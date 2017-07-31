@@ -1,0 +1,24 @@
+
+description 'Zulia Server'
+
+def luceneVersion = '6.6.0'
+
+dependencies {	    
+    compile project(':zulia-common')
+
+    compile "org.apache.lucene:lucene-facet:$luceneVersion"
+    compile "org.apache.lucene:lucene-queryparser:$luceneVersion"
+    compile "org.apache.lucene:lucene-analyzers-common:$luceneVersion"
+    compile "org.apache.lucene:lucene-highlighter:$luceneVersion"
+
+    compile 'com.hazelcast:hazelcast:3.8.2'
+
+    compile group: 'com.beust:jcommander:1.72'
+
+    compile 'org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.25.1'
+
+    compile 'com.cedarsoftware:json-io:4.9.12'
+
+    compile 'info.debatty:java-lsh:0.10'
+
+}

@@ -1,0 +1,16 @@
+apply plugin: 'java'
+
+subprojects {
+	defaultTasks 'build'
+
+	apply plugin: 'java'
+	
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
+	
+	version = '1.0'
+	ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+
+	group = 'io.zulia'
+	
+}
