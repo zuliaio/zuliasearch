@@ -13,7 +13,7 @@ dependencies {
 
     compile 'com.hazelcast:hazelcast:3.8.2'
 
-    compile group: 'com.beust:jcommander:1.72'
+    compile 'com.beust:jcommander:1.72'
 
     compile 'org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.25.1'
 
