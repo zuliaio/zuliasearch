@@ -1,12 +1,6 @@
-build
-bin
-.project
-.classpath
-.settings
+*/gen
+*/out
 .idea
 *.iml
 
-*/.settings
-*/.classpath
-*/.project
-*/.iml
+

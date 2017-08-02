@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+import "zulia_base.proto";
+
+option java_package = "io.zulia.message";
+
+message IndexMapping {
+    string indexName = 1;
+    uint32 numberOfShards = 2;
+    ShardMapping shardMapping = 3;
+}
+
+message ShardMapping {
+    uint32 shardNumber = 1;
+    Member member = 2;
+    repeated Member replicaMember = 3;
+}
+
+message IndexSettings {
+    string indexName = 1;
+    uint32 numberOfShards = 2;
+    uint32 numberOfReplicas = 3;
+
+    //server populated
+    int64 createTime = 4;
+    int64 updateTime = 5;
+
+    string defaultSearchField = 6;
+    repeated AnalyzerSettings analyzerSettings = 7;
+    repeated FieldConfig fieldConfig = 8;
+
+    double requestFactor = 9;
+    uint32 minSegmentRequest = 10;
+    double segmentTolerance = 11;
+
+    uint32 shardQueryCacheSize = 12;
+    uint32 shardQueryCacheMaxAmount = 13;
+
+    uint32 idleTimeWithoutCommit = 14;
+    uint32 segmentCommitInterval = 15;
+
+}
+
+message FieldConfig {
+
+    enum FieldType {
+        STRING = 0;
+        NUMERIC_INT = 1;
+        NUMERIC_LONG = 2;
+        NUMERIC_FLOAT = 3;
+        NUMERIC_DOUBLE = 4;
+        DATE = 5;
+        BOOL = 6;
+    }
+
+    FieldType fieldType = 1;
+    string storedFieldName = 2;
+    repeated IndexAs indexAs = 3;
+    repeated FacetAs facetAs = 4;
+    repeated SortAs sortAs = 5;
+    repeated ProjectAs projectAs = 6;
+}
+
+message AnalyzerSettings {
+
+
+    enum Tokenizer {
+        KEYWORD = 0;
+        WHITESPACE = 1;
+        STANDARD = 2;
+    }
+
+    enum Filter {
+        LOWERCASE = 0;
+        UPPERCASE = 1;
+        STOPWORDS = 2;
+        ASCII_FOLDING = 3;
+        KSTEM = 4;
+        ENGLISH_MIN_STEM = 5;
+        SNOWBALL_STEM = 6;
+        ENGLISH_POSSESSIVE = 7;
+        MINHASH = 8;
+        TWO_TWO_SHINGLE = 9;
+        THREE_THREE_SHINGLE = 10;
+        FOUR_FOUR_SHINGLE = 11;
+        FIVE_FIVE_SHINGLE = 12;
+        BRITISH_US = 13;
+        CONCAT_ALL = 14;
+    }
+
+
+
+    string name = 1;
+    Tokenizer tokenizer = 2;
+    repeated Filter filter = 3;
+    Similarity similarity = 4;
+
+}
+
+
+message IndexAs {
+    string indexFieldName = 1;
+    string analyzerName = 2;
+}
+
+message ProjectAs {
+    string field = 1;
+    Superbit superbit = 2;
+}
+
+message Superbit {
+    uint32 inputDim = 1;
+    uint32 batches = 2;
+    uint32 seed = 3;
+}
+
+message FacetAs {
+    enum DateHandling {
+        DATE_YYYY_MM_DD = 0;
+        DATE_YYYYMMDD = 1;
+    }
+    string facetName = 1;
+    DateHandling dateHandling = 2;
+}
+
+message SortAs {
+    enum StringHandling {
+        STANDARD = 0;
+        LOWERCASE = 1;
+        FOLDING = 2;
+        LOWERCASE_FOLDING = 3;
+    }
+
+    string sortFieldName = 1;
+    StringHandling stringHandling = 2;
+
+}
+

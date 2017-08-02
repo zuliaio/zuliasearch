@@ -1,0 +1,220 @@
+syntax = "proto3";
+
+import "zulia_base.proto";
+import "zulia_query.proto";
+import "zulia_index.proto";
+
+option java_package = "io.zulia.message";
+
+
+service ZuliaService {
+    rpc Query (QueryRequest) returns (QueryResponse);
+    rpc QueryInternal (QueryRequest) returns (InternalQueryResponse);
+    rpc Store (StoreRequest) returns (StoreResponse);
+    rpc Delete (DeleteRequest) returns (DeleteResponse);
+    rpc BatchDelete (BatchDeleteRequest) returns (BatchDeleteResponse);
+    rpc Fetch (FetchRequest) returns (FetchResponse);
+    rpc BatchFetch (BatchFetchRequest) returns (BatchFetchResponse);
+    rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
+    rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
+    rpc GetIndexes (GetIndexesRequest) returns (GetIndexesResponse);
+    rpc GetNumberOfDocs (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
+    rpc GetNumberOfDocsInternal (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
+    rpc Clear (ClearRequest) returns (ClearResponse);
+    rpc ClearInternal (ClearRequest) returns (ClearResponse);
+    rpc Optimize (OptimizeRequest) returns (OptimizeResponse);
+    rpc OptimizeInternal (OptimizeRequest) returns (OptimizeResponse);
+    rpc GetFieldNames (GetFieldNamesRequest) returns (GetFieldNamesResponse);
+    rpc GetFieldNamesInternal (GetFieldNamesRequest) returns (GetFieldNamesResponse);
+    rpc GetTerms (GetTermsRequest) returns (GetTermsResponse);
+    rpc GetTermsInternal (GetTermsRequest) returns (GetTermsResponseInternal);
+    rpc GetMembers (GetMembersRequest) returns (GetMembersResponse);
+    rpc GetIndexSettings (GetIndexSettingsRequest) returns (GetIndexSettingsResponse);
+}
+
+
+message QueryRequest {
+    repeated string index = 1;
+    Query query = 2;
+    uint32 amount = 3;
+    repeated Query filterQuery = 4;
+    FacetRequest facetRequest = 5;
+    SortRequest sortRequest = 6;
+    uint32 start = 7;
+    LastResult lastResult = 8;
+    FetchType resultFetchType = 9;
+    repeated string documentFields = 10;
+    repeated string documentMaskedFields = 11;
+    bool fetchFull = 12;
+    repeated FieldSimilarity fieldSimilarity = 13;
+    repeated HighlightRequest highlightRequest = 14;
+    repeated AnalysisRequest analysisRequest = 15;
+    bool debug = 16;
+    repeated CosineSimRequest cosineSimRequest = 17;
+    bool dontCache = 18;
+}
+
+message QueryResponse {
+    uint64 totalHits = 1;
+    repeated ScoredResult results = 2;
+    LastResult lastResult = 3;
+    repeated FacetGroup facetGroup = 4;
+    repeated AnalysisResult analysisResult = 5;
+}
+
+message InternalQueryResponse {
+    repeated IndexShardResponse indexShardResponse = 1;
+}
+
+message StoreRequest {
+    string uniqueId = 1;
+    string indexName = 2;
+    ResultDocument resultDocument = 3;
+    repeated AssociatedDocument associatedDocument = 4;
+    bool clearExistingAssociated = 5;
+}
+
+message StoreResponse {
+}
+
+
+message DeleteRequest {
+    string indexName = 1;
+    string uniqueId = 2;
+    string filename = 3;
+    bool deleteDocument = 4;
+    bool deleteAllAssociated = 5;
+}
+
+message DeleteResponse {
+}
+
+message BatchDeleteRequest {
+    repeated DeleteRequest request = 1;
+}
+
+message BatchDeleteResponse {
+}
+
+message FetchRequest {
+    string uniqueId = 1;
+    string indexName = 2;
+    string filename = 3;
+    FetchType resultFetchType = 4;
+    FetchType associatedFetchType = 5;
+    repeated string documentFields = 6;
+    repeated string documentMaskedFields = 7;
+    int64 timestamp = 8;
+}
+
+message FetchResponse {
+    ResultDocument resultDocument = 1;
+    repeated AssociatedDocument associatedDocument = 2;
+}
+
+message BatchFetchRequest {
+    repeated FetchRequest fetchRequest = 1;
+}
+
+message BatchFetchResponse {
+    repeated FetchResponse fetchResponse = 1;
+}
+
+
+message CreateIndexRequest {
+    IndexSettings indexSettings = 1;
+}
+
+message CreateIndexResponse {
+}
+
+message DeleteIndexRequest {
+    string indexName = 1;
+}
+
+message DeleteIndexResponse {
+}
+
+
+message GetIndexesRequest {
+}
+
+message GetIndexesResponse {
+    repeated string indexName = 1;
+}
+
+message GetNumberOfDocsRequest {
+    string indexName = 1;
+}
+
+message GetNumberOfDocsResponse {
+    uint64 numberOfDocs = 1;
+    ShardCount shardCount = 2;
+}
+
+message ClearRequest {
+    string indexName = 1;
+}
+
+message ClearResponse {
+}
+
+
+message OptimizeRequest {
+    string indexName = 1;
+}
+
+message OptimizeResponse {
+}
+
+message GetFieldNamesRequest {
+    string indexName = 1;
+}
+
+message GetFieldNamesResponse {
+    repeated string fieldName = 1;
+}
+
+
+message GetTermsRequest {
+    string indexName = 1;
+    string fieldName = 2;
+    uint32 amount = 3;
+
+    string startTerm = 4;
+    string endTerm = 5;
+    uint32 minDocFreq = 6;
+    uint32 minTermFreq = 7;
+    string termFilter = 8;
+    string termMatch = 9;
+
+    repeated string includeTerm = 10;
+
+    FuzzyTerm fuzzyTerm = 11;
+}
+
+message GetTermsResponse {
+    Term term = 1;
+    Term lastTerm = 2;
+}
+
+message GetTermsResponseInternal {
+    repeated GetTermsResponse getTermsResponse = 1;
+}
+
+message GetMembersRequest {
+}
+
+message GetMembersResponse {
+    repeated Member member = 1;
+    repeated IndexMapping indexMapping = 2;
+}
+
+message GetIndexSettingsRequest {
+    string indexName = 1;
+}
+
+message GetIndexSettingsResponse {
+    IndexSettings indexSettings = 1;
+}
+

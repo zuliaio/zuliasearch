@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+option java_package = "io.zulia.message";
+
+message Member {
+    string serverAddress = 1;
+    uint32 hazelcastPort = 2;
+    uint32 servicePort = 3;
+    uint32 restPort = 4;
+}
+
+message ResultDocument {
+    string uniqueId = 1;
+    string indexName = 2;
+    bytes document = 3;
+    repeated Metadata metadata = 4;
+    int64 timestamp = 5;
+}
+
+
+message AssociatedDocument {
+    string filename = 1;
+    string documentUniqueId = 2;
+    string indexName = 3;
+    bytes document = 4;
+    bool compressed = 5;
+    repeated Metadata metadata = 6;
+    int64 timestamp = 7;
+}
+
+message Metadata {
+    string key = 1;
+    string value = 2;
+}
+
+message ShardCount {
+    uint32 shardNumber = 1;
+    uint32 numberOfDocs = 2;
+}
+
+
+message Term {
+    string value = 1;
+    uint64 docFreq = 2;
+    uint64 termFreq = 3;
+    double score = 4;
+}
+
+message FuzzyTerm {
+    string term = 1;
+    uint32 editDistance = 2;
+    uint32 prefixLength = 3;
+    bool transpositions = 4;
+}
+
+
+enum Similarity {
+    TFIDF = 0;
+    BM25 = 1;
+    CONSTANT = 2;
+    TF = 3;
+}
+
