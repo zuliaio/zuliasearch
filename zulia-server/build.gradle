@@ -1,9 +1,15 @@
 
+apply plugin: 'application'
+
 description 'Zulia Server'
+
 
 def luceneVersion = '6.6.0'
 
-dependencies {	    
+
+defaultTasks 'build','installDist'
+
+dependencies {
     compile project(':zulia-common')
 
     compile "org.apache.lucene:lucene-facet:$luceneVersion"
@@ -21,4 +27,29 @@ dependencies {
 
     compile 'info.debatty:java-lsh:0.10'
 
+    compile 'org.mongodb:mongo-java-driver:3.4.2'
+
 }
+
+applicationName = 'zulia'
+mainClassName = "io.zulia.server.util.Zulia"
+
+task createZuliaDScript(type: CreateStartScripts) {
+    applicationName = "zuliad"
+    mainClassName = "io.zulia.server.ZuliaD"
+    outputDir = startScripts.outputDir
+    classpath = startScripts.classpath
+
+    doLast {
+        def unixScriptFile = file getUnixScript()
+        unixScriptFile.text = unixScriptFile.text.replace('APP_HOME="`pwd -P`"', 'export APP_HOME="`pwd -P`"')
+    }
+}
+
+applicationDistribution.into("bin") {
+    duplicatesStrategy= DuplicatesStrategy.EXCLUDE
+    from(createZuliaDScript)
+    from(file("config"))
+    fileMode = 0755
+}
+

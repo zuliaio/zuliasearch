@@ -2,7 +2,7 @@ syntax = "proto3";
 
 option java_package = "io.zulia.message";
 
-message Member {
+message Node {
     string serverAddress = 1;
     uint32 hazelcastPort = 2;
     uint32 servicePort = 3;

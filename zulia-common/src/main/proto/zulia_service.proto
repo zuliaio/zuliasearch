@@ -28,7 +28,7 @@ service ZuliaService {
     rpc GetFieldNamesInternal (GetFieldNamesRequest) returns (GetFieldNamesResponse);
     rpc GetTerms (GetTermsRequest) returns (GetTermsResponse);
     rpc GetTermsInternal (GetTermsRequest) returns (GetTermsResponseInternal);
-    rpc GetMembers (GetMembersRequest) returns (GetMembersResponse);
+    rpc GetNodes (GetNodesRequest) returns (GetNodesResponse);
     rpc GetIndexSettings (GetIndexSettingsRequest) returns (GetIndexSettingsResponse);
 }
 
@@ -202,11 +202,11 @@ message GetTermsResponseInternal {
     repeated GetTermsResponse getTermsResponse = 1;
 }
 
-message GetMembersRequest {
+message GetNodesRequest {
 }
 
-message GetMembersResponse {
-    repeated Member member = 1;
+message GetNodesResponse {
+    repeated Node node = 1;
     repeated IndexMapping indexMapping = 2;
 }
 

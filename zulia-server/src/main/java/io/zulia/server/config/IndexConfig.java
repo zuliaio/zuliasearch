@@ -1,5 +1,6 @@
-package io.zulia.server;
+package io.zulia.server.config;
 
+import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 
 import java.util.List;
@@ -26,5 +27,24 @@ public interface IndexConfig {
 	 * @param indexName
 	 */
 	void removeIndex(String indexName);
+
+	/**
+	 *
+	 * @return - returns all index mapping for a cluster
+	 */
+	List<IndexMapping> getIndexMappings();
+
+	/**
+	 *
+	 * @param indexName -index name to fetch server mapping from
+	 * @return - index mapping for an index
+	 */
+	IndexMapping getIndexMapping(String indexName);
+
+	/**
+	 * Creates or updates index mapping
+	 * @param indexMapping - index mapping to create or update
+	 */
+	void storeIndexMapping(IndexMapping indexMapping);
 
 }
