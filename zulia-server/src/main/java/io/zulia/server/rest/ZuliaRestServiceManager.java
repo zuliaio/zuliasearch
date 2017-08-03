@@ -12,4 +12,12 @@ public class ZuliaRestServiceManager {
 		this.restPort = zuliaConfig.getRestPort();
 		this.zuliaIndexManager = zuliaIndexManager;
 	}
+
+	public void start() {
+
+	}
+
+	public void stop() {
+
+	}
 }

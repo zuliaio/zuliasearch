@@ -4,7 +4,7 @@ import io.zulia.message.ZuliaBase.Node;
 
 import java.util.List;
 
-public interface NodeConfig {
+public interface NodeService {
 
 	/**
 	 *

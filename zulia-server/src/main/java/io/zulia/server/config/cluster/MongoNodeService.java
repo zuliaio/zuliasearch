@@ -1,16 +1,16 @@
-package io.zulia.server.config.mongo;
+package io.zulia.server.config.cluster;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
 import io.zulia.message.ZuliaBase.Node;
-import io.zulia.server.config.NodeConfig;
+import io.zulia.server.config.NodeService;
 import org.bson.Document;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MongoNodeConfig implements NodeConfig {
+public class MongoNodeService implements NodeService {
 
 	private static final String SERVER_ADDRESS = "serverAddress";
 	private static final String HAZELCAST_PORT = "hazelcastPort";
@@ -21,7 +21,7 @@ public class MongoNodeConfig implements NodeConfig {
 	private final MongoClient mongoClient;
 	private final String clusterName;
 
-	public MongoNodeConfig(MongoClient mongoClient, String clusterName) {
+	public MongoNodeService(MongoClient mongoClient, String clusterName) {
 		this.mongoClient = mongoClient;
 		this.clusterName = clusterName;
 

@@ -1,15 +1,15 @@
-package io.zulia.server.config.mongo;
+package io.zulia.server.config.cluster;
 
 import com.mongodb.MongoClient;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
-import io.zulia.server.config.IndexConfig;
+import io.zulia.server.config.IndexService;
 
 import java.util.List;
 
-public class MongoIndexConfig implements IndexConfig {
+public class MongoIndexService implements IndexService {
 
-	public MongoIndexConfig(MongoClient mongoClient) {
+	public MongoIndexService(MongoClient mongoClient) {
 
 	}
 

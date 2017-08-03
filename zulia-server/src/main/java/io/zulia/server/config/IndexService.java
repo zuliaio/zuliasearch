@@ -5,7 +5,7 @@ import io.zulia.message.ZuliaIndex.IndexSettings;
 
 import java.util.List;
 
-public interface IndexConfig {
+public interface IndexService {
 
 	/**
 	 *

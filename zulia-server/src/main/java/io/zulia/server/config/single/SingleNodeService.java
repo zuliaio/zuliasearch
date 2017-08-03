@@ -1,17 +1,17 @@
 package io.zulia.server.config.single;
 
 import io.zulia.message.ZuliaBase.Node;
-import io.zulia.server.config.NodeConfig;
+import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 
 import java.util.Collections;
 import java.util.List;
 
-public class SingleNodeConfig implements NodeConfig {
+public class SingleNodeService implements NodeService {
 
 	private final Node node;
 
-	public SingleNodeConfig(ZuliaConfig zuliaConfig) {
+	public SingleNodeService(ZuliaConfig zuliaConfig) {
 		node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setHazelcastPort(zuliaConfig.getHazelcastPort())
 				.setServicePort(zuliaConfig.getServicePort()).setRestPort(zuliaConfig.getRestPort()).build();
 	}

@@ -27,7 +27,7 @@ dependencies {
 
     compile 'info.debatty:java-lsh:0.10'
 
-    compile 'org.mongodb:mongo-java-driver:3.4.2'
+    compile 'org.mongodb:mongo-java-driver:3.5.0'
 
 }
 

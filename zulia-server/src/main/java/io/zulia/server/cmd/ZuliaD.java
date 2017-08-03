@@ -10,14 +10,13 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
-import io.zulia.server.config.IndexConfig;
-import io.zulia.server.config.NodeConfig;
+import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
-import io.zulia.server.config.mongo.MongoIndexConfig;
-import io.zulia.server.config.mongo.MongoNodeConfig;
-import io.zulia.server.config.mongo.MongoServer;
-import io.zulia.server.config.single.SingleNodeConfig;
+import io.zulia.server.config.cluster.MongoNodeService;
+import io.zulia.server.config.cluster.MongoServer;
+import io.zulia.server.config.single.SingleNodeService;
 import io.zulia.server.log.LogUtil;
+import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
 import org.apache.lucene.facet.FacetsConfig;
@@ -102,8 +101,8 @@ public class ZuliaD {
 			String dataDir = zuliaConfig.getDataPath();
 			Path dataPath = Paths.get(dataDir);
 
-			IndexConfig indexConfig = null;
-			NodeConfig nodeConfig;
+
+			NodeService nodeService;
 
 			File dataFile = dataPath.toFile();
 			if (!dataFile.exists()) {
@@ -128,24 +127,26 @@ public class ZuliaD {
 
 				MongoProvider.setMongoClient(new MongoClient(serverAddressList));
 
-				indexConfig = new MongoIndexConfig(MongoProvider.getMongoClient());
-				nodeConfig = new MongoNodeConfig(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
+
+				nodeService = new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
 			}
 			else {
-				//indexConfig = new FileIndexConfig(dataPath + File.separator + "config");
-				nodeConfig = new SingleNodeConfig(zuliaConfig);
+				nodeService = new SingleNodeService(zuliaConfig);
 			}
 
 			if ("start".equals(jCommander.getParsedCommand())) {
 				setLuceneStatic();
-				List<Node> nodes = nodeConfig.getNodes();
+				List<Node> nodes = nodeService.getNodes();
 
 				if (zuliaConfig.isCluster()) {
 					if (nodes.isEmpty()) {
 						LOG.severe("No nodes added to the cluster");
 						System.exit(3);
 					}
-					displayNodes(nodeConfig, "Registered nodes:");
+					displayNodes(nodeService, "Registered nodes:");
+
+					ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
+					zuliaNode.start();
 				}
 			}
 			else if ("addNode".equals(jCommander.getParsedCommand())) {
@@ -154,17 +155,17 @@ public class ZuliaD {
 
 				LOG.info("Adding node: " + formatNode(node));
 
-				nodeConfig.addNode(node);
+				nodeService.addNode(node);
 
-				displayNodes(nodeConfig, "Registered Nodes:");
+				displayNodes(nodeService, "Registered Nodes:");
 
 			}
 			else if ("removeNode".equals(jCommander.getParsedCommand())) {
 
 				LOG.info("Removing node: " + removeNodeArgs.server + ":" + removeNodeArgs.hazelcastPort);
-				nodeConfig.removeNode(removeNodeArgs.server, removeNodeArgs.hazelcastPort);
+				nodeService.removeNode(removeNodeArgs.server, removeNodeArgs.hazelcastPort);
 
-				displayNodes(nodeConfig, "Registered Nodes:");
+				displayNodes(nodeService, "Registered Nodes:");
 			}
 
 		}
@@ -184,9 +185,9 @@ public class ZuliaD {
 
 	}
 
-	private static void displayNodes(NodeConfig nodeConfig, String header) throws InvalidProtocolBufferException {
+	private static void displayNodes(NodeService nodeService, String header) throws InvalidProtocolBufferException {
 		LOG.info(header);
-		for (Node node : nodeConfig.getNodes()) {
+		for (Node node : nodeService.getNodes()) {
 			LOG.info("  " + formatNode(node));
 		}
 	}
