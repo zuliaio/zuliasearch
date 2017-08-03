@@ -1,4 +1,4 @@
-package io.zulia.server;
+package io.zulia.server.util;
 
 import com.mongodb.MongoClient;
 

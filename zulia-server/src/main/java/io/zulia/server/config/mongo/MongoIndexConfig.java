@@ -1,8 +1,9 @@
-package io.zulia.server.config;
+package io.zulia.server.config.mongo;
 
 import com.mongodb.MongoClient;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.server.config.IndexConfig;
 
 import java.util.List;
 

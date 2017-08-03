@@ -1,4 +1,4 @@
-package io.zulia.server;
+package io.zulia.server.cmd;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -11,14 +11,15 @@ import com.google.protobuf.util.JsonFormat;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
 import io.zulia.server.config.IndexConfig;
-import io.zulia.server.config.MongoIndexConfig;
-import io.zulia.server.config.MongoNodeConfig;
-import io.zulia.server.config.MongoServer;
 import io.zulia.server.config.NodeConfig;
-import io.zulia.server.config.SingleNodeConfig;
 import io.zulia.server.config.ZuliaConfig;
+import io.zulia.server.config.mongo.MongoIndexConfig;
+import io.zulia.server.config.mongo.MongoNodeConfig;
+import io.zulia.server.config.mongo.MongoServer;
+import io.zulia.server.config.single.SingleNodeConfig;
+import io.zulia.server.log.LogUtil;
+import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
-import io.zulia.server.util.log.LogUtil;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.BooleanQuery;
 
@@ -160,10 +161,8 @@ public class ZuliaD {
 			}
 			else if ("removeNode".equals(jCommander.getParsedCommand())) {
 
-				Node node = Node.newBuilder().setServerAddress(removeNodeArgs.server).setHazelcastPort(removeNodeArgs.hazelcastPort).build();
-
-				LOG.info("Removing node: " + formatNode(node));
-				nodeConfig.removeNode(node);
+				LOG.info("Removing node: " + removeNodeArgs.server + ":" + removeNodeArgs.hazelcastPort);
+				nodeConfig.removeNode(removeNodeArgs.server, removeNodeArgs.hazelcastPort);
 
 				displayNodes(nodeConfig, "Registered Nodes:");
 			}

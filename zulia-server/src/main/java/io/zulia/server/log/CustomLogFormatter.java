@@ -1,4 +1,4 @@
-package io.zulia.server.util.log;
+package io.zulia.server.log;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

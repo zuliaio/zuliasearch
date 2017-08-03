@@ -1,5 +1,7 @@
 package io.zulia.server.config;
 
+import io.zulia.server.config.mongo.MongoServer;
+
 import java.util.Collections;
 import java.util.List;
 

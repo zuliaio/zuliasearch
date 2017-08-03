@@ -1,9 +1,10 @@
-package io.zulia.server.config;
+package io.zulia.server.config.mongo;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
 import io.zulia.message.ZuliaBase.Node;
+import io.zulia.server.config.NodeConfig;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -16,7 +17,6 @@ public class MongoNodeConfig implements NodeConfig {
 	private static final String NODES = "nodes";
 	private static final String SERVICE_PORT = "servicePort";
 	private static final String REST_PORT = "restPort";
-
 
 	private final MongoClient mongoClient;
 	private final String clusterName;
@@ -49,6 +49,20 @@ public class MongoNodeConfig implements NodeConfig {
 	}
 
 	@Override
+	public Node getNode(String serverAddress, int hazelcastPort) {
+		List<Node> nodes = new ArrayList<>();
+		Document query = new Document(SERVER_ADDRESS, serverAddress).append(HAZELCAST_PORT, hazelcastPort);
+		Document d = getCollection().find(query).first();
+
+		if (d != null) {
+			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setHazelcastPort(d.getInteger(HAZELCAST_PORT))
+					.setServicePort(d.getInteger(SERVICE_PORT)).setRestPort(d.getInteger(REST_PORT)).build();
+		}
+
+		return null;
+	}
+
+	@Override
 	public void addNode(Node node) {
 
 		Document query = new Document(SERVER_ADDRESS, node.getServerAddress()).append(HAZELCAST_PORT, node.getHazelcastPort());
@@ -61,8 +75,8 @@ public class MongoNodeConfig implements NodeConfig {
 	}
 
 	@Override
-	public void removeNode(Node node) {
+	public void removeNode(String serverAddress, int hazelcastPort) {
 
-		getCollection().deleteOne(new Document(SERVER_ADDRESS, node.getServerAddress()).append(HAZELCAST_PORT, node.getHazelcastPort()));
+		getCollection().deleteOne(new Document(SERVER_ADDRESS, serverAddress).append(HAZELCAST_PORT, hazelcastPort));
 	}
 }

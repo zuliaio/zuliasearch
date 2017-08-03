@@ -1,6 +1,6 @@
-package io.zulia.server.util.log;
+package io.zulia.server.log;
 
-import io.zulia.server.ZuliaD;
+import io.zulia.server.cmd.ZuliaD;
 
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;

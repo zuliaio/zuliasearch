@@ -32,11 +32,11 @@ dependencies {
 }
 
 applicationName = 'zulia'
-mainClassName = "io.zulia.server.util.Zulia"
+mainClassName = "io.zulia.server.cmd.Zulia"
 
 task createZuliaDScript(type: CreateStartScripts) {
     applicationName = "zuliad"
-    mainClassName = "io.zulia.server.ZuliaD"
+    mainClassName = "io.zulia.server.cmd.ZuliaD"
     outputDir = startScripts.outputDir
     classpath = startScripts.classpath
 

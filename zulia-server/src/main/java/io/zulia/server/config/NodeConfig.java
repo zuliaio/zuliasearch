@@ -13,6 +13,14 @@ public interface NodeConfig {
 	List<Node> getNodes();
 
 	/**
+	 *
+	 * @param serverAddress - sever address of node
+	 * @param hazelcastPort - hazelcast port of node
+	 * @return - full node data structure or null if doesn't exist
+	 */
+	Node getNode(String serverAddress, int hazelcastPort);
+
+	/**
 	 * Register a new node with a cluster
 	 * Keyed on server name and hazelcast port
 	 *
@@ -21,10 +29,10 @@ public interface NodeConfig {
 	void addNode(Node node);
 
 	/**
-	 * Removed a node from the cluster
-	 * Keyed on server name and hazelcast port
-	 * @param node - node to remove from the cluster
+	 * Remove a node from the cluster
+	 * @param serverAddress - sever address of node
+	 * @param hazelcastPort - hazelcast port of node
 	 */
-	void removeNode(Node node);
+	void removeNode(String serverAddress, int hazelcastPort);
 
 }

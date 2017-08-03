@@ -1,4 +1,4 @@
-package io.zulia.server.config;
+package io.zulia.server.config.mongo;
 
 public class MongoServer {
 
