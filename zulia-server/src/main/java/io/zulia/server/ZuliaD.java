@@ -3,8 +3,11 @@ package io.zulia.server;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.beust.jcommander.Parameters;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
 import io.zulia.server.config.IndexConfig;
@@ -24,7 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
@@ -44,14 +46,17 @@ public class ZuliaD {
 		private String configPath = "config" + File.separator + "zulia.properties";
 	}
 
+	@Parameters
 	public static class StartArgs {
 
 	}
 
+	@Parameters
 	public static class AddNodeArgs {
 
 	}
 
+	@Parameters
 	public static class RemoveNodeArgs {
 
 		@Parameter(names = "--server", description = "Server to remove from cluster", required = true)
@@ -66,14 +71,6 @@ public class ZuliaD {
 
 		LogUtil.init();
 
-		LOG.info("Hi");
-		try {
-			throw new RuntimeException("Some really bad things");
-		}
-		catch (Exception e) {
-			LOG.log(Level.SEVERE, e.getMessage(), e);
-		}
-
 		ZuliaArgs zuliaArgs = new ZuliaArgs();
 		StartArgs startArgs = new StartArgs();
 		AddNodeArgs addNodeArgs = new AddNodeArgs();
@@ -84,6 +81,11 @@ public class ZuliaD {
 		try {
 			jCommander.parse(args);
 
+			if (jCommander.getParsedCommand() == null) {
+				jCommander.usage();
+				System.exit(2);
+			}
+
 			String prefix = System.getenv("APP_HOME");
 
 			String config = zuliaArgs.configPath;
@@ -92,7 +94,7 @@ public class ZuliaD {
 			}
 
 			ZuliaConfig zuliaConfig = GSON.fromJson(new FileReader(config), ZuliaConfig.class);
-			System.out.println("Using config <" + config + ">");
+			LOG.info("Using config <" + config + ">");
 
 			String dataDir = zuliaConfig.getDataPath();
 			Path dataPath = Paths.get(dataDir);
@@ -105,7 +107,7 @@ public class ZuliaD {
 				throw new IOException("Data dir <" + dataDir + "> does not exist");
 			}
 			else {
-				System.out.println("Using data directory <" + dataFile.getAbsolutePath() + ">");
+				LOG.info("Using data directory <" + dataFile.getAbsolutePath() + ">");
 			}
 
 			if (zuliaConfig.getServerAddress() == null) {
@@ -135,6 +137,13 @@ public class ZuliaD {
 				setLuceneStatic();
 				List<Node> nodes = nodeConfig.getNodes();
 
+				if (zuliaConfig.isCluster()) {
+					if (nodes.isEmpty()) {
+						LOG.severe("No nodes added to the cluster");
+						System.exit(3);
+					}
+					displayNodes(nodeConfig, "Registered nodes:");
+				}
 			}
 			else if ("addNode".equals(jCommander.getParsedCommand())) {
 				if (!zuliaConfig.isCluster()) {
@@ -144,7 +153,11 @@ public class ZuliaD {
 				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setHazelcastPort(zuliaConfig.getHazelcastPort())
 						.setServicePort(zuliaConfig.getServicePort()).setRestPort(zuliaConfig.getRestPort()).build();
 
+				LOG.info("Adding node: " + formatNode(node));
+
 				nodeConfig.addNode(node);
+
+				displayNodes(nodeConfig, "Registered Nodes:");
 
 			}
 			else if ("removeNode".equals(jCommander.getParsedCommand())) {
@@ -153,7 +166,11 @@ public class ZuliaD {
 				}
 
 				Node node = Node.newBuilder().setServerAddress(removeNodeArgs.server).setHazelcastPort(removeNodeArgs.hazelcastPort).build();
+
+				LOG.info("Removing node: " + formatNode(node));
 				nodeConfig.removeNode(node);
+
+				displayNodes(nodeConfig, "Registered Nodes:");
 			}
 
 		}
@@ -167,6 +184,18 @@ public class ZuliaD {
 			System.exit(1);
 		}
 
+	}
+
+	private static void displayNodes(NodeConfig nodeConfig, String header) throws InvalidProtocolBufferException {
+		LOG.info(header);
+		for (Node node : nodeConfig.getNodes()) {
+			LOG.info("  " + formatNode(node));
+		}
+	}
+
+	private static String formatNode(Node node) throws InvalidProtocolBufferException {
+		JsonFormat.Printer printer = JsonFormat.printer();
+		return printer.print(node).replace("\n", " ").replaceAll("\\s+", " ");
 	}
 
 	private static void setLuceneStatic() {
