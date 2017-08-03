@@ -21,11 +21,11 @@ public class SingleNodeConfig implements NodeConfig {
 
 	@Override
 	public void addNode(Node node) {
-		throw new IllegalArgumentException("Add node is only available in cluster mode");
+		throw new UnsupportedOperationException("Add node is only available in cluster mode");
 	}
 
 	@Override
 	public void removeNode(Node node) {
-		throw new IllegalArgumentException("Remove node is only available in cluster mode");
+		throw new UnsupportedOperationException("Remove node is only available in cluster mode");
 	}
 }

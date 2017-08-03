@@ -10,8 +10,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
-import io.zulia.message.ZuliaBase;
 import io.zulia.server.config.IndexConfig;
+import io.zulia.server.config.MongoIndexConfig;
 import io.zulia.server.config.MongoNodeConfig;
 import io.zulia.server.config.MongoServer;
 import io.zulia.server.config.NodeConfig;
@@ -127,7 +127,7 @@ public class ZuliaD {
 
 				MongoProvider.setMongoClient(new MongoClient(serverAddressList));
 
-				//indexConfig = new MongoIndexConfig(mongoServers);
+				indexConfig = new MongoIndexConfig(MongoProvider.getMongoClient());
 				nodeConfig = new MongoNodeConfig(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
 			}
 			else {
@@ -173,7 +173,7 @@ public class ZuliaD {
 			jCommander.usage();
 			System.exit(2);
 		}
-		catch (IllegalArgumentException e) {
+		catch (UnsupportedOperationException e) {
 			System.err.println("Error: " + e.getMessage());
 			System.exit(2);
 		}

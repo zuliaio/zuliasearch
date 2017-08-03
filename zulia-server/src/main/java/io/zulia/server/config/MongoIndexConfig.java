@@ -1,11 +1,16 @@
 package io.zulia.server.config;
 
+import com.mongodb.MongoClient;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 
 import java.util.List;
 
 public class MongoIndexConfig implements IndexConfig {
+
+	public MongoIndexConfig(MongoClient mongoClient) {
+
+	}
 
 	@Override
 	public List<IndexSettings> getIndexes() {
