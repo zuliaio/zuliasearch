@@ -13,6 +13,7 @@ import io.zulia.server.config.MongoServer;
 import io.zulia.server.config.NodeConfig;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.util.ServerNameHelper;
+import io.zulia.server.util.log.LogUtil;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.BooleanQuery;
 
@@ -63,13 +64,15 @@ public class ZuliaD {
 
 	public static void main(String[] args) {
 
-		System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tH:%1$tM:%1$tS.%1$tL <%4$s> %2$s %5$s %6$s%n");
-
-
-		Logger.getLogger("org.mongodb").setLevel(Level.WARNING);
-
+		LogUtil.init();
 
 		LOG.info("Hi");
+		try {
+			throw new RuntimeException("Some really bad things");
+		}
+		catch (Exception e) {
+			LOG.log(Level.SEVERE, e.getMessage(), e);
+		}
 
 		ZuliaArgs zuliaArgs = new ZuliaArgs();
 		StartArgs startArgs = new StartArgs();
