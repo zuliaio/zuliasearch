@@ -23,10 +23,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
 
 public class ZuliaD {
+
+	private static final Logger LOG = Logger.getLogger(ZuliaD.class.getName());
 
 	private static final Gson GSON = new GsonBuilder().create();
 
@@ -35,8 +39,8 @@ public class ZuliaD {
 		@Parameter(names = "--help", help = true)
 		private boolean help;
 
-		@Parameter(names = "--config", description = "Full path to the config (defaults to $APP_HOME/bin/zulia.properties)")
-		private String configPath = "bin" + File.separator + "zulia.properties";
+		@Parameter(names = "--config", description = "Full path to the config (defaults to $APP_HOME/config/zulia.properties)")
+		private String configPath = "config" + File.separator + "zulia.properties";
 	}
 
 	public static class StartArgs {
@@ -59,6 +63,14 @@ public class ZuliaD {
 
 	public static void main(String[] args) {
 
+		System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$tH:%1$tM:%1$tS.%1$tL <%4$s> %2$s %5$s %6$s%n");
+
+
+		Logger.getLogger("org.mongodb").setLevel(Level.WARNING);
+
+
+		LOG.info("Hi");
+
 		ZuliaArgs zuliaArgs = new ZuliaArgs();
 		StartArgs startArgs = new StartArgs();
 		AddNodeArgs addNodeArgs = new AddNodeArgs();
@@ -77,6 +89,7 @@ public class ZuliaD {
 			}
 
 			ZuliaConfig zuliaConfig = GSON.fromJson(new FileReader(config), ZuliaConfig.class);
+			System.out.println("Using config <" + config + ">");
 
 			String dataDir = zuliaConfig.getDataPath();
 			Path dataPath = Paths.get(dataDir);
@@ -87,6 +100,9 @@ public class ZuliaD {
 			File dataFile = dataPath.toFile();
 			if (!dataFile.exists()) {
 				throw new IOException("Data dir <" + dataDir + "> does not exist");
+			}
+			else {
+				System.out.println("Using data directory <" + dataFile.getAbsolutePath() + ">");
 			}
 
 			if (zuliaConfig.getServerAddress() == null) {
@@ -144,10 +160,9 @@ public class ZuliaD {
 		}
 		catch (Exception e) {
 			System.err.println("Error: " + e.getMessage());
+			e.printStackTrace();
 			System.exit(1);
 		}
-
-		System.out.println(zuliaArgs.configPath);
 
 	}
 

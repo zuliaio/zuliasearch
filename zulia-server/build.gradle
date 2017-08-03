@@ -49,7 +49,6 @@ task createZuliaDScript(type: CreateStartScripts) {
 applicationDistribution.into("bin") {
     duplicatesStrategy= DuplicatesStrategy.EXCLUDE
     from(createZuliaDScript)
-    from(file("config"))
     fileMode = 0755
 }
 
