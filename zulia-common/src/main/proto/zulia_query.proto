@@ -36,7 +36,7 @@ message FacetRequest {
 message CountRequest {
     Facet facetField = 1;
     uint32 maxFacets = 2;
-    uint32 segmentFacets = 3;
+    uint32 shardFacets = 3;
     bool computeError = 4;
     bool computePossibleMissed = 5;
 }
@@ -90,7 +90,7 @@ message ScoredResult {
     float score = 2;
     uint32 docId = 3;
     string indexName = 4;
-    uint32 segment = 5;
+    uint32 shard = 5;
     uint32 resultIndex = 6;
     SortValues sortValues = 7;
     int64 timestamp = 8;
@@ -181,7 +181,7 @@ message IndexShardResponse {
 }
 
 message ShardQueryResponse {
-    uint32 segmentNumber = 1;
+    uint32 shardNumber = 1;
     string indexName = 2;
     uint32 totalHits = 3;
     repeated ScoredResult scoredResult = 4;
