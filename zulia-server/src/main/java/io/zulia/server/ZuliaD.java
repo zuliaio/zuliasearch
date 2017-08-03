@@ -10,10 +10,12 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
+import io.zulia.message.ZuliaBase;
 import io.zulia.server.config.IndexConfig;
 import io.zulia.server.config.MongoNodeConfig;
 import io.zulia.server.config.MongoServer;
 import io.zulia.server.config.NodeConfig;
+import io.zulia.server.config.SingleNodeConfig;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.util.ServerNameHelper;
 import io.zulia.server.util.log.LogUtil;
@@ -100,7 +102,7 @@ public class ZuliaD {
 			Path dataPath = Paths.get(dataDir);
 
 			IndexConfig indexConfig = null;
-			NodeConfig nodeConfig = null;
+			NodeConfig nodeConfig;
 
 			File dataFile = dataPath.toFile();
 			if (!dataFile.exists()) {
@@ -130,7 +132,7 @@ public class ZuliaD {
 			}
 			else {
 				//indexConfig = new FileIndexConfig(dataPath + File.separator + "config");
-				//nodeConfig = new FileNodeConfig(dataPath + File.separator + "config");
+				nodeConfig = new SingleNodeConfig(zuliaConfig);
 			}
 
 			if ("start".equals(jCommander.getParsedCommand())) {
@@ -146,10 +148,6 @@ public class ZuliaD {
 				}
 			}
 			else if ("addNode".equals(jCommander.getParsedCommand())) {
-				if (!zuliaConfig.isCluster()) {
-					throw new IllegalArgumentException("Add node is only available in cluster mode");
-				}
-
 				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setHazelcastPort(zuliaConfig.getHazelcastPort())
 						.setServicePort(zuliaConfig.getServicePort()).setRestPort(zuliaConfig.getRestPort()).build();
 
@@ -161,9 +159,6 @@ public class ZuliaD {
 
 			}
 			else if ("removeNode".equals(jCommander.getParsedCommand())) {
-				if (!zuliaConfig.isCluster()) {
-					throw new IllegalArgumentException("Add node is only available in cluster mode");
-				}
 
 				Node node = Node.newBuilder().setServerAddress(removeNodeArgs.server).setHazelcastPort(removeNodeArgs.hazelcastPort).build();
 
@@ -176,6 +171,10 @@ public class ZuliaD {
 		}
 		catch (ParameterException e) {
 			jCommander.usage();
+			System.exit(2);
+		}
+		catch (IllegalArgumentException e) {
+			System.err.println("Error: " + e.getMessage());
 			System.exit(2);
 		}
 		catch (Exception e) {
