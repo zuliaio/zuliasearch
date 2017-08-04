@@ -20,7 +20,6 @@ import java.util.logging.Logger;
 public class FSIndexService implements IndexService {
 
 	private static final Logger LOG = Logger.getLogger(FSIndexService.class.getName());
-	private static final String SETTINGS = "settings";
 	private static final String EXTENSION = ".json";
 	private static final String MAPPING_EXTENSION = "_mapping.json";
 	private final String baseDir;
