@@ -17,9 +17,8 @@ public class ZuliaNode {
 		this.indexManager = new ZuliaIndexManager(zuliaConfig);
 		this.restServiceManager = new ZuliaRestServiceManager(zuliaConfig, indexManager);
 
-		this.hazelcastManager = new HazelcastManager(indexManager, nodeService);
+		this.hazelcastManager = new HazelcastManager(indexManager, nodeService, zuliaConfig);
 	}
-
 
 	public void start() {
 		restServiceManager.start();

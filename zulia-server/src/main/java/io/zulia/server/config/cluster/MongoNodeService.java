@@ -8,6 +8,7 @@ import io.zulia.server.config.NodeService;
 import org.bson.Document;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class MongoNodeService implements NodeService {
@@ -35,7 +36,7 @@ public class MongoNodeService implements NodeService {
 	}
 
 	@Override
-	public List<Node> getNodes() {
+	public Collection<Node> getNodes() {
 
 		List<Node> nodes = new ArrayList<>();
 		for (Document d : getCollection().find()) {

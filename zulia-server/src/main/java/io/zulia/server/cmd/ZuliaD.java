@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -101,7 +102,6 @@ public class ZuliaD {
 			String dataDir = zuliaConfig.getDataPath();
 			Path dataPath = Paths.get(dataDir);
 
-
 			NodeService nodeService;
 
 			File dataFile = dataPath.toFile();
@@ -127,7 +127,6 @@ public class ZuliaD {
 
 				MongoProvider.setMongoClient(new MongoClient(serverAddressList));
 
-
 				nodeService = new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
 			}
 			else {
@@ -136,7 +135,7 @@ public class ZuliaD {
 
 			if ("start".equals(jCommander.getParsedCommand())) {
 				setLuceneStatic();
-				List<Node> nodes = nodeService.getNodes();
+				Collection<Node> nodes = nodeService.getNodes();
 
 				if (zuliaConfig.isCluster()) {
 					if (nodes.isEmpty()) {

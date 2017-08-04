@@ -7,7 +7,7 @@ import io.zulia.server.config.cluster.MongoIndexService;
 import io.zulia.server.config.single.FSIndexService;
 import io.zulia.server.util.MongoProvider;
 
-import java.util.Set;
+import java.util.Collection;
 
 public class ZuliaIndexManager {
 
@@ -23,15 +23,23 @@ public class ZuliaIndexManager {
 		}
 	}
 
-	public void handleNodeAdded(Set<Node> currentNodes, Node nodeAdded, boolean master) {
+	public void handleNodeAdded(Collection<Node> currentNodes, Node nodeAdded, boolean master) {
 
 	}
 
-	public void handleNodeRemoved(Set<Node> currentNodes, Node nodeRemoved, boolean master) {
+	public void handleNodeRemoved(Collection<Node> currentNodes, Node nodeRemoved, boolean master) {
 
 	}
 
 	public void shutdown() {
+
+	}
+
+	public void loadIndexes() {
+
+	}
+
+	public void openConnections(Collection<Node> nodes) {
 
 	}
 }

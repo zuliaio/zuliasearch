@@ -2,7 +2,7 @@ package io.zulia.server.config;
 
 import io.zulia.message.ZuliaBase.Node;
 
-import java.util.List;
+import java.util.Collection;
 
 public interface NodeService {
 
@@ -10,7 +10,7 @@ public interface NodeService {
 	 *
 	 * @return All nodes registered with a cluster
 	 */
-	List<Node> getNodes();
+	Collection<Node> getNodes();
 
 	/**
 	 *
