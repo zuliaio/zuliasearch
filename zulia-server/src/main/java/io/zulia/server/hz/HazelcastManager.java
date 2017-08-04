@@ -29,7 +29,6 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 
 	private final ZuliaIndexManager zuliaIndexManager;
 	private final NodeService nodeService;
-	private final ReentrantReadWriteLock initLock;
 	private HazelcastInstance hazelcastInstance;
 	private Member self;
 
@@ -38,8 +37,6 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 		this.zuliaIndexManager = zuliaIndexManager;
 		this.nodeService = nodeService;
 
-		this.initLock = new ReentrantReadWriteLock(true);
-		initLock.writeLock().lock();
 
 		init(nodeService.getNodes(), zuliaConfig);
 
@@ -52,7 +49,6 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 		Config cfg = new Config();
 		// disable Hazelcast shutdown hook to allow Zulia to handle
 		cfg.setProperty(GroupProperty.SHUTDOWNHOOK_ENABLED.getName(), "false");
-		cfg.setProperty(GroupProperty.REST_ENABLED.getName(), "false");
 
 		cfg.getGroupConfig().setName(zuliaConfig.getClusterName());
 		cfg.getGroupConfig().setPassword(zuliaConfig.getClusterName());
@@ -84,8 +80,6 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 
 		LOG.info("Current cluster members: <" + members + ">");
 		zuliaIndexManager.openConnections(nodes);
-
-		initLock.writeLock().unlock();
 
 	}
 
