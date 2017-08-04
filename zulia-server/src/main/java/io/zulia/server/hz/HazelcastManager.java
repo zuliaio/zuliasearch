@@ -18,6 +18,7 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
@@ -79,12 +80,7 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 		LOG.info("Initialized hazelcast");
 		Set<Member> members = hazelcastInstance.getCluster().getMembers();
 
-		Member firstMember = members.iterator().next();
-
-		if (firstMember.equals(self)) {
-			LOG.info("Member is owner of cluster");
-			zuliaIndexManager.loadIndexes();
-		}
+		zuliaIndexManager.loadIndexes();
 
 		LOG.info("Current cluster members: <" + members + ">");
 		zuliaIndexManager.openConnections(nodes);
@@ -101,33 +97,44 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 	@Override
 	public void memberAdded(MembershipEvent membershipEvent) {
 
-		Set<Member> members = membershipEvent.getCluster().getMembers();
 		Member memberAdded = membershipEvent.getMember();
+
+		Set<Member> members = membershipEvent.getCluster().getMembers();
 		LOG.info("Added member: <" + membershipEvent.getMember() + "> Current members: <" + members + ">");
 
 		ZuliaBase.Node nodeAdded = nodeService.getNode(memberAdded.getAddress().getHost(), memberAdded.getAddress().getPort());
 
+		Collection<ZuliaBase.Node> currentOnlineNodes = new HashSet<>();
+		for (Member member : members) {
+			currentOnlineNodes.add(nodeService.getNode(member.getAddress().getHost(), member.getAddress().getPort()));
+		}
+
 		Member firstMember = members.iterator().next();
 		boolean master = self.equals(firstMember);
 
-		zuliaIndexManager.handleNodeAdded(nodeService.getNodes(), nodeAdded, master);
+		zuliaIndexManager.handleNodeAdded(currentOnlineNodes, nodeAdded, master);
 
 	}
 
 	@Override
 	public void memberRemoved(MembershipEvent membershipEvent) {
 
-		Set<Member> members = membershipEvent.getCluster().getMembers();
 		Member memberRemoved = membershipEvent.getMember();
+
+		Set<Member> members = membershipEvent.getCluster().getMembers();
 		LOG.info("Lost member: <" + memberRemoved + "> Current members: <" + members + ">");
 
 		ZuliaBase.Node nodeRemoved = nodeService.getNode(memberRemoved.getAddress().getHost(), memberRemoved.getAddress().getPort());
 
-		Member firstMember = membershipEvent.getCluster().getMembers().iterator().next();
+		Collection<ZuliaBase.Node> currentOnlineNodes = new HashSet<>();
+		for (Member member : members) {
+			currentOnlineNodes.add(nodeService.getNode(member.getAddress().getHost(), member.getAddress().getPort()));
+		}
 
+		Member firstMember = membershipEvent.getCluster().getMembers().iterator().next();
 		boolean master = self.equals(firstMember);
 
-		zuliaIndexManager.handleNodeRemoved(nodeService.getNodes(), nodeRemoved, master);
+		zuliaIndexManager.handleNodeRemoved(currentOnlineNodes, nodeRemoved, master);
 
 	}
 
