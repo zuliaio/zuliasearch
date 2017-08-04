@@ -15,6 +15,10 @@ import java.util.List;
 public class MongoIndexService implements IndexService {
 
 	private static final String MAPPING = "mapping";
+	private static final String INDEX_SETTINGS = "indexSettings";
+	private static final String ID = "_id";
+	private static final String INDEX_MAPPING = "indexMapping";
+
 	private final MongoCollection<Document> settingsCollection;
 	private final MongoCollection<Document> mappingCollection;
 
@@ -28,7 +32,7 @@ public class MongoIndexService implements IndexService {
 
 		List<IndexSettings> indexSettings = new ArrayList<>();
 		for (Document doc : settingsCollection.find()) {
-			String indexSettingsJson = doc.getString("indexSettings");
+			String indexSettingsJson = doc.getString(INDEX_SETTINGS);
 			IndexSettings.Builder builder = IndexSettings.newBuilder();
 			JsonFormat.parser().merge(indexSettingsJson, builder);
 			indexSettings.add(builder.build());
@@ -44,16 +48,16 @@ public class MongoIndexService implements IndexService {
 	@Override
 	public void createIndex(IndexSettings indexSettings) throws Exception {
 
-		Document indexSettingsDoc = new Document("_id", indexSettings.getIndexName()).append("indexSettings", JsonFormat.printer().print(indexSettings));
+		Document indexSettingsDoc = new Document(ID, indexSettings.getIndexName()).append(INDEX_SETTINGS, JsonFormat.printer().print(indexSettings));
 
-		settingsCollection.replaceOne(new Document("_id", indexSettings.getIndexName()), indexSettingsDoc, new UpdateOptions().upsert(true));
+		settingsCollection.replaceOne(new Document(ID, indexSettings.getIndexName()), indexSettingsDoc, new UpdateOptions().upsert(true));
 
 	}
 
 	@Override
 	public void removeIndex(String indexName) throws Exception {
-		settingsCollection.deleteOne(new Document("_id", indexName));
-		mappingCollection.deleteOne(new Document("_id", indexName));
+		settingsCollection.deleteOne(new Document(ID, indexName));
+		mappingCollection.deleteOne(new Document(ID, indexName));
 	}
 
 	@Override
@@ -62,10 +66,10 @@ public class MongoIndexService implements IndexService {
 		List<IndexMapping> indexMappings = new ArrayList<>();
 		for (Document doc : mappingCollection.find()) {
 
-			String indexMappingJson = doc.getString("indexMapping");
+			String indexMappingJson = doc.getString(INDEX_MAPPING);
 			IndexMapping.Builder builder = IndexMapping.newBuilder();
 			JsonFormat.parser().merge(indexMappingJson, builder);
-			
+
 			indexMappings.add(builder.build());
 
 		}
@@ -80,10 +84,10 @@ public class MongoIndexService implements IndexService {
 
 	@Override
 	public IndexMapping getIndexMapping(String indexName) throws Exception {
-		Document doc = mappingCollection.find(new Document("_id", indexName)).first();
+		Document doc = mappingCollection.find(new Document(ID, indexName)).first();
 
 		if (doc != null) {
-			String indexMappingJson = doc.getString("indexMapping");
+			String indexMappingJson = doc.getString(INDEX_MAPPING);
 			IndexMapping.Builder builder = IndexMapping.newBuilder();
 			JsonFormat.parser().merge(indexMappingJson, builder);
 			return builder.build();
@@ -95,8 +99,8 @@ public class MongoIndexService implements IndexService {
 
 	@Override
 	public void storeIndexMapping(IndexMapping indexMapping) throws Exception {
-		Document indexMappingDoc = new Document("_id", indexMapping.getIndexName()).append("indexMapping", JsonFormat.printer().print(indexMapping));
+		Document indexMappingDoc = new Document(ID, indexMapping.getIndexName()).append(INDEX_MAPPING, JsonFormat.printer().print(indexMapping));
 
-		mappingCollection.replaceOne(new Document("_id", indexMapping.getIndexName()), indexMappingDoc, new UpdateOptions().upsert(true));
+		mappingCollection.replaceOne(new Document(ID, indexMapping.getIndexName()), indexMappingDoc, new UpdateOptions().upsert(true));
 	}
 }
