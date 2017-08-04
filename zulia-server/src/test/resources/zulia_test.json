@@ -1,0 +1,8 @@
+{
+  "dataPath": "./src/test/resources/data",
+  "cluster": false,
+  "serverAddress": "10.0.0.10",
+  "hazelcastPort": 5701,
+  "servicePort": 32191,
+  "restPort": 32192
+}

@@ -9,6 +9,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -25,27 +28,30 @@ public class FSIndexService implements IndexService {
 	public FSIndexService(ZuliaConfig zuliaConfig) {
 		// create the base dir
 		baseDir = zuliaConfig.getDataPath() + File.separator + SETTINGS;
-		new File(baseDir).mkdir();
+		try {
+			Files.createDirectory(Paths.get(baseDir));
+		}
+		catch (FileAlreadyExistsException e1) {
+			// skip if the base dir exists.
+		}
+		catch (IOException e) {
+			LOG.log(Level.SEVERE, e.getMessage(), e);
+			throw new RuntimeException("Failed to create the base directory to store index settings.");
+		}
+
 	}
 
 	@Override
-	public List<ZuliaIndex.IndexSettings> getIndexes() {
+	public List<ZuliaIndex.IndexSettings> getIndexes() throws IOException {
 
-		File settingsDir = new File(baseDir);
-
-		if (settingsDir.exists()) {
+		if (Paths.get(baseDir).toFile().exists()) {
 			JsonFormat.Parser parser = JsonFormat.parser();
 			List<ZuliaIndex.IndexSettings> indexes = new ArrayList<>();
-			for (File files : settingsDir.listFiles()) {
-				try {
-					if (!files.getName().endsWith(MAPPING_EXTENSION)) {
-						ZuliaIndex.IndexSettings.Builder indexSettings = ZuliaIndex.IndexSettings.newBuilder();
-						parser.merge(new FileReader(files), indexSettings);
-						indexes.add(indexSettings.build());
-					}
-				}
-				catch (Exception e) {
-					LOG.log(Level.SEVERE, e.getMessage(), e);
+			for (File files : Paths.get(baseDir).toFile().listFiles()) {
+				if (!files.getName().endsWith(MAPPING_EXTENSION)) {
+					ZuliaIndex.IndexSettings.Builder indexSettings = ZuliaIndex.IndexSettings.newBuilder();
+					parser.merge(new FileReader(files), indexSettings);
+					indexes.add(indexSettings.build());
 				}
 			}
 			return indexes;
@@ -55,33 +61,25 @@ public class FSIndexService implements IndexService {
 	}
 
 	@Override
-	public void createIndex(ZuliaIndex.IndexSettings indexSettings) {
-		try {
-			JsonFormat.Printer printer = JsonFormat.printer();
-			String indexSettingsJson = printer.print(indexSettings);
-			writeFile(indexSettingsJson, indexSettings.getIndexName() + EXTENSION);
-		}
-		catch (Exception e) {
-			LOG.log(Level.SEVERE, e.getMessage(), e);
-		}
-
+	public void createIndex(ZuliaIndex.IndexSettings indexSettings) throws IOException {
+		JsonFormat.Printer printer = JsonFormat.printer();
+		String indexSettingsJson = printer.print(indexSettings);
+		writeFile(indexSettingsJson, indexSettings.getIndexName() + EXTENSION);
 	}
 
 	@Override
-	public void removeIndex(String indexName) {
-		new File(baseDir + File.separator + indexName + EXTENSION).delete();
-		new File(baseDir + File.separator + indexName + MAPPING_EXTENSION).delete();
+	public void removeIndex(String indexName) throws IOException {
+		Files.deleteIfExists(Paths.get(baseDir + File.separator + indexName + EXTENSION));
+		Files.deleteIfExists(Paths.get(baseDir + File.separator + indexName + MAPPING_EXTENSION));
 	}
 
 	@Override
 	public List<ZuliaIndex.IndexMapping> getIndexMappings() {
 
-		File settingsDir = new File(baseDir);
-
-		if (settingsDir.exists()) {
+		if (Paths.get(baseDir).toFile().exists()) {
 			JsonFormat.Parser parser = JsonFormat.parser();
 			List<ZuliaIndex.IndexMapping> indexMappings = new ArrayList<>();
-			for (File files : settingsDir.listFiles()) {
+			for (File files : Paths.get(baseDir).toFile().listFiles()) {
 				try {
 					if (files.getName().endsWith(MAPPING_EXTENSION)) {
 						ZuliaIndex.IndexMapping.Builder indexMapping = ZuliaIndex.IndexMapping.newBuilder();
@@ -101,33 +99,22 @@ public class FSIndexService implements IndexService {
 	}
 
 	@Override
-	public ZuliaIndex.IndexMapping getIndexMapping(String indexName) {
+	public ZuliaIndex.IndexMapping getIndexMapping(String indexName) throws IOException {
 		File indexMapping = new File(baseDir + File.separator + indexName + MAPPING_EXTENSION);
 		if (indexMapping.exists()) {
-			try {
-				ZuliaIndex.IndexMapping.Builder indexMappingBuilder = ZuliaIndex.IndexMapping.newBuilder();
-				JsonFormat.parser().merge(new FileReader(indexMapping), indexMappingBuilder);
-				return indexMappingBuilder.build();
-			}
-			catch (Exception e) {
-				LOG.log(Level.SEVERE, e.getMessage(), e);
-			}
+			ZuliaIndex.IndexMapping.Builder indexMappingBuilder = ZuliaIndex.IndexMapping.newBuilder();
+			JsonFormat.parser().merge(new FileReader(indexMapping), indexMappingBuilder);
+			return indexMappingBuilder.build();
 		}
 
 		return null;
 	}
 
 	@Override
-	public void storeIndexMapping(ZuliaIndex.IndexMapping indexMapping) {
-		try {
-			JsonFormat.Printer printer = JsonFormat.printer();
-			String indexMappingJson = printer.print(indexMapping);
-			writeFile(indexMappingJson, indexMapping.getIndexName() + MAPPING_EXTENSION);
-		}
-		catch (Exception e) {
-			LOG.log(Level.SEVERE, e.getMessage(), e);
-		}
-
+	public void storeIndexMapping(ZuliaIndex.IndexMapping indexMapping) throws IOException {
+		JsonFormat.Printer printer = JsonFormat.printer();
+		String indexMappingJson = printer.print(indexMapping);
+		writeFile(indexMappingJson, indexMapping.getIndexName() + MAPPING_EXTENSION);
 	}
 
 	private void writeFile(String json, String filename) throws IOException {

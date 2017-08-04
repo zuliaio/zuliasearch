@@ -3,18 +3,45 @@ apply plugin: 'java'
 defaultTasks 'build'
 subprojects {
 
-    apply plugin: 'java'
+	apply plugin: 'java'
 
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
+	sourceCompatibility = 1.8
+	targetCompatibility = 1.8
 
-    version = '1.0'
-    ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+	version = '1.0'
+	ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
-    group = 'io.zulia'
+	group = 'io.zulia'
 
-    repositories {
-        mavenCentral()
-    }
+	repositories {
+		mavenCentral()
+	}
+
+	dependencies {
+		testCompile 'org.testng:testng:6.8.21'
+	}
+
+	test {
+		useTestNG()
+
+		systemProperty 'mongoServer', 'localhost'
+		systemProperty 'mongoPort', '27017'
+
+		//tweaking memory settings for the forked vm that runs tests
+		jvmArgs '-Xmx1500m'
+
+		beforeTest { descriptor ->
+			logger.lifecycle("\n\nRunning test: " + descriptor)
+		}
+
+		afterTest { descriptor ->
+			logger.lifecycle("\nFinished test: " + descriptor + "\n\n")
+		}
+
+		onOutput { descriptor, event ->
+			logger.lifecycle(event.message.trim())
+		}
+		workingDir = 'build/'
+	}
 
 }

@@ -3,6 +3,7 @@ package io.zulia.server.config;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface IndexService {
@@ -11,7 +12,7 @@ public interface IndexService {
 	 *
 	 * @return - all indexes for the cluster, {@code null} if nothing exists
 	 */
-	List<IndexSettings> getIndexes();
+	List<IndexSettings> getIndexes() throws IOException;
 
 	/**
 	 * create or update an index
@@ -20,13 +21,13 @@ public interface IndexService {
 	 *
 	 * @param indexSettings
 	 */
-	void createIndex(IndexSettings indexSettings);
+	void createIndex(IndexSettings indexSettings) throws IOException;
 
 	/**
 	 * remove an index from the config storage
 	 * @param indexName
 	 */
-	void removeIndex(String indexName);
+	void removeIndex(String indexName) throws IOException;
 
 	/**
 	 *
@@ -39,12 +40,12 @@ public interface IndexService {
 	 * @param indexName -index name to fetch server mapping from
 	 * @return - index mapping for an index, {@code null} if nothing exists
 	 */
-	IndexMapping getIndexMapping(String indexName);
+	IndexMapping getIndexMapping(String indexName) throws IOException;
 
 	/**
 	 * Creates or updates index mapping
 	 * @param indexMapping - index mapping to create or update
 	 */
-	void storeIndexMapping(IndexMapping indexMapping);
+	void storeIndexMapping(IndexMapping indexMapping) throws IOException;
 
 }
