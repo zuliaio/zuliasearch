@@ -9,7 +9,7 @@ public interface IndexService {
 
 	/**
 	 *
-	 * @return - all indexes for the cluster
+	 * @return - all indexes for the cluster, {@code null} if nothing exists
 	 */
 	List<IndexSettings> getIndexes();
 
@@ -30,14 +30,14 @@ public interface IndexService {
 
 	/**
 	 *
-	 * @return - returns all index mapping for a cluster
+	 * @return - returns all index mapping for a cluster, {@code null} if nothing exists
 	 */
 	List<IndexMapping> getIndexMappings();
 
 	/**
 	 *
 	 * @param indexName -index name to fetch server mapping from
-	 * @return - index mapping for an index
+	 * @return - index mapping for an index, {@code null} if nothing exists
 	 */
 	IndexMapping getIndexMapping(String indexName);
 

@@ -22,7 +22,7 @@ public class ZuliaIndexManager {
 			indexService = new MongoIndexService(MongoProvider.getMongoClient());
 		}
 		else {
-			indexService = new FSIndexService();
+			indexService = new FSIndexService(zuliaConfig);
 		}
 	}
 
