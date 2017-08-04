@@ -8,8 +8,11 @@ import io.zulia.server.config.single.FSIndexService;
 import io.zulia.server.util.MongoProvider;
 
 import java.util.Collection;
+import java.util.logging.Logger;
 
 public class ZuliaIndexManager {
+
+	private static final Logger LOG = Logger.getLogger(ZuliaIndexManager.class.getName());
 
 	private final IndexService indexService;
 

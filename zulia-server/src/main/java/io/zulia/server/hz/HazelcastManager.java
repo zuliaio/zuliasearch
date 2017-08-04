@@ -16,6 +16,7 @@ import io.zulia.message.ZuliaBase;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
+import io.zulia.server.log.LogUtil;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -32,7 +33,6 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 	private Member self;
 
 	public HazelcastManager(ZuliaIndexManager zuliaIndexManager, NodeService nodeService, ZuliaConfig zuliaConfig) {
-
 		this.zuliaIndexManager = zuliaIndexManager;
 		this.nodeService = nodeService;
 
@@ -66,6 +66,8 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 		}
 
 		hazelcastInstance = Hazelcast.newHazelcastInstance(cfg);
+		LogUtil.init();
+
 		self = hazelcastInstance.getCluster().getLocalMember();
 
 		hazelcastInstance.getCluster().addMembershipListener(this);

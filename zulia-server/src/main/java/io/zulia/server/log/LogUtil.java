@@ -1,8 +1,6 @@
 package io.zulia.server.log;
 
-import io.zulia.server.cmd.ZuliaD;
-
-import java.util.logging.ConsoleHandler;
+import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -13,16 +11,16 @@ import java.util.logging.Logger;
 public class LogUtil {
 
 	public static void init() {
-		Logger logger = Logger.getLogger(ZuliaD.class.getName());
-		logger.setUseParentHandlers(false);
+		Logger logger = Logger.getLogger("");
 
-		CustomLogFormatter formatter = new CustomLogFormatter();
-		ConsoleHandler handler = new ConsoleHandler();
-		handler.setFormatter(formatter);
-
-		logger.addHandler(handler);
+		for (Handler h : logger.getHandlers()) {
+			CustomLogFormatter formatter = new CustomLogFormatter();
+			h.setFormatter(formatter);
+		}
 
 		Logger.getLogger("org.mongodb").setLevel(Level.WARNING);
+
+		System.setProperty("hazelcast.logging.type", "none");
 	}
 
 }
