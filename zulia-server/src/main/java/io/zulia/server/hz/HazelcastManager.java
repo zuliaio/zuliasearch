@@ -20,7 +20,6 @@ import io.zulia.server.index.ZuliaIndexManager;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
 public class HazelcastManager implements MembershipListener, LifecycleListener {
@@ -36,7 +35,6 @@ public class HazelcastManager implements MembershipListener, LifecycleListener {
 
 		this.zuliaIndexManager = zuliaIndexManager;
 		this.nodeService = nodeService;
-
 
 		init(nodeService.getNodes(), zuliaConfig);
 
