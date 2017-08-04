@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 
 public class HazelcastManager implements MembershipListener, LifecycleListener {
 
-	private static final Logger LOG = Logger.getLogger(HazelcastManager.class.getName());
+	private static final Logger LOG = Logger.getLogger(HazelcastManager.class.getSimpleName());
 
 	private final ZuliaIndexManager zuliaIndexManager;
 	private final NodeService nodeService;

@@ -17,7 +17,7 @@ public class ZuliaRestServiceManager {
 
 	}
 
-	public void stop() {
+	public void shutdown() {
 
 	}
 }

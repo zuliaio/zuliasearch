@@ -36,7 +36,7 @@ import static io.zulia.message.ZuliaBase.Node;
 
 public class ZuliaD {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaD.class.getName());
+	private static final Logger LOG = Logger.getLogger(ZuliaD.class.getSimpleName());
 
 	private static final Gson GSON = new GsonBuilder().create();
 

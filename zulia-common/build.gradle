@@ -6,7 +6,7 @@ defaultTasks 'generateProto', 'build'
 
 description 'Zulia Common'
 
-def grpcVersion = '1.4.0'
+def grpcVersion = '1.5.0'
 
 dependencies {
     compile "io.grpc:grpc-netty:${grpcVersion}"

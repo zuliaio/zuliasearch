@@ -23,9 +23,8 @@ message AssociatedDocument {
     string documentUniqueId = 2;
     string indexName = 3;
     bytes document = 4;
-    bool compressed = 5;
-    repeated Metadata metadata = 6;
-    int64 timestamp = 7;
+    repeated Metadata metadata = 5;
+    int64 timestamp = 6;
 }
 
 message Metadata {

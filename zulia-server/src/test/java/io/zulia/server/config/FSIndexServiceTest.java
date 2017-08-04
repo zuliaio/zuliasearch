@@ -56,21 +56,21 @@ public class FSIndexServiceTest {
 	}
 
 	@Test(enabled = false)
-	public void testCreateIndex() throws IOException {
+	public void testCreateIndex() throws Exception {
 		indexService.createIndex(indexOne);
 		indexService.createIndex(indexTwo);
 		indexService.createIndex(indexThree);
 	}
 
 	@Test(enabled = false)
-	public void testCreateIndexMapping() throws IOException {
+	public void testCreateIndexMapping() throws Exception {
 		indexService.storeIndexMapping(indexMappingOne);
 		indexService.storeIndexMapping(indexMappingTwo);
 		indexService.storeIndexMapping(indexMappingThree);
 	}
 
 	@Test(enabled = false)
-	public void testRemoveIndex() throws IOException {
+	public void testRemoveIndex() throws Exception {
 		indexService.removeIndex(indexOne.getIndexName());
 		indexService.removeIndex(indexTwo.getIndexName());
 		indexService.removeIndex(indexThree.getIndexName());
