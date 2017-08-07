@@ -3,7 +3,7 @@ package io.zulia.doc;
 import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.message.ZuliaBase.ResultDocument;
-import lumongo.util.ZuliaUtil;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 import java.util.HashMap;

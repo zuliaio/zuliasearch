@@ -1,12 +1,13 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.RoutableCommand;
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.DeleteResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.DeleteRequest;
-import org.lumongo.cluster.message.Lumongo.DeleteResponse;
+import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.DeleteResult;
+import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
+
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 
 public abstract class Delete extends SimpleCommand<DeleteRequest, DeleteResult> implements RoutableCommand {
 	private String indexName;
@@ -83,8 +84,8 @@ public abstract class Delete extends SimpleCommand<DeleteRequest, DeleteResult> 
 	}
 
 	@Override
-	public DeleteResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public DeleteResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		DeleteResponse deleteResponse = service.delete(getRequest());
 

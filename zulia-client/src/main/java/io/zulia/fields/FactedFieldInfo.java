@@ -1,7 +1,5 @@
 package io.zulia.fields;
 
-import org.lumongo.cluster.message.Lumongo.LMFacet;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -9,6 +7,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+
+import static io.zulia.message.ZuliaQuery.Facet;
 
 public class FactedFieldInfo<T> {
 	private final String facetPrefix;
@@ -23,9 +23,9 @@ public class FactedFieldInfo<T> {
 		return facetPrefix;
 	}
 
-	public List<LMFacet> build(T object) throws IllegalArgumentException, IllegalAccessException {
+	public List<Facet> build(T object) throws IllegalArgumentException, IllegalAccessException {
 		if (object != null) {
-			ArrayList<LMFacet> list = new ArrayList<>();
+			ArrayList<Facet> list = new ArrayList<>();
 			Object o = field.get(object);
 
 			if (o != null) {
@@ -33,16 +33,16 @@ public class FactedFieldInfo<T> {
 				if (o instanceof Collection<?>) {
 					Collection<?> l = (Collection<?>) o;
 					for (Object s : l) {
-						LMFacet.Builder lmFacetBuilder = LMFacet.newBuilder().setLabel(facetPrefix);
-						lmFacetBuilder.setPath(s.toString());
+						Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
+						lmFacetBuilder.setValue(s.toString());
 						list.add(lmFacetBuilder.build());
 					}
 				}
 				else if (o.getClass().isArray()) {
 					Object[] l = (Object[]) o;
 					for (Object s : l) {
-						LMFacet.Builder lmFacetBuilder = LMFacet.newBuilder().setLabel(facetPrefix);
-						lmFacetBuilder.setPath(s.toString());
+						Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
+						lmFacetBuilder.setValue(s.toString());
 						list.add(lmFacetBuilder.build());
 					}
 				}
@@ -56,14 +56,14 @@ public class FactedFieldInfo<T> {
 					int month = cal.get(Calendar.MONTH) + 1;
 					int day = cal.get(Calendar.DAY_OF_MONTH);
 
-					LMFacet.Builder lmFacetBuilder = LMFacet.newBuilder().setLabel(facetPrefix);
-					lmFacetBuilder.setPath(year + "" + month + "" + day);
+					Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
+					lmFacetBuilder.setValue(year + "" + month + "" + day);
 
 					list.add(lmFacetBuilder.build());
 				}
 				else {
-					LMFacet.Builder lmFacetBuilder = LMFacet.newBuilder().setLabel(facetPrefix);
-					lmFacetBuilder.setPath(o.toString());
+					Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
+					lmFacetBuilder.setValue(o.toString());
 					list.add(lmFacetBuilder.build());
 				}
 

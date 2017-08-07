@@ -1,14 +1,14 @@
 package io.zulia.fields;
 
-import org.lumongo.cluster.message.LumongoIndex.FacetAs;
-import org.lumongo.cluster.message.LumongoIndex.FieldConfig;
-import org.lumongo.cluster.message.LumongoIndex.IndexAs;
-import org.lumongo.cluster.message.LumongoIndex.ProjectAs;
-import org.lumongo.cluster.message.LumongoIndex.SortAs;
-import org.lumongo.cluster.message.LumongoIndex.Superbit;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.zulia.message.ZuliaIndex.FacetAs;
+import static io.zulia.message.ZuliaIndex.FieldConfig;
+import static io.zulia.message.ZuliaIndex.IndexAs;
+import static io.zulia.message.ZuliaIndex.ProjectAs;
+import static io.zulia.message.ZuliaIndex.SortAs;
+import static io.zulia.message.ZuliaIndex.Superbit;
 
 public class FieldConfigBuilder {
 	private final FieldConfig.FieldType fieldType;

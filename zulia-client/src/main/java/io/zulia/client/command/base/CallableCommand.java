@@ -1,23 +1,23 @@
 package io.zulia.client.command.base;
 
-import org.lumongo.client.pool.LumongoPool;
-import org.lumongo.client.result.Result;
+import io.zulia.client.pool.ZuliaPool;
+import io.zulia.client.result.Result;
 
 import java.util.concurrent.Callable;
 
 public class CallableCommand<R extends Result> implements Callable<R> {
 
 	private Command<R> command;
-	private LumongoPool lumongoPool;
+	private ZuliaPool zuliaPool;
 
-	public CallableCommand(LumongoPool lumongoPool, Command<R> command) {
-		this.lumongoPool = lumongoPool;
+	public CallableCommand(ZuliaPool zuliaPool, Command<R> command) {
+		this.zuliaPool = zuliaPool;
 		this.command = command;
 	}
 
 	@Override
 	public R call() throws Exception {
-		return lumongoPool.execute(command);
+		return zuliaPool.execute(command);
 	}
 }
 

@@ -1,13 +1,13 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.LumongoRestClient;
-import org.lumongo.client.command.base.RestCommand;
-import org.lumongo.client.result.FetchLargeAssociatedResult;
+import io.zulia.client.ZuliaRESTClient;
+import io.zulia.client.command.base.RESTCommand;
+import io.zulia.client.result.FetchLargeAssociatedResult;
 
 import java.io.File;
 import java.io.OutputStream;
 
-public class FetchLargeAssociated extends RestCommand<FetchLargeAssociatedResult> {
+public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult> {
 
 	private String uniqueId;
 	private String fileName;
@@ -30,12 +30,12 @@ public class FetchLargeAssociated extends RestCommand<FetchLargeAssociatedResult
 	}
 
 	@Override
-	public FetchLargeAssociatedResult execute(LumongoRestClient lumongoRestClient) throws Exception {
+	public FetchLargeAssociatedResult execute(ZuliaRESTClient zuliaRESTClient) throws Exception {
 		if (outputFile != null) {
-			lumongoRestClient.fetchAssociated(uniqueId, indexName, fileName, outputFile);
+			zuliaRESTClient.fetchAssociated(uniqueId, indexName, fileName, outputFile);
 		}
 		else if (destination != null) {
-			lumongoRestClient.fetchAssociated(uniqueId, indexName, fileName, destination);
+			zuliaRESTClient.fetchAssociated(uniqueId, indexName, fileName, destination);
 		}
 		else {
 			throw new Exception("File or output stream must be set");

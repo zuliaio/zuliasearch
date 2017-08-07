@@ -1,11 +1,12 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.BatchFetchResponse;
-import org.lumongo.cluster.message.Lumongo.FetchResponse;
-import org.lumongo.fields.Mapper;
+import io.zulia.fields.Mapper;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.zulia.message.ZuliaServiceOuterClass.BatchFetchResponse;
+import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 public class BatchFetchResult extends Result {
 

@@ -1,13 +1,14 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.GetTermsResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.GetTermsRequest;
-import org.lumongo.cluster.message.Lumongo.GetTermsResponse;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.GetTermsResult;
+import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 
 import java.util.List;
+
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 public class GetTerms extends SimpleCommand<GetTermsRequest, GetTermsResult> {
 
@@ -149,11 +150,11 @@ public class GetTerms extends SimpleCommand<GetTermsRequest, GetTermsResult> {
 	}
 
 	@Override
-	public GetTermsResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public GetTermsResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		long start = System.currentTimeMillis();
-		GetTermsResponse getTermsResponse = service.getTerms(getRequest());
+		ZuliaServiceOuterClass.GetTermsResponse getTermsResponse = service.getTerms(getRequest());
 		long end = System.currentTimeMillis();
 		long durationInMs = end - start;
 		return new GetTermsResult(getTermsResponse, durationInMs);

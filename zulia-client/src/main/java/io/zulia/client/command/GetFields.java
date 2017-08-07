@@ -1,18 +1,18 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.GetFieldsResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.GetFieldNamesRequest;
-import org.lumongo.cluster.message.Lumongo.GetFieldNamesResponse;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.GetFieldsResult;
+import io.zulia.message.ZuliaServiceOuterClass;
+
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 /**
  * Returns all the fields from a given index
  * @author mdavis
  *
  */
-public class GetFields extends SimpleCommand<GetFieldNamesRequest, GetFieldsResult> {
+public class GetFields extends SimpleCommand<ZuliaServiceOuterClass.GetFieldNamesRequest, GetFieldsResult> {
 
 	private String indexName;
 
@@ -21,15 +21,15 @@ public class GetFields extends SimpleCommand<GetFieldNamesRequest, GetFieldsResu
 	}
 
 	@Override
-	public GetFieldNamesRequest getRequest() {
-		return GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
+	public ZuliaServiceOuterClass.GetFieldNamesRequest getRequest() {
+		return ZuliaServiceOuterClass.GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
 	}
 
 	@Override
-	public GetFieldsResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public GetFieldsResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		GetFieldNamesResponse getFieldNamesResponse = service.getFieldNames(getRequest());
+		ZuliaServiceOuterClass.GetFieldNamesResponse getFieldNamesResponse = service.getFieldNames(getRequest());
 
 		return new GetFieldsResult(getFieldNamesResponse);
 	}

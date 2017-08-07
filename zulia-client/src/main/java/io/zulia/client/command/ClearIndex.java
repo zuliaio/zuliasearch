@@ -1,11 +1,11 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.ClearIndexResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.ClearRequest;
-import org.lumongo.cluster.message.Lumongo.ClearResponse;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.ClearIndexResult;
+import io.zulia.message.ZuliaServiceGrpc;
+import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.message.ZuliaServiceOuterClass.ClearRequest;
 
 /**
  * Removes all documents from a given index
@@ -26,10 +26,10 @@ public class ClearIndex extends SimpleCommand<ClearRequest, ClearIndexResult> {
 	}
 
 	@Override
-	public ClearIndexResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public ClearIndexResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceGrpc.ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		ClearResponse clearResponse = service.clear(getRequest());
+		ZuliaServiceOuterClass.ClearResponse clearResponse = service.clear(getRequest());
 
 		return new ClearIndexResult(clearResponse);
 	}

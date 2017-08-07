@@ -1,13 +1,15 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.GetIndexesResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.GetIndexesRequest;
-import org.lumongo.cluster.message.Lumongo.GetIndexesResponse;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.GetIndexesResult;
+import io.zulia.message.ZuliaServiceGrpc;
+import io.zulia.message.ZuliaServiceOuterClass;
 
-public class GetIndexes extends SimpleCommand<GetIndexesRequest, GetIndexesResult> {
+import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesRequest;
+import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
+
+public class GetIndexes extends SimpleCommand<ZuliaServiceOuterClass.GetIndexesRequest, GetIndexesResult> {
 
 	public GetIndexes() {
 
@@ -19,8 +21,8 @@ public class GetIndexes extends SimpleCommand<GetIndexesRequest, GetIndexesResul
 	}
 
 	@Override
-	public GetIndexesResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public GetIndexesResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceGrpc.ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		GetIndexesResponse getIndexesResponse = service.getIndexes(getRequest());
 

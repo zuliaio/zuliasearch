@@ -1,8 +1,8 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.GetIndexesResponse;
-
 import java.util.List;
+
+import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
 
 public class GetIndexesResult extends Result {
 

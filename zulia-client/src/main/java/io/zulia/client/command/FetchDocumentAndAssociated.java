@@ -1,6 +1,6 @@
 package io.zulia.client.command;
 
-import org.lumongo.cluster.message.Lumongo.FetchType;
+import io.zulia.message.ZuliaQuery.FetchType;
 
 public class FetchDocumentAndAssociated extends Fetch {
 

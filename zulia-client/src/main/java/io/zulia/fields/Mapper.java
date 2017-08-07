@@ -1,6 +1,6 @@
 package io.zulia.fields;
 
-import io.zulia.client.command.CreateOrUpdateIndex;
+import io.zulia.client.command.CreateIndex;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.IndexConfig;
 import io.zulia.client.result.BatchFetchResult;
@@ -15,13 +15,15 @@ import io.zulia.fields.annotations.Settings;
 import io.zulia.fields.annotations.UniqueId;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.util.AnnotationUtil;
-import lumongo.util.ResultHelper;
+import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+
+import static io.zulia.message.ZuliaQuery.ScoredResult;
 
 public class Mapper<T> {
 
@@ -121,7 +123,7 @@ public class Mapper<T> {
 
 	}
 
-	public CreateOrUpdateIndex createOrUpdateIndex() {
+	public CreateIndex createOrUpdateIndex() {
 
 		if (settings == null) {
 			throw new RuntimeException("No Settings annotation for class <" + clazz.getSimpleName() + ">");
@@ -141,7 +143,7 @@ public class Mapper<T> {
 			indexConfig.addFieldConfig(fieldConfig);
 		}
 
-		return new CreateOrUpdateIndex(settings.indexName(), settings.numberOfSegments(), indexConfig);
+		return new CreateIndex(indexConfig);
 	}
 
 	public Class<T> getClazz() {
@@ -174,7 +176,7 @@ public class Mapper<T> {
 		return fetchResult.getDocument(this);
 	}
 
-	public T fromScoredResult(Lumongo.ScoredResult scoredResult) throws Exception {
+	public T fromScoredResult(ScoredResult scoredResult) throws Exception {
 		return fromDocument(ResultHelper.getDocumentFromScoredResult(scoredResult));
 	}
 

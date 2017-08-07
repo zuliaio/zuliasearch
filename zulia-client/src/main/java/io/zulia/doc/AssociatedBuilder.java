@@ -3,7 +3,7 @@ package io.zulia.doc;
 import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaBase.Metadata;
-import lumongo.util.ZuliaUtil;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 public class AssociatedBuilder {

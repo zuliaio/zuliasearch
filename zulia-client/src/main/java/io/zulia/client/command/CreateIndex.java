@@ -1,12 +1,13 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.config.IndexConfig;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.CreateIndexResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.IndexCreateRequest;
-import org.lumongo.cluster.message.Lumongo.IndexCreateResponse;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.config.IndexConfig;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.CreateIndexResult;
+import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
+
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
 
 /**
  * Creates a new index with the name, number of segments, unique id field, and IndexSettings given.  Whether the index supports faceting
@@ -16,43 +17,31 @@ import org.lumongo.cluster.message.Lumongo.IndexCreateResponse;
  * @author mdavis
  *
  */
-public class CreateIndex extends SimpleCommand<IndexCreateRequest, CreateIndexResult> {
+public class CreateIndex extends SimpleCommand<CreateIndexRequest, CreateIndexResult> {
 
-	private String indexName;
-	private Integer numberOfSegments;
 	private IndexConfig indexConfig;
 
-	public CreateIndex(String indexName, Integer numberOfSegments, IndexConfig indexConfig) {
-		this.indexName = indexName;
-		this.numberOfSegments = numberOfSegments;
+	public CreateIndex(IndexConfig indexConfig) {
 		this.indexConfig = indexConfig;
 	}
 
 	@Override
-	public IndexCreateRequest getRequest() {
-		IndexCreateRequest.Builder indexCreateRequestBuilder = IndexCreateRequest.newBuilder();
-
-		if (indexName != null) {
-			indexCreateRequestBuilder.setIndexName(indexName);
-		}
-
-		if (numberOfSegments != null) {
-			indexCreateRequestBuilder.setNumberOfSegments(numberOfSegments);
-		}
+	public CreateIndexRequest getRequest() {
+		CreateIndexRequest.Builder createIndexRequestBuilder = CreateIndexRequest.newBuilder();
 
 		if (indexConfig != null) {
-			indexCreateRequestBuilder.setIndexSettings(indexConfig.getIndexSettings());
+			createIndexRequestBuilder.setIndexSettings(indexConfig.getIndexSettings());
 		}
 
-		return indexCreateRequestBuilder.build();
+		return createIndexRequestBuilder.build();
 	}
 
 	@Override
-	public CreateIndexResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
-		IndexCreateResponse indexCreateResponse = service.createIndex(getRequest());
+	public CreateIndexResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
+		CreateIndexResponse createIndexResponse = service.createIndex(getRequest());
 
-		return new CreateIndexResult(indexCreateResponse);
+		return new CreateIndexResult(createIndexResponse);
 	}
 
 }

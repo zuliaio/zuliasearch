@@ -1,18 +1,20 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.OptimizeIndexResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.OptimizeRequest;
-import org.lumongo.cluster.message.Lumongo.OptimizeResponse;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.OptimizeIndexResult;
+import io.zulia.message.ZuliaServiceOuterClass;
+
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.OptimizeRequest;
+import static io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
 
 /**
  * Optimizes a given index
  * @author mdavis
  *
  */
-public class OptimizeIndex extends SimpleCommand<OptimizeRequest, OptimizeIndexResult> {
+public class OptimizeIndex extends SimpleCommand<ZuliaServiceOuterClass.OptimizeRequest, OptimizeIndexResult> {
 
 	private String indexName;
 
@@ -26,8 +28,8 @@ public class OptimizeIndex extends SimpleCommand<OptimizeRequest, OptimizeIndexR
 	}
 
 	@Override
-	public OptimizeIndexResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public OptimizeIndexResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		OptimizeResponse optimizeResponse = service.optimize(getRequest());
 

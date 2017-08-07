@@ -1,9 +1,10 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.GetNumberOfDocsResponse;
-import org.lumongo.cluster.message.Lumongo.SegmentCountResponse;
+import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
 
 import java.util.List;
+
+import static io.zulia.message.ZuliaBase.ShardCountResponse;
 
 public class GetNumberOfDocsResult extends Result {
 
@@ -17,12 +18,12 @@ public class GetNumberOfDocsResult extends Result {
 		return getNumberOfDocsResponse.getNumberOfDocs();
 	}
 
-	public int getSegmentCountResponseCount() {
-		return getNumberOfDocsResponse.getSegmentCountResponseCount();
+	public int getShardCountResponseCount() {
+		return getNumberOfDocsResponse.getShardCountResponseCount();
 	}
 
-	public List<SegmentCountResponse> getSegmentCountResponses() {
-		return getNumberOfDocsResponse.getSegmentCountResponseList();
+	public List<ShardCountResponse> getShardCountResponses() {
+		return getNumberOfDocsResponse.getShardCountResponseList();
 	}
 
 	@Override
@@ -32,14 +33,14 @@ public class GetNumberOfDocsResult extends Result {
 		sb.append("{\n  \"numberOfDocs\": ");
 		sb.append(getNumberOfDocs());
 		sb.append(",\n  \"segmentCounts\": [");
-		for (SegmentCountResponse scr : getSegmentCountResponses()) {
+		for (ShardCountResponse scr : getShardCountResponses()) {
 			sb.append("\n    {\n      \"segmentNumber\": ");
-			sb.append(scr.getSegmentNumber());
+			sb.append(scr.getShardNumber());
 			sb.append(",\n      \"numberOfDocs\": ");
 			sb.append(scr.getNumberOfDocs());
 			sb.append("\n    },");
 		}
-		if (getSegmentCountResponseCount() != 0) {
+		if (getShardCountResponseCount() != 0) {
 			sb.setLength(sb.length() - 1);
 		}
 		sb.append("\n  ],\n  \"commandTimeMs\": ");

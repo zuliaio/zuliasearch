@@ -1,16 +1,16 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.LumongoRestClient;
-import org.lumongo.client.command.base.RestCommand;
-import org.lumongo.client.command.base.RoutableCommand;
-import org.lumongo.client.result.StoreLargeAssociatedResult;
+import io.zulia.client.ZuliaRESTClient;
+import io.zulia.client.command.base.RESTCommand;
+import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.result.StoreLargeAssociatedResult;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Map;
 
-public class StoreLargeAssociated extends RestCommand<StoreLargeAssociatedResult> implements RoutableCommand {
+public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult> implements RoutableCommand {
 
 	private String uniqueId;
 	private String fileName;
@@ -63,14 +63,14 @@ public class StoreLargeAssociated extends RestCommand<StoreLargeAssociatedResult
 	}
 
 	@Override
-	public StoreLargeAssociatedResult execute(LumongoRestClient lumongoRestClient) throws Exception {
+	public StoreLargeAssociatedResult execute(ZuliaRESTClient zuliaRESTClient) throws Exception {
 		InputStream input = source;
 		if (fileToStore != null) {
 			input = new FileInputStream(fileToStore);
 		}
 
 		if (input != null) {
-			lumongoRestClient.storeAssociated(uniqueId, indexName, fileName, meta, input, compressed);
+			zuliaRESTClient.storeAssociated(uniqueId, indexName, fileName, meta, input, compressed);
 		}
 		else {
 			throw new Exception("File or input stream must be set");

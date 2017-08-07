@@ -1,8 +1,8 @@
 package io.zulia.client;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
-import lumongo.ZuliaConstants;
-import lumongo.util.StreamHelper;
+import io.zulia.util.StreamHelper;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,15 +16,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ZuliaRestClient {
+public class ZuliaRESTClient {
 	private String server;
 	private int restPort;
 
-	public ZuliaRestClient(String server) {
+	public ZuliaRESTClient(String server) {
 		this(server, ZuliaConstants.DEFAULT_REST_SERVICE_PORT);
 	}
 
-	public ZuliaRestClient(String server, int restPort) {
+	public ZuliaRESTClient(String server, int restPort) {
 		this.server = server;
 		this.restPort = restPort;
 	}

@@ -1,6 +1,6 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.BatchDeleteResponse;
+import io.zulia.message.ZuliaServiceOuterClass.BatchDeleteResponse;
 
 public class BatchDeleteResult extends Result {
 

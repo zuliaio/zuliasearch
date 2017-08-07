@@ -2,7 +2,10 @@ package io.zulia.client.command;
 
 import io.zulia.client.command.base.RoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.StoreResult;
+import io.zulia.doc.AssociatedBuilder;
+import io.zulia.doc.ResultDocBuilder;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
@@ -10,6 +13,10 @@ import org.bson.Document;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.zulia.message.ZuliaBase.AssociatedDocument;
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
 
 public class Store extends SimpleCommand<StoreRequest, StoreResult> implements RoutableCommand {
 	private String uniqueId;
@@ -62,7 +69,7 @@ public class Store extends SimpleCommand<StoreRequest, StoreResult> implements R
 		return this;
 	}
 
-	public List<AssociatedDocument> getAssociatedDocuments() {
+	public List<ZuliaBase.AssociatedDocument> getAssociatedDocuments() {
 		return associatedDocuments;
 	}
 
@@ -100,8 +107,8 @@ public class Store extends SimpleCommand<StoreRequest, StoreResult> implements R
 	}
 
 	@Override
-	public StoreResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public StoreResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		StoreResponse storeResponse = service.store(getRequest());
 

@@ -2,14 +2,14 @@ package io.zulia.client.pool;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import io.zulia.client.command.*;
-import io.zulia.client.config.LumongoPoolConfig;
-import io.zulia.client.result.BatchFetchResult;
-import io.zulia.client.result.ClearIndexResult;
+import io.zulia.client.config.IndexConfig;
+import io.zulia.client.config.ZuliaPoolConfig;
+import io.zulia.client.result.*;
 
-public class ZuliaWorkPool extends LumongoBaseWorkPool {
+public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 
-	public ZuliaWorkPool(LumongoPoolConfig lumongoPoolConfig) throws Exception {
-		super(lumongoPoolConfig);
+	public ZuliaWorkPool(ZuliaPoolConfig zuliaPoolConfig) throws Exception {
+		super(zuliaPoolConfig);
 	}
 
 	public BatchFetchResult batchFetch(BatchFetch batchFetch) throws Exception {
@@ -33,7 +33,7 @@ public class ZuliaWorkPool extends LumongoBaseWorkPool {
 	}
 
 	public CreateIndexResult createIndex(String indexName, int segments, IndexConfig indexConfig) throws Exception {
-		return execute(new CreateIndex(indexName, segments, indexConfig));
+		return execute(new CreateIndex(indexConfig));
 	}
 
 	public ListenableFuture<CreateIndexResult> createIndexAsync(CreateIndex createIndex) throws Exception {
@@ -41,15 +41,7 @@ public class ZuliaWorkPool extends LumongoBaseWorkPool {
 	}
 
 	public ListenableFuture<CreateIndexResult> createIndexAsync(String indexName, int segments, IndexConfig indexConfig) throws Exception {
-		return executeAsync(new CreateIndex(indexName, segments, indexConfig));
-	}
-
-	public CreateOrUpdateIndexResult createOrUpdateIndex(CreateOrUpdateIndex createOrUpdateIndex) throws Exception {
-		return execute(createOrUpdateIndex);
-	}
-
-	public ListenableFuture<CreateOrUpdateIndexResult> createOrUpdateIndexAsync(CreateOrUpdateIndex createOrUpdateIndex) throws Exception {
-		return executeAsync(createOrUpdateIndex);
+		return executeAsync(new CreateIndex(indexConfig));
 	}
 
 	public DeleteResult delete(Delete delete) throws Exception {
@@ -116,12 +108,12 @@ public class ZuliaWorkPool extends LumongoBaseWorkPool {
 		return executeAsync(new GetIndexes());
 	}
 
-	public GetMembersResult getMembers() throws Exception {
-		return execute(new GetMembers());
+	public GetNodesResult getMembers() throws Exception {
+		return execute(new GetNodes());
 	}
 
-	public ListenableFuture<GetMembersResult> getMembersAsync() throws Exception {
-		return executeAsync(new GetMembers());
+	public ListenableFuture<GetNodesResult> getMembersAsync() throws Exception {
+		return executeAsync(new GetNodes());
 	}
 
 	public GetNumberOfDocsResult getNumberOfDocs(String indexName) throws Exception {
@@ -180,17 +172,9 @@ public class ZuliaWorkPool extends LumongoBaseWorkPool {
 		return executeAsync(storeLargeAssociated);
 	}
 
-	public UpdateIndexResult updateIndex(UpdateIndex updateIndex) throws Exception {
-		return execute(updateIndex);
-	}
-
-	public ListenableFuture<UpdateIndexResult> updateIndexAsync(UpdateIndex updateIndex) throws Exception {
-		return executeAsync(updateIndex);
-	}
-
-	public void updateMembers() throws Exception {
-		GetMembersResult getMembersResult = execute(new GetMembers());
-		updateMembers(getMembersResult.getMembers());
+	public void updateNodes() throws Exception {
+		GetNodesResult getNodesResult = execute(new GetNodes());
+		updateNodes(getNodesResult.getNodes());
 	}
 
 	public GetIndexConfigResult getIndexConfig(GetIndexConfig getIndexConfig) throws Exception {

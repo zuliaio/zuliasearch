@@ -1,10 +1,10 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.AssociatedDocument;
-import org.lumongo.cluster.message.Lumongo.Metadata;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import static io.zulia.message.ZuliaBase.AssociatedDocument;
+import static io.zulia.message.ZuliaBase.Metadata;
 
 public class AssociatedResult {
 
@@ -46,11 +46,7 @@ public class AssociatedResult {
 	}
 
 	public boolean hasDocument() {
-		return associatedDocument.hasDocument();
-	}
-
-	public boolean getCompressed() {
-		return associatedDocument.getCompressed();
+		return associatedDocument.getDocument() != null;
 	}
 
 	public long getTimestamp() {

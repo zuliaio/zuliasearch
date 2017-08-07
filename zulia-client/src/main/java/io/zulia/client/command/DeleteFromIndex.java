@@ -1,7 +1,7 @@
 package io.zulia.client.command;
 
 /**
- * Deletes a document from the LuMongo index specified without
+ * Deletes a document from the Zulia index specified without
  * removing associated documents
  * @author mdavis
  *

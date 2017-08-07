@@ -1,14 +1,14 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.IndexDeleteResponse;
+import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
 
 public class DeleteIndexResult extends Result {
 
 	@SuppressWarnings("unused")
-	private IndexDeleteResponse indexDeleteResponse;
+	private DeleteIndexResponse deleteIndexResponse;
 
-	public DeleteIndexResult(IndexDeleteResponse indexDeleteResponse) {
-		this.indexDeleteResponse = indexDeleteResponse;
+	public DeleteIndexResult(DeleteIndexResponse deleteIndexResponse) {
+		this.deleteIndexResponse = deleteIndexResponse;
 	}
 
 }

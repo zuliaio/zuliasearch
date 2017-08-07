@@ -1,6 +1,6 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.ClearResponse;
+import io.zulia.message.ZuliaServiceOuterClass.ClearResponse;
 
 public class ClearIndexResult extends Result {
 

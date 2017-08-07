@@ -1,17 +1,18 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.RoutableCommand;
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.FetchResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.FetchRequest;
-import org.lumongo.cluster.message.Lumongo.FetchResponse;
-import org.lumongo.cluster.message.Lumongo.FetchType;
+import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.FetchResult;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import static io.zulia.message.ZuliaQuery.FetchType;
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
+import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements RoutableCommand {
 
@@ -128,9 +129,9 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements R
 	}
 
 	@Override
-	public FetchResult execute(LumongoConnection lumongoConnection) {
+	public FetchResult execute(ZuliaConnection zuliaConnection) {
 
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		FetchResponse fetchResponse = service.fetch(getRequest());
 

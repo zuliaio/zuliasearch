@@ -1,18 +1,19 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.DeleteIndexResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.IndexDeleteRequest;
-import org.lumongo.cluster.message.Lumongo.IndexDeleteResponse;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.DeleteIndexResult;
+
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexRequest;
+import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
 
 /**
  * Deletes an index.  If index does not exist throwns an exception
  * @author mdavis
  *
  */
-public class DeleteIndex extends SimpleCommand<IndexDeleteRequest, DeleteIndexResult> {
+public class DeleteIndex extends SimpleCommand<DeleteIndexRequest, DeleteIndexResult> {
 
 	private String indexName;
 
@@ -21,15 +22,15 @@ public class DeleteIndex extends SimpleCommand<IndexDeleteRequest, DeleteIndexRe
 	}
 
 	@Override
-	public IndexDeleteRequest getRequest() {
-		return IndexDeleteRequest.newBuilder().setIndexName(indexName).build();
+	public DeleteIndexRequest getRequest() {
+		return DeleteIndexRequest.newBuilder().setIndexName(indexName).build();
 	}
 
 	@Override
-	public DeleteIndexResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public DeleteIndexResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		IndexDeleteResponse indexDeleteResponse = service.deleteIndex(getRequest());
+		DeleteIndexResponse indexDeleteResponse = service.deleteIndex(getRequest());
 
 		return new DeleteIndexResult(indexDeleteResponse);
 	}

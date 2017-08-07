@@ -1,13 +1,13 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.DeleteResponse;
+import io.zulia.message.ZuliaServiceOuterClass;
 
 public class DeleteResult extends Result {
 
 	@SuppressWarnings("unused")
-	private DeleteResponse deleteResponse;
+	private ZuliaServiceOuterClass.DeleteResponse deleteResponse;
 
-	public DeleteResult(DeleteResponse deleteResponse) {
+	public DeleteResult(ZuliaServiceOuterClass.DeleteResponse deleteResponse) {
 		this.deleteResponse = deleteResponse;
 	}
 

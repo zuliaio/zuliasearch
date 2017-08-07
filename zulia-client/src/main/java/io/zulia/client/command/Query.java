@@ -1,23 +1,11 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.QueryResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo;
-import org.lumongo.cluster.message.Lumongo.AnalysisRequest;
-import org.lumongo.cluster.message.Lumongo.CountRequest;
-import org.lumongo.cluster.message.Lumongo.FacetRequest;
-import org.lumongo.cluster.message.Lumongo.FieldSort;
-import org.lumongo.cluster.message.Lumongo.FieldSort.Direction;
-import org.lumongo.cluster.message.Lumongo.HighlightRequest;
-import org.lumongo.cluster.message.Lumongo.LMFacet;
-import org.lumongo.cluster.message.Lumongo.LastResult;
-import org.lumongo.cluster.message.Lumongo.Query.Operator;
-import org.lumongo.cluster.message.Lumongo.QueryRequest;
-import org.lumongo.cluster.message.Lumongo.QueryResponse;
-import org.lumongo.cluster.message.Lumongo.SortRequest;
-import org.lumongo.cluster.message.LumongoIndex;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.QueryResult;
+import io.zulia.message.ZuliaQuery;
+import io.zulia.message.ZuliaQuery.FieldSort.Direction;
+import io.zulia.message.ZuliaServiceGrpc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,8 +16,24 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static io.zulia.message.ZuliaBase.Similarity;
+import static io.zulia.message.ZuliaQuery.AnalysisRequest;
+import static io.zulia.message.ZuliaQuery.CosineSimRequest;
+import static io.zulia.message.ZuliaQuery.CountRequest;
+import static io.zulia.message.ZuliaQuery.Facet;
+import static io.zulia.message.ZuliaQuery.FacetRequest;
+import static io.zulia.message.ZuliaQuery.FetchType;
+import static io.zulia.message.ZuliaQuery.FieldSimilarity;
+import static io.zulia.message.ZuliaQuery.FieldSort;
+import static io.zulia.message.ZuliaQuery.HighlightRequest;
+import static io.zulia.message.ZuliaQuery.LastResult;
+import static io.zulia.message.ZuliaQuery.Query.Operator;
+import static io.zulia.message.ZuliaQuery.SortRequest;
+import static io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
+import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
+
 /**
- * Runs a query on one of more LuMongo indexes.
+ * Runs a query on one of more Zulia indexes.
  * @author mdavis
  *
  */
@@ -41,19 +45,19 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 	private Collection<String> indexes;
 	private LastResult lastResult;
 	private List<CountRequest> countRequests = Collections.emptyList();
-	private List<LMFacet> drillDowns = Collections.emptyList();
+	private List<Facet> drillDowns = Collections.emptyList();
 	private List<FieldSort> fieldSorts = Collections.emptyList();
 	private Set<String> queryFields = Collections.emptySet();
-	private List<Lumongo.Query> filterQueries = Collections.emptyList();
-	private List<HighlightRequest> highlightRequests = Collections.emptyList();
-	private List<AnalysisRequest> analysisRequests = Collections.emptyList();
+	private List<ZuliaQuery.Query> filterQueries = Collections.emptyList();
+	private List<ZuliaQuery.HighlightRequest> highlightRequests = Collections.emptyList();
+	private List<ZuliaQuery.AnalysisRequest> analysisRequests = Collections.emptyList();
 	private Integer minimumNumberShouldMatch;
 	private Operator defaultOperator;
-	private Lumongo.FetchType resultFetchType;
+	private FetchType resultFetchType;
 	private Set<String> documentFields = Collections.emptySet();
 	private Set<String> documentMaskedFields = Collections.emptySet();
-	private List<Lumongo.FieldSimilarity> fieldSimilarities = Collections.emptyList();
-	private List<Lumongo.CosineSimRequest> cosineSimRequests = Collections.emptyList();
+	private List<FieldSimilarity> fieldSimilarities = Collections.emptyList();
+	private List<CosineSimRequest> cosineSimRequests = Collections.emptyList();
 	private Boolean dismax;
 	private Float dismaxTie;
 	private Boolean dontCache;
@@ -154,11 +158,11 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 			this.drillDowns = new ArrayList<>();
 		}
 
-		drillDowns.add(LMFacet.newBuilder().setLabel(label).setPath(path).build());
+		drillDowns.add(Facet.newBuilder().setLabel(label).setValue(path).build());
 		return this;
 	}
 
-	public List<LMFacet> getDrillDowns() {
+	public List<Facet> getDrillDowns() {
 		return drillDowns;
 	}
 
@@ -177,14 +181,14 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 		return this;
 	}
 
-	public Query addFieldSimilarity(String field, LumongoIndex.AnalyzerSettings.Similarity similarity) {
+	public Query addFieldSimilarity(String field, Similarity similarity) {
 
-		Lumongo.FieldSimilarity fieldSimilarity = Lumongo.FieldSimilarity.newBuilder().setField(field).setSimilarity(similarity).build();
+		FieldSimilarity fieldSimilarity = FieldSimilarity.newBuilder().setField(field).setSimilarity(similarity).build();
 
 		return addFieldSimilarity(fieldSimilarity);
 	}
 
-	private Query addFieldSimilarity(Lumongo.FieldSimilarity fieldSimilarity) {
+	private Query addFieldSimilarity(FieldSimilarity fieldSimilarity) {
 		if (fieldSimilarities.isEmpty()) {
 			fieldSimilarities = new ArrayList<>();
 		}
@@ -196,7 +200,7 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 
 	public Query addCosineSim(String field, double[] vector, double similarity) {
 
-		Lumongo.CosineSimRequest.Builder builder = Lumongo.CosineSimRequest.newBuilder().setField(field).setSimilarity(similarity);
+		CosineSimRequest.Builder builder = CosineSimRequest.newBuilder().setField(field).setSimilarity(similarity);
 		for (int i = 0; i < vector.length; i++) {
 			builder.addVector(vector[i]);
 		}
@@ -204,7 +208,7 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 		return this;
 	}
 
-	private Query addCosineSim(Lumongo.CosineSimRequest cosineSimRequest) {
+	private Query addCosineSim(CosineSimRequest cosineSimRequest) {
 		if (cosineSimRequests.isEmpty()) {
 			cosineSimRequests = new ArrayList<>();
 		}
@@ -234,11 +238,11 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 		return this;
 	}
 
-	public List<Lumongo.Query> getFilterQueries() {
+	public List<ZuliaQuery.Query> getFilterQueries() {
 		return filterQueries;
 	}
 
-	public void setFilterQueries(List<Lumongo.Query> filterQueries) {
+	public void setFilterQueries(List<ZuliaQuery.Query> filterQueries) {
 		this.filterQueries = filterQueries;
 	}
 
@@ -263,7 +267,7 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 			this.filterQueries = new ArrayList<>();
 		}
 
-		Lumongo.Query.Builder builder = Lumongo.Query.newBuilder();
+		ZuliaQuery.Query.Builder builder = ZuliaQuery.Query.newBuilder();
 		if (query != null && !query.isEmpty()) {
 			builder.setQ(query);
 		}
@@ -355,12 +359,12 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 
 	public Query addCountRequest(String label, Integer maxFacets, Integer segmentFacets) {
 
-		CountRequest.Builder countRequest = CountRequest.newBuilder().setFacetField(LMFacet.newBuilder().setLabel(label).build());
+		CountRequest.Builder countRequest = CountRequest.newBuilder().setFacetField(Facet.newBuilder().setLabel(label).build());
 		if (maxFacets != null) {
 			countRequest.setMaxFacets(maxFacets);
 		}
 		if (segmentFacets != null) {
-			countRequest.setSegmentFacets(segmentFacets);
+			countRequest.setShardFacets(segmentFacets);
 		}
 		if (countRequests.isEmpty()) {
 			this.countRequests = new ArrayList<>();
@@ -398,11 +402,11 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 		return this;
 	}
 
-	public Lumongo.FetchType getResultFetchType() {
+	public FetchType getResultFetchType() {
 		return resultFetchType;
 	}
 
-	public Query setResultFetchType(Lumongo.FetchType resultFetchType) {
+	public Query setResultFetchType(FetchType resultFetchType) {
 		this.resultFetchType = resultFetchType;
 		return this;
 	}
@@ -458,7 +462,7 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 			requestBuilder.setDebug(debug);
 		}
 
-		Lumongo.Query.Builder queryBuilder = Lumongo.Query.newBuilder();
+		ZuliaQuery.Query.Builder queryBuilder = ZuliaQuery.Query.newBuilder();
 		if (query != null) {
 			queryBuilder.setQ(query);
 		}
@@ -539,9 +543,9 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 	}
 
 	@Override
-	public QueryResult execute(LumongoConnection lumongoConnection) {
+	public QueryResult execute(ZuliaConnection zuliaConnection) {
 
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+		ZuliaServiceGrpc.ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		QueryResponse queryResponse = service.query(getRequest());
 

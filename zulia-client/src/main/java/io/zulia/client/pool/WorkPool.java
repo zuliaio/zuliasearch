@@ -3,7 +3,7 @@ package io.zulia.client.pool;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.lumongo.util.LumongoThreadFactory;
+import io.zulia.util.ZuliaThreadFactory;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -44,7 +44,7 @@ public class WorkPool {
 		};
 
 		pool = MoreExecutors
-				.listeningDecorator(new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, workQueue, new LumongoThreadFactory(poolName)));
+				.listeningDecorator(new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, workQueue, new ZuliaThreadFactory(poolName)));
 	}
 
 	public <T> ListenableFuture<T> executeAsync(Callable<T> task) {

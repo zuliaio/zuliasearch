@@ -1,7 +1,7 @@
 package io.zulia.fields;
 
+import io.zulia.util.AnnotationUtil;
 import org.bson.Document;
-import org.lumongo.util.AnnotationUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;

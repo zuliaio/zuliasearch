@@ -1,6 +1,6 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.OptimizeResponse;
+import static io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
 
 public class OptimizeIndexResult extends Result {
 

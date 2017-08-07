@@ -1,6 +1,6 @@
 package io.zulia.fields.annotations;
 
-import org.lumongo.cluster.message.LumongoIndex.SortAs.StringHandling;
+import io.zulia.message.ZuliaIndex.SortAs.StringHandling;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

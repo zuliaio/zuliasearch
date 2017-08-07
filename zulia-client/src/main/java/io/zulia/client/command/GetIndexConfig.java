@@ -1,16 +1,18 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.config.IndexConfig;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.config.IndexConfig;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsRequest;
+
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
 
 /**
  * Created by Payam Meyer on 4/3/17.
  * @author pmeyer
  */
-public class GetIndexConfig extends SimpleCommand<Lumongo.GetIndexConfigRequest, GetIndexConfigResult> {
+public class GetIndexConfig extends SimpleCommand<GetIndexSettingsRequest, GetIndexConfigResult> {
 
 	private final String indexName;
 
@@ -19,16 +21,16 @@ public class GetIndexConfig extends SimpleCommand<Lumongo.GetIndexConfigRequest,
 	}
 
 	@Override
-	public Lumongo.GetIndexConfigRequest getRequest() {
-		return Lumongo.GetIndexConfigRequest.newBuilder().setIndexName(indexName).build();
+	public GetIndexSettingsRequest getRequest() {
+		return GetIndexSettingsRequest.newBuilder().setIndexName(indexName).build();
 	}
 
 	@Override
-	public GetIndexConfigResult execute(LumongoConnection lumongoConnection) {
+	public GetIndexConfigResult execute(ZuliaConnection zuliaConnection) {
 
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		Lumongo.GetIndexConfigResponse getIndexConfigResponse = service.getIndexConfig(getRequest());
+		GetIndexSettingsResponse getIndexConfigResponse = service.getIndexSettings(getRequest());
 
 		IndexConfig indexConfig = new IndexConfig();
 		indexConfig.configure(getIndexConfigResponse.getIndexSettings());

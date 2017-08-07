@@ -1,8 +1,8 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.GetFieldNamesResponse;
-
 import java.util.List;
+
+import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 
 public class GetFieldsResult extends Result {
 

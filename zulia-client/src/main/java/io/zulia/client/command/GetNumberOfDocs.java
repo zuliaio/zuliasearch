@@ -1,11 +1,12 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.GetNumberOfDocsResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.GetNumberOfDocsRequest;
-import org.lumongo.cluster.message.Lumongo.GetNumberOfDocsResponse;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.GetNumberOfDocsResult;
+
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsRequest;
+import static io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
 
 public class GetNumberOfDocs extends SimpleCommand<GetNumberOfDocsRequest, GetNumberOfDocsResult> {
 
@@ -21,8 +22,8 @@ public class GetNumberOfDocs extends SimpleCommand<GetNumberOfDocsRequest, GetNu
 	}
 
 	@Override
-	public GetNumberOfDocsResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public GetNumberOfDocsResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		GetNumberOfDocsResponse getNumberOfDocsResponse = service.getNumberOfDocs(getRequest());
 

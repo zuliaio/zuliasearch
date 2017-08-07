@@ -6,7 +6,7 @@ import io.zulia.message.ZuliaQuery.FacetGroup;
 import io.zulia.message.ZuliaQuery.LastResult;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
-import lumongo.util.ResultHelper;
+import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.util.ArrayList;

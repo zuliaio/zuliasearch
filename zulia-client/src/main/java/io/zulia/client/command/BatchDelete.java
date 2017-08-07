@@ -1,18 +1,20 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.BatchDeleteResult;
-import org.lumongo.client.result.QueryResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.BatchDeleteRequest;
-import org.lumongo.cluster.message.Lumongo.BatchDeleteResponse;
-import org.lumongo.cluster.message.Lumongo.ScoredResult;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.BatchDeleteResult;
+import io.zulia.client.result.QueryResult;
+import io.zulia.message.ZuliaServiceOuterClass;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class BatchDelete extends SimpleCommand<BatchDeleteRequest, BatchDeleteResult> {
+import static io.zulia.message.ZuliaQuery.ScoredResult;
+import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import static io.zulia.message.ZuliaServiceOuterClass.BatchDeleteRequest;
+import static io.zulia.message.ZuliaServiceOuterClass.BatchDeleteResponse;
+
+public class BatchDelete extends SimpleCommand<ZuliaServiceOuterClass.BatchDeleteRequest, BatchDeleteResult> {
 
 	private List<Delete> deletes;
 
@@ -47,8 +49,8 @@ public class BatchDelete extends SimpleCommand<BatchDeleteRequest, BatchDeleteRe
 	}
 
 	@Override
-	public BatchDeleteResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public BatchDeleteResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		BatchDeleteResponse batchDeleteResponse = service.batchDelete(getRequest());
 

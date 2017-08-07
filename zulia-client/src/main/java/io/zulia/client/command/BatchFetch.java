@@ -1,18 +1,20 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.command.base.SimpleCommand;
-import org.lumongo.client.pool.LumongoConnection;
-import org.lumongo.client.result.BatchFetchResult;
-import org.lumongo.client.result.QueryResult;
-import org.lumongo.cluster.message.ExternalServiceGrpc;
-import org.lumongo.cluster.message.Lumongo.BatchFetchRequest;
-import org.lumongo.cluster.message.Lumongo.BatchFetchResponse;
-import org.lumongo.cluster.message.Lumongo.FetchType;
-import org.lumongo.cluster.message.Lumongo.ScoredResult;
+import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.BatchFetchResult;
+import io.zulia.client.result.QueryResult;
+import io.zulia.message.ZuliaQuery;
+import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import io.zulia.message.ZuliaServiceOuterClass.BatchFetchRequest;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import static io.zulia.message.ZuliaQuery.FetchType;
+import static io.zulia.message.ZuliaQuery.ScoredResult;
+import static io.zulia.message.ZuliaServiceOuterClass.BatchFetchResponse;
 
 /**
  * Fetches multiple documents in a single call
@@ -47,7 +49,7 @@ public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResul
 		return addFetchDocumentsFromResults(qr.getResults());
 	}
 
-	public BatchFetch addFetchDocumentsFromResults(Collection<ScoredResult> scoredResults) {
+	public BatchFetch addFetchDocumentsFromResults(Collection<ZuliaQuery.ScoredResult> scoredResults) {
 
 		for (ScoredResult scoredResult : scoredResults) {
 			Fetch f = new Fetch(scoredResult.getUniqueId(), scoredResult.getIndexName());
@@ -69,8 +71,8 @@ public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResul
 	}
 
 	@Override
-	public BatchFetchResult execute(LumongoConnection lumongoConnection) {
-		ExternalServiceGrpc.ExternalServiceBlockingStub service = lumongoConnection.getService();
+	public BatchFetchResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		BatchFetchResponse batchFetchResponse = service.batchFetch(getRequest());
 

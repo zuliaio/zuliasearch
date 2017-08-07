@@ -2,12 +2,22 @@ package io.zulia.client.pool;
 
 import io.grpc.Metadata;
 import io.grpc.StatusRuntimeException;
+import io.zulia.cache.MetaKeys;
+import io.zulia.client.command.GetNodes;
+import io.zulia.client.command.base.Command;
+import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.config.ZuliaPoolConfig;
+import io.zulia.client.result.GetNodesResult;
+import io.zulia.client.result.Result;
 import org.apache.commons.pool.KeyedPoolableObjectFactory;
 import org.apache.commons.pool.impl.GenericKeyedObjectPool;
 
 import java.util.List;
 
-public class LumongoPool {
+import static io.zulia.message.ZuliaBase.Node;
+import static io.zulia.message.ZuliaIndex.IndexMapping;
+
+public class ZuliaPool {
 
 	protected class MembershipUpdateThread extends Thread {
 
@@ -26,7 +36,7 @@ public class LumongoPool {
 					catch (InterruptedException e) {
 
 					}
-					updateMembers();
+					updateNodes();
 
 				}
 				catch (Throwable t) {
@@ -36,7 +46,7 @@ public class LumongoPool {
 		}
 	}
 
-	private List<LMMember> members;
+	private List<Node> nodes;
 	private int retries;
 	private int maxIdle;
 	private int maxConnections;
@@ -44,47 +54,47 @@ public class LumongoPool {
 	private boolean isClosed;
 	private int memberUpdateInterval;
 
-	private GenericKeyedObjectPool<LMMember, ZuliaConnection> connectionPool;
+	private GenericKeyedObjectPool<Node, ZuliaConnection> connectionPool;
 	private IndexRouting indexRouting;
 
-	public LumongoPool(final LumongoPoolConfig lumongoPoolConfig) throws Exception {
-		members = lumongoPoolConfig.getMembers();
-		retries = lumongoPoolConfig.getDefaultRetries();
-		maxIdle = lumongoPoolConfig.getMaxIdle();
-		maxConnections = lumongoPoolConfig.getMaxConnections();
-		routingEnabled = lumongoPoolConfig.isRoutingEnabled();
-		memberUpdateInterval = lumongoPoolConfig.getMemberUpdateInterval();
+	public ZuliaPool(final ZuliaPoolConfig zuliaPoolConfig) throws Exception {
+		nodes = zuliaPoolConfig.getNodes();
+		retries = zuliaPoolConfig.getDefaultRetries();
+		maxIdle = zuliaPoolConfig.getMaxIdle();
+		maxConnections = zuliaPoolConfig.getMaxConnections();
+		routingEnabled = zuliaPoolConfig.isRoutingEnabled();
+		memberUpdateInterval = zuliaPoolConfig.getMemberUpdateInterval();
 		if (memberUpdateInterval < 100) {
 			//TODO think about cleaner ways to handle this
 			throw new IllegalArgumentException("Member update interval is less than the minimum of 100");
 		}
 
-		KeyedPoolableObjectFactory<LMMember, ZuliaConnection> factory = new KeyedPoolableObjectFactory<LMMember, ZuliaConnection>() {
+		KeyedPoolableObjectFactory<Node, ZuliaConnection> factory = new KeyedPoolableObjectFactory<Node, ZuliaConnection>() {
 
 			@Override
-			public ZuliaConnection makeObject(LMMember key) throws Exception {
+			public ZuliaConnection makeObject(Node key) throws Exception {
 				ZuliaConnection lc = new ZuliaConnection(key);
-				lc.open(lumongoPoolConfig.isCompressedConnection());
+				lc.open(zuliaPoolConfig.isCompressedConnection());
 				return lc;
 			}
 
 			@Override
-			public void destroyObject(LMMember key, ZuliaConnection obj) throws Exception {
+			public void destroyObject(Node key, ZuliaConnection obj) throws Exception {
 				obj.close();
 			}
 
 			@Override
-			public boolean validateObject(LMMember key, ZuliaConnection obj) {
+			public boolean validateObject(Node key, ZuliaConnection obj) {
 				return true;
 			}
 
 			@Override
-			public void activateObject(LMMember key, ZuliaConnection obj) throws Exception {
+			public void activateObject(Node key, ZuliaConnection obj) throws Exception {
 
 			}
 
 			@Override
-			public void passivateObject(LMMember key, ZuliaConnection obj) throws Exception {
+			public void passivateObject(Node key, ZuliaConnection obj) throws Exception {
 
 			}
 
@@ -98,7 +108,7 @@ public class LumongoPool {
 
 		connectionPool = new GenericKeyedObjectPool<>(factory, poolConfig);
 
-		if (lumongoPoolConfig.isMemberUpdateEnabled()) {
+		if (zuliaPoolConfig.isMemberUpdateEnabled()) {
 			MembershipUpdateThread mut = new MembershipUpdateThread();
 			mut.start();
 		}
@@ -108,19 +118,19 @@ public class LumongoPool {
 		return maxConnections;
 	}
 
-	public void updateMembers(List<LMMember> members) {
+	public void updateNodes(List<Node> members) {
 		//TODO handle cleaning up out of the pool?
-		this.members = members;
+		this.nodes = members;
 	}
 
 	public void updateIndexMappings(List<IndexMapping> list) {
 		indexRouting = new IndexRouting(list);
 	}
 
-	public void updateMembers() throws Exception {
-		GetMembersResult getMembersResult = execute(new GetMembers());
-		updateMembers(getMembersResult.getMembers());
-		updateIndexMappings(getMembersResult.getIndexMappings());
+	public void updateNodes() throws Exception {
+		GetNodesResult getNodesResult = execute(new GetNodes());
+		updateNodes(getNodesResult.getNodes());
+		updateIndexMappings(getNodesResult.getIndexMappings());
 	}
 
 	public <R extends Result> R execute(Command<R> command) throws Exception {
@@ -128,22 +138,22 @@ public class LumongoPool {
 		int tries = 0;
 		while (true) {
 			ZuliaConnection zuliaConnection = null;
-			LMMember selectedMember = null;
+			Node selectedNode = null;
 			try {
 				boolean shouldRoute = (command instanceof RoutableCommand) && routingEnabled && (indexRouting != null);
 
 				if (shouldRoute) {
 					RoutableCommand rc = (RoutableCommand) command;
-					selectedMember = indexRouting.getMember(rc.getIndexName(), rc.getUniqueId());
+					selectedNode = indexRouting.getNode(rc.getIndexName(), rc.getUniqueId());
 				}
 
-				if (selectedMember == null) {
-					List<LMMember> tempList = members; //stop array index out bounds on updates without locking
+				if (selectedNode == null) {
+					List<Node> tempList = nodes; //stop array index out bounds on updates without locking
 					int randomMemberIndex = (int) (Math.random() * tempList.size());
-					selectedMember = tempList.get(randomMemberIndex);
+					selectedNode = tempList.get(randomMemberIndex);
 				}
 
-				zuliaConnection = connectionPool.borrowObject(selectedMember);
+				zuliaConnection = connectionPool.borrowObject(selectedNode);
 
 				R r;
 				try {
@@ -159,14 +169,14 @@ public class LumongoPool {
 					}
 				}
 
-				connectionPool.returnObject(selectedMember, zuliaConnection);
+				connectionPool.returnObject(selectedNode, zuliaConnection);
 				return r;
 			}
 			catch (Exception e) {
 
-				if (selectedMember != null && zuliaConnection != null) {
+				if (selectedNode != null && zuliaConnection != null) {
 					try {
-						connectionPool.invalidateObject(selectedMember, zuliaConnection);
+						connectionPool.invalidateObject(selectedNode, zuliaConnection);
 					}
 					catch (Exception e1) {
 					}

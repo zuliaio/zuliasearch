@@ -1,7 +1,7 @@
 package io.zulia.client.command;
 
-import org.lumongo.cluster.message.Lumongo.FetchType;
-import org.lumongo.cluster.message.Lumongo.ScoredResult;
+import static io.zulia.message.ZuliaQuery.FetchType;
+import static io.zulia.message.ZuliaQuery.ScoredResult;
 
 public class FetchDocument extends Fetch {
 

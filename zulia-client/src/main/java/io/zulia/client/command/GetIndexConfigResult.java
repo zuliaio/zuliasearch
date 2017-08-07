@@ -1,7 +1,7 @@
 package io.zulia.client.command;
 
-import org.lumongo.client.config.IndexConfig;
-import org.lumongo.client.result.Result;
+import io.zulia.client.config.IndexConfig;
+import io.zulia.client.result.Result;
 
 /**
  * Created by Payam Meyer on 4/3/17.

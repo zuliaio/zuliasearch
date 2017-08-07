@@ -1,14 +1,15 @@
 package io.zulia.client.config;
 
-import org.lumongo.LumongoConstants;
-import org.lumongo.cluster.message.Lumongo.LMMember;
+import io.zulia.ZuliaConstants;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class LumongoPoolConfig {
+import static io.zulia.message.ZuliaBase.Node;
 
-	private List<LMMember> members;
+public class ZuliaPoolConfig {
+
+	private List<Node> nodes;
 
 	private int maxConnections;
 	private int maxIdle;
@@ -22,8 +23,8 @@ public class LumongoPoolConfig {
 	public final static int DEFAULT_DEFAULT_RETRIES = 0;
 	public final static int DEFAULT_MEMBER_UPDATE_INTERVAL = 10000;
 
-	public LumongoPoolConfig() {
-		this.members = new ArrayList<>();
+	public ZuliaPoolConfig() {
+		this.nodes = new ArrayList<>();
 		this.maxConnections = 16;
 		this.maxIdle = 16;
 		this.defaultRetries = DEFAULT_DEFAULT_RETRIES;
@@ -34,39 +35,39 @@ public class LumongoPoolConfig {
 		this.memberUpdateInterval = DEFAULT_MEMBER_UPDATE_INTERVAL;
 	}
 
-	public LumongoPoolConfig addMember(String serverAddress) {
-		return addMember(serverAddress, LumongoConstants.DEFAULT_EXTERNAL_SERVICE_PORT, LumongoConstants.DEFAULT_REST_SERVICE_PORT);
+	public ZuliaPoolConfig addNode(String serverAddress) {
+		return addNode(serverAddress, ZuliaConstants.DEFAULT_SERVICE_SERVICE_PORT, ZuliaConstants.DEFAULT_REST_SERVICE_PORT);
 	}
 
-	public LumongoPoolConfig addMember(String serverAddress, int externalPort) {
-		return addMember(serverAddress, externalPort, LumongoConstants.DEFAULT_REST_SERVICE_PORT);
+	public ZuliaPoolConfig addNode(String serverAddress, int externalPort) {
+		return addNode(serverAddress, externalPort, ZuliaConstants.DEFAULT_REST_SERVICE_PORT);
 	}
 
-	public LumongoPoolConfig addMember(String serverAddress, int externalPort, int restPort) {
-		LMMember member = LMMember.newBuilder().setServerAddress(serverAddress).setExternalPort(externalPort).setRestPort(restPort).build();
-		members.add(member);
+	public ZuliaPoolConfig addNode(String serverAddress, int servicePort, int restPort) {
+		Node node = Node.newBuilder().setServerAddress(serverAddress).setServicePort(servicePort).setRestPort(restPort).build();
+		nodes.add(node);
 		return this;
 	}
 
-	public LumongoPoolConfig addMember(LMMember member) {
-		members.add(member);
+	public ZuliaPoolConfig addNode(Node node) {
+		nodes.add(node);
 		return this;
 	}
 
-	public LumongoPoolConfig clearMembers() {
-		members.clear();
+	public ZuliaPoolConfig clearMembers() {
+		nodes.clear();
 		return this;
 	}
 
-	public List<LMMember> getMembers() {
-		return members;
+	public List<Node> getNodes() {
+		return nodes;
 	}
 
 	public int getMaxConnections() {
 		return maxConnections;
 	}
 
-	public LumongoPoolConfig setMaxConnections(int maxConnections) {
+	public ZuliaPoolConfig setMaxConnections(int maxConnections) {
 		this.maxConnections = maxConnections;
 		return this;
 	}
@@ -75,7 +76,7 @@ public class LumongoPoolConfig {
 		return maxIdle;
 	}
 
-	public LumongoPoolConfig setMaxIdle(int maxIdle) {
+	public ZuliaPoolConfig setMaxIdle(int maxIdle) {
 		this.maxIdle = maxIdle;
 		return this;
 	}
@@ -84,7 +85,7 @@ public class LumongoPoolConfig {
 		return defaultRetries;
 	}
 
-	public LumongoPoolConfig setDefaultRetries(int defaultRetries) {
+	public ZuliaPoolConfig setDefaultRetries(int defaultRetries) {
 		this.defaultRetries = defaultRetries;
 		return this;
 	}
@@ -93,7 +94,7 @@ public class LumongoPoolConfig {
 		return poolName;
 	}
 
-	public LumongoPoolConfig setPoolName(String poolName) {
+	public ZuliaPoolConfig setPoolName(String poolName) {
 		this.poolName = poolName;
 		return this;
 	}
@@ -102,7 +103,7 @@ public class LumongoPoolConfig {
 		return compressedConnection;
 	}
 
-	public LumongoPoolConfig setCompressedConnection(boolean compressedConnection) {
+	public ZuliaPoolConfig setCompressedConnection(boolean compressedConnection) {
 		this.compressedConnection = compressedConnection;
 		return this;
 	}
@@ -111,7 +112,7 @@ public class LumongoPoolConfig {
 		return routingEnabled;
 	}
 
-	public LumongoPoolConfig setRoutingEnabled(boolean routingEnabled) {
+	public ZuliaPoolConfig setRoutingEnabled(boolean routingEnabled) {
 		this.routingEnabled = routingEnabled;
 		return this;
 	}
@@ -120,7 +121,7 @@ public class LumongoPoolConfig {
 		return memberUpdateEnabled;
 	}
 
-	public LumongoPoolConfig setMemberUpdateEnabled(boolean memberUpdateEnabled) {
+	public ZuliaPoolConfig setMemberUpdateEnabled(boolean memberUpdateEnabled) {
 		this.memberUpdateEnabled = memberUpdateEnabled;
 		return this;
 	}
@@ -129,7 +130,7 @@ public class LumongoPoolConfig {
 		return memberUpdateInterval;
 	}
 
-	public LumongoPoolConfig setMemberUpdateInterval(int memberUpdateInterval) {
+	public ZuliaPoolConfig setMemberUpdateInterval(int memberUpdateInterval) {
 		this.memberUpdateInterval = memberUpdateInterval;
 		return this;
 	}

@@ -4,13 +4,18 @@ import io.zulia.fields.annotations.AsField;
 import io.zulia.fields.annotations.DefaultSearch;
 import io.zulia.fields.annotations.Embedded;
 import io.zulia.fields.annotations.Faceted;
+import io.zulia.fields.annotations.FacetedFields;
 import io.zulia.fields.annotations.Indexed;
 import io.zulia.fields.annotations.IndexedFields;
+import io.zulia.fields.annotations.Sorted;
+import io.zulia.fields.annotations.SortedFields;
 import io.zulia.fields.annotations.UniqueId;
 import io.zulia.message.ZuliaIndex.FacetAs;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.message.ZuliaIndex.IndexAs;
 import io.zulia.message.ZuliaIndex.SortAs;
+import io.zulia.util.AnnotationUtil;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -19,8 +24,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class FieldConfigMapper<T> {
+
+	private static Logger LOG = Logger.getLogger(FieldConfigMapper.class.getSimpleName());
 
 	private final String prefix;
 
@@ -189,8 +197,7 @@ public class FieldConfigMapper<T> {
 		for (FieldConfigMapper fcm : embeddedFieldConfigMappers) {
 			configs.addAll(fcm.getFieldConfigs());
 		}
-		System.out.println(configs);
-		System.out.println();
+		LOG.info(configs.toString());
 		return configs;
 	}
 

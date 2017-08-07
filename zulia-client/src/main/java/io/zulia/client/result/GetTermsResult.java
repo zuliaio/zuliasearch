@@ -1,9 +1,10 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.GetTermsResponse;
-import org.lumongo.cluster.message.Lumongo.Term;
+import io.zulia.message.ZuliaBase;
 
 import java.util.List;
+
+import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 
 public class GetTermsResult extends Result {
 
@@ -13,11 +14,11 @@ public class GetTermsResult extends Result {
 		this.getTermsResponse = getTermsResponse;
 	}
 
-	public List<Term> getTerms() {
+	public List<ZuliaBase.Term> getTerms() {
 		return getTermsResponse.getTermList();
 	}
 
-	public Term getLastTerm() {
+	public ZuliaBase.Term getLastTerm() {
 		if (getTermsResponse.hasLastTerm()) {
 			return getTermsResponse.getLastTerm();
 		}

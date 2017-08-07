@@ -2,7 +2,7 @@ package io.zulia.client.pool;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.zulia.client.ZuliaRestClient;
+import io.zulia.client.ZuliaRESTClient;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceGrpc;
 
@@ -42,8 +42,8 @@ public class ZuliaConnection {
 
 	}
 
-	public ZuliaRestClient getRestClient() throws Exception {
-		return new ZuliaRestClient(node.getServerAddress(), node.getRestPort());
+	public ZuliaRESTClient getRestClient() throws Exception {
+		return new ZuliaRESTClient(node.getServerAddress(), node.getRestPort());
 	}
 
 	public ZuliaServiceGrpc.ZuliaServiceBlockingStub getService() {

@@ -1,6 +1,6 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.StoreResponse;
+import static io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
 
 public class StoreResult extends Result {
 

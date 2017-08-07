@@ -1,18 +1,19 @@
 package io.zulia.client.result;
 
+import io.zulia.fields.Mapper;
+import io.zulia.message.ZuliaBase.ResultDocument;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
-import org.lumongo.cluster.message.Lumongo.AssociatedDocument;
-import org.lumongo.cluster.message.Lumongo.FetchResponse;
-import org.lumongo.cluster.message.Lumongo.Metadata;
-import org.lumongo.cluster.message.Lumongo.ResultDocument;
-import org.lumongo.fields.Mapper;
-import org.lumongo.util.LumongoUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static io.zulia.message.ZuliaBase.AssociatedDocument;
+import static io.zulia.message.ZuliaBase.Metadata;
+import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 public class FetchResult extends Result {
 
@@ -67,8 +68,8 @@ public class FetchResult extends Result {
 	public Document getDocument() {
 		if (fetchResponse.hasResultDocument()) {
 			ResultDocument rd = fetchResponse.getResultDocument();
-			if (rd.hasDocument()) {
-				return LumongoUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
+			if (rd.getDocument() != null) {
+				return ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
 			}
 		}
 		return null;
@@ -95,7 +96,7 @@ public class FetchResult extends Result {
 	}
 
 	public boolean hasResultDocument() {
-		return fetchResponse.hasResultDocument() && fetchResponse.getResultDocument().hasDocument();
+		return fetchResponse.hasResultDocument() && fetchResponse.getResultDocument().getDocument() != null;
 	}
 
 	public Long getDocumentTimestamp() {

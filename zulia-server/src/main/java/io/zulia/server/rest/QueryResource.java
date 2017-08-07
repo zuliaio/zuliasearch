@@ -356,7 +356,7 @@ public class QueryResource {
 						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
 
 						return Response.ok(outputStream, MediaType.APPLICATION_OCTET_STREAM)
-								.header("content-disposition", "attachment; filename = " + "lumongoDownload_" + now.format(formatter) + ".csv").build();
+								.header("content-disposition", "attachment; filename = " + "zuliaDownload_" + now.format(formatter) + ".csv").build();
 					}
 					else {
 

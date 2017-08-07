@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Caches lumongo result documents.  Timestamp associated with the result document can be used to match searches with result documents
+ * Caches zulia result documents.  Timestamp associated with the result document can be used to match searches with result documents
  * @author mdavis
  *
  */

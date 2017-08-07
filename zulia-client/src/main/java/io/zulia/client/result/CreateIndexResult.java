@@ -1,13 +1,13 @@
 package io.zulia.client.result;
 
-import org.lumongo.cluster.message.Lumongo.IndexCreateResponse;
+import static io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
 
 public class CreateIndexResult extends Result {
 
 	@SuppressWarnings("unused")
-	private IndexCreateResponse indexCreateResponse;
+	private CreateIndexResponse indexCreateResponse;
 
-	public CreateIndexResult(IndexCreateResponse indexCreateResponse) {
+	public CreateIndexResult(CreateIndexResponse indexCreateResponse) {
 		this.indexCreateResponse = indexCreateResponse;
 	}
 
