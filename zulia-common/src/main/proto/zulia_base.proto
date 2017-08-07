@@ -2,6 +2,12 @@ syntax = "proto3";
 
 option java_package = "io.zulia.message";
 
+enum MasterSlaveSettings {
+    MASTER_ONLY = 0;
+    SLAVE_ONLY = 1;
+    MASTER_IF_AVAILABLE = 2;
+}
+
 message Node {
     string serverAddress = 1;
     uint32 hazelcastPort = 2;

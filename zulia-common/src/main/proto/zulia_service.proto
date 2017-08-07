@@ -52,6 +52,7 @@ message QueryRequest {
     bool debug = 16;
     repeated CosineSimRequest cosineSimRequest = 17;
     bool dontCache = 18;
+    MasterSlaveSettings masterSlaveSettings = 19;
 }
 
 message QueryResponse {
@@ -105,6 +106,7 @@ message FetchRequest {
     repeated string documentFields = 6;
     repeated string documentMaskedFields = 7;
     int64 timestamp = 8;
+    MasterSlaveSettings masterSlaveSettings = 9;
 }
 
 message FetchResponse {
@@ -145,6 +147,7 @@ message GetIndexesResponse {
 
 message GetNumberOfDocsRequest {
     string indexName = 1;
+    MasterSlaveSettings masterSlaveSettings = 2;
 }
 
 message GetNumberOfDocsResponse {
@@ -169,6 +172,7 @@ message OptimizeResponse {
 
 message GetFieldNamesRequest {
     string indexName = 1;
+    MasterSlaveSettings masterSlaveSettings = 2;
 }
 
 message GetFieldNamesResponse {
@@ -191,6 +195,7 @@ message GetTermsRequest {
     repeated string includeTerm = 10;
 
     FuzzyTerm fuzzyTerm = 11;
+    MasterSlaveSettings masterSlaveSettings = 12;
 }
 
 message GetTermsResponse {
