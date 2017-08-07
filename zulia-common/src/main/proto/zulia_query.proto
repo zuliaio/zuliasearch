@@ -50,7 +50,7 @@ message FacetCount {
 
 message FacetGroup {
     CountRequest countRequest = 1;
-    FacetCount facetCount = 2;
+    repeated FacetCount facetCount = 2;
     bool possibleMissing = 3;
     uint64 maxValuePossibleMissing = 4;
 }
