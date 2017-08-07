@@ -7,7 +7,7 @@ option java_package = "io.zulia.message";
 message IndexMapping {
     string indexName = 1;
     uint32 numberOfShards = 2;
-    ShardMapping shardMapping = 3;
+    repeated ShardMapping shardMapping = 3;
 }
 
 message ShardMapping {
@@ -87,7 +87,6 @@ message AnalyzerSettings {
         BRITISH_US = 13;
         CONCAT_ALL = 14;
     }
-
 
 
     string name = 1;

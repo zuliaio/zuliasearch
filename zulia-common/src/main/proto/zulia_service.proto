@@ -194,7 +194,7 @@ message GetTermsRequest {
 }
 
 message GetTermsResponse {
-    Term term = 1;
+    repeated Term term = 1;
     Term lastTerm = 2;
 }
 

@@ -50,7 +50,7 @@ message FacetCount {
 
 message FacetGroup {
     CountRequest countRequest = 1;
-    FacetCount facetCount = 2;
+    repeated FacetCount facetCount = 2;
     bool possibleMissing = 3;
     uint64 maxValuePossibleMissing = 4;
 }
@@ -95,8 +95,8 @@ message ScoredResult {
     SortValues sortValues = 7;
     int64 timestamp = 8;
     ResultDocument resultDocument = 9;
-    HighlightResult highlightResult = 10;
-    AnalysisResult analysisResult = 11;
+    repeated HighlightResult highlightResult = 10;
+    repeated AnalysisResult analysisResult = 11;
 }
 
 message SortValues {
