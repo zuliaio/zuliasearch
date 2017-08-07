@@ -1,4 +1,4 @@
-package io.zulia.util;
+package io.zulia;
 
 /**
  * Created by Payam Meyer on 8/7/17.
@@ -7,8 +7,7 @@ package io.zulia.util;
 public interface ZuliaConstants {
 
 	int DEFAULT_HAZELCAST_PORT = 5701;
-	int DEFAULT_INTERNAL_SERVICE_PORT = 32190;
-	int DEFAULT_EXTERNAL_SERVICE_PORT = 32191;
+	int DEFAULT_SERVICE_SERVICE_PORT = 32191;
 	int DEFAULT_REST_SERVICE_PORT = 32192;
 
 	//HTTP constants

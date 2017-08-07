@@ -1,9 +1,9 @@
 package io.zulia.server.rest;
 
 import com.cedarsoftware.util.io.JsonWriter;
+import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.util.ResultHelper;
-import io.zulia.util.ZuliaConstants;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 

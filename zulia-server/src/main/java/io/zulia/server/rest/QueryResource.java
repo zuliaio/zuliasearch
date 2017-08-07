@@ -3,10 +3,10 @@ package io.zulia.server.rest;
 import com.cedarsoftware.util.io.JsonWriter;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
+import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.util.CursorHelper;
 import io.zulia.util.ResultHelper;
-import io.zulia.util.ZuliaConstants;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 
@@ -356,7 +356,7 @@ public class QueryResource {
 						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
 
 						return Response.ok(outputStream, MediaType.APPLICATION_OCTET_STREAM)
-								.header("content-disposition", "attachment; filename = " + "lumongoDownload_" + now.format(formatter) + ".csv").build();
+								.header("content-disposition", "attachment; filename = " + "zuliaDownload_" + now.format(formatter) + ".csv").build();
 					}
 					else {
 

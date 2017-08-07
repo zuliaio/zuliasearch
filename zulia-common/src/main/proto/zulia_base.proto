@@ -32,7 +32,7 @@ message Metadata {
     string value = 2;
 }
 
-message ShardCount {
+message ShardCountResponse {
     uint32 shardNumber = 1;
     uint32 numberOfDocs = 2;
 }

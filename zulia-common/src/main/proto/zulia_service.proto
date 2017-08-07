@@ -149,7 +149,7 @@ message GetNumberOfDocsRequest {
 
 message GetNumberOfDocsResponse {
     uint64 numberOfDocs = 1;
-    ShardCount shardCount = 2;
+    repeated ShardCountResponse shardCountResponse = 2;
 }
 
 message ClearRequest {
