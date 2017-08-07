@@ -1,4 +1,4 @@
-package io.zulia.util;
+package io.zulia;
 
 /**
  * Created by Payam Meyer on 8/7/17.

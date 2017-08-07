@@ -2,6 +2,7 @@ package io.zulia.client.cache;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import io.zulia.cache.DocId;
 import io.zulia.client.command.BatchFetch;
 import io.zulia.client.command.FetchDocument;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -9,7 +10,6 @@ import io.zulia.client.result.BatchFetchResult;
 import io.zulia.client.result.FetchResult;
 import io.zulia.client.result.QueryResult;
 import io.zulia.message.ZuliaQuery.ScoredResult;
-import lumongo.util.cache.DocId;
 
 import java.util.ArrayList;
 import java.util.Collection;

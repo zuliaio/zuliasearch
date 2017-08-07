@@ -1,6 +1,6 @@
-package lumongo.util;
+package io.zulia.util;
 
-import lumongo.ZuliaConstants;
+import io.zulia.ZuliaConstants;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;

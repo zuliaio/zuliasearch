@@ -1,4 +1,4 @@
-package lumongo.util;
+package io.zulia.util;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

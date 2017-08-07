@@ -1,4 +1,4 @@
-package lumongo;
+package io.zulia;
 
 /**
  * Created by mdavis on 4/24/16.

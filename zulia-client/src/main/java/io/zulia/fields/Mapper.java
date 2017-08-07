@@ -14,7 +14,7 @@ import io.zulia.fields.annotations.IndexedFields;
 import io.zulia.fields.annotations.Settings;
 import io.zulia.fields.annotations.UniqueId;
 import io.zulia.message.ZuliaIndex.FieldConfig;
-import lumongo.util.AnnotationUtil;
+import io.zulia.util.AnnotationUtil;
 import lumongo.util.ResultHelper;
 import org.bson.Document;
 

@@ -1,8 +1,8 @@
 package io.zulia.server.rest;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.util.StreamHelper;
-import io.zulia.util.ZuliaConstants;
 import org.bson.Document;
 
 import javax.ws.rs.GET;

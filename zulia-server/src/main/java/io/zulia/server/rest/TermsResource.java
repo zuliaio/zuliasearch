@@ -4,8 +4,8 @@ import com.cedarsoftware.util.io.JsonWriter;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.mongodb.util.JSONSerializers;
+import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.util.ZuliaConstants;
 import org.bson.Document;
 
 import javax.ws.rs.DefaultValue;

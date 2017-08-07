@@ -1,4 +1,4 @@
-package lumongo.util;
+package io.zulia.util;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;

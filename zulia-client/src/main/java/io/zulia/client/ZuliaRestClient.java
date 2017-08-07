@@ -1,7 +1,7 @@
 package io.zulia.client;
 
+import io.zulia.util.HttpHelper;
 import lumongo.ZuliaConstants;
-import lumongo.util.HttpHelper;
 import lumongo.util.StreamHelper;
 
 import java.io.File;

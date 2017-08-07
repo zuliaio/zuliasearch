@@ -1,4 +1,4 @@
-package lumongo.util.cache;
+package io.zulia.cache;
 
 public class DocId {
 	private String uniqueId;
