@@ -1,4 +1,4 @@
-package io.zulia.server.log;
+package io.zulia.log;
 
 import java.util.logging.Handler;
 import java.util.logging.Level;

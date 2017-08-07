@@ -1,4 +1,4 @@
-package io.zulia.server.hz;
+package io.zulia.server.hazelcast;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.JoinConfig;
@@ -12,11 +12,11 @@ import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 import com.hazelcast.spi.properties.GroupProperty;
+import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.log.LogUtil;
 
 import java.util.Collection;
 import java.util.HashSet;
