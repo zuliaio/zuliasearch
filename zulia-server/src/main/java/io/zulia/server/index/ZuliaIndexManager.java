@@ -43,12 +43,12 @@ public class ZuliaIndexManager {
 		}
 	}
 
-	public void handleNodeAdded(Collection<Node> currentNodes, Node nodeAdded, boolean master) {
-
+	public void handleNodeAdded(Collection<Node> currentOtherNodesActive, Node nodeAdded) {
+		System.out.println("nodeAdded: " + nodeAdded.getServerAddress() + ":" + nodeAdded.getServicePort());
 	}
 
-	public void handleNodeRemoved(Collection<Node> currentNodes, Node nodeRemoved, boolean master) {
-
+	public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
+		System.out.println("nodeRemoved: " + nodeRemoved.getServerAddress() + ":" + nodeRemoved.getServicePort());
 	}
 
 	public void shutdown() {

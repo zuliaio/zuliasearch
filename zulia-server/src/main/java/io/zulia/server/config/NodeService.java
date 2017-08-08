@@ -21,12 +21,18 @@ public interface NodeService {
 	Node getNode(String serverAddress, int servicePort);
 
 	/**
-	 * Update heartbeat for cluster node
+	 * Update heartbeat for a cluster node
 	 * @param serverAddress - server address of node
 	 * @param servicePort - service port of node
 	 */
 	void updateHeartbeat(String serverAddress, int servicePort);
 
+	/**
+	 * Removed heartbeat for a cluster node
+	 * @param serverAddress - server address of node
+	 * @param servicePort - service port of node
+	 */
+	void removeHeartbeat(String serverAddress, int servicePort);
 
 	/**
 	 * Register a new node with a cluster

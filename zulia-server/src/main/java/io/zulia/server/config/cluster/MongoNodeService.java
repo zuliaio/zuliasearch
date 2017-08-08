@@ -80,6 +80,16 @@ public class MongoNodeService implements NodeService {
 	}
 
 	@Override
+	public void removeHeartbeat(String serverAddress, int servicePort) {
+		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
+
+		Bson update = Updates.unset(HEARTBEAT);
+
+		getCollection().updateOne(query, update);
+
+	}
+
+	@Override
 	public void removeNode(String serverAddress, int servicePort) {
 
 		getCollection().deleteOne(new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort));
@@ -92,8 +102,8 @@ public class MongoNodeService implements NodeService {
 
 	private Node documentToNode(Document d) {
 		if (d != null) {
-			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setHeartbeat(d.getLong(HEARTBEAT)).setServicePort(d.getInteger(SERVICE_PORT))
-					.setRestPort(d.getInteger(REST_PORT)).build();
+			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT))
+					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0).build();
 		}
 		return null;
 	}

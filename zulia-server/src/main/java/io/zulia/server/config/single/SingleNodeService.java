@@ -36,6 +36,11 @@ public class SingleNodeService implements NodeService {
 	}
 
 	@Override
+	public void removeHeartbeat(String serverAddress, int servicePort) {
+		node = node.toBuilder().setHeartbeat(0).build();
+	}
+
+	@Override
 	public void addNode(Node node) {
 		throw new UnsupportedOperationException("Add node is only available in cluster mode");
 	}
