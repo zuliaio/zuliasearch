@@ -33,7 +33,7 @@ public class ClientDocumentCache {
 	/**
 	 * Returns the last cached version of the result document or fetches if the result document is not in the cache
 	 * @param uniqueId - uniqueId to fetch
-	 * @return
+	 * @return FetchResult
 	 * @throws Exception
 	 */
 	public FetchResult fetch(String uniqueId, String indexName) throws Exception {
@@ -43,7 +43,7 @@ public class ClientDocumentCache {
 	/**
 	 * Returns the last cached version of the result document if timestamp matches, fetches if the document is not in the cache or if the timestamp do not match
 	 * @param scoredResult - scored result returned from a search
-	 * @return
+	 * @return FetchResult
 	 * @throws Exception
 	 */
 	public FetchResult fetch(ScoredResult scoredResult) throws Exception {
@@ -54,7 +54,7 @@ public class ClientDocumentCache {
 	 * Returns the last cached version of the result document if timestamp matches, fetches if the document is not in the cache or if the timestamp do not match
 	 * @param uniqueId - uniqueId to fetch
 	 * @param timestamp - timestamp to check against
-	 * @return
+	 * @return FetchResult
 	 * @throws Exception
 	 */
 	public FetchResult fetch(String uniqueId, String indexName, Long timestamp) throws Exception {
@@ -75,11 +75,17 @@ public class ClientDocumentCache {
 		return fr;
 	}
 
+	/**
+	 * Returns the last cached version of the result documents if timestamp matches in batch.
+	 * @param queryResult - query result with the documents to fetch.
+	 * @return BatchFetchResult
+	 * @throws Exception
+	 */
 	public BatchFetchResult fetch(QueryResult queryResult) throws Exception {
 		return fetch(queryResult.getResults());
 	}
 
-	public BatchFetchResult fetch(Collection<ScoredResult> scoredResults) throws Exception {
+	private BatchFetchResult fetch(Collection<ScoredResult> scoredResults) throws Exception {
 
 		List<FetchResult> resultsFromCache = new ArrayList<>();
 		List<FetchDocument> fetchDocumentList = new ArrayList<>();
@@ -112,17 +118,23 @@ public class ClientDocumentCache {
 
 	}
 
-	private boolean fetchNeeded(FetchResult fr, Long timestamp) {
+	/**
+	 *
+	 * @param fetchResult
+	 * @param timestamp
+	 * @return whether or not we need to fetch more
+	 */
+	private boolean fetchNeeded(FetchResult fetchResult, Long timestamp) {
 		boolean fetch = false;
 
-		if (fr == null) { //no result in cache - fetch regardless of passed time stamp
+		if (fetchResult == null) { //no result in cache - fetch regardless of passed time stamp
 			fetch = true;
 		}
 		else if (timestamp != null) { //asking for a specific version and found a version in cache
-			if (fr.getDocumentTimestamp() == null) { //no document in cache and asking for document with a timestamp
+			if (fetchResult.getDocumentTimestamp() == null) { //no document in cache and asking for document with a timestamp
 				fetch = true;
 			}
-			else if (Long.compare(fr.getDocumentTimestamp(), timestamp) != 0) { //outdated document in cache
+			else if (Long.compare(fetchResult.getDocumentTimestamp(), timestamp) != 0) { //outdated document in cache
 				fetch = true;
 			}
 		}

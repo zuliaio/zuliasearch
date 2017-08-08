@@ -3,7 +3,6 @@ package io.zulia.server.rest;
 import com.cedarsoftware.util.io.JsonWriter;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.mongodb.util.JSONSerializers;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import org.bson.Document;
@@ -114,7 +113,7 @@ public class TermsResource {
 					}
 
 					document.put("terms", termsDocs);
-					String docString = JSONSerializers.getStrict().serialize(document);
+					String docString = document.toJson();
 
 					if (pretty) {
 						docString = JsonWriter.formatJson(docString);
