@@ -1,7 +1,6 @@
 package io.zulia.server.rest;
 
 import com.cedarsoftware.util.io.JsonWriter;
-import com.mongodb.util.JSONSerializers;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import org.bson.Document;
@@ -39,7 +38,7 @@ public class IndexesResource {
 
 			Document mongoDocument = new org.bson.Document();
 			mongoDocument.put("indexes", getIndexesResponse.getIndexNameList());
-			String docString = JSONSerializers.getStrict().serialize(mongoDocument);
+			String docString = mongoDocument.toJson();
 
 			if (pretty) {
 				docString = JsonWriter.formatJson(docString);
