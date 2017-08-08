@@ -2,6 +2,8 @@ plugins {
 	id "com.google.protobuf" version "0.8.2"
 }
 
+apply from: '../maven.gradle'
+
 defaultTasks 'generateProto', 'build'
 
 description 'Zulia Common'
