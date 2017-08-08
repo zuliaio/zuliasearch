@@ -65,8 +65,8 @@ public class ZuliaD {
 		@Parameter(names = "--server", description = "Server to remove from cluster", required = true)
 		private String server;
 
-		@Parameter(names = "--hazelcastPort", description = "Hazelcast port of server to remove from cluster", required = true)
-		private int hazelcastPort;
+		@Parameter(names = "--servicePort", description = "Service port of server to remove from cluster", required = true)
+		private int servicePort;
 
 	}
 
@@ -149,8 +149,8 @@ public class ZuliaD {
 				}
 			}
 			else if ("addNode".equals(jCommander.getParsedCommand())) {
-				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setHazelcastPort(zuliaConfig.getHazelcastPort())
-						.setServicePort(zuliaConfig.getServicePort()).setRestPort(zuliaConfig.getRestPort()).build();
+				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
+						.setRestPort(zuliaConfig.getRestPort()).build();
 
 				LOG.info("Adding node: " + formatNode(node));
 
@@ -161,8 +161,8 @@ public class ZuliaD {
 			}
 			else if ("removeNode".equals(jCommander.getParsedCommand())) {
 
-				LOG.info("Removing node: " + removeNodeArgs.server + ":" + removeNodeArgs.hazelcastPort);
-				nodeService.removeNode(removeNodeArgs.server, removeNodeArgs.hazelcastPort);
+				LOG.info("Removing node: " + removeNodeArgs.server + ":" + removeNodeArgs.servicePort);
+				nodeService.removeNode(removeNodeArgs.server, removeNodeArgs.servicePort);
 
 				displayNodes(nodeService, "Registered Nodes:");
 			}

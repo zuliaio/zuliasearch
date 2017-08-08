@@ -10,9 +10,9 @@ enum MasterSlaveSettings {
 
 message Node {
     string serverAddress = 1;
-    uint32 hazelcastPort = 2;
-    uint32 servicePort = 3;
-    uint32 restPort = 4;
+    uint32 servicePort = 2;
+    uint32 restPort = 3;
+    int64 heartbeat = 4;
 }
 
 message ResultDocument {

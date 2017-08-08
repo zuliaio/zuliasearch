@@ -15,14 +15,22 @@ public interface NodeService {
 	/**
 	 *
 	 * @param serverAddress - sever address of node
-	 * @param hazelcastPort - hazelcast port of node
+	 * @param servicePort - service port of node
 	 * @return - full node data structure or null if doesn't exist
 	 */
-	Node getNode(String serverAddress, int hazelcastPort);
+	Node getNode(String serverAddress, int servicePort);
+
+	/**
+	 * Update heartbeat for cluster node
+	 * @param serverAddress - server address of node
+	 * @param servicePort - service port of node
+	 */
+	void updateHeartbeat(String serverAddress, int servicePort);
+
 
 	/**
 	 * Register a new node with a cluster
-	 * Keyed on server name and hazelcast port
+	 * Keyed on server name and service port
 	 *
 	 * @param node - new node to register with the cluster or node to update
 	 */
@@ -30,9 +38,9 @@ public interface NodeService {
 
 	/**
 	 * Remove a node from the cluster
-	 * @param serverAddress - sever address of node
-	 * @param hazelcastPort - hazelcast port of node
+	 * @param serverAddress - server address of node
+	 * @param servicePort - service port of node
 	 */
-	void removeNode(String serverAddress, int hazelcastPort);
+	void removeNode(String serverAddress, int servicePort);
 
 }

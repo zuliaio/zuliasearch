@@ -9,10 +9,10 @@ import java.util.List;
 
 public class SingleNodeService implements NodeService {
 
-	private final Node node;
+	private Node node;
 
 	public SingleNodeService(ZuliaConfig zuliaConfig) {
-		node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setHazelcastPort(zuliaConfig.getHazelcastPort())
+		node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress())
 				.setServicePort(zuliaConfig.getServicePort()).setRestPort(zuliaConfig.getRestPort()).build();
 	}
 
@@ -23,11 +23,16 @@ public class SingleNodeService implements NodeService {
 	}
 
 	@Override
-	public Node getNode(String serverAddress, int hazelcastPort) {
-		if (node.getServerAddress().equals(serverAddress) && node.getHazelcastPort() == hazelcastPort) {
+	public Node getNode(String serverAddress, int servicePort) {
+		if (node.getServerAddress().equals(serverAddress) && node.getServicePort() == servicePort) {
 			return node;
 		}
 		return null;
+	}
+
+	@Override
+	public void updateHeartbeat(String serverAddress, int servicePort) {
+		node = node.toBuilder().setHeartbeat(System.currentTimeMillis()).build();
 	}
 
 	@Override

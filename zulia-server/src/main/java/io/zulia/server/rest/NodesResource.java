@@ -48,8 +48,8 @@ public class NodesResource {
 			for (Node node : getNodesResponse.getNodeList()) {
 				Document memberObj = new Document();
 				memberObj.put("serverAddress", node.getServerAddress());
-				memberObj.put("hazelcastPort", node.getHazelcastPort());
 				memberObj.put("servicePort", node.getServicePort());
+				memberObj.put("restPort", node.getRestPort());
 
 				Document indexMappingObj = new Document();
 				for (IndexMapping indexMapping : getNodesResponse.getIndexMappingList()) {
