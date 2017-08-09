@@ -2,8 +2,13 @@ package io.zulia.server.connection;
 
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.*;
+import io.zulia.server.connection.handler.InternalClearHandler;
 import io.zulia.server.connection.handler.InternalDeleteHandler;
 import io.zulia.server.connection.handler.InternalFetchHandler;
+import io.zulia.server.connection.handler.InternalGetFieldNamesHandler;
+import io.zulia.server.connection.handler.InternalGetNumberOfDocsHandler;
+import io.zulia.server.connection.handler.InternalGetTermsHandler;
+import io.zulia.server.connection.handler.InternalOptimizeHandler;
 import io.zulia.server.connection.handler.InternalQueryHandler;
 import io.zulia.server.connection.handler.InternalStoreHandler;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -21,6 +26,11 @@ public class InternalClient {
 	private final InternalStoreHandler internalStoreHandler;
 	private final InternalDeleteHandler internalDeleteHandler;
 	private final InternalFetchHandler internalFetchHandler;
+	private final InternalGetNumberOfDocsHandler internalGetNumberOfDocsHandler;
+	private final InternalOptimizeHandler internalOptimizeHandler;
+	private final InternalGetFieldNamesHandler internalGetFieldNamesHandler;
+	private final InternalClearHandler internalClearHandler;
+	private final InternalGetTermsHandler internalGetTermsHandler;
 
 	public InternalClient() {
 
@@ -30,6 +40,11 @@ public class InternalClient {
 		internalStoreHandler = new InternalStoreHandler(this);
 		internalDeleteHandler = new InternalDeleteHandler(this);
 		internalFetchHandler = new InternalFetchHandler(this);
+		internalGetNumberOfDocsHandler = new InternalGetNumberOfDocsHandler(this);
+		internalOptimizeHandler = new InternalOptimizeHandler(this);
+		internalGetFieldNamesHandler = new InternalGetFieldNamesHandler(this);
+		internalClearHandler = new InternalClearHandler(this);
+		internalGetTermsHandler = new InternalGetTermsHandler(this);
 	}
 
 	public void close() {
@@ -136,33 +151,23 @@ public class InternalClient {
 	}
 
 	public GetNumberOfDocsResponse getNumberOfDocs(Node node, GetNumberOfDocsRequest request) throws Exception {
-
-		GetNumberOfDocsResponse response = rpcConnection.getService().getNumberOfDocs(request);
-
+		return internalGetNumberOfDocsHandler.handleRequest(node, request);
 	}
 
 	public OptimizeResponse optimize(Node node, OptimizeRequest request) throws Exception {
-
-		OptimizeResponse response = rpcConnection.getService().optimize(request);
-
+		return internalOptimizeHandler.handleRequest(node, request);
 	}
 
 	public GetFieldNamesResponse getFieldNames(Node node, GetFieldNamesRequest request) throws Exception {
-
-		GetFieldNamesResponse response = rpcConnection.getService().getFieldNames(request);
-
+		return internalGetFieldNamesHandler.handleRequest(node, request);
 	}
 
 	public ClearResponse clear(Node node, ClearRequest request) throws Exception {
-
-		ClearResponse response = rpcConnection.getService().clear(request);
-
+		return internalClearHandler.handleRequest(node, request);
 	}
 
 	public GetTermsResponseInternal getTerms(Node node, GetTermsRequest request) throws Exception {
-
-		GetTermsResponseInternal response = rpcConnection.getService().getTerms(request);
-
+		return internalGetTermsHandler.handleRequest(node, request);
 	}
 
 }
