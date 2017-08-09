@@ -1,6 +1,7 @@
 package io.zulia.server.index;
 
 import io.zulia.message.ZuliaBase.Node;
+import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoIndexService;
@@ -97,6 +98,11 @@ public class ZuliaIndexManager {
 	}
 
 	public GetTermsResponse getTerms(GetTermsRequest getTermsRequest) {
+		return null;
+	}
+
+	public InternalQueryResponse queryInternal(QueryRequest request) {
+
 		return null;
 	}
 }

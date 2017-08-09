@@ -1,9 +1,9 @@
-package io.zulia.server.connection.handler;
+package io.zulia.server.connection.client.handler;
 
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponseInternal;
-import io.zulia.server.connection.InternalClient;
-import io.zulia.server.connection.InternalRpcConnection;
+import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalGetTermsHandler extends InternalRequestHandler<GetTermsResponseInternal, GetTermsRequest> {
 	public InternalGetTermsHandler(InternalClient internalClient) {

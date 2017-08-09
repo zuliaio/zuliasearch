@@ -1,4 +1,4 @@
-package io.zulia.server.connection;
+package io.zulia.server.connection.client;
 
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;

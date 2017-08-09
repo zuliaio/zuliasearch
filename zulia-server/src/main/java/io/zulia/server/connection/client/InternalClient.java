@@ -1,16 +1,16 @@
-package io.zulia.server.connection;
+package io.zulia.server.connection.client;
 
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.*;
-import io.zulia.server.connection.handler.InternalClearHandler;
-import io.zulia.server.connection.handler.InternalDeleteHandler;
-import io.zulia.server.connection.handler.InternalFetchHandler;
-import io.zulia.server.connection.handler.InternalGetFieldNamesHandler;
-import io.zulia.server.connection.handler.InternalGetNumberOfDocsHandler;
-import io.zulia.server.connection.handler.InternalGetTermsHandler;
-import io.zulia.server.connection.handler.InternalOptimizeHandler;
-import io.zulia.server.connection.handler.InternalQueryHandler;
-import io.zulia.server.connection.handler.InternalStoreHandler;
+import io.zulia.server.connection.client.handler.InternalClearHandler;
+import io.zulia.server.connection.client.handler.InternalDeleteHandler;
+import io.zulia.server.connection.client.handler.InternalFetchHandler;
+import io.zulia.server.connection.client.handler.InternalGetFieldNamesHandler;
+import io.zulia.server.connection.client.handler.InternalGetNumberOfDocsHandler;
+import io.zulia.server.connection.client.handler.InternalGetTermsHandler;
+import io.zulia.server.connection.client.handler.InternalOptimizeHandler;
+import io.zulia.server.connection.client.handler.InternalQueryHandler;
+import io.zulia.server.connection.client.handler.InternalStoreHandler;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,13 +50,7 @@ public class InternalClient {
 	public void close() {
 
 		for (GenericObjectPool<InternalRpcConnection> pool : internalConnectionPoolMap.values()) {
-			try {
 				pool.close();
-			}
-			catch (Exception e) {
-				LOG.log(Level.SEVERE, e.getMessage(), e);
-			}
-
 		}
 	}
 

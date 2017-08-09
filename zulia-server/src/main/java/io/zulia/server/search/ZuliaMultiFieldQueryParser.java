@@ -21,14 +21,14 @@ import java.util.Map;
  * @author mdavis
  * Copied mostly from org.apache.lucene.queryparser.classic.MultiFieldQueryParser
  */
-public class LumongoMultiFieldQueryParser extends ZuliaQueryParser {
+public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 
 	protected Collection<String> fields;
 	protected Map<String, Float> boosts;
 	private float dismaxTie = 0;
 	private boolean dismax = false;
 
-	public LumongoMultiFieldQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
+	public ZuliaMultiFieldQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
 		super(analyzer, indexConfig);
 	}
 

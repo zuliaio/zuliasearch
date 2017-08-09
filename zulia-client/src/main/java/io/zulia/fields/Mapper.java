@@ -132,12 +132,12 @@ public class Mapper<T> {
 		ClientIndexConfig indexConfig = new ClientIndexConfig(defaultSearchField.getFieldName());
 
 		indexConfig.setRequestFactor(settings.requestFactor());
-		indexConfig.setMinSegmentRequest(settings.minSeqmentRequest());
+		indexConfig.setMinShardRequest(settings.minSeqmentRequest());
 		indexConfig.setIdleTimeWithoutCommit(settings.idleTimeWithoutCommit());
-		indexConfig.setSegmentCommitInterval(settings.segmentCommitInterval());
-		indexConfig.setSegmentTolerance(settings.segmentTolerance());
-		indexConfig.setSegmentQueryCacheSize(settings.segmentQueryCacheSize());
-		indexConfig.setSegmentQueryCacheMaxAmount(settings.segmentQueryCacheMaxAmount());
+		indexConfig.setShardCommitInterval(settings.shardCommitInterval());
+		indexConfig.setShardTolerance(settings.shardTolerance());
+		indexConfig.setShardQueryCacheSize(settings.shardQueryCacheSize());
+		indexConfig.setShardQueryCacheMaxAmount(settings.shardQueryCacheMaxAmount());
 
 		for (FieldConfig fieldConfig : fieldConfigMapper.getFieldConfigs()) {
 			indexConfig.addFieldConfig(fieldConfig);

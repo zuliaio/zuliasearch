@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
 public @interface Settings {
 	String indexName();
 
-	int numberOfSegments();
+	int numberOfShards();
 
 	boolean applyUncommitedDeletes() default true;
 
@@ -24,13 +24,13 @@ public @interface Settings {
 
 	int idleTimeWithoutCommit() default 30;
 
-	int segmentCommitInterval() default 3200;
+	int shardCommitInterval() default 3200;
 
-	double segmentTolerance() default 0.05;
+	double shardTolerance() default 0.05;
 
-	int segmentQueryCacheSize() default 512;
+	int shardQueryCacheSize() default 512;
 
-	int segmentQueryCacheMaxAmount() default 256;
+	int shardQueryCacheMaxAmount() default 256;
 
 	boolean storeDocumentInIndex() default true;
 

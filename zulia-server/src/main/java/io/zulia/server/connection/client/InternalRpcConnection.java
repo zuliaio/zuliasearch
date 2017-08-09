@@ -1,4 +1,4 @@
-package io.zulia.server.connection;
+package io.zulia.server.connection.client;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;

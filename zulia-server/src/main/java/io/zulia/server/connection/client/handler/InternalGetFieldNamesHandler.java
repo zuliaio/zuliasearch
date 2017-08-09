@@ -1,9 +1,9 @@
-package io.zulia.server.connection.handler;
+package io.zulia.server.connection.client.handler;
 
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
-import io.zulia.server.connection.InternalClient;
-import io.zulia.server.connection.InternalRpcConnection;
+import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalGetFieldNamesHandler extends InternalRequestHandler<GetFieldNamesResponse, GetFieldNamesRequest> {
 	public InternalGetFieldNamesHandler(InternalClient internalClient) {

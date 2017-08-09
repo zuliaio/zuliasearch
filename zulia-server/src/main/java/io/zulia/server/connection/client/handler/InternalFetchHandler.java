@@ -1,8 +1,8 @@
-package io.zulia.server.connection.handler;
+package io.zulia.server.connection.client.handler;
 
 import io.zulia.message.ZuliaServiceOuterClass;
-import io.zulia.server.connection.InternalClient;
-import io.zulia.server.connection.InternalRpcConnection;
+import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalFetchHandler extends InternalRequestHandler<ZuliaServiceOuterClass.FetchResponse, ZuliaServiceOuterClass.FetchRequest> {
 	public InternalFetchHandler(InternalClient internalClient) {

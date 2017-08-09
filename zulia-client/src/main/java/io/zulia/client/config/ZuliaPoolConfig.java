@@ -25,8 +25,8 @@ public class ZuliaPoolConfig {
 
 	public ZuliaPoolConfig() {
 		this.nodes = new ArrayList<>();
-		this.maxConnections = 16;
-		this.maxIdle = 16;
+		this.maxConnections = 8;
+		this.maxIdle = 2;
 		this.defaultRetries = DEFAULT_DEFAULT_RETRIES;
 		this.poolName = null;
 		this.compressedConnection = false;
@@ -131,6 +131,11 @@ public class ZuliaPoolConfig {
 	}
 
 	public ZuliaPoolConfig setMemberUpdateInterval(int memberUpdateInterval) {
+
+		if (memberUpdateInterval < 100) {
+			throw new IllegalArgumentException("Member update interval is less than the minimum of 100");
+		}
+
 		this.memberUpdateInterval = memberUpdateInterval;
 		return this;
 	}

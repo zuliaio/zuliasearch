@@ -1,9 +1,9 @@
-package io.zulia.server.connection.handler;
+package io.zulia.server.connection.client.handler;
 
 import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
 import io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
-import io.zulia.server.connection.InternalClient;
-import io.zulia.server.connection.InternalRpcConnection;
+import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalStoreHandler extends InternalRequestHandler<StoreResponse, StoreRequest> {
 	public InternalStoreHandler(InternalClient internalClient) {

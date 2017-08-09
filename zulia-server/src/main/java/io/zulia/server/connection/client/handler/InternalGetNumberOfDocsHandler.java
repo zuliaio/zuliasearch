@@ -1,7 +1,7 @@
-package io.zulia.server.connection.handler;
+package io.zulia.server.connection.client.handler;
 
-import io.zulia.server.connection.InternalClient;
-import io.zulia.server.connection.InternalRpcConnection;
+import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.client.InternalRpcConnection;
 
 import static io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;

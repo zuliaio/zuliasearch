@@ -1,11 +1,11 @@
-package io.zulia.server.connection.handler;
+package io.zulia.server.connection.client.handler;
 
 import io.grpc.Metadata;
 import io.grpc.StatusRuntimeException;
 import io.zulia.cache.MetaKeys;
 import io.zulia.message.ZuliaBase.Node;
-import io.zulia.server.connection.InternalClient;
-import io.zulia.server.connection.InternalRpcConnection;
+import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.client.InternalRpcConnection;
 
 public abstract class InternalRequestHandler<S, Q> {
 

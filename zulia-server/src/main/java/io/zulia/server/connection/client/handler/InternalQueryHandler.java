@@ -1,9 +1,9 @@
-package io.zulia.server.connection.handler;
+package io.zulia.server.connection.client.handler;
 
 import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
-import io.zulia.server.connection.InternalClient;
-import io.zulia.server.connection.InternalRpcConnection;
+import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalQueryHandler extends InternalRequestHandler<InternalQueryResponse, QueryRequest> {
 	public InternalQueryHandler(InternalClient internalClient) {

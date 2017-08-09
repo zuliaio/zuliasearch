@@ -1,4 +1,4 @@
-package io.zulia.server.connection;
+package io.zulia.server.connection.server;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
