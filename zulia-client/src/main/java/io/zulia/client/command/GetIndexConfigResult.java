@@ -1,6 +1,6 @@
 package io.zulia.client.command;
 
-import io.zulia.client.config.IndexConfig;
+import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.result.Result;
 
 /**
@@ -9,17 +9,17 @@ import io.zulia.client.result.Result;
  */
 public class GetIndexConfigResult extends Result {
 
-	private IndexConfig indexConfig;
+	private ClientIndexConfig indexConfig;
 
-	public GetIndexConfigResult(IndexConfig indexConfig) {
+	public GetIndexConfigResult(ClientIndexConfig indexConfig) {
 		this.indexConfig = indexConfig;
 	}
 
-	public IndexConfig getIndexConfig() {
+	public ClientIndexConfig getIndexConfig() {
 		return indexConfig;
 	}
 
-	public void setIndexConfig(IndexConfig indexConfig) {
+	public void setIndexConfig(ClientIndexConfig indexConfig) {
 		this.indexConfig = indexConfig;
 	}
 }

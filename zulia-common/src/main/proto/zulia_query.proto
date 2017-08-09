@@ -176,7 +176,7 @@ message FieldSimilarity {
 
 message IndexShardResponse {
     string indexName = 1;
-    ShardQueryResponse shardQueryResponse = 2;
+    repeated ShardQueryResponse shardQueryResponse = 2;
 }
 
 message ShardQueryResponse {

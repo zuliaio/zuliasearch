@@ -9,18 +9,18 @@ import static io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import static io.zulia.message.ZuliaIndex.FieldConfig;
 import static io.zulia.message.ZuliaIndex.IndexSettings;
 
-public class IndexConfig {
+public class ClientIndexConfig {
 
 	private String defaultSearchField;
 	private Double requestFactor;
-	private Integer minSegmentRequest;
-	private Integer numberOfSegments;
+	private Integer minShardRequest;
+	private Integer numberOfShards;
 	private String indexName;
 	private Integer idleTimeWithoutCommit;
-	private Integer segmentCommitInterval;
-	private Double segmentTolerance;
-	private Integer segmentQueryCacheSize;
-	private Integer segmentQueryCacheMaxAmount;
+	private Integer shardCommitInterval;
+	private Double shardTolerance;
+	private Integer shardQueryCacheSize;
+	private Integer shardQueryCacheMaxAmount;
 	private Boolean storeDocumentInMongo;
 	private Boolean storeDocumentInIndex;
 	private Boolean storeIndexOnDisk;
@@ -28,11 +28,11 @@ public class IndexConfig {
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
 
-	public IndexConfig() {
+	public ClientIndexConfig() {
 		this(null);
 	}
 
-	public IndexConfig(String defaultSearchField) {
+	public ClientIndexConfig(String defaultSearchField) {
 		this.defaultSearchField = defaultSearchField;
 		this.fieldMap = new TreeMap<>();
 		this.analyzerSettingsMap = new TreeMap<>();
@@ -42,7 +42,7 @@ public class IndexConfig {
 		return defaultSearchField;
 	}
 
-	public IndexConfig setDefaultSearchField(String defaultSearchField) {
+	public ClientIndexConfig setDefaultSearchField(String defaultSearchField) {
 		this.defaultSearchField = defaultSearchField;
 		return this;
 	}
@@ -51,26 +51,26 @@ public class IndexConfig {
 		return requestFactor;
 	}
 
-	public IndexConfig setRequestFactor(double requestFactor) {
+	public ClientIndexConfig setRequestFactor(double requestFactor) {
 		this.requestFactor = requestFactor;
 		return this;
 	}
 
-	public int getMinSegmentRequest() {
-		return minSegmentRequest;
+	public int getMinShardRequest() {
+		return minShardRequest;
 	}
 
-	public IndexConfig setMinSegmentRequest(int minSegmentRequest) {
-		this.minSegmentRequest = minSegmentRequest;
+	public ClientIndexConfig setMinShardRequest(int minShardRequest) {
+		this.minShardRequest = minShardRequest;
 		return this;
 	}
 
-	public int getNumberOfSegments() {
-		return numberOfSegments;
+	public int getNumberOfShards() {
+		return numberOfShards;
 	}
 
-	public IndexConfig setNumberOfSegments(int numberOfSegments) {
-		this.numberOfSegments = numberOfSegments;
+	public ClientIndexConfig setNumberOfShards(int numberOfShards) {
+		this.numberOfShards = numberOfShards;
 		return this;
 	}
 
@@ -78,7 +78,7 @@ public class IndexConfig {
 		return indexName;
 	}
 
-	public IndexConfig setIndexName(String indexName) {
+	public ClientIndexConfig setIndexName(String indexName) {
 		this.indexName = indexName;
 		return this;
 	}
@@ -87,43 +87,43 @@ public class IndexConfig {
 		return idleTimeWithoutCommit;
 	}
 
-	public IndexConfig setIdleTimeWithoutCommit(int idleTimeWithoutCommit) {
+	public ClientIndexConfig setIdleTimeWithoutCommit(int idleTimeWithoutCommit) {
 		this.idleTimeWithoutCommit = idleTimeWithoutCommit;
 		return this;
 	}
 
-	public int getSegmentCommitInterval() {
-		return segmentCommitInterval;
+	public int getShardCommitInterval() {
+		return shardCommitInterval;
 	}
 
-	public IndexConfig setSegmentCommitInterval(int segmentCommitInterval) {
-		this.segmentCommitInterval = segmentCommitInterval;
+	public ClientIndexConfig setShardCommitInterval(int shardCommitInterval) {
+		this.shardCommitInterval = shardCommitInterval;
 		return this;
 	}
 
-	public double getSegmentTolerance() {
-		return segmentTolerance;
+	public double getShardTolerance() {
+		return shardTolerance;
 	}
 
-	public IndexConfig setSegmentTolerance(double segmentTolerance) {
-		this.segmentTolerance = segmentTolerance;
+	public ClientIndexConfig setShardTolerance(double shardTolerance) {
+		this.shardTolerance = shardTolerance;
 		return this;
 	}
 
-	public Integer getSegmentQueryCacheSize() {
-		return segmentQueryCacheSize;
+	public Integer getShardQueryCacheSize() {
+		return shardQueryCacheSize;
 	}
 
-	public void setSegmentQueryCacheSize(Integer segmentQueryCacheSize) {
-		this.segmentQueryCacheSize = segmentQueryCacheSize;
+	public void setShardQueryCacheSize(Integer shardQueryCacheSize) {
+		this.shardQueryCacheSize = shardQueryCacheSize;
 	}
 
-	public Integer getSegmentQueryCacheMaxAmount() {
-		return segmentQueryCacheMaxAmount;
+	public Integer getShardQueryCacheMaxAmount() {
+		return shardQueryCacheMaxAmount;
 	}
 
-	public void setSegmentQueryCacheMaxAmount(Integer segmentQueryCacheMaxAmount) {
-		this.segmentQueryCacheMaxAmount = segmentQueryCacheMaxAmount;
+	public void setShardQueryCacheMaxAmount(Integer shardQueryCacheMaxAmount) {
+		this.shardQueryCacheMaxAmount = shardQueryCacheMaxAmount;
 	}
 
 	public void addFieldConfig(FieldConfigBuilder FieldConfigBuilder) {
@@ -195,18 +195,18 @@ public class IndexConfig {
 		if (requestFactor != null) {
 			isb.setRequestFactor(requestFactor);
 		}
-		if (minSegmentRequest != null) {
-			isb.setMinSegmentRequest(minSegmentRequest);
+		if (minShardRequest != null) {
+			isb.setMinShardRequest(minShardRequest);
 		}
 
-		if (segmentCommitInterval != null) {
-			isb.setSegmentCommitInterval(segmentCommitInterval);
+		if (shardCommitInterval != null) {
+			isb.setShardCommitInterval(shardCommitInterval);
 		}
 		if (idleTimeWithoutCommit != null) {
 			isb.setIdleTimeWithoutCommit(idleTimeWithoutCommit);
 		}
-		if (segmentTolerance != null) {
-			isb.setSegmentTolerance(segmentTolerance);
+		if (shardTolerance != null) {
+			isb.setShardTolerance(shardTolerance);
 		}
 
 		for (String fieldName : fieldMap.keySet()) {
@@ -224,10 +224,10 @@ public class IndexConfig {
 	public void configure(IndexSettings indexSettings) {
 		this.defaultSearchField = indexSettings.getDefaultSearchField();
 		this.requestFactor = indexSettings.getRequestFactor();
-		this.minSegmentRequest = indexSettings.getMinSegmentRequest();
-		this.segmentCommitInterval = indexSettings.getSegmentCommitInterval();
+		this.minShardRequest = indexSettings.getMinShardRequest();
+		this.shardCommitInterval = indexSettings.getShardCommitInterval();
 		this.idleTimeWithoutCommit = indexSettings.getIdleTimeWithoutCommit();
-		this.segmentTolerance = indexSettings.getSegmentTolerance();
+		this.shardTolerance = indexSettings.getShardTolerance();
 		this.fieldMap = new TreeMap<>();
 
 		for (FieldConfig fc : indexSettings.getFieldConfigList()) {
@@ -236,8 +236,8 @@ public class IndexConfig {
 
 	}
 
-	public static IndexConfig fromIndexSettings(IndexSettings indexSettings) {
-		IndexConfig ic = new IndexConfig();
+	public static ClientIndexConfig fromIndexSettings(IndexSettings indexSettings) {
+		ClientIndexConfig ic = new ClientIndexConfig();
 		ic.configure(indexSettings);
 		return ic;
 	}

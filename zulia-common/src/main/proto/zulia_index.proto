@@ -30,14 +30,14 @@ message IndexSettings {
     repeated FieldConfig fieldConfig = 8;
 
     double requestFactor = 9;
-    uint32 minSegmentRequest = 10;
-    double segmentTolerance = 11;
+    uint32 minShardRequest = 10;
+    double shardTolerance = 11;
 
     uint32 shardQueryCacheSize = 12;
     uint32 shardQueryCacheMaxAmount = 13;
 
     uint32 idleTimeWithoutCommit = 14;
-    uint32 segmentCommitInterval = 15;
+    uint32 shardCommitInterval = 15;
 
 }
 

@@ -5,6 +5,5 @@ description 'Zulia Client'
 
 dependencies {	
     compile project(':zulia-common')
-    compile 'commons-pool:commons-pool:1.6'
 }
 

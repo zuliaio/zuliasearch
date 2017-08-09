@@ -2,7 +2,7 @@ package io.zulia.fields;
 
 import io.zulia.client.command.CreateIndex;
 import io.zulia.client.command.Store;
-import io.zulia.client.config.IndexConfig;
+import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.result.BatchFetchResult;
 import io.zulia.client.result.FetchResult;
 import io.zulia.doc.ResultDocBuilder;
@@ -129,7 +129,7 @@ public class Mapper<T> {
 			throw new RuntimeException("No Settings annotation for class <" + clazz.getSimpleName() + ">");
 		}
 
-		IndexConfig indexConfig = new IndexConfig(defaultSearchField.getFieldName());
+		ClientIndexConfig indexConfig = new ClientIndexConfig(defaultSearchField.getFieldName());
 
 		indexConfig.setRequestFactor(settings.requestFactor());
 		indexConfig.setMinSegmentRequest(settings.minSeqmentRequest());

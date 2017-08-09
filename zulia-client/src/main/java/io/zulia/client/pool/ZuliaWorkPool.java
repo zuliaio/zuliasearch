@@ -2,7 +2,7 @@ package io.zulia.client.pool;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import io.zulia.client.command.*;
-import io.zulia.client.config.IndexConfig;
+import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.result.*;
 
@@ -32,7 +32,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(createIndex);
 	}
 
-	public CreateIndexResult createIndex(String indexName, int segments, IndexConfig indexConfig) throws Exception {
+	public CreateIndexResult createIndex(String indexName, int segments, ClientIndexConfig indexConfig) throws Exception {
 		return execute(new CreateIndex(indexConfig));
 	}
 
@@ -40,7 +40,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(createIndex);
 	}
 
-	public ListenableFuture<CreateIndexResult> createIndexAsync(String indexName, int segments, IndexConfig indexConfig) throws Exception {
+	public ListenableFuture<CreateIndexResult> createIndexAsync(String indexName, int segments, ClientIndexConfig indexConfig) throws Exception {
 		return executeAsync(new CreateIndex(indexConfig));
 	}
 

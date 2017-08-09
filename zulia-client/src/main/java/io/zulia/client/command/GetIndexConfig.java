@@ -1,7 +1,7 @@
 package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
-import io.zulia.client.config.IndexConfig;
+import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsRequest;
 
@@ -32,7 +32,7 @@ public class GetIndexConfig extends SimpleCommand<GetIndexSettingsRequest, GetIn
 
 		GetIndexSettingsResponse getIndexConfigResponse = service.getIndexSettings(getRequest());
 
-		IndexConfig indexConfig = new IndexConfig();
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.configure(getIndexConfigResponse.getIndexSettings());
 
 		return new GetIndexConfigResult(indexConfig);
