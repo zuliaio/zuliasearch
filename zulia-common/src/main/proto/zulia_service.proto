@@ -9,7 +9,7 @@ option java_package = "io.zulia.message";
 
 service ZuliaService {
     rpc Query (QueryRequest) returns (QueryResponse);
-    rpc QueryInternal (QueryRequest) returns (InternalQueryResponse);
+    rpc InternalQuery (QueryRequest) returns (InternalQueryResponse);
     rpc Store (StoreRequest) returns (StoreResponse);
     rpc Delete (DeleteRequest) returns (DeleteResponse);
     rpc BatchDelete (BatchDeleteRequest) returns (BatchDeleteResponse);
@@ -19,15 +19,15 @@ service ZuliaService {
     rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
     rpc GetIndexes (GetIndexesRequest) returns (GetIndexesResponse);
     rpc GetNumberOfDocs (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
-    rpc GetNumberOfDocsInternal (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
+    rpc InternalGetNumberOfDocs (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
     rpc Clear (ClearRequest) returns (ClearResponse);
-    rpc ClearInternal (ClearRequest) returns (ClearResponse);
+    rpc InternalClear (ClearRequest) returns (ClearResponse);
     rpc Optimize (OptimizeRequest) returns (OptimizeResponse);
-    rpc OptimizeInternal (OptimizeRequest) returns (OptimizeResponse);
+    rpc InternalOptimize (OptimizeRequest) returns (OptimizeResponse);
     rpc GetFieldNames (GetFieldNamesRequest) returns (GetFieldNamesResponse);
-    rpc GetFieldNamesInternal (GetFieldNamesRequest) returns (GetFieldNamesResponse);
+    rpc InternalGetFieldNames (GetFieldNamesRequest) returns (GetFieldNamesResponse);
     rpc GetTerms (GetTermsRequest) returns (GetTermsResponse);
-    rpc GetTermsInternal (GetTermsRequest) returns (GetTermsResponseInternal);
+    rpc InternalGetTerms (GetTermsRequest) returns (InternalGetTermsResponse);
     rpc GetNodes (GetNodesRequest) returns (GetNodesResponse);
     rpc GetIndexSettings (GetIndexSettingsRequest) returns (GetIndexSettingsResponse);
 }
@@ -203,7 +203,7 @@ message GetTermsResponse {
     Term lastTerm = 2;
 }
 
-message GetTermsResponseInternal {
+message InternalGetTermsResponse {
     repeated GetTermsResponse getTermsResponse = 1;
 }
 

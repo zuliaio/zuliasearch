@@ -1,7 +1,7 @@
 package io.zulia.server.index;
 
 import io.zulia.message.ZuliaBase.Node;
-import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
+import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoIndexService;
@@ -14,19 +14,6 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.logging.Logger;
-
-import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
-import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
-import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
-import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
-import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesRequest;
-import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
-import static io.zulia.message.ZuliaServiceOuterClass.GetNodesRequest;
-import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
-import static io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
-import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
-import static io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
-import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 
 public class ZuliaIndexManager {
 
@@ -64,19 +51,11 @@ public class ZuliaIndexManager {
 
 	}
 
-	public QueryResponse query(QueryRequest queryRequest) {
+	public GetIndexesResponse getIndexes(GetIndexesRequest request) {
 		return null;
 	}
 
-	public GetIndexesResponse getIndexes(GetIndexesRequest getIndexesRequest) {
-		return null;
-	}
-
-	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest getFieldNamesRequest) {
-		return null;
-	}
-
-	public FetchResponse fetch(FetchRequest fetchRequest) {
+	public FetchResponse fetch(FetchRequest request) {
 		return null;
 	}
 
@@ -93,16 +72,84 @@ public class ZuliaIndexManager {
 
 	}
 
-	public GetNodesResponse getNodes(GetNodesRequest getNodesRequest) {
+	public GetNodesResponse getNodes(GetNodesRequest request) {
 		return null;
 	}
 
-	public GetTermsResponse getTerms(GetTermsRequest getTermsRequest) {
+	public InternalQueryResponse internalQuery(QueryRequest request) {
+
 		return null;
 	}
 
-	public InternalQueryResponse queryInternal(QueryRequest request) {
+	public QueryResponse query(QueryRequest request) {
+		return null;
+	}
 
+	public StoreResponse store(StoreRequest request) {
+		return null;
+	}
+
+	public DeleteResponse delete(DeleteRequest request) {
+		return null;
+	}
+
+	public BatchDeleteResponse batchDelete(BatchDeleteRequest request) {
+		return null;
+	}
+
+	public BatchFetchResponse batchFetch(BatchFetchRequest request) {
+		return null;
+	}
+
+	public CreateIndexResponse createIndex(CreateIndexRequest request) {
+		return null;
+	}
+
+	public DeleteIndexResponse deleteIndex(DeleteIndexRequest request) {
+		return null;
+	}
+
+	public GetNumberOfDocsResponse getNumberOfDocs(GetNumberOfDocsRequest request) {
+		return null;
+	}
+
+	public GetNumberOfDocsResponse getNumberOfDocsInternal(GetNumberOfDocsRequest request) {
+		return null;
+	}
+
+	public ClearResponse clear(ClearRequest request) {
+		return null;
+	}
+
+	public ClearResponse internalClear(ClearRequest request) {
+		return null;
+	}
+
+	public OptimizeResponse optimize(OptimizeRequest request) {
+		return null;
+	}
+
+	public OptimizeResponse internalOptimize(OptimizeRequest request) {
+		return null;
+	}
+
+	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) {
+		return null;
+	}
+
+	public GetFieldNamesResponse internalGetFieldNames(GetFieldNamesRequest request) {
+		return null;
+	}
+
+	public GetTermsResponse getTerms(GetTermsRequest request) {
+		return null;
+	}
+
+	public InternalGetTermsResponse internalGetTerms(GetTermsRequest request) {
+		return null;
+	}
+
+	public GetIndexSettingsResponse getIndexSettings(GetIndexSettingsRequest request) {
 		return null;
 	}
 }
