@@ -16,6 +16,14 @@ public interface IndexService {
 	List<IndexSettings> getIndexes() throws Exception;
 
 	/**
+	 *
+	 * @param indexName - the index name to return
+	 * @return the index settings for an index
+	 * @throws Exception
+	 */
+	IndexSettings getIndex(String indexName) throws Exception;
+
+	/**
 	 * create or update an index
 	 * shards cannot be changed after an index is created
 	 * time fields will be handled by the config storage

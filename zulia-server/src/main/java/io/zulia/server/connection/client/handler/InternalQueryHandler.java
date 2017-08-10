@@ -12,6 +12,6 @@ public class InternalQueryHandler extends InternalRequestHandler<InternalQueryRe
 
 	@Override
 	protected InternalQueryResponse getResponse(QueryRequest queryRequest, InternalRpcConnection rpcConnection) {
-		return rpcConnection.getService().queryInternal(queryRequest);
+		return rpcConnection.getService().internalQuery(queryRequest);
 	}
 }

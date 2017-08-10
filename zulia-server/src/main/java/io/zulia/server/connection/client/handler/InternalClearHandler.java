@@ -12,7 +12,7 @@ public class InternalClearHandler extends InternalRequestHandler<ClearResponse, 
 
 	@Override
 	protected ClearResponse getResponse(ClearRequest clearRequest, InternalRpcConnection rpcConnection) {
-		return rpcConnection.getService().clearInternal(clearRequest);
+		return rpcConnection.getService().internalClear(clearRequest);
 	}
 
 }

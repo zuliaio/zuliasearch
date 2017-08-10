@@ -146,10 +146,10 @@ message AnalysisRequest {
     TermSort termSort = 6;
     uint32 minWordLen = 7;
     uint32 maxWordLen = 8;
-    float minSegFreqPerc = 9;
-    float maxSegFreqPerc = 10;
-    uint32 minSegFreq = 11;
-    uint32 maxSegFreq = 12;
+    float minShardFreqPerc = 9;
+    float maxShardFreqPerc = 10;
+    uint32 minShardFreq = 11;
+    uint32 maxShardFreq = 12;
     string analyzerOverride = 13;
     SummaryType summaryType = 14;
 }

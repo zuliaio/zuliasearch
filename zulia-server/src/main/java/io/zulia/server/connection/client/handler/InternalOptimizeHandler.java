@@ -12,7 +12,7 @@ public class InternalOptimizeHandler extends InternalRequestHandler<OptimizeResp
 
 	@Override
 	protected OptimizeResponse getResponse(OptimizeRequest optimizeRequest, InternalRpcConnection rpcConnection) {
-		return rpcConnection.getService().optimizeInternal(optimizeRequest);
+		return rpcConnection.getService().internalOptimize(optimizeRequest);
 	}
 
 }

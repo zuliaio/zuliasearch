@@ -357,14 +357,14 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 		return (addCountRequest(label, maxFacets, null));
 	}
 
-	public Query addCountRequest(String label, Integer maxFacets, Integer segmentFacets) {
+	public Query addCountRequest(String label, Integer maxFacets, Integer shardFacets) {
 
 		CountRequest.Builder countRequest = CountRequest.newBuilder().setFacetField(Facet.newBuilder().setLabel(label).build());
 		if (maxFacets != null) {
 			countRequest.setMaxFacets(maxFacets);
 		}
-		if (segmentFacets != null) {
-			countRequest.setShardFacets(segmentFacets);
+		if (shardFacets != null) {
+			countRequest.setShardFacets(shardFacets);
 		}
 		if (countRequests.isEmpty()) {
 			this.countRequests = new ArrayList<>();

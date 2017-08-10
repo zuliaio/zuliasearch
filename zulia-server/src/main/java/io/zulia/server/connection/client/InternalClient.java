@@ -160,7 +160,7 @@ public class InternalClient {
 		return internalClearHandler.handleRequest(node, request);
 	}
 
-	public GetTermsResponseInternal getTerms(Node node, GetTermsRequest request) throws Exception {
+	public InternalGetTermsResponse getTerms(Node node, GetTermsRequest request) throws Exception {
 		return internalGetTermsHandler.handleRequest(node, request);
 	}
 

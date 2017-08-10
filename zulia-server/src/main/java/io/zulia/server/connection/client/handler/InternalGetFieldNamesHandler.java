@@ -12,7 +12,7 @@ public class InternalGetFieldNamesHandler extends InternalRequestHandler<GetFiel
 
 	@Override
 	protected GetFieldNamesResponse getResponse(GetFieldNamesRequest getFieldNamesRequest, InternalRpcConnection rpcConnection) {
-		return rpcConnection.getService().getFieldNamesInternal(getFieldNamesRequest);
+		return rpcConnection.getService().internalGetFieldNames(getFieldNamesRequest);
 	}
 
 }
