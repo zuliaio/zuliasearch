@@ -91,21 +91,14 @@ import java.util.logging.Logger;
 
 public class ZuliaIndex implements IndexShardInterface {
 
-	public static final String CONFIG_SUFFIX = "_config";
-
-	private static final String STORAGE_DB_SUFFIX = "_rs";
-
-	private static final String RESULT_STORAGE_COLLECTION = "resultStorage";
-
 	private final static Logger LOG = Logger.getLogger(ZuliaIndex.class.getSimpleName());
-	private static final String SETTINGS_ID = "settings";
 
 	private final ServerIndexConfig indexConfig;
 
 	private final GenericObjectPool<ZuliaMultiFieldQueryParser> parsers;
 	private final ConcurrentHashMap<Integer, ZuliaShard> shardMap;
 	private final ReadWriteLock indexLock;
-	private final ExecutorService segmentPool;
+	private final ExecutorService shardPool;
 	private final int numberOfShards;
 	private final String indexName;
 
@@ -118,12 +111,9 @@ public class ZuliaIndex implements IndexShardInterface {
 	private ZuliaAnalyzerFactory analyzerFactory;
 	private final IndexService indexService;
 
-	private LockHandler documentLockHandler;
 	private FacetsConfig facetsConfig;
 
 	public ZuliaIndex(ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService) throws Exception {
-
-		this.documentLockHandler = new LockHandler();
 
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
@@ -132,7 +122,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		this.documentStorage = documentStorage;
 
-		this.segmentPool = Executors.newCachedThreadPool(new ZuliaThreadFactory(indexName + "-shards"));
+		this.shardPool = Executors.newCachedThreadPool(new ZuliaThreadFactory(indexName + "-shards"));
 
 		this.parsers = new GenericObjectPool<>(new BasePooledObjectFactory<ZuliaMultiFieldQueryParser>() {
 
@@ -208,12 +198,12 @@ public class ZuliaIndex implements IndexShardInterface {
 		return new BoostQuery(newBq, boost);
 	}
 
-	public void updateIndexSettings(IndexSettings request) {
+	public void updateIndexSettings(IndexSettings request) throws Exception {
 		indexLock.writeLock().lock();
 		try {
 
+			indexService.createIndex(indexConfig.getIndexSettings());
 			indexConfig.configure(request);
-			storeIndexSettings();
 		}
 		finally {
 			indexLock.writeLock().unlock();
@@ -227,18 +217,18 @@ public class ZuliaIndex implements IndexShardInterface {
 	private void doCommit(boolean force) {
 		indexLock.readLock().lock();
 		try {
-			Collection<ZuliaShard> segments = shardMap.values();
-			for (ZuliaShard segment : segments) {
+			Collection<ZuliaShard> shards = shardMap.values();
+			for (ZuliaShard shard : shards) {
 				try {
 					if (force) {
-						segment.forceCommit();
+						shard.forceCommit();
 					}
 					else {
-						segment.doCommit();
+						shard.doCommit();
 					}
 				}
 				catch (Exception e) {
-					LOG.log(Level.SEVERE, "Failed to flush shard <" + segment.getShardNumber() + "> for index <" + indexName + ">", e);
+					LOG.log(Level.SEVERE, "Failed to flush shard <" + shard.getShardNumber() + "> for index <" + indexName + ">", e);
 				}
 			}
 		}
@@ -246,77 +236,6 @@ public class ZuliaIndex implements IndexShardInterface {
 			indexLock.readLock().unlock();
 		}
 
-	}
-
-	public void updateSegmentMap(Map<Node, Set<Integer>> newMemberToSegmentMap) {
-		indexLock.writeLock().lock();
-		try {
-			LOG.info("Updating segments map");
-
-			this.nodeToShardMap = newMemberToSegmentMap;
-			this.shardToNodeMap = new HashMap<>();
-
-			for (Node m : nodeToShardMap.keySet()) {
-				for (int i : nodeToShardMap.get(m)) {
-					shardToNodeMap.put(i, m);
-				}
-			}
-
-			Member self = hazelcastManager.getSelf();
-
-			Set<Integer> newSegments = nodeToShardMap.get(self);
-
-			LOG.info("Settings segments for this node <" + self + "> to <" + newSegments + ">");
-
-			shardMap.keySet().stream().filter(segmentNumber -> !newSegments.contains(segmentNumber)).forEach(segmentNumber -> {
-				try {
-					unloadSegment(segmentNumber, false);
-				}
-				catch (Exception e) {
-					LOG.error("Error unloading segment <" + segmentNumber + "> for index <" + indexName + ">");
-					LOG.error(e.getClass().getSimpleName() + ": ", e);
-				}
-			});
-
-			newSegments.stream().filter(segmentNumber -> !shardMap.containsKey(segmentNumber)).forEach(segmentNumber -> {
-				try {
-					loadSegment(segmentNumber);
-				}
-				catch (Exception e) {
-					LOG.error("Error loading segment <" + segmentNumber + "> for index <" + indexName + ">");
-					LOG.error(e.getClass().getSimpleName() + ": ", e);
-				}
-			});
-
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
-
-	}
-
-	public void loadAllSegments() throws Exception {
-		indexLock.writeLock().lock();
-		try {
-			Member self = hazelcastManager.getSelf();
-			this.nodeToShardMap = new HashMap<>();
-			this.nodeToShardMap.put(self, new HashSet<>());
-			for (int segmentNumber = 0; segmentNumber < numberOfShards; segmentNumber++) {
-				loadSegment(segmentNumber);
-				this.nodeToShardMap.get(self).add(segmentNumber);
-			}
-
-			this.shardToNodeMap = new HashMap<>();
-
-			for (Member m : nodeToShardMap.keySet()) {
-				for (int i : nodeToShardMap.get(m)) {
-					shardToNodeMap.put(i, m);
-				}
-			}
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
 	}
 
 	public void unload(boolean terminate) throws IOException {
@@ -331,11 +250,11 @@ public class ZuliaIndex implements IndexShardInterface {
 				doCommit(true);
 			}
 
-			LOG.info("Shutting segment pool for <" + indexName + ">");
-			segmentPool.shutdownNow();
+			LOG.info("Shutting shard pool for <" + indexName + ">");
+			shardPool.shutdownNow();
 
-			for (Integer segmentNumber : shardMap.keySet()) {
-				unloadSegment(segmentNumber, terminate);
+			for (Integer shardNumber : shardMap.keySet()) {
+				unloadShard(shardNumber, terminate);
 			}
 		}
 		finally {
@@ -343,16 +262,10 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	private void loadSegment(int segmentNumber) throws Exception {
+	private void loadShard(int shardNumber) throws Exception {
 		indexLock.writeLock().lock();
 		try {
-			if (!shardMap.containsKey(segmentNumber)) {
-				String lockName = indexName + "-" + segmentNumber;
-				ILock hzLock = hazelcastManager.getLock(lockName);
-				hazelLockMap.put(segmentNumber, hzLock);
-				LOG.info("Waiting for lock for index <" + indexName + "> segment <" + segmentNumber + ">");
-				hzLock.lock();
-				LOG.info("Obtained lock for index <" + indexName + "> segment <" + segmentNumber + ">");
+			if (!shardMap.containsKey(shardNumber)) {
 
 				//Just for clarity
 				IndexShardInterface indexShardInterface = this;
@@ -361,11 +274,11 @@ public class ZuliaIndex implements IndexShardInterface {
 				FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
 				facetsConfig = new FacetsConfig();
 
-				ZuliaShard s = new ZuliaShard(segmentNumber, indexShardInterface, indexConfig, facetsConfig);
-				shardMap.put(segmentNumber, s);
+				ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, facetsConfig);
+				shardMap.put(shardNumber, s);
 
-				LOG.info("Loaded segment <" + segmentNumber + "> for index <" + indexName + ">");
-				LOG.info("Current segments <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
+				LOG.info("Loaded shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info("Current shards <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
 
 			}
 		}
@@ -374,9 +287,9 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	public IndexWriter getIndexWriter(int segmentNumber) throws Exception {
+	public IndexWriter getIndexWriter(int shardNumber) throws Exception {
 
-		Directory d = MMapDirectory.open(getPathForIndex(segmentNumber));
+		Directory d = MMapDirectory.open(getPathForIndex(shardNumber));
 
 		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
 
@@ -397,7 +310,7 @@ public class ZuliaIndex implements IndexShardInterface {
 				// called by onInit above):
 				int size = commits.size();
 				for (int i = 0; i < size - 1; i++) {
-					//LOG.info("Deleting old commit for segment <" + segmentNumber + "> on index <" + indexName);
+					//LOG.info("Deleting old commit for shard <" + shardNumber + "> on index <" + indexName);
 					commits.get(i).delete();
 				}
 			}
@@ -414,17 +327,17 @@ public class ZuliaIndex implements IndexShardInterface {
 		return new IndexWriter(nrtCachingDirectory, config);
 	}
 
-	private Path getPathForIndex(int segmentNumber) {
-		return Paths.get("indexes", indexName + "_" + segmentNumber + "_idx");
+	private Path getPathForIndex(int shardNumber) {
+		return Paths.get("indexes", indexName + "_" + shardNumber + "_idx");
 	}
 
-	private Path getPathForFacetsIndex(int segmentNumber) {
-		return Paths.get("indexes", indexName + "_" + segmentNumber + "_facets");
+	private Path getPathForFacetsIndex(int shardNumber) {
+		return Paths.get("indexes", indexName + "_" + shardNumber + "_facets");
 	}
 
-	public DirectoryTaxonomyWriter getTaxoWriter(int segmentNumber) throws IOException {
+	public DirectoryTaxonomyWriter getTaxoWriter(int shardNumber) throws IOException {
 
-		Directory d = MMapDirectory.open(getPathForFacetsIndex(segmentNumber));
+		Directory d = MMapDirectory.open(getPathForFacetsIndex(shardNumber));
 
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 2, 10);
 
@@ -435,122 +348,20 @@ public class ZuliaIndex implements IndexShardInterface {
 		return analyzerFactory.getPerFieldAnalyzer();
 	}
 
-	public void unloadSegment(int segmentNumber, boolean terminate) throws IOException {
+	public void unloadShard(int shardNumber, boolean terminate) throws IOException {
 		indexLock.writeLock().lock();
 		try {
-			ILock hzLock = hazelLockMap.get(segmentNumber);
-			try {
-				if (shardMap.containsKey(segmentNumber)) {
-					ZuliaShard s = shardMap.remove(segmentNumber);
-					if (s != null) {
-						LOG.info("Closing segment <" + segmentNumber + "> for index <" + indexName + ">");
-						s.close(terminate);
-						LOG.info("Removed segment <" + segmentNumber + "> for index <" + indexName + ">");
-						LOG.info("Current segments <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
-					}
-				}
 
-			}
-			finally {
-				try {
-					hzLock.forceUnlock();
-					LOG.info("Unlocked lock for index <" + indexName + "> segment <" + segmentNumber + ">");
-				}
-				catch (Exception e) {
-					LOG.error("Failed to unlock <" + segmentNumber + ">: ", e);
+			if (shardMap.containsKey(shardNumber)) {
+				ZuliaShard s = shardMap.remove(shardNumber);
+				if (s != null) {
+					LOG.info("Closing shard <" + shardNumber + "> for index <" + indexName + ">");
+					s.close(terminate);
+					LOG.info("Removed shard <" + shardNumber + "> for index <" + indexName + ">");
+					LOG.info("Current shards <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
 				}
 			}
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
 
-	}
-
-	/**
-	 * called on older cluster node when a new member is added
-	 *
-	 * @param currentNodes
-	 *            - current cluster members
-	 * @param nodeAdded
-	 *            - member that is being added
-	 */
-	public void handleServerAdded(Set<Node> currentNodes, Node nodeAdded) {
-		indexLock.writeLock().lock();
-		try {
-			forceBalance(currentNodes);
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
-
-	}
-
-	public void forceBalance(Set<Node> currentNodes) {
-		indexLock.writeLock().lock();
-		try {
-			mapSanityCheck(currentNodes);
-			balance(currentNodes);
-
-			IExecutorService executorService = hazelcastManager.getExecutorService();
-
-			List<Future<Void>> results = new ArrayList<>();
-
-			for (Node node : currentNodes) {
-
-				try {
-					UpdateSegmentsTask ust = new UpdateSegmentsTask(node.getSocketAddress().getPort(), indexName, nodeToShardMap);
-					if (!node.localMember()) {
-						Future<Void> dt = executorService.submitToMember(ust, node);
-						results.add(dt);
-					}
-				}
-				catch (Exception e) {
-					LOG.error(e.getClass().getSimpleName() + ": ", e);
-				}
-
-			}
-
-			try {
-				UpdateSegmentsTask ust = new UpdateSegmentsTask(hazelcastManager.getHazelcastPort(), indexName, nodeToShardMap);
-				ust.call();
-			}
-			catch (Exception e) {
-				LOG.error(e.getClass().getSimpleName() + ": ", e);
-			}
-			for (Future<Void> result : results) {
-				try {
-					result.get();
-				}
-				catch (Exception e) {
-					LOG.error(e.getClass().getSimpleName() + ": ", e);
-				}
-			}
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
-
-	}
-
-	/**
-	 * Called on older cluster node when member is removed
-	 *
-	 * @param currentNodes
-	 *            - current cluster members
-	 * @param nodeRemoved
-	 *            - member that is being removed
-	 */
-	public void handleServerRemoved(Set<Node> currentNodes, Node nodeRemoved) {
-		indexLock.writeLock().lock();
-		try {
-			Set<Integer> shardsToRedist = nodeToShardMap.remove(nodeRemoved);
-			if (shardsToRedist != null) {
-				Node first = currentNodes.iterator().next();
-				nodeToShardMap.get(first).addAll(shardsToRedist);
-			}
-
-			forceBalance(currentNodes);
 		}
 		finally {
 			indexLock.writeLock().unlock();
@@ -625,7 +436,7 @@ public class ZuliaIndex implements IndexShardInterface {
 	private void mapSanityCheck(Set<Node> currentNodes) {
 		indexLock.writeLock().lock();
 		try {
-			// add all segments to a set
+			// add all shards to a set
 			Set<Integer> allShards = new HashSet<>();
 			for (int shard = 0; shard < indexConfig.getNumberOfShards(); shard++) {
 				allShards.add(shard);
@@ -648,27 +459,27 @@ public class ZuliaIndex implements IndexShardInterface {
 				// get current shards
 				Set<Integer> shards = nodeToShardMap.get(node);
 
-				Set<Integer> invalidSegments = new HashSet<>();
+				Set<Integer> invalidShards = new HashSet<>();
 				// check if valid shard
 				shards.stream().filter(shard -> !allShards.contains(shard)).forEach(shard -> {
 					if ((shard < 0) || (shard >= indexConfig.getNumberOfShards())) {
-						LOG.severe("Segment <" + shard + "> should not exist for cluster");
+						LOG.severe("Shard <" + shard + "> should not exist for cluster");
 					}
 					else {
-						LOG.severe("Segment <" + shard + "> is duplicated in node <" + node + ">");
+						LOG.severe("Shard <" + shard + "> is duplicated in node <" + node + ">");
 					}
-					invalidSegments.add(shard);
+					invalidShards.add(shard);
 
 				});
-				// remove any invalid segments for the cluster
-				shards.removeAll(invalidSegments);
-				// remove from all segments to keep track of segments already used
+				// remove any invalid shards for the cluster
+				shards.removeAll(invalidShards);
+				// remove from all shards to keep track of shards already used
 				allShards.removeAll(shards);
 			}
 
-			// adds any segments that are missing back to the first node
+			// adds any shards that are missing back to the first node
 			if (!allShards.isEmpty()) {
-				LOG.severe("Segments <" + allShards + "> are missing from the cluster. Adding back in.");
+				LOG.severe("Shards <" + allShards + "> are missing from the cluster. Adding back in.");
 				nodeToShardMap.values().iterator().next().addAll(allShards);
 			}
 		}
@@ -738,39 +549,32 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		try {
 
-			long timestamp = hazelcastManager.getClusterTime();
+			long timestamp = System.currentTimeMillis();
 
 			String uniqueId = storeRequest.getUniqueId();
-			ReadWriteLock documentLock = documentLockHandler.getLock(uniqueId);
-			try {
-				documentLock.writeLock().lock();
 
-				if (storeRequest.hasResultDocument()) {
-					ResultDocument resultDocument = storeRequest.getResultDocument();
-					Document document;
-					if (resultDocument.getDocument() != null) {
-						document = ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray());
-					}
-					else {
-						document = new Document();
-					}
-
-					ZuliaShard s = findShardFromUniqueId(uniqueId);
-					s.index(uniqueId, timestamp, document, resultDocument.getMetadataList());
-
+			if (storeRequest.hasResultDocument()) {
+				ResultDocument resultDocument = storeRequest.getResultDocument();
+				Document document;
+				if (resultDocument.getDocument() != null) {
+					document = ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray());
+				}
+				else {
+					document = new Document();
 				}
 
-				if (storeRequest.getClearExistingAssociated()) {
-					documentStorage.deleteAssociatedDocuments(uniqueId);
-				}
+				ZuliaShard s = findShardFromUniqueId(uniqueId);
+				s.index(uniqueId, timestamp, document, resultDocument.getMetadataList());
 
-				for (AssociatedDocument ad : storeRequest.getAssociatedDocumentList()) {
-					ad = AssociatedDocument.newBuilder(ad).setTimestamp(timestamp).build();
-					documentStorage.storeAssociatedDocument(ad);
-				}
 			}
-			finally {
-				documentLock.writeLock().unlock();
+
+			if (storeRequest.getClearExistingAssociated()) {
+				documentStorage.deleteAssociatedDocuments(uniqueId);
+			}
+
+			for (AssociatedDocument ad : storeRequest.getAssociatedDocumentList()) {
+				ad = AssociatedDocument.newBuilder(ad).setTimestamp(timestamp).build();
+				documentStorage.storeAssociatedDocument(ad);
 			}
 
 		}
@@ -789,26 +593,17 @@ public class ZuliaIndex implements IndexShardInterface {
 
 			String uniqueId = deleteRequest.getUniqueId();
 
-			ReadWriteLock documentLock = documentLockHandler.getLock(uniqueId);
-
-			try {
-				documentLock.writeLock().lock();
-
-				if (deleteRequest.getDeleteDocument()) {
-					ZuliaShard s = findShardFromUniqueId(deleteRequest.getUniqueId());
-					s.deleteDocument(uniqueId);
-				}
-
-				if (deleteRequest.getDeleteAllAssociated()) {
-					documentStorage.deleteAssociatedDocuments(uniqueId);
-				}
-				else if (deleteRequest.getFilename() != null) {
-					String fileName = deleteRequest.getFilename();
-					documentStorage.deleteAssociatedDocument(uniqueId, fileName);
-				}
+			if (deleteRequest.getDeleteDocument()) {
+				ZuliaShard s = findShardFromUniqueId(deleteRequest.getUniqueId());
+				s.deleteDocument(uniqueId);
 			}
-			finally {
-				documentLock.writeLock().unlock();
+
+			if (deleteRequest.getDeleteAllAssociated()) {
+				documentStorage.deleteAssociatedDocuments(uniqueId);
+			}
+			else if (deleteRequest.getFilename() != null) {
+				String fileName = deleteRequest.getFilename();
+				documentStorage.deleteAssociatedDocument(uniqueId, fileName);
 			}
 
 		}
@@ -1022,7 +817,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 			for (final ZuliaShard shard : shardMap.values()) {
 
-				Future<ShardQueryResponse> response = segmentPool.submit(() -> {
+				Future<ShardQueryResponse> response = shardPool.submit(() -> {
 
 					QueryCacheKey queryCacheKey = null;
 
@@ -1073,15 +868,6 @@ public class ZuliaIndex implements IndexShardInterface {
 		return indexConfig.getIndexSettings().getShardTolerance();
 	}
 
-	private void storeIndexSettings() {
-		try {
-			indexService.createIndex(indexConfig.getIndexSettings());
-		}
-		catch (Exception e) {
-			LOG.log(Level.SEVERE, e.getMessage(), e);
-		}
-	}
-
 	public void reloadIndexSettings() throws Exception {
 		indexLock.writeLock().lock();
 		try {
@@ -1091,7 +877,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 			parsers.clear();
 
-			//force analyzer to be fetched first so it doesn't fail only on one segment below
+			//force analyzer to be fetched first so it doesn't fail only on one shard below
 			getPerFieldAnalyzer();
 
 			for (ZuliaShard s : shardMap.values()) {
@@ -1111,8 +897,8 @@ public class ZuliaIndex implements IndexShardInterface {
 	public void optimize() throws Exception {
 		indexLock.readLock().lock();
 		try {
-			for (final ZuliaShard segment : shardMap.values()) {
-				segment.optimize();
+			for (final ZuliaShard shard : shardMap.values()) {
+				shard.optimize();
 			}
 
 		}
@@ -1127,9 +913,9 @@ public class ZuliaIndex implements IndexShardInterface {
 		try {
 			List<Future<ShardCountResponse>> responses = new ArrayList<>();
 
-			for (final ZuliaShard segment : shardMap.values()) {
+			for (final ZuliaShard shard : shardMap.values()) {
 
-				Future<ShardCountResponse> response = segmentPool.submit(segment::getNumberOfDocs);
+				Future<ShardCountResponse> response = shardPool.submit(shard::getNumberOfDocs);
 
 				responses.add(response);
 
@@ -1145,7 +931,7 @@ public class ZuliaIndex implements IndexShardInterface {
 					responseBuilder.setNumberOfDocs(responseBuilder.getNumberOfDocs() + scr.getNumberOfDocs());
 				}
 				catch (InterruptedException e) {
-					throw new Exception("Interrupted while waiting for segment results");
+					throw new Exception("Interrupted while waiting for shard results");
 				}
 				catch (Exception e) {
 					Throwable cause = e.getCause();
@@ -1169,9 +955,9 @@ public class ZuliaIndex implements IndexShardInterface {
 		try {
 			List<Future<GetFieldNamesResponse>> responses = new ArrayList<>();
 
-			for (final ZuliaShard segment : shardMap.values()) {
+			for (final ZuliaShard shard : shardMap.values()) {
 
-				Future<GetFieldNamesResponse> response = segmentPool.submit(segment::getFieldNames);
+				Future<GetFieldNamesResponse> response = shardPool.submit(shard::getFieldNames);
 
 				responses.add(response);
 
@@ -1226,10 +1012,10 @@ public class ZuliaIndex implements IndexShardInterface {
 		try {
 			List<Future<Void>> responses = new ArrayList<>();
 
-			for (final ZuliaShard segment : shardMap.values()) {
+			for (final ZuliaShard shard : shardMap.values()) {
 
-				Future<Void> response = segmentPool.submit(() -> {
-					segment.clear();
+				Future<Void> response = shardPool.submit(() -> {
+					shard.clear();
 					return null;
 				});
 
@@ -1265,9 +1051,9 @@ public class ZuliaIndex implements IndexShardInterface {
 		try {
 			List<Future<GetTermsResponse>> responses = new ArrayList<>();
 
-			for (final ZuliaShard segment : shardMap.values()) {
+			for (final ZuliaShard shard : shardMap.values()) {
 
-				Future<GetTermsResponse> response = segmentPool.submit(() -> segment.getTerms(request));
+				Future<GetTermsResponse> response = shardPool.submit(() -> shard.getTerms(request));
 
 				responses.add(response);
 
