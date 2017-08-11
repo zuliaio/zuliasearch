@@ -54,7 +54,7 @@ public class InternalClient {
 		}
 	}
 
-	public void addNode(Node node) throws Exception {
+	public void addNode(Node node) {
 		String nodeKey = getNodeKey(node);
 
 		if (!internalConnectionPoolMap.containsKey(nodeKey)) {

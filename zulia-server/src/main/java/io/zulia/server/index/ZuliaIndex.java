@@ -8,6 +8,7 @@ import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaIndex.FieldConfig;
+import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.CosineSimRequest;
@@ -50,7 +51,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -69,7 +69,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -111,9 +110,13 @@ public class ZuliaIndex implements IndexShardInterface {
 	private ZuliaAnalyzerFactory analyzerFactory;
 	private final IndexService indexService;
 
-	private FacetsConfig facetsConfig;
+	static {
+		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
+	}
 
-	public ZuliaIndex(ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService) throws Exception {
+	private IndexMapping indexMapping;
+
+	public ZuliaIndex(ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService) {
 
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
@@ -161,42 +164,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	}
 
-	/** From org.apache.solr.search.QueryUtils **/
-	public static boolean isNegative(Query q) {
-		if (!(q instanceof BooleanQuery))
-			return false;
-		BooleanQuery bq = (BooleanQuery) q;
-		Collection<BooleanClause> clauses = bq.clauses();
-		if (clauses.size() == 0)
-			return false;
-		for (BooleanClause clause : clauses) {
-			if (!clause.isProhibited())
-				return false;
-		}
-		return true;
-	}
-
-	/** Fixes a negative query by adding a MatchAllDocs query clause.
-	 * The query passed in *must* be a negative query.
-	 */
-	public static Query fixNegativeQuery(Query q) {
-		float boost = 1f;
-		if (q instanceof BoostQuery) {
-			BoostQuery bq = (BoostQuery) q;
-			boost = bq.getBoost();
-			q = bq.getQuery();
-		}
-		BooleanQuery bq = (BooleanQuery) q;
-		BooleanQuery.Builder newBqB = new BooleanQuery.Builder();
-		newBqB.setDisableCoord(bq.isCoordDisabled());
-		newBqB.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
-		for (BooleanClause clause : bq) {
-			newBqB.add(clause);
-		}
-		newBqB.add(new MatchAllDocsQuery(), BooleanClause.Occur.MUST);
-		BooleanQuery newBq = newBqB.build();
-		return new BoostQuery(newBq, boost);
-	}
 
 	public void updateIndexSettings(IndexSettings request) throws Exception {
 		indexLock.writeLock().lock();
@@ -271,10 +238,8 @@ public class ZuliaIndex implements IndexShardInterface {
 				IndexShardInterface indexShardInterface = this;
 
 				//doesnt need to be done each time and it is done in StartNode but helps with test cases that take different paths
-				FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
-				facetsConfig = new FacetsConfig();
 
-				ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, facetsConfig);
+				ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, new FacetsConfig());
 				shardMap.put(shardNumber, s);
 
 				LOG.info("Loaded shard <" + shardNumber + "> for index <" + indexName + ">");
@@ -369,125 +334,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	}
 
-	private void balance(Set<Node> currentNodes) {
-		indexLock.writeLock().lock();
-		try {
-			boolean balanced = false;
-			do {
-				int minShardsForNode = Integer.MAX_VALUE;
-				int maxShardsForNode = Integer.MIN_VALUE;
-				Node minNode = null;
-				Node maxNode = null;
-				List<Node> shuffledNodes = new ArrayList<>(currentNodes);
-				Collections.shuffle(shuffledNodes);
-				for (Node m : shuffledNodes) {
-					int shardsForNodeCount = 0;
-					Set<Integer> shardsForNode = nodeToShardMap.get(m);
-					if (shardsForNode != null) {
-						shardsForNodeCount = shardsForNode.size();
-					}
-					if (shardsForNodeCount < minShardsForNode) {
-						minShardsForNode = shardsForNodeCount;
-						minNode = m;
-					}
-					if (shardsForNodeCount > maxShardsForNode) {
-						maxShardsForNode = shardsForNodeCount;
-						maxNode = m;
-					}
-				}
-
-				if ((maxShardsForNode - minShardsForNode) > 1) {
-					moveShard(maxNode, minNode);
-				}
-				else {
-					if ((maxShardsForNode - minShardsForNode == 1)) {
-						boolean move = Math.random() >= 0.5;
-						if (move) {
-							moveShard(maxNode, minNode);
-						}
-					}
-
-					balanced = true;
-
-				}
-
-			}
-			while (!balanced);
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
-
-	}
-
-	private void moveShard(Node fromNode, Node toNode) {
-		int valueToMove = nodeToShardMap.get(fromNode).iterator().next();
-
-		LOG.info("Moving shard <" + valueToMove + "> from <" + fromNode + "> to <" + toNode + "> of Index <" + indexName + ">");
-		nodeToShardMap.get(fromNode).remove(valueToMove);
-
-		if (!nodeToShardMap.containsKey(toNode)) {
-			nodeToShardMap.put(toNode, new HashSet<>());
-		}
-
-		nodeToShardMap.get(toNode).add(valueToMove);
-	}
-
-	private void mapSanityCheck(Set<Node> currentNodes) {
-		indexLock.writeLock().lock();
-		try {
-			// add all shards to a set
-			Set<Integer> allShards = new HashSet<>();
-			for (int shard = 0; shard < indexConfig.getNumberOfShards(); shard++) {
-				allShards.add(shard);
-			}
-
-			// ensure all members are in the map and contain an empty set
-			for (Node node : currentNodes) {
-				if (!nodeToShardMap.containsKey(node)) {
-					nodeToShardMap.put(node, new HashSet<>());
-				}
-				if (nodeToShardMap.get(node) == null) {
-					nodeToShardMap.put(node, new HashSet<>());
-				}
-			}
-
-			// get all nodes of the map
-			Set<Node> mapNodes = nodeToShardMap.keySet();
-			for (Node node : mapNodes) {
-
-				// get current shards
-				Set<Integer> shards = nodeToShardMap.get(node);
-
-				Set<Integer> invalidShards = new HashSet<>();
-				// check if valid shard
-				shards.stream().filter(shard -> !allShards.contains(shard)).forEach(shard -> {
-					if ((shard < 0) || (shard >= indexConfig.getNumberOfShards())) {
-						LOG.severe("Shard <" + shard + "> should not exist for cluster");
-					}
-					else {
-						LOG.severe("Shard <" + shard + "> is duplicated in node <" + node + ">");
-					}
-					invalidShards.add(shard);
-
-				});
-				// remove any invalid shards for the cluster
-				shards.removeAll(invalidShards);
-				// remove from all shards to keep track of shards already used
-				allShards.removeAll(shards);
-			}
-
-			// adds any shards that are missing back to the first node
-			if (!allShards.isEmpty()) {
-				LOG.severe("Shards <" + allShards + "> are missing from the cluster. Adding back in.");
-				nodeToShardMap.values().iterator().next().addAll(allShards);
-			}
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
-
-	}
 
 	public ZuliaShard findShardFromUniqueId(String uniqueId) throws ShardDoesNotExist {
 		indexLock.readLock().lock();
@@ -583,7 +429,6 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	/** From org.apache.solr.search.QueryUtils **/
 
 	public void deleteDocument(DeleteRequest deleteRequest) throws Exception {
 
@@ -645,13 +490,13 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	public Query getQuery(ZuliaQuery.Query lumongoQuery) throws Exception {
+	public Query getQuery(ZuliaQuery.Query zuliaQuery) throws Exception {
 		indexLock.readLock().lock();
 
-		ZuliaQuery.Query.Operator defaultOperator = lumongoQuery.getDefaultOp();
-		String queryText = lumongoQuery.getQ();
-		Integer minimumShouldMatchNumber = lumongoQuery.getMm();
-		List<String> queryFields = lumongoQuery.getQfList();
+		ZuliaQuery.Query.Operator defaultOperator = zuliaQuery.getDefaultOp();
+		String queryText = zuliaQuery.getQ();
+		Integer minimumShouldMatchNumber = zuliaQuery.getMm();
+		List<String> queryFields = zuliaQuery.getQfList();
 
 		try {
 
@@ -681,8 +526,8 @@ public class ZuliaIndex implements IndexShardInterface {
 				qp.setMinimumNumberShouldMatch(minimumShouldMatchNumber);
 				qp.setDefaultOperator(operator);
 
-				if (lumongoQuery.getDismax()) {
-					qp.enableDismax(lumongoQuery.getDismaxTie());
+				if (zuliaQuery.getDismax()) {
+					qp.enableDismax(zuliaQuery.getDismaxTie());
 				}
 				else {
 					qp.disableDismax();
@@ -713,9 +558,9 @@ public class ZuliaIndex implements IndexShardInterface {
 					qp.setDefaultFields(fields, boostMap);
 				}
 				Query query = qp.parse(queryText);
-				boolean negative = isNegative(query);
+				boolean negative = QueryUtil.isNegative(query);
 				if (negative) {
-					query = fixNegativeQuery(query);
+					query = QueryUtil.fixNegativeQuery(query);
 				}
 				return query;
 
@@ -1083,7 +928,6 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	//handle forwarding, and locking here like other store requests
 	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long clusterTime, HashMap<String, String> metadataMap)
 			throws Exception {
 		indexLock.readLock().lock();
@@ -1147,4 +991,15 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
+	public void setIndexMapping(IndexMapping indexMapping) {
+		this.indexMapping = indexMapping;
+	}
+
+	public IndexMapping getIndexMapping() {
+		return indexMapping;
+	}
+
+	public String getIndexName() {
+		return indexName;
+	}
 }

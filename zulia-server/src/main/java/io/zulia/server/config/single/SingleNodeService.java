@@ -3,6 +3,7 @@ package io.zulia.server.config.single;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
+import io.zulia.server.node.ZuliaNode;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,8 +13,7 @@ public class SingleNodeService implements NodeService {
 	private Node node;
 
 	public SingleNodeService(ZuliaConfig zuliaConfig) {
-		node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress())
-				.setServicePort(zuliaConfig.getServicePort()).setRestPort(zuliaConfig.getRestPort()).build();
+		node = ZuliaNode.nodeFromConfig(zuliaConfig);
 	}
 
 	@Override

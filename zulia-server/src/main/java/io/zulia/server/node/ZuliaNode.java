@@ -61,4 +61,13 @@ public class ZuliaNode {
 		zuliaServiceServer.start();
 	}
 
+	public static boolean isEqual(Node node1, Node node2) {
+		return (node1.getServerAddress().equals(node2.getServerAddress()) && node1.getServicePort() == node2.getServicePort());
+	}
+
+	public static Node nodeFromConfig(ZuliaConfig zuliaConfig) {
+		return Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
+				.setRestPort(zuliaConfig.getRestPort()).build();
+	}
+
 }

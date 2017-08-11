@@ -1,18 +1,36 @@
 package io.zulia.server.index;
 
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.Node;
+import io.zulia.message.ZuliaBase.Term;
+import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
+import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoIndexService;
 import io.zulia.server.config.single.FSIndexService;
+import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.exceptions.IndexDoesNotExist;
+import io.zulia.server.filestorage.DocumentStorage;
+import io.zulia.server.filestorage.MongoDocumentStorage;
+import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
+import io.zulia.util.ZuliaThreadFactory;
 import org.bson.Document;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class ZuliaIndexManager {
@@ -20,8 +38,20 @@ public class ZuliaIndexManager {
 	private static final Logger LOG = Logger.getLogger(ZuliaIndexManager.class.getName());
 
 	private final IndexService indexService;
+	private final InternalClient internalClient;
+	private final ExecutorService pool;
+	private final ConcurrentHashMap<String, io.zulia.server.index.ZuliaIndex> indexMap;
 
-	public ZuliaIndexManager(ZuliaConfig zuliaConfig) {
+	private final ZuliaConfig zuliaConfig;
+
+	private Node thisNode;
+	private Collection<Node> currentOtherNodesActive;
+
+	public ZuliaIndexManager(ZuliaConfig zuliaConfig) throws Exception {
+
+		this.zuliaConfig = zuliaConfig;
+
+		this.thisNode = ZuliaNode.nodeFromConfig(zuliaConfig);
 
 		if (zuliaConfig.isCluster()) {
 			indexService = new MongoIndexService(MongoProvider.getMongoClient());
@@ -29,26 +59,62 @@ public class ZuliaIndexManager {
 		else {
 			indexService = new FSIndexService(zuliaConfig);
 		}
+
+		this.internalClient = new InternalClient();
+
+		this.indexMap = new ConcurrentHashMap<>();
+
+		this.pool = Executors.newCachedThreadPool(new ZuliaThreadFactory("manager"));
+
 	}
 
 	public void handleNodeAdded(Collection<Node> currentOtherNodesActive, Node nodeAdded) {
 		System.out.println("nodeAdded: " + nodeAdded.getServerAddress() + ":" + nodeAdded.getServicePort());
+
+		internalClient.addNode(nodeAdded);
+		this.currentOtherNodesActive = currentOtherNodesActive;
 	}
 
 	public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
 		System.out.println("nodeRemoved: " + nodeRemoved.getServerAddress() + ":" + nodeRemoved.getServicePort());
+		internalClient.removeNode(nodeRemoved);
 	}
 
 	public void shutdown() {
 
 	}
 
-	public void loadIndexes() {
+	public void loadIndexes() throws Exception {
+		List<ZuliaIndex.IndexSettings> indexes = indexService.getIndexes();
+		for (ZuliaIndex.IndexSettings indexSettings : indexes) {
 
+			loadIndex(indexSettings);
+
+		}
+	}
+
+	private void loadIndex(ZuliaIndex.IndexSettings indexSettings) throws Exception {
+		ZuliaIndex.IndexMapping indexMapping = indexService.getIndexMapping(indexSettings.getIndexName());
+
+		pool.submit(() -> {
+
+			ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
+
+			String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
+
+			//TODO switch this on cluster moder / single
+			DocumentStorage documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+
+			io.zulia.server.index.ZuliaIndex zuliaIndex = new io.zulia.server.index.ZuliaIndex(serverIndexConfig, documentStorage, indexService);
+			zuliaIndex.setIndexMapping(indexMapping);
+			indexMap.put(indexSettings.getIndexName(), zuliaIndex);
+		});
 	}
 
 	public void openConnections(Collection<Node> nodes) {
-
+		for (Node node : nodes) {
+			internalClient.addNode(node);
+		}
 	}
 
 	public GetIndexesResponse getIndexes(GetIndexesRequest request) {
@@ -129,27 +195,139 @@ public class ZuliaIndexManager {
 		return null;
 	}
 
-	public OptimizeResponse internalOptimize(OptimizeRequest request) {
-		return null;
+	public OptimizeResponse internalOptimize(OptimizeRequest request) throws Exception {
+		String indexName = request.getIndexName();
+
+		io.zulia.server.index.ZuliaIndex i = getIndexFromName(indexName);
+		i.optimize();
+		return OptimizeResponse.newBuilder().build();
 	}
 
-	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) {
-		return null;
+	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
+		String indexName = request.getIndexName();
+		ZuliaBase.MasterSlaveSettings masterSlaveSettings = request.getMasterSlaveSettings();
+
+		io.zulia.server.index.ZuliaIndex i = getIndexFromName(indexName);
+
+		RequestNodeFederator<GetFieldNamesRequest, GetFieldNamesResponse> federator = new RequestNodeFederator<GetFieldNamesRequest, GetFieldNamesResponse>(
+				thisNode, currentOtherNodesActive, pool, Collections.singleton(i), masterSlaveSettings) {
+
+			@Override
+			public GetFieldNamesResponse processExternal(Node node, GetFieldNamesRequest request) throws Exception {
+				return internalClient.getFieldNames(node, request);
+			}
+
+			@Override
+			public GetFieldNamesResponse processInternal(GetFieldNamesRequest request) throws Exception {
+				return internalGetFieldNames(request);
+			}
+
+		};
+
+		Set<String> fieldNames = new HashSet<>();
+		List<GetFieldNamesResponse> responses = federator.send(request);
+		for (GetFieldNamesResponse response : responses) {
+			fieldNames.addAll(response.getFieldNameList());
+		}
+
+		GetFieldNamesResponse.Builder responseBuilder = GetFieldNamesResponse.newBuilder();
+		responseBuilder.addAllFieldName(fieldNames);
+		return responseBuilder.build();
 	}
 
-	public GetFieldNamesResponse internalGetFieldNames(GetFieldNamesRequest request) {
-		return null;
+	public GetFieldNamesResponse internalGetFieldNames(GetFieldNamesRequest request) throws Exception {
+		String indexName = request.getIndexName();
+		io.zulia.server.index.ZuliaIndex i = getIndexFromName(indexName);
+		return i.getFieldNames();
 	}
 
-	public GetTermsResponse getTerms(GetTermsRequest request) {
-		return null;
+	public GetTermsResponse getTerms(GetTermsRequest request) throws Exception {
+
+		String indexName = request.getIndexName();
+		ZuliaBase.MasterSlaveSettings masterSlaveSettings = request.getMasterSlaveSettings();
+
+		io.zulia.server.index.ZuliaIndex i = getIndexFromName(indexName);
+
+		RequestNodeFederator<GetTermsRequest, InternalGetTermsResponse> federator = new RequestNodeFederator<GetTermsRequest, InternalGetTermsResponse>(
+				thisNode, currentOtherNodesActive, pool, Collections.singleton(i), masterSlaveSettings) {
+
+			@Override
+			public InternalGetTermsResponse processExternal(Node node, GetTermsRequest request) throws Exception {
+				return internalClient.getTerms(node, request);
+			}
+
+			@Override
+			public InternalGetTermsResponse processInternal(GetTermsRequest request) throws Exception {
+				return internalGetTerms(request);
+			}
+
+		};
+
+		List<InternalGetTermsResponse> responses = federator.send(request);
+
+		TreeMap<String, Term.Builder> terms = new TreeMap<>();
+		for (InternalGetTermsResponse response : responses) {
+			for (GetTermsResponse gtr : response.getGetTermsResponseList()) {
+				for (Term term : gtr.getTermList()) {
+					String key = term.getValue();
+					if (!terms.containsKey(key)) {
+						Term.Builder termBuilder = Term.newBuilder().setValue(key).setDocFreq(0).setTermFreq(0);
+						termBuilder.setScore(0);
+						terms.put(key, termBuilder);
+					}
+					Term.Builder builder = terms.get(key);
+					builder.setDocFreq(builder.getDocFreq() + term.getDocFreq());
+					builder.setTermFreq(builder.getTermFreq() + term.getTermFreq());
+
+					builder.setScore(builder.getScore() + term.getScore());
+
+				}
+			}
+		}
+
+		GetTermsResponse.Builder responseBuilder = GetTermsResponse.newBuilder();
+
+		Term.Builder value = null;
+
+		int count = 0;
+
+		int amount = request.getAmount();
+		for (Term.Builder builder : terms.values()) {
+			value = builder;
+			if (builder.getDocFreq() >= request.getMinDocFreq() && builder.getTermFreq() >= request.getMinTermFreq()) {
+				responseBuilder.addTerm(builder.build());
+				count++;
+			}
+
+			if (amount != 0 && count >= amount) {
+				break;
+			}
+		}
+
+		if (value != null) {
+			responseBuilder.setLastTerm(value.build());
+		}
+
+		return responseBuilder.build();
 	}
 
-	public InternalGetTermsResponse internalGetTerms(GetTermsRequest request) {
-		return null;
+	public InternalGetTermsResponse internalGetTerms(GetTermsRequest request) throws Exception {
+		String indexName = request.getIndexName();
+		io.zulia.server.index.ZuliaIndex i = getIndexFromName(indexName);
+		return i.getTerms(request);
 	}
 
-	public GetIndexSettingsResponse getIndexSettings(GetIndexSettingsRequest request) {
-		return null;
+	public GetIndexSettingsResponse getIndexSettings(GetIndexSettingsRequest request) throws Exception {
+		String indexName = request.getIndexName();
+		ZuliaIndex.IndexSettings indexSettings = indexService.getIndex(indexName);
+		return GetIndexSettingsResponse.newBuilder().setIndexSettings(indexSettings).build();
+	}
+
+	private io.zulia.server.index.ZuliaIndex getIndexFromName(String indexName) throws IndexDoesNotExist {
+		io.zulia.server.index.ZuliaIndex i = indexMap.get(indexName);
+		if (i == null) {
+			throw new IndexDoesNotExist(indexName);
+		}
+		return i;
 	}
 }
