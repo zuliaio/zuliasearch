@@ -46,14 +46,32 @@ public class FSIndexService implements IndexService {
 		if (Paths.get(baseDir).toFile().exists()) {
 			JsonFormat.Parser parser = JsonFormat.parser();
 			List<ZuliaIndex.IndexSettings> indexes = new ArrayList<>();
-			for (File files : Paths.get(baseDir).toFile().listFiles()) {
-				if (!files.getName().endsWith(MAPPING_EXTENSION)) {
-					ZuliaIndex.IndexSettings.Builder indexSettings = ZuliaIndex.IndexSettings.newBuilder();
-					parser.merge(new FileReader(files), indexSettings);
-					indexes.add(indexSettings.build());
+			for (File file : Paths.get(baseDir).toFile().listFiles()) {
+				if (!file.getName().endsWith(MAPPING_EXTENSION)) {
+					ZuliaIndex.IndexSettings.Builder indexSettingsBuilder = ZuliaIndex.IndexSettings.newBuilder();
+					parser.merge(new FileReader(file), indexSettingsBuilder);
+					indexes.add(indexSettingsBuilder.build());
 				}
 			}
 			return indexes;
+		}
+
+		return null;
+	}
+
+	@Override
+	public ZuliaIndex.IndexSettings getIndex(String indexName) throws Exception {
+
+		if (Paths.get(baseDir).toFile().exists()) {
+			JsonFormat.Parser parser = JsonFormat.parser();
+			for (File file : Paths.get(baseDir).toFile().listFiles()) {
+				if (file.getName().startsWith(indexName) && !file.getName().endsWith(MAPPING_EXTENSION)) {
+					ZuliaIndex.IndexSettings.Builder indexSettingsBuilder = ZuliaIndex.IndexSettings.newBuilder();
+					parser.merge(new FileReader(file), indexSettingsBuilder);
+					return indexSettingsBuilder.build();
+				}
+			}
+
 		}
 
 		return null;

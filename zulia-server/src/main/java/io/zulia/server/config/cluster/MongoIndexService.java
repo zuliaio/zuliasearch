@@ -46,6 +46,20 @@ public class MongoIndexService implements IndexService {
 	}
 
 	@Override
+	public IndexSettings getIndex(String indexName) throws Exception {
+		Document doc = settingsCollection.find(new Document(ID, indexName)).first();
+
+		if (doc != null) {
+			String indexSettingsJson = doc.getString(INDEX_SETTINGS);
+			IndexSettings.Builder builder = IndexSettings.newBuilder();
+			JsonFormat.parser().merge(indexSettingsJson, builder);
+			return builder.build();
+		}
+
+		return null;
+	}
+
+	@Override
 	public void createIndex(IndexSettings indexSettings) throws Exception {
 
 		Document indexSettingsDoc = new Document(ID, indexSettings.getIndexName()).append(INDEX_SETTINGS, JsonFormat.printer().print(indexSettings));
