@@ -16,12 +16,12 @@ public class GetIndexesServerRequest extends ServerRequestHandler<GetIndexesResp
 	}
 
 	@Override
-	protected GetIndexesResponse handleCall(ZuliaIndexManager indexManager, GetIndexesRequest request) {
+	protected GetIndexesResponse handleCall(ZuliaIndexManager indexManager, GetIndexesRequest request) throws Exception {
 		return indexManager.getIndexes(request);
 	}
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle get indexes request", e);
 	}
 }

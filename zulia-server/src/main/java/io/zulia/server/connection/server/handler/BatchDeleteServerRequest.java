@@ -22,6 +22,6 @@ public class BatchDeleteServerRequest extends ServerRequestHandler<BatchDeleteRe
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle batch delete", e);
 	}
 }

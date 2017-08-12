@@ -23,7 +23,7 @@ public abstract class ServerRequestHandler<S, Q> {
 		}
 	}
 
-	protected abstract S handleCall(ZuliaIndexManager indexManager, Q request);
+	protected abstract S handleCall(ZuliaIndexManager indexManager, Q request) throws Exception;
 
 	protected abstract void onError(Exception e);
 

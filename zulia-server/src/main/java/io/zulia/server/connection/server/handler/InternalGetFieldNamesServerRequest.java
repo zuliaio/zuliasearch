@@ -16,12 +16,12 @@ public class InternalGetFieldNamesServerRequest extends ServerRequestHandler<Get
 	}
 
 	@Override
-	protected GetFieldNamesResponse handleCall(ZuliaIndexManager indexManager, GetFieldNamesRequest request) {
+	protected GetFieldNamesResponse handleCall(ZuliaIndexManager indexManager, GetFieldNamesRequest request) throws Exception {
 		return indexManager.internalGetFieldNames(request);
 	}
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle internal get field names", e);
 	}
 }

@@ -1,9 +1,11 @@
 package io.zulia.server.index;
 
 import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
@@ -22,7 +24,6 @@ import org.bson.Document;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -120,12 +121,66 @@ public class ZuliaIndexManager {
 		}
 	}
 
-	public GetIndexesResponse getIndexes(GetIndexesRequest request) {
-		return null;
+	public GetIndexesResponse getIndexes(GetIndexesRequest request) throws Exception {
+		GetIndexesResponse.Builder getIndexesResponse = GetIndexesResponse.newBuilder();
+		for (ZuliaIndex.IndexSettings indexSettings : indexService.getIndexes()) {
+			getIndexesResponse.addIndexName(indexSettings.getIndexName());
+		}
+		return getIndexesResponse.build();
 	}
 
-	public FetchResponse fetch(FetchRequest request) {
-		return null;
+	public FetchResponse fetch(FetchRequest request) throws Exception {
+		io.zulia.server.index.ZuliaIndex i = getIndexFromName(request.getIndexName());
+
+		RequestNodeRouter<FetchRequest, FetchResponse> router = new RequestNodeRouter<FetchRequest, FetchResponse>(thisNode, currentOtherNodesActive,
+				request.getMasterSlaveSettings(), i, request.getUniqueId()) {
+			@Override
+			protected FetchResponse processExternal(Node node, FetchRequest request) throws Exception {
+				return internalClient.executeFetch(node, request);
+			}
+
+			@Override
+			protected FetchResponse processInternal(FetchRequest request) throws Exception {
+				return internalFetch(request);
+			}
+		};
+		return router.send(request);
+
+	}
+
+	public FetchResponse internalFetch(FetchRequest fetchRequest) throws Exception {
+
+		io.zulia.server.index.ZuliaIndex i = getIndexFromName(fetchRequest.getIndexName());
+		FetchResponse.Builder frBuilder = FetchResponse.newBuilder();
+
+		String uniqueId = fetchRequest.getUniqueId();
+
+		FetchType resultFetchType = fetchRequest.getResultFetchType();
+		if (!FetchType.NONE.equals(resultFetchType)) {
+
+			ZuliaBase.ResultDocument resultDoc = i
+					.getSourceDocument(uniqueId, resultFetchType, fetchRequest.getDocumentFieldsList(), fetchRequest.getDocumentMaskedFieldsList());
+			if (null != resultDoc) {
+				frBuilder.setResultDocument(resultDoc);
+			}
+		}
+
+		FetchType associatedFetchType = fetchRequest.getAssociatedFetchType();
+		if (!FetchType.NONE.equals(associatedFetchType)) {
+			if (fetchRequest.getFilename() != null) {
+				AssociatedDocument ad = i.getAssociatedDocument(uniqueId, fetchRequest.getFilename(), associatedFetchType);
+				if (ad != null) {
+					frBuilder.addAssociatedDocument(ad);
+				}
+			}
+			else {
+				for (AssociatedDocument ad : i.getAssociatedDocuments(uniqueId, associatedFetchType)) {
+					frBuilder.addAssociatedDocument(ad);
+				}
+			}
+		}
+		return frBuilder.build();
+
 	}
 
 	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) {
@@ -213,7 +268,7 @@ public class ZuliaIndexManager {
 		io.zulia.server.index.ZuliaIndex i = getIndexFromName(indexName);
 
 		RequestNodeFederator<GetFieldNamesRequest, GetFieldNamesResponse> federator = new RequestNodeFederator<GetFieldNamesRequest, GetFieldNamesResponse>(
-				thisNode, currentOtherNodesActive, pool, Collections.singleton(i), masterSlaveSettings) {
+				thisNode, currentOtherNodesActive, masterSlaveSettings, i, pool) {
 
 			@Override
 			public GetFieldNamesResponse processExternal(Node node, GetFieldNamesRequest request) throws Exception {
@@ -252,7 +307,7 @@ public class ZuliaIndexManager {
 		io.zulia.server.index.ZuliaIndex i = getIndexFromName(indexName);
 
 		RequestNodeFederator<GetTermsRequest, InternalGetTermsResponse> federator = new RequestNodeFederator<GetTermsRequest, InternalGetTermsResponse>(
-				thisNode, currentOtherNodesActive, pool, Collections.singleton(i), masterSlaveSettings) {
+				thisNode, currentOtherNodesActive, masterSlaveSettings, i, pool) {
 
 			@Override
 			public InternalGetTermsResponse processExternal(Node node, GetTermsRequest request) throws Exception {

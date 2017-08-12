@@ -2,13 +2,13 @@ package io.zulia.server.exceptions;
 
 import java.io.IOException;
 
-public class ShardDoesNotExist extends IOException {
+public class ShardDoesNotExistException extends IOException {
 
 	private static final long serialVersionUID = 1L;
 	private String indexName;
 	private int shardNumber;
 
-	public ShardDoesNotExist(String indexName, int shardNumber) {
+	public ShardDoesNotExistException(String indexName, int shardNumber) {
 		this.indexName = indexName;
 		this.shardNumber = shardNumber;
 	}

@@ -16,12 +16,12 @@ public class InternalGetTermsServerRequest extends ServerRequestHandler<Internal
 	}
 
 	@Override
-	protected InternalGetTermsResponse handleCall(ZuliaIndexManager indexManager, GetTermsRequest request) {
+	protected InternalGetTermsResponse handleCall(ZuliaIndexManager indexManager, GetTermsRequest request) throws Exception {
 		return indexManager.internalGetTerms(request);
 	}
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle internal get terms", e);
 	}
 }

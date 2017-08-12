@@ -16,12 +16,12 @@ public class FetchServerRequest extends ServerRequestHandler<FetchResponse, Fetc
 	}
 
 	@Override
-	protected FetchResponse handleCall(ZuliaIndexManager indexManager, FetchRequest request) {
+	protected FetchResponse handleCall(ZuliaIndexManager indexManager, FetchRequest request) throws Exception {
 		return indexManager.fetch(request);
 	}
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle fetch", e);
 	}
 }

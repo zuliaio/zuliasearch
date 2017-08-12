@@ -22,6 +22,6 @@ public class DeleteIndexServerRequest extends ServerRequestHandler<DeleteIndexRe
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle delete index", e);
 	}
 }

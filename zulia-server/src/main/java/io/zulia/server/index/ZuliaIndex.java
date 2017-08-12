@@ -13,7 +13,6 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.CosineSimRequest;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaQuery.FieldSimilarity;
-import io.zulia.message.ZuliaQuery.HighlightRequest;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
@@ -27,11 +26,13 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.index.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ZuliaMultiFieldQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
+import io.zulia.util.ShardUtil;
 import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
 import org.apache.commons.pool2.BasePooledObjectFactory;
@@ -385,6 +386,15 @@ public class ZuliaIndex implements IndexShardInterface {
 		finally {
 			indexLock.readLock().unlock();
 		}
+	}
+
+	private ZuliaShard findShardFromUniqueId(String uniqueId) throws ShardDoesNotExistException {
+		int shardNumber = ShardUtil.findShardForUniqueId(uniqueId, numberOfShards);
+		ZuliaShard zuliaShard = shardMap.get(shardNumber);
+		if (zuliaShard == null) {
+			throw new ShardDoesNotExistException(indexName, shardNumber);
+		}
+		return zuliaShard;
 	}
 
 	public void deleteDocument(DeleteRequest deleteRequest) throws Exception {
@@ -916,12 +926,12 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	public ResultDocument getSourceDocument(String uniqueId, Long timestamp, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
-			List<HighlightRequest> highlightRequests) throws Exception {
+	public ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
+			throws Exception {
 		indexLock.readLock().lock();
 		try {
 			ZuliaShard s = findShardFromUniqueId(uniqueId);
-			return s.getSourceDocument(uniqueId, timestamp, resultFetchType, fieldsToReturn, fieldsToMask);
+			return s.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
 		}
 		finally {
 			indexLock.readLock().unlock();

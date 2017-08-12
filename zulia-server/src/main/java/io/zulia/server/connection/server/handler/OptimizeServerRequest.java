@@ -22,6 +22,6 @@ public class OptimizeServerRequest extends ServerRequestHandler<OptimizeResponse
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle optimize", e);
 	}
 }

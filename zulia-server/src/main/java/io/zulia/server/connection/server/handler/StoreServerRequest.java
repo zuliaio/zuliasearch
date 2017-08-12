@@ -22,6 +22,6 @@ public class StoreServerRequest extends ServerRequestHandler<StoreResponse, Stor
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle store", e);
 	}
 }

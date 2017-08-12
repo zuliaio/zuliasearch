@@ -22,6 +22,6 @@ public class ClearServerRequest extends ServerRequestHandler<ClearResponse, Clea
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle clear", e);
 	}
 }

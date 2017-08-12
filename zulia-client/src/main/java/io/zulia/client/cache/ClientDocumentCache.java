@@ -64,7 +64,6 @@ public class ClientDocumentCache {
 
 		if (fetch) {
 			FetchDocument fetchDocument = new FetchDocument(uniqueId, indexName);
-			fetchDocument.setTimestamp(timestamp);
 			fr = zuliaWorkPool.fetch(fetchDocument);
 			if (fr.hasResultDocument()) {
 				documentCache.put(new DocId(uniqueId, indexName), fr);
@@ -96,7 +95,6 @@ public class ClientDocumentCache {
 
 			if (fetch) {
 				FetchDocument fetchDocument = new FetchDocument(sr.getUniqueId(), sr.getIndexName());
-				fetchDocument.setTimestamp(sr.getTimestamp());
 				fetchDocumentList.add(fetchDocument);
 			}
 			else {

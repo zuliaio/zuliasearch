@@ -22,6 +22,6 @@ public class DeleteServerRequest extends ServerRequestHandler<DeleteResponse, De
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle internal delete", e);
 	}
 }

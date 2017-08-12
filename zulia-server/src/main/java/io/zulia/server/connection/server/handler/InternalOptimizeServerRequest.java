@@ -16,12 +16,12 @@ public class InternalOptimizeServerRequest extends ServerRequestHandler<Optimize
 	}
 
 	@Override
-	protected OptimizeResponse handleCall(ZuliaIndexManager indexManager, OptimizeRequest request) {
+	protected OptimizeResponse handleCall(ZuliaIndexManager indexManager, OptimizeRequest request) throws Exception {
 		return indexManager.internalOptimize(request);
 	}
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle internal optimize", e);
 	}
 }

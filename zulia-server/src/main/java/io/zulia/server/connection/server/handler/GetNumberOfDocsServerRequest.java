@@ -22,6 +22,6 @@ public class GetNumberOfDocsServerRequest extends ServerRequestHandler<GetNumber
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
+		LOG.log(Level.SEVERE, "Failed to handle get number of documents", e);
 	}
 }
