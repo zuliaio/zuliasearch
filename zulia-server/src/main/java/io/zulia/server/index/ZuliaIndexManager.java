@@ -107,7 +107,10 @@ public class ZuliaIndexManager {
 
 			io.zulia.server.index.ZuliaIndex zuliaIndex = new io.zulia.server.index.ZuliaIndex(serverIndexConfig, documentStorage, indexService);
 			zuliaIndex.setIndexMapping(indexMapping);
+
 			indexMap.put(indexSettings.getIndexName(), zuliaIndex);
+
+			zuliaIndex.loadShards();
 		});
 	}
 

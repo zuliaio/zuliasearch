@@ -3,7 +3,6 @@ package io.zulia.server.index;
 import info.debatty.java.lsh.SuperBit;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
-import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
@@ -28,13 +27,11 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
-import io.zulia.server.exceptions.ShardDoesNotExist;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.index.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ZuliaMultiFieldQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
-import io.zulia.util.ShardUtil;
 import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
 import org.apache.commons.pool2.BasePooledObjectFactory;
@@ -103,8 +100,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private final DocumentStorage documentStorage;
 
-	private Map<Node, Set<Integer>> nodeToShardMap;
-	private Map<Integer, Node> shardToNodeMap;
 	private Timer commitTimer;
 	private TimerTask commitTask;
 	private ZuliaAnalyzerFactory analyzerFactory;
@@ -163,7 +158,6 @@ public class ZuliaIndex implements IndexShardInterface {
 		this.analyzerFactory = new ZuliaAnalyzerFactory(indexConfig);
 
 	}
-
 
 	public void updateIndexSettings(IndexSettings request) throws Exception {
 		indexLock.writeLock().lock();
@@ -334,42 +328,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	}
 
-
-	public ZuliaShard findShardFromUniqueId(String uniqueId) throws ShardDoesNotExist {
-		indexLock.readLock().lock();
-		try {
-			int shardNumber = getShardNumberForUniqueId(uniqueId);
-			ZuliaShard s = shardMap.get(shardNumber);
-			if (s == null) {
-				throw new ShardDoesNotExist(indexName, shardNumber);
-			}
-			return s;
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
-	}
-
-	public Node findNode(String uniqueId) {
-		indexLock.readLock().lock();
-		try {
-			int shardNumber = getShardNumberForUniqueId(uniqueId);
-			return shardToNodeMap.get(shardNumber);
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
-	}
-
-	public Map<Integer, Node> getShardToNodeMap() {
-		return new HashMap<>(shardToNodeMap);
-	}
-
-	private int getShardNumberForUniqueId(String uniqueId) {
-		int numShards = indexConfig.getNumberOfShards();
-		return ShardUtil.findShardForUniqueId(uniqueId, numShards);
-	}
-
 	public void deleteIndex() throws Exception {
 
 		indexService.removeIndex(indexName);
@@ -428,7 +386,6 @@ public class ZuliaIndex implements IndexShardInterface {
 			indexLock.readLock().unlock();
 		}
 	}
-
 
 	public void deleteDocument(DeleteRequest deleteRequest) throws Exception {
 
@@ -1001,5 +958,9 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	public String getIndexName() {
 		return indexName;
+	}
+
+	public void loadShards() {
+		//TODO load shards
 	}
 }
