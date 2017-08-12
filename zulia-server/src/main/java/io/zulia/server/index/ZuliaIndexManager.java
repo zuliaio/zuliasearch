@@ -1,11 +1,9 @@
 package io.zulia.server.index;
 
 import io.zulia.message.ZuliaBase;
-import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaIndex;
-import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
@@ -21,6 +19,7 @@ import io.zulia.server.util.MongoProvider;
 import io.zulia.util.ZuliaThreadFactory;
 import org.bson.Document;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
@@ -141,50 +140,16 @@ public class ZuliaIndexManager {
 
 			@Override
 			protected FetchResponse processInternal(FetchRequest request) throws Exception {
-				return internalFetch(request);
+				return i.fetch(request);
 			}
 		};
 		return router.send(request);
 
 	}
 
-	public FetchResponse internalFetch(FetchRequest fetchRequest) throws Exception {
-
-		io.zulia.server.index.ZuliaIndex i = getIndexFromName(fetchRequest.getIndexName());
-		FetchResponse.Builder frBuilder = FetchResponse.newBuilder();
-
-		String uniqueId = fetchRequest.getUniqueId();
-
-		FetchType resultFetchType = fetchRequest.getResultFetchType();
-		if (!FetchType.NONE.equals(resultFetchType)) {
-
-			ZuliaBase.ResultDocument resultDoc = i
-					.getSourceDocument(uniqueId, resultFetchType, fetchRequest.getDocumentFieldsList(), fetchRequest.getDocumentMaskedFieldsList());
-			if (null != resultDoc) {
-				frBuilder.setResultDocument(resultDoc);
-			}
-		}
-
-		FetchType associatedFetchType = fetchRequest.getAssociatedFetchType();
-		if (!FetchType.NONE.equals(associatedFetchType)) {
-			if (fetchRequest.getFilename() != null) {
-				AssociatedDocument ad = i.getAssociatedDocument(uniqueId, fetchRequest.getFilename(), associatedFetchType);
-				if (ad != null) {
-					frBuilder.addAssociatedDocument(ad);
-				}
-			}
-			else {
-				for (AssociatedDocument ad : i.getAssociatedDocuments(uniqueId, associatedFetchType)) {
-					frBuilder.addAssociatedDocument(ad);
-				}
-			}
-		}
-		return frBuilder.build();
-
-	}
-
-	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) {
-		return null;
+	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws IOException {
+		io.zulia.server.index.ZuliaIndex i = getIndexFromName(indexName);
+		return i.getAssociatedDocumentStream(uniqueId, fileName);
 	}
 
 	public void storeAssociatedDocument(String indexName, String uniqueId, String fileName, InputStream is, Boolean compressed,

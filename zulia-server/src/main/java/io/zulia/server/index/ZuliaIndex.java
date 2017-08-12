@@ -2,6 +2,7 @@ package io.zulia.server.index;
 
 import info.debatty.java.lsh.SuperBit;
 import io.zulia.ZuliaConstants;
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
@@ -16,6 +17,7 @@ import io.zulia.message.ZuliaQuery.FieldSimilarity;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
+import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
@@ -926,7 +928,7 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	public ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
+	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
 			throws Exception {
 		indexLock.readLock().lock();
 		try {
@@ -972,5 +974,37 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	public void loadShards() {
 		//TODO load shards
+	}
+
+	public ZuliaServiceOuterClass.FetchResponse fetch(ZuliaServiceOuterClass.FetchRequest fetchRequest) throws Exception {
+		ZuliaServiceOuterClass.FetchResponse.Builder frBuilder = ZuliaServiceOuterClass.FetchResponse.newBuilder();
+
+		String uniqueId = fetchRequest.getUniqueId();
+
+		FetchType resultFetchType = fetchRequest.getResultFetchType();
+		if (!FetchType.NONE.equals(resultFetchType)) {
+
+			ZuliaBase.ResultDocument resultDoc = getSourceDocument(uniqueId, resultFetchType, fetchRequest.getDocumentFieldsList(),
+					fetchRequest.getDocumentMaskedFieldsList());
+			if (null != resultDoc) {
+				frBuilder.setResultDocument(resultDoc);
+			}
+		}
+
+		FetchType associatedFetchType = fetchRequest.getAssociatedFetchType();
+		if (!FetchType.NONE.equals(associatedFetchType)) {
+			if (fetchRequest.getFilename() != null) {
+				AssociatedDocument ad = getAssociatedDocument(uniqueId, fetchRequest.getFilename(), associatedFetchType);
+				if (ad != null) {
+					frBuilder.addAssociatedDocument(ad);
+				}
+			}
+			else {
+				for (AssociatedDocument ad : getAssociatedDocuments(uniqueId, associatedFetchType)) {
+					frBuilder.addAssociatedDocument(ad);
+				}
+			}
+		}
+		return frBuilder.build();
 	}
 }
