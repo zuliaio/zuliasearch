@@ -6,7 +6,6 @@ import io.zulia.server.connection.server.ZuliaServiceServer;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.rest.ZuliaRESTServiceManager;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Timer;
 
@@ -30,7 +29,7 @@ public class ZuliaNode {
 
 		membershipTimer = new Timer();
 
-		membershipTimer.scheduleAtFixedRate(new MembershipTask(zuliaConfig, nodeService) {
+		MembershipTask membershipTask = new MembershipTask(zuliaConfig, nodeService) {
 
 			@Override
 			protected void handleNodeRemove(Collection<Node> currentOtherNodesActive, Node removedNode) {
@@ -41,7 +40,11 @@ public class ZuliaNode {
 			protected void handleNodeAdded(Collection<Node> currentOtherNodesActive, Node newNode) {
 				indexManager.handleNodeAdded(currentOtherNodesActive, newNode);
 			}
-		}, 0, 1000);
+		};
+		//force membership to run before this constructor exits
+		membershipTask.run();
+
+		membershipTimer.scheduleAtFixedRate(membershipTask, 1000, 1000);
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
@@ -56,9 +59,11 @@ public class ZuliaNode {
 
 	}
 
-	public void start() throws IOException {
+	public void start() throws Exception {
+		indexManager.init();
 		restServiceManager.start();
 		zuliaServiceServer.start();
+
 	}
 
 	public static boolean isEqual(Node node1, Node node2) {

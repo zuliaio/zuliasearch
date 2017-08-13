@@ -57,23 +57,14 @@ public class ZuliaRESTClient {
 	}
 
 	public void storeAssociated(String uniqueId, String indexName, String fileName, File fileToStore) throws IOException {
-		storeAssociated(uniqueId, indexName, fileName, fileToStore, null);
-	}
-
-	public void storeAssociated(String uniqueId, String indexName, String fileName, File fileToStore, Boolean compressed) throws IOException {
-		storeAssociated(uniqueId, indexName, fileName, new FileInputStream(fileToStore), compressed);
+		storeAssociated(uniqueId, indexName, fileName, new FileInputStream(fileToStore));
 	}
 
 	public void storeAssociated(String uniqueId, String indexName, String fileName, InputStream source) throws IOException {
-		storeAssociated(uniqueId, indexName, fileName, source, null);
+		storeAssociated(uniqueId, indexName, fileName, null, source);
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, InputStream source, Boolean compressed) throws IOException {
-		storeAssociated(uniqueId, indexName, fileName, null, source, compressed);
-	}
-
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Map<String, String> meta, InputStream source, Boolean compressed)
-			throws IOException {
+	public void storeAssociated(String uniqueId, String indexName, String fileName, Map<String, String> meta, InputStream source) throws IOException {
 		HttpURLConnection conn = null;
 		OutputStream destination = null;
 		try {
@@ -89,10 +80,6 @@ public class ZuliaRESTClient {
 					String value = meta.get(key);
 					list.add(key + ":" + value);
 				}
-			}
-
-			if (compressed != null) {
-				parameters.put(ZuliaConstants.COMPRESSED, compressed.toString());
 			}
 
 			String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);

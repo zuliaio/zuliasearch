@@ -65,8 +65,7 @@ public class AssociatedResource {
 	@POST
 	@Produces({ MediaType.TEXT_XML })
 	public Response post(@QueryParam(ZuliaConstants.ID) String uniqueId, @QueryParam(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryParam(ZuliaConstants.INDEX) String indexName, @QueryParam(ZuliaConstants.COMPRESSED) Boolean compressed,
-			@QueryParam(ZuliaConstants.META) List<String> meta, InputStream is) {
+			@QueryParam(ZuliaConstants.INDEX) String indexName, @QueryParam(ZuliaConstants.META) List<String> meta, InputStream is) {
 		if (uniqueId != null && fileName != null && indexName != null) {
 
 			HashMap<String, String> metaMap = new HashMap<>();
@@ -86,11 +85,7 @@ public class AssociatedResource {
 
 			try {
 
-				if (compressed == null) {
-					compressed = false;
-				}
-
-				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, compressed, metaMap);
+				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, metaMap);
 
 				return Response.status(ZuliaConstants.SUCCESS)
 						.entity("Stored associated document with uniqueId <" + uniqueId + "> and fileName <" + fileName + ">").build();

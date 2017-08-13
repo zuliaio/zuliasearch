@@ -36,7 +36,6 @@ public interface ZuliaConstants {
 	String ROWS = "rows";
 	String ID = "id";
 	String FILE_NAME = "fileName";
-	String COMPRESSED = "compressed";
 	String META = "meta";
 	String INDEX = "index";
 	String FACET = "facet";

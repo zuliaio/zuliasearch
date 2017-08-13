@@ -1,7 +1,9 @@
-package io.zulia.server.index;
+package io.zulia.server.index.federator;
 
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
+import io.zulia.server.index.RequestNodeBase;
+import io.zulia.server.index.ZuliaIndex;
 
 import java.io.IOException;
 import java.util.ArrayList;

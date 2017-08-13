@@ -19,6 +19,7 @@ import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
+import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
@@ -764,7 +765,7 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	public GetFieldNamesResponse getFieldNames() throws Exception {
+	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
 		indexLock.readLock().lock();
 		try {
 			List<Future<GetFieldNamesResponse>> responses = new ArrayList<>();
@@ -1006,5 +1007,9 @@ public class ZuliaIndex implements IndexShardInterface {
 			}
 		}
 		return frBuilder.build();
+	}
+
+	public ServerIndexConfig getIndexConfig() {
+		return indexConfig;
 	}
 }

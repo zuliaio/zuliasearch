@@ -1,9 +1,11 @@
-package io.zulia.server.index;
+package io.zulia.server.index.router;
 
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
+import io.zulia.server.index.RequestNodeBase;
+import io.zulia.server.index.ZuliaIndex;
 import io.zulia.util.ShardUtil;
 
 import java.io.IOException;

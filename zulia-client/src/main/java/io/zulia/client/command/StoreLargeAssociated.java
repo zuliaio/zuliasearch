@@ -17,7 +17,6 @@ public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult
 	private String indexName;
 	private File fileToStore;
 	private InputStream source;
-	private Boolean compressed;
 	private Map<String, String> meta;
 
 	public StoreLargeAssociated(String uniqueId, String indexName, String fileName, File fileToStore) {
@@ -43,15 +42,6 @@ public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult
 		return this;
 	}
 
-	public Boolean getCompressed() {
-		return compressed;
-	}
-
-	public StoreLargeAssociated setCompressed(Boolean compressed) {
-		this.compressed = compressed;
-		return this;
-	}
-
 	@Override
 	public String getUniqueId() {
 		return uniqueId;
@@ -70,7 +60,7 @@ public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult
 		}
 
 		if (input != null) {
-			zuliaRESTClient.storeAssociated(uniqueId, indexName, fileName, meta, input, compressed);
+			zuliaRESTClient.storeAssociated(uniqueId, indexName, fileName, meta, input);
 		}
 		else {
 			throw new Exception("File or input stream must be set");
