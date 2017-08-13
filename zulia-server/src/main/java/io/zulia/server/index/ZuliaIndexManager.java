@@ -14,8 +14,10 @@ import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.exceptions.IndexDoesNotExist;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
+import io.zulia.server.index.federator.ClearRequestNodeFederator;
 import io.zulia.server.index.federator.GetFieldNamesRequestNodeFederator;
 import io.zulia.server.index.federator.GetTermsRequestNodeFederator;
+import io.zulia.server.index.federator.OptimizeRequestNodeFederator;
 import io.zulia.server.index.router.DeleteRequestNodeRouter;
 import io.zulia.server.index.router.FetchRequestNodeRouter;
 import io.zulia.server.index.router.StoreRequestNodeRouter;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ZuliaIndexManager {
@@ -83,6 +86,19 @@ public class ZuliaIndexManager {
 	}
 
 	public void shutdown() {
+
+		internalClient.close();
+
+		pool.shutdownNow();
+
+		indexMap.values().parallelStream().forEach(zuliaIndex -> {
+			try {
+				zuliaIndex.unload(false);
+			}
+			catch (IOException e) {
+				LOG.log(Level.SEVERE, "Failed to unload index: " + zuliaIndex.getIndexName(), e);
+			}
+		});
 
 	}
 
@@ -194,15 +210,29 @@ public class ZuliaIndexManager {
 		return DeleteRequestNodeRouter.internalDelete(i, request);
 	}
 
-	public BatchDeleteResponse batchDelete(BatchDeleteRequest request) {
-		return null;
+	public BatchDeleteResponse batchDelete(BatchDeleteRequest request) throws Exception {
+		//TODO threading?
+		//TODO grpc streaming?
+		for (DeleteRequest dr : request.getRequestList()) {
+			@SuppressWarnings("unused") DeleteResponse res = delete(dr);
+		}
+		return BatchDeleteResponse.newBuilder().build();
 	}
 
-	public BatchFetchResponse batchFetch(BatchFetchRequest request) {
-		return null;
+	public BatchFetchResponse batchFetch(BatchFetchRequest request) throws Exception {
+		//TODO threading?
+		//TODO grpc streaming?
+		BatchFetchResponse.Builder gfrb = BatchFetchResponse.newBuilder();
+		for (FetchRequest fr : request.getFetchRequestList()) {
+			FetchResponse res = fetch(fr);
+			gfrb.addFetchResponse(res);
+		}
+		return gfrb.build();
 	}
 
 	public CreateIndexResponse createIndex(CreateIndexRequest request) {
+		//if existing index make sure not to allow changing number of shards
+		//
 		return null;
 	}
 
@@ -218,28 +248,34 @@ public class ZuliaIndexManager {
 		return null;
 	}
 
-	public ClearResponse clear(ClearRequest request) {
-		return null;
+	public ClearResponse clear(ClearRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		ClearRequestNodeFederator federator = new ClearRequestNodeFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+				internalClient);
+		return federator.getResponse(request);
 	}
 
-	public ClearResponse internalClear(ClearRequest request) {
-		return null;
+	public ClearResponse internalClear(ClearRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return ClearRequestNodeFederator.internalClear(i, request);
 	}
 
-	public OptimizeResponse optimize(OptimizeRequest request) {
-		return null;
+	public OptimizeResponse optimize(OptimizeRequest request) throws Exception {
+
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		OptimizeRequestNodeFederator federator = new OptimizeRequestNodeFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+				internalClient);
+		return federator.getResponse(request);
 	}
 
 	public OptimizeResponse internalOptimize(OptimizeRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		i.optimize();
-		return OptimizeResponse.newBuilder().build();
+		return OptimizeRequestNodeFederator.internalOptimize(i, request);
 	}
 
 	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
-		String indexName = request.getIndexName();
 		MasterSlaveSettings masterSlaveSettings = request.getMasterSlaveSettings();
-		ZuliaIndex i = getIndexFromName(indexName);
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
 		GetFieldNamesRequestNodeFederator federator = new GetFieldNamesRequestNodeFederator(thisNode, currentOtherNodesActive, masterSlaveSettings, i, pool,
 				internalClient);
 		return federator.getResponse(request);

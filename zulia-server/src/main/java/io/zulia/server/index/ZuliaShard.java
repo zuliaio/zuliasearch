@@ -1172,9 +1172,9 @@ public class ZuliaShard {
 
 	}
 
-	public void optimize() throws IOException {
+	public void optimize(int maxNumberSegments) throws IOException {
 		lastChange = System.currentTimeMillis();
-		indexWriter.forceMerge(1);
+		indexWriter.forceMerge(maxNumberSegments);
 		forceCommit();
 	}
 

@@ -18,6 +18,7 @@ import io.zulia.message.ZuliaQuery.IndexShardResponse;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.message.ZuliaServiceOuterClass.ClearResponse;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
@@ -26,6 +27,8 @@ import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.message.ZuliaServiceOuterClass.InternalGetTermsResponse;
+import io.zulia.message.ZuliaServiceOuterClass.OptimizeRequest;
+import io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
 import io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
@@ -714,18 +717,22 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	public void optimize() throws Exception {
+	public OptimizeResponse optimize(OptimizeRequest request) throws Exception {
 		indexLock.readLock().lock();
 		try {
+			//TODO get from request
+			int maxNumberOfSegments = 1;
 			for (final ZuliaShard shard : shardMap.values()) {
-				shard.optimize();
+				shard.optimize(maxNumberOfSegments);
 			}
 
+			return OptimizeResponse.newBuilder().build();
 		}
 		finally {
 			indexLock.readLock().unlock();
+			reloadIndexSettings();
 		}
-		reloadIndexSettings();
+
 	}
 
 	public GetNumberOfDocsResponse getNumberOfDocs() throws Exception {
@@ -827,7 +834,7 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	public void clear() throws Exception {
+	public ClearResponse clear(ZuliaServiceOuterClass.ClearRequest request) throws Exception {
 		indexLock.writeLock().lock();
 		try {
 			List<Future<Void>> responses = new ArrayList<>();
@@ -859,6 +866,8 @@ public class ZuliaIndex implements IndexShardInterface {
 			}
 
 			documentStorage.deleteAllDocuments();
+
+			return ClearResponse.newBuilder().build();
 
 		}
 		finally {
