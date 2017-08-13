@@ -1,6 +1,6 @@
 package io.zulia.server.index;
 
-import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
@@ -16,7 +16,9 @@ import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
 import io.zulia.server.index.federator.GetFieldNamesRequestNodeFederator;
 import io.zulia.server.index.federator.GetTermsRequestNodeFederator;
+import io.zulia.server.index.router.DeleteRequestNodeRouter;
 import io.zulia.server.index.router.FetchRequestNodeRouter;
+import io.zulia.server.index.router.StoreRequestNodeRouter;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.util.ZuliaThreadFactory;
@@ -131,6 +133,11 @@ public class ZuliaIndexManager {
 
 	}
 
+	public FetchResponse internalFetch(FetchRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return FetchRequestNodeRouter.internalFetch(i, request);
+	}
+
 	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws IOException {
 		ZuliaIndex i = getIndexFromName(indexName);
 		return i.getAssociatedDocumentStream(uniqueId, fileName);
@@ -163,12 +170,28 @@ public class ZuliaIndexManager {
 		return null;
 	}
 
-	public StoreResponse store(StoreRequest request) {
-		return null;
+	public StoreResponse store(StoreRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		StoreRequestNodeRouter router = new StoreRequestNodeRouter(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, request.getUniqueId(),
+				internalClient);
+		return router.send(request);
 	}
 
-	public DeleteResponse delete(DeleteRequest request) {
-		return null;
+	public StoreResponse internalStore(StoreRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return StoreRequestNodeRouter.internalStore(i, request);
+	}
+
+	public DeleteResponse delete(DeleteRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		DeleteRequestNodeRouter router = new DeleteRequestNodeRouter(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i,
+				request.getUniqueId(), internalClient);
+		return router.send(request);
+	}
+
+	public DeleteResponse internalDelete(DeleteRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return DeleteRequestNodeRouter.internalDelete(i, request);
 	}
 
 	public BatchDeleteResponse batchDelete(BatchDeleteRequest request) {
@@ -215,7 +238,7 @@ public class ZuliaIndexManager {
 
 	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
 		String indexName = request.getIndexName();
-		ZuliaBase.MasterSlaveSettings masterSlaveSettings = request.getMasterSlaveSettings();
+		MasterSlaveSettings masterSlaveSettings = request.getMasterSlaveSettings();
 		ZuliaIndex i = getIndexFromName(indexName);
 		GetFieldNamesRequestNodeFederator federator = new GetFieldNamesRequestNodeFederator(thisNode, currentOtherNodesActive, masterSlaveSettings, i, pool,
 				internalClient);

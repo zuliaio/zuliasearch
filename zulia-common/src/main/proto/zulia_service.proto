@@ -11,9 +11,12 @@ service ZuliaService {
     rpc Query (QueryRequest) returns (QueryResponse);
     rpc InternalQuery (QueryRequest) returns (InternalQueryResponse);
     rpc Store (StoreRequest) returns (StoreResponse);
+    rpc InternalStore (StoreRequest) returns (StoreResponse);
     rpc Delete (DeleteRequest) returns (DeleteResponse);
+    rpc InternalDelete (DeleteRequest) returns (DeleteResponse);
     rpc BatchDelete (BatchDeleteRequest) returns (BatchDeleteResponse);
     rpc Fetch (FetchRequest) returns (FetchResponse);
+    rpc InternalFetch (FetchRequest) returns (FetchResponse);
     rpc BatchFetch (BatchFetchRequest) returns (BatchFetchResponse);
     rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
     rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);

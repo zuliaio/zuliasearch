@@ -8,13 +8,15 @@ import io.zulia.server.index.ZuliaIndexManager;
 
 public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 
-	private final ZuliaIndexManager indexManager;
 	private final InternalQueryServerRequest internalQueryServerRequest;
 	private final QueryServerRequest queryServerRequest;
 	private final StoreServerRequest storeServerRequest;
+	private final InternalStoreServerRequest internalStoreServerRequest;
 	private final DeleteServerRequest deleteServerRequest;
+	private final InternalDeleteServerRequest internalDeleteServerRequest;
 	private final BatchDeleteServerRequest batchDeleteServerRequest;
 	private final FetchServerRequest fetchServerServerRequest;
+	private final InternalFetchServerRequest internalFetchServerServerRequest;
 	private final BatchFetchServerRequest batchFetchServerRequest;
 	private final CreateIndexServerRequest createIndexServerRequest;
 	private final DeleteIndexServerRequest deleteIndexServerRequest;
@@ -33,13 +35,15 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	private final GetIndexSettingsServerRequest getIndexSettingsServerRequest;
 
 	public ZuliaServiceHandler(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
 		internalQueryServerRequest = new InternalQueryServerRequest(indexManager);
 		queryServerRequest = new QueryServerRequest(indexManager);
 		storeServerRequest = new StoreServerRequest(indexManager);
+		internalStoreServerRequest = new InternalStoreServerRequest(indexManager);
 		deleteServerRequest = new DeleteServerRequest(indexManager);
+		internalDeleteServerRequest = new InternalDeleteServerRequest(indexManager);
 		batchDeleteServerRequest = new BatchDeleteServerRequest(indexManager);
 		fetchServerServerRequest = new FetchServerRequest(indexManager);
+		internalFetchServerServerRequest = new InternalFetchServerRequest(indexManager);
 		batchFetchServerRequest = new BatchFetchServerRequest(indexManager);
 		createIndexServerRequest = new CreateIndexServerRequest(indexManager);
 		deleteIndexServerRequest = new DeleteIndexServerRequest(indexManager);
@@ -75,8 +79,18 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
+	public void internalStore(StoreRequest request, StreamObserver<StoreResponse> responseObserver) {
+		internalStoreServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
 	public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
 		deleteServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalDelete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+		internalDeleteServerRequest.handleRequest(request, responseObserver);
 	}
 
 	@Override
@@ -87,6 +101,11 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	@Override
 	public void fetch(FetchRequest request, StreamObserver<FetchResponse> responseObserver) {
 		fetchServerServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalFetch(FetchRequest request, StreamObserver<FetchResponse> responseObserver) {
+		internalFetchServerServerRequest.handleRequest(request, responseObserver);
 	}
 
 	@Override

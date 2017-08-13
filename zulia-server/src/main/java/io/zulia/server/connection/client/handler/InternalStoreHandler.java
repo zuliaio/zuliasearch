@@ -13,7 +13,7 @@ public class InternalStoreHandler extends InternalRequestHandler<StoreResponse, 
 	@Override
 	protected StoreResponse getResponse(StoreRequest storeRequest, InternalRpcConnection rpcConnection) {
 
-		return rpcConnection.getService().store(storeRequest);
+		return rpcConnection.getService().internalStore(storeRequest);
 	}
 
 }

@@ -7,17 +7,17 @@ import io.zulia.server.index.ZuliaIndexManager;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class DeleteServerRequest extends ServerRequestHandler<DeleteResponse, DeleteRequest> {
+public class InternalDeleteServerRequest extends ServerRequestHandler<DeleteResponse, DeleteRequest> {
 
-	private final static Logger LOG = Logger.getLogger(DeleteServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(InternalDeleteServerRequest.class.getSimpleName());
 
-	public DeleteServerRequest(ZuliaIndexManager indexManager) {
+	public InternalDeleteServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
 	}
 
 	@Override
 	protected DeleteResponse handleCall(ZuliaIndexManager indexManager, DeleteRequest request) throws Exception {
-		return indexManager.delete(request);
+		return indexManager.internalDelete(request);
 	}
 
 	@Override

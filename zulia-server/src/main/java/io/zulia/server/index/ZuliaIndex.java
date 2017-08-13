@@ -19,6 +19,7 @@ import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
+import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
@@ -27,6 +28,7 @@ import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.message.ZuliaServiceOuterClass.InternalGetTermsResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
+import io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
@@ -352,7 +354,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	}
 
-	public void storeInternal(StoreRequest storeRequest) throws Exception {
+	public StoreResponse internalStore(StoreRequest storeRequest) throws Exception {
 		indexLock.readLock().lock();
 
 		try {
@@ -385,6 +387,7 @@ public class ZuliaIndex implements IndexShardInterface {
 				documentStorage.storeAssociatedDocument(ad);
 			}
 
+			return StoreResponse.newBuilder().build();
 		}
 		finally {
 			indexLock.readLock().unlock();
@@ -400,7 +403,7 @@ public class ZuliaIndex implements IndexShardInterface {
 		return zuliaShard;
 	}
 
-	public void deleteDocument(DeleteRequest deleteRequest) throws Exception {
+	public DeleteResponse deleteDocument(DeleteRequest deleteRequest) throws Exception {
 
 		indexLock.readLock().lock();
 
@@ -420,6 +423,8 @@ public class ZuliaIndex implements IndexShardInterface {
 				String fileName = deleteRequest.getFilename();
 				documentStorage.deleteAssociatedDocument(uniqueId, fileName);
 			}
+
+			return DeleteResponse.newBuilder().build();
 
 		}
 		finally {

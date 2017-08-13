@@ -11,6 +11,6 @@ public class InternalFetchHandler extends InternalRequestHandler<ZuliaServiceOut
 
 	@Override
 	protected ZuliaServiceOuterClass.FetchResponse getResponse(ZuliaServiceOuterClass.FetchRequest fetchRequest, InternalRpcConnection rpcConnection) {
-		return rpcConnection.getService().fetch(fetchRequest);
+		return rpcConnection.getService().internalFetch(fetchRequest);
 	}
 }

@@ -7,21 +7,21 @@ import io.zulia.server.index.ZuliaIndexManager;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class StoreServerRequest extends ServerRequestHandler<StoreResponse, StoreRequest> {
+public class InternalStoreServerRequest extends ServerRequestHandler<StoreResponse, StoreRequest> {
 
-	private final static Logger LOG = Logger.getLogger(StoreServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(InternalStoreServerRequest.class.getSimpleName());
 
-	public StoreServerRequest(ZuliaIndexManager indexManager) {
+	public InternalStoreServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
 	}
 
 	@Override
 	protected StoreResponse handleCall(ZuliaIndexManager indexManager, StoreRequest request) throws Exception {
-		return indexManager.store(request);
+		return indexManager.internalStore(request);
 	}
 
 	@Override
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle store", e);
+		LOG.log(Level.SEVERE, "Failed to handle internal store", e);
 	}
 }

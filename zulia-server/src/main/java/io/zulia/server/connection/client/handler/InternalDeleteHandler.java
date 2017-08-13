@@ -12,7 +12,7 @@ public class InternalDeleteHandler extends InternalRequestHandler<DeleteResponse
 
 	@Override
 	protected DeleteResponse getResponse(DeleteRequest deleteRequest, InternalRpcConnection rpcConnection) {
-		return rpcConnection.getService().delete(deleteRequest);
+		return rpcConnection.getService().internalDelete(deleteRequest);
 	}
 
 }
