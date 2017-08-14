@@ -259,10 +259,33 @@ public class ZuliaIndexManager {
 		return gfrb.build();
 	}
 
-	public CreateIndexResponse createIndex(CreateIndexRequest request) {
+	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
 		//if existing index make sure not to allow changing number of shards
 
-		return null;
+		IndexSettings existingIndex = indexService.getIndex(request.getIndexSettings().getIndexName());
+
+		if (existingIndex == null) {
+
+			indexService.createIndex(request.getIndexSettings());
+		}
+		else {
+
+			if (existingIndex.getNumberOfShards() != request.getIndexSettings().getNumberOfShards()) {
+				throw new IllegalArgumentException("Cannot change shards for existing index");
+			}
+
+			indexService.createIndex(request.getIndexSettings());
+		}
+
+		//index mapping
+
+		//balance shards / indexes
+
+		//load shards / index
+
+		//tell others
+
+		return CreateIndexResponse.newBuilder().build();
 	}
 
 	public DeleteIndexResponse deleteIndex(DeleteIndexRequest request) {
