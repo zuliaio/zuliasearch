@@ -720,20 +720,22 @@ public class ZuliaIndex implements IndexShardInterface {
 	public OptimizeResponse optimize(OptimizeRequest request) throws Exception {
 		indexLock.readLock().lock();
 		try {
-			//TODO get from request
 			int maxNumberOfSegments = 1;
+			if (request.getMaxNumberOfSegments() > 0) {
+				maxNumberOfSegments = request.getMaxNumberOfSegments();
+			}
 			for (final ZuliaShard shard : shardMap.values()) {
 				shard.optimize(maxNumberOfSegments);
 			}
 
-			return OptimizeResponse.newBuilder().build();
 		}
 		finally {
 			indexLock.readLock().unlock();
-			reloadIndexSettings();
 		}
-
+		reloadIndexSettings();
+		return OptimizeResponse.newBuilder().build();
 	}
+
 
 	public GetNumberOfDocsResponse getNumberOfDocs() throws Exception {
 		indexLock.readLock().lock();

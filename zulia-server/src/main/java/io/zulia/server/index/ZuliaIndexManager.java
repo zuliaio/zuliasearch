@@ -270,6 +270,7 @@ public class ZuliaIndexManager {
 
 	public OptimizeResponse internalOptimize(OptimizeRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		i.optimize(request);
 		return OptimizeRequestNodeFederator.internalOptimize(i, request);
 	}
 

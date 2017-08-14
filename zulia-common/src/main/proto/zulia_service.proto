@@ -167,6 +167,7 @@ message ClearResponse {
 
 message OptimizeRequest {
     string indexName = 1;
+    int32 maxNumberOfSegments = 2;
 }
 
 message OptimizeResponse {
