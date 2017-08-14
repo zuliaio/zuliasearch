@@ -16,7 +16,7 @@ public class CreateIndexServerRequest extends ServerRequestHandler<CreateIndexRe
 	}
 
 	@Override
-	protected CreateIndexResponse handleCall(ZuliaIndexManager indexManager, CreateIndexRequest request) {
+	protected CreateIndexResponse handleCall(ZuliaIndexManager indexManager, CreateIndexRequest request) throws Exception {
 		return indexManager.createIndex(request);
 	}
 
