@@ -16,14 +16,17 @@ import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
 import io.zulia.server.index.federator.ClearRequestNodeFederator;
 import io.zulia.server.index.federator.GetFieldNamesRequestNodeFederator;
+import io.zulia.server.index.federator.GetNumberOfDocsRequestNodeFederator;
 import io.zulia.server.index.federator.GetTermsRequestNodeFederator;
 import io.zulia.server.index.federator.OptimizeRequestNodeFederator;
+import io.zulia.server.index.federator.QueryRequestNodeFederator;
 import io.zulia.server.index.router.DeleteRequestNodeRouter;
 import io.zulia.server.index.router.FetchRequestNodeRouter;
 import io.zulia.server.index.router.StoreRequestNodeRouter;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.util.ZuliaThreadFactory;
+import org.apache.lucene.search.Query;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -31,7 +34,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -177,13 +183,36 @@ public class ZuliaIndexManager {
 		return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).build();
 	}
 
-	public InternalQueryResponse internalQuery(QueryRequest request) {
+	public InternalQueryResponse internalQuery(QueryRequest request) throws Exception {
 
-		return null;
+		Map<String, Query> queryMap = new HashMap<>();
+		Set<ZuliaIndex> indexes = new HashSet<>();
+
+		populateIndexesAndIndexMap(request, queryMap, indexes);
+
+		return QueryRequestNodeFederator.internalQuery(indexes, request, queryMap);
 	}
 
-	public QueryResponse query(QueryRequest request) {
-		return null;
+	public QueryResponse query(QueryRequest request) throws Exception {
+		Map<String, Query> queryMap = new HashMap<>();
+		Set<ZuliaIndex> indexes = new HashSet<>();
+
+		populateIndexesAndIndexMap(request, queryMap, indexes);
+
+		QueryRequestNodeFederator federator = new QueryRequestNodeFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), indexes, pool,
+				internalClient, queryMap);
+
+		return federator.getResponse(request);
+	}
+
+	private void populateIndexesAndIndexMap(QueryRequest request, Map<String, Query> queryMap, Set<ZuliaIndex> indexes) throws Exception {
+		for (String indexName : request.getIndexList()) {
+			ZuliaIndex index = getIndexFromName(indexName);
+			indexes.add(index);
+
+			Query query = index.getQuery(request);
+			queryMap.put(indexName, query);
+		}
 	}
 
 	public StoreResponse store(StoreRequest request) throws Exception {
@@ -232,7 +261,7 @@ public class ZuliaIndexManager {
 
 	public CreateIndexResponse createIndex(CreateIndexRequest request) {
 		//if existing index make sure not to allow changing number of shards
-		//
+
 		return null;
 	}
 
@@ -240,12 +269,17 @@ public class ZuliaIndexManager {
 		return null;
 	}
 
-	public GetNumberOfDocsResponse getNumberOfDocs(GetNumberOfDocsRequest request) {
-		return null;
+	public GetNumberOfDocsResponse getNumberOfDocs(GetNumberOfDocsRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		GetNumberOfDocsRequestNodeFederator federator = new GetNumberOfDocsRequestNodeFederator(thisNode, currentOtherNodesActive,
+				MasterSlaveSettings.MASTER_ONLY, i, pool, internalClient);
+		return federator.getResponse(request);
+
 	}
 
-	public GetNumberOfDocsResponse getNumberOfDocsInternal(GetNumberOfDocsRequest request) {
-		return null;
+	public GetNumberOfDocsResponse getNumberOfDocsInternal(GetNumberOfDocsRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return GetNumberOfDocsRequestNodeFederator.internalGetNumberOfDocs(i, request);
 	}
 
 	public ClearResponse clear(ClearRequest request) throws Exception {

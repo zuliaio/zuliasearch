@@ -16,7 +16,7 @@ public class InternalClearServerRequest extends ServerRequestHandler<ClearRespon
 	}
 
 	@Override
-	protected ClearResponse handleCall(ZuliaIndexManager indexManager, ClearRequest request) {
+	protected ClearResponse handleCall(ZuliaIndexManager indexManager, ClearRequest request) throws Exception {
 		return indexManager.internalClear(request);
 	}
 

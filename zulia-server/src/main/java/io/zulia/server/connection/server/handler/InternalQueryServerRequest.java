@@ -16,7 +16,7 @@ public class InternalQueryServerRequest extends ServerRequestHandler<InternalQue
 	}
 
 	@Override
-	protected InternalQueryResponse handleCall(ZuliaIndexManager indexManager, QueryRequest request) {
+	protected InternalQueryResponse handleCall(ZuliaIndexManager indexManager, QueryRequest request) throws Exception {
 		return indexManager.internalQuery(request);
 	}
 

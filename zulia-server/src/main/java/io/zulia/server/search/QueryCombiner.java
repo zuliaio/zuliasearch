@@ -25,6 +25,7 @@ import org.apache.lucene.util.FixedBitSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -42,7 +43,6 @@ public class QueryCombiner {
 
 	private final static Logger log = Logger.getLogger(QueryCombiner.class.getSimpleName());
 
-	private final Map<String, ZuliaIndex> usedIndexMap;
 	private final List<InternalQueryResponse> responses;
 
 	private final Map<String, Map<Integer, ShardQueryResponse>> indexToShardQueryResponseMap;
@@ -61,8 +61,18 @@ public class QueryCombiner {
 
 	private Query query;
 
-	public QueryCombiner(Map<String, ZuliaIndex> usedIndexMap, QueryRequest request, List<InternalQueryResponse> responses) {
-		this.usedIndexMap = usedIndexMap;
+	private final Collection<ZuliaIndex> indexes;
+	private final Map<String, Integer> indexToShardCount;
+
+	public QueryCombiner(Collection<ZuliaIndex> indexes, QueryRequest request, List<InternalQueryResponse> responses) {
+		this.indexToShardCount = new HashMap<>();
+
+		for (ZuliaIndex zuliaIndex : indexes) {
+			indexToShardCount.put(zuliaIndex.getIndexName(), zuliaIndex.getNumberOfShards());
+		}
+
+		this.indexes = indexes;
+
 		this.responses = responses;
 		this.amount = request.getAmount() + request.getStart();
 		this.indexToShardQueryResponseMap = new HashMap<>();
@@ -78,7 +88,7 @@ public class QueryCombiner {
 		this.resultsSize = 0;
 	}
 
-	public void validate() throws Exception {
+	private void validate() throws Exception {
 		for (InternalQueryResponse iqr : responses) {
 
 			for (IndexShardResponse isr : iqr.getIndexShardResponseList()) {
@@ -105,12 +115,12 @@ public class QueryCombiner {
 
 		}
 
-		for (String indexName : usedIndexMap.keySet()) {
-			int numberOfShards = usedIndexMap.get(indexName).getNumberOfShards();
-			Map<Integer, ShardQueryResponse> shardResponseMap = indexToShardQueryResponseMap.get(indexName);
+		for (ZuliaIndex index : indexes) {
+			int numberOfShards = index.getNumberOfShards();
+			Map<Integer, ShardQueryResponse> shardResponseMap = indexToShardQueryResponseMap.get(index.getIndexName());
 
 			if (shardResponseMap == null) {
-				throw new Exception("Missing index <" + indexName + "> in response");
+				throw new Exception("Missing index <" + index.getIndexName() + "> in response");
 			}
 
 			if (shardResponseMap.size() != numberOfShards) {
@@ -126,6 +136,8 @@ public class QueryCombiner {
 	}
 
 	public QueryResponse getQueryResponse() throws Exception {
+
+		validate();
 
 		boolean sorting = (sortRequest != null && !sortRequest.getFieldSortList().isEmpty());
 
@@ -146,7 +158,7 @@ public class QueryCombiner {
 		Map<String, ScoredResult[]> lastIndexResultMap = new HashMap<>();
 
 		for (String indexName : indexToShardQueryResponseMap.keySet()) {
-			int numberOfShards = usedIndexMap.get(indexName).getNumberOfShards();
+			int numberOfShards = indexToShardCount.get(indexName);
 			lastIndexResultMap.put(indexName, new ScoredResult[numberOfShards]);
 		}
 
@@ -165,7 +177,7 @@ public class QueryCombiner {
 
 		Map<AnalysisRequest, Map<String, Term.Builder>> analysisRequestToTermMap = new HashMap<>();
 
-		int segIndex = 0;
+		int shardIndex = 0;
 
 		for (ShardQueryResponse sr : shardResponses) {
 
@@ -204,16 +216,16 @@ public class QueryCombiner {
 					}
 					long count = fc.getCount();
 					facetSum.addAndGet(count);
-					shardSet.set(segIndex);
+					shardSet.set(shardIndex);
 
-					minForShard[segIndex] = count;
+					minForShard[shardIndex] = count;
 				}
 
 				int shardFacets = countRequest.getShardFacets();
 				int facetCountCount = fg.getFacetCountCount();
 				if (facetCountCount < shardFacets || (shardFacets == 0)) {
-					fullResults.set(segIndex);
-					minForShard[segIndex] = 0;
+					fullResults.set(shardIndex);
+					minForShard[shardIndex] = 0;
 				}
 			}
 
@@ -243,7 +255,7 @@ public class QueryCombiner {
 				}
 			}
 
-			segIndex++;
+			shardIndex++;
 		}
 
 		for (AnalysisRequest analysisRequest : analysisRequestList) {
@@ -348,8 +360,7 @@ public class QueryCombiner {
 			for (FieldSort fieldSort : fieldSortList) {
 				String sortField = fieldSort.getSortField();
 
-				for (String indexName : usedIndexMap.keySet()) {
-					ZuliaIndex index = usedIndexMap.get(indexName);
+				for (ZuliaIndex index : indexes) {
 					FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);
 
 					FieldConfig.FieldType indexSortType = index.getSortFieldType(sortField);
@@ -441,7 +452,8 @@ public class QueryCombiner {
 			}
 
 			outside:
-			for (String indexName : usedIndexMap.keySet()) {
+			for (ZuliaIndex index : indexes) {
+				String indexName = index.getIndexName();
 				ScoredResult[] lastForShardArr = lastIndexResultMap.get(indexName);
 				ScoredResult lastForIndex = null;
 				for (ScoredResult sr : lastForShardArr) {
@@ -462,9 +474,9 @@ public class QueryCombiner {
 					continue;
 				}
 
-				double shardTolerance = usedIndexMap.get(indexName).getShardTolerance();
+				double shardTolerance = index.getShardTolerance();
 
-				int numberOfShards = usedIndexMap.get(indexName).getNumberOfShards();
+				int numberOfShards = index.getNumberOfShards();
 				Map<Integer, ShardQueryResponse> shardResponseMap = indexToShardQueryResponseMap.get(indexName);
 				for (int shardNumber = 0; shardNumber < numberOfShards; shardNumber++) {
 					ShardQueryResponse sr = shardResponseMap.get(shardNumber);
@@ -526,7 +538,7 @@ public class QueryCombiner {
 		LastResult.Builder newLastResultBuilder = LastResult.newBuilder();
 		for (String indexName : lastIndexResultMap.keySet()) {
 			ScoredResult[] lastForShardArr = lastIndexResultMap.get(indexName);
-			int numberOfShards = usedIndexMap.get(indexName).getNumberOfShards();
+			int numberOfShards = indexToShardCount.get(indexName);
 			List<ScoredResult> indexList = new ArrayList<>();
 			for (int shard = 0; shard < numberOfShards; shard++) {
 				if (lastForShardArr[shard] != null) {

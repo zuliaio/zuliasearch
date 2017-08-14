@@ -16,7 +16,7 @@ public class InternalGetNumberOfDocsServerRequest extends ServerRequestHandler<G
 	}
 
 	@Override
-	protected GetNumberOfDocsResponse handleCall(ZuliaIndexManager indexManager, GetNumberOfDocsRequest request) {
+	protected GetNumberOfDocsResponse handleCall(ZuliaIndexManager indexManager, GetNumberOfDocsRequest request) throws Exception {
 		return indexManager.getNumberOfDocsInternal(request);
 	}
 

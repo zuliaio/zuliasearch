@@ -16,7 +16,7 @@ public class QueryServerRequest extends ServerRequestHandler<QueryResponse, Quer
 	}
 
 	@Override
-	protected QueryResponse handleCall(ZuliaIndexManager indexManager, QueryRequest request) {
+	protected QueryResponse handleCall(ZuliaIndexManager indexManager, QueryRequest request) throws Exception {
 		return indexManager.query(request);
 	}
 

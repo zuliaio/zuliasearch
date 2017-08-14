@@ -1,6 +1,6 @@
 package io.zulia.server.index.router;
 
-import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
@@ -15,8 +15,8 @@ public abstract class RequestNodeRouter<I, O> extends RequestNodeBase<I, O> {
 
 	private Node node;
 
-	public RequestNodeRouter(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
-			String uniqueId) throws IOException {
+	public RequestNodeRouter(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index, String uniqueId)
+			throws IOException {
 
 		super(thisNode, otherNodesActive, masterSlaveSettings);
 

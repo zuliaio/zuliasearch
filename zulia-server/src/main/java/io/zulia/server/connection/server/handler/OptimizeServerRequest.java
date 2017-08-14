@@ -16,7 +16,7 @@ public class OptimizeServerRequest extends ServerRequestHandler<OptimizeResponse
 	}
 
 	@Override
-	protected OptimizeResponse handleCall(ZuliaIndexManager indexManager, OptimizeRequest request) {
+	protected OptimizeResponse handleCall(ZuliaIndexManager indexManager, OptimizeRequest request) throws Exception {
 		return indexManager.optimize(request);
 	}
 

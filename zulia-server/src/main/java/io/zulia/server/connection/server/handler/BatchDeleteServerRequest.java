@@ -16,7 +16,7 @@ public class BatchDeleteServerRequest extends ServerRequestHandler<BatchDeleteRe
 	}
 
 	@Override
-	protected BatchDeleteResponse handleCall(ZuliaIndexManager indexManager, BatchDeleteRequest request) {
+	protected BatchDeleteResponse handleCall(ZuliaIndexManager indexManager, BatchDeleteRequest request) throws Exception {
 		return indexManager.batchDelete(request);
 	}
 

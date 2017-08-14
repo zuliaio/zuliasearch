@@ -16,7 +16,7 @@ public class BatchFetchServerRequest extends ServerRequestHandler<BatchFetchResp
 	}
 
 	@Override
-	protected BatchFetchResponse handleCall(ZuliaIndexManager indexManager, BatchFetchRequest request) {
+	protected BatchFetchResponse handleCall(ZuliaIndexManager indexManager, BatchFetchRequest request) throws Exception {
 		return indexManager.batchFetch(request);
 	}
 
