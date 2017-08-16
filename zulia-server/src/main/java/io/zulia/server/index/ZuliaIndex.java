@@ -91,8 +91,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -104,7 +102,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private final GenericObjectPool<ZuliaMultiFieldQueryParser> parsers;
 	private final ConcurrentHashMap<Integer, ZuliaShard> shardMap;
-	private final ReadWriteLock indexLock;
+
 	private final ExecutorService shardPool;
 	private final int numberOfShards;
 	private final String indexName;
@@ -147,7 +145,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		});
 
-		this.indexLock = new ReentrantReadWriteLock(true);
 		this.shardMap = new ConcurrentHashMap<>();
 
 		commitTimer = new Timer(indexName + "-CommitTimer", true);
@@ -171,15 +168,10 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	public void updateIndexSettings(IndexSettings request) throws Exception {
-		indexLock.writeLock().lock();
-		try {
 
-			indexService.createIndex(indexConfig.getIndexSettings());
-			indexConfig.configure(request);
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
+		indexService.createIndex(indexConfig.getIndexSettings());
+		indexConfig.configure(request);
+
 	}
 
 	public FieldConfig.FieldType getSortFieldType(String fieldName) {
@@ -187,74 +179,55 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	private void doCommit(boolean force) {
-		indexLock.readLock().lock();
-		try {
-			Collection<ZuliaShard> shards = shardMap.values();
-			for (ZuliaShard shard : shards) {
-				try {
-					if (force) {
-						shard.forceCommit();
-					}
-					else {
-						shard.doCommit();
-					}
+
+		Collection<ZuliaShard> shards = shardMap.values();
+		for (ZuliaShard shard : shards) {
+			try {
+				if (force) {
+					shard.forceCommit();
 				}
-				catch (Exception e) {
-					LOG.log(Level.SEVERE, "Failed to flush shard <" + shard.getShardNumber() + "> for index <" + indexName + ">", e);
+				else {
+					shard.doCommit();
 				}
 			}
-		}
-		finally {
-			indexLock.readLock().unlock();
+			catch (Exception e) {
+				LOG.log(Level.SEVERE, "Failed to flush shard <" + shard.getShardNumber() + "> for index <" + indexName + ">", e);
+			}
 		}
 
 	}
 
 	public void unload(boolean terminate) throws IOException {
-		indexLock.writeLock().lock();
-		try {
-			LOG.info("Canceling timers for <" + indexName + ">");
-			commitTask.cancel();
-			commitTimer.cancel();
 
-			if (!terminate) {
-				LOG.info("Committing <" + indexName + ">");
-				doCommit(true);
-			}
+		LOG.info("Canceling timers for <" + indexName + ">");
+		commitTask.cancel();
+		commitTimer.cancel();
 
-			LOG.info("Shutting shard pool for <" + indexName + ">");
-			shardPool.shutdownNow();
-
-			for (Integer shardNumber : shardMap.keySet()) {
-				unloadShard(shardNumber, terminate);
-			}
+		if (!terminate) {
+			LOG.info("Committing <" + indexName + ">");
+			doCommit(true);
 		}
-		finally {
-			indexLock.writeLock().unlock();
+
+		LOG.info("Shutting shard pool for <" + indexName + ">");
+		shardPool.shutdownNow();
+
+		for (Integer shardNumber : shardMap.keySet()) {
+			unloadShard(shardNumber, terminate);
 		}
+
 	}
 
 	private void loadShard(int shardNumber) throws Exception {
-		indexLock.writeLock().lock();
-		try {
-			if (!shardMap.containsKey(shardNumber)) {
 
-				//Just for clarity
-				IndexShardInterface indexShardInterface = this;
+		//Just for clarity
+		IndexShardInterface indexShardInterface = this;
 
-				//doesnt need to be done each time and it is done in StartNode but helps with test cases that take different paths
+		ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, new FacetsConfig());
+		shardMap.put(shardNumber, s);
 
-				ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, new FacetsConfig());
-				shardMap.put(shardNumber, s);
+		LOG.info("Loaded shard <" + shardNumber + "> for index <" + indexName + ">");
+		LOG.info("Current shards <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
 
-				LOG.info("Loaded shard <" + shardNumber + "> for index <" + indexName + ">");
-				LOG.info("Current shards <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
-
-			}
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
 	}
 
 	public IndexWriter getIndexWriter(int shardNumber) throws Exception {
@@ -319,22 +292,13 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	public void unloadShard(int shardNumber, boolean terminate) throws IOException {
-		indexLock.writeLock().lock();
-		try {
 
-			if (shardMap.containsKey(shardNumber)) {
-				ZuliaShard s = shardMap.remove(shardNumber);
-				if (s != null) {
-					LOG.info("Closing shard <" + shardNumber + "> for index <" + indexName + ">");
-					s.close(terminate);
-					LOG.info("Removed shard <" + shardNumber + "> for index <" + indexName + ">");
-					LOG.info("Current shards <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
-				}
-			}
-
-		}
-		finally {
-			indexLock.writeLock().unlock();
+		ZuliaShard s = shardMap.remove(shardNumber);
+		if (s != null) {
+			LOG.info("Closing shard <" + shardNumber + "> for index <" + indexName + ">");
+			s.close(terminate);
+			LOG.info("Removed shard <" + shardNumber + "> for index <" + indexName + ">");
+			LOG.info("Current shards <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
 		}
 
 	}
@@ -360,43 +324,37 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	public StoreResponse internalStore(StoreRequest storeRequest) throws Exception {
-		indexLock.readLock().lock();
 
-		try {
+		long timestamp = System.currentTimeMillis();
 
-			long timestamp = System.currentTimeMillis();
+		String uniqueId = storeRequest.getUniqueId();
 
-			String uniqueId = storeRequest.getUniqueId();
-
-			if (storeRequest.hasResultDocument()) {
-				ResultDocument resultDocument = storeRequest.getResultDocument();
-				Document document;
-				if (resultDocument.getDocument() != null) {
-					document = ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray());
-				}
-				else {
-					document = new Document();
-				}
-
-				ZuliaShard s = findShardFromUniqueId(uniqueId);
-				s.index(uniqueId, timestamp, document, resultDocument.getMetadataList());
-
+		if (storeRequest.hasResultDocument()) {
+			ResultDocument resultDocument = storeRequest.getResultDocument();
+			Document document;
+			if (resultDocument.getDocument() != null) {
+				document = ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray());
+			}
+			else {
+				document = new Document();
 			}
 
-			if (storeRequest.getClearExistingAssociated()) {
-				documentStorage.deleteAssociatedDocuments(uniqueId);
-			}
+			ZuliaShard s = findShardFromUniqueId(uniqueId);
+			s.index(uniqueId, timestamp, document, resultDocument.getMetadataList());
 
-			for (AssociatedDocument ad : storeRequest.getAssociatedDocumentList()) {
-				ad = AssociatedDocument.newBuilder(ad).setTimestamp(timestamp).build();
-				documentStorage.storeAssociatedDocument(ad);
-			}
-
-			return StoreResponse.newBuilder().build();
 		}
-		finally {
-			indexLock.readLock().unlock();
+
+		if (storeRequest.getClearExistingAssociated()) {
+			documentStorage.deleteAssociatedDocuments(uniqueId);
 		}
+
+		for (AssociatedDocument ad : storeRequest.getAssociatedDocumentList()) {
+			ad = AssociatedDocument.newBuilder(ad).setTimestamp(timestamp).build();
+			documentStorage.storeAssociatedDocument(ad);
+		}
+
+		return StoreResponse.newBuilder().build();
+
 	}
 
 	private ZuliaShard findShardFromUniqueId(String uniqueId) throws ShardDoesNotExistException {
@@ -410,120 +368,98 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	public DeleteResponse deleteDocument(DeleteRequest deleteRequest) throws Exception {
 
-		indexLock.readLock().lock();
+		String uniqueId = deleteRequest.getUniqueId();
 
-		try {
-
-			String uniqueId = deleteRequest.getUniqueId();
-
-			if (deleteRequest.getDeleteDocument()) {
-				ZuliaShard s = findShardFromUniqueId(deleteRequest.getUniqueId());
-				s.deleteDocument(uniqueId);
-			}
-
-			if (deleteRequest.getDeleteAllAssociated()) {
-				documentStorage.deleteAssociatedDocuments(uniqueId);
-			}
-			else if (deleteRequest.getFilename() != null) {
-				String fileName = deleteRequest.getFilename();
-				documentStorage.deleteAssociatedDocument(uniqueId, fileName);
-			}
-
-			return DeleteResponse.newBuilder().build();
-
+		if (deleteRequest.getDeleteDocument()) {
+			ZuliaShard s = findShardFromUniqueId(deleteRequest.getUniqueId());
+			s.deleteDocument(uniqueId);
 		}
-		finally {
-			indexLock.readLock().unlock();
+
+		if (deleteRequest.getDeleteAllAssociated()) {
+			documentStorage.deleteAssociatedDocuments(uniqueId);
 		}
+		else if (deleteRequest.getFilename() != null) {
+			String fileName = deleteRequest.getFilename();
+			documentStorage.deleteAssociatedDocument(uniqueId, fileName);
+		}
+
+		return DeleteResponse.newBuilder().build();
+
 	}
 
 	public BooleanQuery handleCosineSimQuery(CosineSimRequest cosineSimRequest) {
-		indexLock.readLock().lock();
 
-		try {
-
-			double vector[] = new double[cosineSimRequest.getVectorCount()];
-			for (int i = 0; i < cosineSimRequest.getVectorCount(); i++) {
-				vector[i] = cosineSimRequest.getVector(i);
-			}
-
-			SuperBit superBit = indexConfig.getSuperBitForField(cosineSimRequest.getField());
-			boolean[] signature = superBit.signature(vector);
-
-			int mm = (int) ((1 - (Math.acos(cosineSimRequest.getSimilarity()) / Math.PI)) * signature.length);
-			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
-			booleanQueryBuilder.setMinimumNumberShouldMatch(mm);
-			for (int i = 0; i < signature.length; i++) {
-				String fieldName = ZuliaConstants.SUPERBIT_PREFIX + "." + cosineSimRequest.getField() + "." + i;
-				booleanQueryBuilder.add(new BooleanClause(new TermQuery(new org.apache.lucene.index.Term(fieldName, signature[i] ? "1" : "0")),
-						BooleanClause.Occur.SHOULD));
-			}
-
-			return booleanQueryBuilder.build();
-
+		double vector[] = new double[cosineSimRequest.getVectorCount()];
+		for (int i = 0; i < cosineSimRequest.getVectorCount(); i++) {
+			vector[i] = cosineSimRequest.getVector(i);
 		}
-		finally {
-			indexLock.readLock().unlock();
+
+		SuperBit superBit = indexConfig.getSuperBitForField(cosineSimRequest.getField());
+		boolean[] signature = superBit.signature(vector);
+
+		int mm = (int) ((1 - (Math.acos(cosineSimRequest.getSimilarity()) / Math.PI)) * signature.length);
+		BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
+		booleanQueryBuilder.setMinimumNumberShouldMatch(mm);
+		for (int i = 0; i < signature.length; i++) {
+			String fieldName = ZuliaConstants.SUPERBIT_PREFIX + "." + cosineSimRequest.getField() + "." + i;
+			booleanQueryBuilder
+					.add(new BooleanClause(new TermQuery(new org.apache.lucene.index.Term(fieldName, signature[i] ? "1" : "0")), BooleanClause.Occur.SHOULD));
 		}
+
+		return booleanQueryBuilder.build();
+
 	}
 
 	public Query getQuery(QueryRequest qr) throws Exception {
-		indexLock.readLock().lock();
 
-		try {
+		Query q = parseQueryToLucene(qr.getQuery());
 
-			Query q = parseQueryToLucene(qr.getQuery());
+		Map<String, Set<String>> facetToValues = new HashMap<>();
+		if (qr.hasFacetRequest()) {
+			FacetRequest facetRequest = qr.getFacetRequest();
 
-			Map<String, Set<String>> facetToValues = new HashMap<>();
-			if (qr.hasFacetRequest()) {
-				FacetRequest facetRequest = qr.getFacetRequest();
-
-				List<Facet> drillDownList = facetRequest.getDrillDownList();
-				if (!drillDownList.isEmpty()) {
-					for (Facet drillDown : drillDownList) {
-						String key = drillDown.getLabel();
-						String value = drillDown.getValue();
-						if (!facetToValues.containsKey(key)) {
-							facetToValues.put(key, new HashSet<>());
-						}
-						facetToValues.get(key).add(value);
+			List<Facet> drillDownList = facetRequest.getDrillDownList();
+			if (!drillDownList.isEmpty()) {
+				for (Facet drillDown : drillDownList) {
+					String key = drillDown.getLabel();
+					String value = drillDown.getValue();
+					if (!facetToValues.containsKey(key)) {
+						facetToValues.put(key, new HashSet<>());
 					}
+					facetToValues.get(key).add(value);
 				}
 			}
+		}
 
-			if (!qr.getFilterQueryList().isEmpty() || !qr.getCosineSimRequestList().isEmpty() || !facetToValues.isEmpty()) {
-				BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
-				for (ZuliaQuery.Query filterQuery : qr.getFilterQueryList()) {
-					Query filterLuceneQuery = parseQueryToLucene(filterQuery);
-					booleanQuery.add(filterLuceneQuery, BooleanClause.Occur.FILTER);
-				}
-
-				for (Map.Entry<String, Set<String>> entry : facetToValues.entrySet()) {
-					String indexFieldName = FacetsConfig.DEFAULT_INDEX_FIELD_NAME + "." + entry.getKey();
-
-					BooleanQuery.Builder facetQuery = new BooleanQuery.Builder();
-					for (String value : entry.getValue()) {
-						facetQuery.add(new BooleanClause(new TermQuery(new org.apache.lucene.index.Term(indexFieldName, value)), BooleanClause.Occur.SHOULD));
-					}
-
-					booleanQuery.add(facetQuery.build(), BooleanClause.Occur.FILTER);
-				}
-
-				for (CosineSimRequest cosineSimRequest : qr.getCosineSimRequestList()) {
-					BooleanQuery cosineQuery = handleCosineSimQuery(cosineSimRequest);
-					booleanQuery.add(cosineQuery, BooleanClause.Occur.MUST);
-				}
-
-				booleanQuery.add(q, BooleanClause.Occur.MUST);
-				q = booleanQuery.build();
+		if (!qr.getFilterQueryList().isEmpty() || !qr.getCosineSimRequestList().isEmpty() || !facetToValues.isEmpty()) {
+			BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
+			for (ZuliaQuery.Query filterQuery : qr.getFilterQueryList()) {
+				Query filterLuceneQuery = parseQueryToLucene(filterQuery);
+				booleanQuery.add(filterLuceneQuery, BooleanClause.Occur.FILTER);
 			}
 
-			return q;
+			for (Map.Entry<String, Set<String>> entry : facetToValues.entrySet()) {
+				String indexFieldName = FacetsConfig.DEFAULT_INDEX_FIELD_NAME + "." + entry.getKey();
 
+				BooleanQuery.Builder facetQuery = new BooleanQuery.Builder();
+				for (String value : entry.getValue()) {
+					facetQuery.add(new BooleanClause(new TermQuery(new org.apache.lucene.index.Term(indexFieldName, value)), BooleanClause.Occur.SHOULD));
+				}
+
+				booleanQuery.add(facetQuery.build(), BooleanClause.Occur.FILTER);
+			}
+
+			for (CosineSimRequest cosineSimRequest : qr.getCosineSimRequestList()) {
+				BooleanQuery cosineQuery = handleCosineSimQuery(cosineSimRequest);
+				booleanQuery.add(cosineQuery, BooleanClause.Occur.MUST);
+			}
+
+			booleanQuery.add(q, BooleanClause.Occur.MUST);
+			q = booleanQuery.build();
 		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+
+		return q;
+
 	}
 
 	private Query parseQueryToLucene(ZuliaQuery.Query zuliaQuery) throws Exception {
@@ -604,149 +540,145 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	public IndexShardResponse internalQuery(Query query, final QueryRequest queryRequest) throws Exception {
-		indexLock.readLock().lock();
-		try {
-			int amount = queryRequest.getAmount() + queryRequest.getStart();
 
-			if (indexConfig.getNumberOfShards() != 1) {
-				if (!queryRequest.getFetchFull() && (amount > 0)) {
-					amount = (int) (((amount / numberOfShards) + indexConfig.getIndexSettings().getMinShardRequest()) * indexConfig.getIndexSettings()
-							.getRequestFactor());
-				}
+		int amount = queryRequest.getAmount() + queryRequest.getStart();
+
+		if (indexConfig.getNumberOfShards() != 1) {
+			if (!queryRequest.getFetchFull() && (amount > 0)) {
+				amount = (int) (((amount / numberOfShards) + indexConfig.getIndexSettings().getMinShardRequest()) * indexConfig.getIndexSettings()
+						.getRequestFactor());
 			}
+		}
 
-			final int requestedAmount = amount;
+		final int requestedAmount = amount;
 
-			final HashMap<Integer, FieldDoc> lastScoreDocMap = new HashMap<>();
-			FieldDoc after;
+		final HashMap<Integer, FieldDoc> lastScoreDocMap = new HashMap<>();
+		FieldDoc after;
 
-			ZuliaQuery.LastResult lr = queryRequest.getLastResult();
-			if (lr != null) {
-				for (ZuliaQuery.LastIndexResult lir : lr.getLastIndexResultList()) {
-					if (indexName.equals(lir.getIndexName())) {
-						for (ZuliaQuery.ScoredResult sr : lir.getLastForShardList()) {
-							int docId = sr.getDocId();
-							float score = sr.getScore();
+		ZuliaQuery.LastResult lr = queryRequest.getLastResult();
+		if (lr != null) {
+			for (ZuliaQuery.LastIndexResult lir : lr.getLastIndexResultList()) {
+				if (indexName.equals(lir.getIndexName())) {
+					for (ZuliaQuery.ScoredResult sr : lir.getLastForShardList()) {
+						int docId = sr.getDocId();
+						float score = sr.getScore();
 
-							SortRequest sortRequest = queryRequest.getSortRequest();
+						SortRequest sortRequest = queryRequest.getSortRequest();
 
-							Object[] sortTerms = new Object[sortRequest.getFieldSortCount()];
+						Object[] sortTerms = new Object[sortRequest.getFieldSortCount()];
 
-							int sortTermsIndex = 0;
+						int sortTermsIndex = 0;
 
-							ZuliaQuery.SortValues sortValues = sr.getSortValues();
-							for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
+						ZuliaQuery.SortValues sortValues = sr.getSortValues();
+						for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
 
-								String sortField = fs.getSortField();
-								FieldConfig.FieldType sortType = indexConfig.getFieldTypeForSortField(sortField);
-								if (sortType == null) {
-									throw new Exception(sortField + " is not defined as a sortable field");
-								}
-
-								ZuliaQuery.SortValue sortValue = sortValues.getSortValue(sortTermsIndex);
-
-								if (sortValue.getExists()) {
-									if (FieldTypeUtil.isNumericOrDateFieldType(sortType)) {
-										if (FieldTypeUtil.isNumericIntFieldType(sortType)) {
-											sortTerms[sortTermsIndex] = sortValue.getIntegerValue();
-										}
-										else if (FieldTypeUtil.isNumericLongFieldType(sortType)) {
-											sortTerms[sortTermsIndex] = sortValue.getLongValue();
-										}
-										else if (FieldTypeUtil.isNumericFloatFieldType(sortType)) {
-											sortTerms[sortTermsIndex] = sortValue.getFloatValue();
-										}
-										else if (FieldTypeUtil.isNumericDoubleFieldType(sortType)) {
-											sortTerms[sortTermsIndex] = sortValue.getDoubleValue();
-										}
-										else if (FieldTypeUtil.isDateFieldType(sortType)) {
-											sortTerms[sortTermsIndex] = sortValue.getDateValue();
-										}
-										else {
-											throw new Exception("Invalid numeric sort type <" + sortType + "> for sort field <" + sortField + ">");
-										}
-									}
-									else { //string
-										sortTerms[sortTermsIndex] = new BytesRef(sortValue.getStringValue());
-									}
-								}
-								else {
-									sortTerms[sortTermsIndex] = null;
-								}
-
-								sortTermsIndex++;
+							String sortField = fs.getSortField();
+							FieldConfig.FieldType sortType = indexConfig.getFieldTypeForSortField(sortField);
+							if (sortType == null) {
+								throw new Exception(sortField + " is not defined as a sortable field");
 							}
 
-							after = new FieldDoc(docId, score, sortTerms, sr.getShard());
-							lastScoreDocMap.put(sr.getShard(), after);
+							ZuliaQuery.SortValue sortValue = sortValues.getSortValue(sortTermsIndex);
+
+							if (sortValue.getExists()) {
+								if (FieldTypeUtil.isNumericOrDateFieldType(sortType)) {
+									if (FieldTypeUtil.isNumericIntFieldType(sortType)) {
+										sortTerms[sortTermsIndex] = sortValue.getIntegerValue();
+									}
+									else if (FieldTypeUtil.isNumericLongFieldType(sortType)) {
+										sortTerms[sortTermsIndex] = sortValue.getLongValue();
+									}
+									else if (FieldTypeUtil.isNumericFloatFieldType(sortType)) {
+										sortTerms[sortTermsIndex] = sortValue.getFloatValue();
+									}
+									else if (FieldTypeUtil.isNumericDoubleFieldType(sortType)) {
+										sortTerms[sortTermsIndex] = sortValue.getDoubleValue();
+									}
+									else if (FieldTypeUtil.isDateFieldType(sortType)) {
+										sortTerms[sortTermsIndex] = sortValue.getDateValue();
+									}
+									else {
+										throw new Exception("Invalid numeric sort type <" + sortType + "> for sort field <" + sortField + ">");
+									}
+								}
+								else { //string
+									sortTerms[sortTermsIndex] = new BytesRef(sortValue.getStringValue());
+								}
+							}
+							else {
+								sortTerms[sortTermsIndex] = null;
+							}
+
+							sortTermsIndex++;
 						}
+
+						after = new FieldDoc(docId, score, sortTerms, sr.getShard());
+						lastScoreDocMap.put(sr.getShard(), after);
 					}
 				}
 			}
-
-			Map<String, Similarity> fieldSimilarityMap = new HashMap<>();
-			for (FieldSimilarity fieldSimilarity : queryRequest.getFieldSimilarityList()) {
-				fieldSimilarityMap.put(fieldSimilarity.getField(), fieldSimilarity.getSimilarity());
-			}
-
-			for (CosineSimRequest cosineSimRequest : queryRequest.getCosineSimRequestList()) {
-				io.zulia.message.ZuliaIndex.Superbit superbitConfig = indexConfig.getSuperBitConfigForField(cosineSimRequest.getField());
-
-				int sigLength = superbitConfig.getInputDim() * superbitConfig.getBatches();
-				for (int i = 0; i < sigLength; i++) {
-					String fieldName = ZuliaConstants.SUPERBIT_PREFIX + "." + cosineSimRequest.getField() + "." + i;
-					fieldSimilarityMap.put(fieldName, Similarity.CONSTANT);
-				}
-
-			}
-
-			IndexShardResponse.Builder builder = IndexShardResponse.newBuilder();
-
-			List<Future<ShardQueryResponse>> responses = new ArrayList<>();
-
-			for (final ZuliaShard shard : shardMap.values()) {
-
-				Future<ShardQueryResponse> response = shardPool.submit(() -> {
-
-					QueryCacheKey queryCacheKey = null;
-
-					if (!queryRequest.getDontCache()) {
-						queryCacheKey = new QueryCacheKey(queryRequest);
-					}
-
-					return shard
-							.queryShard(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap.get(shard.getShardNumber()), queryRequest.getFacetRequest(),
-									queryRequest.getSortRequest(), queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(),
-									queryRequest.getDocumentMaskedFieldsList(), queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(),
-									queryRequest.getDebug());
-				});
-
-				responses.add(response);
-
-			}
-
-			for (Future<ShardQueryResponse> response : responses) {
-				try {
-					ShardQueryResponse rs = response.get();
-					builder.addShardQueryResponse(rs);
-				}
-				catch (ExecutionException e) {
-					Throwable t = e.getCause();
-
-					if (t instanceof OutOfMemoryError) {
-						throw (OutOfMemoryError) t;
-					}
-
-					throw ((Exception) e.getCause());
-				}
-			}
-
-			builder.setIndexName(indexName);
-			return builder.build();
 		}
-		finally {
-			indexLock.readLock().unlock();
+
+		Map<String, Similarity> fieldSimilarityMap = new HashMap<>();
+		for (FieldSimilarity fieldSimilarity : queryRequest.getFieldSimilarityList()) {
+			fieldSimilarityMap.put(fieldSimilarity.getField(), fieldSimilarity.getSimilarity());
 		}
+
+		for (CosineSimRequest cosineSimRequest : queryRequest.getCosineSimRequestList()) {
+			io.zulia.message.ZuliaIndex.Superbit superbitConfig = indexConfig.getSuperBitConfigForField(cosineSimRequest.getField());
+
+			int sigLength = superbitConfig.getInputDim() * superbitConfig.getBatches();
+			for (int i = 0; i < sigLength; i++) {
+				String fieldName = ZuliaConstants.SUPERBIT_PREFIX + "." + cosineSimRequest.getField() + "." + i;
+				fieldSimilarityMap.put(fieldName, Similarity.CONSTANT);
+			}
+
+		}
+
+		IndexShardResponse.Builder builder = IndexShardResponse.newBuilder();
+
+		List<Future<ShardQueryResponse>> responses = new ArrayList<>();
+
+		for (final ZuliaShard shard : shardMap.values()) {
+
+			//TODO check index mapping here
+
+			Future<ShardQueryResponse> response = shardPool.submit(() -> {
+
+				QueryCacheKey queryCacheKey = null;
+
+				if (!queryRequest.getDontCache()) {
+					queryCacheKey = new QueryCacheKey(queryRequest);
+				}
+
+				return shard.queryShard(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap.get(shard.getShardNumber()), queryRequest.getFacetRequest(),
+						queryRequest.getSortRequest(), queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(),
+						queryRequest.getDocumentMaskedFieldsList(), queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(),
+						queryRequest.getDebug());
+			});
+
+			responses.add(response);
+
+		}
+
+		for (Future<ShardQueryResponse> response : responses) {
+			try {
+				ShardQueryResponse rs = response.get();
+				builder.addShardQueryResponse(rs);
+			}
+			catch (ExecutionException e) {
+				Throwable t = e.getCause();
+
+				if (t instanceof OutOfMemoryError) {
+					throw (OutOfMemoryError) t;
+				}
+
+				throw ((Exception) e.getCause());
+			}
+		}
+
+		builder.setIndexName(indexName);
+		return builder.build();
 
 	}
 
@@ -759,288 +691,236 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	public void reloadIndexSettings() throws Exception {
-		indexLock.writeLock().lock();
-		try {
 
-			IndexSettings indexSettings = indexService.getIndex(indexName);
-			indexConfig.configure(indexSettings);
+		IndexSettings indexSettings = indexService.getIndex(indexName);
+		indexConfig.configure(indexSettings);
 
-			parsers.clear();
+		parsers.clear();
 
-			//force analyzer to be fetched first so it doesn't fail only on one shard below
-			getPerFieldAnalyzer();
+		//force analyzer to be fetched first so it doesn't fail only on one shard below
+		getPerFieldAnalyzer();
 
-			for (ZuliaShard s : shardMap.values()) {
-				try {
-					s.updateIndexSettings(indexSettings);
-				}
-				catch (Exception ignored) {
-				}
+		for (ZuliaShard s : shardMap.values()) {
+			try {
+				s.updateIndexSettings(indexSettings);
 			}
+			catch (Exception ignored) {
+			}
+		}
 
-		}
-		finally {
-			indexLock.writeLock().unlock();
-		}
 	}
 
 	public OptimizeResponse optimize(OptimizeRequest request) throws Exception {
-		indexLock.readLock().lock();
-		try {
-			int maxNumberOfSegments = 1;
-			if (request.getMaxNumberOfSegments() > 0) {
-				maxNumberOfSegments = request.getMaxNumberOfSegments();
-			}
-			for (final ZuliaShard shard : shardMap.values()) {
-				shard.optimize(maxNumberOfSegments);
-			}
 
+		int maxNumberOfSegments = 1;
+		if (request.getMaxNumberOfSegments() > 0) {
+			maxNumberOfSegments = request.getMaxNumberOfSegments();
 		}
-		finally {
-			indexLock.readLock().unlock();
+		for (final ZuliaShard shard : shardMap.values()) {
+			shard.optimize(maxNumberOfSegments);
 		}
+
 		reloadIndexSettings();
 		return OptimizeResponse.newBuilder().build();
 	}
 
 	public GetNumberOfDocsResponse getNumberOfDocs() throws Exception {
-		indexLock.readLock().lock();
-		try {
-			List<Future<ShardCountResponse>> responses = new ArrayList<>();
 
-			for (final ZuliaShard shard : shardMap.values()) {
+		List<Future<ShardCountResponse>> responses = new ArrayList<>();
 
-				Future<ShardCountResponse> response = shardPool.submit(shard::getNumberOfDocs);
+		for (final ZuliaShard shard : shardMap.values()) {
 
-				responses.add(response);
+			Future<ShardCountResponse> response = shardPool.submit(shard::getNumberOfDocs);
 
+			responses.add(response);
+
+		}
+
+		GetNumberOfDocsResponse.Builder responseBuilder = GetNumberOfDocsResponse.newBuilder();
+
+		responseBuilder.setNumberOfDocs(0);
+		for (Future<ShardCountResponse> response : responses) {
+			try {
+				ShardCountResponse scr = response.get();
+				responseBuilder.addShardCountResponse(scr);
+				responseBuilder.setNumberOfDocs(responseBuilder.getNumberOfDocs() + scr.getNumberOfDocs());
 			}
-
-			GetNumberOfDocsResponse.Builder responseBuilder = GetNumberOfDocsResponse.newBuilder();
-
-			responseBuilder.setNumberOfDocs(0);
-			for (Future<ShardCountResponse> response : responses) {
-				try {
-					ShardCountResponse scr = response.get();
-					responseBuilder.addShardCountResponse(scr);
-					responseBuilder.setNumberOfDocs(responseBuilder.getNumberOfDocs() + scr.getNumberOfDocs());
-				}
-				catch (InterruptedException e) {
-					throw new Exception("Interrupted while waiting for shard results");
-				}
-				catch (Exception e) {
-					Throwable cause = e.getCause();
-					if (cause instanceof Exception) {
-						throw e;
-					}
-
+			catch (InterruptedException e) {
+				throw new Exception("Interrupted while waiting for shard results");
+			}
+			catch (Exception e) {
+				Throwable cause = e.getCause();
+				if (cause instanceof Exception) {
 					throw e;
 				}
-			}
 
-			return responseBuilder.build();
+				throw e;
+			}
 		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+
+		return responseBuilder.build();
+
 	}
 
 	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
-		indexLock.readLock().lock();
-		try {
-			List<Future<GetFieldNamesResponse>> responses = new ArrayList<>();
 
-			for (final ZuliaShard shard : shardMap.values()) {
+		List<Future<GetFieldNamesResponse>> responses = new ArrayList<>();
 
-				Future<GetFieldNamesResponse> response = shardPool.submit(shard::getFieldNames);
+		for (final ZuliaShard shard : shardMap.values()) {
 
-				responses.add(response);
+			Future<GetFieldNamesResponse> response = shardPool.submit(shard::getFieldNames);
 
-			}
+			responses.add(response);
 
-			GetFieldNamesResponse.Builder responseBuilder = GetFieldNamesResponse.newBuilder();
-
-			Set<String> fields = new HashSet<>();
-			for (Future<GetFieldNamesResponse> response : responses) {
-				try {
-					GetFieldNamesResponse gfnr = response.get();
-					fields.addAll(gfnr.getFieldNameList());
-				}
-				catch (ExecutionException e) {
-					Throwable cause = e.getCause();
-					if (cause instanceof Exception) {
-						throw e;
-					}
-					else {
-						throw new Exception(cause);
-					}
-				}
-			}
-
-			fields.remove(ZuliaConstants.TIMESTAMP_FIELD);
-			fields.remove(ZuliaConstants.STORED_DOC_FIELD);
-			fields.remove(ZuliaConstants.STORED_META_FIELD);
-			fields.remove(ZuliaConstants.ID_FIELD);
-			fields.remove(ZuliaConstants.FIELDS_LIST_FIELD);
-
-			List<String> toRemove = new ArrayList<>();
-			for (String field : fields) {
-				if (field.startsWith(FacetsConfig.DEFAULT_INDEX_FIELD_NAME)) {
-					toRemove.add(field);
-				}
-				if (field.startsWith(ZuliaConstants.SUPERBIT_PREFIX)) {
-					toRemove.add(field);
-				}
-			}
-			fields.removeAll(toRemove);
-
-			responseBuilder.addAllFieldName(fields);
-			return responseBuilder.build();
 		}
-		finally {
-			indexLock.readLock().unlock();
+
+		GetFieldNamesResponse.Builder responseBuilder = GetFieldNamesResponse.newBuilder();
+
+		Set<String> fields = new HashSet<>();
+		for (Future<GetFieldNamesResponse> response : responses) {
+			try {
+				GetFieldNamesResponse gfnr = response.get();
+				fields.addAll(gfnr.getFieldNameList());
+			}
+			catch (ExecutionException e) {
+				Throwable cause = e.getCause();
+				if (cause instanceof Exception) {
+					throw e;
+				}
+				else {
+					throw new Exception(cause);
+				}
+			}
 		}
+
+		fields.remove(ZuliaConstants.TIMESTAMP_FIELD);
+		fields.remove(ZuliaConstants.STORED_DOC_FIELD);
+		fields.remove(ZuliaConstants.STORED_META_FIELD);
+		fields.remove(ZuliaConstants.ID_FIELD);
+		fields.remove(ZuliaConstants.FIELDS_LIST_FIELD);
+
+		List<String> toRemove = new ArrayList<>();
+		for (String field : fields) {
+			if (field.startsWith(FacetsConfig.DEFAULT_INDEX_FIELD_NAME)) {
+				toRemove.add(field);
+			}
+			if (field.startsWith(ZuliaConstants.SUPERBIT_PREFIX)) {
+				toRemove.add(field);
+			}
+		}
+		fields.removeAll(toRemove);
+
+		responseBuilder.addAllFieldName(fields);
+		return responseBuilder.build();
+
 	}
 
 	public ClearResponse clear(ZuliaServiceOuterClass.ClearRequest request) throws Exception {
-		indexLock.writeLock().lock();
-		try {
-			List<Future<Void>> responses = new ArrayList<>();
 
-			for (final ZuliaShard shard : shardMap.values()) {
+		List<Future<Void>> responses = new ArrayList<>();
 
-				Future<Void> response = shardPool.submit(() -> {
-					shard.clear();
-					return null;
-				});
+		for (final ZuliaShard shard : shardMap.values()) {
 
-				responses.add(response);
+			Future<Void> response = shardPool.submit(() -> {
+				shard.clear();
+				return null;
+			});
 
-			}
-
-			for (Future<Void> response : responses) {
-				try {
-					response.get();
-				}
-				catch (ExecutionException e) {
-					Throwable cause = e.getCause();
-					if (cause instanceof Exception) {
-						throw e;
-					}
-					else {
-						throw new Exception(cause);
-					}
-				}
-			}
-
-			documentStorage.deleteAllDocuments();
-
-			return ClearResponse.newBuilder().build();
+			responses.add(response);
 
 		}
-		finally {
-			indexLock.writeLock().unlock();
+
+		for (Future<Void> response : responses) {
+			try {
+				response.get();
+			}
+			catch (ExecutionException e) {
+				Throwable cause = e.getCause();
+				if (cause instanceof Exception) {
+					throw e;
+				}
+				else {
+					throw new Exception(cause);
+				}
+			}
 		}
+
+		documentStorage.deleteAllDocuments();
+
+		return ClearResponse.newBuilder().build();
+
 	}
 
 	public InternalGetTermsResponse getTerms(final GetTermsRequest request) throws Exception {
-		indexLock.readLock().lock();
-		try {
-			List<Future<GetTermsResponse>> responses = new ArrayList<>();
 
-			for (final ZuliaShard shard : shardMap.values()) {
+		List<Future<GetTermsResponse>> responses = new ArrayList<>();
 
-				Future<GetTermsResponse> response = shardPool.submit(() -> shard.getTerms(request));
+		for (final ZuliaShard shard : shardMap.values()) {
 
-				responses.add(response);
+			Future<GetTermsResponse> response = shardPool.submit(() -> shard.getTerms(request));
 
+			responses.add(response);
+
+		}
+
+		InternalGetTermsResponse.Builder getTermsResponseInternalBuilder = InternalGetTermsResponse.newBuilder();
+		for (Future<GetTermsResponse> response : responses) {
+			try {
+				GetTermsResponse gtr = response.get();
+				getTermsResponseInternalBuilder.addGetTermsResponse(gtr);
 			}
-
-			InternalGetTermsResponse.Builder getTermsResponseInternalBuilder = InternalGetTermsResponse.newBuilder();
-			for (Future<GetTermsResponse> response : responses) {
-				try {
-					GetTermsResponse gtr = response.get();
-					getTermsResponseInternalBuilder.addGetTermsResponse(gtr);
+			catch (ExecutionException e) {
+				Throwable cause = e.getCause();
+				if (cause instanceof Exception) {
+					throw e;
 				}
-				catch (ExecutionException e) {
-					Throwable cause = e.getCause();
-					if (cause instanceof Exception) {
-						throw e;
-					}
-					else {
-						throw new Exception(cause);
-					}
+				else {
+					throw new Exception(cause);
 				}
 			}
+		}
 
-			return getTermsResponseInternalBuilder.build();
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+		return getTermsResponseInternalBuilder.build();
+
 	}
 
 	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long clusterTime, HashMap<String, String> metadataMap)
 			throws Exception {
-		indexLock.readLock().lock();
-		try {
-			documentStorage.storeAssociatedDocument(uniqueId, fileName, is, clusterTime, metadataMap);
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+
+		documentStorage.storeAssociatedDocument(uniqueId, fileName, is, clusterTime, metadataMap);
+
 	}
 
 	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) throws IOException {
-		indexLock.readLock().lock();
-		try {
-			return documentStorage.getAssociatedDocumentStream(uniqueId, fileName);
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+
+		return documentStorage.getAssociatedDocumentStream(uniqueId, fileName);
+
 	}
 
 	public void getAssociatedDocuments(OutputStream outputStream, Document filter) throws IOException {
-		indexLock.readLock().lock();
-		try {
-			documentStorage.getAssociatedDocuments(outputStream, filter);
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+
+		documentStorage.getAssociatedDocuments(outputStream, filter);
+
 	}
 
 	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
 			throws Exception {
-		indexLock.readLock().lock();
-		try {
-			ZuliaShard s = findShardFromUniqueId(uniqueId);
-			return s.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+
+		ZuliaShard s = findShardFromUniqueId(uniqueId);
+		return s.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
+
 	}
 
 	public AssociatedDocument getAssociatedDocument(String uniqueId, String fileName, FetchType associatedFetchType) throws Exception {
-		indexLock.readLock().lock();
-		try {
-			return documentStorage.getAssociatedDocument(uniqueId, fileName, associatedFetchType);
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+
+		return documentStorage.getAssociatedDocument(uniqueId, fileName, associatedFetchType);
+
 	}
 
 	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType associatedFetchType) throws Exception {
-		indexLock.readLock().lock();
-		try {
-			return documentStorage.getAssociatedDocuments(uniqueId, associatedFetchType);
-		}
-		finally {
-			indexLock.readLock().unlock();
-		}
+
+		return documentStorage.getAssociatedDocuments(uniqueId, associatedFetchType);
+
 	}
 
 	public void setIndexMapping(IndexMapping indexMapping) {
