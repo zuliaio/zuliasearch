@@ -14,10 +14,10 @@ service ZuliaService {
     rpc InternalStore (StoreRequest) returns (StoreResponse);
     rpc Delete (DeleteRequest) returns (DeleteResponse);
     rpc InternalDelete (DeleteRequest) returns (DeleteResponse);
-    rpc BatchDelete (BatchDeleteRequest) returns (BatchDeleteResponse);
+    rpc BatchDelete (BatchDeleteRequest) returns (stream DeleteResponse);
     rpc Fetch (FetchRequest) returns (FetchResponse);
     rpc InternalFetch (FetchRequest) returns (FetchResponse);
-    rpc BatchFetch (BatchFetchRequest) returns (BatchFetchResponse);
+    rpc BatchFetch (BatchFetchRequest) returns (stream FetchResponse);
     rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
     rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
     rpc GetIndexes (GetIndexesRequest) returns (GetIndexesResponse);
@@ -211,6 +211,7 @@ message InternalGetTermsResponse {
 }
 
 message GetNodesRequest {
+    bool activeOnly = 1;
 }
 
 message GetNodesResponse {

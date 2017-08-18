@@ -19,7 +19,6 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -165,11 +164,7 @@ public class Mapper<T> {
 	}
 
 	public List<T> fromBatchFetchResult(BatchFetchResult batchFetchResult) throws Exception {
-		List<T> results = new ArrayList<>();
-		for (FetchResult fr : batchFetchResult.getFetchResults()) {
-			results.add(fr.getDocument(this));
-		}
-		return results;
+		return batchFetchResult.getDocuments(this);
 	}
 
 	public T fromFetchResult(FetchResult fetchResult) throws Exception {

@@ -22,7 +22,7 @@ public class ZuliaNode {
 
 	public ZuliaNode(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
-		this.indexManager = new ZuliaIndexManager(zuliaConfig);
+		this.indexManager = new ZuliaIndexManager(zuliaConfig, nodeService);
 		this.restServiceManager = new ZuliaRESTServiceManager(zuliaConfig, indexManager);
 
 		this.zuliaServiceServer = new ZuliaServiceServer(zuliaConfig, indexManager);

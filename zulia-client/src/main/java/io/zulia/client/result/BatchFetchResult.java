@@ -1,51 +1,55 @@
 package io.zulia.client.result;
 
 import io.zulia.fields.Mapper;
+import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static io.zulia.message.ZuliaServiceOuterClass.BatchFetchResponse;
-import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 public class BatchFetchResult extends Result {
 
 	@SuppressWarnings("unused")
 	private BatchFetchResponse batchFetchResponse;
 
-	private List<FetchResult> fetchResults;
+	private Iterator<FetchResponse> fetchResults;
 
-	public BatchFetchResult(List<FetchResult> fetchResults) {
+	public BatchFetchResult(Iterator<FetchResponse> fetchResults) {
 		this.fetchResults = fetchResults;
 	}
 
-	public BatchFetchResult(BatchFetchResponse batchFetchResponse) {
-		this.batchFetchResponse = batchFetchResponse;
-
-		this.fetchResults = new ArrayList<FetchResult>();
-
-		for (FetchResponse ft : batchFetchResponse.getFetchResponseList()) {
-			fetchResults.add(new FetchResult(ft));
-		}
-	}
-
 	public List<FetchResult> getFetchResults() {
-		return fetchResults;
-	}
-
-	public <T> List<T> getDocuments(Mapper<T> mapper) throws Exception {
-		ArrayList<T> list = new ArrayList<T>();
-		for (FetchResult fr : fetchResults) {
-			if (fr.hasResultDocument()) {
-				list.add(fr.getDocument(mapper));
-			}
-		}
+		ArrayList<FetchResult> list = new ArrayList<>();
+		getFetchResults(list::add);
 		return list;
 	}
 
-	@Override
-	public String toString() {
-		return fetchResults.toString();
+	public void getFetchResults(Consumer<FetchResult> fetchResultHandler) {
+		while (fetchResults.hasNext()) {
+			FetchResult fetchResult = new FetchResult(fetchResults.next());
+			fetchResultHandler.accept(fetchResult);
+		}
 	}
+
+	public <T> List<T> getDocuments(Mapper<T> mapper) throws Exception {
+		ArrayList<T> list = new ArrayList<>();
+		getDocuments(mapper, list::add);
+		return list;
+	}
+
+	public <T> void getDocuments(Mapper<T> mapper, Consumer<T> docHandler) throws Exception {
+
+		while (fetchResults.hasNext()) {
+			FetchResult fetchResult = new FetchResult(fetchResults.next());
+			if (fetchResult.hasResultDocument()) {
+				docHandler.accept(fetchResult.getDocument(mapper));
+			}
+		}
+
+	}
+
 
 }

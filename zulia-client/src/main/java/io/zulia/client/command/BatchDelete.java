@@ -5,14 +5,15 @@ import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.BatchDeleteResult;
 import io.zulia.client.result.QueryResult;
 import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import static io.zulia.message.ZuliaQuery.ScoredResult;
 import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import static io.zulia.message.ZuliaServiceOuterClass.BatchDeleteRequest;
-import static io.zulia.message.ZuliaServiceOuterClass.BatchDeleteResponse;
 
 public class BatchDelete extends SimpleCommand<ZuliaServiceOuterClass.BatchDeleteRequest, BatchDeleteResult> {
 
@@ -52,7 +53,7 @@ public class BatchDelete extends SimpleCommand<ZuliaServiceOuterClass.BatchDelet
 	public BatchDeleteResult execute(ZuliaConnection zuliaConnection) {
 		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		BatchDeleteResponse batchDeleteResponse = service.batchDelete(getRequest());
+		Iterator<DeleteResponse> batchDeleteResponse = service.batchDelete(getRequest());
 
 		return new BatchDeleteResult(batchDeleteResponse);
 	}

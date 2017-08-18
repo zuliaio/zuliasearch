@@ -1,13 +1,15 @@
 package io.zulia.client.result;
 
-import io.zulia.message.ZuliaServiceOuterClass.BatchDeleteResponse;
+import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
+
+import java.util.Iterator;
 
 public class BatchDeleteResult extends Result {
 
 	@SuppressWarnings("unused")
-	private BatchDeleteResponse batchDeleteResponse;
+	private Iterator<DeleteResponse> batchDeleteResponse;
 
-	public BatchDeleteResult(BatchDeleteResponse batchDeleteResponse) {
+	public BatchDeleteResult(Iterator<DeleteResponse> batchDeleteResponse) {
 		this.batchDeleteResponse = batchDeleteResponse;
 	}
 

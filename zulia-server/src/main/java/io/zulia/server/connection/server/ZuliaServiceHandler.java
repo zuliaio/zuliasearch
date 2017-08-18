@@ -94,7 +94,7 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
-	public void batchDelete(BatchDeleteRequest request, StreamObserver<BatchDeleteResponse> responseObserver) {
+	public void batchDelete(BatchDeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
 		batchDeleteServerRequest.handleRequest(request, responseObserver);
 	}
 
@@ -109,7 +109,7 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
-	public void batchFetch(BatchFetchRequest request, StreamObserver<BatchFetchResponse> responseObserver) {
+	public void batchFetch(BatchFetchRequest request, StreamObserver<FetchResponse> responseObserver) {
 		batchFetchServerRequest.handleRequest(request, responseObserver);
 	}
 

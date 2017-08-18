@@ -6,6 +6,7 @@ import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
+import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoIndexService;
@@ -13,6 +14,7 @@ import io.zulia.server.config.single.FSIndexService;
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.exceptions.IndexDoesNotExist;
 import io.zulia.server.filestorage.DocumentStorage;
+import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
 import io.zulia.server.index.federator.ClearRequestNodeFederator;
 import io.zulia.server.index.federator.GetFieldNamesRequestNodeFederator;
@@ -54,15 +56,17 @@ public class ZuliaIndexManager {
 	private final ConcurrentHashMap<String, ZuliaIndex> indexMap;
 
 	private final ZuliaConfig zuliaConfig;
+	private final NodeService nodeService;
 
 	private Node thisNode;
 	private Collection<Node> currentOtherNodesActive;
 
-	public ZuliaIndexManager(ZuliaConfig zuliaConfig) throws Exception {
+	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
 		this.zuliaConfig = zuliaConfig;
 
 		this.thisNode = ZuliaNode.nodeFromConfig(zuliaConfig);
+		this.nodeService = nodeService;
 
 		if (zuliaConfig.isCluster()) {
 			indexService = new MongoIndexService(MongoProvider.getMongoClient());
@@ -126,8 +130,13 @@ public class ZuliaIndexManager {
 
 			String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
 
-			//TODO switch this on cluster moder / single
-			DocumentStorage documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+			DocumentStorage documentStorage;
+			if (zuliaConfig.isCluster()) {
+				documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+			}
+			else {
+				documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
+			}
 
 			ZuliaIndex zuliaIndex = new ZuliaIndex(serverIndexConfig, documentStorage, indexService);
 			zuliaIndex.setIndexMapping(indexMapping);
@@ -179,8 +188,12 @@ public class ZuliaIndexManager {
 	}
 
 	public GetNodesResponse getNodes(GetNodesRequest request) {
-		//TODO: option to force read from DB to get current settings and to get non active registered nodes
-		return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).build();
+		if ((request.getActiveOnly())) {
+			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).build();
+		}
+		else {
+			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).build();
+		}
 	}
 
 	public InternalQueryResponse internalQuery(QueryRequest request) throws Exception {
@@ -237,26 +250,6 @@ public class ZuliaIndexManager {
 	public DeleteResponse internalDelete(DeleteRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
 		return DeleteRequestNodeRouter.internalDelete(i, request);
-	}
-
-	public BatchDeleteResponse batchDelete(BatchDeleteRequest request) throws Exception {
-		//TODO threading?
-		//TODO grpc streaming?
-		for (DeleteRequest dr : request.getRequestList()) {
-			@SuppressWarnings("unused") DeleteResponse res = delete(dr);
-		}
-		return BatchDeleteResponse.newBuilder().build();
-	}
-
-	public BatchFetchResponse batchFetch(BatchFetchRequest request) throws Exception {
-		//TODO threading?
-		//TODO grpc streaming?
-		BatchFetchResponse.Builder gfrb = BatchFetchResponse.newBuilder();
-		for (FetchRequest fr : request.getFetchRequestList()) {
-			FetchResponse res = fetch(fr);
-			gfrb.addFetchResponse(res);
-		}
-		return gfrb.build();
 	}
 
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
@@ -359,7 +352,6 @@ public class ZuliaIndexManager {
 	}
 
 	public GetIndexSettingsResponse getIndexSettings(GetIndexSettingsRequest request) throws Exception {
-		//TODO: option to force read from DB to get current settings
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
 		return GetIndexSettingsResponse.newBuilder().setIndexSettings(i.getIndexConfig().getIndexSettings()).build();
 	}

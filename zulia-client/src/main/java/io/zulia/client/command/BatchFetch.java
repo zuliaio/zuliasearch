@@ -7,14 +7,15 @@ import io.zulia.client.result.QueryResult;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import io.zulia.message.ZuliaServiceOuterClass.BatchFetchRequest;
+import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import static io.zulia.message.ZuliaQuery.FetchType;
 import static io.zulia.message.ZuliaQuery.ScoredResult;
-import static io.zulia.message.ZuliaServiceOuterClass.BatchFetchResponse;
 
 /**
  * Fetches multiple documents in a single call
@@ -73,7 +74,7 @@ public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResul
 	public BatchFetchResult execute(ZuliaConnection zuliaConnection) {
 		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		BatchFetchResponse batchFetchResponse = service.batchFetch(getRequest());
+		Iterator<FetchResponse> batchFetchResponse = service.batchFetch(getRequest());
 
 		return new BatchFetchResult(batchFetchResponse);
 	}
