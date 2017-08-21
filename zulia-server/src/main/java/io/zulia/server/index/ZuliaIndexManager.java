@@ -148,7 +148,6 @@ public class ZuliaIndexManager {
 	}
 
 	public GetIndexesResponse getIndexes(GetIndexesRequest request) throws Exception {
-		//TODO: switch to use what is cached vs. in DB
 		GetIndexesResponse.Builder getIndexesResponse = GetIndexesResponse.newBuilder();
 		for (IndexSettings indexSettings : indexService.getIndexes()) {
 			getIndexesResponse.addIndexName(indexSettings.getIndexName());
@@ -270,6 +269,7 @@ public class ZuliaIndexManager {
 			indexService.createIndex(request.getIndexSettings());
 		}
 
+
 		//index mapping
 
 		//balance shards / indexes
@@ -281,7 +281,15 @@ public class ZuliaIndexManager {
 		return CreateIndexResponse.newBuilder().build();
 	}
 
+	public CreateIndexResponse internalCreateIndex(CreateIndexRequest request) {
+		return null;
+	}
+
 	public DeleteIndexResponse deleteIndex(DeleteIndexRequest request) {
+		return null;
+	}
+
+	public DeleteIndexResponse internalDeleteIndex(DeleteIndexRequest request) {
 		return null;
 	}
 

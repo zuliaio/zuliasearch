@@ -19,7 +19,9 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	private final InternalFetchServerRequest internalFetchServerServerRequest;
 	private final BatchFetchServerRequest batchFetchServerRequest;
 	private final CreateIndexServerRequest createIndexServerRequest;
+	private final InternalCreateIndexServerRequest internalCreateIndexServerRequest;
 	private final DeleteIndexServerRequest deleteIndexServerRequest;
+	private final InternalDeleteIndexServerRequest internalDeleteIndexServerRequest;
 	private final GetIndexesServerRequest getIndexesServerRequest;
 	private final GetNumberOfDocsServerRequest getNumberOfDocsServerRequest;
 	private final InternalGetNumberOfDocsServerRequest internalGetNumberOfDocsServerRequest;
@@ -46,7 +48,9 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 		internalFetchServerServerRequest = new InternalFetchServerRequest(indexManager);
 		batchFetchServerRequest = new BatchFetchServerRequest(indexManager);
 		createIndexServerRequest = new CreateIndexServerRequest(indexManager);
+		internalCreateIndexServerRequest = new InternalCreateIndexServerRequest(indexManager);
 		deleteIndexServerRequest = new DeleteIndexServerRequest(indexManager);
+		internalDeleteIndexServerRequest = new InternalDeleteIndexServerRequest(indexManager);
 		getIndexesServerRequest = new GetIndexesServerRequest(indexManager);
 		getNumberOfDocsServerRequest = new GetNumberOfDocsServerRequest(indexManager);
 		internalGetNumberOfDocsServerRequest = new InternalGetNumberOfDocsServerRequest(indexManager);
@@ -119,8 +123,18 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
+	public void internalCreateIndex(CreateIndexRequest request, StreamObserver<CreateIndexResponse> responseObserver) {
+		internalCreateIndexServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
 	public void deleteIndex(DeleteIndexRequest request, StreamObserver<DeleteIndexResponse> responseObserver) {
 		deleteIndexServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalDeleteIndex(DeleteIndexRequest request, StreamObserver<DeleteIndexResponse> responseObserver) {
+		internalDeleteIndexServerRequest.handleRequest(request, responseObserver);
 	}
 
 	@Override
