@@ -36,6 +36,7 @@ import org.bson.Document;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -159,8 +160,8 @@ public class ZuliaIndexManager {
 
 	public FetchResponse fetch(FetchRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		FetchRequestRouter router = new FetchRequestRouter(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i,
-				request.getUniqueId(), internalClient);
+		FetchRequestRouter router = new FetchRequestRouter(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i, request.getUniqueId(),
+				internalClient);
 		return router.send(request);
 
 	}
@@ -231,8 +232,7 @@ public class ZuliaIndexManager {
 
 	public StoreResponse store(StoreRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		StoreRequestRouter router = new StoreRequestRouter(thisNode, currentOtherNodesActive, i, request.getUniqueId(),
-				internalClient);
+		StoreRequestRouter router = new StoreRequestRouter(thisNode, currentOtherNodesActive, i, request.getUniqueId(), internalClient);
 		return router.send(request);
 	}
 
@@ -243,8 +243,7 @@ public class ZuliaIndexManager {
 
 	public DeleteResponse delete(DeleteRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		DeleteRequestRouter router = new DeleteRequestRouter(thisNode, currentOtherNodesActive, i,
-				request.getUniqueId(), internalClient);
+		DeleteRequestRouter router = new DeleteRequestRouter(thisNode, currentOtherNodesActive, i, request.getUniqueId(), internalClient);
 		return router.send(request);
 	}
 
@@ -268,8 +267,11 @@ public class ZuliaIndexManager {
 
 			IndexMapping.Builder indexMapping = IndexMapping.newBuilder();
 
+			List<Node> nodes = new ArrayList<>();
+
 			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
 				ShardMapping.Builder shardMapping = ShardMapping.newBuilder();
+
 				//shardMapping.setPrimayNode();
 				//shardMapping.addReplicaNode();
 				indexMapping.addShardMapping(shardMapping);
@@ -285,6 +287,8 @@ public class ZuliaIndexManager {
 				throw new IllegalArgumentException("Cannot change shards for existing index");
 			}
 
+			//TODO handle changing of replication factor
+
 			indexService.createIndex(indexSettings);
 		}
 
@@ -294,14 +298,12 @@ public class ZuliaIndexManager {
 
 		//load shards / index
 
-		//tell others
+
 
 		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
 				this);
 
 		List<CreateIndexResponse> send = createIndexRequestFederator.send(request);
-
-
 
 		return CreateIndexResponse.newBuilder().build();
 	}
@@ -320,8 +322,8 @@ public class ZuliaIndexManager {
 
 	public GetNumberOfDocsResponse getNumberOfDocs(GetNumberOfDocsRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		GetNumberOfDocsRequestFederator federator = new GetNumberOfDocsRequestFederator(thisNode, currentOtherNodesActive,
-				MasterSlaveSettings.MASTER_ONLY, i, pool, internalClient);
+		GetNumberOfDocsRequestFederator federator = new GetNumberOfDocsRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i,
+				pool, internalClient);
 		return federator.getResponse(request);
 
 	}
