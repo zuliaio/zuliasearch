@@ -2,7 +2,9 @@
 */out
 .idea
 *.iml
-
+.gradle
 
 */build
+build
+
 
