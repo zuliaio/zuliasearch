@@ -14,11 +14,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-public class GetFieldNamesRequestNodeFederator extends RequestNodeFederator<GetFieldNamesRequest, GetFieldNamesResponse> {
+public class GetFieldNamesRequestFederator extends MasterSlaveNodeRequestFederator<GetFieldNamesRequest, GetFieldNamesResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public GetFieldNamesRequestNodeFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings,
+	public GetFieldNamesRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings,
 			ZuliaIndex index, ExecutorService pool, InternalClient internalClient) throws IOException {
 		super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
 		this.internalClient = internalClient;

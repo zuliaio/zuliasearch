@@ -10,11 +10,11 @@ import io.zulia.server.index.ZuliaIndex;
 import java.io.IOException;
 import java.util.Collection;
 
-public class FetchRequestNodeRouter extends RequestNodeRouter<FetchRequest, FetchResponse> {
+public class FetchRequestRouter extends NodeRequestRouter<FetchRequest, FetchResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public FetchRequestNodeRouter(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index, String uniqueId,
+	public FetchRequestRouter(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index, String uniqueId,
 			InternalClient internalClient) throws IOException {
 		super(thisNode, otherNodesActive, masterSlaveSettings, index, uniqueId);
 		this.internalClient = internalClient;

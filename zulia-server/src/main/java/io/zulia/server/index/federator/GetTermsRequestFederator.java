@@ -15,11 +15,11 @@ import java.util.List;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 
-public class GetTermsRequestNodeFederator extends RequestNodeFederator<GetTermsRequest, InternalGetTermsResponse> {
+public class GetTermsRequestFederator extends MasterSlaveNodeRequestFederator<GetTermsRequest, InternalGetTermsResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public GetTermsRequestNodeFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
+	public GetTermsRequestFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
 			ExecutorService pool, InternalClient internalClient) throws IOException {
 		super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
 		this.internalClient = internalClient;

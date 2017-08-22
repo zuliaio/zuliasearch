@@ -20,17 +20,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
-public class QueryRequestNodeFederator extends RequestNodeFederator<QueryRequest, InternalQueryResponse> {
+public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<QueryRequest, InternalQueryResponse> {
 	private final InternalClient internalClient;
 	private final Collection<ZuliaIndex> indexes;
 
 	private final Map<String, Query> queryMap;
 
-	private static final Logger LOG = Logger.getLogger(QueryRequestNodeFederator.class.getSimpleName());
+	private static final Logger LOG = Logger.getLogger(QueryRequestFederator.class.getSimpleName());
 
 	private static AtomicLong queryNumber = new AtomicLong();
 
-	public QueryRequestNodeFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, Collection<ZuliaIndex> indexes,
+	public QueryRequestFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, Collection<ZuliaIndex> indexes,
 			ExecutorService pool, InternalClient internalClient, Map<String, Query> queryMap) throws IOException {
 		super(thisNode, otherNodesActive, masterSlaveSettings, indexes, pool);
 		this.internalClient = internalClient;

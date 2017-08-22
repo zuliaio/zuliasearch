@@ -10,13 +10,13 @@ import io.zulia.server.index.ZuliaIndex;
 import java.io.IOException;
 import java.util.Collection;
 
-public class StoreRequestNodeRouter extends RequestNodeRouter<StoreRequest, StoreResponse> {
+public class StoreRequestRouter extends NodeRequestRouter<StoreRequest, StoreResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public StoreRequestNodeRouter(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index, String uniqueId,
+	public StoreRequestRouter(Node thisNode, Collection<Node> otherNodesActive, ZuliaIndex index, String uniqueId,
 			InternalClient internalClient) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, index, uniqueId);
+		super(thisNode, otherNodesActive, MasterSlaveSettings.MASTER_ONLY, index, uniqueId);
 		this.internalClient = internalClient;
 		this.index = index;
 	}

@@ -4,6 +4,7 @@ import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.ShardMapping;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.NodeService;
@@ -16,15 +17,16 @@ import io.zulia.server.exceptions.IndexDoesNotExist;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
-import io.zulia.server.index.federator.ClearRequestNodeFederator;
-import io.zulia.server.index.federator.GetFieldNamesRequestNodeFederator;
-import io.zulia.server.index.federator.GetNumberOfDocsRequestNodeFederator;
-import io.zulia.server.index.federator.GetTermsRequestNodeFederator;
-import io.zulia.server.index.federator.OptimizeRequestNodeFederator;
-import io.zulia.server.index.federator.QueryRequestNodeFederator;
-import io.zulia.server.index.router.DeleteRequestNodeRouter;
-import io.zulia.server.index.router.FetchRequestNodeRouter;
-import io.zulia.server.index.router.StoreRequestNodeRouter;
+import io.zulia.server.index.federator.ClearRequestFederator;
+import io.zulia.server.index.federator.CreateIndexRequestFederator;
+import io.zulia.server.index.federator.GetFieldNamesRequestFederator;
+import io.zulia.server.index.federator.GetNumberOfDocsRequestFederator;
+import io.zulia.server.index.federator.GetTermsRequestFederator;
+import io.zulia.server.index.federator.OptimizeRequestFederator;
+import io.zulia.server.index.federator.QueryRequestFederator;
+import io.zulia.server.index.router.DeleteRequestRouter;
+import io.zulia.server.index.router.FetchRequestRouter;
+import io.zulia.server.index.router.StoreRequestRouter;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.util.ZuliaThreadFactory;
@@ -157,7 +159,7 @@ public class ZuliaIndexManager {
 
 	public FetchResponse fetch(FetchRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		FetchRequestNodeRouter router = new FetchRequestNodeRouter(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i,
+		FetchRequestRouter router = new FetchRequestRouter(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i,
 				request.getUniqueId(), internalClient);
 		return router.send(request);
 
@@ -165,7 +167,7 @@ public class ZuliaIndexManager {
 
 	public FetchResponse internalFetch(FetchRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return FetchRequestNodeRouter.internalFetch(i, request);
+		return FetchRequestRouter.internalFetch(i, request);
 	}
 
 	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws IOException {
@@ -202,7 +204,7 @@ public class ZuliaIndexManager {
 
 		populateIndexesAndIndexMap(request, queryMap, indexes);
 
-		return QueryRequestNodeFederator.internalQuery(indexes, request, queryMap);
+		return QueryRequestFederator.internalQuery(indexes, request, queryMap);
 	}
 
 	public QueryResponse query(QueryRequest request) throws Exception {
@@ -211,7 +213,7 @@ public class ZuliaIndexManager {
 
 		populateIndexesAndIndexMap(request, queryMap, indexes);
 
-		QueryRequestNodeFederator federator = new QueryRequestNodeFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), indexes, pool,
+		QueryRequestFederator federator = new QueryRequestFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), indexes, pool,
 				internalClient, queryMap);
 
 		return federator.getResponse(request);
@@ -229,46 +231,62 @@ public class ZuliaIndexManager {
 
 	public StoreResponse store(StoreRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		StoreRequestNodeRouter router = new StoreRequestNodeRouter(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, request.getUniqueId(),
+		StoreRequestRouter router = new StoreRequestRouter(thisNode, currentOtherNodesActive, i, request.getUniqueId(),
 				internalClient);
 		return router.send(request);
 	}
 
 	public StoreResponse internalStore(StoreRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return StoreRequestNodeRouter.internalStore(i, request);
+		return StoreRequestRouter.internalStore(i, request);
 	}
 
 	public DeleteResponse delete(DeleteRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		DeleteRequestNodeRouter router = new DeleteRequestNodeRouter(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i,
+		DeleteRequestRouter router = new DeleteRequestRouter(thisNode, currentOtherNodesActive, i,
 				request.getUniqueId(), internalClient);
 		return router.send(request);
 	}
 
 	public DeleteResponse internalDelete(DeleteRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return DeleteRequestNodeRouter.internalDelete(i, request);
+		return DeleteRequestRouter.internalDelete(i, request);
 	}
 
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
 		//if existing index make sure not to allow changing number of shards
 
-		IndexSettings existingIndex = indexService.getIndex(request.getIndexSettings().getIndexName());
+		if (!request.hasIndexSettings()) {
+			throw new IllegalArgumentException("Index settings field is required for create index");
+		}
+
+		IndexSettings indexSettings = request.getIndexSettings();
+
+		IndexSettings existingIndex = indexService.getIndex(indexSettings.getIndexName());
 
 		if (existingIndex == null) {
 
-			indexService.createIndex(request.getIndexSettings());
+			IndexMapping.Builder indexMapping = IndexMapping.newBuilder();
+
+			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
+				ShardMapping.Builder shardMapping = ShardMapping.newBuilder();
+				//shardMapping.setPrimayNode();
+				//shardMapping.addReplicaNode();
+				indexMapping.addShardMapping(shardMapping);
+			}
+
+			indexService.storeIndexMapping(indexMapping.build());
+
+			indexService.createIndex(indexSettings);
 		}
 		else {
 
-			if (existingIndex.getNumberOfShards() != request.getIndexSettings().getNumberOfShards()) {
+			if (existingIndex.getNumberOfShards() != indexSettings.getNumberOfShards()) {
 				throw new IllegalArgumentException("Cannot change shards for existing index");
 			}
 
-			indexService.createIndex(request.getIndexSettings());
+			indexService.createIndex(indexSettings);
 		}
-
 
 		//index mapping
 
@@ -277,6 +295,13 @@ public class ZuliaIndexManager {
 		//load shards / index
 
 		//tell others
+
+		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
+				this);
+
+		List<CreateIndexResponse> send = createIndexRequestFederator.send(request);
+
+
 
 		return CreateIndexResponse.newBuilder().build();
 	}
@@ -295,7 +320,7 @@ public class ZuliaIndexManager {
 
 	public GetNumberOfDocsResponse getNumberOfDocs(GetNumberOfDocsRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		GetNumberOfDocsRequestNodeFederator federator = new GetNumberOfDocsRequestNodeFederator(thisNode, currentOtherNodesActive,
+		GetNumberOfDocsRequestFederator federator = new GetNumberOfDocsRequestFederator(thisNode, currentOtherNodesActive,
 				MasterSlaveSettings.MASTER_ONLY, i, pool, internalClient);
 		return federator.getResponse(request);
 
@@ -303,25 +328,25 @@ public class ZuliaIndexManager {
 
 	public GetNumberOfDocsResponse getNumberOfDocsInternal(GetNumberOfDocsRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return GetNumberOfDocsRequestNodeFederator.internalGetNumberOfDocs(i, request);
+		return GetNumberOfDocsRequestFederator.internalGetNumberOfDocs(i, request);
 	}
 
 	public ClearResponse clear(ClearRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		ClearRequestNodeFederator federator = new ClearRequestNodeFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+		ClearRequestFederator federator = new ClearRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
 				internalClient);
 		return federator.getResponse(request);
 	}
 
 	public ClearResponse internalClear(ClearRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return ClearRequestNodeFederator.internalClear(i, request);
+		return ClearRequestFederator.internalClear(i, request);
 	}
 
 	public OptimizeResponse optimize(OptimizeRequest request) throws Exception {
 
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		OptimizeRequestNodeFederator federator = new OptimizeRequestNodeFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+		OptimizeRequestFederator federator = new OptimizeRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
 				internalClient);
 		return federator.getResponse(request);
 	}
@@ -329,13 +354,13 @@ public class ZuliaIndexManager {
 	public OptimizeResponse internalOptimize(OptimizeRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
 		i.optimize(request);
-		return OptimizeRequestNodeFederator.internalOptimize(i, request);
+		return OptimizeRequestFederator.internalOptimize(i, request);
 	}
 
 	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
 		MasterSlaveSettings masterSlaveSettings = request.getMasterSlaveSettings();
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		GetFieldNamesRequestNodeFederator federator = new GetFieldNamesRequestNodeFederator(thisNode, currentOtherNodesActive, masterSlaveSettings, i, pool,
+		GetFieldNamesRequestFederator federator = new GetFieldNamesRequestFederator(thisNode, currentOtherNodesActive, masterSlaveSettings, i, pool,
 				internalClient);
 		return federator.getResponse(request);
 
@@ -343,12 +368,12 @@ public class ZuliaIndexManager {
 
 	public GetFieldNamesResponse internalGetFieldNames(GetFieldNamesRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return GetFieldNamesRequestNodeFederator.internalGetFieldNames(i, request);
+		return GetFieldNamesRequestFederator.internalGetFieldNames(i, request);
 	}
 
 	public GetTermsResponse getTerms(GetTermsRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		GetTermsRequestNodeFederator federator = new GetTermsRequestNodeFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i, pool,
+		GetTermsRequestFederator federator = new GetTermsRequestFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i, pool,
 				internalClient);
 		return federator.getResponse(request);
 
@@ -356,7 +381,7 @@ public class ZuliaIndexManager {
 
 	public InternalGetTermsResponse internalGetTerms(GetTermsRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return GetTermsRequestNodeFederator.internalGetTerms(i, request);
+		return GetTermsRequestFederator.internalGetTerms(i, request);
 	}
 
 	public GetIndexSettingsResponse getIndexSettings(GetIndexSettingsRequest request) throws Exception {

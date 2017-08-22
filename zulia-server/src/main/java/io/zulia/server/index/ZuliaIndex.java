@@ -42,7 +42,6 @@ import io.zulia.server.index.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ZuliaMultiFieldQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
-import io.zulia.util.ShardUtil;
 import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
 import org.apache.commons.pool2.BasePooledObjectFactory;
@@ -358,7 +357,7 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	private ZuliaShard findShardFromUniqueId(String uniqueId) throws ShardDoesNotExistException {
-		int shardNumber = ShardUtil.findShardForUniqueId(uniqueId, numberOfShards);
+		int shardNumber = MasterSlaveSelector.getShardForUniqueId(uniqueId, numberOfShards);
 		ZuliaShard zuliaShard = shardMap.get(shardNumber);
 		if (zuliaShard == null) {
 			throw new ShardDoesNotExistException(indexName, shardNumber);

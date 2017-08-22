@@ -3,7 +3,9 @@ package io.zulia.server.connection.client;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.connection.client.handler.InternalClearHandler;
+import io.zulia.server.connection.client.handler.InternalCreateIndexHandler;
 import io.zulia.server.connection.client.handler.InternalDeleteHandler;
+import io.zulia.server.connection.client.handler.InternalDeleteIndexHandler;
 import io.zulia.server.connection.client.handler.InternalFetchHandler;
 import io.zulia.server.connection.client.handler.InternalGetFieldNamesHandler;
 import io.zulia.server.connection.client.handler.InternalGetNumberOfDocsHandler;
@@ -31,6 +33,8 @@ public class InternalClient {
 	private final InternalGetFieldNamesHandler internalGetFieldNamesHandler;
 	private final InternalClearHandler internalClearHandler;
 	private final InternalGetTermsHandler internalGetTermsHandler;
+	private final InternalCreateIndexHandler internalCreateIndexHandler;
+	private final InternalDeleteIndexHandler internalDeleteIndexHandler;
 
 	public InternalClient() {
 
@@ -45,6 +49,8 @@ public class InternalClient {
 		internalGetFieldNamesHandler = new InternalGetFieldNamesHandler(this);
 		internalClearHandler = new InternalClearHandler(this);
 		internalGetTermsHandler = new InternalGetTermsHandler(this);
+		internalCreateIndexHandler = new InternalCreateIndexHandler(this);
+		internalDeleteIndexHandler = new InternalDeleteIndexHandler(this);
 	}
 
 	public void close() {
@@ -164,4 +170,7 @@ public class InternalClient {
 		return internalGetTermsHandler.handleRequest(node, request);
 	}
 
+	public CreateIndexResponse createIndex(Node node, CreateIndexRequest request) throws Exception {
+		return internalCreateIndexHandler.handleRequest(node, request);
+	}
 }

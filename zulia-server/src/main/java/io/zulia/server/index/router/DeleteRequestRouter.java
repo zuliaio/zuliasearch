@@ -10,13 +10,13 @@ import io.zulia.server.index.ZuliaIndex;
 import java.io.IOException;
 import java.util.Collection;
 
-public class DeleteRequestNodeRouter extends RequestNodeRouter<DeleteRequest, DeleteResponse> {
+public class DeleteRequestRouter extends NodeRequestRouter<DeleteRequest, DeleteResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public DeleteRequestNodeRouter(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index, String uniqueId,
-			InternalClient internalClient) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, index, uniqueId);
+	public DeleteRequestRouter(Node thisNode, Collection<Node> otherNodesActive, ZuliaIndex index, String uniqueId, InternalClient internalClient)
+			throws IOException {
+		super(thisNode, otherNodesActive, MasterSlaveSettings.MASTER_ONLY, index, uniqueId);
 		this.internalClient = internalClient;
 		this.index = index;
 	}
