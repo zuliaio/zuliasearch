@@ -87,6 +87,10 @@ public class FSIndexService implements IndexService {
 	@Override
 	public void removeIndex(String indexName) throws IOException {
 		Files.deleteIfExists(Paths.get(baseDir + File.separator + indexName + EXTENSION));
+	}
+
+	@Override
+	public void removeIndexMapping(String indexName) throws Exception {
 		Files.deleteIfExists(Paths.get(baseDir + File.separator + indexName + MAPPING_EXTENSION));
 	}
 

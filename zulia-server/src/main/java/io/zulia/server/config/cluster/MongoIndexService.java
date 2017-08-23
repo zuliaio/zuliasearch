@@ -71,6 +71,10 @@ public class MongoIndexService implements IndexService {
 	@Override
 	public void removeIndex(String indexName) throws Exception {
 		settingsCollection.deleteOne(new Document(ID, indexName));
+	}
+
+	@Override
+	public void removeIndexMapping(String indexName) throws Exception {
 		mappingCollection.deleteOne(new Document(ID, indexName));
 	}
 

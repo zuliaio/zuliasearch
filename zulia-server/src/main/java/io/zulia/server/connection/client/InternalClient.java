@@ -56,7 +56,7 @@ public class InternalClient {
 	public void close() {
 
 		for (GenericObjectPool<InternalRpcConnection> pool : internalConnectionPoolMap.values()) {
-				pool.close();
+			pool.close();
 		}
 	}
 
@@ -172,5 +172,9 @@ public class InternalClient {
 
 	public CreateIndexResponse createIndex(Node node, CreateIndexRequest request) throws Exception {
 		return internalCreateIndexHandler.handleRequest(node, request);
+	}
+
+	public DeleteIndexResponse deleteIndex(Node node, DeleteIndexRequest request) throws Exception {
+		return internalDeleteIndexHandler.handleRequest(node, request);
 	}
 }

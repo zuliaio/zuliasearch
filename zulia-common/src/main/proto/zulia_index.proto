@@ -39,6 +39,8 @@ message IndexSettings {
     uint32 idleTimeWithoutCommit = 14;
     uint32 shardCommitInterval = 15;
 
+    uint32 indexWeight = 16;
+
 }
 
 message FieldConfig {

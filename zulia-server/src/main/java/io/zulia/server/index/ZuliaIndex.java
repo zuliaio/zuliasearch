@@ -4,12 +4,14 @@ import info.debatty.java.lsh.SuperBit;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
+import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.ShardMapping;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.CosineSimRequest;
 import io.zulia.message.ZuliaQuery.Facet;
@@ -84,12 +86,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -100,7 +102,8 @@ public class ZuliaIndex implements IndexShardInterface {
 	private final ServerIndexConfig indexConfig;
 
 	private final GenericObjectPool<ZuliaMultiFieldQueryParser> parsers;
-	private final ConcurrentHashMap<Integer, ZuliaShard> shardMap;
+	private final ConcurrentHashMap<Integer, ZuliaShard> primaryShardMap;
+	private final ConcurrentHashMap<Integer, ZuliaShard> replicaShardMap;
 
 	private final ExecutorService shardPool;
 	private final int numberOfShards;
@@ -144,7 +147,8 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		});
 
-		this.shardMap = new ConcurrentHashMap<>();
+		this.primaryShardMap = new ConcurrentHashMap<>();
+		this.replicaShardMap = new ConcurrentHashMap<>();
 
 		commitTimer = new Timer(indexName + "-CommitTimer", true);
 
@@ -179,7 +183,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private void doCommit(boolean force) {
 
-		Collection<ZuliaShard> shards = shardMap.values();
+		Collection<ZuliaShard> shards = primaryShardMap.values();
 		for (ZuliaShard shard : shards) {
 			try {
 				if (force) {
@@ -210,22 +214,32 @@ public class ZuliaIndex implements IndexShardInterface {
 		LOG.info("Shutting shard pool for <" + indexName + ">");
 		shardPool.shutdownNow();
 
-		for (Integer shardNumber : shardMap.keySet()) {
+		for (Integer shardNumber : primaryShardMap.keySet()) {
+			unloadShard(shardNumber, terminate);
+		}
+
+		for (Integer shardNumber : replicaShardMap.keySet()) {
 			unloadShard(shardNumber, terminate);
 		}
 
 	}
 
-	private void loadShard(int shardNumber) throws Exception {
+	private void loadShard(int shardNumber, boolean primary) throws Exception {
 
 		//Just for clarity
 		IndexShardInterface indexShardInterface = this;
 
-		ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, new FacetsConfig());
-		shardMap.put(shardNumber, s);
+		ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, new FacetsConfig(), primary);
 
-		LOG.info("Loaded shard <" + shardNumber + "> for index <" + indexName + ">");
-		LOG.info("Current shards <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
+		if (primary) {
+			LOG.info("Loaded primary shard <" + shardNumber + "> for index <" + indexName + ">");
+			primaryShardMap.put(shardNumber, s);
+		}
+		else {
+			LOG.info("Loaded replica shard <" + shardNumber + "> for index <" + indexName + ">");
+			replicaShardMap.put(shardNumber, s);
+		}
+
 
 	}
 
@@ -290,14 +304,24 @@ public class ZuliaIndex implements IndexShardInterface {
 		return analyzerFactory.getPerFieldAnalyzer();
 	}
 
-	public void unloadShard(int shardNumber, boolean terminate) throws IOException {
+	protected void unloadShard(int shardNumber, boolean terminate) throws IOException {
 
-		ZuliaShard s = shardMap.remove(shardNumber);
-		if (s != null) {
-			LOG.info("Closing shard <" + shardNumber + "> for index <" + indexName + ">");
-			s.close(terminate);
-			LOG.info("Removed shard <" + shardNumber + "> for index <" + indexName + ">");
-			LOG.info("Current shards <" + (new TreeSet<>(shardMap.keySet())) + "> for index <" + indexName + ">");
+		{
+			ZuliaShard s = primaryShardMap.remove(shardNumber);
+			if (s != null) {
+				LOG.info("Closing primary shard <" + shardNumber + "> for index <" + indexName + ">");
+				s.close(terminate);
+				LOG.info("Removed primary shard <" + shardNumber + "> for index <" + indexName + ">");
+			}
+		}
+
+		{
+			ZuliaShard s = replicaShardMap.remove(shardNumber);
+			if (s != null) {
+				LOG.info("Closing replica shard <" + shardNumber + "> for index <" + indexName + ">");
+				s.close(terminate);
+				LOG.info("Removed replica shard <" + shardNumber + "> for index <" + indexName + ">");
+			}
 		}
 
 	}
@@ -358,7 +382,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private ZuliaShard findShardFromUniqueId(String uniqueId) throws ShardDoesNotExistException {
 		int shardNumber = MasterSlaveSelector.getShardForUniqueId(uniqueId, numberOfShards);
-		ZuliaShard zuliaShard = shardMap.get(shardNumber);
+		ZuliaShard zuliaShard = primaryShardMap.get(shardNumber);
 		if (zuliaShard == null) {
 			throw new ShardDoesNotExistException(indexName, shardNumber);
 		}
@@ -638,7 +662,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		List<Future<ShardQueryResponse>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : shardMap.values()) {
+		for (final ZuliaShard shard : primaryShardMap.values()) {
 
 			//TODO check index mapping here
 
@@ -699,7 +723,15 @@ public class ZuliaIndex implements IndexShardInterface {
 		//force analyzer to be fetched first so it doesn't fail only on one shard below
 		getPerFieldAnalyzer();
 
-		for (ZuliaShard s : shardMap.values()) {
+		for (ZuliaShard s : primaryShardMap.values()) {
+			try {
+				s.updateIndexSettings(indexSettings);
+			}
+			catch (Exception ignored) {
+			}
+		}
+
+		for (ZuliaShard s : replicaShardMap.values()) {
 			try {
 				s.updateIndexSettings(indexSettings);
 			}
@@ -715,7 +747,7 @@ public class ZuliaIndex implements IndexShardInterface {
 		if (request.getMaxNumberOfSegments() > 0) {
 			maxNumberOfSegments = request.getMaxNumberOfSegments();
 		}
-		for (final ZuliaShard shard : shardMap.values()) {
+		for (final ZuliaShard shard : primaryShardMap.values()) {
 			shard.optimize(maxNumberOfSegments);
 		}
 
@@ -727,7 +759,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		List<Future<ShardCountResponse>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : shardMap.values()) {
+		for (final ZuliaShard shard : primaryShardMap.values()) {
 
 			Future<ShardCountResponse> response = shardPool.submit(shard::getNumberOfDocs);
 
@@ -765,7 +797,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		List<Future<GetFieldNamesResponse>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : shardMap.values()) {
+		for (final ZuliaShard shard : primaryShardMap.values()) {
 
 			Future<GetFieldNamesResponse> response = shardPool.submit(shard::getFieldNames);
 
@@ -818,7 +850,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		List<Future<Void>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : shardMap.values()) {
+		for (final ZuliaShard shard : primaryShardMap.values()) {
 
 			Future<Void> response = shardPool.submit(() -> {
 				shard.clear();
@@ -854,7 +886,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		List<Future<GetTermsResponse>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : shardMap.values()) {
+		for (final ZuliaShard shard : primaryShardMap.values()) {
 
 			Future<GetTermsResponse> response = shardPool.submit(() -> shard.getTerms(request));
 
@@ -934,8 +966,22 @@ public class ZuliaIndex implements IndexShardInterface {
 		return indexName;
 	}
 
-	public void loadShards() {
-		//TODO load shards
+	public void loadShards(Predicate<Node> thisNodeTest) throws Exception {
+		List<ShardMapping> shardMappingList = indexMapping.getShardMappingList();
+		for (ShardMapping shardMapping : shardMappingList) {
+			if (thisNodeTest.test(shardMapping.getPrimayNode())) {
+				loadShard(shardMapping.getShardNumber(), true);
+			}
+			else {
+				for (Node node : shardMapping.getReplicaNodeList()) {
+					if (thisNodeTest.test(node)) {
+						loadShard(shardMapping.getShardNumber(), false);
+						break;
+					}
+				}
+
+			}
+		}
 	}
 
 	public ZuliaServiceOuterClass.FetchResponse fetch(ZuliaServiceOuterClass.FetchRequest fetchRequest) throws Exception {

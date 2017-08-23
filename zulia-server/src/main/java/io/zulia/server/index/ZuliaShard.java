@@ -134,6 +134,7 @@ public class ZuliaShard {
 	private final Set<String> fetchSetWithDocument;
 	private final IndexShardInterface indexShardInterface;
 
+
 	private IndexWriter indexWriter;
 	private DirectoryReader directoryReader;
 	private Long lastCommit;
@@ -148,8 +149,13 @@ public class ZuliaShard {
 	private DirectoryTaxonomyWriter taxoWriter;
 	private DirectoryTaxonomyReader taxoReader;
 
-	public ZuliaShard(int segmentNumber, IndexShardInterface indexShardInterface, ServerIndexConfig indexConfig, FacetsConfig facetsConfig) throws Exception {
+	private final boolean primary;
+
+	public ZuliaShard(int segmentNumber, IndexShardInterface indexShardInterface, ServerIndexConfig indexConfig, FacetsConfig facetsConfig, boolean primary)
+			throws Exception {
 		setupCaches(indexConfig);
+
+		this.primary = primary;
 
 		this.segmentNumber = segmentNumber;
 
@@ -173,6 +179,10 @@ public class ZuliaShard {
 		this.lastChange = null;
 		this.indexName = indexConfig.getIndexName();
 
+	}
+
+	public boolean isPrimary() {
+		return primary;
 	}
 
 	private static String getFoldedString(String text) {

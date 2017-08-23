@@ -46,7 +46,7 @@ public interface IndexService {
 
 	/**
 	 *
-	 * @param indexName -index name to fetch server mapping from
+	 * @param indexName - index name to fetch server mapping from
 	 * @return - index mapping for an index, {@code null} if nothing exists
 	 */
 	IndexMapping getIndexMapping(String indexName) throws Exception;
@@ -56,5 +56,11 @@ public interface IndexService {
 	 * @param indexMapping - index mapping to create or update
 	 */
 	void storeIndexMapping(IndexMapping indexMapping) throws Exception;
+
+	/**
+	 * remove an index mapping from the config storage
+	 * @param indexName - index name of mapping to remove
+	 */
+	void removeIndexMapping(String indexName) throws Exception;
 
 }
