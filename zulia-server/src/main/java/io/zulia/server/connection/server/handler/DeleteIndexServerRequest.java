@@ -16,7 +16,7 @@ public class DeleteIndexServerRequest extends ServerRequestHandler<DeleteIndexRe
 	}
 
 	@Override
-	protected DeleteIndexResponse handleCall(ZuliaIndexManager indexManager, DeleteIndexRequest request) {
+	protected DeleteIndexResponse handleCall(ZuliaIndexManager indexManager, DeleteIndexRequest request) throws Exception {
 		return indexManager.deleteIndex(request);
 	}
 

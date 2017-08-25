@@ -328,7 +328,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	public void deleteIndex() throws Exception {
 
-		indexService.removeIndex(indexName);
 
 		for (int i = 0; i < numberOfShards; i++) {
 			{

@@ -126,7 +126,7 @@ public class ZuliaShard {
 	private final static Logger log = Logger.getLogger(ZuliaShard.class.getSimpleName());
 	private static Pattern sortedDocValuesMessage = Pattern.compile(
 			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Use UninvertingReader or index with docvalues\\.");
-	private final int segmentNumber;
+	private final int shardNumber;
 	private final ServerIndexConfig indexConfig;
 	private final AtomicLong counter;
 	private final Set<String> fetchSet;
@@ -151,13 +151,13 @@ public class ZuliaShard {
 
 	private final boolean primary;
 
-	public ZuliaShard(int segmentNumber, IndexShardInterface indexShardInterface, ServerIndexConfig indexConfig, FacetsConfig facetsConfig, boolean primary)
+	public ZuliaShard(int shardNumber, IndexShardInterface indexShardInterface, ServerIndexConfig indexConfig, FacetsConfig facetsConfig, boolean primary)
 			throws Exception {
 		setupCaches(indexConfig);
 
 		this.primary = primary;
 
-		this.segmentNumber = segmentNumber;
+		this.shardNumber = shardNumber;
 
 		this.indexShardInterface = indexShardInterface;
 		this.indexConfig = indexConfig;
@@ -218,7 +218,7 @@ public class ZuliaShard {
 		if (!indexWriter.isOpen()) {
 			synchronized (this) {
 				if (!indexWriter.isOpen()) {
-					this.indexWriter = this.indexShardInterface.getIndexWriter(segmentNumber);
+					this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
 					this.directoryReader = DirectoryReader.open(indexWriter, true, false);
 				}
 			}
@@ -230,7 +230,7 @@ public class ZuliaShard {
 		}
 		catch (AlreadyClosedException e) {
 			synchronized (this) {
-				this.taxoWriter = this.indexShardInterface.getTaxoWriter(segmentNumber);
+				this.taxoWriter = this.indexShardInterface.getTaxoWriter(shardNumber);
 				this.taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 			}
 		}
@@ -247,13 +247,13 @@ public class ZuliaShard {
 
 		this.perFieldAnalyzer = this.indexShardInterface.getPerFieldAnalyzer();
 
-		this.indexWriter = this.indexShardInterface.getIndexWriter(segmentNumber);
+		this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
 		if (this.directoryReader != null) {
 			this.directoryReader.close();
 		}
 		this.directoryReader = DirectoryReader.open(indexWriter);
 
-		this.taxoWriter = this.indexShardInterface.getTaxoWriter(segmentNumber);
+		this.taxoWriter = this.indexShardInterface.getTaxoWriter(shardNumber);
 		if (this.taxoReader != null) {
 			this.taxoReader.close();
 		}
@@ -283,7 +283,7 @@ public class ZuliaShard {
 	}
 
 	public int getShardNumber() {
-		return segmentNumber;
+		return shardNumber;
 	}
 
 	public ShardQueryResponse queryShard(Query query, Map<String, Similarity> similarityOverrideMap, int amount, FieldDoc after, FacetRequest facetRequest,
@@ -310,8 +310,8 @@ public class ZuliaShard {
 			indexSearcher.setSimilarity(getSimilarity(similarityOverrideMap));
 
 			if (debug) {
-				log.info("Lucene Query for index <" + indexName + "> segment <" + segmentNumber + ">: " + query);
-				log.info("Rewritten Query for index <" + indexName + "> segment <" + segmentNumber + ">: " + indexSearcher.rewrite(query));
+				log.info("Lucene Query for index <" + indexName + "> segment <" + shardNumber + ">: " + query);
+				log.info("Rewritten Query for index <" + indexName + "> segment <" + shardNumber + ">: " + indexSearcher.rewrite(query));
 			}
 
 			int hasMoreAmount = amount + 1;
@@ -366,7 +366,7 @@ public class ZuliaShard {
 			}
 
 			shardQueryReponseBuilder.setIndexName(indexName);
-			shardQueryReponseBuilder.setShardNumber(segmentNumber);
+			shardQueryReponseBuilder.setShardNumber(shardNumber);
 
 			if (!analysisHandlerList.isEmpty()) {
 				for (AnalysisHandler analysisHandler : analysisHandlerList) {
@@ -655,7 +655,7 @@ public class ZuliaShard {
 		srBuilder.setTimestamp(timestamp);
 
 		srBuilder.setDocId(docId);
-		srBuilder.setShard(segmentNumber);
+		srBuilder.setShard(shardNumber);
 		srBuilder.setIndexName(indexName);
 		srBuilder.setResultIndex(i);
 
@@ -864,7 +864,11 @@ public class ZuliaShard {
 	}
 
 	public void forceCommit() throws IOException {
-		log.info("Committing segment <" + segmentNumber + "> for index <" + indexName + ">");
+		if (!primary) {
+			throw new IllegalStateException("Cannot force commit from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+		}
+
+		log.info("Committing segment <" + shardNumber + "> for index <" + indexName + ">");
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();
 		taxoWriter.commit();
@@ -904,6 +908,10 @@ public class ZuliaShard {
 	}
 
 	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<Metadata> metadataList) throws Exception {
+		if (!primary) {
+			throw new IllegalStateException("Cannot index document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+		}
+
 
 		reopenIndexWritersIfNecessary();
 
@@ -1176,6 +1184,10 @@ public class ZuliaShard {
 	}
 
 	public void deleteDocument(String uniqueId) throws Exception {
+		if (!primary) {
+			throw new IllegalStateException("Cannot delete document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+		}
+
 		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 		indexWriter.deleteDocuments(term);
 		possibleCommit();
@@ -1183,6 +1195,10 @@ public class ZuliaShard {
 	}
 
 	public void optimize(int maxNumberSegments) throws IOException {
+		if (!primary) {
+			throw new IllegalStateException("Cannot optimize replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+		}
+
 		lastChange = System.currentTimeMillis();
 		indexWriter.forceMerge(maxNumberSegments);
 		forceCommit();
@@ -1210,6 +1226,9 @@ public class ZuliaShard {
 	}
 
 	public void clear() throws IOException {
+		if (!primary) {
+			throw new IllegalStateException("Cannot clear replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+		}
 		// index has write lock so none needed here
 		indexWriter.deleteAll();
 		forceCommit();
@@ -1379,7 +1398,7 @@ public class ZuliaShard {
 
 		openReaderIfChanges();
 		int count = directoryReader.numDocs();
-		return ShardCountResponse.newBuilder().setNumberOfDocs(count).setShardNumber(segmentNumber).build();
+		return ShardCountResponse.newBuilder().setNumberOfDocs(count).setShardNumber(shardNumber).build();
 
 	}
 
