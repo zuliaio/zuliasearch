@@ -37,7 +37,6 @@ public class QueryUtil {
 		}
 		BooleanQuery bq = (BooleanQuery) q;
 		BooleanQuery.Builder newBqB = new BooleanQuery.Builder();
-		newBqB.setDisableCoord(bq.isCoordDisabled());
 		newBqB.setMinimumNumberShouldMatch(bq.getMinimumNumberShouldMatch());
 		for (BooleanClause clause : bq) {
 			newBqB.add(clause);

@@ -1,8 +1,10 @@
-package io.zulia.server.config;
+package io.zulia.server.test.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.server.config.IndexService;
+import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.single.FSIndexService;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
