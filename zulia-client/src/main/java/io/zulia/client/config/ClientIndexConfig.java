@@ -21,9 +21,6 @@ public class ClientIndexConfig {
 	private Double shardTolerance;
 	private Integer shardQueryCacheSize;
 	private Integer shardQueryCacheMaxAmount;
-	private Boolean storeDocumentInMongo;
-	private Boolean storeDocumentInIndex;
-	private Boolean storeIndexOnDisk;
 
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
@@ -161,30 +158,6 @@ public class ClientIndexConfig {
 
 	public TreeMap<String, FieldConfig> getFieldConfigMap() {
 		return fieldMap;
-	}
-
-	public Boolean getStoreDocumentInMongo() {
-		return storeDocumentInMongo;
-	}
-
-	public void setStoreDocumentInMongo(Boolean storeDocumentInMongo) {
-		this.storeDocumentInMongo = storeDocumentInMongo;
-	}
-
-	public Boolean getStoreDocumentInIndex() {
-		return storeDocumentInIndex;
-	}
-
-	public void setStoreDocumentInIndex(Boolean storeDocumentInIndex) {
-		this.storeDocumentInIndex = storeDocumentInIndex;
-	}
-
-	public Boolean getStoreIndexOnDisk() {
-		return storeIndexOnDisk;
-	}
-
-	public void setStoreIndexOnDisk(Boolean storeIndexOnDisk) {
-		this.storeIndexOnDisk = storeIndexOnDisk;
 	}
 
 	public IndexSettings getIndexSettings() {
