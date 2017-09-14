@@ -10,6 +10,7 @@ import io.zulia.server.config.IndexService;
 import org.bson.Document;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MongoIndexService implements IndexService {
@@ -42,7 +43,7 @@ public class MongoIndexService implements IndexService {
 			return indexSettings;
 		}
 
-		return null;
+		return Collections.emptyList();
 	}
 
 	@Override
