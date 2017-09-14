@@ -4,7 +4,6 @@ import io.zulia.message.ZuliaServiceOuterClass.DeleteIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
 import io.zulia.server.index.ZuliaIndexManager;
 
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,7 +16,7 @@ public class InternalDeleteIndexServerRequest extends ServerRequestHandler<Delet
 	}
 
 	@Override
-	protected DeleteIndexResponse handleCall(ZuliaIndexManager indexManager, DeleteIndexRequest request) throws IOException {
+	protected DeleteIndexResponse handleCall(ZuliaIndexManager indexManager, DeleteIndexRequest request) throws Exception {
 		return indexManager.internalDeleteIndex(request);
 	}
 

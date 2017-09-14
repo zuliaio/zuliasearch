@@ -352,16 +352,17 @@ public class ZuliaIndexManager {
 		indexService.removeIndex(request.getIndexName());
 		indexService.removeIndexMapping(request.getIndexName());
 
-		List<DeleteIndexResponse> send = deleteIndexRequestFederator.send(request);
+		List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
 
 		return DeleteIndexResponse.newBuilder().build();
 
 	}
 
-	public DeleteIndexResponse internalDeleteIndex(DeleteIndexRequest request) throws IOException {
+	public DeleteIndexResponse internalDeleteIndex(DeleteIndexRequest request) throws Exception {
 		ZuliaIndex zuliaIndex = indexMap.get(request.getIndexName());
 		if (zuliaIndex != null) {
 			zuliaIndex.unload(true);
+			zuliaIndex.deleteIndex();
 		}
 		return DeleteIndexResponse.newBuilder().build();
 	}

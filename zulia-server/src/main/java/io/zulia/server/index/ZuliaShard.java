@@ -213,6 +213,7 @@ public class ZuliaShard {
 	}
 
 	private void reopenIndexWritersIfNecessary() throws Exception {
+
 		if (!indexWriter.isOpen()) {
 			synchronized (this) {
 				if (!indexWriter.isOpen()) {

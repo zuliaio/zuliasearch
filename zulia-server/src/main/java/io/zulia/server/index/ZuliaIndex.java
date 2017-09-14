@@ -41,8 +41,6 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -237,35 +235,10 @@ public class ZuliaIndex implements IndexShardInterface {
 		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
 
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
-		config.setRAMBufferSizeMB(100);
-		config.setIndexDeletionPolicy(new IndexDeletionPolicy() {
-			public void onInit(List<? extends IndexCommit> commits) {
-				// Note that commits.size() should normally be 1:
-				onCommit(commits);
-			}
-
-			/**
-			 * Deletes all commits except the most recent one.
-			 */
-			@Override
-			public void onCommit(List<? extends IndexCommit> commits) {
-				// Note that commits.size() should normally be 2 (if not
-				// called by onInit above):
-				int size = commits.size();
-				for (int i = 0; i < size - 1; i++) {
-					//LOG.info("Deleting old commit for shard <" + shardNumber + "> on index <" + indexName);
-					commits.get(i).delete();
-				}
-			}
-		});
-
-		//ConcurrentMergeScheduler concurrentMergeScheduler = new ConcurrentMergeScheduler();
-		//concurrentMergeScheduler.setMaxMergesAndThreads(8,2);
-		//config.setMergeScheduler(concurrentMergeScheduler);
-
+		config.setRAMBufferSizeMB(128);
 		config.setUseCompoundFile(false);
 
-		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 15, 90);
+		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 32, 128);
 
 		return new IndexWriter(nrtCachingDirectory, config);
 	}
@@ -282,7 +255,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		Directory d = MMapDirectory.open(getPathForFacetsIndex(shardNumber));
 
-		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 2, 10);
+		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 8, 16);
 
 		return new DirectoryTaxonomyWriter(nrtCachingDirectory);
 	}
@@ -299,6 +272,7 @@ public class ZuliaIndex implements IndexShardInterface {
 				LOG.info("Closing primary shard <" + shardNumber + "> for index <" + indexName + ">");
 				s.close(terminate);
 				LOG.info("Removed primary shard <" + shardNumber + "> for index <" + indexName + ">");
+
 			}
 		}
 
