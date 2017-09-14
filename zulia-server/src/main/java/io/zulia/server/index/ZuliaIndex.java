@@ -4,6 +4,7 @@ import info.debatty.java.lsh.SuperBit;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
+import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
@@ -22,20 +23,7 @@ import io.zulia.message.ZuliaQuery.IndexShardResponse;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
-import io.zulia.message.ZuliaServiceOuterClass.ClearResponse;
-import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
-import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
-import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
-import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
-import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
-import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
-import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
-import io.zulia.message.ZuliaServiceOuterClass.InternalGetTermsResponse;
-import io.zulia.message.ZuliaServiceOuterClass.OptimizeRequest;
-import io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
-import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
-import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
-import io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
+import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
@@ -240,7 +228,6 @@ public class ZuliaIndex implements IndexShardInterface {
 			replicaShardMap.put(shardNumber, s);
 		}
 
-
 	}
 
 	public IndexWriter getIndexWriter(int shardNumber) throws Exception {
@@ -327,7 +314,6 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	public void deleteIndex() throws Exception {
-
 
 		for (int i = 0; i < numberOfShards; i++) {
 			{
@@ -561,7 +547,14 @@ public class ZuliaIndex implements IndexShardInterface {
 		}
 	}
 
-	public IndexShardResponse internalQuery(Query query, final QueryRequest queryRequest) throws Exception {
+	public IndexShardResponse internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
+
+		QueryRequest queryRequest = internalQueryRequest.getQueryRequest();
+		Set<ZuliaShard> shardsForQuery = new HashSet<>();
+		for (IndexRouting indexRouting : internalQueryRequest.getIndexRoutingList()) {
+			List<ZuliaShard> shardsFromRouting = getShardsFromRouting(indexRouting, queryRequest.getMasterSlaveSettings());
+			shardsForQuery.addAll(shardsFromRouting);
+		}
 
 		int amount = queryRequest.getAmount() + queryRequest.getStart();
 
@@ -661,9 +654,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		List<Future<ShardQueryResponse>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : primaryShardMap.values()) {
-
-			//TODO check index mapping here
+		for (final ZuliaShard shard : shardsForQuery) {
 
 			Future<ShardQueryResponse> response = shardPool.submit(() -> {
 
@@ -754,22 +745,25 @@ public class ZuliaIndex implements IndexShardInterface {
 		return OptimizeResponse.newBuilder().build();
 	}
 
-	public GetNumberOfDocsResponse getNumberOfDocs() throws Exception {
+	public GetNumberOfDocsResponse getNumberOfDocs(InternalGetNumberOfDocsRequest request) throws Exception {
 
 		List<Future<ShardCountResponse>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : primaryShardMap.values()) {
+		GetNumberOfDocsRequest getNumberOfDocsRequest = request.getGetNumberOfDocsRequest();
 
+		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getNumberOfDocsRequest.getMasterSlaveSettings());
+
+		for (ZuliaShard shard : shardsForCommand) {
 			Future<ShardCountResponse> response = shardPool.submit(shard::getNumberOfDocs);
-
 			responses.add(response);
-
 		}
 
 		GetNumberOfDocsResponse.Builder responseBuilder = GetNumberOfDocsResponse.newBuilder();
 
 		responseBuilder.setNumberOfDocs(0);
-		for (Future<ShardCountResponse> response : responses) {
+		for (Future<ShardCountResponse> response : responses)
+
+		{
 			try {
 				ShardCountResponse scr = response.get();
 				responseBuilder.addShardCountResponse(scr);
@@ -792,7 +786,37 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	}
 
-	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
+	private List<ZuliaShard> getShardsFromRouting(IndexRouting indexRouting, MasterSlaveSettings masterSlaveSettings) throws ShardDoesNotExistException {
+		List<ZuliaShard> shardsForCommand = new ArrayList<>();
+		for (int shardNumber : indexRouting.getShardList()) {
+
+			ZuliaShard shard = null;
+
+			if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings)) {
+				shard = primaryShardMap.get(shardNumber);
+			}
+			else if (MasterSlaveSettings.SLAVE_ONLY.equals(masterSlaveSettings)) {
+				shard = replicaShardMap.get(shardNumber);
+			}
+			else {
+				shard = primaryShardMap.get(shardNumber);
+				if (shard == null) {
+					shard = replicaShardMap.get(shardNumber);
+				}
+			}
+
+			if (shard == null) {
+				throw new ShardDoesNotExistException(indexName, shardNumber);
+			}
+
+			shardsForCommand.add(shard);
+		}
+		return shardsForCommand;
+	}
+
+	public GetFieldNamesResponse getFieldNames(InternalGetFieldNamesRequest request) throws Exception {
+
+
 
 		List<Future<GetFieldNamesResponse>> responses = new ArrayList<>();
 
@@ -881,13 +905,16 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	}
 
-	public InternalGetTermsResponse getTerms(final GetTermsRequest request) throws Exception {
+	public InternalGetTermsResponse getTerms(final InternalGetTermsRequest request) throws Exception {
 
 		List<Future<GetTermsResponse>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : primaryShardMap.values()) {
+		GetTermsRequest getTermsRequest = request.getGetTermsRequest();
+		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getTermsRequest.getMasterSlaveSettings());
 
-			Future<GetTermsResponse> response = shardPool.submit(() -> shard.getTerms(request));
+		for (final ZuliaShard shard : shardsForCommand) {
+
+			Future<GetTermsResponse> response = shardPool.submit(() -> shard.getTerms(getTermsRequest));
 
 			responses.add(response);
 

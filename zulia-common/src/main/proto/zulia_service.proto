@@ -9,7 +9,7 @@ option java_package = "io.zulia.message";
 
 service ZuliaService {
     rpc Query (QueryRequest) returns (QueryResponse);
-    rpc InternalQuery (QueryRequest) returns (InternalQueryResponse);
+    rpc InternalQuery (InternalQueryRequest) returns (InternalQueryResponse);
     rpc Store (StoreRequest) returns (StoreResponse);
     rpc InternalStore (StoreRequest) returns (StoreResponse);
     rpc Delete (DeleteRequest) returns (DeleteResponse);
@@ -24,17 +24,27 @@ service ZuliaService {
     rpc InternalDeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
     rpc GetIndexes (GetIndexesRequest) returns (GetIndexesResponse);
     rpc GetNumberOfDocs (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
-    rpc InternalGetNumberOfDocs (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
+    rpc InternalGetNumberOfDocs (InternalGetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
     rpc Clear (ClearRequest) returns (ClearResponse);
     rpc InternalClear (ClearRequest) returns (ClearResponse);
     rpc Optimize (OptimizeRequest) returns (OptimizeResponse);
     rpc InternalOptimize (OptimizeRequest) returns (OptimizeResponse);
     rpc GetFieldNames (GetFieldNamesRequest) returns (GetFieldNamesResponse);
-    rpc InternalGetFieldNames (GetFieldNamesRequest) returns (GetFieldNamesResponse);
+    rpc InternalGetFieldNames (InternalGetFieldNamesRequest) returns (GetFieldNamesResponse);
     rpc GetTerms (GetTermsRequest) returns (GetTermsResponse);
-    rpc InternalGetTerms (GetTermsRequest) returns (InternalGetTermsResponse);
+    rpc InternalGetTerms (InternalGetTermsRequest) returns (InternalGetTermsResponse);
     rpc GetNodes (GetNodesRequest) returns (GetNodesResponse);
     rpc GetIndexSettings (GetIndexSettingsRequest) returns (GetIndexSettingsResponse);
+}
+
+message IndexRouting {
+    string index = 1;
+    repeated uint32 shard = 2;
+}
+
+message InternalQueryRequest {
+    QueryRequest queryRequest = 1;
+    repeated IndexRouting indexRouting = 2;
 }
 
 
@@ -149,9 +159,16 @@ message GetIndexesResponse {
     repeated string indexName = 1;
 }
 
+
+
 message GetNumberOfDocsRequest {
     string indexName = 1;
     MasterSlaveSettings masterSlaveSettings = 2;
+}
+
+message InternalGetNumberOfDocsRequest {
+    GetNumberOfDocsRequest getNumberOfDocsRequest = 1;
+    IndexRouting indexRouting = 2;
 }
 
 message GetNumberOfDocsResponse {
@@ -180,6 +197,11 @@ message GetFieldNamesRequest {
     MasterSlaveSettings masterSlaveSettings = 2;
 }
 
+message InternalGetFieldNamesRequest {
+    GetFieldNamesRequest getFieldNamesRequest = 1;
+    IndexRouting indexRouting = 2;
+}
+
 message GetFieldNamesResponse {
     repeated string fieldName = 1;
 }
@@ -201,6 +223,11 @@ message GetTermsRequest {
 
     FuzzyTerm fuzzyTerm = 11;
     MasterSlaveSettings masterSlaveSettings = 12;
+}
+
+message InternalGetTermsRequest {
+    GetTermsRequest getTermsRequest = 1;
+    IndexRouting indexRouting = 2;
 }
 
 message GetTermsResponse {

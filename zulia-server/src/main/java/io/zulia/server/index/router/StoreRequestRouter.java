@@ -14,8 +14,8 @@ public class StoreRequestRouter extends NodeRequestRouter<StoreRequest, StoreRes
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public StoreRequestRouter(Node thisNode, Collection<Node> otherNodesActive, ZuliaIndex index, String uniqueId,
-			InternalClient internalClient) throws IOException {
+	public StoreRequestRouter(Node thisNode, Collection<Node> otherNodesActive, ZuliaIndex index, String uniqueId, InternalClient internalClient)
+			throws IOException {
 		super(thisNode, otherNodesActive, MasterSlaveSettings.MASTER_ONLY, index, uniqueId);
 		this.internalClient = internalClient;
 		this.index = index;
@@ -27,7 +27,7 @@ public class StoreRequestRouter extends NodeRequestRouter<StoreRequest, StoreRes
 	}
 
 	@Override
-	protected StoreResponse processInternal(StoreRequest request) throws Exception {
+	protected StoreResponse processInternal(Node node, StoreRequest request) throws Exception {
 		return internalStore(index, request);
 	}
 

@@ -27,7 +27,7 @@ public class CreateIndexRequestFederator extends AllNodeRequestFederator<CreateI
 	}
 
 	@Override
-	protected CreateIndexResponse processInternal(CreateIndexRequest request) throws Exception {
+	protected CreateIndexResponse processInternal(Node node, CreateIndexRequest request) throws Exception {
 		return internalCreateIndex(indexManager, request);
 	}
 

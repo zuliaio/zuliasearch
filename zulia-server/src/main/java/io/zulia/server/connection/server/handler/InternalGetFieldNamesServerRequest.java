@@ -1,13 +1,13 @@
 package io.zulia.server.connection.server.handler;
 
-import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
+import io.zulia.message.ZuliaServiceOuterClass.InternalGetFieldNamesRequest;
 import io.zulia.server.index.ZuliaIndexManager;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class InternalGetFieldNamesServerRequest extends ServerRequestHandler<GetFieldNamesResponse, GetFieldNamesRequest> {
+public class InternalGetFieldNamesServerRequest extends ServerRequestHandler<GetFieldNamesResponse, InternalGetFieldNamesRequest> {
 
 	private final static Logger LOG = Logger.getLogger(InternalGetFieldNamesServerRequest.class.getSimpleName());
 
@@ -16,7 +16,7 @@ public class InternalGetFieldNamesServerRequest extends ServerRequestHandler<Get
 	}
 
 	@Override
-	protected GetFieldNamesResponse handleCall(ZuliaIndexManager indexManager, GetFieldNamesRequest request) throws Exception {
+	protected GetFieldNamesResponse handleCall(ZuliaIndexManager indexManager, InternalGetFieldNamesRequest request) throws Exception {
 		return indexManager.internalGetFieldNames(request);
 	}
 

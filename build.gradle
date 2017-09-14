@@ -16,7 +16,7 @@ subprojects {
 	repositories {
 		mavenCentral()
 		maven {
-			url "https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-7.0.0-RC2-revd3ce558f74b0b4fc082b87a7e60cf43d7010e03c/lucene/maven/"
+			url "https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-7.0.0-RC3-rev3ba304b29825a94249c5145b3f5061e87b87d8f8/lucene/maven/"
 		}
 	}
 

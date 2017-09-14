@@ -28,7 +28,7 @@ public class ClearRequestFederator extends MasterSlaveNodeRequestFederator<Clear
 	}
 
 	@Override
-	protected ClearResponse processInternal(ClearRequest request) throws Exception {
+	protected ClearResponse processInternal(Node node, ClearRequest request) throws Exception {
 		return internalClear(index, request);
 	}
 

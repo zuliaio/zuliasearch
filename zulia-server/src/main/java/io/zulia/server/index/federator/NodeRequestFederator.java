@@ -31,7 +31,7 @@ public abstract class NodeRequestFederator<I, O> extends NodeRequestBase<I, O> {
 
 			Future<O> futureResponse = pool.submit(() -> {
 				if (nodeIsLocal(node)) {
-					return processInternal(request);
+					return processInternal(node, request);
 				}
 				return processExternal(node, request);
 

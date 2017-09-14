@@ -134,7 +134,7 @@ public class InternalClient {
 		}
 	}
 
-	public InternalQueryResponse executeQuery(Node node, QueryRequest request) throws Exception {
+	public InternalQueryResponse executeQuery(Node node, InternalQueryRequest request) throws Exception {
 		return internalQueryHandler.handleRequest(node, request);
 	}
 
@@ -150,7 +150,7 @@ public class InternalClient {
 		return internalFetchHandler.handleRequest(node, request);
 	}
 
-	public GetNumberOfDocsResponse getNumberOfDocs(Node node, GetNumberOfDocsRequest request) throws Exception {
+	public GetNumberOfDocsResponse getNumberOfDocs(Node node, InternalGetNumberOfDocsRequest request) throws Exception {
 		return internalGetNumberOfDocsHandler.handleRequest(node, request);
 	}
 
@@ -158,7 +158,7 @@ public class InternalClient {
 		return internalOptimizeHandler.handleRequest(node, request);
 	}
 
-	public GetFieldNamesResponse getFieldNames(Node node, GetFieldNamesRequest request) throws Exception {
+	public GetFieldNamesResponse getFieldNames(Node node, InternalGetFieldNamesRequest request) throws Exception {
 		return internalGetFieldNamesHandler.handleRequest(node, request);
 	}
 
@@ -166,7 +166,7 @@ public class InternalClient {
 		return internalClearHandler.handleRequest(node, request);
 	}
 
-	public InternalGetTermsResponse getTerms(Node node, GetTermsRequest request) throws Exception {
+	public InternalGetTermsResponse getTerms(Node node, InternalGetTermsRequest request) throws Exception {
 		return internalGetTermsHandler.handleRequest(node, request);
 	}
 

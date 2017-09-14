@@ -204,12 +204,12 @@ public class ZuliaIndexManager {
 		}
 	}
 
-	public InternalQueryResponse internalQuery(QueryRequest request) throws Exception {
+	public InternalQueryResponse internalQuery(InternalQueryRequest request) throws Exception {
 
 		Map<String, Query> queryMap = new HashMap<>();
 		Set<ZuliaIndex> indexes = new HashSet<>();
 
-		populateIndexesAndIndexMap(request, queryMap, indexes);
+		populateIndexesAndIndexMap(request.getQueryRequest(), queryMap, indexes);
 
 		return QueryRequestFederator.internalQuery(indexes, request, queryMap);
 	}
@@ -226,12 +226,13 @@ public class ZuliaIndexManager {
 		return federator.getResponse(request);
 	}
 
-	private void populateIndexesAndIndexMap(QueryRequest request, Map<String, Query> queryMap, Set<ZuliaIndex> indexes) throws Exception {
-		for (String indexName : request.getIndexList()) {
+	private void populateIndexesAndIndexMap(QueryRequest queryRequest, Map<String, Query> queryMap, Set<ZuliaIndex> indexes) throws Exception {
+
+		for (String indexName : queryRequest.getIndexList()) {
 			ZuliaIndex index = getIndexFromName(indexName);
 			indexes.add(index);
 
-			Query query = index.getQuery(request);
+			Query query = index.getQuery(queryRequest);
 			queryMap.put(indexName, query);
 		}
 	}
@@ -373,9 +374,9 @@ public class ZuliaIndexManager {
 
 	}
 
-	public GetNumberOfDocsResponse getNumberOfDocsInternal(GetNumberOfDocsRequest request) throws Exception {
-		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return GetNumberOfDocsRequestFederator.internalGetNumberOfDocs(i, request);
+	public GetNumberOfDocsResponse getNumberOfDocsInternal(InternalGetNumberOfDocsRequest internalRequest) throws Exception {
+		ZuliaIndex i = getIndexFromName(internalRequest.getGetNumberOfDocsRequest().getIndexName());
+		return GetNumberOfDocsRequestFederator.internalGetNumberOfDocs(i, internalRequest);
 	}
 
 	public ClearResponse clear(ClearRequest request) throws Exception {
@@ -413,8 +414,9 @@ public class ZuliaIndexManager {
 
 	}
 
-	public GetFieldNamesResponse internalGetFieldNames(GetFieldNamesRequest request) throws Exception {
-		ZuliaIndex i = getIndexFromName(request.getIndexName());
+	public GetFieldNamesResponse internalGetFieldNames(InternalGetFieldNamesRequest request) throws Exception {
+		GetFieldNamesRequest getFieldNamesRequest = request.getGetFieldNamesRequest();
+		ZuliaIndex i = getIndexFromName(getFieldNamesRequest.getIndexName());
 		return GetFieldNamesRequestFederator.internalGetFieldNames(i, request);
 	}
 
@@ -426,8 +428,9 @@ public class ZuliaIndexManager {
 
 	}
 
-	public InternalGetTermsResponse internalGetTerms(GetTermsRequest request) throws Exception {
-		ZuliaIndex i = getIndexFromName(request.getIndexName());
+	public InternalGetTermsResponse internalGetTerms(InternalGetTermsRequest request) throws Exception {
+		GetTermsRequest getTermsRequest = request.getGetTermsRequest();
+		ZuliaIndex i = getIndexFromName(getTermsRequest.getIndexName());
 		return GetTermsRequestFederator.internalGetTerms(i, request);
 	}
 

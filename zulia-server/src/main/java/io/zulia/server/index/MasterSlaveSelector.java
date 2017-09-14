@@ -4,12 +4,14 @@ import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.ShardMapping;
+import io.zulia.message.ZuliaServiceOuterClass.IndexRouting;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.exceptions.ShardOfflineException;
 import io.zulia.server.node.ZuliaNode;
 
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 public class MasterSlaveSelector {
 
@@ -42,13 +44,15 @@ public class MasterSlaveSelector {
 
 	}
 
-	public void addNodesForIndex(Set<Node> nodeSet) throws ShardOfflineException {
-		for (int s = 0; s < indexMapping.getNumberOfShards(); s++) {
-			for (io.zulia.message.ZuliaIndex.ShardMapping shardMapping : indexMapping.getShardMappingList()) {
-				Node selectedNode = getNodeFromShardMapping(shardMapping);
-				nodeSet.add(selectedNode);
-			}
+	public Map<Node, IndexRouting.Builder> getNodesForIndex() throws ShardOfflineException {
+
+		Map<Node, IndexRouting.Builder> map = new HashMap<>();
+		for (io.zulia.message.ZuliaIndex.ShardMapping shardMapping : indexMapping.getShardMappingList()) {
+			Node selectedNode = getNodeFromShardMapping(shardMapping);
+			map.computeIfAbsent(selectedNode, (k) -> IndexRouting.newBuilder()).addShard(shardMapping.getShardNumber());
 		}
+
+		return map;
 	}
 
 	protected Node getNodeFromShardMapping(ShardMapping shardMapping) throws ShardOfflineException {

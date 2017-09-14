@@ -5,6 +5,8 @@ import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
+import io.zulia.message.ZuliaServiceOuterClass.IndexRouting;
+import io.zulia.message.ZuliaServiceOuterClass.InternalGetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalGetTermsResponse;
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.index.ZuliaIndex;
@@ -28,15 +30,19 @@ public class GetTermsRequestFederator extends MasterSlaveNodeRequestFederator<Ge
 
 	@Override
 	protected InternalGetTermsResponse processExternal(Node node, GetTermsRequest request) throws Exception {
-		return internalClient.getTerms(node, request);
+		IndexRouting indexRouting = getIndexRouting(node).get(0);
+		InternalGetTermsRequest internalRequest = InternalGetTermsRequest.newBuilder().setIndexRouting(indexRouting).setGetTermsRequest(request).build();
+		return internalClient.getTerms(node, internalRequest);
 	}
 
 	@Override
-	protected InternalGetTermsResponse processInternal(GetTermsRequest request) throws Exception {
-		return internalGetTerms(index, request);
+	protected InternalGetTermsResponse processInternal(Node node, GetTermsRequest request) throws Exception {
+		IndexRouting indexRouting = getIndexRouting(node).get(0);
+		InternalGetTermsRequest internalRequest = InternalGetTermsRequest.newBuilder().setIndexRouting(indexRouting).setGetTermsRequest(request).build();
+		return internalGetTerms(index, internalRequest);
 	}
 
-	public static InternalGetTermsResponse internalGetTerms(ZuliaIndex index, GetTermsRequest request) throws Exception {
+	public static InternalGetTermsResponse internalGetTerms(ZuliaIndex index, InternalGetTermsRequest request) throws Exception {
 		return index.getTerms(request);
 	}
 

@@ -3,8 +3,10 @@ package io.zulia.server.index.federator;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
+import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
+import io.zulia.message.ZuliaServiceOuterClass.InternalGetNumberOfDocsRequest;
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.index.ZuliaIndex;
 
@@ -28,16 +30,22 @@ public class GetNumberOfDocsRequestFederator extends MasterSlaveNodeRequestFeder
 
 	@Override
 	protected GetNumberOfDocsResponse processExternal(Node node, GetNumberOfDocsRequest request) throws Exception {
-		return internalClient.getNumberOfDocs(node, request);
+		ZuliaServiceOuterClass.IndexRouting indexRouting = getIndexRouting(node).get(0);
+		InternalGetNumberOfDocsRequest internalRequest = InternalGetNumberOfDocsRequest.newBuilder().setIndexRouting(indexRouting)
+				.setGetNumberOfDocsRequest(request).build();
+		return internalClient.getNumberOfDocs(node, internalRequest);
 	}
 
 	@Override
-	protected GetNumberOfDocsResponse processInternal(GetNumberOfDocsRequest request) throws Exception {
-		return internalGetNumberOfDocs(index, request);
+	protected GetNumberOfDocsResponse processInternal(Node node, GetNumberOfDocsRequest request) throws Exception {
+		ZuliaServiceOuterClass.IndexRouting indexRouting = getIndexRouting(node).get(0);
+		InternalGetNumberOfDocsRequest internalRequest = InternalGetNumberOfDocsRequest.newBuilder().setIndexRouting(indexRouting)
+				.setGetNumberOfDocsRequest(request).build();
+		return internalGetNumberOfDocs(index, internalRequest);
 	}
 
-	public static GetNumberOfDocsResponse internalGetNumberOfDocs(ZuliaIndex index, GetNumberOfDocsRequest request) throws Exception {
-		return index.getNumberOfDocs();
+	public static GetNumberOfDocsResponse internalGetNumberOfDocs(ZuliaIndex index, InternalGetNumberOfDocsRequest request) throws Exception {
+		return index.getNumberOfDocs(request);
 	}
 
 	public GetNumberOfDocsResponse getResponse(GetNumberOfDocsRequest request) throws Exception {

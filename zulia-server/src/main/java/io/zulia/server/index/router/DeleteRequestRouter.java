@@ -27,7 +27,7 @@ public class DeleteRequestRouter extends NodeRequestRouter<DeleteRequest, Delete
 	}
 
 	@Override
-	protected DeleteResponse processInternal(DeleteRequest request) throws Exception {
+	protected DeleteResponse processInternal(Node node, DeleteRequest request) throws Exception {
 		return internalDelete(index, request);
 	}
 

@@ -27,7 +27,7 @@ public class FetchRequestRouter extends NodeRequestRouter<FetchRequest, FetchRes
 	}
 
 	@Override
-	protected FetchResponse processInternal(FetchRequest request) throws Exception {
+	protected FetchResponse processInternal(Node node, FetchRequest request) throws Exception {
 		return internalFetch(index, request);
 	}
 

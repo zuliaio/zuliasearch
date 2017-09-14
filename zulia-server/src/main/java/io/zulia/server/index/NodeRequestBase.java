@@ -23,6 +23,6 @@ public abstract class NodeRequestBase<I, O> {
 
 	protected abstract O processExternal(Node node, I request) throws Exception;
 
-	protected abstract O processInternal(I request) throws Exception;
+	protected abstract O processInternal(Node node, I request) throws Exception;
 
 }

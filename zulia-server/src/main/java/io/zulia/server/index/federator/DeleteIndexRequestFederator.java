@@ -27,7 +27,7 @@ public class DeleteIndexRequestFederator extends AllNodeRequestFederator<DeleteI
 	}
 
 	@Override
-	protected DeleteIndexResponse processInternal(DeleteIndexRequest request) throws Exception {
+	protected DeleteIndexResponse processInternal(Node node, DeleteIndexRequest request) throws Exception {
 		return internalDeleteIndex(indexManager, request);
 	}
 

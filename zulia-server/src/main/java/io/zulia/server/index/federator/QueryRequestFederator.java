@@ -4,6 +4,7 @@ import com.google.protobuf.util.JsonFormat;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
+import io.zulia.message.ZuliaServiceOuterClass.InternalQueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
@@ -40,15 +41,20 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 	@Override
 	protected InternalQueryResponse processExternal(Node node, QueryRequest request) throws Exception {
-		return internalClient.executeQuery(node, request);
+		InternalQueryRequest internalQueryRequest = InternalQueryRequest.newBuilder().addAllIndexRouting(getIndexRouting(node)).setQueryRequest(request)
+				.build();
+		return internalClient.executeQuery(node, internalQueryRequest);
 	}
 
 	@Override
-	protected InternalQueryResponse processInternal(QueryRequest request) throws Exception {
-		return internalQuery(indexes, request, queryMap);
+	protected InternalQueryResponse processInternal(Node node, QueryRequest request) throws Exception {
+		InternalQueryRequest internalQueryRequest = InternalQueryRequest.newBuilder().addAllIndexRouting(getIndexRouting(node)).setQueryRequest(request)
+				.build();
+		return internalQuery(indexes, internalQueryRequest, queryMap);
 	}
 
-	public static InternalQueryResponse internalQuery(Collection<ZuliaIndex> indexes, QueryRequest request, Map<String, Query> queryMap) throws Exception {
+	public static InternalQueryResponse internalQuery(Collection<ZuliaIndex> indexes, InternalQueryRequest request, Map<String, Query> queryMap)
+			throws Exception {
 		InternalQueryResponse.Builder internalQueryResponseBuilder = InternalQueryResponse.newBuilder();
 		for (ZuliaIndex index : indexes) {
 			IndexShardResponse isr = index.internalQuery(queryMap.get(index.getIndexName()), request);

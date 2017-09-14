@@ -68,7 +68,7 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
-	public void internalQuery(QueryRequest request, StreamObserver<InternalQueryResponse> responseObserver) {
+	public void internalQuery(InternalQueryRequest request, StreamObserver<InternalQueryResponse> responseObserver) {
 		internalQueryServerRequest.handleRequest(request, responseObserver);
 	}
 
@@ -148,7 +148,7 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
-	public void internalGetNumberOfDocs(GetNumberOfDocsRequest request, StreamObserver<GetNumberOfDocsResponse> responseObserver) {
+	public void internalGetNumberOfDocs(InternalGetNumberOfDocsRequest request, StreamObserver<GetNumberOfDocsResponse> responseObserver) {
 		internalGetNumberOfDocsServerRequest.handleRequest(request, responseObserver);
 	}
 
@@ -178,7 +178,7 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
-	public void internalGetFieldNames(GetFieldNamesRequest request, StreamObserver<GetFieldNamesResponse> responseObserver) {
+	public void internalGetFieldNames(InternalGetFieldNamesRequest request, StreamObserver<GetFieldNamesResponse> responseObserver) {
 		internalGetFieldNamesServerRequest.handleRequest(request, responseObserver);
 	}
 
@@ -188,7 +188,7 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
-	public void internalGetTerms(GetTermsRequest request, StreamObserver<InternalGetTermsResponse> responseObserver) {
+	public void internalGetTerms(InternalGetTermsRequest request, StreamObserver<InternalGetTermsResponse> responseObserver) {
 		internalGetTermsServerRequest.handleRequest(request, responseObserver);
 	}
 

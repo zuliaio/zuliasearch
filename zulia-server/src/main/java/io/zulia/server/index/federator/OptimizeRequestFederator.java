@@ -28,7 +28,7 @@ public class OptimizeRequestFederator extends MasterSlaveNodeRequestFederator<Op
 	}
 
 	@Override
-	protected OptimizeResponse processInternal(OptimizeRequest request) throws Exception {
+	protected OptimizeResponse processInternal(Node node, OptimizeRequest request) throws Exception {
 		return internalOptimize(index, request);
 	}
 

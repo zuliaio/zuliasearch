@@ -30,7 +30,7 @@ public abstract class NodeRequestRouter<I, O> extends NodeRequestBase<I, O> {
 
 	public O send(final I request) throws Exception {
 		if (nodeIsLocal(node)) {
-			return processInternal(request);
+			return processInternal(node, request);
 		}
 		return processExternal(node, request);
 	}

@@ -4,6 +4,8 @@ import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
+import io.zulia.message.ZuliaServiceOuterClass.IndexRouting;
+import io.zulia.message.ZuliaServiceOuterClass.InternalGetFieldNamesRequest;
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.index.ZuliaIndex;
 
@@ -18,8 +20,8 @@ public class GetFieldNamesRequestFederator extends MasterSlaveNodeRequestFederat
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public GetFieldNamesRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings,
-			ZuliaIndex index, ExecutorService pool, InternalClient internalClient) throws IOException {
+	public GetFieldNamesRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
+			ExecutorService pool, InternalClient internalClient) throws IOException {
 		super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
 		this.internalClient = internalClient;
 		this.index = index;
@@ -27,15 +29,21 @@ public class GetFieldNamesRequestFederator extends MasterSlaveNodeRequestFederat
 
 	@Override
 	protected GetFieldNamesResponse processExternal(Node node, GetFieldNamesRequest request) throws Exception {
-		return internalClient.getFieldNames(node, request);
+		IndexRouting indexRouting = getIndexRouting(node).get(0);
+		InternalGetFieldNamesRequest internalRequest = InternalGetFieldNamesRequest.newBuilder().setIndexRouting(indexRouting).setGetFieldNamesRequest(request)
+				.build();
+		return internalClient.getFieldNames(node, internalRequest);
 	}
 
 	@Override
-	protected GetFieldNamesResponse processInternal(GetFieldNamesRequest request) throws Exception {
-		return internalGetFieldNames(index, request);
+	protected GetFieldNamesResponse processInternal(Node node, GetFieldNamesRequest request) throws Exception {
+		IndexRouting indexRouting = getIndexRouting(node).get(0);
+		InternalGetFieldNamesRequest internalRequest = InternalGetFieldNamesRequest.newBuilder().setIndexRouting(indexRouting).setGetFieldNamesRequest(request)
+				.build();
+		return internalGetFieldNames(index, internalRequest);
 	}
 
-	public static GetFieldNamesResponse internalGetFieldNames(ZuliaIndex index, GetFieldNamesRequest request) throws Exception {
+	public static GetFieldNamesResponse internalGetFieldNames(ZuliaIndex index, InternalGetFieldNamesRequest request) throws Exception {
 		return index.getFieldNames(request);
 	}
 
