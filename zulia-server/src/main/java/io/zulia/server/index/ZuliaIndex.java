@@ -820,7 +820,11 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		List<Future<GetFieldNamesResponse>> responses = new ArrayList<>();
 
-		for (final ZuliaShard shard : primaryShardMap.values()) {
+		GetFieldNamesRequest getFieldNamesRequest = request.getGetFieldNamesRequest();
+
+		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getFieldNamesRequest.getMasterSlaveSettings());
+
+		for (final ZuliaShard shard : shardsForCommand) {
 
 			Future<GetFieldNamesResponse> response = shardPool.submit(shard::getFieldNames);
 
