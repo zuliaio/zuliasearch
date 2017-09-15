@@ -17,6 +17,11 @@ public class CreateIndexRequestValidator {
 		}
 
 		IndexSettings.Builder indexSettings = requestBuilder.getIndexSettingsBuilder();
+
+		if (indexSettings.getIndexName().isEmpty()) {
+			throw new IllegalArgumentException("Index name must be provided");
+		}
+
 		if (indexSettings.getNumberOfShards() == 0) {
 			indexSettings.setNumberOfShards(1);
 		}

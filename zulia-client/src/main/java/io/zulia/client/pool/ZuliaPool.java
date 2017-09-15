@@ -1,6 +1,7 @@
 package io.zulia.client.pool;
 
 import io.grpc.Metadata;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.zulia.cache.MetaKeys;
 import io.zulia.client.command.GetNodes;
@@ -151,12 +152,20 @@ public class ZuliaPool {
 					return r;
 				}
 				catch (StatusRuntimeException e) {
-					//TODO: don't invalidate for query errors? (i.e. bad index name or bad query syntax)
-					nodePool.invalidateObject(zuliaConnection);
+
+					if (!Status.INVALID_ARGUMENT.equals(e.getStatus())) {
+						nodePool.invalidateObject(zuliaConnection);
+					}
 
 					Metadata trailers = e.getTrailers();
 					if (trailers.containsKey(MetaKeys.ERROR_KEY)) {
-						throw new Exception(trailers.get(MetaKeys.ERROR_KEY));
+						String errorMessage = trailers.get(MetaKeys.ERROR_KEY);
+						if (!Status.INVALID_ARGUMENT.equals(e.getStatus())) {
+							throw new Exception(errorMessage);
+						}
+						else {
+							throw new IllegalArgumentException(errorMessage);
+						}
 					}
 					else {
 						throw e;

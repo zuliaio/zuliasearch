@@ -23,9 +23,9 @@ public class MongoIndexService implements IndexService {
 	private final MongoCollection<Document> settingsCollection;
 	private final MongoCollection<Document> mappingCollection;
 
-	public MongoIndexService(MongoClient mongoClient) {
-		settingsCollection = mongoClient.getDatabase(SETTINGS).getCollection(SETTINGS);
-		mappingCollection = mongoClient.getDatabase(SETTINGS).getCollection(MAPPING);
+	public MongoIndexService(MongoClient mongoClient, String clusterName) {
+		settingsCollection = mongoClient.getDatabase(clusterName).getCollection(SETTINGS);
+		mappingCollection = mongoClient.getDatabase(clusterName).getCollection(MAPPING);
 	}
 
 	@Override
