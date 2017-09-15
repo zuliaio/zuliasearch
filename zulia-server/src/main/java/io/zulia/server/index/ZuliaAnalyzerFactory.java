@@ -54,6 +54,9 @@ public class ZuliaAnalyzerFactory {
 			@Override
 			protected TokenStreamComponents createComponents(String fieldName) {
 				AnalyzerSettings.Tokenizer tokenizer = analyzerSettings.getTokenizer();
+				if (tokenizer == null) {
+					tokenizer = AnalyzerSettings.Tokenizer.STANDARD;
+				}
 				List<AnalyzerSettings.Filter> filterList = analyzerSettings.getFilterList();
 
 				Tokenizer src;

@@ -44,6 +44,8 @@ public class ZuliaRESTServiceManager {
 	public void shutdown() {
 		LOG.info("Starting rest service shutdown");
 		//TODO configure
-		server.shutdown(1, TimeUnit.SECONDS);
+		if (server != null) {
+			server.shutdown(1, TimeUnit.SECONDS);
+		}
 	}
 }

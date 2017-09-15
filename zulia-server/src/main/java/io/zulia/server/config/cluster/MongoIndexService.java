@@ -97,7 +97,7 @@ public class MongoIndexService implements IndexService {
 			return indexMappings;
 		}
 
-		return null;
+		return Collections.emptyList();
 
 	}
 

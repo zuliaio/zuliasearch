@@ -1,5 +1,6 @@
 package io.zulia.server.config;
 
+import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 
@@ -30,7 +31,7 @@ public interface IndexService {
 	 *
 	 * @param indexSettings
 	 */
-	void createIndex(IndexSettings indexSettings) throws Exception;
+	void createIndex(ZuliaIndex.IndexSettings indexSettings) throws Exception;
 
 	/**
 	 * remove an index from the config storage

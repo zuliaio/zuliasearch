@@ -18,28 +18,28 @@ message ShardMapping {
 
 message IndexSettings {
     string indexName = 1;
-    uint32 numberOfShards = 2;
-    uint32 numberOfReplicas = 3;
+    uint32 numberOfShards = 2; // default 1
+    uint32 numberOfReplicas = 3; // default 1
 
     //server populated
     int64 createTime = 4;
     int64 updateTime = 5;
 
-    string defaultSearchField = 6;
+    string defaultSearchField = 6; //default null (none)
     repeated AnalyzerSettings analyzerSettings = 7;
     repeated FieldConfig fieldConfig = 8;
 
-    double requestFactor = 9;
-    uint32 minShardRequest = 10;
-    double shardTolerance = 11;
+    double requestFactor = 9; // default 2.0
+    uint32 minShardRequest = 10; //default 2
+    double shardTolerance = 11; //default 0
 
-    uint32 shardQueryCacheSize = 12;
-    uint32 shardQueryCacheMaxAmount = 13;
+    uint32 shardQueryCacheSize = 12; // default 512
+    uint32 shardQueryCacheMaxAmount = 13; // default 256
 
-    uint32 idleTimeWithoutCommit = 14;
-    uint32 shardCommitInterval = 15;
+    uint32 idleTimeWithoutCommit = 14; // default 5
+    uint32 shardCommitInterval = 15; // default 3200
 
-    uint32 indexWeight = 16;
+    uint32 indexWeight = 16; //default 1
 
 }
 
@@ -67,9 +67,9 @@ message AnalyzerSettings {
 
 
     enum Tokenizer {
-        KEYWORD = 0;
-        WHITESPACE = 1;
-        STANDARD = 2;
+        STANDARD = 0;
+        KEYWORD = 1;
+        WHITESPACE = 2;
     }
 
     enum Filter {
@@ -92,9 +92,9 @@ message AnalyzerSettings {
 
 
     string name = 1;
-    Tokenizer tokenizer = 2;
+    Tokenizer tokenizer = 2; //STANDARD default
     repeated Filter filter = 3;
-    Similarity similarity = 4;
+    Similarity similarity = 4; //BM25 default
 
 }
 
@@ -111,8 +111,8 @@ message ProjectAs {
 
 message Superbit {
     uint32 inputDim = 1;
-    uint32 batches = 2;
-    uint32 seed = 3;
+    uint32 batches = 2; //default 1
+    uint32 seed = 3; //default 1357
 }
 
 message FacetAs {

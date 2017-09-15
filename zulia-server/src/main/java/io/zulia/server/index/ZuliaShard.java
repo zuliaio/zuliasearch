@@ -449,7 +449,7 @@ public class ZuliaShard {
 
 				AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsForIndexField(name);
 				Similarity similarity = Similarity.BM25;
-				if (analyzerSettings != null) {
+				if (analyzerSettings != null && analyzerSettings.getSimilarity() != null) {
 					similarity = analyzerSettings.getSimilarity();
 				}
 
@@ -1309,7 +1309,7 @@ public class ZuliaShard {
 					if (hasFuzzyTerm) {
 						FuzzyTerm fuzzyTerm = request.getFuzzyTerm();
 						FuzzyTermsEnum termsEnum = new FuzzyTermsEnum(terms, atts, new Term(fieldName, fuzzyTerm.getTerm()), fuzzyTerm.getEditDistance(),
-								fuzzyTerm.getPrefixLength(), fuzzyTerm.getTranspositions());
+								fuzzyTerm.getPrefixLength(), !fuzzyTerm.getNoTranspositions());
 						BytesRef text = termsEnum.term();
 
 						handleTerm(termsMap, termsEnum, text, termFilter, termMatch);

@@ -13,6 +13,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,7 +57,7 @@ public class FSIndexService implements IndexService {
 			return indexes;
 		}
 
-		return null;
+		return Collections.emptyList();
 	}
 
 	@Override
@@ -115,7 +116,7 @@ public class FSIndexService implements IndexService {
 			return indexMappings;
 		}
 
-		return null;
+		return Collections.emptyList();
 
 	}
 

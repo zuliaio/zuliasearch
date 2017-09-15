@@ -55,13 +55,13 @@ message FuzzyTerm {
     string term = 1;
     uint32 editDistance = 2;
     uint32 prefixLength = 3;
-    bool transpositions = 4;
+    bool noTranspositions = 4;
 }
 
 
 enum Similarity {
-    TFIDF = 0;
-    BM25 = 1;
+    BM25 = 0;
+    TFIDF = 1;
     CONSTANT = 2;
     TF = 3;
 }

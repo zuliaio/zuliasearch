@@ -13,6 +13,7 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoIndexService;
 import io.zulia.server.config.single.FSIndexService;
 import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.server.validation.CreateIndexRequestValidator;
 import io.zulia.server.exceptions.IndexDoesNotExist;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -62,7 +64,7 @@ public class ZuliaIndexManager {
 	private final NodeService nodeService;
 
 	private Node thisNode;
-	private Collection<Node> currentOtherNodesActive;
+	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
 
 	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
@@ -262,6 +264,10 @@ public class ZuliaIndexManager {
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
 		//if existing index make sure not to allow changing number of shards
 
+		LOG.info("Creating index: " + request);
+		request = CreateIndexRequestValidator.validateAndSetDefault(request);
+
+
 		if (!request.hasIndexSettings()) {
 			throw new IllegalArgumentException("Index settings field is required for create index");
 		}
@@ -269,6 +275,15 @@ public class ZuliaIndexManager {
 		NodeWeightComputation nodeWeightComputation = new DefaultNodeWeightComputation(indexService, thisNode, currentOtherNodesActive);
 
 		IndexSettings indexSettings = request.getIndexSettings();
+
+		if (indexSettings.getNumberOfShards() == 0) {
+			indexSettings = indexSettings.toBuilder().setNumberOfShards(1).build();
+		}
+		else if (indexSettings.getNumberOfShards() < 0) {
+			throw new IllegalArgumentException("Number of shards cannot be negative");
+		}
+
+
 
 		IndexSettings existingIndex = indexService.getIndex(indexSettings.getIndexName());
 

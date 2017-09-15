@@ -7,8 +7,8 @@ option java_package = "io.zulia.message";
 
 message Query {
     enum Operator {
-        AND = 0;
-        OR = 1;
+        OR = 0;
+        AND = 1;
     }
 
     string q = 1;
