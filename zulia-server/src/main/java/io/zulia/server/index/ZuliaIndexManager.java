@@ -290,6 +290,7 @@ public class ZuliaIndexManager {
 		if (existingIndex == null) {
 
 			IndexMapping.Builder indexMapping = IndexMapping.newBuilder();
+			indexMapping.setIndexName(indexSettings.getIndexName());
 
 			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
 

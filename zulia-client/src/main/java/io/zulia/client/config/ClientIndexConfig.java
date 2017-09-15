@@ -162,6 +162,10 @@ public class ClientIndexConfig {
 
 	public IndexSettings getIndexSettings() {
 		IndexSettings.Builder isb = IndexSettings.newBuilder();
+
+		if (indexName != null) {
+			isb.setIndexName(indexName);
+		}
 		if (defaultSearchField != null) {
 			isb.setDefaultSearchField(defaultSearchField);
 		}
