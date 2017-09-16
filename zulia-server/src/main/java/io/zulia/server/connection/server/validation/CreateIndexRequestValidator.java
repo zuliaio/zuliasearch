@@ -22,6 +22,13 @@ public class CreateIndexRequestValidator {
 			throw new IllegalArgumentException("Index name must be provided");
 		}
 
+		if (indexSettings.getIndexWeight() == 0) {
+			indexSettings.setIndexWeight(1);
+		}
+		else if (indexSettings.getIndexWeight() < 0) {
+			throw new IllegalArgumentException("Index weight must be positive");
+		}
+
 		if (indexSettings.getNumberOfShards() == 0) {
 			indexSettings.setNumberOfShards(1);
 		}

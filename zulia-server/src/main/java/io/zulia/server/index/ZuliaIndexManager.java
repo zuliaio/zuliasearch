@@ -291,6 +291,7 @@ public class ZuliaIndexManager {
 
 			IndexMapping.Builder indexMapping = IndexMapping.newBuilder();
 			indexMapping.setIndexName(indexSettings.getIndexName());
+			indexMapping.setNumberOfShards(indexSettings.getNumberOfShards());
 
 			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
 
