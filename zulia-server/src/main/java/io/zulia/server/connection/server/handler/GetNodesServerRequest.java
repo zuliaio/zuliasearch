@@ -16,7 +16,7 @@ public class GetNodesServerRequest extends ServerRequestHandler<GetNodesResponse
 	}
 
 	@Override
-	protected GetNodesResponse handleCall(ZuliaIndexManager indexManager, GetNodesRequest request) {
+	protected GetNodesResponse handleCall(ZuliaIndexManager indexManager, GetNodesRequest request) throws Exception {
 		return indexManager.getNodes(request);
 	}
 

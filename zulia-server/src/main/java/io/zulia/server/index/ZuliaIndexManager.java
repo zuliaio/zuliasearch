@@ -197,12 +197,14 @@ public class ZuliaIndexManager {
 		i.getAssociatedDocuments(outputStream, filter);
 	}
 
-	public GetNodesResponse getNodes(GetNodesRequest request) {
+	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
+
+		List<IndexMapping> indexMappingList = indexService.getIndexMappings();
 		if ((request.getActiveOnly())) {
-			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).build();
+			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addAllIndexMapping(indexMappingList).build();
 		}
 		else {
-			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).build();
+			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexMapping(indexMappingList).build();
 		}
 	}
 
@@ -267,7 +269,6 @@ public class ZuliaIndexManager {
 		LOG.info("Creating index: " + request);
 		request = CreateIndexRequestValidator.validateAndSetDefault(request);
 
-
 		if (!request.hasIndexSettings()) {
 			throw new IllegalArgumentException("Index settings field is required for create index");
 		}
@@ -282,8 +283,6 @@ public class ZuliaIndexManager {
 		else if (indexSettings.getNumberOfShards() < 0) {
 			throw new IllegalArgumentException("Number of shards cannot be negative");
 		}
-
-
 
 		IndexSettings existingIndex = indexService.getIndex(indexSettings.getIndexName());
 

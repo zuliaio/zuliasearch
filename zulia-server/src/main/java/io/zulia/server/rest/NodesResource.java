@@ -3,6 +3,7 @@ package io.zulia.server.rest;
 import com.cedarsoftware.util.io.JsonWriter;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
+import io.zulia.server.node.ZuliaNode;
 import org.bson.Document;
 
 import javax.ws.rs.GET;
@@ -54,14 +55,25 @@ public class NodesResource {
 				Document indexMappingObj = new Document();
 				for (IndexMapping indexMapping : getNodesResponse.getIndexMappingList()) {
 
-					TreeSet<Integer> shards = new TreeSet<>();
+					TreeSet<Integer> primaryShards = new TreeSet<>();
+					TreeSet<Integer> replicaShards = new TreeSet<>();
 					for (ShardMapping shardMapping : indexMapping.getShardMappingList()) {
-						if (shardMapping.getPrimayNode().equals(node)) {
-							shards.add(shardMapping.getShardNumber());
+						if (ZuliaNode.isEqual(shardMapping.getPrimayNode(), node)) {
+							primaryShards.add(shardMapping.getShardNumber());
 						}
+						for (Node replica : shardMapping.getReplicaNodeList()) {
+							if (ZuliaNode.isEqual(replica, node)) {
+								replicaShards.add(shardMapping.getShardNumber());
+							}
+						}
+
 					}
 
+					Document shards = new Document();
 					indexMappingObj.put(indexMapping.getIndexName(), shards);
+					shards.put("primary", primaryShards);
+					shards.put("replica", replicaShards);
+
 				}
 				memberObj.put("indexMapping", indexMappingObj);
 
