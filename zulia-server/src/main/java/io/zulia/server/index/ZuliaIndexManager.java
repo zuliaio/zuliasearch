@@ -264,10 +264,10 @@ public class ZuliaIndexManager {
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
 		//if existing index make sure not to allow changing number of shards
 
-
+		LOG.info("Creating index: " + request);
 		request = CreateIndexRequestValidator.validateAndSetDefault(request);
 
-		LOG.info("Creating index: " + request);
+
 		if (!request.hasIndexSettings()) {
 			throw new IllegalArgumentException("Index settings field is required for create index");
 		}
