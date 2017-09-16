@@ -1280,24 +1280,24 @@ public class ZuliaShard {
 			BytesRef startTermBytes;
 			BytesRef endTermBytes = null;
 
-			if (request.getStartTerm() != null) {
+			if (!request.getStartTerm().isEmpty()) {
 				startTermBytes = new BytesRef(request.getStartTerm());
 			}
 			else {
 				startTermBytes = new BytesRef("");
 			}
 
-			if (request.getEndTerm() != null) {
+			if (!request.getEndTerm().isEmpty()) {
 				endTermBytes = new BytesRef(request.getEndTerm());
 			}
 
 			Pattern termFilter = null;
-			if (request.getTermFilter() != null) {
+			if (!request.getTermFilter().isEmpty()) {
 				termFilter = Pattern.compile(request.getTermFilter());
 			}
 
 			Pattern termMatch = null;
-			if (request.getTermMatch() != null) {
+			if (!request.getTermMatch().isEmpty()) {
 				termMatch = Pattern.compile(request.getTermMatch());
 			}
 
