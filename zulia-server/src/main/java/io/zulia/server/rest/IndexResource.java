@@ -1,7 +1,10 @@
 package io.zulia.server.rest;
 
 import com.cedarsoftware.util.io.JsonWriter;
+import com.google.protobuf.util.JsonFormat;
 import io.zulia.ZuliaConstants;
+import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
 import io.zulia.server.index.ZuliaIndexManager;
 
 import javax.ws.rs.GET;
@@ -32,23 +35,14 @@ public class IndexResource {
 		try {
 			StringBuilder responseBuilder = new StringBuilder();
 
-			/*
-			IndexConfig indexConfig = indexManager.getIndexConfig(index);
+			GetIndexSettingsResponse getIndexSettingsResponse = indexManager
+					.getIndexSettings(ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(index).build());
 
 			responseBuilder.append("{");
-			responseBuilder.append("\"indexName\": ");
-			responseBuilder.append("\"");
-			responseBuilder.append(indexConfig.getIndexName());
-			responseBuilder.append("\"");
-			responseBuilder.append(",");
-			responseBuilder.append("\"numberOfSegments\": ");
-			responseBuilder.append(indexConfig.getNumberOfSegments());
-			responseBuilder.append(",");
 			responseBuilder.append("\"indexSettings\": ");
 			JsonFormat.Printer printer = JsonFormat.printer();
-			responseBuilder.append(printer.print(indexConfig.getIndexSettings()));
+			responseBuilder.append(printer.print(getIndexSettingsResponse.getIndexSettings()));
 			responseBuilder.append("}");
-			*/
 
 			String docString = responseBuilder.toString();
 
