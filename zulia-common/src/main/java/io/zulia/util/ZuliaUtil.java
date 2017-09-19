@@ -10,6 +10,7 @@ import org.bson.io.BasicOutputBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public class ZuliaUtil {
@@ -17,7 +18,14 @@ public class ZuliaUtil {
 	public static void handleLists(Object o, Consumer<? super Object> action) {
 		if (o instanceof Collection) {
 			Collection<?> c = (Collection<?>) o;
-			c.stream().filter((obj) -> obj != null).forEach(action);
+			c.stream().filter(Objects::nonNull).forEach(obj -> {
+				if (obj instanceof Collection) {
+					handleLists(obj, action);
+				}
+				else {
+					action.accept(obj);
+				}
+			});
 		}
 		else if (o instanceof Object[]) {
 			Object[] arr = (Object[]) o;

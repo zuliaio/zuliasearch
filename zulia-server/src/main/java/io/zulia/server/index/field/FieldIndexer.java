@@ -1,8 +1,7 @@
 package io.zulia.server.index.field;
 
+import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.document.Document;
-
-import java.util.Collection;
 
 public abstract class FieldIndexer {
 
@@ -12,21 +11,14 @@ public abstract class FieldIndexer {
 
 	public void index(Document document, String storedFieldName, Object storedValue, String indexedFieldName) throws Exception {
 
-		if (storedValue instanceof Collection) {
-			Collection<?> collection = (Collection<?>) storedValue;
-			for (Object co : collection) {
-				handleValue(document, storedFieldName, co, indexedFieldName);
+		ZuliaUtil.handleLists(storedValue, obj -> {
+			try {
+				handleValue(document, storedFieldName, obj, indexedFieldName);
 			}
-		}
-		else if (storedValue instanceof Object[]) {
-			Object[] arr = (Object[]) storedValue;
-			for (Object co : arr) {
-				handleValue(document, storedFieldName, co, indexedFieldName);
+			catch (Exception e) {
+				throw new RuntimeException(e);
 			}
-		}
-		else {
-			handleValue(document, storedFieldName, storedValue, indexedFieldName);
-		}
+		});
 
 	}
 
