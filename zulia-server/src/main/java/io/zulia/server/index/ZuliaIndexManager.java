@@ -14,6 +14,7 @@ import io.zulia.server.config.cluster.MongoIndexService;
 import io.zulia.server.config.single.FSIndexService;
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.connection.server.validation.CreateIndexRequestValidator;
+import io.zulia.server.connection.server.validation.QueryRequestValidator;
 import io.zulia.server.exceptions.IndexDoesNotExist;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
@@ -219,6 +220,8 @@ public class ZuliaIndexManager {
 	}
 
 	public QueryResponse query(QueryRequest request) throws Exception {
+		request = new QueryRequestValidator().validateAndSetDefault(request);
+
 		Map<String, Query> queryMap = new HashMap<>();
 		Set<ZuliaIndex> indexes = new HashSet<>();
 
@@ -267,7 +270,7 @@ public class ZuliaIndexManager {
 		//if existing index make sure not to allow changing number of shards
 
 		LOG.info("Creating index: " + request);
-		request = CreateIndexRequestValidator.validateAndSetDefault(request);
+		request = new CreateIndexRequestValidator().validateAndSetDefault(request);
 
 		if (!request.hasIndexSettings()) {
 			throw new IllegalArgumentException("Index settings field is required for create index");

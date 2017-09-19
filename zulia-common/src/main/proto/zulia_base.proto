@@ -54,7 +54,7 @@ message Term {
 message FuzzyTerm {
     string term = 1;
     uint32 editDistance = 2;
-    uint32 prefixLength = 3;
+    uint32 prefixLength = 3; // default = 0
     bool noTranspositions = 4;
 }
 

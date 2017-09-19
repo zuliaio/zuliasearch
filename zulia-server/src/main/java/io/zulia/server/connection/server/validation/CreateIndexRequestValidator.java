@@ -6,10 +6,9 @@ import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
 
 import java.util.List;
 
-public class CreateIndexRequestValidator {
+public class CreateIndexRequestValidator implements DefaultValidator<CreateIndexRequest> {
 
-	public static CreateIndexRequest validateAndSetDefault(CreateIndexRequest request) {
-
+	public CreateIndexRequest validateAndSetDefault(CreateIndexRequest request) {
 		CreateIndexRequest.Builder requestBuilder = request.toBuilder();
 
 		if (!requestBuilder.hasIndexSettings()) {
@@ -77,5 +76,4 @@ public class CreateIndexRequestValidator {
 
 		return requestBuilder.build();
 	}
-
 }
