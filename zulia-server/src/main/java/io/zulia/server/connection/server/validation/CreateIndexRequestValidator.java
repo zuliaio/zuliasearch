@@ -32,7 +32,7 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 			indexSettings.setNumberOfShards(1);
 		}
 		if (indexSettings.getNumberOfReplicas() == 0) {
-			indexSettings.setNumberOfReplicas(1);
+			//indexSettings.setNumberOfReplicas(0);
 		}
 		if (indexSettings.getRequestFactor() == 0) {
 			indexSettings.setRequestFactor(2.0);
