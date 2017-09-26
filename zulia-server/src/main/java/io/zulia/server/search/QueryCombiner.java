@@ -284,7 +284,7 @@ public class QueryCombiner {
 				maxValuePossibleMissing += minForShard[i];
 			}
 
-			boolean computeError = countRequest.getMaxFacets() > 0 && countRequest.getShardFacets() > 0;
+			boolean computeError = countRequest.getMaxFacets() > 0 && countRequest.getShardFacets() > 0 && numberOfShards > 1;
 			boolean computePossibleMissing = computeError && (maxValuePossibleMissing != 0);
 
 			SortedSet<FacetCountResult> sortedFacetResults = facetCounts.keySet().stream()
