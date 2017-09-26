@@ -1,3 +1,3 @@
 include 'zulia-common','zulia-client','zulia-server'
 
-rootProject.name = "Zulia Search"
+rootProject.name = "ZuliaSearch"

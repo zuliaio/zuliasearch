@@ -27,6 +27,9 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 			if (countRequestBuilder.getMaxFacets() == 0) {
 				countRequestBuilder.setMaxFacets(10);
 			}
+			if (countRequestBuilder.getShardFacets() == 0) {
+				countRequestBuilder.setShardFacets(countRequestBuilder.getMaxFacets() * 10);
+			}
 
 		}
 

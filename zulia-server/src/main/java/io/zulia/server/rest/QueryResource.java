@@ -55,14 +55,14 @@ public class QueryResource {
 			@QueryParam(ZuliaConstants.FETCH) Boolean fetch, @QueryParam(ZuliaConstants.ROWS) int rows, @QueryParam(ZuliaConstants.FACET) List<String> facet,
 			@QueryParam(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @QueryParam(ZuliaConstants.DEFAULT_OP) String defaultOperator,
 			@QueryParam(ZuliaConstants.SORT) List<String> sort, @QueryParam(ZuliaConstants.PRETTY) boolean pretty,
-			@QueryParam(ZuliaConstants.COMPUTE_FACET_ERROR) boolean computeFacetError, @QueryParam(ZuliaConstants.DISMAX) Boolean dismax,
-			@QueryParam(ZuliaConstants.DISMAX_TIE) Float dismaxTie, @QueryParam(ZuliaConstants.MIN_MATCH) Integer mm,
-			@QueryParam(ZuliaConstants.SIMILARITY) List<String> similarity, @QueryParam(ZuliaConstants.DEBUG) Boolean debug,
-			@QueryParam(ZuliaConstants.DONT_CACHE) Boolean dontCache, @QueryParam(ZuliaConstants.START) Integer start,
-			@QueryParam(ZuliaConstants.HIGHLIGHT) List<String> highlightList, @QueryParam(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
-			@QueryParam(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList, @QueryParam(ZuliaConstants.COS_SIM_JSON) List<String> cosineSimJsonList,
-			@QueryParam(ZuliaConstants.FORMAT) @DefaultValue("json") String format, @QueryParam(ZuliaConstants.BATCH) boolean batch,
-			@QueryParam(ZuliaConstants.BATCH_SIZE) @DefaultValue("500") Integer batchSize, @QueryParam(ZuliaConstants.CURSOR) String cursor) {
+			@QueryParam(ZuliaConstants.DISMAX) Boolean dismax, @QueryParam(ZuliaConstants.DISMAX_TIE) Float dismaxTie,
+			@QueryParam(ZuliaConstants.MIN_MATCH) Integer mm, @QueryParam(ZuliaConstants.SIMILARITY) List<String> similarity,
+			@QueryParam(ZuliaConstants.DEBUG) Boolean debug, @QueryParam(ZuliaConstants.DONT_CACHE) Boolean dontCache,
+			@QueryParam(ZuliaConstants.START) Integer start, @QueryParam(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
+			@QueryParam(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList, @QueryParam(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
+			@QueryParam(ZuliaConstants.COS_SIM_JSON) List<String> cosineSimJsonList, @QueryParam(ZuliaConstants.FORMAT) @DefaultValue("json") String format,
+			@QueryParam(ZuliaConstants.BATCH) boolean batch, @QueryParam(ZuliaConstants.BATCH_SIZE) @DefaultValue("500") Integer batchSize,
+			@QueryParam(ZuliaConstants.CURSOR) String cursor) {
 
 		QueryRequest.Builder qrBuilder = QueryRequest.newBuilder().addAllIndex(indexName);
 
@@ -261,10 +261,7 @@ public class QueryResource {
 			if (count != null) {
 				facetBuilder.setMaxFacets(count);
 			}
-			if (computeFacetError) {
-				facetBuilder.setComputeError(true);
-				facetBuilder.setComputePossibleMissed(true);
-			}
+
 			frBuilder.addCountRequest(facetBuilder);
 		}
 		if (drillDowns != null) {

@@ -511,7 +511,12 @@ public class ZuliaShard {
 					}
 				}
 				else {
-					numOfFacets = countRequest.getMaxFacets();
+					if (countRequest.getMaxFacets() > 0) {
+						numOfFacets = countRequest.getMaxFacets();
+					}
+					else {
+						numOfFacets = taxoReader.getSize();
+					}
 				}
 
 				facetResult = facets.getTopChildren(numOfFacets, label);

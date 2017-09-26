@@ -15,7 +15,7 @@ message Query {
     Operator defaultOp = 2; // default OR
     repeated string qf = 3;
     uint32 mm = 4; // default 0
-    bool noDismax = 5;
+    bool dismax = 5;
     float dismaxTie = 6; // default 0
 
 }
@@ -32,10 +32,8 @@ message FacetRequest {
 
 message CountRequest {
     Facet facetField = 1;
-    uint32 maxFacets = 2; // default 10
-    uint32 shardFacets = 3;
-    bool computeError = 4; // default true
-    bool computePossibleMissed = 5; // default true
+    uint32 maxFacets = 2; // default 10, set to -1 to get all
+    uint32 shardFacets = 3; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
 }
 
 
@@ -48,7 +46,7 @@ message FacetCount {
 message FacetGroup {
     CountRequest countRequest = 1;
     repeated FacetCount facetCount = 2;
-    bool noPossibleMissing = 3;
+    bool possibleMissing = 3;
     uint64 maxValuePossibleMissing = 4; // default 0
 }
 
@@ -137,9 +135,9 @@ message AnalysisRequest {
     }
 
     string field = 1;
-    bool noTokens = 2;
-    bool noDocTerms = 3;
-    bool noSummaryTerms = 4;
+    bool tokens = 2;
+    bool docTerms = 3;
+    bool summaryTerms = 4;
     uint32 topN = 5; // default 10
     TermSort termSort = 6; // default TFIDF
     uint32 minWordLen = 7; // default 0
