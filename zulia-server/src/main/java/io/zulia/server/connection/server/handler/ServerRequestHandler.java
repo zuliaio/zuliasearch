@@ -28,7 +28,6 @@ public abstract class ServerRequestHandler<S, Q> {
 
 			responseObserver.onError(new StatusException(Status.INVALID_ARGUMENT, metadata));
 			onError(e);
-			onError(e);
 		}
 		catch (Exception e) {
 			responseObserver.onError(e);
