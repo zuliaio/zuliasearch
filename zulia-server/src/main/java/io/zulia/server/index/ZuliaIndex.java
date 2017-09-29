@@ -526,8 +526,10 @@ public class ZuliaIndex implements IndexShardInterface {
 		QueryRequest queryRequest = internalQueryRequest.getQueryRequest();
 		Set<ZuliaShard> shardsForQuery = new HashSet<>();
 		for (IndexRouting indexRouting : internalQueryRequest.getIndexRoutingList()) {
-			List<ZuliaShard> shardsFromRouting = getShardsFromRouting(indexRouting, queryRequest.getMasterSlaveSettings());
-			shardsForQuery.addAll(shardsFromRouting);
+			if (indexRouting.getIndex().equals(indexName)) {
+				List<ZuliaShard> shardsFromRouting = getShardsFromRouting(indexRouting, queryRequest.getMasterSlaveSettings());
+				shardsForQuery.addAll(shardsFromRouting);
+			}
 		}
 
 		int amount = queryRequest.getAmount() + queryRequest.getStart();
@@ -762,9 +764,10 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private List<ZuliaShard> getShardsFromRouting(IndexRouting indexRouting, MasterSlaveSettings masterSlaveSettings) throws ShardDoesNotExistException {
 		List<ZuliaShard> shardsForCommand = new ArrayList<>();
+
 		for (int shardNumber : indexRouting.getShardList()) {
 
-			ZuliaShard shard = null;
+			ZuliaShard shard;
 
 			if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings)) {
 				shard = primaryShardMap.get(shardNumber);
