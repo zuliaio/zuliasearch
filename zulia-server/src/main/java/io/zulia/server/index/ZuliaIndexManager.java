@@ -325,7 +325,7 @@ public class ZuliaIndexManager {
 		else {
 
 			if (existingIndex.equals(indexSettings)) {
-				LOG.info("No changes to index <" + indexSettings.getIndexName() + ">");
+				LOG.info("No changes to existing index <" + indexSettings.getIndexName() + ">");
 				CreateIndexResponse.newBuilder().build();
 			}
 
