@@ -1,7 +1,7 @@
 package io.zulia.server.index;
 
-import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
+import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexAs;
 import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
 import io.zulia.server.analysis.filter.BritishUSFilter;
@@ -15,6 +15,7 @@ import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.UpperCaseFilter;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.en.EnglishMinimalStemFilter;
 import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
@@ -162,12 +163,12 @@ public class ZuliaAnalyzerFactory {
 		for (IndexAs indexAs : indexConfig.getIndexAsValues()) {
 			String indexFieldName = indexAs.getIndexFieldName();
 
-			ZuliaIndex.FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(indexFieldName);
+			FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(indexFieldName);
 			AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsForIndexField(indexFieldName);
 
 			Analyzer a;
 
-			if (ZuliaIndex.FieldConfig.FieldType.STRING.equals(fieldType)) {
+			if (FieldConfig.FieldType.STRING.equals(fieldType)) {
 				if (analyzerSettings != null) {
 					a = getPerFieldAnalyzer(analyzerSettings);
 				}
@@ -175,8 +176,20 @@ public class ZuliaAnalyzerFactory {
 					a = new KeywordAnalyzer();
 				}
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
+			else if (FieldConfig.FieldType.BOOL.equals(fieldType)) {
 				a = new BooleanAnalyzer();
+			}
+			else if (FieldConfig.FieldType.NUMERIC_INT.equals(fieldType)) {
+				a = new WhitespaceAnalyzer();
+			}
+			else if (FieldConfig.FieldType.NUMERIC_LONG.equals(fieldType)) {
+				a = new WhitespaceAnalyzer();
+			}
+			else if (FieldConfig.FieldType.NUMERIC_FLOAT.equals(fieldType)) {
+				a = new WhitespaceAnalyzer();
+			}
+			else if (FieldConfig.FieldType.NUMERIC_DOUBLE.equals(fieldType)) {
+				a = new WhitespaceAnalyzer();
 			}
 			else {
 				a = new KeywordAnalyzer();
