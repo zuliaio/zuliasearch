@@ -1,9 +1,7 @@
 package io.zulia.server.connection.server.handler;
 
-import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.InternalQueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
-import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.server.index.ZuliaIndexManager;
 
 import java.util.logging.Level;
