@@ -35,8 +35,6 @@ public class ZuliaQueryParser extends QueryParser {
 		super(indexConfig.getIndexSettings().getDefaultSearchField(), analyzer);
 		this.indexConfig = indexConfig;
 		setAllowLeadingWildcard(true);
-		//TODO consider turning this on
-		//setSplitOnWhitespace(false);
 	}
 
 	private static Long getDateAsLong(String dateString) {

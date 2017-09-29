@@ -23,7 +23,7 @@ import java.util.Map;
  */
 public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 
-	protected Collection<String> fields;
+	protected List<String> fields;
 	protected Map<String, Float> boosts;
 	private float dismaxTie = 0;
 	private boolean dismax = false;
@@ -47,7 +47,7 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 
 	public void setDefaultFields(Collection<String> fields, Map<String, Float> boosts) {
 		this.field = null;
-		this.fields = fields;
+		this.fields = new ArrayList<>(fields);
 		this.boosts = boosts;
 	}
 
@@ -111,18 +111,57 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 	protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
 		if (field == null) {
 			List<Query> clauses = new ArrayList<>();
-			for (String f : fields) {
-				Query q = super.getFieldQuery(f, queryText, quoted);
+			Query[] fieldQueries = new Query[fields.size()];
+			int maxTerms = 0;
+			for (int i = 0; i < fields.size(); i++) {
+				Query q = super.getFieldQuery(fields.get(i), queryText, quoted);
 				if (q != null) {
-					//If the user passes a map of boosts
-					if (boosts != null) {
-						//Get the boost from the map and apply them
-						Float boost = boosts.get(f);
-						if (boost != null) {
-							q = new BoostQuery(q, boost);
+					if (q instanceof BooleanQuery) {
+						maxTerms = Math.max(maxTerms, ((BooleanQuery) q).clauses().size());
+					}
+					else {
+						maxTerms = Math.max(1, maxTerms);
+					}
+					fieldQueries[i] = q;
+				}
+			}
+			for (int termNum = 0; termNum < maxTerms; termNum++) {
+				List<Query> termClauses = new ArrayList<>();
+				for (int i = 0; i < fields.size(); i++) {
+					if (fieldQueries[i] != null) {
+						Query q = null;
+						if (fieldQueries[i] instanceof BooleanQuery) {
+							List<BooleanClause> nestedClauses = ((BooleanQuery) fieldQueries[i]).clauses();
+							if (termNum < nestedClauses.size()) {
+								q = nestedClauses.get(termNum).getQuery();
+							}
+						}
+						else if (termNum == 0) { // e.g. TermQuery-s
+							q = fieldQueries[i];
+						}
+						if (q != null) {
+							if (boosts != null) {
+								//Get the boost from the map and apply them
+								Float boost = boosts.get(fields.get(i));
+								if (boost != null) {
+									q = new BoostQuery(q, boost);
+								}
+							}
+							termClauses.add(q);
 						}
 					}
-					clauses.add(q);
+				}
+				if (maxTerms > 1) {
+					if (termClauses.size() > 0) {
+						BooleanQuery.Builder builder = newBooleanQuery();
+						for (Query termClause : termClauses) {
+							builder.add(termClause, BooleanClause.Occur.SHOULD);
+						}
+						clauses.add(builder.build());
+					}
+				}
+				else {
+					clauses.addAll(termClauses);
 				}
 			}
 			if (clauses.size() == 0)  // happens for stopwords
