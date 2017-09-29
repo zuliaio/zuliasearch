@@ -223,7 +223,7 @@ public class QueryCombiner {
 
 				int shardFacets = countRequest.getShardFacets();
 				int facetCountCount = fg.getFacetCountCount();
-				if (facetCountCount < shardFacets || (shardFacets == 0)) {
+				if (facetCountCount < shardFacets || (shardFacets == -1)) {
 					fullResults.set(shardIndex);
 					minForShard[shardIndex] = 0;
 				}
@@ -284,8 +284,8 @@ public class QueryCombiner {
 				maxValuePossibleMissing += minForShard[i];
 			}
 
-			boolean computeError = countRequest.getShardFacets() != 0 && countRequest.getComputeError();
-			boolean computePossibleMissing = countRequest.getShardFacets() != 0 && countRequest.getComputePossibleMissed() && (maxValuePossibleMissing != 0);
+			boolean computeError = countRequest.getMaxFacets() > 0 && countRequest.getShardFacets() > 0 && numberOfShards > 1;
+			boolean computePossibleMissing = computeError && (maxValuePossibleMissing != 0);
 
 			SortedSet<FacetCountResult> sortedFacetResults = facetCounts.keySet().stream()
 					.map(facet -> new FacetCountResult(facet, facetCounts.get(facet).get())).collect(Collectors.toCollection(TreeSet::new));

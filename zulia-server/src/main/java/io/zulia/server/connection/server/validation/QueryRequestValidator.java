@@ -2,13 +2,10 @@ package io.zulia.server.connection.server.validation;
 
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.HighlightRequest;
-import io.zulia.message.ZuliaQuery.Query;
-import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 
 import static io.zulia.message.ZuliaQuery.CountRequest;
 import static io.zulia.message.ZuliaQuery.FacetRequest;
-import static io.zulia.message.ZuliaQuery.FieldSort;
 
 /**
  * Created by Payam Meyer on 9/19/17.
@@ -20,11 +17,6 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 	public QueryRequest validateAndSetDefault(QueryRequest request) {
 		QueryRequest.Builder queryRequestBuilder = request.toBuilder();
 
-		Query.Builder queryBuilder = queryRequestBuilder.getQuery().toBuilder();
-
-		if (queryBuilder.getDefaultOp() == null) {
-			queryBuilder.setDefaultOp(Query.Operator.OR);
-		}
 
 		FacetRequest.Builder facetRequestBuilder = queryRequestBuilder.getFacetRequest().toBuilder();
 
@@ -35,17 +27,8 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 			if (countRequestBuilder.getMaxFacets() == 0) {
 				countRequestBuilder.setMaxFacets(10);
 			}
-
-		}
-
-		SortRequest.Builder sortRequestBuilder = queryRequestBuilder.getSortRequest().toBuilder();
-
-		for (FieldSort fieldSort : sortRequestBuilder.getFieldSortList()) {
-
-			FieldSort.Builder fieldSortBuilder = fieldSort.toBuilder();
-
-			if (fieldSortBuilder.getDirection() == null) {
-				fieldSortBuilder.setDirection(FieldSort.Direction.ASCENDING);
+			if (countRequestBuilder.getShardFacets() == 0) {
+				countRequestBuilder.setShardFacets(countRequestBuilder.getMaxFacets() * 10);
 			}
 
 		}
@@ -86,13 +69,6 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 					analysisRequestBuilder.setTopN(10);
 				}
 
-				if (analysisRequestBuilder.getTermSort() == null) {
-					analysisRequestBuilder.setTermSort(AnalysisRequest.TermSort.TFIDF);
-				}
-
-				if (analysisRequestBuilder.getSummaryType() == null) {
-					analysisRequestBuilder.setSummaryType(AnalysisRequest.SummaryType.ALL_TERMS_TOP_N);
-				}
 
 			}
 
