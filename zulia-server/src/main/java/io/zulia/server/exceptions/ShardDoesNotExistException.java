@@ -9,6 +9,7 @@ public class ShardDoesNotExistException extends IOException {
 	private int shardNumber;
 
 	public ShardDoesNotExistException(String indexName, int shardNumber) {
+		super("Shard does not exist for index <" + indexName + "> with shard <" + shardNumber + ">");
 		this.indexName = indexName;
 		this.shardNumber = shardNumber;
 	}
