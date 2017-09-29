@@ -491,7 +491,7 @@ public class ZuliaShard {
 			String label = countRequest.getFacetField().getLabel();
 
 			if (!indexConfig.existingFacet(label)) {
-				throw new Exception(label + " is not defined as a facetable field");
+				throw new IllegalArgumentException(label + " is not defined as a facetable field");
 			}
 
 			FacetResult facetResult = null;
