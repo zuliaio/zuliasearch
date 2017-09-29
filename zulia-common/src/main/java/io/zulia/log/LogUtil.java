@@ -20,7 +20,6 @@ public class LogUtil {
 
 		Logger.getLogger("org.mongodb").setLevel(Level.WARNING);
 
-		System.setProperty("hazelcast.logging.type", "none");
 	}
 
 }
