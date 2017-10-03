@@ -381,6 +381,8 @@ public class ZuliaIndexManager {
 		ZuliaIndex zuliaIndex = indexMap.get(request.getIndexName());
 		if (zuliaIndex != null) {
 			zuliaIndex.unload(true);
+			indexService.removeIndex(request.getIndexName());
+			indexService.removeIndexMapping(request.getIndexName());
 			zuliaIndex.deleteIndex();
 		}
 		return DeleteIndexResponse.newBuilder().build();
