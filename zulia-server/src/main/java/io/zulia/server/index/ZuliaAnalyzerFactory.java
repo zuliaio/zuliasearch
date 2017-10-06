@@ -54,27 +54,44 @@ public class ZuliaAnalyzerFactory {
 
 			@Override
 			protected TokenStreamComponents createComponents(String fieldName) {
-				AnalyzerSettings.Tokenizer tokenizer = analyzerSettings.getTokenizer();
-				if (tokenizer == null) {
-					tokenizer = AnalyzerSettings.Tokenizer.STANDARD;
-				}
-				List<AnalyzerSettings.Filter> filterList = analyzerSettings.getFilterList();
 
+				AnalyzerSettings.Tokenizer tokenizer = analyzerSettings.getTokenizer();
 				Tokenizer src;
-				TokenStream tok;
-				TokenStream lastTok;
 				if (AnalyzerSettings.Tokenizer.KEYWORD.equals(tokenizer)) {
 					src = new KeywordTokenizer();
+				}
+				else if (AnalyzerSettings.Tokenizer.WHITESPACE.equals(tokenizer)) {
+					src = new WhitespaceTokenizer();
+				}
+				else if (AnalyzerSettings.Tokenizer.STANDARD.equals(tokenizer)) {
+					src = new StandardTokenizer();
+				}
+				else {
+					throw new RuntimeException("Unknown tokenizer type <" + tokenizer);
+				}
+
+				return new TokenStreamComponents(src, getFilteredStream(src));
+			}
+
+			@Override
+			protected TokenStream normalize(String fieldName, TokenStream in) {
+				return getFilteredStream(in);
+			}
+
+			private TokenStream getFilteredStream(TokenStream src) {
+				TokenStream tok;
+				TokenStream lastTok;
+
+				AnalyzerSettings.Tokenizer tokenizer = analyzerSettings.getTokenizer();
+				if (AnalyzerSettings.Tokenizer.KEYWORD.equals(tokenizer)) {
 					tok = src;
 					lastTok = src;
 				}
 				else if (AnalyzerSettings.Tokenizer.WHITESPACE.equals(tokenizer)) {
-					src = new WhitespaceTokenizer();
 					tok = src;
 					lastTok = src;
 				}
 				else if (AnalyzerSettings.Tokenizer.STANDARD.equals(tokenizer)) {
-					src = new StandardTokenizer();
 					tok = new StandardFilter(src);
 					lastTok = tok;
 				}
@@ -82,6 +99,7 @@ public class ZuliaAnalyzerFactory {
 					throw new RuntimeException("Unknown tokenizer type <" + tokenizer);
 				}
 
+				List<AnalyzerSettings.Filter> filterList = analyzerSettings.getFilterList();
 				for (AnalyzerSettings.Filter filter : filterList) {
 					if (AnalyzerSettings.Filter.LOWERCASE.equals(filter)) {
 						tok = new LowerCaseFilter(lastTok);
@@ -151,9 +169,9 @@ public class ZuliaAnalyzerFactory {
 					}
 					lastTok = tok;
 				}
-
-				return new TokenStreamComponents(src, tok);
+				return tok;
 			}
+
 		};
 
 	}
