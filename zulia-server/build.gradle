@@ -21,7 +21,7 @@ dependencies {
 
     compile 'com.beust:jcommander:1.72'
 
-    compile 'org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.25.1'
+    compile 'org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.26'
 
     compile 'com.cedarsoftware:json-io:4.9.12'
 
