@@ -100,7 +100,6 @@ import org.apache.lucene.util.NumericUtils;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -118,9 +117,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ZuliaShard {
-
-	private final static DateTimeFormatter FORMATTER_YYYYMMDD = DateTimeFormatter.BASIC_ISO_DATE;
-	private final static DateTimeFormatter FORMATTER_YYYY_MM_DD = DateTimeFormatter.ISO_DATE;
 
 	private final static Logger log = Logger.getLogger(ZuliaShard.class.getSimpleName());
 	private static Pattern sortedDocValuesMessage = Pattern.compile(
@@ -1151,11 +1147,12 @@ public class ZuliaShard {
 						LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
 
 						if (FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
-							String date = FORMATTER_YYYYMMDD.format(localDate);
+							String date = localDate.getYear() + "" + localDate.getMonthValue() + "" + localDate.getDayOfMonth();
 							addFacet(doc, facetName, date);
 						}
 						else if (FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
-							String date = FORMATTER_YYYY_MM_DD.format(localDate);
+
+							String date = localDate.getYear() + "-" + localDate.getMonthValue() + "-" + localDate.getDayOfMonth();
 							addFacet(doc, facetName, date);
 						}
 						else {

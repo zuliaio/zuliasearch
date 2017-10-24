@@ -15,6 +15,8 @@ import java.util.function.Consumer;
 
 public class ZuliaUtil {
 
+	private static final DocumentCodec documentCodec = new DocumentCodec();
+
 	public static void handleLists(Object o, Consumer<? super Object> action) {
 		if (o instanceof Collection) {
 			Collection<?> c = (Collection<?>) o;
@@ -51,6 +53,7 @@ public class ZuliaUtil {
 
 	public static Document byteArrayToMongoDocument(byte[] byteArray) {
 		BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(byteArray));
-		return new DocumentCodec().decode(bsonReader, DecoderContext.builder().build());
+
+		return documentCodec.decode(bsonReader, DecoderContext.builder().build());
 	}
 }
