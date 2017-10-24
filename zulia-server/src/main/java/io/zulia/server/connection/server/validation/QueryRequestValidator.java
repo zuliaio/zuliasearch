@@ -17,12 +17,10 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 	public QueryRequest validateAndSetDefault(QueryRequest request) {
 		QueryRequest.Builder queryRequestBuilder = request.toBuilder();
 
+		FacetRequest.Builder facetRequestBuilder = queryRequestBuilder.getFacetRequestBuilder();
 
-		FacetRequest.Builder facetRequestBuilder = queryRequestBuilder.getFacetRequest().toBuilder();
+		for (CountRequest.Builder countRequestBuilder : facetRequestBuilder.getCountRequestBuilderList()) {
 
-		for (CountRequest countRequest : facetRequestBuilder.getCountRequestList()) {
-
-			CountRequest.Builder countRequestBuilder = countRequest.toBuilder();
 
 			if (countRequestBuilder.getMaxFacets() == 0) {
 				countRequestBuilder.setMaxFacets(10);
@@ -35,9 +33,7 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 
 		if (queryRequestBuilder.getHighlightRequestList() != null) {
 
-			for (HighlightRequest highlightRequest : queryRequestBuilder.getHighlightRequestList()) {
-
-				HighlightRequest.Builder highlightRequestBuilder = highlightRequest.toBuilder();
+			for (HighlightRequest.Builder highlightRequestBuilder : queryRequestBuilder.getHighlightRequestBuilderList()) {
 
 				if (highlightRequestBuilder.getPreTag() == null) {
 					highlightRequestBuilder.setPreTag("<em>");
@@ -61,9 +57,7 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 
 		if (queryRequestBuilder.getAnalysisRequestList() != null) {
 
-			for (AnalysisRequest analysisRequest : queryRequestBuilder.getAnalysisRequestList()) {
-
-				AnalysisRequest.Builder analysisRequestBuilder = analysisRequest.toBuilder();
+			for (AnalysisRequest.Builder analysisRequestBuilder : queryRequestBuilder.getAnalysisRequestBuilderList()) {
 
 				if (analysisRequestBuilder.getTopN() == 0) {
 					analysisRequestBuilder.setTopN(10);
