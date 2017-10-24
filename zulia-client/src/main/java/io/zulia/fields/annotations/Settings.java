@@ -16,7 +16,6 @@ public @interface Settings {
 
 	int numberOfShards();
 
-	boolean applyUncommitedDeletes() default true;
 
 	double requestFactor() default 2.0;
 
@@ -32,10 +31,5 @@ public @interface Settings {
 
 	int shardQueryCacheMaxAmount() default 256;
 
-	boolean storeDocumentInIndex() default true;
-
-	boolean storeDocumentInMongo() default false;
-
-	boolean storeIndexOnDisk() default false;
 
 }

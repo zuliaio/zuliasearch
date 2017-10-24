@@ -26,6 +26,7 @@ import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.index.field.FieldTypeUtil;
@@ -96,6 +97,7 @@ public class ZuliaIndex implements IndexShardInterface {
 	private final String indexName;
 
 	private final DocumentStorage documentStorage;
+	private final ZuliaConfig zuliaConfig;
 
 	private Timer commitTimer;
 	private TimerTask commitTask;
@@ -108,8 +110,9 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private IndexMapping indexMapping;
 
-	public ZuliaIndex(ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService) {
+	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService) {
 
+		this.zuliaConfig = zuliaConfig;
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
 		this.numberOfShards = indexConfig.getNumberOfShards();
@@ -230,7 +233,9 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	public IndexWriter getIndexWriter(int shardNumber) throws Exception {
 
-		Directory d = MMapDirectory.open(getPathForIndex(shardNumber));
+		Path pathForIndex = getPathForIndex(shardNumber);
+		System.out.println(pathForIndex);
+		Directory d = MMapDirectory.open(pathForIndex);
 
 		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
 
@@ -244,11 +249,11 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	private Path getPathForIndex(int shardNumber) {
-		return Paths.get("indexes", indexName + "_" + shardNumber + "_idx");
+		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_idx");
 	}
 
 	private Path getPathForFacetsIndex(int shardNumber) {
-		return Paths.get("indexes", indexName + "_" + shardNumber + "_facets");
+		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_facets");
 	}
 
 	public DirectoryTaxonomyWriter getTaxoWriter(int shardNumber) throws IOException {
@@ -792,8 +797,6 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	public GetFieldNamesResponse getFieldNames(InternalGetFieldNamesRequest request) throws Exception {
-
-
 
 		List<Future<GetFieldNamesResponse>> responses = new ArrayList<>();
 

@@ -130,6 +130,8 @@ public class Mapper<T> {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig(defaultSearchField.getFieldName());
 
+		indexConfig.setIndexName(settings.indexName());
+		indexConfig.setNumberOfShards(settings.numberOfShards());
 		indexConfig.setRequestFactor(settings.requestFactor());
 		indexConfig.setMinShardRequest(settings.minSeqmentRequest());
 		indexConfig.setIdleTimeWithoutCommit(settings.idleTimeWithoutCommit());

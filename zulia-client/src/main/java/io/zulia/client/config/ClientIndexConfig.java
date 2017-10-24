@@ -163,6 +163,10 @@ public class ClientIndexConfig {
 	public IndexSettings getIndexSettings() {
 		IndexSettings.Builder isb = IndexSettings.newBuilder();
 
+		if (numberOfShards != null) {
+			isb.setNumberOfShards(numberOfShards);
+		}
+
 		if (indexName != null) {
 			isb.setIndexName(indexName);
 		}
@@ -199,6 +203,7 @@ public class ClientIndexConfig {
 	}
 
 	public void configure(IndexSettings indexSettings) {
+		this.numberOfShards = indexSettings.getNumberOfShards();
 		this.defaultSearchField = indexSettings.getDefaultSearchField();
 		this.requestFactor = indexSettings.getRequestFactor();
 		this.minShardRequest = indexSettings.getMinShardRequest();

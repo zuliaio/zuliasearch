@@ -150,7 +150,7 @@ public class ZuliaIndexManager {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
 		}
 
-		ZuliaIndex zuliaIndex = new ZuliaIndex(serverIndexConfig, documentStorage, indexService);
+		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService);
 		zuliaIndex.setIndexMapping(indexMapping);
 
 		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
@@ -303,6 +303,7 @@ public class ZuliaIndexManager {
 
 				Node primaryNode = nodes.remove(0);
 				shardMapping.setPrimayNode(primaryNode);
+				shardMapping.setShardNumber(i);
 				nodeWeightComputation.addShard(primaryNode, indexSettings, true);
 
 				for (int r = 0; r < nodes.size(); r++) {
