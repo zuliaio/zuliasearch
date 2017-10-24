@@ -15,13 +15,28 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
  */
 public class GetNodes extends SimpleCommand<GetNodesRequest, GetNodesResult> {
 
+	private Boolean activeOnly;
+
 	public GetNodes() {
 
 	}
 
+	public Boolean isActiveOnly() {
+		return activeOnly;
+	}
+
+	public GetNodes setActiveOnly(Boolean activeOnly) {
+		this.activeOnly = activeOnly;
+		return this;
+	}
+
 	@Override
 	public GetNodesRequest getRequest() {
-		return GetNodesRequest.newBuilder().build();
+		GetNodesRequest.Builder builder = GetNodesRequest.newBuilder();
+		if (activeOnly != null) {
+			builder.setActiveOnly(activeOnly);
+		}
+		return builder.build();
 	}
 
 	@Override

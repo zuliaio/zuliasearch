@@ -173,7 +173,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 	}
 
 	public void updateNodes() throws Exception {
-		GetNodesResult getNodesResult = execute(new GetNodes());
+		GetNodesResult getNodesResult = execute(new GetNodes().setActiveOnly(true));
 		updateNodes(getNodesResult.getNodes());
 	}
 

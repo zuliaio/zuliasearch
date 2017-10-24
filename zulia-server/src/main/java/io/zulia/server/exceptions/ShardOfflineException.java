@@ -12,7 +12,7 @@ public class ShardOfflineException extends IOException {
 	private String indexName;
 
 	public ShardOfflineException(String indexName, int shardNumber, MasterSlaveSettings masterSlaveSettings) {
-		super("Index <" + indexName + "> with shardNumber + <" + shardNumber + "> is offline for <" + masterSlaveSettings + ">");
+		super("Index <" + indexName + "> with shardNumber <" + shardNumber + "> is offline for <" + masterSlaveSettings + ">");
 		this.indexName = indexName;
 		this.shardNumber = shardNumber;
 		this.masterSlaveSettings = masterSlaveSettings;

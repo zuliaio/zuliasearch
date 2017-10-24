@@ -7,7 +7,6 @@ import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceGrpc;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 public class ZuliaConnection {
 
@@ -38,7 +37,7 @@ public class ZuliaConnection {
 			asyncStub = asyncStub.withCompression("gzip");
 		}
 
-		System.err.println("INFO: Connecting to <" + node.getServerAddress() + ">");
+		System.err.println("INFO: Connecting to <" + node.getServerAddress() + ":" + node.getServicePort() + ">");
 
 	}
 
@@ -58,10 +57,10 @@ public class ZuliaConnection {
 	 * closes the connection to the server if open, calling a method (index, query, ...) will open a new connection
 	 */
 	public void close() {
-
+		System.err.println("INFO: Closing connection to <" + node.getServerAddress() + ":" + node.getServicePort() + ">");
 		try {
 			if (channel != null) {
-				channel.shutdown().awaitTermination(15, TimeUnit.SECONDS);
+				channel.shutdownNow();
 			}
 		}
 		catch (Exception e) {

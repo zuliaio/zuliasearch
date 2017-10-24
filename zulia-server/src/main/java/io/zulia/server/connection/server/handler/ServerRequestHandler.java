@@ -5,6 +5,7 @@ import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 import io.zulia.cache.MetaKeys;
+import io.zulia.server.exceptions.ShardOfflineException;
 import io.zulia.server.index.ZuliaIndexManager;
 
 public abstract class ServerRequestHandler<S, Q> {
@@ -21,16 +22,18 @@ public abstract class ServerRequestHandler<S, Q> {
 			responseObserver.onNext(s);
 			responseObserver.onCompleted();
 		}
-		catch (IllegalArgumentException e) {
-
+		catch (Exception e) {
 			Metadata metadata = new Metadata();
 			metadata.put(MetaKeys.ERROR_KEY, e.getMessage());
+			Status status = Status.UNKNOWN;
+			if (e instanceof IllegalArgumentException) {
+				status = Status.INVALID_ARGUMENT;
+			}
+			if (e instanceof ShardOfflineException) {
+				status = Status.UNAVAILABLE;
+			}
 
-			responseObserver.onError(new StatusException(Status.INVALID_ARGUMENT, metadata));
-			onError(e);
-		}
-		catch (Exception e) {
-			responseObserver.onError(e);
+			responseObserver.onError(new StatusException(status, metadata));
 			onError(e);
 		}
 	}

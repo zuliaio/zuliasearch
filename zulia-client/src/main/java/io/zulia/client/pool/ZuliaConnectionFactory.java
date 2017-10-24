@@ -28,4 +28,9 @@ public class ZuliaConnectionFactory extends BasePooledObjectFactory<ZuliaConnect
 			return new DefaultPooledObject<>(obj);
 		}
 	}
+
+	@Override
+	public void destroyObject(PooledObject<ZuliaConnection> p) throws Exception {
+		p.getObject().close();
+	}
 }

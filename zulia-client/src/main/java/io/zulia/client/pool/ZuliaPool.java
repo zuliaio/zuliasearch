@@ -114,7 +114,7 @@ public class ZuliaPool {
 	}
 
 	public void updateNodes() throws Exception {
-		GetNodesResult getNodesResult = execute(new GetNodes());
+		GetNodesResult getNodesResult = execute(new GetNodes().setActiveOnly(true));
 		updateNodes(getNodesResult.getNodes());
 		updateIndexMappings(getNodesResult.getIndexMappings());
 	}
@@ -174,6 +174,7 @@ public class ZuliaPool {
 
 			}
 			catch (Exception e) {
+				System.err.println(e.getClass().getSimpleName() + ":" + e.getMessage());
 				if (tries >= retries) {
 					throw e;
 				}

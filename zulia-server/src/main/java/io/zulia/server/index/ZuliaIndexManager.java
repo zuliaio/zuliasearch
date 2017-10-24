@@ -345,7 +345,18 @@ public class ZuliaIndexManager {
 		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
 				this);
 
-		List<CreateIndexResponse> send = createIndexRequestFederator.send(request);
+		try {
+			List<CreateIndexResponse> send = createIndexRequestFederator.send(request);
+		}
+		catch (Exception e) {
+			if (existingIndex == null) {
+				throw new Exception("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
+			}
+			else {
+				throw new Exception("Failed to create index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
+
+			}
+		}
 
 		return CreateIndexResponse.newBuilder().build();
 	}
