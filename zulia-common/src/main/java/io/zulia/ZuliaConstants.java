@@ -6,7 +6,6 @@ package io.zulia;
  */
 public interface ZuliaConstants {
 
-	int DEFAULT_HAZELCAST_PORT = 5701;
 	int DEFAULT_SERVICE_SERVICE_PORT = 32191;
 	int DEFAULT_REST_SERVICE_PORT = 32192;
 
@@ -43,7 +42,6 @@ public interface ZuliaConstants {
 	String FETCH = "fetch";
 	String FIELDS = "fl";
 	String PRETTY = "pretty";
-	String COMPUTE_FACET_ERROR = "computeFacetError";
 	String MIN_MATCH = "mm";
 	String DEBUG = "debug";
 	String AMOUNT = "amount";
