@@ -418,7 +418,7 @@ public class ZuliaIndex implements IndexShardInterface {
 			}
 		}
 
-		if (!qr.getFilterQueryList().isEmpty() || !qr.getCosineSimRequestList().isEmpty() || !facetToValues.isEmpty()) {
+		if (!qr.getFilterQueryList().isEmpty() || !qr.getCosineSimRequestList().isEmpty() || !facetToValues.isEmpty() || qr.getScoredQueryList().isEmpty()) {
 			BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
 			for (ZuliaQuery.Query filterQuery : qr.getFilterQueryList()) {
 				Query filterLuceneQuery = parseQueryToLucene(filterQuery);
@@ -439,6 +439,11 @@ public class ZuliaIndex implements IndexShardInterface {
 			for (CosineSimRequest cosineSimRequest : qr.getCosineSimRequestList()) {
 				BooleanQuery cosineQuery = handleCosineSimQuery(cosineSimRequest);
 				booleanQuery.add(cosineQuery, BooleanClause.Occur.MUST);
+			}
+
+			for (ZuliaQuery.Query scoredQuery : qr.getScoredQueryList()) {
+				Query scoredLuceneQuery = parseQueryToLucene(scoredQuery);
+				booleanQuery.add(scoredLuceneQuery, BooleanClause.Occur.MUST);
 			}
 
 			booleanQuery.add(q, BooleanClause.Occur.MUST);

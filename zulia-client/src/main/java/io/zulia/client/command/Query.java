@@ -49,6 +49,7 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 	private List<FieldSort> fieldSorts = Collections.emptyList();
 	private Set<String> queryFields = Collections.emptySet();
 	private List<ZuliaQuery.Query> filterQueries = Collections.emptyList();
+	private List<ZuliaQuery.Query> scoredQueries = Collections.emptyList();
 	private List<ZuliaQuery.HighlightRequest> highlightRequests = Collections.emptyList();
 	private List<ZuliaQuery.AnalysisRequest> analysisRequests = Collections.emptyList();
 	private Integer minimumNumberShouldMatch;
@@ -284,6 +285,52 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 		return this;
 	}
 
+	public List<ZuliaQuery.Query> getScoredQueries() {
+		return scoredQueries;
+	}
+
+	public void setScoredQueries(List<ZuliaQuery.Query> scoredQueries) {
+		this.scoredQueries = scoredQueries;
+	}
+
+	public Query addScoredQuery(String query) {
+		return addScoredQuery(query, null, null, null);
+	}
+
+	public Query addScoredQuery(String query, Collection<String> queryFields) {
+		return addScoredQuery(query, queryFields, null, null);
+	}
+
+	public Query addScoredQuery(String query, Collection<String> queryFields, Operator defaultOperator) {
+		return addScoredQuery(query, queryFields, defaultOperator, null);
+	}
+
+	public Query addScoredQuery(String query, Collection<String> queryFields, Integer minimumNumberShouldMatch) {
+		return addScoredQuery(query, queryFields, null, minimumNumberShouldMatch);
+	}
+
+	public Query addScoredQuery(String query, Collection<String> queryFields, Operator defaultOperator, Integer minimumNumberShouldMatch) {
+		if (scoredQueries.isEmpty()) {
+			this.scoredQueries = new ArrayList<>();
+		}
+
+		ZuliaQuery.Query.Builder builder = ZuliaQuery.Query.newBuilder();
+		if (query != null && !query.isEmpty()) {
+			builder.setQ(query);
+		}
+		if (minimumNumberShouldMatch != null) {
+			builder.setMm(minimumNumberShouldMatch);
+		}
+		if (defaultOperator != null) {
+			builder.setDefaultOp(defaultOperator);
+		}
+		if (queryFields != null && !queryFields.isEmpty()) {
+			builder.addAllQf(queryFields);
+		}
+		scoredQueries.add(builder.build());
+		return this;
+	}
+
 	public Query addHighlight(String field) {
 		return addHighlight(field, null, null, null);
 	}
@@ -510,6 +557,10 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 
 		if (!filterQueries.isEmpty()) {
 			requestBuilder.addAllFilterQuery(filterQueries);
+		}
+
+		if (!scoredQueries.isEmpty()) {
+			requestBuilder.addAllScoredQuery(scoredQueries);
 		}
 
 		if (!highlightRequests.isEmpty()) {

@@ -68,6 +68,7 @@ message QueryRequest {
     repeated CosineSimRequest cosineSimRequest = 17;
     bool dontCache = 18;
     MasterSlaveSettings masterSlaveSettings = 19;
+    repeated Query scoredQuery = 20;
 }
 
 message QueryResponse {
@@ -158,7 +159,6 @@ message GetIndexesRequest {
 message GetIndexesResponse {
     repeated string indexName = 1;
 }
-
 
 
 message GetNumberOfDocsRequest {
