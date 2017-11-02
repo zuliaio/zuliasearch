@@ -68,32 +68,31 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		long queryId = queryNumber.getAndIncrement();
 
 		long start = System.currentTimeMillis();
-		try {
 
-			String queryJson = JsonFormat.printer().print(request);
-			LOG.info("Running id <" + queryId + "> query <" + queryJson + ">");
+		String queryJson = JsonFormat.printer().print(request);
+		LOG.info("Running id <" + queryId + "> query <" + queryJson + ">");
 
-			List<InternalQueryResponse> results = send(request);
+		List<InternalQueryResponse> results = send(request);
 
-			QueryCombiner queryCombiner = new QueryCombiner(indexes, request, results);
+		QueryCombiner queryCombiner = new QueryCombiner(indexes, request, results);
 
-			QueryResponse qr = queryCombiner.getQueryResponse();
+		QueryResponse qr = queryCombiner.getQueryResponse();
 
-			if (!queryCombiner.isShort()) {
-				return qr;
-			}
-			else {
-				if (!request.getFetchFull()) {
-					QueryRequest newRequest = request.toBuilder().setFetchFull(true).build();
-					return getResponse(newRequest);
-				}
-
-				throw new Exception("Full fetch request is short");
-			}
-		}
-		finally {
+		if (!queryCombiner.isShort()) {
 			long end = System.currentTimeMillis();
 			LOG.info("Finished query id <" + queryId + "> in " + (end - start) + "ms");
+			return qr;
 		}
+		else {
+			if (!request.getFetchFull()) {
+				QueryRequest newRequest = request.toBuilder().setFetchFull(true).build();
+				long end = System.currentTimeMillis();
+				LOG.info("Finished query id <" + queryId + "> in " + (end - start) + "ms");
+				return getResponse(newRequest);
+			}
+
+			throw new Exception("Full fetch request is short");
+		}
+
 	}
 }
