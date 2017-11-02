@@ -380,8 +380,15 @@ public class ZuliaIndexManager {
 		DeleteIndexRequestFederator deleteIndexRequestFederator = new DeleteIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
 				this);
 
-		indexService.removeIndex(request.getIndexName());
-		indexService.removeIndexMapping(request.getIndexName());
+		String indexName = request.getIndexName();
+		ZuliaIndex zuliaIndex = indexMap.get(indexName);
+		if (zuliaIndex != null) {
+			zuliaIndex.unload(true);
+		}
+
+		indexService.removeIndex(indexName);
+		indexService.removeIndexMapping(indexName);
+		indexMap.remove(indexName);
 
 		List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
 
