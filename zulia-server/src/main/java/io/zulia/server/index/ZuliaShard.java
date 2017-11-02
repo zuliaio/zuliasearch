@@ -868,7 +868,7 @@ public class ZuliaShard {
 			throw new IllegalStateException("Cannot force commit from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
 
-		log.info("Committing segment <" + shardNumber + "> for index <" + indexName + ">");
+		log.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();
 		taxoWriter.commit();
