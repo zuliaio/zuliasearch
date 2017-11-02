@@ -40,7 +40,7 @@ public class ZuliaD {
 
 	private static final Gson GSON = new GsonBuilder().create();
 
-	public static class ZuliaArgs {
+	public static class ZuliaDArgs {
 
 		@Parameter(names = "--help", help = true)
 		private boolean help;
@@ -74,12 +74,12 @@ public class ZuliaD {
 
 		LogUtil.init();
 
-		ZuliaArgs zuliaArgs = new ZuliaArgs();
+		ZuliaDArgs zuliaDArgs = new ZuliaDArgs();
 		StartArgs startArgs = new StartArgs();
 		AddNodeArgs addNodeArgs = new AddNodeArgs();
 		RemoveNodeArgs removeNodeArgs = new RemoveNodeArgs();
 
-		JCommander jCommander = JCommander.newBuilder().addObject(zuliaArgs).addCommand("start", startArgs).addCommand("addNode", addNodeArgs)
+		JCommander jCommander = JCommander.newBuilder().addObject(zuliaDArgs).addCommand("start", startArgs).addCommand("addNode", addNodeArgs)
 				.addCommand("removeNode", removeNodeArgs).build();
 		try {
 			jCommander.parse(args);
@@ -91,10 +91,12 @@ public class ZuliaD {
 
 			String prefix = System.getenv("APP_HOME");
 
-			String config = zuliaArgs.configPath;
+			String config = zuliaDArgs.configPath;
 			if (prefix != null) {
 				config = prefix + File.separator + config;
 			}
+
+			System.out.println("Path: " + config);
 
 			ZuliaConfig zuliaConfig = GSON.fromJson(new FileReader(config), ZuliaConfig.class);
 			LOG.info("Using config <" + config + ">");
