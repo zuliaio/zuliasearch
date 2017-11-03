@@ -17,10 +17,22 @@ import io.zulia.client.result.GetFieldsResult;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.GetNumberOfDocsResult;
 import io.zulia.client.result.OptimizeIndexResult;
+import io.zulia.client.result.QueryResult;
 import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaQuery;
+import io.zulia.message.ZuliaQuery.FieldSort.Direction;
+import io.zulia.util.ZuliaUtil;
+import org.bson.Document;
+
+import java.text.DecimalFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Set;
 
 public class Zulia {
+
+	private static final DecimalFormat df = new DecimalFormat("#.00");
 
 	public static class ZuliaArgs {
 
@@ -43,6 +55,52 @@ public class Zulia {
 
 	@Parameters(commandNames = "query", commandDescription = "Queries the given index in --index argument.")
 	public static class Query {
+
+		@Parameter(names = "--indexes", description = "Indexes to query, none to default to the required argument or many.")
+		private Set<String> indexes;
+
+		@Parameter(names = "--q", description = "Zulia query, matches all docs by default.")
+		private String q;
+
+		@Parameter(names = "--rows", description = "Number of records to return.")
+		private Integer rows = 0;
+
+		@Parameter(names = "--start", description = "Results start index.")
+		private Integer start = 0;
+
+		@Parameter(names = "--facets", description = "List of fields to facet on.")
+		private Set<String> facets;
+
+		@Parameter(names = "--facetCount", description = "Number of facets to return.")
+		private Integer facetCount = 10;
+
+		@Parameter(names = "--facetShardCount", description = "Number of facets to return per shard.")
+		private Integer facetShardCount = 40;
+
+		@Parameter(names = "--sort", description = "List of fields to sort on.")
+		private Set<String> sortFields;
+
+		@Parameter(names = "--sortDesc", description = "List of fields to sort on in descending order.")
+		private Set<String> sortDescFields;
+
+		@Parameter(names = "--qf", description = "Specific field(s) to search, index default if none given.")
+		private Set<String> qf;
+
+		@Parameter(names = "--fq", description = "Filter query.")
+		private Set<String> fq;
+
+		@Parameter(names = "--minimumNumberShouldMatch", description = "Minimum number of optional boolean queries to match")
+		private Integer minimumNumberShouldMatch;
+
+		@Parameter(names = "--fetch", description = "Fetch type (none, metadata, full)")
+		private String fetch = "none";
+
+		@Parameter(names = "--fl", description = "List of fields to return")
+		private Set<String> fl;
+
+		@Parameter(names = "--flMask", description = "List of fields to mask")
+		private Set<String> flMask;
+
 	}
 
 	@Parameters(commandNames = "clear", commandDescription = "Clears the given index in --index argument.")
@@ -98,8 +156,179 @@ public class Zulia {
 			ZuliaWorkPool workPool = new ZuliaWorkPool(config);
 
 			if ("query".equals(jCommander.getParsedCommand())) {
-				// TODO: need to handle everything that goes with query
-				// needs to have its own arguments
+
+				if (query.q != null) {
+
+					io.zulia.client.command.Query zuliaQuery;
+					if (query.indexes != null) {
+						zuliaQuery = new io.zulia.client.command.Query(query.indexes, query.q, query.rows);
+					}
+					else {
+						zuliaQuery = new io.zulia.client.command.Query(index, query.q, query.rows);
+					}
+
+					if (query.qf != null) {
+						query.qf.forEach(zuliaQuery::addQueryField);
+					}
+
+					zuliaQuery.setStart(query.start);
+
+					if (query.fetch.equalsIgnoreCase("full")) {
+						zuliaQuery.setResultFetchType(ZuliaQuery.FetchType.FULL);
+					}
+
+					if (query.minimumNumberShouldMatch != null) {
+						zuliaQuery.setMinimumNumberShouldMatch(query.minimumNumberShouldMatch);
+					}
+
+					if (query.facets != null) {
+						for (String facet : query.facets) {
+							zuliaQuery.addCountRequest(facet, query.facetCount, query.facetShardCount);
+						}
+					}
+
+					if (query.sortFields != null) {
+						query.sortFields.forEach(zuliaQuery::addFieldSort);
+					}
+
+					if (query.sortDescFields != null) {
+						for (String sortDesc : query.sortDescFields) {
+							zuliaQuery.addFieldSort(sortDesc, Direction.DESCENDING);
+						}
+					}
+
+					if (query.fq != null) {
+						query.fq.forEach(zuliaQuery::addFilterQuery);
+					}
+
+					if (query.fl != null) {
+						query.fl.forEach(zuliaQuery::addDocumentField);
+					}
+
+					if (query.flMask != null) {
+						query.flMask.forEach(zuliaQuery::addDocumentMaskedField);
+					}
+
+					QueryResult qr = workPool.execute(zuliaQuery);
+
+					List<ZuliaQuery.ScoredResult> srList = qr.getResults();
+
+					System.out.println("QueryTime: " + (qr.getCommandTimeMs()) + "ms");
+					System.out.println("TotalResults: " + qr.getTotalHits());
+
+					System.out.println("Results:");
+
+					System.out.print("UniqueId");
+					System.out.print("\t");
+					System.out.print("Score");
+					System.out.print("\t");
+					System.out.print("Index");
+					System.out.print("\t");
+					System.out.print("Shard");
+					System.out.print("\t");
+					System.out.print("LuceneShardId");
+					System.out.print("\t");
+					System.out.print("Sort");
+					System.out.print("\t");
+					if (query.fetch.equalsIgnoreCase("full")) {
+						System.out.print("Document");
+					}
+					System.out.println();
+
+					for (ZuliaQuery.ScoredResult sr : srList) {
+						System.out.print(sr.getUniqueId());
+						System.out.print("\t");
+						System.out.print(df.format(sr.getScore()));
+						System.out.print("\t");
+						System.out.print(sr.getIndexName());
+						System.out.print("\t");
+						System.out.print(sr.getShard());
+						System.out.print("\t");
+						System.out.print(sr.getLuceneShardId());
+						System.out.print("\t");
+
+						StringBuffer sb = new StringBuffer();
+
+						if (sr.hasSortValues()) {
+							for (ZuliaQuery.SortValue sortValue : sr.getSortValues().getSortValueList()) {
+								if (sb.length() != 0) {
+									sb.append(",");
+								}
+								if (sortValue.getExists()) {
+									if (sortValue.getDateValue() != 0) {
+										sb.append(new Date(sortValue.getDateValue()));
+									}
+									else if (sortValue.getDoubleValue() != 0) {
+										sb.append(sortValue.getDoubleValue());
+									}
+									else if (sortValue.getFloatValue() != 0) {
+										sb.append(sortValue.getFloatValue());
+									}
+									else if (sortValue.getIntegerValue() != 0) {
+										sb.append(sortValue.getIntegerValue());
+									}
+									else if (sortValue.getLongValue() != 0) {
+										sb.append(sortValue.getLongValue());
+									}
+									else if (sortValue.getStringValue() != null) {
+										sb.append(sortValue.getStringValue());
+									}
+								}
+								else {
+									sb.append("!NULL!");
+								}
+							}
+						}
+
+						if (sb.length() != 0) {
+							System.out.print(sb);
+						}
+						else {
+							System.out.print("--");
+						}
+
+						if (query.fetch != null && query.fetch.equalsIgnoreCase("full")) {
+							System.out.print("\t");
+							if (sr.hasResultDocument()) {
+								ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
+								if (resultDocument.getDocument() != null) {
+									Document mongoDocument = new Document();
+									mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray()));
+									System.out.println(mongoDocument.toJson());
+								}
+							}
+						}
+
+						System.out.println();
+					}
+
+					if (!qr.getFacetGroups().isEmpty()) {
+						System.out.println("Facets:");
+						for (ZuliaQuery.FacetGroup fg : qr.getFacetGroups()) {
+							System.out.println();
+							System.out.println("--Facet on " + fg.getCountRequest().getFacetField().getLabel() + "--");
+							for (ZuliaQuery.FacetCount fc : fg.getFacetCountList()) {
+								System.out.print(fc.getFacet());
+								System.out.print("\t");
+								System.out.print(fc.getCount());
+								System.out.print("\t");
+								System.out.print("+" + fc.getMaxError());
+								System.out.println();
+							}
+							if (fg.getPossibleMissing()) {
+								System.out.println("Possible facets missing from top results for <" + fg.getCountRequest().getFacetField().getLabel()
+										+ "> with max count <" + fg.getMaxValuePossibleMissing() + ">");
+							}
+						}
+
+					}
+
+				}
+				else {
+					jCommander.usage();
+					System.exit(2);
+				}
+
 			}
 			else if ("clear".equals(jCommander.getParsedCommand())) {
 				System.out.println("Clearing index: " + index);

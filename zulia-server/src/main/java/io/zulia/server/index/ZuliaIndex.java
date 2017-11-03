@@ -561,7 +561,7 @@ public class ZuliaIndex implements IndexShardInterface {
 			for (ZuliaQuery.LastIndexResult lir : lr.getLastIndexResultList()) {
 				if (indexName.equals(lir.getIndexName())) {
 					for (ZuliaQuery.ScoredResult sr : lir.getLastForShardList()) {
-						int docId = sr.getDocId();
+						int luceneShardId = sr.getLuceneShardId();
 						float score = sr.getScore();
 
 						SortRequest sortRequest = queryRequest.getSortRequest();
@@ -613,7 +613,7 @@ public class ZuliaIndex implements IndexShardInterface {
 							sortTermsIndex++;
 						}
 
-						after = new FieldDoc(docId, score, sortTerms, sr.getShard());
+						after = new FieldDoc(luceneShardId, score, sortTerms, sr.getShard());
 						lastScoreDocMap.put(sr.getShard(), after);
 					}
 				}
