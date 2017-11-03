@@ -6,6 +6,7 @@ import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import io.zulia.client.command.ClearIndex;
 import io.zulia.client.command.DeleteIndex;
+import io.zulia.client.command.GetIndexes;
 import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.GetNumberOfDocs;
 import io.zulia.client.command.OptimizeIndex;
@@ -14,6 +15,7 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.ClearIndexResult;
 import io.zulia.client.result.DeleteIndexResult;
 import io.zulia.client.result.GetFieldsResult;
+import io.zulia.client.result.GetIndexesResult;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.GetNumberOfDocsResult;
 import io.zulia.client.result.OptimizeIndexResult;
@@ -45,16 +47,13 @@ public class Zulia {
 		@Parameter(names = "--port", description = "Zulia Port", order = 2)
 		private Integer port = 32191;
 
-		@Parameter(names = "--getIndexes", description = "Gets all available indexes.", order = 3)
-		private String getIndexes;
-
-		@Parameter(names = "--index", description = "Index name", required = true, order = 4)
+		@Parameter(names = "--index", description = "Index name", order = 3)
 		private String index;
 
 	}
 
 	@Parameters(commandNames = "query", commandDescription = "Queries the given index in --index argument.")
-	public static class Query {
+	public static class QueryCmd {
 
 		@Parameter(names = "--indexes", description = "Indexes to query, none to default to the required argument or many.")
 		private Set<String> indexes;
@@ -103,28 +102,32 @@ public class Zulia {
 
 	}
 
+	@Parameters(commandNames = "getIndexes", commandDescription = "Gets all available indexes.")
+	public static class GetIndexesCmd {
+	}
+
 	@Parameters(commandNames = "clear", commandDescription = "Clears the given index in --index argument.")
-	public static class Clear {
+	public static class ClearCmd {
 	}
 
 	@Parameters(commandNames = "optimize", commandDescription = "Optimizes the given index in --index argument.")
-	public static class Optimize {
+	public static class OptimizeCmd {
 	}
 
 	@Parameters(commandNames = "getCount", commandDescription = "Gets total number of docs in the given index in --index argument.")
-	public static class GetCount {
+	public static class GetCountCmd {
 	}
 
 	@Parameters(commandNames = "getFields", commandDescription = "Gets all the fields in the given index in --index argument.")
-	public static class GetFields {
+	public static class GetFieldsCmd {
 	}
 
 	@Parameters(commandNames = "getCurrentNodes", commandDescription = "Gets the current nodes that belong to the given index in --index argument.")
-	public static class GetCurrentNodes {
+	public static class GetCurrentNodesCmd {
 	}
 
 	@Parameters(commandNames = "delete", commandDescription = "Deletes the given index in --index argument.")
-	public static class Delete {
+	public static class DeleteCmd {
 	}
 
 	public static void main(String[] args) {
@@ -132,17 +135,22 @@ public class Zulia {
 		LogUtil.init();
 
 		ZuliaArgs zuliaArgs = new ZuliaArgs();
-		Clear clear = new Clear();
-		Optimize optimize = new Optimize();
-		GetCount getCount = new GetCount();
-		GetCurrentNodes getCurrentNodes = new GetCurrentNodes();
-		GetFields getFields = new GetFields();
-		Delete delete = new Delete();
-		Query query = new Query();
+		GetIndexesCmd getIndexesCmd = new GetIndexesCmd();
+		ClearCmd clear = new ClearCmd();
+		OptimizeCmd optimize = new OptimizeCmd();
+		GetCountCmd getCount = new GetCountCmd();
+		GetCurrentNodesCmd getCurrentNodes = new GetCurrentNodesCmd();
+		GetFieldsCmd getFields = new GetFieldsCmd();
+		DeleteCmd delete = new DeleteCmd();
+		QueryCmd query = new QueryCmd();
 
-		JCommander jCommander = JCommander.newBuilder().addObject(zuliaArgs).addCommand(query).addCommand(clear).addCommand(getCount)
+		JCommander jCommander = JCommander.newBuilder().addObject(zuliaArgs).addCommand(getIndexesCmd).addCommand(query).addCommand(clear).addCommand(getCount)
 				.addCommand(getCurrentNodes).addCommand(getFields).addCommand(delete).addCommand(optimize).build();
 		try {
+
+			ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(zuliaArgs.address, zuliaArgs.port);
+			ZuliaWorkPool workPool = new ZuliaWorkPool(config);
+
 			jCommander.parse(args);
 
 			if (jCommander.getParsedCommand() == null) {
@@ -150,10 +158,20 @@ public class Zulia {
 				System.exit(2);
 			}
 
+			if ("getIndexes".equalsIgnoreCase(jCommander.getParsedCommand())) {
+				GetIndexes getIndexes = new GetIndexes();
+				GetIndexesResult execute = workPool.execute(getIndexes);
+				System.out.println(execute.getIndexNames());
+				System.exit(0);
+			}
+
 			String index = zuliaArgs.index;
 
-			ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(zuliaArgs.address, zuliaArgs.port);
-			ZuliaWorkPool workPool = new ZuliaWorkPool(config);
+			if (index == null) {
+				System.err.println("Please pass in an index.");
+				jCommander.usage();
+				System.exit(2);
+			}
 
 			if ("query".equals(jCommander.getParsedCommand())) {
 
