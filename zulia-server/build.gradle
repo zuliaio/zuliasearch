@@ -1,4 +1,3 @@
-
 apply plugin: 'application'
 
 apply from: '../maven.gradle'
@@ -9,10 +8,11 @@ description 'Zulia Server'
 def luceneVersion = '7.1.0'
 
 
-defaultTasks 'build','installDist'
+defaultTasks 'build', 'installDist'
 
 dependencies {
     compile project(':zulia-common')
+    compile project(':zulia-client') //needed for admin tools
 
     compile "org.apache.lucene:lucene-facet:$luceneVersion"
     compile "org.apache.lucene:lucene-queryparser:$luceneVersion"
@@ -49,7 +49,7 @@ task createZuliaDScript(type: CreateStartScripts) {
 }
 
 applicationDistribution.into("bin") {
-    duplicatesStrategy= DuplicatesStrategy.EXCLUDE
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from(createZuliaDScript)
     fileMode = 0755
 }

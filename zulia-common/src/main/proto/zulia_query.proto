@@ -83,7 +83,7 @@ message LastResult {
 message ScoredResult {
     string uniqueId = 1;
     float score = 2;
-    uint32 docId = 3;
+    uint32 luceneShardId = 3;
     string indexName = 4;
     uint32 shard = 5;
     uint32 resultIndex = 6;

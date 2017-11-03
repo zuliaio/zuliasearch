@@ -23,11 +23,11 @@ import static io.zulia.message.ZuliaIndex.IndexMapping;
 
 public class ZuliaPool {
 
-	protected class MembershipUpdateThread extends Thread {
+	protected class ZuliaNodeUpdateThread extends Thread {
 
-		MembershipUpdateThread() {
+		ZuliaNodeUpdateThread() {
 			setDaemon(true);
-			setName("LMMemberUpdateThread" + hashCode());
+			setName("ZuliaNodeUpdateThread" + hashCode());
 		}
 
 		@Override
@@ -35,7 +35,7 @@ public class ZuliaPool {
 			while (!isClosed) {
 				try {
 					try {
-						Thread.sleep(memberUpdateInterval);
+						Thread.sleep(nodeUpdateInterval);
 					}
 					catch (InterruptedException e) {
 
@@ -56,7 +56,7 @@ public class ZuliaPool {
 	private int maxConnections;
 	private boolean routingEnabled;
 	private boolean isClosed;
-	private int memberUpdateInterval;
+	private int nodeUpdateInterval;
 	private final boolean compressedConnection;
 
 	private ConcurrentHashMap<String, GenericObjectPool<ZuliaConnection>> zuliaConnectionPoolMap;
@@ -68,7 +68,7 @@ public class ZuliaPool {
 		maxIdle = zuliaPoolConfig.getMaxIdle();
 		maxConnections = zuliaPoolConfig.getMaxConnections();
 		routingEnabled = zuliaPoolConfig.isRoutingEnabled();
-		memberUpdateInterval = zuliaPoolConfig.getMemberUpdateInterval();
+		nodeUpdateInterval = zuliaPoolConfig.getNodeUpdateInterval();
 		compressedConnection = zuliaPoolConfig.isCompressedConnection();
 
 		zuliaConnectionPoolMap = new ConcurrentHashMap<>();
@@ -77,8 +77,8 @@ public class ZuliaPool {
 		poolConfig.setMaxIdlePerKey(maxIdle);
 		poolConfig.setMaxTotalPerKey(maxConnections);
 
-		if (zuliaPoolConfig.isMemberUpdateEnabled()) {
-			MembershipUpdateThread mut = new MembershipUpdateThread();
+		if (zuliaPoolConfig.isNodeUpdateEnabled()) {
+			ZuliaNodeUpdateThread mut = new ZuliaNodeUpdateThread();
 			mut.start();
 		}
 	}
@@ -135,8 +135,8 @@ public class ZuliaPool {
 
 				if (selectedNode == null) {
 					List<Node> tempList = nodes; //stop array index out bounds on updates without locking
-					int randomMemberIndex = (int) (Math.random() * tempList.size());
-					selectedNode = tempList.get(randomMemberIndex);
+					int randomNodeIndex = (int) (Math.random() * tempList.size());
+					selectedNode = tempList.get(randomNodeIndex);
 				}
 
 				final Node finalSelectedNode = selectedNode;
