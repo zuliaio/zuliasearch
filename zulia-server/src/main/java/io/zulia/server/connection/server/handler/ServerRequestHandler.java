@@ -24,7 +24,12 @@ public abstract class ServerRequestHandler<S, Q> {
 		}
 		catch (Exception e) {
 			Metadata metadata = new Metadata();
-			metadata.put(MetaKeys.ERROR_KEY, e.getMessage());
+			if (e.getMessage() != null) {
+				metadata.put(MetaKeys.ERROR_KEY, e.getMessage());
+			}
+			else {
+				metadata.put(MetaKeys.ERROR_KEY, e.getClass().getSimpleName());
+			}
 			Status status = Status.UNKNOWN;
 			if (e instanceof IllegalArgumentException) {
 				status = Status.INVALID_ARGUMENT;

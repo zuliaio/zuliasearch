@@ -617,7 +617,7 @@ public class ZuliaShard {
 	private ScoredResult.Builder handleDocResult(IndexSearcher is, SortRequest sortRequest, boolean sorting, ScoreDoc[] results, int i,
 			FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList,
 			List<AnalysisHandler> analysisHandlerList) throws Exception {
-		int docId = results[i].doc;
+		int luceneShardId = results[i].doc;
 
 		Set<String> fieldsToFetch = fetchSet;
 
@@ -628,7 +628,7 @@ public class ZuliaShard {
 			fieldsToFetch = fetchSetWithMeta;
 		}
 
-		Document d = is.doc(docId, fieldsToFetch);
+		Document d = is.doc(luceneShardId, fieldsToFetch);
 
 		IndexableField f = d.getField(ZuliaConstants.TIMESTAMP_FIELD);
 		long timestamp = f.numericValue().longValue();
@@ -654,7 +654,7 @@ public class ZuliaShard {
 
 		srBuilder.setTimestamp(timestamp);
 
-		srBuilder.setDocId(docId);
+		srBuilder.setLuceneShardId(luceneShardId);
 		srBuilder.setShard(shardNumber);
 		srBuilder.setIndexName(indexName);
 		srBuilder.setResultIndex(i);
@@ -868,7 +868,7 @@ public class ZuliaShard {
 			throw new IllegalStateException("Cannot force commit from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
 
-		log.info("Committing segment <" + shardNumber + "> for index <" + indexName + ">");
+		log.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();
 		taxoWriter.commit();

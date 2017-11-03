@@ -17,8 +17,8 @@ public class ZuliaPoolConfig {
 	private String poolName;
 	private boolean compressedConnection;
 	private boolean routingEnabled;
-	private boolean memberUpdateEnabled;
-	private int memberUpdateInterval;
+	private boolean nodeUpdateEnabled;
+	private int nodeUpdateInterval;
 
 	public final static int DEFAULT_DEFAULT_RETRIES = 0;
 	public final static int DEFAULT_MEMBER_UPDATE_INTERVAL = 10000;
@@ -31,8 +31,8 @@ public class ZuliaPoolConfig {
 		this.poolName = null;
 		this.compressedConnection = false;
 		this.routingEnabled = true;
-		this.memberUpdateEnabled = true;
-		this.memberUpdateInterval = DEFAULT_MEMBER_UPDATE_INTERVAL;
+		this.nodeUpdateEnabled = true;
+		this.nodeUpdateInterval = DEFAULT_MEMBER_UPDATE_INTERVAL;
 	}
 
 	public ZuliaPoolConfig addNode(String serverAddress) {
@@ -117,26 +117,26 @@ public class ZuliaPoolConfig {
 		return this;
 	}
 
-	public boolean isMemberUpdateEnabled() {
-		return memberUpdateEnabled;
+	public boolean isNodeUpdateEnabled() {
+		return nodeUpdateEnabled;
 	}
 
-	public ZuliaPoolConfig setMemberUpdateEnabled(boolean memberUpdateEnabled) {
-		this.memberUpdateEnabled = memberUpdateEnabled;
+	public ZuliaPoolConfig setNodeUpdateEnabled(boolean nodeUpdateEnabled) {
+		this.nodeUpdateEnabled = nodeUpdateEnabled;
 		return this;
 	}
 
-	public int getMemberUpdateInterval() {
-		return memberUpdateInterval;
+	public int getNodeUpdateInterval() {
+		return nodeUpdateInterval;
 	}
 
-	public ZuliaPoolConfig setMemberUpdateInterval(int memberUpdateInterval) {
+	public ZuliaPoolConfig setNodeUpdateInterval(int nodeUpdateInterval) {
 
-		if (memberUpdateInterval < 100) {
+		if (nodeUpdateInterval < 100) {
 			throw new IllegalArgumentException("Member update interval is less than the minimum of 100");
 		}
 
-		this.memberUpdateInterval = memberUpdateInterval;
+		this.nodeUpdateInterval = nodeUpdateInterval;
 		return this;
 	}
 
