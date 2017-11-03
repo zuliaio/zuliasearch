@@ -92,7 +92,7 @@ public class ZuliaD {
 			String prefix = System.getenv("APP_HOME");
 
 			String config = zuliaDArgs.configPath;
-			if (prefix != null) {
+			if (prefix != null && !config.startsWith(File.separator)) {
 				config = prefix + File.separator + config;
 			}
 
