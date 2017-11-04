@@ -2,6 +2,9 @@ package io.zulia.client.config;
 
 import io.zulia.fields.FieldConfigBuilder;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.TreeMap;
 
 import static io.zulia.message.ZuliaBase.Similarity;
@@ -11,7 +14,7 @@ import static io.zulia.message.ZuliaIndex.IndexSettings;
 
 public class ClientIndexConfig {
 
-	private String defaultSearchField;
+	private List<String> defaultSearchFields = Collections.emptyList();
 	private Double requestFactor;
 	private Integer minShardRequest;
 	private Integer numberOfShards;
@@ -26,21 +29,24 @@ public class ClientIndexConfig {
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
 
 	public ClientIndexConfig() {
-		this(null);
-	}
-
-	public ClientIndexConfig(String defaultSearchField) {
-		this.defaultSearchField = defaultSearchField;
 		this.fieldMap = new TreeMap<>();
 		this.analyzerSettingsMap = new TreeMap<>();
 	}
 
-	public String getDefaultSearchField() {
-		return defaultSearchField;
+	public ClientIndexConfig addDefaultSearchField(String defaultSearchField) {
+		if (defaultSearchFields.isEmpty()) {
+			defaultSearchFields = new ArrayList<>();
+		}
+		defaultSearchFields.add(defaultSearchField);
+		return this;
 	}
 
-	public ClientIndexConfig setDefaultSearchField(String defaultSearchField) {
-		this.defaultSearchField = defaultSearchField;
+	public List<String> getDefaultSearchFields() {
+		return defaultSearchFields;
+	}
+
+	public ClientIndexConfig setDefaultSearchFields(List<String> defaultSearchFields) {
+		this.defaultSearchFields = defaultSearchFields;
 		return this;
 	}
 
@@ -170,8 +176,8 @@ public class ClientIndexConfig {
 		if (indexName != null) {
 			isb.setIndexName(indexName);
 		}
-		if (defaultSearchField != null) {
-			isb.setDefaultSearchField(defaultSearchField);
+		if (defaultSearchFields != null) {
+			isb.addAllDefaultSearchField(defaultSearchFields);
 		}
 		if (requestFactor != null) {
 			isb.setRequestFactor(requestFactor);
@@ -204,7 +210,7 @@ public class ClientIndexConfig {
 
 	public void configure(IndexSettings indexSettings) {
 		this.numberOfShards = indexSettings.getNumberOfShards();
-		this.defaultSearchField = indexSettings.getDefaultSearchField();
+		this.defaultSearchFields = indexSettings.getDefaultSearchFieldList();
 		this.requestFactor = indexSettings.getRequestFactor();
 		this.minShardRequest = indexSettings.getMinShardRequest();
 		this.shardCommitInterval = indexSettings.getShardCommitInterval();
