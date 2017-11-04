@@ -28,12 +28,12 @@ import java.time.format.DateTimeFormatter;
 
 public class ZuliaQueryParser extends QueryParser {
 
-	private ServerIndexConfig indexConfig;
+	protected ServerIndexConfig indexConfig;
 
 	private int minimumNumberShouldMatch;
 
 	public ZuliaQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
-		super(indexConfig.getIndexSettings().getDefaultSearchField(), analyzer);
+		super(null, analyzer);
 		this.indexConfig = indexConfig;
 		setAllowLeadingWildcard(true);
 	}

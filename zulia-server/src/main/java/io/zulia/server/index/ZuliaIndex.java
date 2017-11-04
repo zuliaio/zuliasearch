@@ -67,7 +67,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -494,28 +493,10 @@ public class ZuliaIndex implements IndexShardInterface {
 			}
 
 			if (queryFields.isEmpty()) {
-				qp.setDefaultField(indexConfig.getIndexSettings().getDefaultSearchField());
+				qp.setDefaultFields(indexConfig.getIndexSettings().getDefaultSearchFieldList());
 			}
 			else {
-				Set<String> fields = new LinkedHashSet<>();
-
-				HashMap<String, Float> boostMap = new HashMap<>();
-				for (String queryField : queryFields) {
-
-					if (queryField.contains("^")) {
-						try {
-							float boost = Float.parseFloat(queryField.substring(queryField.indexOf("^") + 1));
-							queryField = queryField.substring(0, queryField.indexOf("^"));
-							boostMap.put(queryField, boost);
-						}
-						catch (Exception e) {
-							throw new IllegalArgumentException("Invalid queryText field boost <" + queryField + ">");
-						}
-					}
-					fields.add(queryField);
-
-				}
-				qp.setDefaultFields(fields, boostMap);
+				qp.setDefaultFields(queryFields);
 			}
 			Query query = qp.parse(queryText);
 			boolean negative = QueryUtil.isNegative(query);
