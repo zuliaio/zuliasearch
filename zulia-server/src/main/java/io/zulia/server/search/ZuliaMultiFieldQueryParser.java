@@ -13,8 +13,11 @@ import org.apache.lucene.search.Query;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Created by Matt Davis on 5/14/16.
@@ -42,13 +45,45 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 	}
 
 	public void setDefaultFields(Collection<String> fields) {
-		setDefaultFields(fields, null);
-	}
 
-	public void setDefaultFields(Collection<String> fields, Map<String, Float> boosts) {
-		this.field = null;
-		this.fields = new ArrayList<>(fields);
-		this.boosts = boosts;
+		Map<String, Float> boostMap = new HashMap<>();
+		Set<String> allFields = new TreeSet<>();
+		for (String field : fields) {
+
+			Float boost = null;
+			if (field.contains("^")) {
+				boost = Float.parseFloat(field.substring(field.indexOf("^") + 1));
+				try {
+					field = field.substring(0, field.indexOf("^"));
+
+				}
+				catch (Exception e) {
+					throw new IllegalArgumentException("Invalid queryText field boost <" + field + ">");
+				}
+			}
+
+			if (field.contains("*")) {
+				String regex = field.replace("*", ".*");
+				Set<String> fieldNames = indexConfig.getMatchingFields(regex);
+				allFields.addAll(fieldNames);
+
+				if (boost != null) {
+					for (String f : fieldNames) {
+						boostMap.put(f, boost);
+					}
+				}
+			}
+			else {
+				allFields.add(field);
+				if (boost != null) {
+					boostMap.put(field, boost);
+				}
+			}
+		}
+
+		super.setDefaultField(null);
+		this.fields = new ArrayList<>(allFields);
+		this.boosts = boostMap;
 	}
 
 	@Override
@@ -233,7 +268,7 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 		return super.getRegexpQuery(field, termStr);
 	}
 
-	/** Creates a multifield query */
+	/** Creates a multi-field query */
 	// TODO: investigate more general approach by default, e.g. DisjunctionMaxQuery?
 	protected Query getMultiFieldQuery(List<Query> queries) throws ParseException {
 		if (queries.isEmpty()) {
