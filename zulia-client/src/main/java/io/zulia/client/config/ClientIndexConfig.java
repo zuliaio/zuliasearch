@@ -21,6 +21,7 @@ public class ClientIndexConfig {
 	private Double shardTolerance;
 	private Integer shardQueryCacheSize;
 	private Integer shardQueryCacheMaxAmount;
+	private Integer indexWeight;
 
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
@@ -135,6 +136,14 @@ public class ClientIndexConfig {
 		return this.fieldMap.get(fieldName);
 	}
 
+	public Integer getIndexWeight() {
+		return indexWeight;
+	}
+
+	public void setIndexWeight(Integer indexWeight) {
+		this.indexWeight = indexWeight;
+	}
+
 	public void addAnalyzerSetting(String name, AnalyzerSettings.Tokenizer tokenizer, Iterable<AnalyzerSettings.Filter> filterList, Similarity similarity) {
 
 		AnalyzerSettings.Builder analyzerSettings = AnalyzerSettings.newBuilder();
@@ -190,6 +199,10 @@ public class ClientIndexConfig {
 			isb.setShardTolerance(shardTolerance);
 		}
 
+		if (indexWeight != null) {
+			isb.setIndexWeight(indexWeight);
+		}
+
 		for (String fieldName : fieldMap.keySet()) {
 			FieldConfig fieldConfig = fieldMap.get(fieldName);
 			isb.addFieldConfig(fieldConfig);
@@ -211,6 +224,7 @@ public class ClientIndexConfig {
 		this.idleTimeWithoutCommit = indexSettings.getIdleTimeWithoutCommit();
 		this.shardTolerance = indexSettings.getShardTolerance();
 		this.fieldMap = new TreeMap<>();
+		this.indexWeight = indexSettings.getIndexWeight();
 
 		for (FieldConfig fc : indexSettings.getFieldConfigList()) {
 			fieldMap.put(fc.getStoredFieldName(), fc);
