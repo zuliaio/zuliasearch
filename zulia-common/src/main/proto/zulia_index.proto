@@ -25,7 +25,7 @@ message IndexSettings {
     int64 createTime = 4;
     int64 updateTime = 5;
 
-    string defaultSearchField = 6; //default null (none)
+    repeated string defaultSearchField = 6;
     repeated AnalyzerSettings analyzerSettings = 7;
     repeated FieldConfig fieldConfig = 8;
 

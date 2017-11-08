@@ -14,7 +14,9 @@ import io.zulia.message.ZuliaIndex.SortAs;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 import static io.zulia.message.ZuliaIndex.ProjectAs;
 import static io.zulia.message.ZuliaIndex.Superbit;
@@ -192,8 +194,22 @@ public class ServerIndexConfig {
 		return indexSettings.getIndexName();
 	}
 
+	public Set<String> getMatchingFields(String regex) {
+		Set<String> matchingFieldNames = new TreeSet<>();
+
+		Pattern pattern = Pattern.compile(regex);
+		for (String indexFieldName : indexAsMap.keySet()) {
+			if (pattern.matcher(indexFieldName).matches()) {
+				matchingFieldNames.add(indexFieldName);
+			}
+		}
+		return matchingFieldNames;
+
+	}
+
 	@Override
 	public String toString() {
 		return "ServerIndexConfig{" + "indexSettings=" + indexSettings + '}';
 	}
+
 }

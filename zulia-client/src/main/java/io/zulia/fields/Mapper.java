@@ -19,6 +19,7 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -34,7 +35,7 @@ public class Mapper<T> {
 
 	private UniqueIdFieldInfo<T> uniqueIdField;
 
-	private DefaultSearchFieldInfo<T> defaultSearchField;
+	private List<DefaultSearchFieldInfo<T>> defaultSearchFields = new ArrayList<>();
 
 	private Settings settings;
 
@@ -93,12 +94,7 @@ public class Mapper<T> {
 
 				@SuppressWarnings("unused") DefaultSearch defaultSearch = f.getAnnotation(DefaultSearch.class);
 
-				if (defaultSearchField == null) {
-					defaultSearchField = new DefaultSearchFieldInfo<>(f, fieldName);
-				}
-				else {
-					throw new RuntimeException("Cannot define two default search fields for class <" + clazz.getSimpleName() + ">");
-				}
+				defaultSearchFields.add(new DefaultSearchFieldInfo<>(f, fieldName));
 
 			}
 
@@ -110,10 +106,6 @@ public class Mapper<T> {
 		}
 		if (uniqueIdField == null) {
 			throw new RuntimeException("A unique id field must be defined for class <" + clazz.getSimpleName() + ">");
-		}
-
-		if (defaultSearchField == null) {
-			throw new RuntimeException("A default search field must be defined for class <" + clazz.getSimpleName() + ">");
 		}
 
 		if (clazz.isAnnotationPresent(Settings.class)) {
@@ -128,7 +120,11 @@ public class Mapper<T> {
 			throw new RuntimeException("No Settings annotation for class <" + clazz.getSimpleName() + ">");
 		}
 
-		ClientIndexConfig indexConfig = new ClientIndexConfig(defaultSearchField.getFieldName());
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+
+		for (DefaultSearchFieldInfo<T> defaultSearchField : defaultSearchFields) {
+			indexConfig.addDefaultSearchField(defaultSearchField.getFieldName());
+		}
 
 		indexConfig.setIndexName(settings.indexName());
 		indexConfig.setNumberOfShards(settings.numberOfShards());
