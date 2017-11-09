@@ -55,6 +55,7 @@ public interface ZuliaConstants {
 	String DISMAX_TIE = "dismaxTie";
 	String SIMILARITY = "sim";
 	String START = "start";
+	String ACTIVE = "active";
 
 	String TERM_FILTER = "termFilter";
 	String TERM_MATCH = "termMatch";
