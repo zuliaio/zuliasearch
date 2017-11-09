@@ -51,6 +51,7 @@ public class NodesResource {
 				memberObj.put("serverAddress", node.getServerAddress());
 				memberObj.put("servicePort", node.getServicePort());
 				memberObj.put("restPort", node.getRestPort());
+				memberObj.put("heartbeat", node.getHeartbeat());
 
 				Document indexMappingObj = new Document();
 				for (IndexMapping indexMapping : getNodesResponse.getIndexMappingList()) {
