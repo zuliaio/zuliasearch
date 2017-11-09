@@ -7,6 +7,7 @@ import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceGrpc;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ZuliaConnection {
 
@@ -17,8 +18,13 @@ public class ZuliaConnection {
 	private ZuliaServiceGrpc.ZuliaServiceBlockingStub blockingStub;
 	private ZuliaServiceGrpc.ZuliaServiceStub asyncStub;
 
+	private final long connectionNumber;
+
+	private static AtomicLong connectionNumberGen = new AtomicLong();
+
 	public ZuliaConnection(Node node) throws IOException {
 		this.node = node;
+		this.connectionNumber = connectionNumberGen.getAndIncrement();
 	}
 
 	public void open(boolean compressedConnection) throws IOException {
@@ -37,7 +43,7 @@ public class ZuliaConnection {
 			asyncStub = asyncStub.withCompression("gzip");
 		}
 
-		System.err.println("INFO: Connecting to <" + node.getServerAddress() + ":" + node.getServicePort() + ">");
+		System.err.println("INFO: Connecting to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
 
 	}
 
@@ -57,7 +63,7 @@ public class ZuliaConnection {
 	 * closes the connection to the server if open, calling a method (index, query, ...) will open a new connection
 	 */
 	public void close() {
-		System.err.println("INFO: Closing connection to <" + node.getServerAddress() + ":" + node.getServicePort() + ">");
+		System.err.println("INFO: Closing connection to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
 		try {
 			if (channel != null) {
 				channel.shutdownNow();
