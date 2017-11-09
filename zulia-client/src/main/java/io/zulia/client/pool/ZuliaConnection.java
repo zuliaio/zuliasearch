@@ -64,13 +64,6 @@ public class ZuliaConnection {
 	 */
 	public void close() {
 
-		try {
-			throw new Exception();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-
 		System.err.println("INFO: Closing connection to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
 		try {
 			if (channel != null) {
