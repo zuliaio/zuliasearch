@@ -38,10 +38,10 @@ public class NodesResource {
 
 	@GET
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
-	public Response get(@Context Response response, @QueryParam(ZuliaConstants.PRETTY) boolean pretty) {
+	public Response get(@Context Response response, @QueryParam(ZuliaConstants.PRETTY) boolean pretty, @QueryParam(ZuliaConstants.ACTIVE) boolean active) {
 
 		try {
-			GetNodesResponse getNodesResponse = indexManager.getNodes(GetNodesRequest.newBuilder().build());
+			GetNodesResponse getNodesResponse = indexManager.getNodes(GetNodesRequest.newBuilder().setActiveOnly(active).build());
 
 			org.bson.Document mongoDocument = new org.bson.Document();
 
