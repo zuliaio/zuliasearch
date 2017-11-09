@@ -386,22 +386,21 @@ public class ZuliaIndexManager {
 			zuliaIndex.unload(true);
 		}
 
+		List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
+
 		indexService.removeIndex(indexName);
 		indexService.removeIndexMapping(indexName);
-		indexMap.remove(indexName);
-
-		List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
 
 		return DeleteIndexResponse.newBuilder().build();
 
 	}
 
 	public DeleteIndexResponse internalDeleteIndex(DeleteIndexRequest request) throws Exception {
-		ZuliaIndex zuliaIndex = indexMap.get(request.getIndexName());
+		String indexName = request.getIndexName();
+		ZuliaIndex zuliaIndex = indexMap.get(indexName);
 		if (zuliaIndex != null) {
 			zuliaIndex.unload(true);
-			indexService.removeIndex(request.getIndexName());
-			indexService.removeIndexMapping(request.getIndexName());
+			indexMap.remove(indexName);
 			zuliaIndex.deleteIndex();
 		}
 		return DeleteIndexResponse.newBuilder().build();
