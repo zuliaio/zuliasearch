@@ -9,6 +9,7 @@ import io.zulia.server.config.IndexService;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -61,6 +62,7 @@ public class DefaultNodeWeightComputation implements NodeWeightComputation {
 	@Override
 	public List<Node> getNodesSortedByWeight() {
 		List<Map.Entry<Node, AtomicDouble>> entries = new ArrayList<>(nodeWeightMap.entrySet());
+		Collections.shuffle(entries);
 		entries.sort(Map.Entry.comparingByValue(Comparator.comparingDouble(AtomicDouble::get)));
 		return entries.stream().map(Map.Entry::getKey).collect(Collectors.toList());
 	}

@@ -202,7 +202,7 @@ public class ZuliaIndexManager {
 
 		List<IndexMapping> indexMappingList = indexService.getIndexMappings();
 		if ((request.getActiveOnly())) {
-			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addAllIndexMapping(indexMappingList).build();
+			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexMapping(indexMappingList).build();
 		}
 		else {
 			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexMapping(indexMappingList).build();
