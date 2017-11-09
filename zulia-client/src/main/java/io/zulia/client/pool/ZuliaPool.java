@@ -10,8 +10,8 @@ import io.zulia.client.command.base.RoutableCommand;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.Result;
-import org.apache.commons.pool2.impl.GenericKeyedObjectPoolConfig;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import java.util.HashSet;
 import java.util.List;
@@ -73,10 +73,6 @@ public class ZuliaPool {
 
 		zuliaConnectionPoolMap = new ConcurrentHashMap<>();
 
-		GenericKeyedObjectPoolConfig poolConfig = new GenericKeyedObjectPoolConfig(); //
-		poolConfig.setMaxIdlePerKey(maxIdle);
-		poolConfig.setMaxTotalPerKey(maxConnections);
-
 		if (zuliaPoolConfig.isNodeUpdateEnabled()) {
 			ZuliaNodeUpdateThread mut = new ZuliaNodeUpdateThread();
 			mut.start();
@@ -98,6 +94,7 @@ public class ZuliaPool {
 		removedNodes.addAll(zuliaConnectionPoolMap.keySet());
 		removedNodes.removeAll(newKeys);
 		for (String removedNode : removedNodes) {
+			System.err.println("Removing not active node: " + removedNode);
 			GenericObjectPool<ZuliaConnection> remove = zuliaConnectionPoolMap.remove(removedNode);
 			remove.close();
 		}
@@ -140,8 +137,12 @@ public class ZuliaPool {
 				}
 
 				final Node finalSelectedNode = selectedNode;
-				GenericObjectPool<ZuliaConnection> nodePool = zuliaConnectionPoolMap.computeIfAbsent(getNodeKey(selectedNode),
-						(String key) -> new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection)));
+				GenericObjectPool<ZuliaConnection> nodePool = zuliaConnectionPoolMap.computeIfAbsent(getNodeKey(selectedNode), (String key) -> {
+					GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig(); //
+					poolConfig.setMaxIdle(maxIdle);
+					poolConfig.setMaxTotal(maxConnections);
+					return new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection), poolConfig);
+				});
 
 				zuliaConnection = nodePool.borrowObject();
 
