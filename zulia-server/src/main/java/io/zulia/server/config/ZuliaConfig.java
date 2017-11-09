@@ -12,7 +12,6 @@ public class ZuliaConfig {
 	private String clusterName = "zulia";
 	private List<MongoServer> mongoServers = Collections.singletonList(new MongoServer());
 	private String serverAddress = null; //null means autodetect
-	private int hazelcastPort = 5701;
 	private int servicePort = 32191;
 	private int restPort = 32192;
 
@@ -41,10 +40,6 @@ public class ZuliaConfig {
 
 	public void setServerAddress(String serverAddress) {
 		this.serverAddress = serverAddress;
-	}
-
-	public int getHazelcastPort() {
-		return hazelcastPort;
 	}
 
 	public int getServicePort() {
