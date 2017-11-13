@@ -256,8 +256,8 @@ public class QueryResource {
 			}
 
 			CountRequest.Builder countBuilder = CountRequest.newBuilder();
-			Facet lmFacet = Facet.newBuilder().setLabel(f).build();
-			CountRequest.Builder facetBuilder = countBuilder.setFacetField(lmFacet);
+			Facet zuliaFacet = Facet.newBuilder().setLabel(f).build();
+			CountRequest.Builder facetBuilder = countBuilder.setFacetField(zuliaFacet);
 			if (count != null) {
 				facetBuilder.setMaxFacets(count);
 			}
