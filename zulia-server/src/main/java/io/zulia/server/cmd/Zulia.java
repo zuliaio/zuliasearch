@@ -175,176 +175,169 @@ public class Zulia {
 
 			if ("query".equals(jCommander.getParsedCommand())) {
 
-				if (query.q != null) {
-
-					io.zulia.client.command.Query zuliaQuery;
-					if (query.indexes != null) {
-						zuliaQuery = new io.zulia.client.command.Query(query.indexes, query.q, query.rows);
-					}
-					else {
-						zuliaQuery = new io.zulia.client.command.Query(index, query.q, query.rows);
-					}
-
-					if (query.qf != null) {
-						query.qf.forEach(zuliaQuery::addQueryField);
-					}
-
-					zuliaQuery.setStart(query.start);
-
-					if (query.fetch.equalsIgnoreCase("full")) {
-						zuliaQuery.setResultFetchType(ZuliaQuery.FetchType.FULL);
-					}
-
-					if (query.minimumNumberShouldMatch != null) {
-						zuliaQuery.setMinimumNumberShouldMatch(query.minimumNumberShouldMatch);
-					}
-
-					if (query.facets != null) {
-						for (String facet : query.facets) {
-							zuliaQuery.addCountRequest(facet, query.facetCount, query.facetShardCount);
-						}
-					}
-
-					if (query.sortFields != null) {
-						query.sortFields.forEach(zuliaQuery::addFieldSort);
-					}
-
-					if (query.sortDescFields != null) {
-						for (String sortDesc : query.sortDescFields) {
-							zuliaQuery.addFieldSort(sortDesc, Direction.DESCENDING);
-						}
-					}
-
-					if (query.fq != null) {
-						query.fq.forEach(zuliaQuery::addFilterQuery);
-					}
-
-					if (query.fl != null) {
-						query.fl.forEach(zuliaQuery::addDocumentField);
-					}
-
-					if (query.flMask != null) {
-						query.flMask.forEach(zuliaQuery::addDocumentMaskedField);
-					}
-
-					QueryResult qr = workPool.execute(zuliaQuery);
-
-					List<ZuliaQuery.ScoredResult> srList = qr.getResults();
-
-					System.out.println("QueryTime: " + (qr.getCommandTimeMs()) + "ms");
-					System.out.println("TotalResults: " + qr.getTotalHits());
-
-					System.out.println("Results:");
-
-					System.out.print("UniqueId");
-					System.out.print("\t");
-					System.out.print("Score");
-					System.out.print("\t");
-					System.out.print("Index");
-					System.out.print("\t");
-					System.out.print("Shard");
-					System.out.print("\t");
-					System.out.print("LuceneShardId");
-					System.out.print("\t");
-					System.out.print("Sort");
-					System.out.print("\t");
-					if (query.fetch.equalsIgnoreCase("full")) {
-						System.out.print("Document");
-					}
-					System.out.println();
-
-					for (ZuliaQuery.ScoredResult sr : srList) {
-						System.out.print(sr.getUniqueId());
-						System.out.print("\t");
-						System.out.print(df.format(sr.getScore()));
-						System.out.print("\t");
-						System.out.print(sr.getIndexName());
-						System.out.print("\t");
-						System.out.print(sr.getShard());
-						System.out.print("\t");
-						System.out.print(sr.getLuceneShardId());
-						System.out.print("\t");
-
-						StringBuffer sb = new StringBuffer();
-
-						if (sr.hasSortValues()) {
-							for (ZuliaQuery.SortValue sortValue : sr.getSortValues().getSortValueList()) {
-								if (sb.length() != 0) {
-									sb.append(",");
-								}
-								if (sortValue.getExists()) {
-									if (sortValue.getDateValue() != 0) {
-										sb.append(new Date(sortValue.getDateValue()));
-									}
-									else if (sortValue.getDoubleValue() != 0) {
-										sb.append(sortValue.getDoubleValue());
-									}
-									else if (sortValue.getFloatValue() != 0) {
-										sb.append(sortValue.getFloatValue());
-									}
-									else if (sortValue.getIntegerValue() != 0) {
-										sb.append(sortValue.getIntegerValue());
-									}
-									else if (sortValue.getLongValue() != 0) {
-										sb.append(sortValue.getLongValue());
-									}
-									else if (sortValue.getStringValue() != null) {
-										sb.append(sortValue.getStringValue());
-									}
-								}
-								else {
-									sb.append("!NULL!");
-								}
-							}
-						}
-
-						if (sb.length() != 0) {
-							System.out.print(sb);
-						}
-						else {
-							System.out.print("--");
-						}
-
-						if (query.fetch != null && query.fetch.equalsIgnoreCase("full")) {
-							System.out.print("\t");
-							if (sr.hasResultDocument()) {
-								ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
-								if (resultDocument.getDocument() != null) {
-									Document mongoDocument = new Document();
-									mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray()));
-									System.out.println(mongoDocument.toJson());
-								}
-							}
-						}
-
-						System.out.println();
-					}
-
-					if (!qr.getFacetGroups().isEmpty()) {
-						System.out.println("Facets:");
-						for (ZuliaQuery.FacetGroup fg : qr.getFacetGroups()) {
-							System.out.println();
-							System.out.println("--Facet on " + fg.getCountRequest().getFacetField().getLabel() + "--");
-							for (ZuliaQuery.FacetCount fc : fg.getFacetCountList()) {
-								System.out.print(fc.getFacet());
-								System.out.print("\t");
-								System.out.print(fc.getCount());
-								System.out.print("\t");
-								System.out.print("+" + fc.getMaxError());
-								System.out.println();
-							}
-							if (fg.getPossibleMissing()) {
-								System.out.println("Possible facets missing from top results for <" + fg.getCountRequest().getFacetField().getLabel()
-										+ "> with max count <" + fg.getMaxValuePossibleMissing() + ">");
-							}
-						}
-
-					}
-
+				io.zulia.client.command.Query zuliaQuery;
+				if (query.indexes != null) {
+					zuliaQuery = new io.zulia.client.command.Query(query.indexes, query.q, query.rows);
 				}
 				else {
-					jCommander.usage();
-					System.exit(2);
+					zuliaQuery = new io.zulia.client.command.Query(index, query.q, query.rows);
+				}
+
+				if (query.qf != null) {
+					query.qf.forEach(zuliaQuery::addQueryField);
+				}
+
+				zuliaQuery.setStart(query.start);
+
+				if (query.fetch.equalsIgnoreCase("full")) {
+					zuliaQuery.setResultFetchType(ZuliaQuery.FetchType.FULL);
+				}
+
+				if (query.minimumNumberShouldMatch != null) {
+					zuliaQuery.setMinimumNumberShouldMatch(query.minimumNumberShouldMatch);
+				}
+
+				if (query.facets != null) {
+					for (String facet : query.facets) {
+						zuliaQuery.addCountRequest(facet, query.facetCount, query.facetShardCount);
+					}
+				}
+
+				if (query.sortFields != null) {
+					query.sortFields.forEach(zuliaQuery::addFieldSort);
+				}
+
+				if (query.sortDescFields != null) {
+					for (String sortDesc : query.sortDescFields) {
+						zuliaQuery.addFieldSort(sortDesc, Direction.DESCENDING);
+					}
+				}
+
+				if (query.fq != null) {
+					query.fq.forEach(zuliaQuery::addFilterQuery);
+				}
+
+				if (query.fl != null) {
+					query.fl.forEach(zuliaQuery::addDocumentField);
+				}
+
+				if (query.flMask != null) {
+					query.flMask.forEach(zuliaQuery::addDocumentMaskedField);
+				}
+
+				QueryResult qr = workPool.execute(zuliaQuery);
+
+				List<ZuliaQuery.ScoredResult> srList = qr.getResults();
+
+				System.out.println("QueryTime: " + (qr.getCommandTimeMs()) + "ms");
+				System.out.println("TotalResults: " + qr.getTotalHits());
+
+				System.out.println("Results:");
+
+				System.out.print("UniqueId");
+				System.out.print("\t");
+				System.out.print("Score");
+				System.out.print("\t");
+				System.out.print("Index");
+				System.out.print("\t");
+				System.out.print("Shard");
+				System.out.print("\t");
+				System.out.print("LuceneShardId");
+				System.out.print("\t");
+				System.out.print("Sort");
+				System.out.print("\t");
+				if (query.fetch.equalsIgnoreCase("full")) {
+					System.out.print("Document");
+				}
+				System.out.println();
+
+				for (ZuliaQuery.ScoredResult sr : srList) {
+					System.out.print(sr.getUniqueId());
+					System.out.print("\t");
+					System.out.print(df.format(sr.getScore()));
+					System.out.print("\t");
+					System.out.print(sr.getIndexName());
+					System.out.print("\t");
+					System.out.print(sr.getShard());
+					System.out.print("\t");
+					System.out.print(sr.getLuceneShardId());
+					System.out.print("\t");
+
+					StringBuffer sb = new StringBuffer();
+
+					if (sr.hasSortValues()) {
+						for (ZuliaQuery.SortValue sortValue : sr.getSortValues().getSortValueList()) {
+							if (sb.length() != 0) {
+								sb.append(",");
+							}
+							if (sortValue.getExists()) {
+								if (sortValue.getDateValue() != 0) {
+									sb.append(new Date(sortValue.getDateValue()));
+								}
+								else if (sortValue.getDoubleValue() != 0) {
+									sb.append(sortValue.getDoubleValue());
+								}
+								else if (sortValue.getFloatValue() != 0) {
+									sb.append(sortValue.getFloatValue());
+								}
+								else if (sortValue.getIntegerValue() != 0) {
+									sb.append(sortValue.getIntegerValue());
+								}
+								else if (sortValue.getLongValue() != 0) {
+									sb.append(sortValue.getLongValue());
+								}
+								else if (sortValue.getStringValue() != null) {
+									sb.append(sortValue.getStringValue());
+								}
+							}
+							else {
+								sb.append("!NULL!");
+							}
+						}
+					}
+
+					if (sb.length() != 0) {
+						System.out.print(sb);
+					}
+					else {
+						System.out.print("--");
+					}
+
+					if (query.fetch != null && query.fetch.equalsIgnoreCase("full")) {
+						System.out.print("\t");
+						if (sr.hasResultDocument()) {
+							ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
+							if (resultDocument.getDocument() != null) {
+								Document mongoDocument = new Document();
+								mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray()));
+								System.out.println(mongoDocument.toJson());
+							}
+						}
+					}
+
+					System.out.println();
+				}
+
+				if (!qr.getFacetGroups().isEmpty()) {
+					System.out.println("Facets:");
+					for (ZuliaQuery.FacetGroup fg : qr.getFacetGroups()) {
+						System.out.println();
+						System.out.println("--Facet on " + fg.getCountRequest().getFacetField().getLabel() + "--");
+						for (ZuliaQuery.FacetCount fc : fg.getFacetCountList()) {
+							System.out.print(fc.getFacet());
+							System.out.print("\t");
+							System.out.print(fc.getCount());
+							System.out.print("\t");
+							System.out.print("+" + fc.getMaxError());
+							System.out.println();
+						}
+						if (fg.getPossibleMissing()) {
+							System.out.println(
+									"Possible facets missing from top results for <" + fg.getCountRequest().getFacetField().getLabel() + "> with max count <"
+											+ fg.getMaxValuePossibleMissing() + ">");
+						}
+					}
+
 				}
 
 			}
