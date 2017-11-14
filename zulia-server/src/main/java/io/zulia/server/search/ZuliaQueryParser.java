@@ -145,7 +145,13 @@ public class ZuliaQueryParser extends QueryParser {
 		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(field);
 		if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
 			if (FieldTypeUtil.isDateFieldType(fieldType)) {
-				return getNumericOrDateRange(field, text, text, true, true);
+				try {
+					getDateAsLong(text);
+					return getNumericOrDateRange(field, text, text, true, true);
+				}
+				catch (Exception e) {
+					return new MatchNoDocsQuery(field + " expects date");
+				}
 			}
 			else {
 				if (FieldTypeUtil.isNumericIntFieldType(fieldType) && Ints.tryParse(text) != null) {
