@@ -144,18 +144,18 @@ public class ZuliaPool {
 					return new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection), poolConfig);
 				});
 
-				zuliaConnection = nodePool.borrowObject();
+				boolean valid = true;
 
+				zuliaConnection = nodePool.borrowObject();
 				R r;
 				try {
 					r = command.executeTimed(zuliaConnection);
-					nodePool.returnObject(zuliaConnection);
 					return r;
 				}
 				catch (StatusRuntimeException e) {
 
 					if (!Status.INVALID_ARGUMENT.equals(e.getStatus())) {
-						nodePool.invalidateObject(zuliaConnection);
+						valid = false;
 					}
 
 					Metadata trailers = e.getTrailers();
@@ -170,6 +170,14 @@ public class ZuliaPool {
 					}
 					else {
 						throw e;
+					}
+				}
+				finally {
+					if (valid) {
+						nodePool.returnObject(zuliaConnection);
+					}
+					else {
+						nodePool.invalidateObject(zuliaConnection);
 					}
 				}
 
