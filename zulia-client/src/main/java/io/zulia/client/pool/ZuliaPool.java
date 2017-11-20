@@ -120,7 +120,7 @@ public class ZuliaPool {
 
 		int tries = 0;
 		while (true) {
-			ZuliaConnection zuliaConnection = null;
+			ZuliaConnection zuliaConnection;
 			Node selectedNode = null;
 			try {
 				boolean shouldRoute = (command instanceof RoutableCommand) && routingEnabled && (indexRouting != null);

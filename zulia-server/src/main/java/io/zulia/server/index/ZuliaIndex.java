@@ -204,10 +204,18 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		for (Integer shardNumber : primaryShardMap.keySet()) {
 			unloadShard(shardNumber, terminate);
+			if (terminate) {
+				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
+				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
+			}
 		}
 
 		for (Integer shardNumber : replicaShardMap.keySet()) {
 			unloadShard(shardNumber, terminate);
+			if (terminate) {
+				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
+				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
+			}
 		}
 
 	}
@@ -293,17 +301,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	public void deleteIndex() throws Exception {
 
-		for (int i = 0; i < numberOfShards; i++) {
-			{
-				Path p = getPathForIndex(i);
-				Files.walkFileTree(p, new DeletingFileVisitor());
-			}
-			{
-				Path p = getPathForFacetsIndex(i);
-				Files.walkFileTree(p, new DeletingFileVisitor());
-			}
-
-		}
+		unload(true);
 
 		documentStorage.drop();
 
