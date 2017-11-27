@@ -1,5 +1,6 @@
 package io.zulia.client.command;
 
+import io.zulia.client.command.base.MultiIndexRoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.QueryResult;
@@ -37,7 +38,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
  * @author mdavis
  *
  */
-public class Query extends SimpleCommand<QueryRequest, QueryResult> {
+public class Query extends SimpleCommand<QueryRequest, QueryResult> implements MultiIndexRoutableCommand {
 
 	private String query;
 	private int amount;
@@ -500,6 +501,11 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 	}
 
 	@Override
+	public Collection<String> getIndexNames() {
+		return indexes;
+	}
+
+	@Override
 	public QueryRequest getRequest() {
 		QueryRequest.Builder requestBuilder = QueryRequest.newBuilder();
 		requestBuilder.setAmount(amount);
@@ -611,4 +617,5 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> {
 				+ filterQueries + ", minimumNumberShouldMatch=" + minimumNumberShouldMatch + ", defaultOperator=" + defaultOperator + ", resultFetchType="
 				+ resultFetchType + ", documentFields=" + documentFields + ", documentMaskedFields=" + documentMaskedFields + '}';
 	}
+
 }

@@ -1,6 +1,7 @@
 package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.DeleteIndexResult;
 
@@ -13,12 +14,17 @@ import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
  * @author mdavis
  *
  */
-public class DeleteIndex extends SimpleCommand<DeleteIndexRequest, DeleteIndexResult> {
+public class DeleteIndex extends SimpleCommand<DeleteIndexRequest, DeleteIndexResult> implements SingleIndexRoutableCommand {
 
 	private String indexName;
 
 	public DeleteIndex(String indexName) {
 		this.indexName = indexName;
+	}
+
+	@Override
+	public String getIndexName() {
+		return indexName;
 	}
 
 	@Override

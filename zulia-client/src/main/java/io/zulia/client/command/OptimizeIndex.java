@@ -1,6 +1,7 @@
 package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.OptimizeIndexResult;
 import io.zulia.message.ZuliaServiceOuterClass;
@@ -14,12 +15,17 @@ import static io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
  * @author mdavis
  *
  */
-public class OptimizeIndex extends SimpleCommand<ZuliaServiceOuterClass.OptimizeRequest, OptimizeIndexResult> {
+public class OptimizeIndex extends SimpleCommand<ZuliaServiceOuterClass.OptimizeRequest, OptimizeIndexResult> implements SingleIndexRoutableCommand {
 
 	private String indexName;
 
 	public OptimizeIndex(String indexName) {
 		this.indexName = indexName;
+	}
+
+	@Override
+	public String getIndexName() {
+		return indexName;
 	}
 
 	@Override
