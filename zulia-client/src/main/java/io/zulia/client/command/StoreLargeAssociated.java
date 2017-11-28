@@ -2,7 +2,7 @@ package io.zulia.client.command;
 
 import io.zulia.client.ZuliaRESTClient;
 import io.zulia.client.command.base.RESTCommand;
-import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.result.StoreLargeAssociatedResult;
 
 import java.io.File;
@@ -10,7 +10,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Map;
 
-public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult> implements RoutableCommand {
+public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult> implements ShardRoutableCommand {
 
 	private String uniqueId;
 	private String fileName;

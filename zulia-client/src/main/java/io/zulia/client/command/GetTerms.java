@@ -1,6 +1,7 @@
 package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.GetTermsResult;
 import io.zulia.message.ZuliaServiceOuterClass;
@@ -10,7 +11,7 @@ import java.util.List;
 
 import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
-public class GetTerms extends SimpleCommand<GetTermsRequest, GetTermsResult> {
+public class GetTerms extends SimpleCommand<GetTermsRequest, GetTermsResult> implements SingleIndexRoutableCommand {
 
 	private String indexName;
 	private String fieldName;

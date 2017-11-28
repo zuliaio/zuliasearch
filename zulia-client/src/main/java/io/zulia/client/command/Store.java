@@ -1,6 +1,6 @@
 package io.zulia.client.command;
 
-import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.StoreResult;
@@ -18,7 +18,7 @@ import static io.zulia.message.ZuliaBase.AssociatedDocument;
 import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import static io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
 
-public class Store extends SimpleCommand<StoreRequest, StoreResult> implements RoutableCommand {
+public class Store extends SimpleCommand<StoreRequest, StoreResult> implements ShardRoutableCommand {
 	private String uniqueId;
 	private String indexName;
 	private ResultDocument resultDocument;

@@ -1,6 +1,7 @@
 package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.GetNumberOfDocsResult;
 
@@ -8,12 +9,17 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import static io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
 
-public class GetNumberOfDocs extends SimpleCommand<GetNumberOfDocsRequest, GetNumberOfDocsResult> {
+public class GetNumberOfDocs extends SimpleCommand<GetNumberOfDocsRequest, GetNumberOfDocsResult> implements SingleIndexRoutableCommand {
 
 	private String indexName;
 
 	public GetNumberOfDocs(String indexName) {
 		this.indexName = indexName;
+	}
+
+	@Override
+	public String getIndexName() {
+		return indexName;
 	}
 
 	@Override

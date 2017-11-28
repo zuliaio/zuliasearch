@@ -1,7 +1,6 @@
 package io.zulia.client.command.base;
 
-public interface RoutableCommand {
-	String getUniqueId();
+public interface SingleIndexRoutableCommand {
 
 	String getIndexName();
 }
