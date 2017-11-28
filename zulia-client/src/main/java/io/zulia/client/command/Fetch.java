@@ -1,6 +1,6 @@
 package io.zulia.client.command;
 
-import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.FetchResult;
@@ -14,7 +14,7 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
-public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements RoutableCommand {
+public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements ShardRoutableCommand {
 
 	private String uniqueId;
 	private String indexName;

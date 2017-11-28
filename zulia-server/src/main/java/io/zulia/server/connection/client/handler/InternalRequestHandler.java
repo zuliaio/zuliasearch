@@ -17,13 +17,11 @@ public abstract class InternalRequestHandler<S, Q> {
 
 	public S handleRequest(Node node, Q q) throws Exception {
 		InternalRpcConnection rpcConnection = null;
+
+		boolean valid = true;
 		try {
 			rpcConnection = internalClient.getInternalRpcConnection(node);
-
-			S response = getResponse(q, rpcConnection);
-
-			internalClient.returnInternalBlockingConnection(node, rpcConnection, true);
-			return response;
+			return getResponse(q, rpcConnection);
 		}
 		catch (StatusRuntimeException e) {
 			Metadata trailers = e.getTrailers();
@@ -35,8 +33,11 @@ public abstract class InternalRequestHandler<S, Q> {
 			}
 		}
 		catch (Exception e) {
-			internalClient.returnInternalBlockingConnection(node, rpcConnection, false);
+			valid = false;
 			throw e;
+		}
+		finally {
+			internalClient.returnInternalBlockingConnection(node, rpcConnection, valid);
 		}
 	}
 

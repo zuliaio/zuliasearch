@@ -1,6 +1,7 @@
 package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.ClearIndexResult;
 import io.zulia.message.ZuliaServiceGrpc;
@@ -12,12 +13,17 @@ import io.zulia.message.ZuliaServiceOuterClass.ClearRequest;
  * @author mdavis
  *
  */
-public class ClearIndex extends SimpleCommand<ClearRequest, ClearIndexResult> {
+public class ClearIndex extends SimpleCommand<ClearRequest, ClearIndexResult> implements SingleIndexRoutableCommand {
 
 	private String indexName;
 
 	public ClearIndex(String indexName) {
 		this.indexName = indexName;
+	}
+
+	@Override
+	public String getIndexName() {
+		return indexName;
 	}
 
 	@Override
