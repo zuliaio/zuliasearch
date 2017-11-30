@@ -124,9 +124,9 @@ message HighlightResult {
 
 message AnalysisRequest {
     enum TermSort {
-        ABC = 0;
-        TFIDF = 1;
-        TF = 2;
+        TFIDF = 0;
+        TF = 1;
+        ABC = 2;
     }
 
     enum SummaryType {

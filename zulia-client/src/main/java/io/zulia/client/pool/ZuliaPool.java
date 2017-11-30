@@ -6,13 +6,16 @@ import io.grpc.StatusRuntimeException;
 import io.zulia.cache.MetaKeys;
 import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.base.Command;
-import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.command.base.MultiIndexRoutableCommand;
+import io.zulia.client.command.base.ShardRoutableCommand;
+import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.Result;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -120,18 +123,32 @@ public class ZuliaPool {
 
 		int tries = 0;
 		while (true) {
-			ZuliaConnection zuliaConnection = null;
+			ZuliaConnection zuliaConnection;
 			Node selectedNode = null;
 			try {
-				boolean shouldRoute = (command instanceof RoutableCommand) && routingEnabled && (indexRouting != null);
 
-				if (shouldRoute) {
-					RoutableCommand rc = (RoutableCommand) command;
-					selectedNode = indexRouting.getNode(rc.getIndexName(), rc.getUniqueId());
+				if (routingEnabled && (indexRouting != null)) {
+					if (command instanceof ShardRoutableCommand) {
+						ShardRoutableCommand rc = (ShardRoutableCommand) command;
+						selectedNode = indexRouting.getNode(rc.getIndexName(), rc.getUniqueId());
+					}
+					else if (command instanceof SingleIndexRoutableCommand) {
+						SingleIndexRoutableCommand sirc = (SingleIndexRoutableCommand) command;
+						selectedNode = indexRouting.getRandomNode(sirc.getIndexName());
+					}
+					else if (command instanceof MultiIndexRoutableCommand) {
+						MultiIndexRoutableCommand mirc = (MultiIndexRoutableCommand) command;
+						selectedNode = indexRouting.getRandomNode(mirc.getIndexNames());
+					}
 				}
 
 				if (selectedNode == null) {
 					List<Node> tempList = nodes; //stop array index out bounds on updates without locking
+
+					if (tempList.isEmpty()) {
+						throw new IOException("There are no active nodes");
+					}
+
 					int randomNodeIndex = (int) (Math.random() * tempList.size());
 					selectedNode = tempList.get(randomNodeIndex);
 				}
