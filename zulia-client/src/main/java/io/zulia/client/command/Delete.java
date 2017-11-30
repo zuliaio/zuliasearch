@@ -1,6 +1,6 @@
 package io.zulia.client.command;
 
-import io.zulia.client.command.base.RoutableCommand;
+import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.DeleteResult;
@@ -9,7 +9,7 @@ import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
 import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import static io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 
-public abstract class Delete extends SimpleCommand<DeleteRequest, DeleteResult> implements RoutableCommand {
+public abstract class Delete extends SimpleCommand<DeleteRequest, DeleteResult> implements ShardRoutableCommand {
 	private String indexName;
 	private String uniqueId;
 	private String fileName;
