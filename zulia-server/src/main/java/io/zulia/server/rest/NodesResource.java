@@ -59,7 +59,7 @@ public class NodesResource {
 					TreeSet<Integer> primaryShards = new TreeSet<>();
 					TreeSet<Integer> replicaShards = new TreeSet<>();
 					for (ShardMapping shardMapping : indexMapping.getShardMappingList()) {
-						if (ZuliaNode.isEqual(shardMapping.getPrimayNode(), node)) {
+						if (ZuliaNode.isEqual(shardMapping.getPrimaryNode(), node)) {
 							primaryShards.add(shardMapping.getShardNumber());
 						}
 						for (Node replica : shardMapping.getReplicaNodeList()) {
