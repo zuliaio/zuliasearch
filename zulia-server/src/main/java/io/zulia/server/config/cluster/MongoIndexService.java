@@ -33,9 +33,9 @@ public class MongoIndexService implements IndexService {
 
 		List<IndexSettings> indexSettings = new ArrayList<>();
 		for (Document doc : settingsCollection.find()) {
-			String indexSettingsJson = doc.getString(INDEX_SETTINGS);
+			Document indexSettingsDoc = (Document) doc.get(INDEX_SETTINGS);
 			IndexSettings.Builder builder = IndexSettings.newBuilder();
-			JsonFormat.parser().merge(indexSettingsJson, builder);
+			JsonFormat.parser().merge(indexSettingsDoc.toJson(), builder);
 			indexSettings.add(builder.build());
 		}
 
@@ -51,9 +51,9 @@ public class MongoIndexService implements IndexService {
 		Document doc = settingsCollection.find(new Document(ID, indexName)).first();
 
 		if (doc != null) {
-			String indexSettingsJson = doc.getString(INDEX_SETTINGS);
+			Document indexSettingsDoc = (Document) doc.get(INDEX_SETTINGS);
 			IndexSettings.Builder builder = IndexSettings.newBuilder();
-			JsonFormat.parser().merge(indexSettingsJson, builder);
+			JsonFormat.parser().merge(indexSettingsDoc.toJson(), builder);
 			return builder.build();
 		}
 
@@ -63,7 +63,8 @@ public class MongoIndexService implements IndexService {
 	@Override
 	public void createIndex(IndexSettings indexSettings) throws Exception {
 
-		Document indexSettingsDoc = new Document(ID, indexSettings.getIndexName()).append(INDEX_SETTINGS, JsonFormat.printer().print(indexSettings));
+		Document indexSettingsDoc = new Document(ID, indexSettings.getIndexName())
+				.append(INDEX_SETTINGS, Document.parse(JsonFormat.printer().print(indexSettings)));
 
 		settingsCollection.replaceOne(new Document(ID, indexSettings.getIndexName()), indexSettingsDoc, new UpdateOptions().upsert(true));
 
@@ -85,9 +86,9 @@ public class MongoIndexService implements IndexService {
 		List<IndexMapping> indexMappings = new ArrayList<>();
 		for (Document doc : mappingCollection.find()) {
 
-			String indexMappingJson = doc.getString(INDEX_MAPPING);
+			Document indexMappingDoc = (Document) doc.get(INDEX_MAPPING);
 			IndexMapping.Builder builder = IndexMapping.newBuilder();
-			JsonFormat.parser().merge(indexMappingJson, builder);
+			JsonFormat.parser().merge(indexMappingDoc.toJson(), builder);
 
 			indexMappings.add(builder.build());
 
@@ -106,9 +107,10 @@ public class MongoIndexService implements IndexService {
 		Document doc = mappingCollection.find(new Document(ID, indexName)).first();
 
 		if (doc != null) {
-			String indexMappingJson = doc.getString(INDEX_MAPPING);
+			Document indexingDoc = (Document) doc.get(INDEX_MAPPING);
+
 			IndexMapping.Builder builder = IndexMapping.newBuilder();
-			JsonFormat.parser().merge(indexMappingJson, builder);
+			JsonFormat.parser().merge(indexingDoc.toJson(), builder);
 			return builder.build();
 		}
 
@@ -118,7 +120,9 @@ public class MongoIndexService implements IndexService {
 
 	@Override
 	public void storeIndexMapping(IndexMapping indexMapping) throws Exception {
-		Document indexMappingDoc = new Document(ID, indexMapping.getIndexName()).append(INDEX_MAPPING, JsonFormat.printer().print(indexMapping));
+
+		Document indexMappingDoc = new Document(ID, indexMapping.getIndexName())
+				.append(INDEX_MAPPING, Document.parse(JsonFormat.printer().print(indexMapping)));
 
 		mappingCollection.replaceOne(new Document(ID, indexMapping.getIndexName()), indexMappingDoc, new UpdateOptions().upsert(true));
 	}
