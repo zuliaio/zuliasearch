@@ -43,7 +43,7 @@ public class DefaultNodeWeightComputation implements NodeWeightComputation {
 		for (IndexMapping indexMapping : indexService.getIndexMappings()) {
 			double indexShardWeight = weightMap.get(indexMapping.getIndexName()) / indexMapping.getNumberOfShards();
 			for (ZuliaIndex.ShardMapping shardMapping : indexMapping.getShardMappingList()) {
-				nodeWeightMap.computeIfAbsent(getNodeKey(shardMapping.getPrimayNode()), k -> new AtomicDouble()).addAndGet(indexShardWeight);
+				nodeWeightMap.computeIfAbsent(getNodeKey(shardMapping.getPrimaryNode()), k -> new AtomicDouble()).addAndGet(indexShardWeight);
 
 				for (Node node : shardMapping.getReplicaNodeList()) {
 					nodeWeightMap.computeIfAbsent(getNodeKey(node), k -> new AtomicDouble()).addAndGet(indexShardWeight - REPLICA_WEIGHT_DELTA);

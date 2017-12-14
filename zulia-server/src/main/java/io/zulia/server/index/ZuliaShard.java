@@ -399,8 +399,9 @@ public class ZuliaShard {
 
 			Analyzer analyzer = perFieldAnalyzer;
 
-			if (analysisRequest.getAnalyzerOverride() != null) {
-				String analyzerName = analysisRequest.getAnalyzerOverride();
+			String analyzerOverride = analysisRequest.getAnalyzerOverride();
+			if (analyzerOverride != null && !analyzerOverride.isEmpty()) {
+				String analyzerName = analyzerOverride;
 
 				AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsByName(analyzerName);
 				if (analyzerSettings != null) {
@@ -410,7 +411,7 @@ public class ZuliaShard {
 					throw new RuntimeException("Invalid analyzer name <" + analyzerName + ">");
 				}
 			}
-			System.out.println(analysisRequest.getAnalyzerOverride());
+
 			AnalysisHandler analysisHandler = new AnalysisHandler(directoryReader, analyzer, indexConfig, analysisRequest);
 			analysisHandlerList.add(analysisHandler);
 		}

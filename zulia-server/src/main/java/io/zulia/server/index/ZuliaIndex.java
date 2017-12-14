@@ -415,7 +415,7 @@ public class ZuliaIndex implements IndexShardInterface {
 			}
 		}
 
-		if (!qr.getFilterQueryList().isEmpty() || !qr.getCosineSimRequestList().isEmpty() || !facetToValues.isEmpty() || qr.getScoredQueryList().isEmpty()) {
+		if (!qr.getFilterQueryList().isEmpty() || !qr.getCosineSimRequestList().isEmpty() || !facetToValues.isEmpty() || !qr.getScoredQueryList().isEmpty()) {
 			BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
 			for (ZuliaQuery.Query filterQuery : qr.getFilterQueryList()) {
 				Query filterLuceneQuery = parseQueryToLucene(filterQuery);
@@ -963,7 +963,7 @@ public class ZuliaIndex implements IndexShardInterface {
 	public void loadShards(Predicate<Node> thisNodeTest) throws Exception {
 		List<ShardMapping> shardMappingList = indexMapping.getShardMappingList();
 		for (ShardMapping shardMapping : shardMappingList) {
-			if (thisNodeTest.test(shardMapping.getPrimayNode())) {
+			if (thisNodeTest.test(shardMapping.getPrimaryNode())) {
 				loadShard(shardMapping.getShardNumber(), true);
 			}
 			else {
