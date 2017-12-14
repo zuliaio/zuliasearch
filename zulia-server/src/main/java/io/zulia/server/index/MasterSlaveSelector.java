@@ -89,7 +89,7 @@ public class MasterSlaveSelector {
 		Node selectedNode = null;
 
 		for (Node onlineNode : nodes) {
-			if (ZuliaNode.isEqual(onlineNode, shardMapping.getPrimayNode())) {
+			if (ZuliaNode.isEqual(onlineNode, shardMapping.getPrimaryNode())) {
 				selectedNode = onlineNode;
 				break;
 			}

@@ -20,50 +20,50 @@ public class IndexRouting {
 	private Random random = new Random();
 
 	private Map<String, Map<Integer, Node>> indexMapping = new HashMap<>();
-	private Map<String, Integer> segmentCountMapping = new HashMap<>();
+	private Map<String, Integer> shardCountMapping = new HashMap<>();
 
 	public IndexRouting(List<IndexMapping> indexMappingList) {
 		for (IndexMapping im : indexMappingList) {
 			Map<Integer, Node> segmentMapping = new HashMap<>();
 			for (ShardMapping sg : im.getShardMappingList()) {
 				// TODO: Does this need to know primary or replica?
-				segmentMapping.put(sg.getShardNumber(), sg.getPrimayNode());
+				segmentMapping.put(sg.getShardNumber(), sg.getPrimaryNode());
 			}
-			segmentCountMapping.put(im.getIndexName(), im.getNumberOfShards());
+			shardCountMapping.put(im.getIndexName(), im.getNumberOfShards());
 			indexMapping.put(im.getIndexName(), segmentMapping);
 		}
 	}
 
 	public Node getNode(String indexName, String uniqueId) {
-		Integer numberOfSegments = segmentCountMapping.get(indexName);
-		if (numberOfSegments == null) {
+		Integer numberOfShards = shardCountMapping.get(indexName);
+		if (numberOfShards == null) {
 			return null;
 		}
 
-		Map<Integer, Node> segmentMapping = indexMapping.get(indexName);
+		Map<Integer, Node> shardMapping = indexMapping.get(indexName);
 
-		if (segmentMapping.isEmpty()) {
+		if (shardMapping.isEmpty()) {
 			return null;
 		}
 
-		int segmentNumber = ShardUtil.findShardForUniqueId(uniqueId, numberOfSegments);
-		return segmentMapping.get(segmentNumber);
+		int shardNumber = ShardUtil.findShardForUniqueId(uniqueId, numberOfShards);
+		return shardMapping.get(shardNumber);
 	}
 
 	public Node getRandomNode(String indexName) {
-		Integer numberOfSegments = segmentCountMapping.get(indexName);
-		if (numberOfSegments == null) {
+		Integer numberOfShards = shardCountMapping.get(indexName);
+		if (numberOfShards == null) {
 			return null;
 		}
 
-		Map<Integer, Node> segmentMapping = indexMapping.get(indexName);
+		Map<Integer, Node> shardMapping = indexMapping.get(indexName);
 
-		if (segmentMapping.isEmpty()) {
+		if (shardMapping.isEmpty()) {
 			return null;
 		}
 
-		int segmentNumber = random.nextInt(numberOfSegments);
-		return segmentMapping.get(segmentNumber);
+		int shardNumber = random.nextInt(numberOfShards);
+		return shardMapping.get(shardNumber);
 	}
 
 	public Node getRandomNode(Collection<String> indexNames) {
@@ -71,13 +71,13 @@ public class IndexRouting {
 		Set<Node> allNodes = new HashSet<>();
 
 		for (String indexName : indexNames) {
-			Integer numberOfSegments = segmentCountMapping.get(indexName);
-			if (numberOfSegments == null) {
+			Integer numberOfShards = shardCountMapping.get(indexName);
+			if (numberOfShards == null) {
 				return null;
 			}
 
-			Map<Integer, Node> segmentMapping = indexMapping.get(indexName);
-			allNodes.addAll(segmentMapping.values());
+			Map<Integer, Node> shardMapping = indexMapping.get(indexName);
+			allNodes.addAll(shardMapping.values());
 
 		}
 

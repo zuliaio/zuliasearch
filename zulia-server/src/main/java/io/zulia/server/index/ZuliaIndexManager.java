@@ -302,7 +302,7 @@ public class ZuliaIndexManager {
 				ShardMapping.Builder shardMapping = ShardMapping.newBuilder();
 
 				Node primaryNode = nodes.remove(0);
-				shardMapping.setPrimayNode(primaryNode);
+				shardMapping.setPrimaryNode(primaryNode);
 				shardMapping.setShardNumber(i);
 				nodeWeightComputation.addShard(primaryNode, indexSettings, true);
 

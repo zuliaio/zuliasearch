@@ -12,7 +12,7 @@ message IndexMapping {
 
 message ShardMapping {
     uint32 shardNumber = 1;
-    Node primayNode = 2;
+    Node primaryNode = 2;
     repeated Node replicaNode = 3;
 }
 
