@@ -149,6 +149,9 @@ public class ZuliaD {
 					ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
 					zuliaNode.start();
 				}
+				else {
+					LOG.severe("Looks like you're trying to run in cluster mode but you haven't configured cluster:true in the config.");
+				}
 			}
 			else if ("addNode".equals(jCommander.getParsedCommand())) {
 				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
