@@ -327,7 +327,7 @@ public class ZuliaIndexManager {
 
 			if (existingIndex.equals(indexSettings)) {
 				LOG.info("No changes to existing index <" + indexSettings.getIndexName() + ">");
-				CreateIndexResponse.newBuilder().build();
+				return CreateIndexResponse.newBuilder().build();
 			}
 
 			if (existingIndex.getNumberOfShards() != indexSettings.getNumberOfShards()) {
