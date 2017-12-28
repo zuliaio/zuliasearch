@@ -30,7 +30,7 @@ public class ZuliaConnection {
 	public void open(boolean compressedConnection) throws IOException {
 
 		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(node.getServerAddress(), node.getServicePort())
-				.maxInboundMessageSize(128 * 1024 * 1024).usePlaintext(true);
+				.maxInboundMessageSize(256 * 1024 * 1024).usePlaintext(true);
 		channel = managedChannelBuilder.build();
 
 		blockingStub = ZuliaServiceGrpc.newBlockingStub(channel);
