@@ -21,7 +21,7 @@ public class InternalRpcConnection {
 		this.memberAddress = memberAddress;
 		this.internalServicePort = servicePort;
 
-		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(memberAddress, servicePort).maxInboundMessageSize(128 * 1024 * 1024)
+		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(memberAddress, servicePort).maxInboundMessageSize(256 * 1024 * 1024)
 				.usePlaintext(true);
 		channel = managedChannelBuilder.build();
 
