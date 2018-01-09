@@ -1,15 +1,15 @@
 package io.zulia.server.index.federator;
 
 import io.zulia.message.ZuliaBase.Node;
-import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
+import io.zulia.message.ZuliaServiceOuterClass.InternalCreateIndexRequest;
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.index.ZuliaIndexManager;
 
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
-public class CreateIndexRequestFederator extends AllNodeRequestFederator<CreateIndexRequest, CreateIndexResponse> {
+public class CreateIndexRequestFederator extends AllNodeRequestFederator<InternalCreateIndexRequest, CreateIndexResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndexManager indexManager;
 
@@ -22,17 +22,17 @@ public class CreateIndexRequestFederator extends AllNodeRequestFederator<CreateI
 	}
 
 	@Override
-	protected CreateIndexResponse processExternal(Node node, CreateIndexRequest request) throws Exception {
+	protected CreateIndexResponse processExternal(Node node, InternalCreateIndexRequest request) throws Exception {
 		return internalClient.createIndex(node, request);
 	}
 
 	@Override
-	protected CreateIndexResponse processInternal(Node node, CreateIndexRequest request) throws Exception {
+	protected CreateIndexResponse processInternal(Node node, InternalCreateIndexRequest request) throws Exception {
 		return internalCreateIndex(indexManager, request);
 	}
 
-	public static CreateIndexResponse internalCreateIndex(ZuliaIndexManager zuliaIndexManager, CreateIndexRequest request) throws Exception {
-		return zuliaIndexManager.internalCreateIndex(request);
+	public static CreateIndexResponse internalCreateIndex(ZuliaIndexManager zuliaIndexManager, InternalCreateIndexRequest request) throws Exception {
+		return zuliaIndexManager.internalCreateIndex(request.getIndexName());
 	}
 
 }

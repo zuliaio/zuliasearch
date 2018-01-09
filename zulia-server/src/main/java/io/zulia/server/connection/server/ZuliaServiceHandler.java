@@ -123,7 +123,7 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	}
 
 	@Override
-	public void internalCreateIndex(CreateIndexRequest request, StreamObserver<CreateIndexResponse> responseObserver) {
+	public void internalCreateIndex(InternalCreateIndexRequest request, StreamObserver<CreateIndexResponse> responseObserver) {
 		internalCreateIndexServerRequest.handleRequest(request, responseObserver);
 	}
 
