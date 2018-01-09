@@ -134,8 +134,14 @@ public class ZuliaIndexManager {
 
 	}
 
-	private void loadIndex(IndexSettings indexSettings) throws Exception {
+	private void loadIndex(String indexName) throws Exception {
 
+		IndexSettings indexSettings = indexService.getIndex(indexName);
+
+		loadIndex(indexSettings);
+	}
+
+	private void loadIndex(IndexSettings indexSettings) throws Exception {
 		IndexMapping indexMapping = indexService.getIndexMapping(indexSettings.getIndexName());
 
 		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
@@ -156,7 +162,6 @@ public class ZuliaIndexManager {
 		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
 
 		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
-
 	}
 
 	public GetIndexesResponse getIndexes(GetIndexesRequest request) throws Exception {
@@ -287,12 +292,13 @@ public class ZuliaIndexManager {
 			throw new IllegalArgumentException("Number of shards cannot be negative");
 		}
 
-		IndexSettings existingIndex = indexService.getIndex(indexSettings.getIndexName());
+		String indexName = indexSettings.getIndexName();
+		IndexSettings existingIndex = indexService.getIndex(indexName);
 
 		if (existingIndex == null) {
 
 			IndexMapping.Builder indexMapping = IndexMapping.newBuilder();
-			indexMapping.setIndexName(indexSettings.getIndexName());
+			indexMapping.setIndexName(indexName);
 			indexMapping.setNumberOfShards(indexSettings.getNumberOfShards());
 
 			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
@@ -321,12 +327,11 @@ public class ZuliaIndexManager {
 			}
 
 			indexService.storeIndexMapping(indexMapping.build());
-			indexService.createIndex(indexSettings);
 		}
 		else {
 
 			if (existingIndex.equals(indexSettings)) {
-				LOG.info("No changes to existing index <" + indexSettings.getIndexName() + ">");
+				LOG.info("No changes to existing index <" + indexName + ">");
 				return CreateIndexResponse.newBuilder().build();
 			}
 
@@ -339,14 +344,14 @@ public class ZuliaIndexManager {
 				throw new IllegalArgumentException("Cannot change replication factor for existing index yet");
 			}
 
-			indexService.createIndex(indexSettings);
 		}
+		indexService.createIndex(indexSettings);
 
 		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
 				this);
 
 		try {
-			List<CreateIndexResponse> send = createIndexRequestFederator.send(request);
+			List<CreateIndexResponse> send = createIndexRequestFederator.send(InternalCreateIndexRequest.newBuilder().setIndexName(indexName).build());
 		}
 		catch (Exception e) {
 			if (existingIndex == null) {
@@ -361,15 +366,14 @@ public class ZuliaIndexManager {
 		return CreateIndexResponse.newBuilder().build();
 	}
 
-	public CreateIndexResponse internalCreateIndex(CreateIndexRequest request) throws Exception {
+	public CreateIndexResponse internalCreateIndex(String indexName) throws Exception {
 
-		IndexSettings indexSettings = request.getIndexSettings();
-		ZuliaIndex zuliaIndex = indexMap.get(indexSettings.getIndexName());
+		ZuliaIndex zuliaIndex = indexMap.get(indexName);
 		if (zuliaIndex == null) {
-			loadIndex(indexSettings);
+			loadIndex(indexName);
 		}
 		else {
-			zuliaIndex.updateIndexSettings(indexSettings);
+			zuliaIndex.reloadIndexSettings();
 		}
 
 		return CreateIndexResponse.newBuilder().build();

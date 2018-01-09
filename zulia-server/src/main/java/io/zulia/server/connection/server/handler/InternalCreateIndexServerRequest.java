@@ -1,13 +1,13 @@
 package io.zulia.server.connection.server.handler;
 
-import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
+import io.zulia.message.ZuliaServiceOuterClass.InternalCreateIndexRequest;
 import io.zulia.server.index.ZuliaIndexManager;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class InternalCreateIndexServerRequest extends ServerRequestHandler<CreateIndexResponse, CreateIndexRequest> {
+public class InternalCreateIndexServerRequest extends ServerRequestHandler<CreateIndexResponse, InternalCreateIndexRequest> {
 
 	private final static Logger LOG = Logger.getLogger(InternalCreateIndexServerRequest.class.getSimpleName());
 
@@ -16,8 +16,8 @@ public class InternalCreateIndexServerRequest extends ServerRequestHandler<Creat
 	}
 
 	@Override
-	protected CreateIndexResponse handleCall(ZuliaIndexManager indexManager, CreateIndexRequest request) throws Exception {
-		return indexManager.internalCreateIndex(request);
+	protected CreateIndexResponse handleCall(ZuliaIndexManager indexManager, InternalCreateIndexRequest request) throws Exception {
+		return indexManager.internalCreateIndex(request.getIndexName());
 	}
 
 	@Override

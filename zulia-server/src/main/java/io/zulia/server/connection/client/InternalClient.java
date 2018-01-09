@@ -170,7 +170,7 @@ public class InternalClient {
 		return internalGetTermsHandler.handleRequest(node, request);
 	}
 
-	public CreateIndexResponse createIndex(Node node, CreateIndexRequest request) throws Exception {
+	public CreateIndexResponse createIndex(Node node, InternalCreateIndexRequest request) throws Exception {
 		return internalCreateIndexHandler.handleRequest(node, request);
 	}
 

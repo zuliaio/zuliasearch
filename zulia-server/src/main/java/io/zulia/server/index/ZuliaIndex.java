@@ -44,6 +44,7 @@ import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -158,12 +159,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	}
 
-	public void updateIndexSettings(IndexSettings request) throws Exception {
-
-		indexService.createIndex(indexConfig.getIndexSettings());
-		indexConfig.configure(request);
-
-	}
 
 	public FieldConfig.FieldType getSortFieldType(String fieldName) {
 		return indexConfig.getFieldTypeForSortField(fieldName);
@@ -245,6 +240,7 @@ public class ZuliaIndex implements IndexShardInterface {
 		Directory d = MMapDirectory.open(pathForIndex);
 
 		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
+		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
 
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
 		config.setRAMBufferSizeMB(128);
@@ -680,7 +676,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		for (ZuliaShard s : primaryShardMap.values()) {
 			try {
-				s.updateIndexSettings(indexSettings);
+				s.updateIndexSettings();
 			}
 			catch (Exception ignored) {
 			}
@@ -688,7 +684,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		for (ZuliaShard s : replicaShardMap.values()) {
 			try {
-				s.updateIndexSettings(indexSettings);
+				s.updateIndexSettings();
 			}
 			catch (Exception ignored) {
 			}

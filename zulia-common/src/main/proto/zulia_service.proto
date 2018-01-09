@@ -19,7 +19,7 @@ service ZuliaService {
     rpc InternalFetch (FetchRequest) returns (FetchResponse);
     rpc BatchFetch (BatchFetchRequest) returns (stream FetchResponse);
     rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
-    rpc InternalCreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
+    rpc InternalCreateIndex (InternalCreateIndexRequest) returns (CreateIndexResponse);
     rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
     rpc InternalDeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
     rpc GetIndexes (GetIndexesRequest) returns (GetIndexesResponse);
@@ -141,6 +141,11 @@ message BatchFetchResponse {
 message CreateIndexRequest {
     IndexSettings indexSettings = 1;
 }
+
+message InternalCreateIndexRequest {
+    string indexName = 1;
+}
+
 
 message CreateIndexResponse {
 }

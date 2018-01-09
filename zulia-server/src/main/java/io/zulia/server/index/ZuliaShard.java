@@ -15,7 +15,6 @@ import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.FacetAs;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexAs;
-import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.SortAs;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
@@ -268,10 +267,7 @@ public class ZuliaShard {
 
 	}
 
-	public void updateIndexSettings(IndexSettings indexSettings) throws Exception {
-
-		this.indexConfig.configure(indexSettings);
-
+	public void updateIndexSettings() throws Exception {
 		setupCaches(indexConfig);
 		openIndexWriters();
 
