@@ -8,20 +8,20 @@ defaultTasks 'generateProto', 'build'
 
 description 'Zulia Common'
 
-def grpcVersion = '1.7.0'
+def grpcVersion = '1.9.0'
 
 dependencies {
     compile "io.grpc:grpc-netty:${grpcVersion}"
     compile "io.grpc:grpc-protobuf:${grpcVersion}"
     compile "io.grpc:grpc-stub:${grpcVersion}"
-    compile 'org.mongodb:bson:3.6.0'
-	compile 'org.apache.commons:commons-pool2:2.4.2'
+    compile 'org.mongodb:bson:3.6.1'
+	compile 'org.apache.commons:commons-pool2:2.5.0'
 }
 
 protobuf {
 
 	protoc {
-		artifact = 'com.google.protobuf:protoc:3.4.0'
+		artifact = 'com.google.protobuf:protoc:3.5.1'
 	}
 	plugins {
 		grpc {
