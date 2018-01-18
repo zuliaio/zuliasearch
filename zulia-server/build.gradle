@@ -5,7 +5,7 @@ apply from: '../maven.gradle'
 description 'Zulia Server'
 
 
-def luceneVersion = '7.1.0'
+def luceneVersion = '7.2.1'
 
 
 defaultTasks 'build', 'installDist'
@@ -29,7 +29,7 @@ dependencies {
 
     compile 'info.debatty:java-lsh:0.10'
 
-    compile 'org.mongodb:mongodb-driver:3.6.0'
+    compile 'org.mongodb:mongodb-driver:3.6.1'
 
 }
 
