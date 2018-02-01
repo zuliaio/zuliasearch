@@ -127,6 +127,7 @@ public class ZuliaIndexManager {
 					loadIndex(indexSettings);
 				}
 				catch (Exception e) {
+					LOG.log(Level.SEVERE, e.getClass().getSimpleName() + ":", e);
 					throw new RuntimeException(e);
 				}
 			});
