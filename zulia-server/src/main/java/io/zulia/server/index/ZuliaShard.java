@@ -209,49 +209,52 @@ public class ZuliaShard {
 
 	private void reopenIndexWritersIfNecessary() throws Exception {
 
-		if (!indexWriter.isOpen()) {
-			synchronized (this) {
+		synchronized (this) {
+			if (!indexWriter.isOpen()) {
+
 				if (!indexWriter.isOpen()) {
 					this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
 					this.directoryReader = DirectoryReader.open(indexWriter, true, false);
 				}
 			}
-		}
 
-		//TODO: is this a real use case?
-		try {
-			taxoWriter.getSize();
-		}
-		catch (AlreadyClosedException e) {
-			synchronized (this) {
+			//TODO: is this a real use case?
+			try {
+				taxoWriter.getSize();
+			}
+			catch (AlreadyClosedException e) {
+
 				this.taxoWriter = this.indexShardInterface.getTaxoWriter(shardNumber);
 				this.taxoReader = new DirectoryTaxonomyReader(taxoWriter);
+
 			}
 		}
 
 	}
 
 	private void openIndexWriters() throws Exception {
-		if (this.indexWriter != null) {
-			indexWriter.close();
-		}
-		if (this.taxoWriter != null) {
-			taxoWriter.close();
-		}
+		synchronized (this) {
+			if (this.indexWriter != null) {
+				indexWriter.close();
+			}
+			if (this.taxoWriter != null) {
+				taxoWriter.close();
+			}
 
-		this.perFieldAnalyzer = this.indexShardInterface.getPerFieldAnalyzer();
+			this.perFieldAnalyzer = this.indexShardInterface.getPerFieldAnalyzer();
 
-		this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
-		if (this.directoryReader != null) {
-			this.directoryReader.close();
-		}
-		this.directoryReader = DirectoryReader.open(indexWriter);
+			this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
+			if (this.directoryReader != null) {
+				this.directoryReader.close();
+			}
+			this.directoryReader = DirectoryReader.open(indexWriter);
 
-		this.taxoWriter = this.indexShardInterface.getTaxoWriter(shardNumber);
-		if (this.taxoReader != null) {
-			this.taxoReader.close();
+			this.taxoWriter = this.indexShardInterface.getTaxoWriter(shardNumber);
+			if (this.taxoReader != null) {
+				this.taxoReader.close();
+			}
+			this.taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 		}
-		this.taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 	}
 
 	private void setupCaches(ServerIndexConfig indexConfig) {
@@ -595,19 +598,21 @@ public class ZuliaShard {
 	}
 
 	private void openReaderIfChanges() throws IOException {
-		DirectoryReader newDirectoryReader = DirectoryReader.openIfChanged(directoryReader, indexWriter);
-		if (newDirectoryReader != null) {
-			directoryReader = newDirectoryReader;
-			QueryResultCache qrc = queryResultCache;
-			if (qrc != null) {
-				qrc.clear();
+		synchronized (this) {
+			DirectoryReader newDirectoryReader = DirectoryReader.openIfChanged(directoryReader, indexWriter);
+			if (newDirectoryReader != null) {
+				directoryReader = newDirectoryReader;
+				QueryResultCache qrc = queryResultCache;
+				if (qrc != null) {
+					qrc.clear();
+				}
+
 			}
 
-		}
-
-		DirectoryTaxonomyReader newone = TaxonomyReader.openIfChanged(taxoReader);
-		if (newone != null) {
-			taxoReader = newone;
+			DirectoryTaxonomyReader newone = TaxonomyReader.openIfChanged(taxoReader);
+			if (newone != null) {
+				taxoReader = newone;
+			}
 		}
 	}
 
