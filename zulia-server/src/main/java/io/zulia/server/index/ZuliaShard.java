@@ -61,16 +61,14 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
-import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -90,7 +88,6 @@ import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -130,6 +127,9 @@ public class ZuliaShard {
 
 	private IndexWriter indexWriter;
 	private DirectoryReader directoryReader;
+	private DefaultSortedSetDocValuesReaderState sortedSetDocValuesReaderState;
+
+
 	private Long lastCommit;
 	private Long lastChange;
 	private String indexName;
@@ -139,8 +139,6 @@ public class ZuliaShard {
 	private int segmentQueryCacheMaxAmount;
 	private PerFieldAnalyzerWrapper perFieldAnalyzer;
 
-	private DirectoryTaxonomyWriter taxoWriter;
-	private DirectoryTaxonomyReader taxoReader;
 
 	private final boolean primary;
 
@@ -214,20 +212,11 @@ public class ZuliaShard {
 
 				if (!indexWriter.isOpen()) {
 					this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
-					this.directoryReader = DirectoryReader.open(indexWriter, true, false);
+					this.directoryReader = DirectoryReader.open(indexWriter);
+					this.sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(this.directoryReader);
 				}
 			}
 
-			//TODO: is this a real use case?
-			try {
-				taxoWriter.getSize();
-			}
-			catch (AlreadyClosedException e) {
-
-				this.taxoWriter = this.indexShardInterface.getTaxoWriter(shardNumber);
-				this.taxoReader = new DirectoryTaxonomyReader(taxoWriter);
-
-			}
 		}
 
 	}
@@ -237,9 +226,6 @@ public class ZuliaShard {
 			if (this.indexWriter != null) {
 				indexWriter.close();
 			}
-			if (this.taxoWriter != null) {
-				taxoWriter.close();
-			}
 
 			this.perFieldAnalyzer = this.indexShardInterface.getPerFieldAnalyzer();
 
@@ -248,12 +234,8 @@ public class ZuliaShard {
 				this.directoryReader.close();
 			}
 			this.directoryReader = DirectoryReader.open(indexWriter);
+			this.sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(this.directoryReader);
 
-			this.taxoWriter = this.indexShardInterface.getTaxoWriter(shardNumber);
-			if (this.taxoReader != null) {
-				this.taxoReader.close();
-			}
-			this.taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 		}
 	}
 
@@ -480,7 +462,7 @@ public class ZuliaShard {
 		FacetsCollector facetsCollector = new FacetsCollector();
 		indexSearcher.search(q, MultiCollector.wrap(collector, facetsCollector));
 
-		Facets facets = new FastTaxonomyFacetCounts(taxoReader, facetsConfig, facetsCollector);
+		Facets facets = new SortedSetDocValuesFacetCounts(sortedSetDocValuesReaderState, facetsCollector);
 
 		for (CountRequest countRequest : facetRequest.getCountRequestList()) {
 
@@ -503,7 +485,7 @@ public class ZuliaShard {
 						numOfFacets = countRequest.getMaxFacets() * 10;
 					}
 					else {
-						numOfFacets = taxoReader.getSize();
+						numOfFacets = sortedSetDocValuesReaderState.getSize();
 					}
 				}
 				else {
@@ -511,7 +493,7 @@ public class ZuliaShard {
 						numOfFacets = countRequest.getMaxFacets();
 					}
 					else {
-						numOfFacets = taxoReader.getSize();
+						numOfFacets = sortedSetDocValuesReaderState.getSize();
 					}
 				}
 
@@ -607,12 +589,10 @@ public class ZuliaShard {
 					qrc.clear();
 				}
 
+				sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(directoryReader);
+
 			}
 
-			DirectoryTaxonomyReader newone = TaxonomyReader.openIfChanged(taxoReader);
-			if (newone != null) {
-				taxoReader = newone;
-			}
 		}
 	}
 
@@ -873,7 +853,6 @@ public class ZuliaShard {
 		log.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();
-		taxoWriter.commit();
 
 		lastCommit = currentTime;
 
@@ -904,9 +883,6 @@ public class ZuliaShard {
 		indexWriter.close();
 		directory.close();
 
-		directory = taxoWriter.getDirectory();
-		taxoWriter.close();
-		directory.close();
 	}
 
 	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<Metadata> metadataList) throws Exception {
@@ -935,7 +911,7 @@ public class ZuliaShard {
 
 		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadataMongoDoc))));
 
-		luceneDocument = facetsConfig.build(taxoWriter, luceneDocument);
+		luceneDocument = facetsConfig.build(luceneDocument);
 
 		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 
@@ -1180,7 +1156,7 @@ public class ZuliaShard {
 
 	private void addFacet(Document doc, String facetName, String value) {
 		if (!value.isEmpty()) {
-			doc.add(new FacetField(facetName, value));
+			doc.add(new SortedSetDocValuesFacetField(facetName, value));
 			doc.add(new StringField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME + "." + facetName, new BytesRef(value), Store.NO));
 		}
 	}
