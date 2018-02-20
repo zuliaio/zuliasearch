@@ -19,9 +19,13 @@ public class ZuliaNode {
 	private final ZuliaServiceServer zuliaServiceServer;
 
 	private final Timer membershipTimer;
+	private final NodeService nodeService;
+	private final ZuliaConfig zuliaConfig;
 
 	public ZuliaNode(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
+		this.zuliaConfig = zuliaConfig;
+		this.nodeService = nodeService;
 		this.indexManager = new ZuliaIndexManager(zuliaConfig, nodeService);
 		this.restServiceManager = new ZuliaRESTServiceManager(zuliaConfig, indexManager);
 
@@ -49,11 +53,7 @@ public class ZuliaNode {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				membershipTimer.cancel();
-				nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
-				restServiceManager.shutdown();
-				zuliaServiceServer.shutdown();
-				indexManager.shutdown();
+				stop();
 			}
 		});
 
@@ -64,6 +64,14 @@ public class ZuliaNode {
 		restServiceManager.start();
 		zuliaServiceServer.start();
 
+	}
+
+	public void shutdown() {
+		membershipTimer.cancel();
+		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
+		restServiceManager.shutdown();
+		zuliaServiceServer.shutdown();
+		indexManager.shutdown();
 	}
 
 	public static boolean isEqual(Node node1, Node node2) {

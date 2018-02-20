@@ -38,15 +38,39 @@ public class ZuliaConfig {
 		return serverAddress;
 	}
 
-	public void setServerAddress(String serverAddress) {
-		this.serverAddress = serverAddress;
-	}
-
 	public int getServicePort() {
 		return servicePort;
 	}
 
 	public int getRestPort() {
 		return restPort;
+	}
+
+	public void setDataPath(String dataPath) {
+		this.dataPath = dataPath;
+	}
+
+	public void setCluster(boolean cluster) {
+		this.cluster = cluster;
+	}
+
+	public void setClusterName(String clusterName) {
+		this.clusterName = clusterName;
+	}
+
+	public void setMongoServers(List<MongoServer> mongoServers) {
+		this.mongoServers = mongoServers;
+	}
+
+	public void setServerAddress(String serverAddress) {
+		this.serverAddress = serverAddress;
+	}
+
+	public void setServicePort(int servicePort) {
+		this.servicePort = servicePort;
+	}
+
+	public void setRestPort(int restPort) {
+		this.restPort = restPort;
 	}
 }

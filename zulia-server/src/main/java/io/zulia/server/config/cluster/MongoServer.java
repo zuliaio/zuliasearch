@@ -8,6 +8,11 @@ public class MongoServer {
 	public MongoServer() {
 	}
 
+	public MongoServer(String hostname, int port) {
+		this.hostname = hostname;
+		this.port = port;
+	}
+
 	public String getHostname() {
 		return hostname;
 	}

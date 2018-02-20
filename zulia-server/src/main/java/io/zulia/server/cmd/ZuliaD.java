@@ -201,7 +201,7 @@ public class ZuliaD {
 		return printer.print(node).replace("\n", " ").replaceAll("\\s+", " ");
 	}
 
-	private static void setLuceneStatic() {
+	public static void setLuceneStatic() {
 		BooleanQuery.setMaxClauseCount(16 * 1024);
 		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
 	}
