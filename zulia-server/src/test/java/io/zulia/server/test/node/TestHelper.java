@@ -83,14 +83,8 @@ public class TestHelper {
 
 	}
 
-	public static void startNodes(int nodeCount) throws Exception {
+	public static void startNodes() throws Exception {
 
-		int port = 20000;
-
-		for (int i = 0; i < nodeCount; i++) {
-			ZuliaBase.Node node = ZuliaBase.Node.newBuilder().setServerAddress("localhost").setServicePort(++port).setRestPort(++port).build();
-			nodeService.addNode(node);
-		}
 
 		int i = 0;
 		for (ZuliaBase.Node node : nodeService.getNodes()) {
@@ -110,6 +104,15 @@ public class TestHelper {
 			zuliaNodes.add(zuliaNode);
 		}
 
+	}
+
+	public static void createNodes(int nodeCount) {
+		int port = 20000;
+
+		for (int i = 0; i < nodeCount; i++) {
+			ZuliaBase.Node node = ZuliaBase.Node.newBuilder().setServerAddress("localhost").setServicePort(++port).setRestPort(++port).build();
+			nodeService.addNode(node);
+		}
 	}
 
 	public static void stopNodes() throws Exception {
