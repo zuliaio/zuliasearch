@@ -1,12 +1,16 @@
 package io.zulia.server.test.node;
 
 import com.mongodb.MongoClient;
+import io.zulia.client.config.ZuliaPoolConfig;
+import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
 import io.zulia.server.cmd.ZuliaD;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoNodeService;
 import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.node.ZuliaNode;
+import io.zulia.server.util.MongoProvider;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -24,16 +28,39 @@ public class TestHelper {
 
 	public static final String MONGO_SERVER_PROPERTY_DEFAULT = "127.0.0.1";
 
-	private static final MongoClient mongoClient;
+	private static final MongoNodeService nodeService;
 
 	static {
+
+
+		LogUtil.init();
+		ZuliaD.setLuceneStatic();
+
 		String mongoServer = getMongoServer();
-		mongoClient = new MongoClient(mongoServer);
+		MongoProvider.setMongoClient(new MongoClient(mongoServer));
+
+		MongoProvider.getMongoClient().getDatabase(TEST_CLUSTER_NAME).drop();
+
+		nodeService = new MongoNodeService(MongoProvider.getMongoClient(), TEST_CLUSTER_NAME);
+
+		try {
+			Path dataPath = Paths.get("/tmp/zuliaTest");
+
+			if (Files.exists(dataPath)) {
+				Files.walk(dataPath).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+			}
+			Files.createDirectory(dataPath);
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
 	}
 
-	private List<ZuliaNode> zuliaNodes = new ArrayList<>();
+	private static List<ZuliaNode> zuliaNodes = new ArrayList<>();
 
 	private static String getMongoServer() {
+
 		String mongoServer = System.getProperty(MONGO_SERVER_PROPERTY);
 		if (mongoServer == null) {
 			mongoServer = MONGO_SERVER_PROPERTY_DEFAULT;
@@ -41,24 +68,22 @@ public class TestHelper {
 		return mongoServer;
 	}
 
-	public static MongoClient getMongoClient() {
-		return mongoClient;
+
+
+
+	public static ZuliaWorkPool createClient() throws Exception {
+
+		ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
+		for (ZuliaBase.Node node : nodeService.getNodes()) {
+			zuliaPoolConfig.addNode(node);
+		}
+
+		return new ZuliaWorkPool(zuliaPoolConfig);
+
+
 	}
 
-	public void startSuite(int instanceCount) throws Exception {
-		ZuliaD.setLuceneStatic();
-
-	}
-
-	public void startNodes(int nodeCount) throws Exception {
-
-		Path dataPath = Paths.get("/tmp/zuliaTest");
-
-		Files.walk(dataPath).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-
-		mongoClient.getDatabase(TEST_CLUSTER_NAME).drop();
-
-		MongoNodeService nodeService = new MongoNodeService(mongoClient, TEST_CLUSTER_NAME);
+	public static void startNodes(int nodeCount) throws Exception {
 
 		int port = 20000;
 
@@ -87,7 +112,7 @@ public class TestHelper {
 
 	}
 
-	public void stopNodes() throws Exception {
+	public static void stopNodes() throws Exception {
 
 		for (ZuliaNode zuliaNode : zuliaNodes) {
 			zuliaNode.shutdown();
