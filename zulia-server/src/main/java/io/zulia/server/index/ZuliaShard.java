@@ -234,8 +234,10 @@ public class ZuliaShard {
 				this.directoryReader.close();
 			}
 			this.directoryReader = DirectoryReader.open(indexWriter);
-			this.sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(this.directoryReader);
 
+			if (this.directoryReader.maxDoc() != 0) {
+				this.sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(this.directoryReader);
+			}
 		}
 	}
 

@@ -32,7 +32,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(createIndex);
 	}
 
-	public CreateIndexResult createIndex(String indexName, int segments, ClientIndexConfig indexConfig) throws Exception {
+	public CreateIndexResult createIndex(ClientIndexConfig indexConfig) throws Exception {
 		return execute(new CreateIndex(indexConfig));
 	}
 
@@ -40,7 +40,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(createIndex);
 	}
 
-	public ListenableFuture<CreateIndexResult> createIndexAsync(String indexName, int segments, ClientIndexConfig indexConfig) throws Exception {
+	public ListenableFuture<CreateIndexResult> createIndexAsync(ClientIndexConfig indexConfig) throws Exception {
 		return executeAsync(new CreateIndex(indexConfig));
 	}
 

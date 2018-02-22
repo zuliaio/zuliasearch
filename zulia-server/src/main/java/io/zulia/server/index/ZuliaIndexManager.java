@@ -356,6 +356,7 @@ public class ZuliaIndexManager {
 		}
 		catch (Exception e) {
 			if (existingIndex == null) {
+				LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexSettings().getIndexName() + ">: ", e);
 				throw new Exception("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
 			}
 			else {
