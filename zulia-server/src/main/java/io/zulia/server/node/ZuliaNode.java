@@ -8,6 +8,7 @@ import io.zulia.server.rest.ZuliaRESTServiceManager;
 
 import java.util.Collection;
 import java.util.Timer;
+import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
 
@@ -22,6 +23,8 @@ public class ZuliaNode {
 	private final NodeService nodeService;
 	private final ZuliaConfig zuliaConfig;
 
+	private static final Logger LOG = Logger.getLogger(ZuliaNode.class.getName());
+
 	public ZuliaNode(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
 		this.zuliaConfig = zuliaConfig;
@@ -33,6 +36,17 @@ public class ZuliaNode {
 
 		membershipTimer = new Timer();
 
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				shutdown();
+			}
+		});
+
+	}
+
+	public void start() throws Exception {
+		LOG.info(getLogPrefix() + "starting");
 		MembershipTask membershipTask = new MembershipTask(zuliaConfig, nodeService) {
 
 			@Override
@@ -50,28 +64,23 @@ public class ZuliaNode {
 
 		membershipTimer.scheduleAtFixedRate(membershipTask, 1000, 1000);
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				stop();
-			}
-		});
-
-	}
-
-	public void start() throws Exception {
 		indexManager.init();
 		restServiceManager.start();
 		zuliaServiceServer.start();
+		LOG.info(getLogPrefix() + "started");
 
 	}
 
+
+
 	public void shutdown() {
+		LOG.info(getLogPrefix() + "stopping");
 		membershipTimer.cancel();
 		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		restServiceManager.shutdown();
 		zuliaServiceServer.shutdown();
 		indexManager.shutdown();
+		LOG.info(getLogPrefix() + "stopped");
 	}
 
 	public static boolean isEqual(Node node1, Node node2) {
@@ -81,6 +90,10 @@ public class ZuliaNode {
 	public static Node nodeFromConfig(ZuliaConfig zuliaConfig) {
 		return Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
 				.setRestPort(zuliaConfig.getRestPort()).build();
+	}
+
+	private String getLogPrefix() {
+		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
 	}
 
 }

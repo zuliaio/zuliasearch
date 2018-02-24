@@ -277,9 +277,9 @@ public class ZuliaIndex implements IndexShardInterface {
 		{
 			ZuliaShard s = primaryShardMap.remove(shardNumber);
 			if (s != null) {
-				LOG.info("Closing primary shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info(getLogPrefix() + "Closing primary shard <" + shardNumber + "> for index <" + indexName + ">");
 				s.close(terminate);
-				LOG.info("Removed primary shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info(getLogPrefix() + "Removed primary shard <" + shardNumber + "> for index <" + indexName + ">");
 
 			}
 		}
@@ -287,9 +287,9 @@ public class ZuliaIndex implements IndexShardInterface {
 		{
 			ZuliaShard s = replicaShardMap.remove(shardNumber);
 			if (s != null) {
-				LOG.info("Closing replica shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info(getLogPrefix() + "Closing replica shard <" + shardNumber + "> for index <" + indexName + ">");
 				s.close(terminate);
-				LOG.info("Removed replica shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info(getLogPrefix() + "Removed replica shard <" + shardNumber + "> for index <" + indexName + ">");
 			}
 		}
 
@@ -1026,4 +1026,9 @@ public class ZuliaIndex implements IndexShardInterface {
 	public int hashCode() {
 		return indexName.hashCode();
 	}
+
+	private String getLogPrefix() {
+		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
+	}
+
 }
