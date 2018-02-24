@@ -11,9 +11,11 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.zip.GZIPInputStream;
 
 public abstract class StaxJAXBReader<T> {
 
@@ -33,7 +35,7 @@ public abstract class StaxJAXBReader<T> {
 
 	}
 
-	public void handleFile(String filename) throws Exception {
+	public void handleFile(String filename) {
 
 		pool.executeAsync(() -> {
 
@@ -41,7 +43,13 @@ public abstract class StaxJAXBReader<T> {
 				Unmarshaller unmarshaller = ctx.createUnmarshaller();
 				XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 
-				try (Reader reader = new InputStreamReader(new FileInputStream(filename), Charset.forName("UTF-8"))) {
+				InputStream in = new FileInputStream(filename);
+
+				if (filename.endsWith(".gz")) {
+					in = new GZIPInputStream(in);
+				}
+
+				try (Reader reader = new InputStreamReader(in, Charset.forName("UTF-8"))) {
 
 					XMLEventReader xmlEventReader = xmlInputFactory.createXMLEventReader(reader);
 

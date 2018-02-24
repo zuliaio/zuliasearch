@@ -59,7 +59,7 @@ public class ZuliaNode {
 				indexManager.handleNodeAdded(currentOtherNodesActive, newNode);
 			}
 		};
-		//force membership to run before this constructor exits
+		//force membership to run
 		membershipTask.run();
 
 		membershipTimer.scheduleAtFixedRate(membershipTask, 1000, 1000);
