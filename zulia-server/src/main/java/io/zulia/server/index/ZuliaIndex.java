@@ -40,6 +40,7 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
+import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
@@ -109,6 +110,7 @@ public class ZuliaIndex implements IndexShardInterface {
 	}
 
 	private IndexMapping indexMapping;
+	private FacetsConfig facetsConfig;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService) {
 
@@ -117,6 +119,8 @@ public class ZuliaIndex implements IndexShardInterface {
 		this.indexName = indexConfig.getIndexName();
 		this.numberOfShards = indexConfig.getNumberOfShards();
 		this.indexService = indexService;
+
+		this.facetsConfig = new FacetsConfig();
 
 		this.documentStorage = documentStorage;
 
@@ -220,7 +224,7 @@ public class ZuliaIndex implements IndexShardInterface {
 		//Just for clarity
 		IndexShardInterface indexShardInterface = this;
 
-		ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, new FacetsConfig(), primary);
+		ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, facetsConfig, primary);
 
 		if (primary) {
 			LOG.info("Loaded primary shard <" + shardNumber + "> for index <" + indexName + ">");
@@ -236,7 +240,6 @@ public class ZuliaIndex implements IndexShardInterface {
 	public IndexWriter getIndexWriter(int shardNumber) throws Exception {
 
 		Path pathForIndex = getPathForIndex(shardNumber);
-		System.out.println(pathForIndex);
 		Directory d = MMapDirectory.open(pathForIndex);
 
 		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
@@ -418,16 +421,17 @@ public class ZuliaIndex implements IndexShardInterface {
 				booleanQuery.add(filterLuceneQuery, BooleanClause.Occur.FILTER);
 			}
 
-			for (Map.Entry<String, Set<String>> entry : facetToValues.entrySet()) {
-				String indexFieldName = FacetsConfig.DEFAULT_INDEX_FIELD_NAME + "." + entry.getKey();
-
-				BooleanQuery.Builder facetQuery = new BooleanQuery.Builder();
-				for (String value : entry.getValue()) {
-					facetQuery.add(new BooleanClause(new TermQuery(new org.apache.lucene.index.Term(indexFieldName, value)), BooleanClause.Occur.SHOULD));
+			if (!facetToValues.isEmpty()) {
+				DrillDownQuery drillDownQuery = new DrillDownQuery(facetsConfig);
+				for (Map.Entry<String, Set<String>> entry : facetToValues.entrySet()) {
+					String indexFieldName = entry.getKey();
+					for (String value : entry.getValue()) {
+						drillDownQuery.add(indexFieldName, value);
+					}
 				}
-
-				booleanQuery.add(facetQuery.build(), BooleanClause.Occur.FILTER);
+				booleanQuery.add(drillDownQuery, BooleanClause.Occur.FILTER);
 			}
+
 
 			for (CosineSimRequest cosineSimRequest : qr.getCosineSimRequestList()) {
 				BooleanQuery cosineQuery = handleCosineSimQuery(cosineSimRequest);
