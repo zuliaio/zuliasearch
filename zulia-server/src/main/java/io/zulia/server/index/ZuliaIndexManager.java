@@ -148,7 +148,7 @@ public class ZuliaIndexManager {
 	}
 
 	private void loadIndex(IndexSettings indexSettings) throws Exception {
-		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " loaded index <" + indexSettings.getIndexName() + ">");
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " loading index <" + indexSettings.getIndexName() + ">");
 
 		IndexMapping indexMapping = indexService.getIndexMapping(indexSettings.getIndexName());
 
