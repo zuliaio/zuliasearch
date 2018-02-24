@@ -101,7 +101,8 @@ public class ZuliaIndexManager {
 	}
 
 	public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
-		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":" + nodeRemoved.getServicePort());
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":" + nodeRemoved
+				.getServicePort());
 		internalClient.removeNode(nodeRemoved);
 		this.currentOtherNodesActive = currentOtherNodesActive;
 	}
@@ -120,7 +121,6 @@ public class ZuliaIndexManager {
 				LOG.log(Level.SEVERE, "Failed to unload index: " + zuliaIndex.getIndexName(), e);
 			}
 		});
-		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " shutdown");
 
 	}
 

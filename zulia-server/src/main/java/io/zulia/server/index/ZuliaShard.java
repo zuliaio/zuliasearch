@@ -915,6 +915,7 @@ public class ZuliaShard {
 
 		luceneDocument = facetsConfig.build(luceneDocument);
 
+
 		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 
 		indexWriter.updateDocument(term, luceneDocument);
@@ -1127,12 +1128,12 @@ public class ZuliaShard {
 						LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
 
 						if (FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
-							String date = localDate.getYear() + "" + localDate.getMonthValue() + "" + localDate.getDayOfMonth();
+							String date = String.format("%02d%02d%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
 							addFacet(doc, facetName, date);
 						}
 						else if (FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
 
-							String date = localDate.getYear() + "-" + localDate.getMonthValue() + "-" + localDate.getDayOfMonth();
+							String date = String.format("%02d-%02d-%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
 							addFacet(doc, facetName, date);
 						}
 						else {
@@ -1159,7 +1160,6 @@ public class ZuliaShard {
 	private void addFacet(Document doc, String facetName, String value) {
 		if (!value.isEmpty()) {
 			doc.add(new SortedSetDocValuesFacetField(facetName, value));
-			doc.add(new StringField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME + "." + facetName, new BytesRef(value), Store.NO));
 		}
 	}
 

@@ -37,9 +37,11 @@ public class StartStopTest {
 	@Test
 	public void init() throws Exception {
 
-		TestHelper.createNodes(3);
+		TestHelper.createNodes(1);
 
 		TestHelper.startNodes();
+
+		Thread.sleep(2000);
 
 		zuliaWorkPool = TestHelper.createClient();
 
@@ -108,8 +110,9 @@ public class StartStopTest {
 	@Test(dependsOnMethods = "index")
 	public void restart() throws Exception {
 		TestHelper.stopNodes();
-		Thread.sleep(20000);
+		Thread.sleep(2000);
 		TestHelper.startNodes();
+		Thread.sleep(2000);
 	}
 
 	@Test(dependsOnMethods = "restart")
@@ -138,8 +141,20 @@ public class StartStopTest {
 			Assert.assertEquals( qr.getFacetCounts("date").size(), 3, "Total facets not " + 3);
 
 			for (@SuppressWarnings("unused") FacetCount fc : qr.getFacetCounts("date")) {
-				//System.out.println(fc);
+				System.out.println(fc);
 			}
+
+		}
+
+		{
+			Query q = new Query(FACET_TEST_INDEX, "title:userguide", 10);
+			q.addDrillDown("issn", "1234-1234").addDrillDown("country", "France");
+			q.addCountRequest("issn");
+
+			QueryResult qr = zuliaWorkPool.query(q);
+
+			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN / 2, "Total record count after drill down not " + (COUNT_PER_ISSN / 2));
+			Assert.assertEquals(qr.getFacetCounts("issn").size(), 1, "Number of issn facets not equal " + 1);
 
 		}
 
@@ -148,7 +163,8 @@ public class StartStopTest {
 
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			assertEquals("Total record count after drill down not " + totalRecords / 10, totalRecords / 10, qr.getTotalHits());
+			Assert.assertEquals(qr.getTotalHits(), totalRecords / 10, "Total record count after drill down not " + totalRecords / 10);
+
 
 		}
 
@@ -195,16 +211,7 @@ public class StartStopTest {
 			assertEquals("Total record count after drill down not " + (COUNT_PER_ISSN / 2), COUNT_PER_ISSN / 2, qr.getTotalHits());
 		}
 
-		{
-			Query q = new Query(FACET_TEST_INDEX, "title:userguide", 10);
-			q.addDrillDown("issn", "1234-1234").addDrillDown("country", "France");
-			q.addCountRequest("issn");
 
-			QueryResult qr = zuliaWorkPool.query(q);
-
-			assertEquals("Total record count after drill down not " + (COUNT_PER_ISSN / 2), COUNT_PER_ISSN / 2, qr.getTotalHits());
-			assertEquals("Number of issn facets not equal " + 1, 1, qr.getFacetCounts("issn").size());
-		}
 	}
 
 	@Test(dependsOnMethods = "confirm")
