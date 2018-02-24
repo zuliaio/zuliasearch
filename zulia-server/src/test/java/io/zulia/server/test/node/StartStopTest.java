@@ -120,10 +120,10 @@ public class StartStopTest {
 
 			Assert.assertEquals(qr.getTotalHits(), totalRecords, "Total record count not " + totalRecords);
 
-			assertEquals("Total facets not " + issns.length, qr.getFacetCounts("issn").size(), issns.length);
+			Assert.assertEquals(qr.getFacetCounts("issn").size(), issns.length, "Total facets not " + issns.length);
+
 			for (FacetCount fc : qr.getFacetCounts("issn")) {
-				System.out.println(fc.getFacet() + ": " + fc.getCount());
-				assertEquals("Count for facet <" + fc.getFacet() + "> not <" + COUNT_PER_ISSN + ">", COUNT_PER_ISSN, fc.getCount());
+				Assert.assertEquals(fc.getCount(), COUNT_PER_ISSN, "Count for facet <" + fc.getFacet() + "> not <" + COUNT_PER_ISSN + ">");
 			}
 
 		}
@@ -133,9 +133,10 @@ public class StartStopTest {
 			Query q = new Query(FACET_TEST_INDEX, "title:userguide", 10).addCountRequest("date", 30);
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			assertEquals("Total record count not " + totalRecords, totalRecords, qr.getTotalHits());
 
-			assertEquals("Total facets not " + 3, 3, qr.getFacetCounts("date").size());
+			Assert.assertEquals( qr.getTotalHits(), totalRecords, "Total record count not " + totalRecords);
+			Assert.assertEquals( qr.getFacetCounts("date").size(), 3, "Total facets not " + 3);
+
 			for (@SuppressWarnings("unused") FacetCount fc : qr.getFacetCounts("date")) {
 				//System.out.println(fc);
 			}

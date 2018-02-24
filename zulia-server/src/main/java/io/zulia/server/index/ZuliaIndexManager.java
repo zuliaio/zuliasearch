@@ -90,15 +90,20 @@ public class ZuliaIndexManager {
 	}
 
 	public void handleNodeAdded(Collection<Node> currentOtherNodesActive, Node nodeAdded) {
-		LOG.info("nodeAdded: " + nodeAdded.getServerAddress() + ":" + nodeAdded.getServicePort());
+		LOG.info(getLogPrefix() + " added node " + nodeAdded.getServerAddress() + ":" + nodeAdded.getServicePort());
 
 		internalClient.addNode(nodeAdded);
 		this.currentOtherNodesActive = currentOtherNodesActive;
 	}
 
+	private String getLogPrefix() {
+		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort();
+	}
+
 	public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
-		LOG.info("nodeRemoved: " + nodeRemoved.getServerAddress() + ":" + nodeRemoved.getServicePort());
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":" + nodeRemoved.getServicePort());
 		internalClient.removeNode(nodeRemoved);
+		this.currentOtherNodesActive = currentOtherNodesActive;
 	}
 
 	public void shutdown() {
@@ -115,11 +120,11 @@ public class ZuliaIndexManager {
 				LOG.log(Level.SEVERE, "Failed to unload index: " + zuliaIndex.getIndexName(), e);
 			}
 		});
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " shutdown");
 
 	}
 
 	public void init() throws Exception {
-
 		List<IndexSettings> indexes = indexService.getIndexes();
 		for (IndexSettings indexSettings : indexes) {
 			pool.submit(() -> {
@@ -143,6 +148,8 @@ public class ZuliaIndexManager {
 	}
 
 	private void loadIndex(IndexSettings indexSettings) throws Exception {
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " loaded index <" + indexSettings.getIndexName() + ">");
+
 		IndexMapping indexMapping = indexService.getIndexMapping(indexSettings.getIndexName());
 
 		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
@@ -275,7 +282,7 @@ public class ZuliaIndexManager {
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
 		//if existing index make sure not to allow changing number of shards
 
-		LOG.info("Creating index: " + request);
+		LOG.info(getLogPrefix() + " creating index: " + request);
 		request = new CreateIndexRequestValidator().validateAndSetDefault(request);
 
 		if (!request.hasIndexSettings()) {
