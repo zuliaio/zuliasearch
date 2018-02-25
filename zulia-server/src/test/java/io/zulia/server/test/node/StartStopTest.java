@@ -20,8 +20,6 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
 
-import static org.testng.AssertJUnit.assertEquals;
-
 public class StartStopTest {
 
 	public static final String FACET_TEST_INDEX = "plugged-54a725bc148f6dd7d62bc600";
@@ -121,12 +119,12 @@ public class StartStopTest {
 			Query q = new Query(FACET_TEST_INDEX, "title:userguide", 10).addCountRequest("issn", 30);
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			Assert.assertEquals(qr.getTotalHits(), totalRecords, "Total record count not " + totalRecords);
+			Assert.assertEquals(qr.getTotalHits(), totalRecords, "Total record count mismatch");
 
-			Assert.assertEquals(qr.getFacetCounts("issn").size(), issns.length, "Total facets not " + issns.length);
+			Assert.assertEquals(qr.getFacetCounts("issn").size(), issns.length, "Total facets mismatch");
 
 			for (FacetCount fc : qr.getFacetCounts("issn")) {
-				Assert.assertEquals(fc.getCount(), COUNT_PER_ISSN, "Count for facet <" + fc.getFacet() + "> not <" + COUNT_PER_ISSN + ">");
+				Assert.assertEquals(fc.getCount(), COUNT_PER_ISSN, "Count for facet <" + fc.getFacet() + "> mismatch");
 			}
 
 		}
@@ -136,12 +134,11 @@ public class StartStopTest {
 			Query q = new Query(FACET_TEST_INDEX, "title:userguide", 10).addCountRequest("date", 30);
 			QueryResult qr = zuliaWorkPool.query(q);
 
-
-			Assert.assertEquals( qr.getTotalHits(), totalRecords, "Total record count not " + totalRecords);
-			Assert.assertEquals( qr.getFacetCounts("date").size(), 3, "Total facets not " + 3);
+			Assert.assertEquals(qr.getTotalHits(), totalRecords, "Total record count mismatch");
+			Assert.assertEquals(qr.getFacetCounts("date").size(), 3, "Total facets mismatch");
 
 			for (@SuppressWarnings("unused") FacetCount fc : qr.getFacetCounts("date")) {
-				System.out.println(fc);
+				//System.out.println(fc);
 			}
 
 		}
@@ -153,8 +150,8 @@ public class StartStopTest {
 
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN / 2, "Total record count after drill down not " + (COUNT_PER_ISSN / 2));
-			Assert.assertEquals(qr.getFacetCounts("issn").size(), 1, "Number of issn facets not equal " + 1);
+			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN / 2, "Total record count after drill down mismatch");
+			Assert.assertEquals(qr.getFacetCounts("issn").size(), 1, "Number of issn facets  mismatch");
 
 		}
 
@@ -163,7 +160,7 @@ public class StartStopTest {
 
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			Assert.assertEquals(qr.getTotalHits(), totalRecords / 10, "Total record count after drill down not " + totalRecords / 10);
+			Assert.assertEquals(qr.getTotalHits(), totalRecords / 10, "Total record count after drill down mismatch");
 
 
 		}
@@ -173,7 +170,7 @@ public class StartStopTest {
 
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			assertEquals("Total record count after drill down not " + (totalRecords * 2) / 5, (totalRecords * 2) / 5, qr.getTotalHits());
+			Assert.assertEquals(qr.getTotalHits(), (totalRecords * 2) / 5, "Total record count after drill down mismatch");
 
 		}
 
@@ -182,7 +179,8 @@ public class StartStopTest {
 
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			assertEquals("Total record count after drill down not " + totalRecords / 2, totalRecords / 2, qr.getTotalHits());
+			Assert.assertEquals(qr.getTotalHits(), totalRecords / 2, "Total record count after drill down mismatch");
+
 
 		}
 
@@ -191,7 +189,7 @@ public class StartStopTest {
 
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			assertEquals("Total record count after drill down not " + COUNT_PER_ISSN, COUNT_PER_ISSN, qr.getTotalHits());
+			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN, "Total record count after drill down mismatch");
 
 		}
 
@@ -200,15 +198,16 @@ public class StartStopTest {
 
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			assertEquals("Total record count after drill down not " + (COUNT_PER_ISSN * 2), COUNT_PER_ISSN * 2, qr.getTotalHits());
+			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN * 2, "Total record count after drill down mismatch");
+
 		}
 		{
 			Query q = new Query(FACET_TEST_INDEX, "title:userguide", 10).addDrillDown("issn", "1234-1234").addDrillDown("country", "France");
 
 			QueryResult qr = zuliaWorkPool.query(q);
 
-			assertEquals("Total record count after drill down not " + (COUNT_PER_ISSN / 2), COUNT_PER_ISSN / 2, qr.getTotalHits());
-			assertEquals("Total record count after drill down not " + (COUNT_PER_ISSN / 2), COUNT_PER_ISSN / 2, qr.getTotalHits());
+			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN / 2, "Total record count after drill down mismatch");
+
 		}
 
 
