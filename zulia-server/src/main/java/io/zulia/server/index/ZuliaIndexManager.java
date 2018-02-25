@@ -97,7 +97,7 @@ public class ZuliaIndexManager {
 	}
 
 	private String getLogPrefix() {
-		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort();
+		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
 	}
 
 	public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
@@ -390,17 +390,14 @@ public class ZuliaIndexManager {
 	}
 
 	public DeleteIndexResponse deleteIndex(DeleteIndexRequest request) throws Exception {
+		LOG.info(getLogPrefix() + "Received delete index request for <" + request.getIndexName() + ">");
+
 		DeleteIndexRequestFederator deleteIndexRequestFederator = new DeleteIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
 				this);
 
-		String indexName = request.getIndexName();
-		ZuliaIndex zuliaIndex = indexMap.get(indexName);
-		if (zuliaIndex != null) {
-			zuliaIndex.unload(true);
-		}
-
 		List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
 
+		String indexName = request.getIndexName();
 		indexService.removeIndex(indexName);
 		indexService.removeIndexMapping(indexName);
 
@@ -412,8 +409,13 @@ public class ZuliaIndexManager {
 		String indexName = request.getIndexName();
 		ZuliaIndex zuliaIndex = indexMap.get(indexName);
 		if (zuliaIndex != null) {
+			LOG.info(getLogPrefix() + "Deleting index <" + request.getIndexName() + ">");
+			zuliaIndex.unload(true);
 			zuliaIndex.deleteIndex();
 			indexMap.remove(indexName);
+		}
+		else {
+			LOG.info(getLogPrefix() + "Index <" + request.getIndexName() + "> was not found");
 		}
 		return DeleteIndexResponse.newBuilder().build();
 	}
