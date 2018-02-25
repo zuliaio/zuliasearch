@@ -42,7 +42,6 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
@@ -163,7 +162,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	}
 
-
 	public FieldConfig.FieldType getSortFieldType(String fieldName) {
 		return indexConfig.getFieldTypeForSortField(fieldName);
 	}
@@ -205,7 +203,6 @@ public class ZuliaIndex implements IndexShardInterface {
 			unloadShard(shardNumber, terminate);
 			if (terminate) {
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
-				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
 			}
 		}
 
@@ -213,7 +210,6 @@ public class ZuliaIndex implements IndexShardInterface {
 			unloadShard(shardNumber, terminate);
 			if (terminate) {
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
-				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
 			}
 		}
 
@@ -256,19 +252,6 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private Path getPathForIndex(int shardNumber) {
 		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_idx");
-	}
-
-	private Path getPathForFacetsIndex(int shardNumber) {
-		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_facets");
-	}
-
-	public DirectoryTaxonomyWriter getTaxoWriter(int shardNumber) throws IOException {
-
-		Directory d = MMapDirectory.open(getPathForFacetsIndex(shardNumber));
-
-		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 8, 16);
-
-		return new DirectoryTaxonomyWriter(nrtCachingDirectory);
 	}
 
 	public PerFieldAnalyzerWrapper getPerFieldAnalyzer() throws Exception {
@@ -431,7 +414,6 @@ public class ZuliaIndex implements IndexShardInterface {
 				}
 				booleanQuery.add(drillDownQuery, BooleanClause.Occur.FILTER);
 			}
-
 
 			for (CosineSimRequest cosineSimRequest : qr.getCosineSimRequestList()) {
 				BooleanQuery cosineQuery = handleCosineSimQuery(cosineSimRequest);

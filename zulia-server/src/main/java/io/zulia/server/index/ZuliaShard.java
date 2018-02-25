@@ -114,7 +114,7 @@ import java.util.regex.Pattern;
 
 public class ZuliaShard {
 
-	private final static Logger log = Logger.getLogger(ZuliaShard.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(ZuliaShard.class.getSimpleName());
 	private static Pattern sortedDocValuesMessage = Pattern.compile(
 			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Use UninvertingReader or index with docvalues\\.");
 	private final int shardNumber;
@@ -129,7 +129,6 @@ public class ZuliaShard {
 	private DirectoryReader directoryReader;
 	private DefaultSortedSetDocValuesReaderState sortedSetDocValuesReaderState;
 
-
 	private Long lastCommit;
 	private Long lastChange;
 	private String indexName;
@@ -138,7 +137,6 @@ public class ZuliaShard {
 	private FacetsConfig facetsConfig;
 	private int segmentQueryCacheMaxAmount;
 	private PerFieldAnalyzerWrapper perFieldAnalyzer;
-
 
 	private final boolean primary;
 
@@ -199,22 +197,17 @@ public class ZuliaShard {
 		return text;
 	}
 
-	public static void main(String[] args) {
-		System.out.println(getFoldedString("Blah blah blah"));
-
-		System.out.println(getFoldedString("Blah blḀh blḀh"));
-	}
-
 	private void reopenIndexWritersIfNecessary() throws Exception {
 
 		synchronized (this) {
 			if (!indexWriter.isOpen()) {
 
-				if (!indexWriter.isOpen()) {
-					this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
-					this.directoryReader = DirectoryReader.open(indexWriter);
-					this.sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(this.directoryReader);
-				}
+				LOG.info("Reopening indexwriter for <" + indexName + "> with shard <" + shardNumber + "> with primary <" + primary + ">");
+
+				this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
+				this.directoryReader = DirectoryReader.open(indexWriter);
+				this.sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(this.directoryReader);
+
 			}
 
 		}
@@ -288,8 +281,8 @@ public class ZuliaShard {
 			indexSearcher.setSimilarity(getSimilarity(similarityOverrideMap));
 
 			if (debug) {
-				log.info("Lucene Query for index <" + indexName + "> segment <" + shardNumber + ">: " + query);
-				log.info("Rewritten Query for index <" + indexName + "> segment <" + shardNumber + ">: " + indexSearcher.rewrite(query));
+				LOG.info("Lucene Query for index <" + indexName + "> segment <" + shardNumber + ">: " + query);
+				LOG.info("Rewritten Query for index <" + indexName + "> segment <" + shardNumber + ">: " + indexSearcher.rewrite(query));
 			}
 
 			int hasMoreAmount = amount + 1;
@@ -852,7 +845,7 @@ public class ZuliaShard {
 			throw new IllegalStateException("Cannot force commit from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
 
-		log.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
+		LOG.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();
 

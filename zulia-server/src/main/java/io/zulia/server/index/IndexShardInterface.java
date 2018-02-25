@@ -1,7 +1,6 @@
 package io.zulia.server.index;
 
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 
 /**
@@ -13,5 +12,4 @@ public interface IndexShardInterface {
 
 	PerFieldAnalyzerWrapper getPerFieldAnalyzer() throws Exception;
 
-	DirectoryTaxonomyWriter getTaxoWriter(int shardNumber) throws Exception;
 }
