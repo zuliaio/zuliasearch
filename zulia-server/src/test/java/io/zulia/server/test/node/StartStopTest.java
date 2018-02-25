@@ -35,7 +35,7 @@ public class StartStopTest {
 	@Test
 	public void init() throws Exception {
 
-		TestHelper.createNodes(1);
+		TestHelper.createNodes(3);
 
 		TestHelper.startNodes();
 
