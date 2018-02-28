@@ -194,6 +194,10 @@ public class ServerIndexConfig {
 		return indexSettings.getIndexName();
 	}
 
+	public int getRAMBufferMB() {
+		return indexSettings.getRamBufferMB();
+	}
+
 	public Set<String> getMatchingFields(String regex) {
 		Set<String> matchingFieldNames = new TreeSet<>();
 

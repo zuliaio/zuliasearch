@@ -25,6 +25,7 @@ public class ClientIndexConfig {
 	private Integer shardQueryCacheSize;
 	private Integer shardQueryCacheMaxAmount;
 	private Integer indexWeight;
+	private Integer ramBufferMB;
 
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
@@ -51,29 +52,37 @@ public class ClientIndexConfig {
 		return this;
 	}
 
-	public double getRequestFactor() {
+	public Double getRequestFactor() {
 		return requestFactor;
 	}
 
-	public ClientIndexConfig setRequestFactor(double requestFactor) {
+	public ClientIndexConfig setRequestFactor(Double requestFactor) {
 		this.requestFactor = requestFactor;
 		return this;
 	}
 
-	public int getMinShardRequest() {
+	public Integer getMinShardRequest() {
 		return minShardRequest;
 	}
 
-	public ClientIndexConfig setMinShardRequest(int minShardRequest) {
+	public ClientIndexConfig setMinShardRequest(Integer minShardRequest) {
 		this.minShardRequest = minShardRequest;
 		return this;
 	}
 
-	public int getNumberOfShards() {
+	public Integer getNumberOfShards() {
 		return numberOfShards;
 	}
 
-	public ClientIndexConfig setNumberOfShards(int numberOfShards) {
+	public Integer getRamBufferMB() {
+		return ramBufferMB;
+	}
+
+	public void setRamBufferMB(Integer ramBufferMB) {
+		this.ramBufferMB = ramBufferMB;
+	}
+
+	public ClientIndexConfig setNumberOfShards(Integer numberOfShards) {
 		this.numberOfShards = numberOfShards;
 		return this;
 	}
@@ -87,29 +96,29 @@ public class ClientIndexConfig {
 		return this;
 	}
 
-	public int getIdleTimeWithoutCommit() {
+	public Integer getIdleTimeWithoutCommit() {
 		return idleTimeWithoutCommit;
 	}
 
-	public ClientIndexConfig setIdleTimeWithoutCommit(int idleTimeWithoutCommit) {
+	public ClientIndexConfig setIdleTimeWithoutCommit(Integer idleTimeWithoutCommit) {
 		this.idleTimeWithoutCommit = idleTimeWithoutCommit;
 		return this;
 	}
 
-	public int getShardCommitInterval() {
+	public Integer getShardCommitInterval() {
 		return shardCommitInterval;
 	}
 
-	public ClientIndexConfig setShardCommitInterval(int shardCommitInterval) {
+	public ClientIndexConfig setShardCommitInterval(Integer shardCommitInterval) {
 		this.shardCommitInterval = shardCommitInterval;
 		return this;
 	}
 
-	public double getShardTolerance() {
+	public Double getShardTolerance() {
 		return shardTolerance;
 	}
 
-	public ClientIndexConfig setShardTolerance(double shardTolerance) {
+	public ClientIndexConfig setShardTolerance(Double shardTolerance) {
 		this.shardTolerance = shardTolerance;
 		return this;
 	}
@@ -207,6 +216,10 @@ public class ClientIndexConfig {
 
 		if (indexWeight != null) {
 			isb.setIndexWeight(indexWeight);
+		}
+
+		if (ramBufferMB != null) {
+			isb.setRamBufferMB(ramBufferMB);
 		}
 
 		for (String fieldName : fieldMap.keySet()) {

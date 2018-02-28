@@ -138,15 +138,14 @@ public class ZuliaShard {
 	private final boolean primary;
 
 	public ZuliaShard(int shardNumber, IndexWriter indexWriter, ServerIndexConfig indexConfig, FacetsConfig facetsConfig, boolean primary) throws Exception {
-		setupCaches(indexConfig);
 
 		this.primary = primary;
-
 		this.shardNumber = shardNumber;
-
 		this.indexConfig = indexConfig;
-
 		this.indexWriter = indexWriter;
+
+		updateIndexSettings();
+
 		this.readerAndStateManager = new ReaderAndStateManager(this.indexWriter);
 		this.readerAndStateManager.addListener(new ReferenceManager.RefreshListener() {
 			@Override
@@ -223,8 +222,8 @@ public class ZuliaShard {
 
 	public void updateIndexSettings() {
 		setupCaches(indexConfig);
-		//TODO: set ram buffer size
-		//indexWriter.getConfig().setRAMBufferSizeMB(indexConfig.getRamBuffer());
+		int ramBufferMB = indexConfig.getRAMBufferMB() != 0 ? indexConfig.getRAMBufferMB() : 128;
+		indexWriter.getConfig().setRAMBufferSizeMB(ramBufferMB);
 	}
 
 	public int getShardNumber() {
