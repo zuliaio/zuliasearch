@@ -127,7 +127,6 @@ public class ZuliaShard {
 	private IndexWriter indexWriter;
 	private ReaderAndStateManager readerAndStateManager;
 
-
 	private Long lastCommit;
 	private Long lastChange;
 	private String indexName;
@@ -250,7 +249,6 @@ public class ZuliaShard {
 					return cacheShardResponse;
 				}
 			}
-
 
 			IndexSearcher indexSearcher = new IndexSearcher(readerAndState.getReader());
 
@@ -433,8 +431,7 @@ public class ZuliaShard {
 	}
 
 	private void searchWithFacets(SortedSetDocValuesReaderState sortedSetDocValuesReaderState, FacetRequest facetRequest, Query q, IndexSearcher indexSearcher,
-			TopDocsCollector<?> collector,
-			ShardQueryResponse.Builder segmentReponseBuilder) throws Exception {
+			TopDocsCollector<?> collector, ShardQueryResponse.Builder segmentReponseBuilder) throws Exception {
 		FacetsCollector facetsCollector = new FacetsCollector();
 		indexSearcher.search(q, MultiCollector.wrap(collector, facetsCollector));
 
@@ -554,7 +551,6 @@ public class ZuliaShard {
 		collector = TopFieldCollector.create(sort, hasMoreAmount, after, true, true, true);
 		return collector;
 	}
-
 
 	private ScoredResult.Builder handleDocResult(IndexSearcher is, SortRequest sortRequest, boolean sorting, ScoreDoc[] results, int i,
 			FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList,
@@ -835,15 +831,10 @@ public class ZuliaShard {
 		}
 	}
 
-	public void close(boolean terminate) throws IOException {
-		if (!terminate) {
-			forceCommit();
-		}
-
+	public void close() throws IOException {
 		Directory directory = indexWriter.getDirectory();
 		indexWriter.close();
 		directory.close();
-
 	}
 
 	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<Metadata> metadataList) throws Exception {

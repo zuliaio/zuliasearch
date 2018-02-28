@@ -202,14 +202,14 @@ public class ZuliaIndex {
 		shardPool.shutdownNow();
 
 		for (Integer shardNumber : primaryShardMap.keySet()) {
-			unloadShard(shardNumber, terminate);
+			unloadShard(shardNumber);
 			if (terminate) {
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 			}
 		}
 
 		for (Integer shardNumber : replicaShardMap.keySet()) {
-			unloadShard(shardNumber, terminate);
+			unloadShard(shardNumber);
 			if (terminate) {
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 			}
@@ -260,13 +260,13 @@ public class ZuliaIndex {
 		return zuliaPerFieldAnalyzer;
 	}
 
-	protected void unloadShard(int shardNumber, boolean terminate) throws IOException {
+	protected void unloadShard(int shardNumber) throws IOException {
 
 		{
 			ZuliaShard s = primaryShardMap.remove(shardNumber);
 			if (s != null) {
 				LOG.info(getLogPrefix() + "Closing primary shard <" + shardNumber + "> for index <" + indexName + ">");
-				s.close(terminate);
+				s.close();
 				LOG.info(getLogPrefix() + "Removed primary shard <" + shardNumber + "> for index <" + indexName + ">");
 
 			}
@@ -276,7 +276,7 @@ public class ZuliaIndex {
 			ZuliaShard s = replicaShardMap.remove(shardNumber);
 			if (s != null) {
 				LOG.info(getLogPrefix() + "Closing replica shard <" + shardNumber + "> for index <" + indexName + ">");
-				s.close(terminate);
+				s.close();
 				LOG.info(getLogPrefix() + "Removed replica shard <" + shardNumber + "> for index <" + indexName + ">");
 			}
 		}
