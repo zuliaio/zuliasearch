@@ -42,9 +42,10 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -239,7 +240,23 @@ public class ZuliaIndex implements IndexShardInterface {
 		Directory d = MMapDirectory.open(pathForIndex);
 
 		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
-		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+		config.setIndexDeletionPolicy(new IndexDeletionPolicy() {
+			@Override
+			public void onInit(List<? extends IndexCommit> commits) throws IOException {
+				onCommit(commits);
+			}
+
+			@Override
+			public void onCommit(List<? extends IndexCommit> commits) throws IOException {
+				System.out.println("Found <" + commits.size() + ">");
+				// Note that commits.size() should normally be 2 (if not
+				// called by onInit above):
+				int size = commits.size();
+				for (int i = 0; i < size - 1; i++) {
+					commits.get(i).delete();
+				}
+			}
+		});
 
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
 		config.setRAMBufferSizeMB(128);

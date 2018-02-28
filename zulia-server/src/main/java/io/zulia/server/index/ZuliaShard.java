@@ -126,7 +126,7 @@ public class ZuliaShard {
 	private final IndexShardInterface indexShardInterface;
 
 	private IndexWriter indexWriter;
-	private DirectoryReader directoryReader;
+	private ReaderAndStateManager readerAndStateManager;
 	private DefaultSortedSetDocValuesReaderState sortedSetDocValuesReaderState;
 
 	private Long lastCommit;
@@ -204,9 +204,7 @@ public class ZuliaShard {
 
 				LOG.info("Reopening indexwriter for <" + indexName + "> with shard <" + shardNumber + "> with primary <" + primary + ">");
 
-				this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
-				this.directoryReader = DirectoryReader.open(indexWriter);
-				this.sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(this.directoryReader);
+				openIndexWriters();
 
 			}
 
@@ -216,21 +214,21 @@ public class ZuliaShard {
 
 	private void openIndexWriters() throws Exception {
 		synchronized (this) {
-			if (this.indexWriter != null) {
+			LOG.info("Opening indexwriter for <" + indexName + "> with shard <" + shardNumber + "> with primary <" + primary + ">");
+			if (this.indexWriter != null && indexWriter.isOpen()) {
 				indexWriter.close();
 			}
 
 			this.perFieldAnalyzer = this.indexShardInterface.getPerFieldAnalyzer();
 
-			this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
-			if (this.directoryReader != null) {
-				this.directoryReader.close();
-			}
-			this.directoryReader = DirectoryReader.open(indexWriter);
+			indexWriter.getConfig().getAnalyzer()
 
-			if (this.directoryReader.maxDoc() != 0) {
-				this.sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(this.directoryReader);
-			}
+			this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
+
+			ReaderAndStateManager currentReaderManager = this.readerAndStateManager;
+			this.readerAndStateManager = new ReaderAndStateManager(this.indexWriter);
+			currentReaderManager.close();
+
 		}
 	}
 
@@ -260,10 +258,12 @@ public class ZuliaShard {
 	public ShardQueryResponse queryShard(Query query, Map<String, Similarity> similarityOverrideMap, int amount, FieldDoc after, FacetRequest facetRequest,
 			SortRequest sortRequest, QueryCacheKey queryCacheKey, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
 			List<HighlightRequest> highlightList, List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug) throws Exception {
-		try {
-			reopenIndexWritersIfNecessary();
 
-			openReaderIfChanges();
+		reopenIndexWritersIfNecessary();
+		readerAndStateManager.maybeRefreshBlocking();
+		ReaderAndState readerAndState = readerAndStateManager.acquire();
+
+		try {
 
 			QueryResultCache qrc = queryResultCache;
 
@@ -275,7 +275,9 @@ public class ZuliaShard {
 				}
 			}
 
-			IndexSearcher indexSearcher = new IndexSearcher(directoryReader);
+			openReaderIfChanges();
+
+			IndexSearcher indexSearcher = new IndexSearcher(readerAndState.getReader());
 
 			//similarity is only set query time, indexing time all these similarities are the same
 			indexSearcher.setSimilarity(getSimilarity(similarityOverrideMap));
@@ -321,7 +323,7 @@ public class ZuliaShard {
 
 			List<ZuliaHighlighter> highlighterList = getHighlighterList(highlightList, query);
 
-			List<AnalysisHandler> analysisHandlerList = getAnalysisHandlerList(analysisRequestList);
+			List<AnalysisHandler> analysisHandlerList = getAnalysisHandlerList(readerAndState.getReader(), analysisRequestList);
 
 			for (int i = 0; i < numResults; i++) {
 				ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, sortRequest, sorting, results, i, resultFetchType, fieldsToReturn, fieldsToMask,
@@ -363,9 +365,12 @@ public class ZuliaShard {
 
 			throw e;
 		}
+		finally {
+			readerAndStateManager.decRef(readerAndState);
+		}
 	}
 
-	private List<AnalysisHandler> getAnalysisHandlerList(List<ZuliaQuery.AnalysisRequest> analysisRequests) throws Exception {
+	private List<AnalysisHandler> getAnalysisHandlerList(DirectoryReader directoryReader, List<ZuliaQuery.AnalysisRequest> analysisRequests) throws Exception {
 		if (analysisRequests.isEmpty()) {
 			return Collections.emptyList();
 		}
@@ -576,9 +581,16 @@ public class ZuliaShard {
 
 	private void openReaderIfChanges() throws IOException {
 		synchronized (this) {
+			readerAndStateManager.maybeRefreshBlocking();
+
 			DirectoryReader newDirectoryReader = DirectoryReader.openIfChanged(directoryReader, indexWriter);
 			if (newDirectoryReader != null) {
+				if (directoryReader != null) {
+					directoryReader.close();
+
+				}
 				directoryReader = newDirectoryReader;
+				LOG.info("Reopening reader for <" + indexName + "> with shard <" + shardNumber + "> with primary <" + primary + "> because of changes");
 				QueryResultCache qrc = queryResultCache;
 				if (qrc != null) {
 					qrc.clear();
@@ -848,6 +860,7 @@ public class ZuliaShard {
 		LOG.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();
+		openReaderIfChanges();
 
 		lastCommit = currentTime;
 
@@ -907,7 +920,6 @@ public class ZuliaShard {
 		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadataMongoDoc))));
 
 		luceneDocument = facetsConfig.build(luceneDocument);
-
 
 		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 
