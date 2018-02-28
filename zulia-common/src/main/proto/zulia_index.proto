@@ -41,6 +41,8 @@ message IndexSettings {
 
     uint32 indexWeight = 16; //default 1
 
+    uint32 ramBufferMB = 17; //default 128
+
 }
 
 message FieldConfig {

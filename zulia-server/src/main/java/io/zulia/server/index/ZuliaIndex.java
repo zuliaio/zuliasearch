@@ -241,10 +241,8 @@ public class ZuliaIndex {
 
 		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
 		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
-		//TODO use index config settings or set it using index config later
-		config.setRAMBufferSizeMB(128);
+		config.setRAMBufferSizeMB(128); // should be overwritten by ZuliaShard.updateIndexSettings()
 		config.setUseCompoundFile(false);
 
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 32, 128);
