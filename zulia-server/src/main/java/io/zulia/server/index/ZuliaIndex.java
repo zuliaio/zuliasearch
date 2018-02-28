@@ -24,6 +24,7 @@ import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.*;
+import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.ZuliaConfig;
@@ -39,13 +40,11 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -83,7 +82,7 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ZuliaIndex implements IndexShardInterface {
+public class ZuliaIndex {
 
 	private final static Logger LOG = Logger.getLogger(ZuliaIndex.class.getSimpleName());
 
@@ -102,7 +101,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private Timer commitTimer;
 	private TimerTask commitTask;
-	private ZuliaAnalyzerFactory analyzerFactory;
+	private ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 
 	static {
@@ -126,11 +125,13 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		this.shardPool = Executors.newCachedThreadPool(new ZuliaThreadFactory(indexName + "-shards"));
 
+		this.zuliaPerFieldAnalyzer = new ZuliaPerFieldAnalyzer(indexConfig);
+
 		this.parsers = new GenericObjectPool<>(new BasePooledObjectFactory<ZuliaMultiFieldQueryParser>() {
 
 			@Override
-			public ZuliaMultiFieldQueryParser create() throws Exception {
-				return new ZuliaMultiFieldQueryParser(getPerFieldAnalyzer(), ZuliaIndex.this.indexConfig);
+			public ZuliaMultiFieldQueryParser create() {
+				return new ZuliaMultiFieldQueryParser(zuliaPerFieldAnalyzer, ZuliaIndex.this.indexConfig);
 			}
 
 			@Override
@@ -159,7 +160,7 @@ public class ZuliaIndex implements IndexShardInterface {
 
 		commitTimer.scheduleAtFixedRate(commitTask, 1000, 1000);
 
-		this.analyzerFactory = new ZuliaAnalyzerFactory(indexConfig);
+
 
 	}
 
@@ -218,10 +219,9 @@ public class ZuliaIndex implements IndexShardInterface {
 
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
 
-		//Just for clarity
-		IndexShardInterface indexShardInterface = this;
+		IndexWriter indexWriter = getIndexWriter(shardNumber);
 
-		ZuliaShard s = new ZuliaShard(shardNumber, indexShardInterface, indexConfig, facetsConfig, primary);
+		ZuliaShard s = new ZuliaShard(shardNumber, indexWriter, indexConfig, facetsConfig, primary);
 
 		if (primary) {
 			LOG.info("Loaded primary shard <" + shardNumber + "> for index <" + indexName + ">");
@@ -240,25 +240,10 @@ public class ZuliaIndex implements IndexShardInterface {
 		Directory d = MMapDirectory.open(pathForIndex);
 
 		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
-		config.setIndexDeletionPolicy(new IndexDeletionPolicy() {
-			@Override
-			public void onInit(List<? extends IndexCommit> commits) throws IOException {
-				onCommit(commits);
-			}
-
-			@Override
-			public void onCommit(List<? extends IndexCommit> commits) throws IOException {
-				System.out.println("Found <" + commits.size() + ">");
-				// Note that commits.size() should normally be 2 (if not
-				// called by onInit above):
-				int size = commits.size();
-				for (int i = 0; i < size - 1; i++) {
-					commits.get(i).delete();
-				}
-			}
-		});
+		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
 
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
+		//TODO use index config settings or set it using index config later
 		config.setRAMBufferSizeMB(128);
 		config.setUseCompoundFile(false);
 
@@ -271,8 +256,8 @@ public class ZuliaIndex implements IndexShardInterface {
 		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_idx");
 	}
 
-	public PerFieldAnalyzerWrapper getPerFieldAnalyzer() throws Exception {
-		return analyzerFactory.getPerFieldAnalyzer();
+	public ZuliaPerFieldAnalyzer getPerFieldAnalyzer() {
+		return zuliaPerFieldAnalyzer;
 	}
 
 	protected void unloadShard(int shardNumber, boolean terminate) throws IOException {
@@ -672,10 +657,7 @@ public class ZuliaIndex implements IndexShardInterface {
 		IndexSettings indexSettings = indexService.getIndex(indexName);
 		indexConfig.configure(indexSettings);
 
-		parsers.clear();
-
-		//force analyzer to be fetched first so it doesn't fail only on one shard below
-		getPerFieldAnalyzer();
+		zuliaPerFieldAnalyzer.refresh();
 
 		for (ZuliaShard s : primaryShardMap.values()) {
 			try {

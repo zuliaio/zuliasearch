@@ -34,6 +34,7 @@ import io.zulia.message.ZuliaQuery.SortValues;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
+import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.analysis.highlight.ZuliaHighlighter;
 import io.zulia.server.analysis.similarity.ConstantSimilarity;
 import io.zulia.server.analysis.similarity.TFSimilarity;
@@ -53,7 +54,6 @@ import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
-import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.LongPoint;
@@ -66,9 +66,9 @@ import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
-import org.apache.lucene.facet.sortedset.DefaultSortedSetDocValuesReaderState;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -123,11 +123,10 @@ public class ZuliaShard {
 	private final Set<String> fetchSet;
 	private final Set<String> fetchSetWithMeta;
 	private final Set<String> fetchSetWithDocument;
-	private final IndexShardInterface indexShardInterface;
 
 	private IndexWriter indexWriter;
 	private ReaderAndStateManager readerAndStateManager;
-	private DefaultSortedSetDocValuesReaderState sortedSetDocValuesReaderState;
+
 
 	private Long lastCommit;
 	private Long lastChange;
@@ -136,22 +135,35 @@ public class ZuliaShard {
 
 	private FacetsConfig facetsConfig;
 	private int segmentQueryCacheMaxAmount;
-	private PerFieldAnalyzerWrapper perFieldAnalyzer;
 
 	private final boolean primary;
 
-	public ZuliaShard(int shardNumber, IndexShardInterface indexShardInterface, ServerIndexConfig indexConfig, FacetsConfig facetsConfig, boolean primary)
-			throws Exception {
+	public ZuliaShard(int shardNumber, IndexWriter indexWriter, ServerIndexConfig indexConfig, FacetsConfig facetsConfig, boolean primary) throws Exception {
 		setupCaches(indexConfig);
 
 		this.primary = primary;
 
 		this.shardNumber = shardNumber;
 
-		this.indexShardInterface = indexShardInterface;
 		this.indexConfig = indexConfig;
 
-		openIndexWriters();
+		this.indexWriter = indexWriter;
+		this.readerAndStateManager = new ReaderAndStateManager(this.indexWriter);
+		this.readerAndStateManager.addListener(new ReferenceManager.RefreshListener() {
+			@Override
+			public void beforeRefresh() {
+
+			}
+
+			@Override
+			public void afterRefresh(boolean didRefresh) {
+				if (didRefresh) {
+					if (queryResultCache != null) {
+						queryResultCache.clear();
+					}
+				}
+			}
+		});
 
 		this.facetsConfig = facetsConfig;
 
@@ -197,41 +209,6 @@ public class ZuliaShard {
 		return text;
 	}
 
-	private void reopenIndexWritersIfNecessary() throws Exception {
-
-		synchronized (this) {
-			if (!indexWriter.isOpen()) {
-
-				LOG.info("Reopening indexwriter for <" + indexName + "> with shard <" + shardNumber + "> with primary <" + primary + ">");
-
-				openIndexWriters();
-
-			}
-
-		}
-
-	}
-
-	private void openIndexWriters() throws Exception {
-		synchronized (this) {
-			LOG.info("Opening indexwriter for <" + indexName + "> with shard <" + shardNumber + "> with primary <" + primary + ">");
-			if (this.indexWriter != null && indexWriter.isOpen()) {
-				indexWriter.close();
-			}
-
-			this.perFieldAnalyzer = this.indexShardInterface.getPerFieldAnalyzer();
-
-			indexWriter.getConfig().getAnalyzer()
-
-			this.indexWriter = this.indexShardInterface.getIndexWriter(shardNumber);
-
-			ReaderAndStateManager currentReaderManager = this.readerAndStateManager;
-			this.readerAndStateManager = new ReaderAndStateManager(this.indexWriter);
-			currentReaderManager.close();
-
-		}
-	}
-
 	private void setupCaches(ServerIndexConfig indexConfig) {
 		segmentQueryCacheMaxAmount = indexConfig.getIndexSettings().getShardQueryCacheMaxAmount();
 
@@ -245,10 +222,10 @@ public class ZuliaShard {
 
 	}
 
-	public void updateIndexSettings() throws Exception {
+	public void updateIndexSettings() {
 		setupCaches(indexConfig);
-		openIndexWriters();
-
+		//TODO: set ram buffer size
+		//indexWriter.getConfig().setRAMBufferSizeMB(indexConfig.getRamBuffer());
 	}
 
 	public int getShardNumber() {
@@ -259,7 +236,6 @@ public class ZuliaShard {
 			SortRequest sortRequest, QueryCacheKey queryCacheKey, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
 			List<HighlightRequest> highlightList, List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug) throws Exception {
 
-		reopenIndexWritersIfNecessary();
 		readerAndStateManager.maybeRefreshBlocking();
 		ReaderAndState readerAndState = readerAndStateManager.acquire();
 
@@ -275,7 +251,6 @@ public class ZuliaShard {
 				}
 			}
 
-			openReaderIfChanges();
 
 			IndexSearcher indexSearcher = new IndexSearcher(readerAndState.getReader());
 
@@ -304,7 +279,7 @@ public class ZuliaShard {
 
 			if ((facetRequest != null) && !facetRequest.getCountRequestList().isEmpty()) {
 
-				searchWithFacets(facetRequest, query, indexSearcher, collector, shardQueryReponseBuilder);
+				searchWithFacets(readerAndState.getSortedSetDocValuesReaderState(), facetRequest, query, indexSearcher, collector, shardQueryReponseBuilder);
 
 			}
 			else {
@@ -378,7 +353,7 @@ public class ZuliaShard {
 		List<AnalysisHandler> analysisHandlerList = new ArrayList<>();
 		for (ZuliaQuery.AnalysisRequest analysisRequest : analysisRequests) {
 
-			Analyzer analyzer = perFieldAnalyzer;
+			Analyzer analyzer = indexWriter.getAnalyzer();
 
 			String analyzerOverride = analysisRequest.getAnalyzerOverride();
 			if (analyzerOverride != null && !analyzerOverride.isEmpty()) {
@@ -386,7 +361,7 @@ public class ZuliaShard {
 
 				AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsByName(analyzerName);
 				if (analyzerSettings != null) {
-					analyzer = ZuliaAnalyzerFactory.getPerFieldAnalyzer(analyzerSettings);
+					analyzer = ZuliaPerFieldAnalyzer.getAnalyzerForField(analyzerSettings);
 				}
 				else {
 					throw new RuntimeException("Invalid analyzer name <" + analyzerName + ">");
@@ -457,7 +432,8 @@ public class ZuliaShard {
 		};
 	}
 
-	private void searchWithFacets(FacetRequest facetRequest, Query q, IndexSearcher indexSearcher, TopDocsCollector<?> collector,
+	private void searchWithFacets(SortedSetDocValuesReaderState sortedSetDocValuesReaderState, FacetRequest facetRequest, Query q, IndexSearcher indexSearcher,
+			TopDocsCollector<?> collector,
 			ShardQueryResponse.Builder segmentReponseBuilder) throws Exception {
 		FacetsCollector facetsCollector = new FacetsCollector();
 		indexSearcher.search(q, MultiCollector.wrap(collector, facetsCollector));
@@ -579,29 +555,6 @@ public class ZuliaShard {
 		return collector;
 	}
 
-	private void openReaderIfChanges() throws IOException {
-		synchronized (this) {
-			readerAndStateManager.maybeRefreshBlocking();
-
-			DirectoryReader newDirectoryReader = DirectoryReader.openIfChanged(directoryReader, indexWriter);
-			if (newDirectoryReader != null) {
-				if (directoryReader != null) {
-					directoryReader.close();
-
-				}
-				directoryReader = newDirectoryReader;
-				LOG.info("Reopening reader for <" + indexName + "> with shard <" + shardNumber + "> with primary <" + primary + "> because of changes");
-				QueryResultCache qrc = queryResultCache;
-				if (qrc != null) {
-					qrc.clear();
-				}
-
-				sortedSetDocValuesReaderState = new DefaultSortedSetDocValuesReaderState(directoryReader);
-
-			}
-
-		}
-	}
 
 	private ScoredResult.Builder handleDocResult(IndexSearcher is, SortRequest sortRequest, boolean sorting, ScoreDoc[] results, int i,
 			FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList,
@@ -655,7 +608,7 @@ public class ZuliaShard {
 	}
 
 	private void handleStoredDoc(ScoredResult.Builder srBuilder, String uniqueId, Document d, FetchType resultFetchType, List<String> fieldsToReturn,
-			List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList, List<AnalysisHandler> analysisHandlerList) throws Exception {
+			List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList, List<AnalysisHandler> analysisHandlerList) {
 
 		ResultDocument.Builder rdBuilder = ResultDocument.newBuilder();
 		rdBuilder.setUniqueId(uniqueId);
@@ -758,7 +711,7 @@ public class ZuliaShard {
 
 				ZuliaUtil.handleLists(storeFieldValues, (value) -> {
 					String content = value.toString();
-					TokenStream tokenStream = perFieldAnalyzer.tokenStream(indexField, content);
+					TokenStream tokenStream = indexWriter.getAnalyzer().tokenStream(indexField, content);
 
 					try {
 						TextFragment[] bestTextFragments = highlighter
@@ -860,7 +813,7 @@ public class ZuliaShard {
 		LOG.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();
-		openReaderIfChanges();
+		readerAndStateManager.maybeRefresh();
 
 		lastCommit = currentTime;
 
@@ -897,8 +850,6 @@ public class ZuliaShard {
 		if (!primary) {
 			throw new IllegalStateException("Cannot index document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
-
-		reopenIndexWritersIfNecessary();
 
 		Document luceneDocument = new Document();
 
@@ -1190,24 +1141,30 @@ public class ZuliaShard {
 	}
 
 	public GetFieldNamesResponse getFieldNames() throws IOException {
+		readerAndStateManager.maybeRefreshBlocking();
+		ReaderAndState readerAndState = readerAndStateManager.acquire();
 
-		openReaderIfChanges();
+		try {
 
-		GetFieldNamesResponse.Builder builder = GetFieldNamesResponse.newBuilder();
+			GetFieldNamesResponse.Builder builder = GetFieldNamesResponse.newBuilder();
 
-		Set<String> fields = new HashSet<>();
+			Set<String> fields = new HashSet<>();
 
-		for (LeafReaderContext subReaderContext : directoryReader.leaves()) {
-			FieldInfos fieldInfos = subReaderContext.reader().getFieldInfos();
-			for (FieldInfo fi : fieldInfos) {
-				String fieldName = fi.name;
-				fields.add(fieldName);
+			for (LeafReaderContext subReaderContext : readerAndState.getReader().leaves()) {
+				FieldInfos fieldInfos = subReaderContext.reader().getFieldInfos();
+				for (FieldInfo fi : fieldInfos) {
+					String fieldName = fi.name;
+					fields.add(fieldName);
+				}
 			}
+
+			fields.forEach(builder::addFieldName);
+
+			return builder.build();
 		}
-
-		fields.forEach(builder::addFieldName);
-
-		return builder.build();
+		finally {
+			readerAndStateManager.decRef(readerAndState);
+		}
 	}
 
 	public void clear() throws IOException {
@@ -1220,125 +1177,135 @@ public class ZuliaShard {
 	}
 
 	public GetTermsResponse getTerms(GetTermsRequest request) throws IOException {
-		openReaderIfChanges();
 
-		GetTermsResponse.Builder builder = GetTermsResponse.newBuilder();
+		readerAndStateManager.maybeRefreshBlocking();
+		ReaderAndState readerAndState = readerAndStateManager.acquire();
 
-		String fieldName = request.getFieldName();
+		try {
+			DirectoryReader directoryReader = readerAndState.getReader();
 
-		SortedMap<String, ZuliaBase.Term.Builder> termsMap = new TreeMap<>();
+			GetTermsResponse.Builder builder = GetTermsResponse.newBuilder();
 
-		if (request.getIncludeTermCount() > 0) {
+			String fieldName = request.getFieldName();
 
-			Set<String> includeTerms = new TreeSet<>(request.getIncludeTermList());
-			List<BytesRef> termBytesList = new ArrayList<>();
-			for (String term : includeTerms) {
-				BytesRef termBytes = new BytesRef(term);
-				termBytesList.add(termBytes);
-			}
+			SortedMap<String, ZuliaBase.Term.Builder> termsMap = new TreeMap<>();
 
-			for (LeafReaderContext subReaderContext : directoryReader.leaves()) {
-				Terms terms = subReaderContext.reader().terms(fieldName);
+			if (request.getIncludeTermCount() > 0) {
 
-				if (terms != null) {
-
-					TermsEnum termsEnum = terms.iterator();
-					for (BytesRef termBytes : termBytesList) {
-						if (termsEnum.seekExact(termBytes)) {
-							BytesRef text = termsEnum.term();
-							handleTerm(termsMap, termsEnum, text, null, null);
-						}
-
-					}
+				Set<String> includeTerms = new TreeSet<>(request.getIncludeTermList());
+				List<BytesRef> termBytesList = new ArrayList<>();
+				for (String term : includeTerms) {
+					BytesRef termBytes = new BytesRef(term);
+					termBytesList.add(termBytes);
 				}
 
-			}
-		}
-		else {
+				for (LeafReaderContext subReaderContext : directoryReader.leaves()) {
+					Terms terms = subReaderContext.reader().terms(fieldName);
 
-			AttributeSource atts = null;
-			MaxNonCompetitiveBoostAttribute maxBoostAtt = null;
-			boolean hasFuzzyTerm = request.hasFuzzyTerm();
-			if (hasFuzzyTerm) {
-				atts = new AttributeSource();
-				maxBoostAtt = atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-			}
+					if (terms != null) {
 
-			BytesRef startTermBytes;
-			BytesRef endTermBytes = null;
+						TermsEnum termsEnum = terms.iterator();
+						for (BytesRef termBytes : termBytesList) {
+							if (termsEnum.seekExact(termBytes)) {
+								BytesRef text = termsEnum.term();
+								handleTerm(termsMap, termsEnum, text, null, null);
+							}
 
-			if (!request.getStartTerm().isEmpty()) {
-				startTermBytes = new BytesRef(request.getStartTerm());
+						}
+					}
+
+				}
 			}
 			else {
-				startTermBytes = new BytesRef("");
-			}
 
-			if (!request.getEndTerm().isEmpty()) {
-				endTermBytes = new BytesRef(request.getEndTerm());
-			}
+				AttributeSource atts = null;
+				MaxNonCompetitiveBoostAttribute maxBoostAtt = null;
+				boolean hasFuzzyTerm = request.hasFuzzyTerm();
+				if (hasFuzzyTerm) {
+					atts = new AttributeSource();
+					maxBoostAtt = atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
+				}
 
-			Pattern termFilter = null;
-			if (!request.getTermFilter().isEmpty()) {
-				termFilter = Pattern.compile(request.getTermFilter());
-			}
+				BytesRef startTermBytes;
+				BytesRef endTermBytes = null;
 
-			Pattern termMatch = null;
-			if (!request.getTermMatch().isEmpty()) {
-				termMatch = Pattern.compile(request.getTermMatch());
-			}
+				if (!request.getStartTerm().isEmpty()) {
+					startTermBytes = new BytesRef(request.getStartTerm());
+				}
+				else {
+					startTermBytes = new BytesRef("");
+				}
 
-			for (LeafReaderContext subReaderContext : directoryReader.leaves()) {
-				Terms terms = subReaderContext.reader().terms(fieldName);
+				if (!request.getEndTerm().isEmpty()) {
+					endTermBytes = new BytesRef(request.getEndTerm());
+				}
 
-				if (terms != null) {
+				Pattern termFilter = null;
+				if (!request.getTermFilter().isEmpty()) {
+					termFilter = Pattern.compile(request.getTermFilter());
+				}
 
-					if (hasFuzzyTerm) {
-						FuzzyTerm fuzzyTerm = request.getFuzzyTerm();
-						FuzzyTermsEnum termsEnum = new FuzzyTermsEnum(terms, atts, new Term(fieldName, fuzzyTerm.getTerm()), fuzzyTerm.getEditDistance(),
-								fuzzyTerm.getPrefixLength(), !fuzzyTerm.getNoTranspositions());
-						BytesRef text = termsEnum.term();
+				Pattern termMatch = null;
+				if (!request.getTermMatch().isEmpty()) {
+					termMatch = Pattern.compile(request.getTermMatch());
+				}
 
-						handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
+				for (LeafReaderContext subReaderContext : directoryReader.leaves()) {
+					Terms terms = subReaderContext.reader().terms(fieldName);
 
-						while ((text = termsEnum.next()) != null) {
-							handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
-						}
+					if (terms != null) {
 
-					}
-					else {
-						TermsEnum termsEnum = terms.iterator();
-						SeekStatus seekStatus = termsEnum.seekCeil(startTermBytes);
-
-						if (!seekStatus.equals(SeekStatus.END)) {
+						if (hasFuzzyTerm) {
+							FuzzyTerm fuzzyTerm = request.getFuzzyTerm();
+							FuzzyTermsEnum termsEnum = new FuzzyTermsEnum(terms, atts, new Term(fieldName, fuzzyTerm.getTerm()), fuzzyTerm.getEditDistance(),
+									fuzzyTerm.getPrefixLength(), !fuzzyTerm.getNoTranspositions());
 							BytesRef text = termsEnum.term();
 
-							if (endTermBytes == null || (text.compareTo(endTermBytes) < 0)) {
+							handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
+
+							while ((text = termsEnum.next()) != null) {
 								handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
+							}
 
-								while ((text = termsEnum.next()) != null) {
+						}
+						else {
+							TermsEnum termsEnum = terms.iterator();
+							SeekStatus seekStatus = termsEnum.seekCeil(startTermBytes);
 
-									if (endTermBytes == null || (text.compareTo(endTermBytes) < 0)) {
-										handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
-									}
-									else {
-										break;
+							if (!seekStatus.equals(SeekStatus.END)) {
+								BytesRef text = termsEnum.term();
+
+								if (endTermBytes == null || (text.compareTo(endTermBytes) < 0)) {
+									handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
+
+									while ((text = termsEnum.next()) != null) {
+
+										if (endTermBytes == null || (text.compareTo(endTermBytes) < 0)) {
+											handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
+										}
+										else {
+											break;
+										}
 									}
 								}
 							}
 						}
+
 					}
 
 				}
-
 			}
-		}
 
-		for (ZuliaBase.Term.Builder termBuilder : termsMap.values()) {
-			builder.addTerm(termBuilder.build());
-		}
+			for (ZuliaBase.Term.Builder termBuilder : termsMap.values()) {
+				builder.addTerm(termBuilder.build());
+			}
 
-		return builder.build();
+			return builder.build();
+
+		}
+		finally {
+			readerAndStateManager.decRef(readerAndState);
+		}
 
 	}
 
@@ -1376,9 +1343,17 @@ public class ZuliaShard {
 
 	public ShardCountResponse getNumberOfDocs() throws IOException {
 
-		openReaderIfChanges();
-		int count = directoryReader.numDocs();
-		return ShardCountResponse.newBuilder().setNumberOfDocs(count).setShardNumber(shardNumber).build();
+		readerAndStateManager.maybeRefreshBlocking();
+		ReaderAndState readerAndState = readerAndStateManager.acquire();
+
+		try {
+
+			int count = readerAndState.getReader().numDocs();
+			return ShardCountResponse.newBuilder().setNumberOfDocs(count).setShardNumber(shardNumber).build();
+		}
+		finally {
+			readerAndStateManager.decRef(readerAndState);
+		}
 
 	}
 
