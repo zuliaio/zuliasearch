@@ -480,6 +480,14 @@ public class ZuliaShard {
 					throw e;
 				}
 			}
+			catch (IllegalArgumentException e) {
+				if (e.getMessage().equals("dimension \"" + label + "\" was not indexed")) {
+					//this is when no data has been indexing into a facet or facet does not exist
+				}
+				else {
+					throw e;
+				}
+			}
 			FacetGroup.Builder fg = FacetGroup.newBuilder();
 			fg.setCountRequest(countRequest);
 
