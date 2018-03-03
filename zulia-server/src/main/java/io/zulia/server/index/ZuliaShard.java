@@ -107,7 +107,7 @@ public class ZuliaShard {
 	private final Set<String> fetchSetWithMeta;
 	private final Set<String> fetchSetWithDocument;
 
-	private ShardReaderManager shardReaderManager;
+	private final ShardReaderManager shardReaderManager;
 	private final ShardWriteManager shardWriteManager;
 
 	private Long lastCommit;
