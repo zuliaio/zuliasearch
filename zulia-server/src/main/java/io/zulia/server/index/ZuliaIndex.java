@@ -205,6 +205,7 @@ public class ZuliaIndex {
 			unloadShard(shardNumber);
 			if (terminate) {
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
+				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
 			}
 		}
 
@@ -212,6 +213,7 @@ public class ZuliaIndex {
 			unloadShard(shardNumber);
 			if (terminate) {
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
+				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
 			}
 		}
 
@@ -219,9 +221,11 @@ public class ZuliaIndex {
 
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
 
-		IndexWriter indexWriter = getIndexWriter(shardNumber);
 
-		ZuliaShard s = new ZuliaShard(shardNumber, indexWriter, indexConfig, facetsConfig, primary);
+
+		WriterManager writerManager = new WriterManager(getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), zuliaPerFieldAnalyzer);
+
+		ZuliaShard s = new ZuliaShard(shardNumber, writerManager, indexConfig, facetsConfig, primary);
 
 		if (primary) {
 			LOG.info("Loaded primary shard <" + shardNumber + "> for index <" + indexName + ">");
@@ -234,28 +238,12 @@ public class ZuliaIndex {
 
 	}
 
-	public IndexWriter getIndexWriter(int shardNumber) throws Exception {
-
-		Path pathForIndex = getPathForIndex(shardNumber);
-		Directory d = MMapDirectory.open(pathForIndex);
-
-		IndexWriterConfig config = new IndexWriterConfig(getPerFieldAnalyzer());
-		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-		config.setMaxBufferedDocs(Integer.MAX_VALUE);
-		config.setRAMBufferSizeMB(128); // should be overwritten by ZuliaShard.updateIndexSettings()
-		config.setUseCompoundFile(false);
-
-		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 32, 128);
-
-		return new IndexWriter(nrtCachingDirectory, config);
-	}
-
 	private Path getPathForIndex(int shardNumber) {
 		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_idx");
 	}
 
-	public ZuliaPerFieldAnalyzer getPerFieldAnalyzer() {
-		return zuliaPerFieldAnalyzer;
+	private Path getPathForFacetsIndex(int shardNumber) {
+		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_facets");
 	}
 
 	protected void unloadShard(int shardNumber) throws IOException {
