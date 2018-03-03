@@ -1,11 +1,15 @@
 package io.zulia.server.index;
 
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
+import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -16,12 +20,15 @@ import java.nio.file.Path;
 public class WriterManager {
 
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
+	private final FacetsConfig facetsConfig;
+
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 
-	public WriterManager(Path pathToIndex, Path pathToTaxoIndex, ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
+	public WriterManager(Path pathToIndex, Path pathToTaxoIndex, FacetsConfig facetsConfig, ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
 
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
+		this.facetsConfig = facetsConfig;
 
 		openIndexWriter(pathToIndex);
 		openTaxoWriter(pathToTaxoIndex);
@@ -40,7 +47,7 @@ public class WriterManager {
 
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 32, 128);
 
-		this.indexWriter = new	IndexWriter(nrtCachingDirectory, config);
+		this.indexWriter = new IndexWriter(nrtCachingDirectory, config);
 
 	}
 
@@ -109,5 +116,25 @@ public class WriterManager {
 		taxoWriter.commit();
 	}
 
+	public void updateIndexSetting(ServerIndexConfig indexConfig) {
+		int ramBufferMB = indexConfig.getRAMBufferMB() != 0 ? indexConfig.getRAMBufferMB() : 128;
+		indexWriter.getConfig().setRAMBufferSizeMB(ramBufferMB);
+	}
 
+	public void deleteDocuments(Term term) throws IOException {
+		indexWriter.deleteDocuments(term);
+	}
+
+	public void forceMerge(int maxNumberSegments) throws IOException {
+		indexWriter.forceMerge(maxNumberSegments);
+	}
+
+	public void updateDocument(Document luceneDocument, Term updateQuery) throws IOException {
+		luceneDocument = facetsConfig.build(taxoWriter, luceneDocument);
+		indexWriter.updateDocument(updateQuery, luceneDocument);
+	}
+
+	public void deleteAll() throws IOException {
+		indexWriter.deleteAll();
+	}
 }

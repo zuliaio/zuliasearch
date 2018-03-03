@@ -64,16 +64,9 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
-import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -89,7 +82,6 @@ import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -133,13 +125,11 @@ public class ZuliaShard {
 	private String indexName;
 	private QueryResultCache queryResultCache;
 
-	private FacetsConfig facetsConfig;
 	private int segmentQueryCacheMaxAmount;
 
 	private final boolean primary;
 
-	public ZuliaShard(int shardNumber, WriterManager writerManager, ServerIndexConfig indexConfig, FacetsConfig facetsConfig,
-			boolean primary) throws Exception {
+	public ZuliaShard(int shardNumber, WriterManager writerManager, ServerIndexConfig indexConfig, boolean primary) throws Exception {
 
 		this.primary = primary;
 		this.shardNumber = shardNumber;
@@ -158,14 +148,13 @@ public class ZuliaShard {
 			@Override
 			public void afterRefresh(boolean didRefresh) {
 				if (didRefresh) {
-					if (queryResultCache != null) {
-						queryResultCache.clear();
+					QueryResultCache qrc = queryResultCache;
+					if (qrc != null) {
+						qrc.clear();
 					}
 				}
 			}
 		});
-
-		this.facetsConfig = facetsConfig;
 
 		this.fetchSet = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD)));
 
@@ -224,8 +213,7 @@ public class ZuliaShard {
 
 	public void updateIndexSettings() {
 		setupCaches(indexConfig);
-		int ramBufferMB = indexConfig.getRAMBufferMB() != 0 ? indexConfig.getRAMBufferMB() : 128;
-		indexWriter.getConfig().setRAMBufferSizeMB(ramBufferMB);
+		writerManager.updateIndexSetting(indexConfig);
 	}
 
 	public int getShardNumber() {
@@ -251,10 +239,9 @@ public class ZuliaShard {
 				}
 			}
 
-			IndexSearcher indexSearcher = new IndexSearcher(readerAndState.getReader());
+			PerFieldSimilarityWrapper similarity = getSimilarity(similarityOverrideMap);
 
-			//similarity is only set query time, indexing time all these similarities are the same
-			indexSearcher.setSimilarity(getSimilarity(similarityOverrideMap));
+			IndexSearcher indexSearcher = readerAndState.getSearcher(similarity);
 
 			if (debug) {
 				LOG.info("Lucene Query for index <" + indexName + "> segment <" + shardNumber + ">: " + query);
@@ -278,7 +265,7 @@ public class ZuliaShard {
 
 			if ((facetRequest != null) && !facetRequest.getCountRequestList().isEmpty()) {
 
-				searchWithFacets(readerAndState.getSortedSetDocValuesReaderState(), facetRequest, query, indexSearcher, collector, shardQueryReponseBuilder);
+				searchWithFacets(readerAndState, facetRequest, query, indexSearcher, collector, shardQueryReponseBuilder);
 
 			}
 			else {
@@ -297,7 +284,7 @@ public class ZuliaShard {
 
 			List<ZuliaHighlighter> highlighterList = getHighlighterList(highlightList, query);
 
-			List<AnalysisHandler> analysisHandlerList = getAnalysisHandlerList(readerAndState.getReader(), analysisRequestList);
+			List<AnalysisHandler> analysisHandlerList = getAnalysisHandlerList(readerAndState, analysisRequestList);
 
 			for (int i = 0; i < numResults; i++) {
 				ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, sortRequest, sorting, results, i, resultFetchType, fieldsToReturn, fieldsToMask,
@@ -344,7 +331,7 @@ public class ZuliaShard {
 		}
 	}
 
-	private List<AnalysisHandler> getAnalysisHandlerList(DirectoryReader directoryReader, List<ZuliaQuery.AnalysisRequest> analysisRequests) throws Exception {
+	private List<AnalysisHandler> getAnalysisHandlerList(ReaderAndState readerAndState, List<ZuliaQuery.AnalysisRequest> analysisRequests) throws Exception {
 		if (analysisRequests.isEmpty()) {
 			return Collections.emptyList();
 		}
@@ -352,7 +339,7 @@ public class ZuliaShard {
 		List<AnalysisHandler> analysisHandlerList = new ArrayList<>();
 		for (ZuliaQuery.AnalysisRequest analysisRequest : analysisRequests) {
 
-			Analyzer analyzer = indexWriter.getAnalyzer();
+			Analyzer analyzer = writerManager.getAnalyzer();
 
 			String analyzerOverride = analysisRequest.getAnalyzerOverride();
 			if (analyzerOverride != null && !analyzerOverride.isEmpty()) {
@@ -367,7 +354,7 @@ public class ZuliaShard {
 				}
 			}
 
-			AnalysisHandler analysisHandler = new AnalysisHandler(directoryReader, analyzer, indexConfig, analysisRequest);
+			AnalysisHandler analysisHandler = new AnalysisHandler(readerAndState, analyzer, indexConfig, analysisRequest);
 			analysisHandlerList.add(analysisHandler);
 		}
 		return analysisHandlerList;
@@ -431,12 +418,12 @@ public class ZuliaShard {
 		};
 	}
 
-	private void searchWithFacets(SortedSetDocValuesReaderState sortedSetDocValuesReaderState, FacetRequest facetRequest, Query q, IndexSearcher indexSearcher,
-			TopDocsCollector<?> collector, ShardQueryResponse.Builder segmentReponseBuilder) throws Exception {
+	private void searchWithFacets(ReaderAndState readerAndState, FacetRequest facetRequest, Query q, IndexSearcher indexSearcher, TopDocsCollector<?> collector,
+			ShardQueryResponse.Builder segmentReponseBuilder) throws Exception {
 		FacetsCollector facetsCollector = new FacetsCollector();
 		indexSearcher.search(q, MultiCollector.wrap(collector, facetsCollector));
 
-		Facets facets = new SortedSetDocValuesFacetCounts(sortedSetDocValuesReaderState, facetsCollector);
+		Facets facets = readerAndState.getFacets(facetsCollector);
 
 		for (CountRequest countRequest : facetRequest.getCountRequestList()) {
 
@@ -459,7 +446,7 @@ public class ZuliaShard {
 						numOfFacets = countRequest.getMaxFacets() * 10;
 					}
 					else {
-						numOfFacets = sortedSetDocValuesReaderState.getSize();
+						numOfFacets = readerAndState.getTotalFacets();
 					}
 				}
 				else {
@@ -467,7 +454,7 @@ public class ZuliaShard {
 						numOfFacets = countRequest.getMaxFacets();
 					}
 					else {
-						numOfFacets = sortedSetDocValuesReaderState.getSize();
+						numOfFacets = readerAndState.getTotalFacets();
 					}
 				}
 
@@ -868,11 +855,8 @@ public class ZuliaShard {
 
 		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadataMongoDoc))));
 
-		luceneDocument = facetsConfig.build(luceneDocument);
-
 		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
-
-		indexWriter.updateDocument(term, luceneDocument);
+		writerManager.updateDocument(luceneDocument, term);
 
 		possibleCommit();
 	}
@@ -1123,7 +1107,7 @@ public class ZuliaShard {
 		}
 
 		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
-		indexWriter.deleteDocuments(term);
+		writerManager.deleteDocuments(term);
 		possibleCommit();
 
 	}
@@ -1134,7 +1118,7 @@ public class ZuliaShard {
 		}
 
 		lastChange = System.currentTimeMillis();
-		indexWriter.forceMerge(maxNumberSegments);
+		writerManager.forceMerge(maxNumberSegments);
 		forceCommit();
 	}
 
@@ -1146,15 +1130,7 @@ public class ZuliaShard {
 
 			GetFieldNamesResponse.Builder builder = GetFieldNamesResponse.newBuilder();
 
-			Set<String> fields = new HashSet<>();
-
-			for (LeafReaderContext subReaderContext : readerAndState.getReader().leaves()) {
-				FieldInfos fieldInfos = subReaderContext.reader().getFieldInfos();
-				for (FieldInfo fi : fieldInfos) {
-					String fieldName = fi.name;
-					fields.add(fieldName);
-				}
-			}
+			Set<String> fields = readerAndState.getFields();
 
 			fields.forEach(builder::addFieldName);
 
@@ -1169,8 +1145,8 @@ public class ZuliaShard {
 		if (!primary) {
 			throw new IllegalStateException("Cannot clear replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
-		// index has write lock so none needed here
-		indexWriter.deleteAll();
+
+		writerManager.deleteAll();
 		forceCommit();
 	}
 
@@ -1180,7 +1156,7 @@ public class ZuliaShard {
 		ReaderAndState readerAndState = readerAndStateManager.acquire();
 
 		try {
-			DirectoryReader directoryReader = readerAndState.getReader();
+			DirectoryReader directoryReader = readerAndState.getIndexReader();
 
 			GetTermsResponse.Builder builder = GetTermsResponse.newBuilder();
 
@@ -1346,7 +1322,7 @@ public class ZuliaShard {
 
 		try {
 
-			int count = readerAndState.getReader().numDocs();
+			int count = readerAndState.numDocs();
 			return ShardCountResponse.newBuilder().setNumberOfDocs(count).setShardNumber(shardNumber).build();
 		}
 		finally {
