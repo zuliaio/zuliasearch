@@ -69,6 +69,7 @@ import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetCounts;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -124,8 +125,8 @@ public class ZuliaShard {
 	private final Set<String> fetchSetWithMeta;
 	private final Set<String> fetchSetWithDocument;
 
-	private IndexWriter indexWriter;
 	private ReaderAndStateManager readerAndStateManager;
+	private final WriterManager writerManager;
 
 	private Long lastCommit;
 	private Long lastChange;
@@ -137,16 +138,17 @@ public class ZuliaShard {
 
 	private final boolean primary;
 
-	public ZuliaShard(int shardNumber, IndexWriter indexWriter, ServerIndexConfig indexConfig, FacetsConfig facetsConfig, boolean primary) throws Exception {
+	public ZuliaShard(int shardNumber, WriterManager writerManager, ServerIndexConfig indexConfig, FacetsConfig facetsConfig,
+			boolean primary) throws Exception {
 
 		this.primary = primary;
 		this.shardNumber = shardNumber;
 		this.indexConfig = indexConfig;
-		this.indexWriter = indexWriter;
+		this.writerManager = writerManager;
 
 		updateIndexSettings();
 
-		this.readerAndStateManager = new ReaderAndStateManager(this.indexWriter);
+		this.readerAndStateManager = new ReaderAndStateManager(writerManager);
 		this.readerAndStateManager.addListener(new ReferenceManager.RefreshListener() {
 			@Override
 			public void beforeRefresh() {
@@ -714,7 +716,7 @@ public class ZuliaShard {
 
 				ZuliaUtil.handleLists(storeFieldValues, (value) -> {
 					String content = value.toString();
-					TokenStream tokenStream = indexWriter.getAnalyzer().tokenStream(indexField, content);
+					TokenStream tokenStream = writerManager.getAnalyzer().tokenStream(indexField, content);
 
 					try {
 						TextFragment[] bestTextFragments = highlighter
@@ -815,7 +817,7 @@ public class ZuliaShard {
 
 		LOG.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
 		long currentTime = System.currentTimeMillis();
-		indexWriter.commit();
+		writerManager.commit();
 		readerAndStateManager.maybeRefresh();
 
 		lastCommit = currentTime;
@@ -839,9 +841,7 @@ public class ZuliaShard {
 	}
 
 	public void close() throws IOException {
-		Directory directory = indexWriter.getDirectory();
-		indexWriter.close();
-		directory.close();
+		writerManager.close();
 	}
 
 	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<Metadata> metadataList) throws Exception {
