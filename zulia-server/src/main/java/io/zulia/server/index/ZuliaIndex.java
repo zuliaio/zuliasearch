@@ -42,9 +42,6 @@ import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -52,9 +49,6 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MMapDirectory;
-import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
 
@@ -221,11 +215,10 @@ public class ZuliaIndex {
 
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
 
+		ShardWriteManager shardWriteManager = new ShardWriteManager(getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), facetsConfig,
+				zuliaPerFieldAnalyzer);
 
-
-		WriterManager writerManager = new WriterManager(getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), zuliaPerFieldAnalyzer);
-
-		ZuliaShard s = new ZuliaShard(shardNumber, writerManager, indexConfig, facetsConfig, primary);
+		ZuliaShard s = new ZuliaShard(shardNumber, shardWriteManager, indexConfig, primary);
 
 		if (primary) {
 			LOG.info("Loaded primary shard <" + shardNumber + "> for index <" + indexName + ">");

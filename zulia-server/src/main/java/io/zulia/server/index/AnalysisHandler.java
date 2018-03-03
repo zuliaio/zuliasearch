@@ -39,7 +39,7 @@ public class AnalysisHandler {
 	private DocFreq docFreq;
 	private TermFreq summaryTermFreq;
 
-	public AnalysisHandler(ReaderAndState readerAndState, Analyzer analyzer, ServerIndexConfig indexConfig, AnalysisRequest analysisRequest) {
+	public AnalysisHandler(ShardReader shardReader, Analyzer analyzer, ServerIndexConfig indexConfig, AnalysisRequest analysisRequest) {
 		this.analysisRequest = analysisRequest;
 		this.indexField = analysisRequest.getField();
 		this.storedFieldName = indexConfig.getStoredFieldName(indexField);
@@ -58,7 +58,7 @@ public class AnalysisHandler {
 				|| analysisRequest.getMaxShardFreq() > 0 || AnalysisRequest.TermSort.TFIDF.equals(analysisRequest.getTermSort()));
 
 		if (needDocFreq) {
-			this.docFreq = new DocFreq(readerAndState, analysisRequest.getField());
+			this.docFreq = new DocFreq(shardReader, analysisRequest.getField());
 			if (analysisRequest.getMinShardFreqPerc() != 0) {
 				this.minShardDocFreqCount = docFreq.getNumDocsForPercent(analysisRequest.getMinShardFreqPerc());
 			}

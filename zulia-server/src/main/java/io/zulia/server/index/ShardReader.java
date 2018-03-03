@@ -4,6 +4,7 @@ import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FastTaxonomyFacetCounts;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FieldInfo;
@@ -17,20 +18,16 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ReaderAndState implements AutoCloseable {
+public class ShardReader implements AutoCloseable {
 
 	private final FacetsConfig facetsConfig;
 	private final DirectoryReader indexReader;
 	private final DirectoryTaxonomyReader taxoReader;
 
-	public ReaderAndState(DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, FacetsConfig facetsConfig) {
+	public ShardReader(DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, FacetsConfig facetsConfig) {
 		this.indexReader = indexReader;
 		this.taxoReader = taxoReader;
 		this.facetsConfig = facetsConfig;
-	}
-
-	public DirectoryReader getIndexReader() {
-		return indexReader;
 	}
 
 	@Override
@@ -79,4 +76,48 @@ public class ReaderAndState implements AutoCloseable {
 	public int docFreq(String field, String term) throws IOException {
 		return indexReader.docFreq(new Term(field, term));
 	}
+
+	public ShardTermsHandler getShardTermsHandler() {
+		return new ShardTermsHandler(indexReader);
+	}
+
+	public int getRefCount() {
+		return indexReader.getRefCount();
+	}
+
+	public boolean tryIncRef() throws IOException {
+		if (indexReader.tryIncRef()) {
+			if (taxoReader.tryIncRef()) {
+				return true;
+			}
+			else {
+				indexReader.decRef();
+			}
+		}
+		return false;
+	}
+
+	public void decRef() throws IOException {
+		indexReader.decRef();
+		taxoReader.decRef();
+	}
+
+	public ShardReader refreshIfNeeded() throws IOException {
+
+		DirectoryReader r = DirectoryReader.openIfChanged(indexReader);
+		if (r == null) {
+			return null;
+		}
+		else {
+			DirectoryTaxonomyReader tr = TaxonomyReader.openIfChanged(taxoReader);
+			if (tr == null) {
+				taxoReader.incRef();
+				tr = taxoReader;
+			}
+
+			return new ShardReader(r, tr, facetsConfig);
+		}
+
+	}
+
 }
