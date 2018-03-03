@@ -12,7 +12,6 @@ import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.index.IndexReader;
 import org.bson.Document;
 
 import java.util.List;
@@ -40,7 +39,7 @@ public class AnalysisHandler {
 	private DocFreq docFreq;
 	private TermFreq summaryTermFreq;
 
-	public AnalysisHandler(IndexReader indexReader, Analyzer analyzer, ServerIndexConfig indexConfig, AnalysisRequest analysisRequest) {
+	public AnalysisHandler(ReaderAndState readerAndState, Analyzer analyzer, ServerIndexConfig indexConfig, AnalysisRequest analysisRequest) {
 		this.analysisRequest = analysisRequest;
 		this.indexField = analysisRequest.getField();
 		this.storedFieldName = indexConfig.getStoredFieldName(indexField);
@@ -59,7 +58,7 @@ public class AnalysisHandler {
 				|| analysisRequest.getMaxShardFreq() > 0 || AnalysisRequest.TermSort.TFIDF.equals(analysisRequest.getTermSort()));
 
 		if (needDocFreq) {
-			this.docFreq = new DocFreq(indexReader, analysisRequest.getField());
+			this.docFreq = new DocFreq(readerAndState, analysisRequest.getField());
 			if (analysisRequest.getMinShardFreqPerc() != 0) {
 				this.minShardDocFreqCount = docFreq.getNumDocsForPercent(analysisRequest.getMinShardFreqPerc());
 			}

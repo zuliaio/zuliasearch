@@ -2,7 +2,6 @@ package io.zulia.server.index;
 
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.ReferenceManager;
 
 import java.io.IOException;
@@ -17,13 +16,13 @@ public class ReaderAndStateManager extends ReferenceManager<ReaderAndState> {
 
 	@Override
 	protected void decRef(ReaderAndState reference) throws IOException {
-		reference.getReader().decRef();
+		reference.getIndexReader().decRef();
 	}
 
 	@Override
 	protected ReaderAndState refreshIfNeeded(ReaderAndState referenceToRefresh) throws IOException {
 
-		DirectoryReader reader = DirectoryReader.openIfChanged(referenceToRefresh.getReader());
+		DirectoryReader reader = DirectoryReader.openIfChanged(referenceToRefresh.getIndexReader());
 		if (reader != null) {
 			return new ReaderAndState(reader);
 		}
@@ -33,11 +32,11 @@ public class ReaderAndStateManager extends ReferenceManager<ReaderAndState> {
 
 	@Override
 	protected boolean tryIncRef(ReaderAndState reference) throws IOException {
-		if (reference.getReader().tryIncRef()) {
+		if (reference.getIndexReader().tryIncRef()) {
 			if (reference.getTaxoReader().tryIncRef()) {
 				return true;
 			} else {
-				reference.getReader().decRef();
+				reference.getIndexReader().decRef();
 			}
 		}
 		return false;
@@ -45,6 +44,6 @@ public class ReaderAndStateManager extends ReferenceManager<ReaderAndState> {
 
 	@Override
 	protected int getRefCount(ReaderAndState reference) {
-		return reference.getReader().getRefCount();
+		return reference.getIndexReader().getRefCount();
 	}
 }

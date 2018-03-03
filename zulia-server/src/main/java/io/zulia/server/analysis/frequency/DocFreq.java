@@ -1,7 +1,6 @@
 package io.zulia.server.analysis.frequency;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
+import io.zulia.server.index.ReaderAndState;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 
@@ -15,23 +14,23 @@ import java.util.HashMap;
 public class DocFreq {
 
 	private final HashMap<String, Integer> docFreqMap;
-	private final IndexReader indexReader;
+	private final ReaderAndState readerAndState;
 	private final String field;
 	private final TFIDFSimilarity similarity;
 	private final int numDocs;
 
-	public DocFreq(IndexReader indexReader, String field) {
-		this.indexReader = indexReader;
+	public DocFreq(ReaderAndState readerAndState, String field) {
+		this.readerAndState = readerAndState;
 		this.field = field;
 		this.docFreqMap = new HashMap<>();
 		this.similarity = new ClassicSimilarity();
-		this.numDocs = indexReader.numDocs();
+		this.numDocs = readerAndState.numDocs();
 	}
 
 	public int getDocFreq(String term) throws IOException {
 		Integer termDocFreq = this.docFreqMap.get(term);
 		if (termDocFreq == null) {
-			termDocFreq = indexReader.docFreq(new Term(field, term));
+			termDocFreq = readerAndState.docFreq(field, term);
 			docFreqMap.put(term, termDocFreq);
 		}
 
