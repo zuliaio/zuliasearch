@@ -17,7 +17,7 @@ import org.apache.lucene.store.NRTCachingDirectory;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class WriterManager {
+public class ShardWriteManager {
 
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final FacetsConfig facetsConfig;
@@ -25,7 +25,8 @@ public class WriterManager {
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 
-	public WriterManager(Path pathToIndex, Path pathToTaxoIndex, FacetsConfig facetsConfig, ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
+	public ShardWriteManager(Path pathToIndex, Path pathToTaxoIndex, FacetsConfig facetsConfig, ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer)
+			throws IOException {
 
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.facetsConfig = facetsConfig;
@@ -58,44 +59,24 @@ public class WriterManager {
 
 	}
 
-	public void close() {
+	public void close() throws IOException {
 		if (indexWriter != null) {
 			Directory directory = indexWriter.getDirectory();
-			try {
-				indexWriter.close();
-			}
-			catch (Exception e) {
 
-			}
-			finally {
-				indexWriter = null;
-				try {
-					directory.close();
-				}
-				catch (Exception e) {
+			indexWriter.close();
+			indexWriter = null;
+			directory.close();
 
-				}
-
-			}
 		}
 		if (taxoWriter != null) {
 			Directory directory = taxoWriter.getDirectory();
-			try {
-				taxoWriter.close();
-			}
-			catch (Exception e) {
 
-			}
-			finally {
-				taxoWriter = null;
-				try {
-					directory.close();
-				}
-				catch (Exception e) {
+			taxoWriter.close();
 
-				}
+			taxoWriter = null;
 
-			}
+			directory.close();
+
 		}
 	}
 
@@ -136,5 +117,9 @@ public class WriterManager {
 
 	public void deleteAll() throws IOException {
 		indexWriter.deleteAll();
+	}
+
+	public FacetsConfig getFacetsConfig() {
+		return facetsConfig;
 	}
 }
