@@ -1,5 +1,7 @@
 package io.zulia.server.index;
 
+import io.zulia.ZuliaConstants;
+import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.analysis.Analyzer;
@@ -16,20 +18,24 @@ import org.apache.lucene.store.NRTCachingDirectory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 public class ShardWriteManager {
 
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final FacetsConfig facetsConfig;
+	private final ShardDocumentIndexer shardDocumentIndexer;
 
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 
-	public ShardWriteManager(Path pathToIndex, Path pathToTaxoIndex, FacetsConfig facetsConfig, ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer)
-			throws IOException {
+	public ShardWriteManager(Path pathToIndex, Path pathToTaxoIndex, FacetsConfig facetsConfig, ServerIndexConfig serverIndexConfig,
+			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
 
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.facetsConfig = facetsConfig;
+
+		this.shardDocumentIndexer = new ShardDocumentIndexer(serverIndexConfig);
 
 		openIndexWriter(pathToIndex);
 		openTaxoWriter(pathToTaxoIndex);
@@ -110,16 +116,18 @@ public class ShardWriteManager {
 		indexWriter.forceMerge(maxNumberSegments);
 	}
 
-	public void updateDocument(Document luceneDocument, Term updateQuery) throws IOException {
-		luceneDocument = facetsConfig.build(taxoWriter, luceneDocument);
-		indexWriter.updateDocument(updateQuery, luceneDocument);
-	}
-
 	public void deleteAll() throws IOException {
 		indexWriter.deleteAll();
 	}
 
 	public FacetsConfig getFacetsConfig() {
 		return facetsConfig;
+	}
+
+	public void indexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<Metadata> metadataList) throws Exception {
+		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadataList);
+		luceneDocument = facetsConfig.build(taxoWriter, luceneDocument);
+		Term updateQuery = new Term(ZuliaConstants.ID_FIELD, uniqueId);
+		indexWriter.updateDocument(updateQuery, luceneDocument);
 	}
 }

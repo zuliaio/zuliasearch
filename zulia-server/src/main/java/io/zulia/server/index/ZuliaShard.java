@@ -2,18 +2,13 @@ package io.zulia.server.index;
 
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.protobuf.ByteString;
-import info.debatty.java.lsh.SuperBit;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
-import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
-import io.zulia.message.ZuliaIndex.FacetAs;
 import io.zulia.message.ZuliaIndex.FieldConfig;
-import io.zulia.message.ZuliaIndex.IndexAs;
-import io.zulia.message.ZuliaIndex.SortAs;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.CountRequest;
@@ -37,33 +32,17 @@ import io.zulia.server.analysis.highlight.ZuliaHighlighter;
 import io.zulia.server.analysis.similarity.ConstantSimilarity;
 import io.zulia.server.analysis.similarity.TFSimilarity;
 import io.zulia.server.config.ServerIndexConfig;
-import io.zulia.server.index.field.BooleanFieldIndexer;
-import io.zulia.server.index.field.DateFieldIndexer;
-import io.zulia.server.index.field.DoubleFieldIndexer;
 import io.zulia.server.index.field.FieldTypeUtil;
-import io.zulia.server.index.field.FloatFieldIndexer;
-import io.zulia.server.index.field.IntFieldIndexer;
-import io.zulia.server.index.field.LongFieldIndexer;
-import io.zulia.server.index.field.StringFieldIndexer;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.QueryResultCache;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
@@ -77,15 +56,11 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -164,29 +139,6 @@ public class ZuliaShard {
 
 	public boolean isPrimary() {
 		return primary;
-	}
-
-	private static String getFoldedString(String text) {
-
-		boolean needsFolding = false;
-		for (int pos = 0; pos < text.length(); ++pos) {
-			final char c = text.charAt(pos);
-
-			if (c >= '\u0080') {
-				needsFolding = true;
-				break;
-			}
-		}
-
-		if (!needsFolding) {
-			return text;
-		}
-
-		char[] textChar = text.toCharArray();
-		char[] output = new char[textChar.length * 4];
-		int outputPos = ASCIIFoldingFilter.foldToASCII(textChar, 0, output, 0, textChar.length);
-		text = new String(output, 0, outputPos);
-		return text;
 	}
 
 	private void setupCaches(ServerIndexConfig indexConfig) {
@@ -827,271 +779,9 @@ public class ZuliaShard {
 			throw new IllegalStateException("Cannot index document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
 
-		Document luceneDocument = new Document();
-
-		addStoredFieldsForDocument(mongoDocument, luceneDocument);
-
-		luceneDocument.add(new StringField(ZuliaConstants.ID_FIELD, uniqueId, Store.YES));
-
-		luceneDocument.add(new LongPoint(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
-		luceneDocument.add(new StoredField(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
-
-		luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(mongoDocument))));
-
-		org.bson.Document metadataMongoDoc = new org.bson.Document();
-
-		for (Metadata metadata : metadataList) {
-			metadataMongoDoc.put(metadata.getKey(), metadata.getValue());
-		}
-
-		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadataMongoDoc))));
-
-		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
-		shardWriteManager.updateDocument(luceneDocument, term);
+		shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadataList);
 
 		possibleCommit();
-	}
-
-	private void addStoredFieldsForDocument(org.bson.Document mongoDocument, Document luceneDocument) throws Exception {
-		for (String storedFieldName : indexConfig.getIndexedStoredFieldNames()) {
-
-			FieldConfig fc = indexConfig.getFieldConfig(storedFieldName);
-
-			if (fc != null) {
-
-				FieldConfig.FieldType fieldType = fc.getFieldType();
-
-				Object o = ResultHelper.getValueFromMongoDocument(mongoDocument, storedFieldName);
-
-				if (o != null) {
-					handleFacetsForStoredField(luceneDocument, fc, o);
-
-					handleSortForStoredField(luceneDocument, storedFieldName, fc, o);
-
-					handleIndexingForStoredField(luceneDocument, storedFieldName, fc, fieldType, o);
-
-					handleProjectForStoredField(luceneDocument, fc, o);
-				}
-			}
-
-		}
-	}
-
-	private void handleProjectForStoredField(Document luceneDocument, FieldConfig fc, Object o) throws Exception {
-		for (ZuliaIndex.ProjectAs projectAs : fc.getProjectAsList()) {
-			if (projectAs.hasSuperbit()) {
-				if (o instanceof List) {
-					List<Number> values = (List<Number>) o;
-
-					double vec[] = new double[values.size()];
-					int i = 0;
-					for (Number value : values) {
-						vec[i++] = value.doubleValue();
-					}
-
-					SuperBit superBitForField = indexConfig.getSuperBitForField(projectAs.getField());
-					boolean[] signature = superBitForField.signature(vec);
-
-					int j = 0;
-					for (boolean s : signature) {
-						StringFieldIndexer.INSTANCE.index(luceneDocument, projectAs.getField(), s ? "1" : "0",
-								ZuliaConstants.SUPERBIT_PREFIX + "." + projectAs.getField() + "." + j);
-						j++;
-					}
-
-				}
-				else {
-					throw new Exception("Expecting a list for superbit field <" + projectAs.getField() + ">");
-				}
-			}
-		}
-	}
-
-	private void handleIndexingForStoredField(Document luceneDocument, String storedFieldName, FieldConfig fc, FieldConfig.FieldType fieldType, Object o)
-			throws Exception {
-		for (IndexAs indexAs : fc.getIndexAsList()) {
-
-			String indexedFieldName = indexAs.getIndexFieldName();
-			luceneDocument.add(new StringField(ZuliaConstants.FIELDS_LIST_FIELD, indexedFieldName, Store.NO));
-
-			if (FieldConfig.FieldType.NUMERIC_INT.equals(fieldType)) {
-				IntFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
-			}
-			else if (FieldConfig.FieldType.NUMERIC_LONG.equals(fieldType)) {
-				LongFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
-			}
-			else if (FieldConfig.FieldType.NUMERIC_FLOAT.equals(fieldType)) {
-				FloatFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
-			}
-			else if (FieldConfig.FieldType.NUMERIC_DOUBLE.equals(fieldType)) {
-				DoubleFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
-			}
-			else if (FieldConfig.FieldType.DATE.equals(fieldType)) {
-				DateFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
-			}
-			else if (FieldConfig.FieldType.BOOL.equals(fieldType)) {
-				BooleanFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
-			}
-			else if (FieldConfig.FieldType.STRING.equals(fieldType)) {
-				StringFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
-			}
-			else {
-				throw new RuntimeException("Unsupported field type <" + fieldType + ">");
-			}
-		}
-	}
-
-	private void handleSortForStoredField(Document d, String storedFieldName, FieldConfig fc, Object o) {
-
-		FieldConfig.FieldType fieldType = fc.getFieldType();
-		for (SortAs sortAs : fc.getSortAsList()) {
-			String sortFieldName = sortAs.getSortFieldName();
-
-			if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
-				ZuliaUtil.handleLists(o, obj -> {
-
-					if (FieldConfig.FieldType.DATE.equals(fieldType)) {
-						if (obj instanceof Date) {
-
-							Date date = (Date) obj;
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, date.getTime());
-							d.add(docValue);
-						}
-						else {
-							throw new RuntimeException(
-									"Expecting date for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
-											+ ">");
-						}
-					}
-					else {
-						if (obj instanceof Number) {
-
-							Number number = (Number) obj;
-							SortedNumericDocValuesField docValue = null;
-							if (FieldConfig.FieldType.NUMERIC_INT.equals(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, number.intValue());
-							}
-							else if (FieldConfig.FieldType.NUMERIC_LONG.equals(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, number.longValue());
-							}
-							else if (FieldConfig.FieldType.NUMERIC_FLOAT.equals(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.floatToSortableInt(number.floatValue()));
-							}
-							else if (FieldConfig.FieldType.NUMERIC_DOUBLE.equals(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.doubleToSortableLong(number.doubleValue()));
-							}
-							else {
-								throw new RuntimeException(
-										"Not handled numeric field type <" + fieldType + "> for document field <" + storedFieldName + "> / sort field <"
-												+ sortFieldName + ">");
-							}
-
-							d.add(docValue);
-						}
-						else {
-							throw new RuntimeException(
-									"Expecting number for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
-											+ ">");
-						}
-					}
-				});
-			}
-			else if (FieldConfig.FieldType.BOOL.equals(fieldType)) {
-				ZuliaUtil.handleLists(o, obj -> {
-					if (obj instanceof Boolean) {
-						String text = obj.toString();
-						SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));
-						d.add(docValue);
-					}
-					else {
-						throw new RuntimeException(
-								"Expecting boolean for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
-										+ ">");
-					}
-				});
-			}
-			else if (FieldConfig.FieldType.STRING.equals(fieldType)) {
-				ZuliaUtil.handleLists(o, obj -> {
-					String text = o.toString();
-
-					SortAs.StringHandling stringHandling = sortAs.getStringHandling();
-					if (SortAs.StringHandling.STANDARD.equals(stringHandling)) {
-						//no op
-					}
-					else if (SortAs.StringHandling.LOWERCASE.equals(stringHandling)) {
-						text = text.toLowerCase();
-					}
-					else if (SortAs.StringHandling.FOLDING.equals(stringHandling)) {
-						text = getFoldedString(text);
-					}
-					else if (SortAs.StringHandling.LOWERCASE_FOLDING.equals(stringHandling)) {
-						text = getFoldedString(text).toLowerCase();
-					}
-					else {
-						throw new RuntimeException(
-								"Not handled string handling <" + stringHandling + "> for document field <" + storedFieldName + "> / sort field <"
-										+ sortFieldName + ">");
-					}
-
-					SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));
-					d.add(docValue);
-				});
-			}
-			else {
-				throw new RuntimeException(
-						"Not handled field type <" + fieldType + "> for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">");
-			}
-
-		}
-	}
-
-	private void handleFacetsForStoredField(Document doc, FieldConfig fc, Object o) throws Exception {
-		for (FacetAs fa : fc.getFacetAsList()) {
-
-			String facetName = fa.getFacetName();
-
-			if (FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
-				FacetAs.DateHandling dateHandling = fa.getDateHandling();
-				ZuliaUtil.handleLists(o, obj -> {
-					if (obj instanceof Date) {
-						LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
-
-						if (FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
-							String date = String.format("%02d%02d%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
-							addFacet(doc, facetName, date);
-						}
-						else if (FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
-
-							String date = String.format("%02d-%02d-%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
-							addFacet(doc, facetName, date);
-						}
-						else {
-							throw new RuntimeException("Not handled date handling <" + dateHandling + "> for facet <" + fa.getFacetName() + ">");
-						}
-
-					}
-					else {
-						throw new RuntimeException("Cannot facet date for document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName()
-								+ ">: excepted Date or Collection of Date, found <" + o.getClass().getSimpleName() + ">");
-					}
-				});
-			}
-			else {
-				ZuliaUtil.handleLists(o, obj -> {
-					String string = obj.toString();
-					addFacet(doc, facetName, string);
-				});
-			}
-
-		}
-	}
-
-	private void addFacet(Document doc, String facetName, String value) {
-		if (!value.isEmpty()) {
-			doc.add(new FacetField(facetName, value));
-			//doc.add(new SortedSetDocValuesFacetField(facetName, value));
-			doc.add(new StringField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME + "." + facetName, new BytesRef(value), Store.NO));
-		}
 	}
 
 	public void deleteDocument(String uniqueId) throws Exception {
