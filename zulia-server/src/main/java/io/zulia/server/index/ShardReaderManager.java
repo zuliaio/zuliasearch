@@ -1,17 +1,13 @@
 package io.zulia.server.index;
 
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.ReferenceManager;
 
 import java.io.IOException;
 
 public class ShardReaderManager extends ReferenceManager<ShardReader> {
 
-	public ShardReaderManager(ShardWriteManager shardWriteManager) throws IOException {
-		DirectoryReader indexReader = DirectoryReader.open(shardWriteManager.getIndexWriter());
-		DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(shardWriteManager.getTaxoWriter());
-		current = new ShardReader(indexReader, taxoReader, shardWriteManager.getFacetsConfig());
+	public ShardReaderManager(ShardReader initial) {
+		this.current = initial;
 	}
 
 	@Override
@@ -33,4 +29,5 @@ public class ShardReaderManager extends ReferenceManager<ShardReader> {
 	protected int getRefCount(ShardReader reference) {
 		return reference.getRefCount();
 	}
+
 }
