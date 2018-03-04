@@ -154,8 +154,6 @@ public class ZuliaIndex {
 
 		commitTimer.scheduleAtFixedRate(commitTask, 1000, 1000);
 
-
-
 	}
 
 	public FieldConfig.FieldType getSortFieldType(String fieldName) {
@@ -171,7 +169,7 @@ public class ZuliaIndex {
 					shard.forceCommit();
 				}
 				else {
-					shard.doCommit();
+					shard.tryIdleCommit();
 				}
 			}
 			catch (Exception e) {
@@ -215,10 +213,10 @@ public class ZuliaIndex {
 
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
 
-		ShardWriteManager shardWriteManager = new ShardWriteManager(getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), facetsConfig,
-				zuliaPerFieldAnalyzer);
+		ShardWriteManager shardWriteManager = new ShardWriteManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), facetsConfig,
+				indexConfig, zuliaPerFieldAnalyzer);
 
-		ZuliaShard s = new ZuliaShard(shardNumber, shardWriteManager, indexConfig, primary);
+		ZuliaShard s = new ZuliaShard(shardWriteManager, primary);
 
 		if (primary) {
 			LOG.info("Loaded primary shard <" + shardNumber + "> for index <" + indexName + ">");
