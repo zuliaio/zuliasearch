@@ -119,6 +119,7 @@ public class ZuliaShard {
 
 	private final boolean primary;
 
+	//
 	public ZuliaShard(int shardNumber, ShardWriteManager shardWriteManager, ServerIndexConfig indexConfig, boolean primary) throws Exception {
 
 		this.primary = primary;
