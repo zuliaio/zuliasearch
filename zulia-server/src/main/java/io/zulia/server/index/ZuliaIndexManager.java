@@ -303,7 +303,10 @@ public class ZuliaIndexManager {
 		String indexName = indexSettings.getIndexName();
 		IndexSettings existingIndex = indexService.getIndex(indexName);
 
+		long currentTimeMillis = System.currentTimeMillis();
 		if (existingIndex == null) {
+
+			indexSettings = indexSettings.toBuilder().setCreateTime(currentTimeMillis).build();
 
 			IndexMapping.Builder indexMapping = IndexMapping.newBuilder();
 			indexMapping.setIndexName(indexName);
@@ -353,6 +356,7 @@ public class ZuliaIndexManager {
 			}
 
 		}
+		indexSettings = indexSettings.toBuilder().setUpdateTime(currentTimeMillis).build();
 		indexService.createIndex(indexSettings);
 
 		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
