@@ -81,7 +81,7 @@ public class ShardWriteManager {
 		config.setRAMBufferSizeMB(128); // should be overwritten by ZuliaShard.updateIndexSettings()
 		config.setUseCompoundFile(false);
 
-		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 32, 128);
+		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 50, 150);
 
 		this.indexWriter = new IndexWriter(nrtCachingDirectory, config);
 
@@ -89,7 +89,7 @@ public class ShardWriteManager {
 
 	private void openTaxoWriter(Path pathToTaxo) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
-		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 8, 16);
+		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
 		this.taxoWriter = new DirectoryTaxonomyWriter(nrtCachingDirectory);
 
 	}
