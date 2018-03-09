@@ -21,7 +21,7 @@ public class StoreServerRequest extends ServerRequestHandler<StoreResponse, Stor
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle store", e);
 	}
 }

@@ -21,7 +21,7 @@ public class DeleteIndexServerRequest extends ServerRequestHandler<DeleteIndexRe
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle delete index", e);
 	}
 }

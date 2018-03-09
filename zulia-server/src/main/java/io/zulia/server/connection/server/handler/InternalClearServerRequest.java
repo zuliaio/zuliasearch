@@ -21,7 +21,7 @@ public class InternalClearServerRequest extends ServerRequestHandler<ClearRespon
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle internal clear", e);
 	}
 }

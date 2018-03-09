@@ -21,7 +21,7 @@ public class OptimizeServerRequest extends ServerRequestHandler<OptimizeResponse
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle optimize", e);
 	}
 }
