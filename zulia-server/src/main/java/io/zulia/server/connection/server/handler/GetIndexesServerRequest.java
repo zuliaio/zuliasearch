@@ -21,7 +21,7 @@ public class GetIndexesServerRequest extends ServerRequestHandler<GetIndexesResp
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle get indexes request", e);
 	}
 }

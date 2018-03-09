@@ -6,6 +6,7 @@ import io.zulia.message.ZuliaServiceGrpc;
 import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class InternalRpcConnection {
@@ -42,8 +43,7 @@ public class InternalRpcConnection {
 			}
 		}
 		catch (Exception e) {
-			System.err.println("ERROR: Exception: " + e);
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Close Failed", e);
 		}
 		channel = null;
 		blockingStub = null;

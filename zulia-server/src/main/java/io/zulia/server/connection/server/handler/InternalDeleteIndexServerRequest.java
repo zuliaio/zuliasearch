@@ -21,7 +21,7 @@ public class InternalDeleteIndexServerRequest extends ServerRequestHandler<Delet
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle internal delete index", e);
 	}
 }

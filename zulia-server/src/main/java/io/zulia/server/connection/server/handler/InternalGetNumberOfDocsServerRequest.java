@@ -21,7 +21,7 @@ public class InternalGetNumberOfDocsServerRequest extends ServerRequestHandler<G
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle internal get number of docs", e);
 	}
 }

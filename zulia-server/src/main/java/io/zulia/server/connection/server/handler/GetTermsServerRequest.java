@@ -21,7 +21,7 @@ public class GetTermsServerRequest extends ServerRequestHandler<GetTermsResponse
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle get terms request", e);
 	}
 }

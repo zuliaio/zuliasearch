@@ -21,7 +21,7 @@ public class CreateIndexServerRequest extends ServerRequestHandler<CreateIndexRe
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle create index", e);
 	}
 }

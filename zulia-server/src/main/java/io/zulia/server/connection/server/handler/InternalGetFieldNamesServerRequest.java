@@ -21,7 +21,7 @@ public class InternalGetFieldNamesServerRequest extends ServerRequestHandler<Get
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle internal get field names", e);
 	}
 }
