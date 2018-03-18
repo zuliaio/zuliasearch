@@ -124,6 +124,7 @@ public class ZuliaD {
 				List<ServerAddress> serverAddressList = new ArrayList<>();
 
 				for (MongoServer mongoServer : mongoServers) {
+					System.out.println("Added Mongo Server: " + mongoServer);
 					serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
 				}
 
