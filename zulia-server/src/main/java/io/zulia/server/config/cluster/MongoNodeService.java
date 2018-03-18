@@ -2,6 +2,7 @@ package io.zulia.server.config.cluster;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import io.zulia.message.ZuliaBase.Node;
@@ -29,7 +30,7 @@ public class MongoNodeService implements NodeService {
 		this.clusterName = clusterName;
 
 		MongoCollection<Document> collection = getCollection();
-		collection.createIndex(new Document(SERVER_ADDRESS, 1).append(SERVICE_PORT, 1));
+		collection.createIndex(new Document(SERVER_ADDRESS, 1).append(SERVICE_PORT, 1), new IndexOptions().background(true));
 
 	}
 
