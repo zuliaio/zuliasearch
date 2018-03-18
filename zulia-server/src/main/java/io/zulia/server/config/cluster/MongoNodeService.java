@@ -1,7 +1,6 @@
 package io.zulia.server.config.cluster;
 
 import com.mongodb.MongoClient;
-import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
@@ -35,7 +34,8 @@ public class MongoNodeService implements NodeService {
 	}
 
 	private MongoCollection<Document> getCollection() {
-		return mongoClient.getDatabase(clusterName).getCollection(NODES).withWriteConcern(WriteConcern.MAJORITY);
+		//return mongoClient.getDatabase(clusterName).getCollection(NODES).withWriteConcern(WriteConcern.MAJORITY);
+		return mongoClient.getDatabase(clusterName).getCollection(NODES);
 	}
 
 	@Override
