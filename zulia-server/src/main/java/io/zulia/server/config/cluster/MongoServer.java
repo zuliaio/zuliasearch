@@ -23,6 +23,6 @@ public class MongoServer {
 
 	@Override
 	public String toString() {
-		return "MongoServer{" + "hostname='" + hostname + '\'' + ", port=" + port + '}';
+		return "{" + "hostname='" + hostname + '\'' + ", port=" + port + '}';
 	}
 }
