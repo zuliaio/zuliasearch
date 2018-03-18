@@ -129,8 +129,10 @@ public class ZuliaD {
 				}
 
 				MongoProvider.setMongoClient(new MongoClient(serverAddressList));
+				System.out.println("Created Mongo Client: " + MongoProvider.getMongoClient());
 
 				nodeService = new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
+				System.out.println("Created Mongo Node Service");
 			}
 			else {
 				nodeService = new SingleNodeService(zuliaConfig);
@@ -138,7 +140,10 @@ public class ZuliaD {
 
 			if ("start".equals(jCommander.getParsedCommand())) {
 				setLuceneStatic();
+
+				System.out.println("Getting Nodes");
 				Collection<Node> nodes = nodeService.getNodes();
+				System.out.println("Got Nodes");
 
 				if (zuliaConfig.isCluster()) {
 					if (nodes.isEmpty()) {
