@@ -124,26 +124,25 @@ public class ZuliaD {
 				List<ServerAddress> serverAddressList = new ArrayList<>();
 
 				for (MongoServer mongoServer : mongoServers) {
-					System.out.println("Added Mongo Server: " + mongoServer);
+					LOG.info("Added Mongo Server: " + mongoServer);
 					serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
 				}
 
 				MongoProvider.setMongoClient(new MongoClient(serverAddressList));
-				System.out.println("Created Mongo Client: " + MongoProvider.getMongoClient());
+				LOG.info("Created Mongo Client: " + MongoProvider.getMongoClient());
 
 				nodeService = new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
-				System.out.println("Created Mongo Node Service");
+				LOG.info("Created Mongo Node Service");
 			}
 			else {
 				nodeService = new SingleNodeService(zuliaConfig);
+				LOG.info("Created Single Node Service");
 			}
 
 			if ("start".equals(jCommander.getParsedCommand())) {
 				setLuceneStatic();
 
-				System.out.println("Getting Nodes");
 				Collection<Node> nodes = nodeService.getNodes();
-				System.out.println("Got Nodes");
 
 				if (zuliaConfig.isCluster()) {
 					if (nodes.isEmpty()) {
