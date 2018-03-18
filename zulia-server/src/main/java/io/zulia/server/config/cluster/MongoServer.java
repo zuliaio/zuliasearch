@@ -20,4 +20,9 @@ public class MongoServer {
 	public int getPort() {
 		return port;
 	}
+
+	@Override
+	public String toString() {
+		return "MongoServer{" + "hostname='" + hostname + '\'' + ", port=" + port + '}';
+	}
 }
