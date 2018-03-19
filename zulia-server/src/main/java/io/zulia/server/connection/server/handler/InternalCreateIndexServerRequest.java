@@ -21,7 +21,7 @@ public class InternalCreateIndexServerRequest extends ServerRequestHandler<Creat
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle internal create index", e);
 	}
 }

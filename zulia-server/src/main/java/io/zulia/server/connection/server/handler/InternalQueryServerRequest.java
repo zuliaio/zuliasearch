@@ -21,7 +21,7 @@ public class InternalQueryServerRequest extends ServerRequestHandler<InternalQue
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle internal query", e);
 	}
 }

@@ -42,6 +42,7 @@ import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -413,61 +414,67 @@ public class ZuliaIndex {
 	}
 
 	private Query parseQueryToLucene(ZuliaQuery.Query zuliaQuery) throws Exception {
-		ZuliaQuery.Query.Operator defaultOperator = zuliaQuery.getDefaultOp();
-		String queryText = zuliaQuery.getQ();
-		Integer minimumShouldMatchNumber = zuliaQuery.getMm();
-		List<String> queryFields = zuliaQuery.getQfList();
 
-		QueryParser.Operator operator = null;
-		if (defaultOperator.equals(ZuliaQuery.Query.Operator.OR)) {
-			operator = QueryParser.Operator.OR;
-		}
-		else if (defaultOperator.equals(ZuliaQuery.Query.Operator.AND)) {
-			operator = QueryParser.Operator.AND;
-		}
-		else {
-			//this should never happen
-			LOG.severe("Unknown operator type: <" + defaultOperator + ">");
-		}
-
-		ZuliaMultiFieldQueryParser qp = null;
-		if (queryText == null || queryText.isEmpty()) {
-			if (queryFields.isEmpty()) {
-				return new MatchAllDocsQuery();
-			}
-			else {
-				queryText = "*";
-			}
-		}
 		try {
-			qp = parsers.borrowObject();
-			qp.setMinimumNumberShouldMatch(minimumShouldMatchNumber);
-			qp.setDefaultOperator(operator);
+			ZuliaQuery.Query.Operator defaultOperator = zuliaQuery.getDefaultOp();
+			String queryText = zuliaQuery.getQ();
+			Integer minimumShouldMatchNumber = zuliaQuery.getMm();
+			List<String> queryFields = zuliaQuery.getQfList();
 
-			if (zuliaQuery.getDismax()) {
-				qp.enableDismax(zuliaQuery.getDismaxTie());
+			QueryParser.Operator operator = null;
+			if (defaultOperator.equals(ZuliaQuery.Query.Operator.OR)) {
+				operator = QueryParser.Operator.OR;
+			}
+			else if (defaultOperator.equals(ZuliaQuery.Query.Operator.AND)) {
+				operator = QueryParser.Operator.AND;
 			}
 			else {
-				qp.disableDismax();
+				//this should never happen
+				LOG.severe("Unknown operator type: <" + defaultOperator + ">");
 			}
 
-			if (queryFields.isEmpty()) {
-				qp.setDefaultFields(indexConfig.getIndexSettings().getDefaultSearchFieldList());
+			ZuliaMultiFieldQueryParser qp = null;
+			if (queryText == null || queryText.isEmpty()) {
+				if (queryFields.isEmpty()) {
+					return new MatchAllDocsQuery();
+				}
+				else {
+					queryText = "*";
+				}
 			}
-			else {
-				qp.setDefaultFields(queryFields);
-			}
-			Query query = qp.parse(queryText);
-			boolean negative = QueryUtil.isNegative(query);
-			if (negative) {
-				query = QueryUtil.fixNegativeQuery(query);
-			}
+			try {
+				qp = parsers.borrowObject();
+				qp.setMinimumNumberShouldMatch(minimumShouldMatchNumber);
+				qp.setDefaultOperator(operator);
 
-			return query;
+				if (zuliaQuery.getDismax()) {
+					qp.enableDismax(zuliaQuery.getDismaxTie());
+				}
+				else {
+					qp.disableDismax();
+				}
 
+				if (queryFields.isEmpty()) {
+					qp.setDefaultFields(indexConfig.getIndexSettings().getDefaultSearchFieldList());
+				}
+				else {
+					qp.setDefaultFields(queryFields);
+				}
+				Query query = qp.parse(queryText);
+				boolean negative = QueryUtil.isNegative(query);
+				if (negative) {
+					query = QueryUtil.fixNegativeQuery(query);
+				}
+
+				return query;
+
+			}
+			finally {
+				parsers.returnObject(qp);
+			}
 		}
-		finally {
-			parsers.returnObject(qp);
+		catch (ParseException e) {
+			throw new Exception("Invalid Query: " + zuliaQuery.getQ());
 		}
 	}
 

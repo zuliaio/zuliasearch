@@ -21,7 +21,7 @@ public class QueryServerRequest extends ServerRequestHandler<QueryResponse, Quer
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle query", e);
 	}
 }

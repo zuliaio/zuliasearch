@@ -21,7 +21,7 @@ public class GetNumberOfDocsServerRequest extends ServerRequestHandler<GetNumber
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle get number of documents", e);
 	}
 }
