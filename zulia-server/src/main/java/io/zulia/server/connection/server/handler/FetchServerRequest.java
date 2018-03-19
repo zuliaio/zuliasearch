@@ -21,7 +21,7 @@ public class FetchServerRequest extends ServerRequestHandler<FetchResponse, Fetc
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle fetch", e);
 	}
 }

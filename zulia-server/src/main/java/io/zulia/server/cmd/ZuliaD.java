@@ -124,19 +124,24 @@ public class ZuliaD {
 				List<ServerAddress> serverAddressList = new ArrayList<>();
 
 				for (MongoServer mongoServer : mongoServers) {
+					LOG.info("Added Mongo Server: " + mongoServer);
 					serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
 				}
 
 				MongoProvider.setMongoClient(new MongoClient(serverAddressList));
+				LOG.info("Created Mongo Client: " + MongoProvider.getMongoClient());
 
 				nodeService = new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
+				LOG.info("Created Mongo Node Service");
 			}
 			else {
 				nodeService = new SingleNodeService(zuliaConfig);
+				LOG.info("Created Single Node Service");
 			}
 
 			if ("start".equals(jCommander.getParsedCommand())) {
 				setLuceneStatic();
+
 				Collection<Node> nodes = nodeService.getNodes();
 
 				if (zuliaConfig.isCluster()) {

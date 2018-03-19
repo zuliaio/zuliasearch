@@ -21,7 +21,7 @@ public class ClearServerRequest extends ServerRequestHandler<ClearResponse, Clea
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle clear", e);
 	}
 }

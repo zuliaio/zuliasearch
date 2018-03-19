@@ -21,7 +21,7 @@ public class InternalGetTermsServerRequest extends ServerRequestHandler<Internal
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle internal get terms", e);
 	}
 }

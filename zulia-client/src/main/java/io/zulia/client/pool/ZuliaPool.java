@@ -179,7 +179,7 @@ public class ZuliaPool {
 					if (trailers.containsKey(MetaKeys.ERROR_KEY)) {
 						String errorMessage = trailers.get(MetaKeys.ERROR_KEY);
 						if (!Status.INVALID_ARGUMENT.equals(e.getStatus())) {
-							throw new Exception(command.getClass().getSimpleName() + ":" + errorMessage);
+							throw new Exception(command.getClass().getSimpleName() + ": " + errorMessage);
 						}
 						else {
 							throw new IllegalArgumentException(command.getClass().getSimpleName() + ":" + errorMessage);

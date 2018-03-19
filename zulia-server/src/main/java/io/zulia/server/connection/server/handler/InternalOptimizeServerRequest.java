@@ -21,7 +21,7 @@ public class InternalOptimizeServerRequest extends ServerRequestHandler<Optimize
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle internal optimize", e);
 	}
 }

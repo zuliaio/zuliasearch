@@ -22,7 +22,7 @@ public abstract class ServerRequestHandler<S, Q> {
 			responseObserver.onNext(s);
 			responseObserver.onCompleted();
 		}
-		catch (Exception e) {
+		catch (Throwable e) {
 			Metadata metadata = new Metadata();
 			if (e.getMessage() != null) {
 				metadata.put(MetaKeys.ERROR_KEY, e.getMessage());
@@ -45,6 +45,6 @@ public abstract class ServerRequestHandler<S, Q> {
 
 	protected abstract S handleCall(ZuliaIndexManager indexManager, Q request) throws Exception;
 
-	protected abstract void onError(Exception e);
+	protected abstract void onError(Throwable e);
 
 }

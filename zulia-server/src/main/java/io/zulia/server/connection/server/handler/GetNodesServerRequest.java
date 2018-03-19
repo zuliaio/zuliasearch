@@ -21,7 +21,7 @@ public class GetNodesServerRequest extends ServerRequestHandler<GetNodesResponse
 	}
 
 	@Override
-	protected void onError(Exception e) {
+	protected void onError(Throwable e) {
 		LOG.log(Level.SEVERE, "Failed to handle get nodes", e);
 	}
 }
