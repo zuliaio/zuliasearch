@@ -36,7 +36,7 @@ public class BooleanAnalyzer extends Analyzer {
 				int ch = input.read();
 				if (ch == -1)
 					return false;
-				termAtt.copyBuffer(((ch == 't' || ch == 'T' || ch == '1') ? TRUE_TOKEN : FALSE_TOKEN), 0, 1);
+				termAtt.copyBuffer(((ch == 't' || ch == 'T' || ch == 'y' || ch == 'Y' || ch == '1') ? TRUE_TOKEN : FALSE_TOKEN), 0, 1);
 				return true;
 			}
 		};

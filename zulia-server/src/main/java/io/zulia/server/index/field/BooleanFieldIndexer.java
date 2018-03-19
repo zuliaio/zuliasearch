@@ -33,12 +33,14 @@ public class BooleanFieldIndexer extends FieldIndexer {
 			}
 			else if (value instanceof String) {
 				String v = (String) value;
-				if (v.startsWith("T") || v.startsWith("F") | v.startsWith("t") | v.startsWith("f") || v.startsWith("0") || v.startsWith("1")) {
+				if (v.startsWith("T") || v.startsWith("F") || v.startsWith("Y") || v.startsWith("N") || v.startsWith("t") || v.startsWith("f") || v
+						.startsWith("y") || v.startsWith("n") || v.startsWith("0") || v.startsWith("1")) {
 					d.add((new Field(indexedFieldName, v, notStoredTextField)));
 				}
 				else {
 					throw new Exception(
-							"String for Boolean field must start with 'T','t','F','f','0', or '1' for <" + storedFieldName + "> and found <" + v + ">");
+							"String for Boolean field must start with 'Y','y','N','n','T','t','F','f','0', or '1' for <" + storedFieldName + "> and found <" + v
+									+ ">");
 				}
 			}
 			else if (value instanceof Number) {
