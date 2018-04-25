@@ -108,11 +108,11 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(new GetIndexes());
 	}
 
-	public GetNodesResult getMembers() throws Exception {
+	public GetNodesResult getNodes() throws Exception {
 		return execute(new GetNodes());
 	}
 
-	public ListenableFuture<GetNodesResult> getMembersAsync() throws Exception {
+	public ListenableFuture<GetNodesResult> getNodesAsync() throws Exception {
 		return executeAsync(new GetNodes());
 	}
 
