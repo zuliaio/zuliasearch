@@ -90,6 +90,7 @@ message AnalyzerSettings {
         FIVE_FIVE_SHINGLE = 12;
         BRITISH_US = 13;
         CONCAT_ALL = 14;
+        CASE_PROTECTED_WORDS = 15;
     }
 
 
