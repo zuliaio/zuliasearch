@@ -1,11 +1,11 @@
 package io.zulia.server.analysis.filter;
 
+import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.glassfish.grizzly.utils.Charsets;
 
 import java.io.IOException;
 import java.net.URL;
@@ -26,7 +26,7 @@ public class BritishUSFilter extends TokenFilter {
 
 		try {
 			URL url = Resources.getResource(BritishUSFilter.class, "british.txt");
-			String text = Resources.toString(url, Charsets.UTF8_CHARSET);
+			String text = Resources.toString(url, Charsets.UTF_8);
 			String[] lines = text.split("\n");
 			for (String line : lines) {
 				if (!line.startsWith("UK\tUS")) {
