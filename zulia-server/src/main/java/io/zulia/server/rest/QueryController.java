@@ -3,6 +3,14 @@ package io.zulia.server.rest;
 import com.cedarsoftware.util.io.JsonWriter;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
+import io.micronaut.context.annotation.Parameter;
+import io.micronaut.core.io.Writable;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.util.CursorHelper;
@@ -10,15 +18,8 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
-import java.io.OutputStream;
+import javax.inject.Singleton;
+import java.io.Writer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
@@ -36,33 +37,34 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
-@Path(ZuliaConstants.QUERY_URL)
-public class QueryResource {
+@Controller(ZuliaConstants.QUERY_URL)
+public class QueryController {
 
-	private final static Logger LOG = Logger.getLogger(QueryResource.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(QueryController.class.getSimpleName());
 
+	@Singleton
 	private ZuliaIndexManager indexManager;
 
-	public QueryResource(ZuliaIndexManager indexManager) {
+	public QueryController(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 
-	@GET
+	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8", MediaType.TEXT_PLAIN + ";charset=utf-8" })
-	public Response get(@QueryParam(ZuliaConstants.INDEX) List<String> indexName, @QueryParam(ZuliaConstants.QUERY) String query,
-			@QueryParam(ZuliaConstants.QUERY_FIELD) List<String> queryFields, @QueryParam(ZuliaConstants.FILTER_QUERY) List<String> filterQueries,
-			@QueryParam(ZuliaConstants.FILTER_QUERY_JSON) List<String> filterJsonQueries, @QueryParam(ZuliaConstants.FIELDS) List<String> fields,
-			@QueryParam(ZuliaConstants.FETCH) Boolean fetch, @QueryParam(ZuliaConstants.ROWS) int rows, @QueryParam(ZuliaConstants.FACET) List<String> facet,
-			@QueryParam(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @QueryParam(ZuliaConstants.DEFAULT_OP) String defaultOperator,
-			@QueryParam(ZuliaConstants.SORT) List<String> sort, @QueryParam(ZuliaConstants.PRETTY) boolean pretty,
-			@QueryParam(ZuliaConstants.DISMAX) Boolean dismax, @QueryParam(ZuliaConstants.DISMAX_TIE) Float dismaxTie,
-			@QueryParam(ZuliaConstants.MIN_MATCH) Integer mm, @QueryParam(ZuliaConstants.SIMILARITY) List<String> similarity,
-			@QueryParam(ZuliaConstants.DEBUG) Boolean debug, @QueryParam(ZuliaConstants.DONT_CACHE) Boolean dontCache,
-			@QueryParam(ZuliaConstants.START) Integer start, @QueryParam(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
-			@QueryParam(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList, @QueryParam(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
-			@QueryParam(ZuliaConstants.COS_SIM_JSON) List<String> cosineSimJsonList, @QueryParam(ZuliaConstants.FORMAT) @DefaultValue("json") String format,
-			@QueryParam(ZuliaConstants.BATCH) boolean batch, @QueryParam(ZuliaConstants.BATCH_SIZE) @DefaultValue("500") Integer batchSize,
-			@QueryParam(ZuliaConstants.CURSOR) String cursor) {
+	public HttpResponse get(@Parameter(ZuliaConstants.INDEX) List<String> indexName, @Parameter(ZuliaConstants.QUERY) String query,
+			@Parameter(ZuliaConstants.QUERY_FIELD) List<String> queryFields, @Parameter(ZuliaConstants.FILTER_QUERY) List<String> filterQueries,
+			@Parameter(ZuliaConstants.FILTER_QUERY_JSON) List<String> filterJsonQueries, @Parameter(ZuliaConstants.FIELDS) List<String> fields,
+			@Parameter(ZuliaConstants.FETCH) Boolean fetch, @Parameter(ZuliaConstants.ROWS) int rows, @Parameter(ZuliaConstants.FACET) List<String> facet,
+			@Parameter(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @Parameter(ZuliaConstants.DEFAULT_OP) String defaultOperator,
+			@Parameter(ZuliaConstants.SORT) List<String> sort, @Parameter(ZuliaConstants.PRETTY) boolean pretty,
+			@Parameter(ZuliaConstants.DISMAX) Boolean dismax, @Parameter(ZuliaConstants.DISMAX_TIE) Float dismaxTie,
+			@Parameter(ZuliaConstants.MIN_MATCH) Integer mm, @Parameter(ZuliaConstants.SIMILARITY) List<String> similarity,
+			@Parameter(ZuliaConstants.DEBUG) Boolean debug, @Parameter(ZuliaConstants.DONT_CACHE) Boolean dontCache,
+			@Parameter(ZuliaConstants.START) Integer start, @Parameter(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
+			@Parameter(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList, @Parameter(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
+			@Parameter(ZuliaConstants.COS_SIM_JSON) List<String> cosineSimJsonList, @Parameter(ZuliaConstants.FORMAT) @QueryValue("json") String format,
+			@Parameter(ZuliaConstants.BATCH) boolean batch, @Parameter(ZuliaConstants.BATCH_SIZE) @QueryValue("500") Integer batchSize,
+			@Parameter(ZuliaConstants.CURSOR) String cursor) {
 
 		QueryRequest.Builder qrBuilder = QueryRequest.newBuilder().addAllIndex(indexName);
 
@@ -73,8 +75,8 @@ public class QueryResource {
 			}
 			outputCursor = true;
 			if (sort == null || sort.isEmpty()) {
-				return Response.status(ZuliaConstants.INTERNAL_ERROR)
-						.entity("Sort on unique value or value combination is required to use a cursor (i.e. id or title,id)").build();
+				return HttpResponse.created("Sort on unique value or value combination is required to use a cursor (i.e. id or title,id)")
+						.status(ZuliaConstants.INTERNAL_ERROR);
 			}
 		}
 
@@ -114,7 +116,7 @@ public class QueryResource {
 				queryBuilder.setDefaultOp(Query.Operator.OR);
 			}
 			else {
-				Response.status(ZuliaConstants.INTERNAL_ERROR).entity("Invalid default operator <" + defaultOperator + ">").build();
+				HttpResponse.created("Invalid default operator <" + defaultOperator + ">").status(ZuliaConstants.INTERNAL_ERROR);
 			}
 		}
 
@@ -143,13 +145,13 @@ public class QueryResource {
 						fieldSimilarity.setSimilarity(Similarity.TFIDF);
 					}
 					else {
-						Response.status(ZuliaConstants.INTERNAL_ERROR).entity("Unknown similarity type <" + simType + ">").build();
+						HttpResponse.created("Unknown similarity type <" + simType + ">").status(ZuliaConstants.INTERNAL_ERROR);
 					}
 
 					qrBuilder.addFieldSimilarity(fieldSimilarity);
 				}
 				else {
-					Response.status(ZuliaConstants.INTERNAL_ERROR).entity("Similarity <" + sim + "> should be in the form field:simType").build();
+					HttpResponse.created("Similarity <" + sim + "> should be in the form field:simType").status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
 		}
@@ -169,8 +171,8 @@ public class QueryResource {
 					qrBuilder.addCosineSimRequest(consineSimRequest);
 				}
 				catch (InvalidProtocolBufferException e) {
-					return Response.status(ZuliaConstants.INTERNAL_ERROR)
-							.entity("Failed to parse cosine sim json: " + e.getClass().getSimpleName() + ":" + e.getMessage()).build();
+					return HttpResponse.created("Failed to parse cosine sim json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+							.status(ZuliaConstants.INTERNAL_ERROR);
 				}
 
 			}
@@ -184,8 +186,8 @@ public class QueryResource {
 					qrBuilder.addFilterQuery(filterQueryBuilder);
 				}
 				catch (InvalidProtocolBufferException e) {
-					return Response.status(ZuliaConstants.INTERNAL_ERROR)
-							.entity("Failed to parse filter json: " + e.getClass().getSimpleName() + ":" + e.getMessage()).build();
+					return HttpResponse.created("Failed to parse filter json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+							.status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
 		}
@@ -205,8 +207,8 @@ public class QueryResource {
 					qrBuilder.addHighlightRequest(hlBuilder);
 				}
 				catch (InvalidProtocolBufferException e) {
-					return Response.status(ZuliaConstants.INTERNAL_ERROR)
-							.entity("Failed to parse highlight json: " + e.getClass().getSimpleName() + ":" + e.getMessage()).build();
+					return HttpResponse.created("Failed to parse highlight json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+							.status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
 		}
@@ -219,8 +221,8 @@ public class QueryResource {
 					qrBuilder.addAnalysisRequest(analyzeRequestBuilder);
 				}
 				catch (InvalidProtocolBufferException e) {
-					return Response.status(ZuliaConstants.INTERNAL_ERROR)
-							.entity("Failed to parse analyzer json: " + e.getClass().getSimpleName() + ":" + e.getMessage()).build();
+					return HttpResponse.created("Failed to parse analyzer json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+							.status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
 		}
@@ -251,7 +253,7 @@ public class QueryResource {
 					count = Integer.parseInt(countString);
 				}
 				catch (Exception e) {
-					Response.status(ZuliaConstants.INTERNAL_ERROR).entity("Invalid facet count <" + countString + "> for facet <" + f + ">").build();
+					return HttpResponse.created("Invalid facet count <" + countString + "> for facet <" + f + ">").status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
 
@@ -291,8 +293,8 @@ public class QueryResource {
 					fieldSort.setDirection(FieldSort.Direction.ASCENDING);
 				}
 				else {
-					Response.status(ZuliaConstants.INTERNAL_ERROR)
-							.entity("Invalid sort direction <" + sortDir + "> for field <" + sortField + ">.  Expecting -1/1 or DESC/ASC").build();
+					return HttpResponse.created("Invalid sort direction <" + sortDir + "> for field <" + sortField + ">.  Expecting -1/1 or DESC/ASC")
+							.status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
 			fieldSort.setSortField(sortField);
@@ -310,19 +312,19 @@ public class QueryResource {
 					response = JsonWriter.formatJson(response);
 				}
 
-				return Response.status(ZuliaConstants.SUCCESS).type(MediaType.APPLICATION_JSON + ";charset=utf-8").entity(response).build();
+				return HttpResponse.created(response).status(ZuliaConstants.SUCCESS).contentType(MediaType.APPLICATION_JSON_TYPE);
 			}
 			else {
 				if (fields != null && !fields.isEmpty() || (!facet.isEmpty() && rows == 0)) {
 					if (batch) {
 						qrBuilder.setAmount(batchSize);
 
-						StreamingOutput outputStream = output -> {
+						Writable writable = output -> {
 							try {
 								QueryResponse qr = indexManager.query(qrBuilder.build());
 
 								String header = buildHeaderForCSV(fields);
-								output.write(header.getBytes());
+								output.write(header);
 								output.flush();
 
 								int count = 0;
@@ -346,14 +348,14 @@ public class QueryResource {
 							catch (Exception e) {
 								e.printStackTrace();
 							}
-
 						};
 
 						LocalDateTime now = LocalDateTime.now();
 						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
 
-						return Response.ok(outputStream, MediaType.APPLICATION_OCTET_STREAM)
-								.header("content-disposition", "attachment; filename = " + "zuliaDownload_" + now.format(formatter) + ".csv").build();
+						return HttpResponse.created(writable).status(ZuliaConstants.SUCCESS)
+								.header("content-disposition", "attachment; filename = " + "zuliaDownload_" + now.format(formatter) + ".csv")
+								.contentType(MediaType.APPLICATION_OCTET_STREAM);
 					}
 					else {
 
@@ -373,29 +375,30 @@ public class QueryResource {
 								}
 
 							}
-							return Response.status(ZuliaConstants.SUCCESS).type(MediaType.TEXT_PLAIN + ";charset=utf-8").entity(response.toString()).build();
+							return HttpResponse.created(response.toString()).status(ZuliaConstants.SUCCESS)
+									.contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 						}
 						else {
 							String response = getCSVDocumentResponse(fields, qr);
-							return Response.status(ZuliaConstants.SUCCESS).type(MediaType.TEXT_PLAIN + ";charset=utf-8").entity(response).build();
+							return HttpResponse.created(response).status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 						}
 					}
 				}
 				else {
-					return Response.status(ZuliaConstants.SUCCESS).type(MediaType.TEXT_PLAIN + ";charset=utf-8")
-							.entity("Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0")
-							.build();
+					return HttpResponse.created(
+							"Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0")
+							.status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 				}
 			}
 		}
 		catch (Exception e) {
 			LOG.log(Level.SEVERE, e.getMessage(), e);
-			return Response.status(ZuliaConstants.INTERNAL_ERROR).entity(e.getClass().getSimpleName() + ":" + e.getMessage()).build();
+			return HttpResponse.created(e.getClass().getSimpleName() + ":" + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}
 
-	private String buildHeaderForCSV(@QueryParam(ZuliaConstants.FIELDS) List<String> fields) throws Exception {
+	private String buildHeaderForCSV(@Parameter(ZuliaConstants.FIELDS) List<String> fields) throws Exception {
 
 		StringBuilder headerBuilder = new StringBuilder();
 		fields.stream().filter(field -> !field.startsWith("-")).forEach(field -> headerBuilder.append(field).append(","));
@@ -606,7 +609,7 @@ public class QueryResource {
 		return responseBuilder.toString();
 	}
 
-	private void appendDocument(List<String> fields, StringBuilder responseBuilder, OutputStream outputStream, Document document) throws Exception {
+	private void appendDocument(List<String> fields, StringBuilder responseBuilder, Writer outputStream, Document document) throws Exception {
 		int i = 0;
 		if (responseBuilder == null) {
 			responseBuilder = new StringBuilder();
@@ -693,7 +696,7 @@ public class QueryResource {
 		responseBuilder.append("\n");
 
 		if (outputStream != null) {
-			outputStream.write(responseBuilder.toString().getBytes());
+			outputStream.write(responseBuilder.toString());
 			outputStream.flush();
 		}
 	}

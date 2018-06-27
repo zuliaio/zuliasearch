@@ -1,20 +1,21 @@
 package io.zulia.server.rest;
 
+import io.micronaut.context.annotation.Parameter;
+import io.micronaut.core.io.Streamable;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Body;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Post;
+import io.micronaut.http.annotation.Produces;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.util.StreamHelper;
 import org.bson.Document;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.StreamingOutput;
+import javax.inject.Singleton;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
@@ -25,47 +26,46 @@ import java.util.logging.Logger;
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
-@Path(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL)
+@Controller(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL)
 public class AssociatedResource {
 
 	private final static Logger LOG = Logger.getLogger(AssociatedResource.class.getSimpleName());
 
+	@Singleton
 	private ZuliaIndexManager indexManager;
 
 	public AssociatedResource(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 
-	@GET
-	@Produces({ MediaType.APPLICATION_OCTET_STREAM })
-	public Response get(@Context Response response, @QueryParam(ZuliaConstants.ID) final String uniqueId,
-			@QueryParam(ZuliaConstants.FILE_NAME) final String fileName, @QueryParam(ZuliaConstants.INDEX) final String indexName) {
+	@Get
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public HttpResponse get(@Parameter(ZuliaConstants.ID) final String uniqueId, @Parameter(ZuliaConstants.FILE_NAME) final String fileName,
+			@Parameter(ZuliaConstants.INDEX) final String indexName) {
 
-		StreamingOutput stream = output -> {
+		Streamable stream = ((outputStream, charset) -> {
 			if (uniqueId != null && fileName != null && indexName != null) {
 				InputStream is = indexManager.getAssociatedDocumentStream(indexName, uniqueId, fileName);
 				if (is != null) {
-					StreamHelper.copyStream(is, output);
-
+					StreamHelper.copyStream(is, outputStream);
 				}
 				else {
-					throw new WebApplicationException("Cannot find associated document with uniqueId <" + uniqueId + "> with fileName <" + fileName + ">",
-							ZuliaConstants.NOT_FOUND);
+					throw new IOException("Cannot find associated document with uniqueId <" + uniqueId + "> with fileName <" + fileName + ">");
 				}
 			}
 			else {
-				throw new WebApplicationException(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required", ZuliaConstants.BAD_REQUEST);
+				throw new IOException(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
 			}
-		};
+		});
 
-		return Response.ok(stream).header("content-disposition", "attachment; filename = " + fileName).build();
-
+		return HttpResponse.created(stream).status(ZuliaConstants.SUCCESS).header("content-disposition", "attachment; filename = " + fileName)
+				.contentType(MediaType.APPLICATION_OCTET_STREAM);
 	}
 
-	@POST
-	@Produces({ MediaType.TEXT_XML })
-	public Response post(@QueryParam(ZuliaConstants.ID) String uniqueId, @QueryParam(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryParam(ZuliaConstants.INDEX) String indexName, @QueryParam(ZuliaConstants.META) List<String> meta, InputStream is) {
+	@Post
+	@Produces(MediaType.TEXT_XML)
+	public HttpResponse post(@Parameter(ZuliaConstants.ID) String uniqueId, @Parameter(ZuliaConstants.FILE_NAME) String fileName,
+			@Parameter(ZuliaConstants.INDEX) String indexName, @Parameter(ZuliaConstants.META) List<String> meta, @Body InputStream is) throws Exception {
 		if (uniqueId != null && fileName != null && indexName != null) {
 
 			HashMap<String, String> metaMap = new HashMap<>();
@@ -78,7 +78,7 @@ public class AssociatedResource {
 						metaMap.put(key, value);
 					}
 					else {
-						throw new WebApplicationException("Meta must be in the form key:value");
+						throw new Exception("Meta must be in the form key:value");
 					}
 				}
 			}
@@ -87,27 +87,26 @@ public class AssociatedResource {
 
 				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, metaMap);
 
-				return Response.status(ZuliaConstants.SUCCESS)
-						.entity("Stored associated document with uniqueId <" + uniqueId + "> and fileName <" + fileName + ">").build();
+				return HttpResponse.created("Stored associated document with uniqueId <" + uniqueId + "> and fileName <" + fileName + ">")
+						.status(ZuliaConstants.SUCCESS);
+
 			}
 			catch (Exception e) {
 				LOG.log(Level.SEVERE, e.getMessage(), e);
-				return Response.status(ZuliaConstants.INTERNAL_ERROR).entity(e.getMessage()).build();
+				return HttpResponse.created(e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 			}
 		}
 		else {
-			throw new WebApplicationException(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required", ZuliaConstants.BAD_REQUEST);
+			throw new Exception(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
 		}
 
 	}
 
-	@GET
-	@Path("/all")
-	@Produces({ MediaType.APPLICATION_JSON })
-	public Response get(@QueryParam(ZuliaConstants.INDEX) final String indexName, @QueryParam(ZuliaConstants.QUERY) String query) {
+	@Get("/all")
+	@Produces(MediaType.APPLICATION_JSON)
+	public HttpResponse get(@Parameter(ZuliaConstants.INDEX) final String indexName, @Parameter(ZuliaConstants.QUERY) String query) {
 
-		StreamingOutput stream = output -> {
-
+		Streamable stream = (outputStream, charset) -> {
 			Document filter;
 			if (query != null) {
 				filter = Document.parse(query);
@@ -116,10 +115,10 @@ public class AssociatedResource {
 				filter = new Document();
 			}
 
-			indexManager.getAssociatedDocuments(indexName, output, filter);
+			indexManager.getAssociatedDocuments(indexName, outputStream, filter);
 		};
 
-		return Response.ok(stream).build();
+		return HttpResponse.created(stream).status(ZuliaConstants.SUCCESS);
 
 	}
 }

@@ -1,36 +1,37 @@
 package io.zulia.server.rest;
 
 import com.cedarsoftware.util.io.JsonWriter;
+import io.micronaut.context.annotation.Parameter;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.util.ResultHelper;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.inject.Singleton;
 
 import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
-@Path(ZuliaConstants.FETCH_URL)
+@Controller(ZuliaConstants.FETCH_URL)
 public class FetchResource {
 
+	@Singleton
 	private ZuliaIndexManager indexManager;
 
 	public FetchResource(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 
-	@GET
-	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
-	public Response get(@Context Response response, @QueryParam(ZuliaConstants.ID) final String uniqueId,
-			@QueryParam(ZuliaConstants.INDEX) final String indexName, @QueryParam(ZuliaConstants.PRETTY) boolean pretty) {
+	@Get
+	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
+	public HttpResponse get(@Parameter(ZuliaConstants.ID) final String uniqueId, @Parameter(ZuliaConstants.INDEX) final String indexName,
+			@Parameter(ZuliaConstants.PRETTY) boolean pretty) {
 
 		FetchRequest.Builder fetchRequest = FetchRequest.newBuilder();
 		fetchRequest.setIndexName(indexName);
@@ -56,19 +57,19 @@ public class FetchResource {
 						docString = JsonWriter.formatJson(docString);
 					}
 
-					return Response.status(ZuliaConstants.SUCCESS).entity(docString).build();
+					return HttpResponse.created(docString).status(ZuliaConstants.SUCCESS);
 				}
 
-				return Response.status(ZuliaConstants.NOT_FOUND).entity("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").build();
+				return HttpResponse.created("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").status(ZuliaConstants.NOT_FOUND);
 			}
 			else {
-				return Response.status(ZuliaConstants.NOT_FOUND).entity("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").build();
+				return HttpResponse.created("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").status(ZuliaConstants.NOT_FOUND);
 			}
 
 		}
 		catch (Exception e) {
-			return Response.status(ZuliaConstants.INTERNAL_ERROR)
-					.entity("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage()).build();
+			return HttpResponse.created("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage())
+					.status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

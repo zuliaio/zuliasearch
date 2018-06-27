@@ -1,0 +1,11 @@
+micronaut:
+  server:
+    port: 32192
+    cors:
+      enabled: true
+  application:
+    name: zulia-service
+endpoints:
+    routes:
+        enabled: true
+

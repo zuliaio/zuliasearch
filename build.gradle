@@ -1,6 +1,7 @@
 apply plugin: 'java'
 
 defaultTasks 'build'
+
 subprojects {
 
 	apply plugin: 'java'
@@ -15,6 +16,7 @@ subprojects {
 
 	repositories {
 		mavenCentral()
+		jcenter()
 	}
 
 	dependencies {

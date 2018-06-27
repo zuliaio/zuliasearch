@@ -1,36 +1,37 @@
 package io.zulia.server.rest;
 
 import com.cedarsoftware.util.io.JsonWriter;
+import io.micronaut.context.annotation.Parameter;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import org.bson.Document;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.inject.Singleton;
 
 /**
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
-@Path(ZuliaConstants.STATS_URL)
+@Controller(ZuliaConstants.STATS_URL)
 public class StatsResource {
 
 	private static final int MB = 1024 * 1024;
 
+	@Singleton
 	private ZuliaIndexManager indexManager;
 
 	public StatsResource(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 
-	@GET
+	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
-	public Response get(@Context Response response, @QueryParam(ZuliaConstants.PRETTY) boolean pretty) {
+	public HttpResponse<String> get(@Parameter(ZuliaConstants.PRETTY) boolean pretty) {
 
 		try {
 
@@ -49,11 +50,11 @@ public class StatsResource {
 				docString = JsonWriter.formatJson(docString);
 			}
 
-			return Response.status(ZuliaConstants.SUCCESS).entity(docString).build();
+			return HttpResponse.created(docString).status(ZuliaConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return Response.status(ZuliaConstants.INTERNAL_ERROR).entity("Failed to get cluster membership: " + e.getMessage()).build();
+			return HttpResponse.created("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

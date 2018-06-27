@@ -1,4 +1,9 @@
+plugins {
+    id "com.github.johnrengelman.shadow" version "2.0.2"
+}
+
 apply plugin: 'application'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 apply from: '../maven.gradle'
 
@@ -6,24 +11,33 @@ description 'Zulia Server'
 
 
 def luceneVersion = '7.3.0'
+def micronautVersion = '1.0.0.M1'
 
 
 defaultTasks 'build', 'installDist'
 
 dependencies {
-    compile project(':zulia-common')
-    compile project(':zulia-client') //needed for admin tools
+    compile project(':zulia-client')
 
+    // Lucene
     compile "org.apache.lucene:lucene-facet:$luceneVersion"
     compile "org.apache.lucene:lucene-queryparser:$luceneVersion"
     compile "org.apache.lucene:lucene-analyzers-common:$luceneVersion"
     compile "org.apache.lucene:lucene-highlighter:$luceneVersion"
 
+    // Micronaut
+    compile "io.reactivex.rxjava2:rxjava:2.1.14"
+    annotationProcessor "io.micronaut:inject-java:$micronautVersion"
+    compile "io.micronaut:http-client:$micronautVersion"
+    compile "io.micronaut:http-server-netty:$micronautVersion"
+    compile "io.micronaut:inject:$micronautVersion"
+    compile "io.micronaut:runtime:$micronautVersion"
+    compileOnly "io.micronaut:inject-java:$micronautVersion"
+    testCompile "junit:junit:4.12"
+    testCompile "io.micronaut:inject-java:$micronautVersion"
+
+    // Other
     compile 'com.beust:jcommander:1.72'
-
-    compile 'org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.25'
-
-
 
     compile 'com.cedarsoftware:json-io:4.9.12'
 
@@ -54,3 +68,15 @@ applicationDistribution.into("bin") {
     fileMode = 0755
 }
 
+shadowJar {
+    mergeServiceFiles()
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'io.zulia.server.rest.ZuliaRESTServiceManager'
+    }
+}
+
+compileJava.options.compilerArgs += '-parameters'
+compileTestJava.options.compilerArgs += '-parameters'
