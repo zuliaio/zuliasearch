@@ -65,19 +65,15 @@ public class ZuliaNode {
 		membershipTimer.scheduleAtFixedRate(membershipTask, 1000, 1000);
 
 		indexManager.init();
-		restServiceManager.start();
 		zuliaServiceServer.start();
 		LOG.info(getLogPrefix() + "started");
 
 	}
 
-
-
 	public void shutdown() {
 		LOG.info(getLogPrefix() + "stopping");
 		membershipTimer.cancel();
 		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
-		restServiceManager.shutdown();
 		zuliaServiceServer.shutdown();
 		indexManager.shutdown();
 		LOG.info(getLogPrefix() + "stopped");
