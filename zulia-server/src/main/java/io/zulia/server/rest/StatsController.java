@@ -11,21 +11,18 @@ import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import org.bson.Document;
 
-import javax.inject.Singleton;
-
 /**
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
 @Controller(ZuliaConstants.STATS_URL)
-public class StatsResource {
+public class StatsController {
 
 	private static final int MB = 1024 * 1024;
 
-	@Singleton
 	private ZuliaIndexManager indexManager;
 
-	public StatsResource(ZuliaIndexManager indexManager) {
+	public StatsController(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 

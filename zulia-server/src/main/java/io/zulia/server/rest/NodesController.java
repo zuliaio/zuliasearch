@@ -12,7 +12,6 @@ import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.node.ZuliaNode;
 import org.bson.Document;
 
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
@@ -28,12 +27,11 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
  * @author pmeyer
  */
 @Controller(ZuliaConstants.NODES_URL)
-public class NodesResource {
+public class NodesController {
 
-	@Singleton
 	private ZuliaIndexManager indexManager;
 
-	public NodesResource(ZuliaIndexManager indexManager) {
+	public NodesController(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 

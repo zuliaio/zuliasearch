@@ -18,7 +18,6 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 
-import javax.inject.Singleton;
 import java.io.Writer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -42,7 +41,6 @@ public class QueryController {
 
 	private final static Logger LOG = Logger.getLogger(QueryController.class.getSimpleName());
 
-	@Singleton
 	private ZuliaIndexManager indexManager;
 
 	public QueryController(ZuliaIndexManager indexManager) {

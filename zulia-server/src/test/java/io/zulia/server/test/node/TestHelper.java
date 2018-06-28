@@ -32,7 +32,6 @@ public class TestHelper {
 
 	static {
 
-
 		LogUtil.init();
 		ZuliaD.setLuceneStatic();
 
@@ -68,23 +67,20 @@ public class TestHelper {
 		return mongoServer;
 	}
 
-
-
-
 	public static ZuliaWorkPool createClient() throws Exception {
 
 		ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
 		for (ZuliaBase.Node node : nodeService.getNodes()) {
+			System.out.println("Adding node: " + node.getServerAddress());
 			zuliaPoolConfig.addNode(node);
 		}
 
+		System.out.println("Returning?");
 		return new ZuliaWorkPool(zuliaPoolConfig);
-
 
 	}
 
 	public static void startNodes() throws Exception {
-
 
 		int i = 0;
 		for (ZuliaBase.Node node : nodeService.getNodes()) {

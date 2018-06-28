@@ -24,7 +24,7 @@ public interface ZuliaConstants {
 	String FIELDS_URL = "fields";
 	String TERMS_URL = "terms";
 	String INDEX_URL = "index";
-	String INDEXES_URL = "indexes";
+	String INDEXES_URL = "/indexes";
 	String NODES_URL = "nodes";
 	String STATS_URL = "stats";
 

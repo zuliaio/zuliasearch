@@ -1,5 +1,6 @@
 package io.zulia.server.node;
 
+import io.micronaut.runtime.Micronaut;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.connection.server.ZuliaServiceServer;
@@ -15,7 +16,6 @@ import static io.zulia.message.ZuliaBase.Node;
 public class ZuliaNode {
 
 	private final ZuliaIndexManager indexManager;
-	private final ZuliaRESTServiceManager restServiceManager;
 
 	private final ZuliaServiceServer zuliaServiceServer;
 
@@ -30,7 +30,6 @@ public class ZuliaNode {
 		this.zuliaConfig = zuliaConfig;
 		this.nodeService = nodeService;
 		this.indexManager = new ZuliaIndexManager(zuliaConfig, nodeService);
-		this.restServiceManager = new ZuliaRESTServiceManager(zuliaConfig, indexManager);
 
 		this.zuliaServiceServer = new ZuliaServiceServer(zuliaConfig, indexManager);
 
@@ -65,6 +64,7 @@ public class ZuliaNode {
 		membershipTimer.scheduleAtFixedRate(membershipTask, 1000, 1000);
 
 		indexManager.init();
+		Micronaut.run(ZuliaRESTServiceManager.class);
 		zuliaServiceServer.start();
 		LOG.info(getLogPrefix() + "started");
 

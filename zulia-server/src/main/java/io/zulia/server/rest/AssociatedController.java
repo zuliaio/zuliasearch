@@ -14,7 +14,6 @@ import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.util.StreamHelper;
 import org.bson.Document;
 
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -27,14 +26,13 @@ import java.util.logging.Logger;
  * @author pmeyer
  */
 @Controller(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL)
-public class AssociatedResource {
+public class AssociatedController {
 
-	private final static Logger LOG = Logger.getLogger(AssociatedResource.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(AssociatedController.class.getSimpleName());
 
-	@Singleton
 	private ZuliaIndexManager indexManager;
 
-	public AssociatedResource(ZuliaIndexManager indexManager) {
+	public AssociatedController(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 
