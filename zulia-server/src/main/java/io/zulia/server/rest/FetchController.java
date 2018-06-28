@@ -13,18 +13,15 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 
-import javax.inject.Singleton;
-
 import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 @Controller(ZuliaConstants.FETCH_URL)
-public class FetchResource {
+public class FetchController {
 
-	@Singleton
 	private ZuliaIndexManager indexManager;
 
-	public FetchResource(ZuliaIndexManager indexManager) {
+	public FetchController(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 

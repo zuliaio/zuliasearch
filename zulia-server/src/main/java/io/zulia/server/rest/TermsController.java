@@ -14,7 +14,6 @@ import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import org.bson.Document;
 
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,12 +27,11 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
  * @author pmeyer
  */
 @Controller(ZuliaConstants.TERMS_URL)
-public class TermsResource {
+public class TermsController {
 
-	@Singleton
 	private ZuliaIndexManager indexManager;
 
-	public TermsResource(ZuliaIndexManager indexManager) {
+	public TermsController(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 

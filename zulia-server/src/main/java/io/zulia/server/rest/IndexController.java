@@ -13,19 +13,16 @@ import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
 import io.zulia.server.index.ZuliaIndexManager;
 
-import javax.inject.Singleton;
-
 /**
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
 @Controller(ZuliaConstants.INDEX_URL)
-public class IndexResource {
+public class IndexController {
 
-	@Singleton
 	private ZuliaIndexManager indexManager;
 
-	public IndexResource(ZuliaIndexManager indexManager) {
+	public IndexController(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 

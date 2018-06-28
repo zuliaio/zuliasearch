@@ -10,10 +10,12 @@ import io.zulia.server.config.NodeService;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+@Singleton
 public class MongoNodeService implements NodeService {
 
 	private static final String NODES = "nodes";
@@ -98,14 +100,12 @@ public class MongoNodeService implements NodeService {
 	}
 
 	private Document nodeToDocument(Node node) {
-		return new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort()).append(SERVICE_PORT, node.getServicePort())
-				.append(REST_PORT, node.getRestPort());
+		return new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort()).append(SERVICE_PORT, node.getServicePort()).append(REST_PORT, node.getRestPort());
 	}
 
 	private Node documentToNode(Document d) {
 		if (d != null) {
-			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT))
-					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0).build();
+			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT)).setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0).build();
 		}
 		return null;
 	}

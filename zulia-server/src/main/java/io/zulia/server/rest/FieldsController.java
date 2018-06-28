@@ -11,8 +11,6 @@ import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import org.bson.Document;
 
-import javax.inject.Singleton;
-
 import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 
@@ -21,12 +19,11 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
  * @author pmeyer
  */
 @Controller(ZuliaConstants.FIELDS_URL)
-public class FieldsResource {
+public class FieldsController {
 
-	@Singleton
 	private ZuliaIndexManager indexManager;
 
-	public FieldsResource(ZuliaIndexManager indexManager) {
+	public FieldsController(ZuliaIndexManager indexManager) {
 		this.indexManager = indexManager;
 	}
 

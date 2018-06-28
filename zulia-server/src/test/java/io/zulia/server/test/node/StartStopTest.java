@@ -55,6 +55,8 @@ public class StartStopTest {
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 
+		System.out.println("Creating index?");
+
 		zuliaWorkPool.createIndex(indexConfig);
 	}
 
@@ -162,7 +164,6 @@ public class StartStopTest {
 
 			Assert.assertEquals(qr.getTotalHits(), totalRecords / 10, "Total record count after drill down mismatch");
 
-
 		}
 
 		{
@@ -180,7 +181,6 @@ public class StartStopTest {
 			QueryResult qr = zuliaWorkPool.query(q);
 
 			Assert.assertEquals(qr.getTotalHits(), totalRecords / 2, "Total record count after drill down mismatch");
-
 
 		}
 
@@ -209,7 +209,6 @@ public class StartStopTest {
 			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN / 2, "Total record count after drill down mismatch");
 
 		}
-
 
 	}
 
