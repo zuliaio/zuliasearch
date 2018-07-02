@@ -5,7 +5,7 @@ apply from: '../maven.gradle'
 description 'Zulia Server'
 
 
-def luceneVersion = '7.2.1'
+def luceneVersion = '7.3.0'
 
 
 defaultTasks 'build', 'installDist'

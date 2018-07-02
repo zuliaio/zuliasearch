@@ -3,6 +3,7 @@ package io.zulia.server.analysis;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
 import io.zulia.server.analysis.filter.BritishUSFilter;
+import io.zulia.server.analysis.filter.CaseProtectedWordsFilter;
 import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -223,6 +224,9 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 					}
 					else if (ZuliaIndex.AnalyzerSettings.Filter.CONCAT_ALL.equals(filter)) {
 						tok = new WordDelimiterGraphFilter(lastTok, CATENATE_ALL, null);
+					}
+					else if (ZuliaIndex.AnalyzerSettings.Filter.CASE_PROTECTED_WORDS.equals(filter)) {
+						tok = new CaseProtectedWordsFilter(lastTok);
 					}
 					else {
 						throw new RuntimeException("Unknown filter type <" + filter + ">");
