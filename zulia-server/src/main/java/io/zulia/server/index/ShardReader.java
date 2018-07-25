@@ -142,7 +142,7 @@ public class ShardReader implements AutoCloseable {
 
 	public ZuliaQuery.ShardQueryResponse queryShard(Query query, Map<String, ZuliaBase.Similarity> similarityOverrideMap, int amount, FieldDoc after,
 			ZuliaQuery.FacetRequest facetRequest, ZuliaQuery.SortRequest sortRequest, QueryCacheKey queryCacheKey, ZuliaQuery.FetchType resultFetchType,
-			Set<String> fieldsToReturn, Set<String> fieldsToMask, List<ZuliaQuery.HighlightRequest> highlightList,
+			List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaQuery.HighlightRequest> highlightList,
 			List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug) throws Exception {
 
 		QueryResultCache qrc = queryResultCache;
@@ -225,7 +225,7 @@ public class ShardReader implements AutoCloseable {
 
 		if (moreAvailable) {
 			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, sortRequest, sorting, results, numResults, ZuliaQuery.FetchType.NONE,
-					Collections.emptySet(), Collections.emptySet(), Collections.emptyList(), Collections.emptyList());
+					Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 			shardQueryReponseBuilder.setNext(srBuilder);
 		}
 
@@ -467,7 +467,7 @@ public class ShardReader implements AutoCloseable {
 	}
 
 	private ZuliaQuery.ScoredResult.Builder handleDocResult(IndexSearcher is, ZuliaQuery.SortRequest sortRequest, boolean sorting, ScoreDoc[] results, int i,
-			ZuliaQuery.FetchType resultFetchType, Set<String> fieldsToReturn, Set<String> fieldsToMask, List<ZuliaHighlighter> highlighterList,
+			ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList,
 			List<AnalysisHandler> analysisHandlerList) throws Exception {
 		int luceneShardId = results[i].doc;
 
@@ -518,7 +518,7 @@ public class ShardReader implements AutoCloseable {
 	}
 
 	private void handleStoredDoc(ZuliaQuery.ScoredResult.Builder srBuilder, String uniqueId, Document d, ZuliaQuery.FetchType resultFetchType,
-			Set<String> fieldsToReturn, Set<String> fieldsToMask, List<ZuliaHighlighter> highlighterList, List<AnalysisHandler> analysisHandlerList) {
+			List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList, List<AnalysisHandler> analysisHandlerList) {
 
 		ZuliaBase.ResultDocument.Builder rdBuilder = ZuliaBase.ResultDocument.newBuilder();
 		rdBuilder.setUniqueId(uniqueId);
@@ -645,8 +645,8 @@ public class ShardReader implements AutoCloseable {
 
 	}
 
-	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, ZuliaQuery.FetchType resultFetchType, Set<String> fieldsToReturn,
-			Set<String> fieldsToMask) throws Exception {
+	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,
+			List<String> fieldsToMask) throws Exception {
 
 		ZuliaBase.ResultDocument rd = null;
 
