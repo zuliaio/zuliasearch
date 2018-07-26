@@ -706,15 +706,21 @@ public class ShardReader implements AutoCloseable {
 				}
 				else {
 					Object subDoc = mongoDocument.get(topLevelField);
-					if (subDoc instanceof org.bson.Document) {
-						filterDocument(Collections.emptyList(), topLevelToChildren.get(topLevelField), (org.bson.Document) subDoc);
-					}
-					else if (subDoc == null) {
+					ZuliaUtil.handleLists(subDoc, subDocItem -> {
+						if (subDocItem instanceof org.bson.Document) {
 
-					}
-					else {
-						//TODO: warn user?
-					}
+							Collection<String> subFieldsToMask =
+									topLevelToChildren.get(topLevelField) != null ? topLevelToChildren.get(topLevelField) : Collections.emptyList();
+
+							filterDocument(Collections.emptyList(), subFieldsToMask, (org.bson.Document) subDocItem);
+						}
+						else if (subDocItem == null) {
+
+						}
+						else {
+							//TODO: warn user?
+						}
+					});
 				}
 			}
 		}
@@ -730,22 +736,32 @@ public class ShardReader implements AutoCloseable {
 			ArrayList<String> allDocumentKeys = new ArrayList<>(mongoDocument.keySet());
 			for (String topLevelField : allDocumentKeys) {
 
-				if ((!topLevelFieldsToReturn.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField)) || topLevelFieldsToMask
-						.contains(topLevelField)) {
+				if ((!topLevelFieldsToReturn.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField))
+						|| topLevelFieldsToMask.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField)) {
 					mongoDocument.remove(topLevelField);
 				}
 
 				if (topLevelToChildrenToReturn.containsKey(topLevelField) || topLevelToChildrenToMask.containsKey(topLevelField)) {
 					Object subDoc = mongoDocument.get(topLevelField);
-					if (subDoc instanceof org.bson.Document) {
-						filterDocument(topLevelToChildrenToReturn.get(topLevelField), topLevelToChildrenToMask.get(topLevelField), (org.bson.Document) subDoc);
-					}
-					else if (subDoc == null) {
+					ZuliaUtil.handleLists(subDoc, subDocItem -> {
+						if (subDocItem instanceof org.bson.Document) {
 
-					}
-					else {
-						//TODO: warn user?
-					}
+							Collection<String> subFieldsToReturn = topLevelToChildrenToReturn.get(topLevelField) != null ?
+									topLevelToChildrenToReturn.get(topLevelField) :
+									Collections.emptyList();
+
+							Collection<String> subFieldsToMask =
+									topLevelToChildrenToMask.get(topLevelField) != null ? topLevelToChildrenToMask.get(topLevelField) : Collections.emptyList();
+
+							filterDocument(subFieldsToReturn, subFieldsToMask, (org.bson.Document) subDocItem);
+						}
+						else if (subDocItem == null) {
+
+						}
+						else {
+							//TODO: warn user?
+						}
+					});
 
 				}
 			}
