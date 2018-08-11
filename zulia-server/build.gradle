@@ -24,7 +24,7 @@ dependencies {
     compile 'org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.27'
     compile 'org.glassfish.jersey.inject:jersey-hk2:2.27'
 
-    compile 'com.sun.xml.bind:jaxb-impl:jar:2.3.0.1'
+    compile 'com.sun.xml.bind:jaxb-impl:2.3.0.1'
 
 
     compile 'com.google.protobuf:protobuf-java-util:3.5.1'
