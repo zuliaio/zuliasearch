@@ -1,6 +1,6 @@
 package io.zulia.server.test.node;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClients;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.log.LogUtil;
@@ -37,7 +37,7 @@ public class TestHelper {
 		ZuliaD.setLuceneStatic();
 
 		String mongoServer = getMongoServer();
-		MongoProvider.setMongoClient(new MongoClient(mongoServer));
+		MongoProvider.setMongoClient(MongoClients.create(mongoServer));
 
 		MongoProvider.getMongoClient().getDatabase(TEST_CLUSTER_NAME).drop();
 
