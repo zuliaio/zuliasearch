@@ -1,9 +1,9 @@
 package io.zulia.server.config.cluster;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.IndexOptions;
-import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.Updates;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
@@ -67,7 +67,7 @@ public class MongoNodeService implements NodeService {
 
 		Document query = new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort());
 
-		getCollection().replaceOne(query, nodeToDocument(node), new UpdateOptions().upsert(true));
+		getCollection().replaceOne(query, nodeToDocument(node), new ReplaceOptions().upsert(true));
 
 	}
 
