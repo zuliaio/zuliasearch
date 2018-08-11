@@ -15,7 +15,7 @@ dependencies {
     compile "io.grpc:grpc-protobuf:${grpcVersion}"
     compile "io.grpc:grpc-stub:${grpcVersion}"
     compile 'org.mongodb:bson:3.8.0'
-    compile 'org.apache.commons:commons-pool2:2.5.0'
+    compile 'org.apache.commons:commons-pool2:2.6.0'
 }
 
 protobuf {
