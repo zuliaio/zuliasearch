@@ -37,8 +37,7 @@ subprojects {
 	test {
 		useTestNG()
 
-		systemProperty 'mongoServer', 'localhost'
-		systemProperty 'mongoPort', '27017'
+		systemProperty 'mongoTestConnection', 'mongodb://127.0.0.1:27017'
 
 		//tweaking memory settings for the forked vm that runs tests
 		jvmArgs '-Xmx1500m'

@@ -23,10 +23,10 @@ import java.util.List;
 
 public class TestHelper {
 
-	public static final String MONGO_SERVER_PROPERTY = "mongoServer";
+	public static final String MONGO_TEST_CONNECTION = "mongoTestConnection";
 	public static final String TEST_CLUSTER_NAME = "zuliaTest";
 
-	public static final String MONGO_SERVER_PROPERTY_DEFAULT = "127.0.0.1";
+	public static final String MONGO_TEST_CONNECTION_DEFAULT = "mongodb://127.0.0.1:27017";
 
 	private static final MongoNodeService nodeService;
 
@@ -37,6 +37,7 @@ public class TestHelper {
 		ZuliaD.setLuceneStatic();
 
 		String mongoServer = getMongoServer();
+
 		MongoProvider.setMongoClient(MongoClients.create(mongoServer));
 
 		MongoProvider.getMongoClient().getDatabase(TEST_CLUSTER_NAME).drop();
@@ -61,10 +62,12 @@ public class TestHelper {
 
 	private static String getMongoServer() {
 
-		String mongoServer = System.getProperty(MONGO_SERVER_PROPERTY);
+		String mongoServer = System.getProperty(MONGO_TEST_CONNECTION);
 		if (mongoServer == null) {
-			mongoServer = MONGO_SERVER_PROPERTY_DEFAULT;
+			mongoServer = MONGO_TEST_CONNECTION_DEFAULT;
+			System.out.println(mongoServer);
 		}
+
 		return mongoServer;
 	}
 
