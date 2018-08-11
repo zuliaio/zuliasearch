@@ -3,7 +3,7 @@ package io.zulia.server.config.cluster;
 import com.google.protobuf.util.JsonFormat;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.ReplaceOptions;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.server.config.IndexService;
@@ -66,7 +66,7 @@ public class MongoIndexService implements IndexService {
 		Document indexSettingsDoc = new Document(ID, indexSettings.getIndexName())
 				.append(INDEX_SETTINGS, Document.parse(JsonFormat.printer().print(indexSettings)));
 
-		settingsCollection.replaceOne(new Document(ID, indexSettings.getIndexName()), indexSettingsDoc, new UpdateOptions().upsert(true));
+		settingsCollection.replaceOne(new Document(ID, indexSettings.getIndexName()), indexSettingsDoc, new ReplaceOptions().upsert(true));
 
 	}
 
@@ -124,6 +124,6 @@ public class MongoIndexService implements IndexService {
 		Document indexMappingDoc = new Document(ID, indexMapping.getIndexName())
 				.append(INDEX_MAPPING, Document.parse(JsonFormat.printer().print(indexMapping)));
 
-		mappingCollection.replaceOne(new Document(ID, indexMapping.getIndexName()), indexMappingDoc, new UpdateOptions().upsert(true));
+		mappingCollection.replaceOne(new Document(ID, indexMapping.getIndexName()), indexMappingDoc, new ReplaceOptions().upsert(true));
 	}
 }
