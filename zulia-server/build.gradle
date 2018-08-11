@@ -23,7 +23,7 @@ dependencies {
 
     compile 'org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.27'
 
-
+    compile 'com.google.protobuf:protobuf-java-util:3.5.1'
 
     compile 'com.cedarsoftware:json-io:4.10.0'
 
