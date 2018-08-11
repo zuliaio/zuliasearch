@@ -22,6 +22,7 @@ dependencies {
     compile 'com.beust:jcommander:1.72'
 
     compile 'org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.27'
+    compile 'org.glassfish.jersey.inject:jersey-hk2:2.27'
 
     compile 'com.google.protobuf:protobuf-java-util:3.5.1'
 
