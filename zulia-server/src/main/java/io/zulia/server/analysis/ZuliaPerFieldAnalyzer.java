@@ -13,10 +13,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.UpperCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.en.EnglishMinimalStemFilter;
 import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
 import org.apache.lucene.analysis.en.KStemFilter;
@@ -153,6 +153,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 					lastTok = src;
 				}
 				else if (ZuliaIndex.AnalyzerSettings.Tokenizer.STANDARD.equals(tokenizer)) {
+					//standard filter does nothing anymore, consider removing it
 					tok = new StandardFilter(src);
 					lastTok = tok;
 				}
@@ -205,7 +206,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 						tok = new KStemFilter(lastTok);
 					}
 					else if (ZuliaIndex.AnalyzerSettings.Filter.STOPWORDS.equals(filter)) {
-						tok = new StopFilter(lastTok, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+						tok = new StopFilter(lastTok, EnglishAnalyzer.ENGLISH_STOP_WORDS_SET);
 					}
 					else if (ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_MIN_STEM.equals(filter)) {
 						tok = new EnglishMinimalStemFilter(lastTok);
