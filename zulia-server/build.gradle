@@ -31,7 +31,7 @@ dependencies {
     }
 
 
-    compile 'com.google.protobuf:protobuf-java-util:3.5.1'
+    compile 'com.google.protobuf:protobuf-java-util:3.6.1'
 
     compile 'com.cedarsoftware:json-io:4.10.0'
 
