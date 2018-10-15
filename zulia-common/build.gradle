@@ -8,13 +8,13 @@ defaultTasks 'generateProto', 'build'
 
 description 'Zulia Common'
 
-def grpcVersion = '1.14.0'
+def grpcVersion = '1.15.1'
 
 dependencies {
     compile "io.grpc:grpc-netty-shaded:${grpcVersion}"
     compile "io.grpc:grpc-protobuf:${grpcVersion}"
     compile "io.grpc:grpc-stub:${grpcVersion}"
-    compile 'org.mongodb:bson:3.8.0'
+    compile 'org.mongodb:bson:3.8.2'
     compile 'org.apache.commons:commons-pool2:2.6.0'
 }
 
