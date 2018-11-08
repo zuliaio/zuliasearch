@@ -18,8 +18,6 @@ subprojects {
 	sourceCompatibility = 1.8
 	targetCompatibility = 1.8
 	
-	ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
-
 	group = 'io.zulia'
 
 	repositories {
