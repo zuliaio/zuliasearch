@@ -26,7 +26,7 @@ if (hasProperty('sonatypeUsername')) {
                     MavenDeployment deployment -> signing.signPom(deployment)
                 }
 
-                if (project.ext.isReleaseVersion) {
+                if (!project.getVersion().toString().contains("rc")) {
                     repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
                         authentication(userName: sonatypeUsername, password: sonatypePassword)
                     }
