@@ -35,7 +35,7 @@ public interface ZuliaConstants {
 	String ROWS = "rows";
 	String ID = "id";
 	String FILE_NAME = "fileName";
-	String META = "meta";
+	String META_JSON = "metaJson";
 	String INDEX = "index";
 	String FACET = "facet";
 	String SORT = "sort";
