@@ -1,7 +1,6 @@
 package io.zulia.server.index;
 
 import io.zulia.ZuliaConstants;
-import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.document.Document;
@@ -19,7 +18,6 @@ import org.apache.lucene.store.NRTCachingDirectory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
@@ -180,8 +178,8 @@ public class ShardWriteManager {
 		return facetsConfig;
 	}
 
-	public void indexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<Metadata> metadataList) throws Exception {
-		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadataList);
+	public void indexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
+		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadata);
 		luceneDocument = facetsConfig.build(taxoWriter, luceneDocument);
 		Term updateQuery = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 		indexWriter.updateDocument(updateQuery, luceneDocument);

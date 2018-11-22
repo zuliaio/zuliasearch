@@ -2,7 +2,6 @@ package io.zulia.doc;
 
 import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
-import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
@@ -44,17 +43,17 @@ public class AssociatedBuilder {
 	}
 
 	public AssociatedBuilder setDocument(Document document) {
-		adBuilder.setDocument(ByteString.copyFrom(ZuliaUtil.mongoDocumentToByteArray(document)));
+		adBuilder.setDocument(ZuliaUtil.mongoDocumentToByteString(document));
 		return this;
 	}
 
-	public AssociatedBuilder addMetaData(String key, String value) {
-		adBuilder.addMetadata(Metadata.newBuilder().setKey(key).setValue(value));
-		return this;
-	}
-
-	public AssociatedBuilder clearMetaData() {
-		adBuilder.clearMetadata();
+	public AssociatedBuilder setMetadata(Document metadata) {
+		if (metadata != null) {
+			adBuilder.setMetadata(ZuliaUtil.mongoDocumentToByteString(metadata));
+		}
+		else {
+			adBuilder.clearMetadata();
+		}
 		return this;
 	}
 

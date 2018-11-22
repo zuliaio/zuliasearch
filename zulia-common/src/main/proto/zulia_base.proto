@@ -19,7 +19,7 @@ message ResultDocument {
     string uniqueId = 1;
     string indexName = 2;
     bytes document = 3;
-    repeated Metadata metadata = 4;
+    bytes metadata = 4;
     int64 timestamp = 5;
 }
 
@@ -29,14 +29,10 @@ message AssociatedDocument {
     string documentUniqueId = 2;
     string indexName = 3;
     bytes document = 4;
-    repeated Metadata metadata = 5;
+    bytes metadata = 5;
     int64 timestamp = 6;
 }
 
-message Metadata {
-    string key = 1;
-    string value = 2;
-}
 
 message ShardCountResponse {
     uint32 shardNumber = 1;
