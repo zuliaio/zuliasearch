@@ -53,7 +53,7 @@ public class FetchResult extends Result {
 	public Document getMeta() {
 		if (fetchResponse.hasResultDocument()) {
 			ResultDocument rd = fetchResponse.getResultDocument();
-			return ZuliaUtil.byteArrayToMongoDocument(rd.getMetadata());
+			return ZuliaUtil.byteStringToMongoDocument(rd.getMetadata());
 		}
 		return null;
 	}
