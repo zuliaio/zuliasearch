@@ -56,7 +56,7 @@ public class ZuliaUtil {
 		return ByteString.copyFrom(mongoDocumentToByteArray(mongoDocument));
 	}
 
-	public static Document byteArrayToMongoDocument(ByteString bytes) {
+	public static Document byteStringToMongoDocument(ByteString bytes) {
 		if (bytes != null) {
 			return byteArrayToMongoDocument(bytes.toByteArray());
 		}
