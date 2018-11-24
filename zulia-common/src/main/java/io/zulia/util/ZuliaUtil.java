@@ -64,7 +64,7 @@ public class ZuliaUtil {
 	}
 
 	public static Document byteArrayToMongoDocument(byte[] byteArray) {
-		if (byteArray != null) {
+		if (byteArray != null && byteArray.length != 0) {
 			BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(byteArray));
 
 			return documentCodec.decode(bsonReader, DecoderContext.builder().build());
