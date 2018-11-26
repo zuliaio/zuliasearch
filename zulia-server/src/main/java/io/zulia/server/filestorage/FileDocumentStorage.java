@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
 public class FileDocumentStorage implements DocumentStorage {
@@ -41,7 +40,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Map<String, String> metadataMap) throws Exception {
+	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadataMap) throws Exception {
 		throw new RuntimeException("Not implemented");
 	}
 

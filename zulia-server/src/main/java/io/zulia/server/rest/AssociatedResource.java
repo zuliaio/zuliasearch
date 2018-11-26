@@ -16,8 +16,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -65,27 +63,20 @@ public class AssociatedResource {
 	@POST
 	@Produces({ MediaType.TEXT_XML })
 	public Response post(@QueryParam(ZuliaConstants.ID) String uniqueId, @QueryParam(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryParam(ZuliaConstants.INDEX) String indexName, @QueryParam(ZuliaConstants.META) List<String> meta, InputStream is) {
+			@QueryParam(ZuliaConstants.INDEX) String indexName, @QueryParam(ZuliaConstants.META_JSON) String metaJson, InputStream is) {
 		if (uniqueId != null && fileName != null && indexName != null) {
 
-			HashMap<String, String> metaMap = new HashMap<>();
-			if (meta != null) {
-				for (String m : meta) {
-					int colonIndex = m.indexOf(":");
-					if (colonIndex != -1) {
-						String key = m.substring(0, colonIndex);
-						String value = m.substring(colonIndex + 1).trim();
-						metaMap.put(key, value);
-					}
-					else {
-						throw new WebApplicationException("Meta must be in the form key:value");
-					}
-				}
+			Document metadata;
+			if (metaJson != null) {
+				metadata = Document.parse(metaJson);
+			}
+			else {
+				metadata = new Document();
 			}
 
 			try {
 
-				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, metaMap);
+				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, metadata);
 
 				return Response.status(ZuliaConstants.SUCCESS)
 						.entity("Stored associated document with uniqueId <" + uniqueId + "> and fileName <" + fileName + ">").build();

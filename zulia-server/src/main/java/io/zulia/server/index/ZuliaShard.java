@@ -1,7 +1,6 @@
 package io.zulia.server.index;
 
 import io.zulia.message.ZuliaBase;
-import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaQuery;
@@ -73,7 +72,6 @@ public class ZuliaShard {
 		}
 	}
 
-
 	public void forceCommit() throws IOException {
 		if (!primary) {
 			throw new IllegalStateException("Cannot force commit from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
@@ -95,12 +93,12 @@ public class ZuliaShard {
 		shardWriteManager.close();
 	}
 
-	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<Metadata> metadataList) throws Exception {
+	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
 		if (!primary) {
 			throw new IllegalStateException("Cannot index document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
 
-		shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadataList);
+		shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
 		if (shardWriteManager.markedChangedCheckIfCommitNeeded()) {
 			forceCommit();
 		}
