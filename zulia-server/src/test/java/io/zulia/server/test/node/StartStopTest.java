@@ -10,7 +10,9 @@ import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex.FacetAs.DateHandling;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -77,6 +79,7 @@ public class StartStopTest {
 
 					if (half) { // 1/2 of input
 						mongoDocument.put("country", "US");
+
 					}
 					else { // 1/2 of input
 						mongoDocument.put("country", "France");
@@ -97,7 +100,13 @@ public class StartStopTest {
 					}
 
 					Store s = new Store(uniqueId, FACET_TEST_INDEX);
-					s.setResultDocument(ResultDocBuilder.newBuilder().setDocument(mongoDocument));
+
+					ResultDocBuilder resultDocumentBuilder = ResultDocBuilder.newBuilder().setDocument(mongoDocument);
+					if (half) {
+						resultDocumentBuilder.setMetadata(new Document("test", "someValue"));
+					}
+
+					s.setResultDocument(resultDocumentBuilder);
 
 					zuliaWorkPool.store(s);
 				}
@@ -209,6 +218,35 @@ public class StartStopTest {
 			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN / 2, "Total record count after drill down mismatch");
 
 		}
+
+		{
+			Query q = new Query(FACET_TEST_INDEX, "country:US", 10).setResultFetchType(ZuliaQuery.FetchType.META);
+
+			QueryResult qr = zuliaWorkPool.query(q);
+
+			for (ZuliaQuery.ScoredResult result : qr.getResults()) {
+				Document metadata = ZuliaUtil.byteStringToMongoDocument(result.getResultDocument().getMetadata());
+				Assert.assertEquals(metadata.getString("test"), "someValue");
+			}
+
+			Assert.assertEquals(qr.getTotalHits(), totalRecords / 2, "Total record count filtered on half mismatch");
+
+		}
+
+		{
+			Query q = new Query(FACET_TEST_INDEX, "country:US", 10).setResultFetchType(ZuliaQuery.FetchType.FULL);
+
+			QueryResult qr = zuliaWorkPool.query(q);
+
+			for (ZuliaQuery.ScoredResult result : qr.getResults()) {
+				Document metadata = ZuliaUtil.byteStringToMongoDocument(result.getResultDocument().getMetadata());
+				Assert.assertEquals(metadata.getString("test"), "someValue");
+			}
+
+			Assert.assertEquals(qr.getTotalHits(), totalRecords / 2, "Total record count filtered on half mismatch");
+
+		}
+
 
 
 	}

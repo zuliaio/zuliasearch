@@ -526,12 +526,7 @@ public class ShardReader implements AutoCloseable {
 
 		if (ZuliaQuery.FetchType.FULL.equals(resultFetchType) || ZuliaQuery.FetchType.META.equals(resultFetchType)) {
 			BytesRef metaRef = d.getBinaryValue(ZuliaConstants.STORED_META_FIELD);
-			org.bson.Document metaMongoDoc = new org.bson.Document();
-			metaMongoDoc.putAll(ZuliaUtil.byteArrayToMongoDocument(metaRef.bytes));
-
-			for (String key : metaMongoDoc.keySet()) {
-				rdBuilder.addMetadata(ZuliaBase.Metadata.newBuilder().setKey(key).setValue(((String) metaMongoDoc.get(key))));
-			}
+			rdBuilder.setMetadata(ByteString.copyFrom(metaRef.bytes));
 		}
 
 		if (ZuliaQuery.FetchType.FULL.equals(resultFetchType)) {
@@ -688,7 +683,7 @@ public class ShardReader implements AutoCloseable {
 
 		filterDocument(fieldsToReturn, fieldsToMask, mongoDocument);
 
-		ByteString document = ByteString.copyFrom(ZuliaUtil.mongoDocumentToByteArray(mongoDocument));
+		ByteString document = ZuliaUtil.mongoDocumentToByteString(mongoDocument);
 		resultDocBuilder.setDocument(document);
 
 		return resultDocBuilder.build();
