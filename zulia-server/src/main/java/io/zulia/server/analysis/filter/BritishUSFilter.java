@@ -25,7 +25,7 @@ public class BritishUSFilter extends TokenFilter {
 		CharArrayMap<char[]> charMap = new CharArrayMap<>(2000, false);
 
 		try {
-			URL url = Resources.getResource(BritishUSFilter.class, "british.txt");
+			URL url = BritishUSFilter.class.getResource("/british.txt");
 			String text = Resources.toString(url, Charsets.UTF8_CHARSET);
 			String[] lines = text.split("\n");
 			for (String line : lines) {
