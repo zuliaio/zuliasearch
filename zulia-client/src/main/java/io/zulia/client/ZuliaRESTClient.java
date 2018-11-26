@@ -3,6 +3,7 @@ package io.zulia.client;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
 import io.zulia.util.StreamHelper;
+import org.bson.Document;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,9 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 public class ZuliaRESTClient {
 	private String server;
@@ -64,7 +63,7 @@ public class ZuliaRESTClient {
 		storeAssociated(uniqueId, indexName, fileName, null, source);
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Map<String, String> meta, InputStream source) throws IOException {
+	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws IOException {
 		HttpURLConnection conn = null;
 		OutputStream destination = null;
 		try {
@@ -73,13 +72,8 @@ public class ZuliaRESTClient {
 			parameters.put(ZuliaConstants.ID, uniqueId);
 			parameters.put(ZuliaConstants.FILE_NAME, fileName);
 			parameters.put(ZuliaConstants.INDEX, indexName);
-			if (meta != null) {
-				ArrayList<Object> list = new ArrayList<>();
-				parameters.put(ZuliaConstants.META_JSON, list);
-				for (String key : meta.keySet()) {
-					String value = meta.get(key);
-					list.add(key + ":" + value);
-				}
+			if (metadata != null) {
+				parameters.put(ZuliaConstants.META_JSON, metadata.toJson());
 			}
 
 			String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);

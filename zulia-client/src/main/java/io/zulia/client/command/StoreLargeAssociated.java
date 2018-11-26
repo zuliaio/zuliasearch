@@ -4,11 +4,11 @@ import io.zulia.client.ZuliaRESTClient;
 import io.zulia.client.command.base.RESTCommand;
 import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.result.StoreLargeAssociatedResult;
+import org.bson.Document;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.util.Map;
 
 public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult> implements ShardRoutableCommand {
 
@@ -17,7 +17,7 @@ public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult
 	private String indexName;
 	private File fileToStore;
 	private InputStream source;
-	private Map<String, String> meta;
+	private Document meta;
 
 	public StoreLargeAssociated(String uniqueId, String indexName, String fileName, File fileToStore) {
 		this.uniqueId = uniqueId;
@@ -33,11 +33,11 @@ public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult
 		this.source = source;
 	}
 
-	public Map<String, String> getMeta() {
+	public Document getMeta() {
 		return meta;
 	}
 
-	public StoreLargeAssociated setMeta(Map<String, String> meta) {
+	public StoreLargeAssociated setMeta(Document meta) {
 		this.meta = meta;
 		return this;
 	}

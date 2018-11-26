@@ -28,19 +28,6 @@ subprojects {
 		testCompile 'org.testng:testng:6.8.21'
 	}
 
-	sourceSets {
-		main {
-			resources {
-				srcDir 'src/main/java'
-			}
-		}
-		test {
-			resources {
-				srcDir 'src/test/java'
-			}
-		}
-	}
-
 	test {
 		useTestNG()
 
