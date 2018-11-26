@@ -1,10 +1,9 @@
 package io.zulia.client.result;
 
-import java.util.HashMap;
-import java.util.Map;
+import io.zulia.util.ZuliaUtil;
+import org.bson.Document;
 
 import static io.zulia.message.ZuliaBase.AssociatedDocument;
-import static io.zulia.message.ZuliaBase.Metadata;
 
 public class AssociatedResult {
 
@@ -14,12 +13,8 @@ public class AssociatedResult {
 		this.associatedDocument = associatedDocument;
 	}
 
-	public Map<String, String> getMeta() {
-		HashMap<String, String> metadata = new HashMap<String, String>();
-		for (Metadata md : associatedDocument.getMetadataList()) {
-			metadata.put(md.getKey(), md.getValue());
-		}
-		return metadata;
+	public Document getMeta() {
+		return ZuliaUtil.byteArrayToMongoDocument(associatedDocument.getMetadata().toByteArray());
 	}
 
 	public String getFilename() {
@@ -39,8 +34,7 @@ public class AssociatedResult {
 
 	public String getDocumentAsUtf8() {
 		if (hasDocument()) {
-			String contents = associatedDocument.getDocument().toStringUtf8();
-			return contents;
+			return associatedDocument.getDocument().toStringUtf8();
 		}
 		return null;
 	}

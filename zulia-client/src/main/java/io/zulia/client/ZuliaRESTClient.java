@@ -75,7 +75,7 @@ public class ZuliaRESTClient {
 			parameters.put(ZuliaConstants.INDEX, indexName);
 			if (meta != null) {
 				ArrayList<Object> list = new ArrayList<>();
-				parameters.put(ZuliaConstants.META, list);
+				parameters.put(ZuliaConstants.META_JSON, list);
 				for (String key : meta.keySet()) {
 					String value = meta.get(key);
 					list.add(key + ":" + value);

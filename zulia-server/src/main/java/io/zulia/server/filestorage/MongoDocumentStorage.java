@@ -13,8 +13,8 @@ import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
 import com.mongodb.client.model.IndexOptions;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
-import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.message.ZuliaQuery.FetchType;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 import java.io.ByteArrayInputStream;
@@ -25,9 +25,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -100,21 +98,19 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Map<String, String> metadataMap) throws Exception {
+	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadata) throws Exception {
 		GridFSBucket gridFS = createGridFSConnection();
 
 		deleteAssociatedDocument(uniqueId, fileName);
 
-		GridFSUploadOptions gridFSUploadOptions = getGridFSUploadOptions(uniqueId, fileName, timestamp, metadataMap);
+		GridFSUploadOptions gridFSUploadOptions = getGridFSUploadOptions(uniqueId, fileName, timestamp, metadata);
 		gridFS.uploadFromStream(fileName, is, gridFSUploadOptions);
 	}
 
-	private GridFSUploadOptions getGridFSUploadOptions(String uniqueId, String fileName, long timestamp, Map<String, String> metadataMap) {
-		Document metadata = new Document();
-		if (metadataMap != null) {
-			for (String key : metadataMap.keySet()) {
-				metadata.put(key, metadataMap.get(key));
-			}
+	private GridFSUploadOptions getGridFSUploadOptions(String uniqueId, String fileName, long timestamp, Document metadata) {
+
+		if (metadata == null) {
+			metadata = new Document();
 		}
 		metadata.put(TIMESTAMP, timestamp);
 		metadata.put(DOCUMENT_UNIQUE_ID_KEY, uniqueId);
@@ -130,9 +126,12 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 		ByteArrayInputStream byteInputStream = new ByteArrayInputStream(bytes);
 
-		Map<String, String> metadata = new HashMap<>();
-		for (Metadata meta : doc.getMetadataList()) {
-			metadata.put(meta.getKey(), meta.getValue());
+		Document metadata;
+		if (doc.getMetadata() != null) {
+			metadata = ZuliaUtil.byteArrayToMongoDocument(doc.getMetadata().toByteArray());
+		}
+		else {
+			metadata = new Document();
 		}
 
 		storeAssociatedDocument(doc.getDocumentUniqueId(), doc.getFilename(), byteInputStream, doc.getTimestamp(), metadata);
@@ -196,9 +195,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 		aBuilder.setTimestamp(timestamp);
 
 		aBuilder.setDocumentUniqueId((String) metadata.remove(DOCUMENT_UNIQUE_ID_KEY));
-		for (String field : metadata.keySet()) {
-			aBuilder.addMetadata(Metadata.newBuilder().setKey(field).setValue((String) metadata.get(field)));
-		}
+		aBuilder.setMetadata(ZuliaUtil.mongoDocumentToByteString(metadata));
 
 		if (FetchType.FULL.equals(fetchType)) {
 
