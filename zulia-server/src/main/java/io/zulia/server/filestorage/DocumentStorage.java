@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.Map;
 
 public interface DocumentStorage {
 
@@ -20,7 +19,7 @@ public interface DocumentStorage {
 
 	void getAssociatedDocuments(OutputStream outputstream, Document filter) throws IOException;
 
-	void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Map<String, String> metadataMap) throws Exception;
+	void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadataMap) throws Exception;
 
 	InputStream getAssociatedDocumentStream(String uniqueId, String filename);
 

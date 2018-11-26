@@ -284,9 +284,16 @@ public class ZuliaIndex {
 			else {
 				document = new Document();
 			}
+			Document metadata;
+			if (resultDocument.getMetadata() != null) {
+				metadata = ZuliaUtil.byteArrayToMongoDocument(resultDocument.getMetadata().toByteArray());
+			}
+			else {
+				metadata = new Document();
+			}
 
 			ZuliaShard s = findShardFromUniqueId(uniqueId);
-			s.index(uniqueId, timestamp, document, resultDocument.getMetadataList());
+			s.index(uniqueId, timestamp, document, metadata);
 
 		}
 
@@ -691,9 +698,7 @@ public class ZuliaIndex {
 		GetNumberOfDocsResponse.Builder responseBuilder = GetNumberOfDocsResponse.newBuilder();
 
 		responseBuilder.setNumberOfDocs(0);
-		for (Future<ShardCountResponse> response : responses)
-
-		{
+		for (Future<ShardCountResponse> response : responses) {
 			try {
 				ShardCountResponse scr = response.get();
 				responseBuilder.addShardCountResponse(scr);
@@ -874,14 +879,13 @@ public class ZuliaIndex {
 
 	}
 
-	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long clusterTime, HashMap<String, String> metadataMap)
-			throws Exception {
+	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long clusterTime, Document metadata) throws Exception {
 
-		documentStorage.storeAssociatedDocument(uniqueId, fileName, is, clusterTime, metadataMap);
+		documentStorage.storeAssociatedDocument(uniqueId, fileName, is, clusterTime, metadata);
 
 	}
 
-	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) throws IOException {
+	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) {
 
 		return documentStorage.getAssociatedDocumentStream(uniqueId, fileName);
 
