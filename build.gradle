@@ -1,7 +1,5 @@
 plugins {
 	id "org.ajoberstar.reckon" version "0.9.0"
-	id "maven"
-	id "java"
 }
 
 reckon {
@@ -14,6 +12,7 @@ defaultTasks 'build'
 subprojects {
 
 	apply plugin: 'java'
+	apply plugin: 'maven'
 
 	sourceCompatibility = 1.8
 	targetCompatibility = 1.8
