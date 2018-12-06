@@ -2,7 +2,6 @@ plugins {
     id "com.google.protobuf" version "0.8.7"
 }
 
-apply from: "../maven.gradle"
 
 defaultTasks "generateProto", "build"
 
