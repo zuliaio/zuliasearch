@@ -1,29 +1,29 @@
 plugins {
-    id "com.google.protobuf" version "0.8.6"
+    id "com.google.protobuf" version "0.8.7"
 }
 
-apply from: '../maven.gradle'
+apply from: "../maven.gradle"
 
-defaultTasks 'generateProto', 'build'
+defaultTasks "generateProto", "build"
 
-description 'Zulia Common'
+description "Zulia Common"
 
-def grpcVersion = '1.16.1'
+def grpcVersion = "1.16.1"
 
 dependencies {
     compile "io.grpc:grpc-netty-shaded:${grpcVersion}"
     compile "io.grpc:grpc-protobuf:${grpcVersion}"
     compile "io.grpc:grpc-stub:${grpcVersion}"
-    compile 'org.mongodb:bson:3.8.2'
-    compile 'org.apache.commons:commons-pool2:2.6.0'
-	compile 'com.google.protobuf:protobuf-java:3.6.1'
-    compile 'javax.annotation:javax.annotation-api:1.3.2'
+    compile "org.mongodb:bson:3.8.2"
+    compile "org.apache.commons:commons-pool2:2.6.0"
+	compile "com.google.protobuf:protobuf-java:3.6.1"
+    compile "javax.annotation:javax.annotation-api:1.3.2"
 }
 
 protobuf {
 
 	protoc {
-		artifact = 'com.google.protobuf:protoc:3.6.1'
+		artifact = "com.google.protobuf:protoc:3.6.1"
 	}
 	plugins {
 		grpc {
@@ -35,7 +35,7 @@ protobuf {
 			grpc {
 				// To generate deprecated interfaces and static bindService method,
 				// turn the enable_deprecated option to true below:
-				option 'enable_deprecated=false'
+				option "enable_deprecated=false"
 			}
 		}
 	}
@@ -48,7 +48,7 @@ clean {
 }
 
 // Inform IntelliJ projects about the generated code.
-apply plugin: 'idea'
+apply plugin: "idea"
 
 idea {
     module {

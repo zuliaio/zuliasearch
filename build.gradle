@@ -1,8 +1,8 @@
 plugins {
-	id "org.ajoberstar.reckon" version "0.8.0"
+	id "org.ajoberstar.reckon" version "0.9.0"
+	id "maven"
+	id "java"
 }
-
-apply plugin: 'java'
 
 reckon {
 	scopeFromProp()
