@@ -9,12 +9,14 @@ import com.google.gson.GsonBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import io.zulia.log.LogUtil;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
+import io.zulia.server.config.cluster.MongoAuth;
 import io.zulia.server.config.cluster.MongoNodeService;
 import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.config.single.SingleNodeService;
@@ -130,8 +132,15 @@ public class ZuliaD {
 					serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
 				}
 
-				MongoClient mongoClient = MongoClients
-						.create(MongoClientSettings.builder().applyToClusterSettings(builder -> builder.hosts(serverAddressList)).build());
+				MongoClientSettings.Builder mongoBuilder = MongoClientSettings.builder().applyToClusterSettings(builder -> builder.hosts(serverAddressList));
+
+				MongoAuth mongoAuth = zuliaConfig.getMongoAuth();
+				if (mongoAuth != null) {
+					mongoBuilder.credential(
+							MongoCredential.createCredential(mongoAuth.getUsername(), mongoAuth.getDatabase(), mongoAuth.getPassword().toCharArray()));
+				}
+
+				MongoClient mongoClient = MongoClients.create(mongoBuilder.build());
 
 				MongoProvider.setMongoClient(mongoClient);
 				LOG.info("Created Mongo Client: " + MongoProvider.getMongoClient());
