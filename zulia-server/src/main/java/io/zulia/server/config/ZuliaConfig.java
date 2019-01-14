@@ -1,5 +1,6 @@
 package io.zulia.server.config;
 
+import io.zulia.server.config.cluster.MongoAuth;
 import io.zulia.server.config.cluster.MongoServer;
 
 import java.util.Collections;
@@ -11,6 +12,7 @@ public class ZuliaConfig {
 	private boolean cluster = false;
 	private String clusterName = "zulia";
 	private List<MongoServer> mongoServers = Collections.singletonList(new MongoServer());
+	private MongoAuth mongoAuth;
 	private String serverAddress = null; //null means autodetect
 	private int servicePort = 32191;
 	private int restPort = 32192;
@@ -72,5 +74,13 @@ public class ZuliaConfig {
 
 	public void setRestPort(int restPort) {
 		this.restPort = restPort;
+	}
+
+	public MongoAuth getMongoAuth() {
+		return mongoAuth;
+	}
+
+	public void setMongoAuth(MongoAuth mongoAuth) {
+		this.mongoAuth = mongoAuth;
 	}
 }
