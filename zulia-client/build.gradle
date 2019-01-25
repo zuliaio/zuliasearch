@@ -2,8 +2,5 @@ description "Zulia Client"
 
 dependencies {
     compile project(":zulia-common")
-    implementation "javax.xml.bind:jaxb-api:2.3.0"
-    implementation "com.sun.xml.bind:jaxb-impl:2.4.0-b180725.0644"
-    implementation "com.sun.istack:istack-commons-runtime:3.0.5"
 }
 
