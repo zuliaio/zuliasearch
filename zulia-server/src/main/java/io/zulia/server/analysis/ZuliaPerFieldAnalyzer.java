@@ -6,6 +6,7 @@ import io.zulia.server.analysis.filter.BritishUSFilter;
 import io.zulia.server.analysis.filter.CaseProtectedWordsFilter;
 import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
@@ -25,17 +26,23 @@ import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.CATENATE_ALL;
 
 public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
+	private static final Logger LOG = Logger.getLogger(ZuliaPerFieldAnalyzer.class.getName());
+
 	private final ServerIndexConfig indexConfig;
 	private final Analyzer defaultAnalyzer;
 
@@ -140,26 +147,9 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 			}
 
 			private TokenStream getFilteredStream(TokenStream src) {
-				TokenStream tok;
-				TokenStream lastTok;
+				TokenStream tok = src;
+				TokenStream lastTok = src;
 
-				ZuliaIndex.AnalyzerSettings.Tokenizer tokenizer = analyzerSettings.getTokenizer();
-				if (ZuliaIndex.AnalyzerSettings.Tokenizer.KEYWORD.equals(tokenizer)) {
-					tok = src;
-					lastTok = src;
-				}
-				else if (ZuliaIndex.AnalyzerSettings.Tokenizer.WHITESPACE.equals(tokenizer)) {
-					tok = src;
-					lastTok = src;
-				}
-				else if (ZuliaIndex.AnalyzerSettings.Tokenizer.STANDARD.equals(tokenizer)) {
-					//standard filter does nothing anymore, consider removing it
-					tok = new StandardFilter(src);
-					lastTok = tok;
-				}
-				else {
-					throw new RuntimeException("Unknown tokenizer type <" + tokenizer);
-				}
 
 				List<ZuliaIndex.AnalyzerSettings.Filter> filterList = analyzerSettings.getFilterList();
 				for (ZuliaIndex.AnalyzerSettings.Filter filter : filterList) {
@@ -182,16 +172,6 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 						shingleFilter.setOutputUnigrams(false);
 						tok = shingleFilter;
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.THREE_THREE_SHINGLE.equals(filter)) {
-						ShingleFilter shingleFilter = new ShingleFilter(lastTok, 3, 3);
-						shingleFilter.setOutputUnigrams(false);
-						tok = shingleFilter;
-					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.THREE_THREE_SHINGLE.equals(filter)) {
-						ShingleFilter shingleFilter = new ShingleFilter(lastTok, 3, 3);
-						shingleFilter.setOutputUnigrams(false);
-						tok = shingleFilter;
-					}
 					else if (ZuliaIndex.AnalyzerSettings.Filter.FOUR_FOUR_SHINGLE.equals(filter)) {
 						ShingleFilter shingleFilter = new ShingleFilter(lastTok, 4, 4);
 						shingleFilter.setOutputUnigrams(false);
@@ -206,7 +186,20 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 						tok = new KStemFilter(lastTok);
 					}
 					else if (ZuliaIndex.AnalyzerSettings.Filter.STOPWORDS.equals(filter)) {
-						tok = new StopFilter(lastTok, EnglishAnalyzer.ENGLISH_STOP_WORDS_SET);
+						CharArraySet stopWordsSet = EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
+
+						File file = new File(System.getProperty("user.home") + File.separator + ".zulia" + File.separator + "stopwords.txt");
+						if (file.exists()) {
+							try {
+								List<String> fileLines = Files.lines(file.toPath()).map(s -> s = s.trim()).collect(Collectors.toList());
+								stopWordsSet = StopFilter.makeStopSet(fileLines);
+							}
+							catch (IOException e) {
+								throw new RuntimeException(e);
+							}
+						}
+
+						tok = new StopFilter(lastTok, stopWordsSet);
 					}
 					else if (ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_MIN_STEM.equals(filter)) {
 						tok = new EnglishMinimalStemFilter(lastTok);
