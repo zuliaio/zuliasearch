@@ -1,5 +1,5 @@
 plugins {
-    id "application"
+    application
 }
 
 description = "Zulia Server"
@@ -38,24 +38,30 @@ dependencies {
 
 }
 
-applicationName = "zulia"
-mainClassName = "io.zulia.server.cmd.Zulia"
 
-task createZuliaDScript(type: CreateStartScripts) {
+val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
+zuliaScriptTask.applicationName = "zulia"
+zuliaScriptTask.mainClassName = "io.zulia.server.cmd.Zulia"
+
+
+val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
     applicationName = "zuliad"
     mainClassName = "io.zulia.server.cmd.ZuliaD"
-    outputDir = startScripts.outputDir
-    classpath = startScripts.classpath
+    //outputDir = zuliaScriptTask.outputDir
+    //classpath = zuliaScriptTask.classpath
 
     doLast {
-        def unixScriptFile = file getUnixScript()
-        unixScriptFile.text = unixScriptFile.text.replace('APP_HOME="`pwd -P`"', 'export APP_HOME="`pwd -P`"')
+        val unixScriptFile = file(unixScript)
+        val text = unixScriptFile.readText(Charsets.UTF_8)
+        val newText = text.replace("APP_HOME=\"`pwd -P`\"'", "export APP_HOME=\"`pwd -P`\"")
+        unixScriptFile.writeText(newText, Charsets.UTF_8)
     }
 }
 
-applicationDistribution.into("bin") {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    from(createZuliaDScript)
-    fileMode = 0755
-}
+
+//applicationDistribution.into("bin") {
+//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//    from(createZuliaDScript)
+//    fileMode = 0755
+//}
 
