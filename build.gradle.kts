@@ -27,7 +27,7 @@ subprojects {
 	}
 
 	dependencies {
-		testCompile("org.testng:testng:6.8.21")
+		testCompile("org.testng:testng:6.14.3")
 	}
 
 	tasks.withType<Test> {
