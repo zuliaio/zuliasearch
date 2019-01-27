@@ -47,21 +47,29 @@ zuliaScriptTask.mainClassName = "io.zulia.server.cmd.Zulia"
 val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
     applicationName = "zuliad"
     mainClassName = "io.zulia.server.cmd.ZuliaD"
-    //outputDir = zuliaScriptTask.outputDir
-    //classpath = zuliaScriptTask.classpath
+    outputDir = zuliaScriptTask.outputDir
+    classpath = zuliaScriptTask.classpath
 
     doLast {
         val unixScriptFile = file(unixScript)
         val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"'", "export APP_HOME=\"`pwd -P`\"")
+        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
         unixScriptFile.writeText(newText, Charsets.UTF_8)
     }
 }
 
 
-//applicationDistribution.into("bin") {
-//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-//    from(createZuliaDScript)
-//    fileMode = 0755
-//}
+distributions {
+    main {
+        contents {
+            from(zuliaDScriptTask) {
+                into("bin")
+            }
+            fileMode = 777
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+        }
+
+    }
+}
+
 
