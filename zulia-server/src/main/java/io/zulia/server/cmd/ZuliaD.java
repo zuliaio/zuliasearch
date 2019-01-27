@@ -106,6 +106,9 @@ public class ZuliaD {
 			LOG.info("Using config <" + config + ">");
 
 			String dataDir = zuliaConfig.getDataPath();
+			if (prefix != null && !dataDir.startsWith(File.separator)) {
+				dataDir = prefix + File.separator + dataDir;
+			}
 			Path dataPath = Paths.get(dataDir);
 
 			NodeService nodeService;
