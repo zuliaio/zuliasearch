@@ -35,11 +35,11 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 
 			for (HighlightRequest.Builder highlightRequestBuilder : queryRequestBuilder.getHighlightRequestBuilderList()) {
 
-				if (highlightRequestBuilder.getPreTag() == null) {
+				if (highlightRequestBuilder.getPreTag().isEmpty()) {
 					highlightRequestBuilder.setPreTag("<em>");
 				}
 
-				if (highlightRequestBuilder.getPostTag() == null) {
+				if (highlightRequestBuilder.getPostTag().isEmpty()) {
 					highlightRequestBuilder.setPostTag("</em>");
 				}
 
