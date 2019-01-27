@@ -108,6 +108,7 @@ public class ZuliaD {
 			String dataDir = zuliaConfig.getDataPath();
 			if (prefix != null && !dataDir.startsWith(File.separator)) {
 				dataDir = prefix + File.separator + dataDir;
+				zuliaConfig.setDataPath(dataDir);
 			}
 			Path dataPath = Paths.get(dataDir);
 
