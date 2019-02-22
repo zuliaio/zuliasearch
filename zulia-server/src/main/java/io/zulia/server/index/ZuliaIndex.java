@@ -481,7 +481,7 @@ public class ZuliaIndex {
 			}
 		}
 		catch (ParseException e) {
-			throw new Exception("Invalid Query: " + zuliaQuery.getQ());
+			throw new IllegalArgumentException("Invalid Query: " + zuliaQuery.getQ());
 		}
 	}
 
