@@ -244,7 +244,6 @@ public class ShardReader implements AutoCloseable {
 
 		ZuliaQuery.ShardQueryResponse segmentResponse = shardQueryReponseBuilder.build();
 		if (useCache) {
-			LOG.info("Caching query <" + query + "> for index <" + segmentResponse.getIndexName() + "> in shard <" + segmentResponse.getShardNumber() + ">");
 			qrc.storeInCache(queryCacheKey, segmentResponse);
 		}
 		return segmentResponse;
