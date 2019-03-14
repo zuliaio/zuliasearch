@@ -9,13 +9,13 @@ defaultTasks("generateProto", "build")
 
 description = "Zulia Common"
 
-val grpcVersion = "1.16.1"
+val grpcVersion = "1.19.0"
 
 dependencies {
     compile("io.grpc:grpc-netty-shaded:${grpcVersion}")
     compile("io.grpc:grpc-protobuf:${grpcVersion}")
     compile("io.grpc:grpc-stub:${grpcVersion}")
-    compile("org.mongodb:bson:3.9.0")
+    compile("org.mongodb:bson:3.10.1")
     compile("org.apache.commons:commons-pool2:2.6.0")
     compile("com.google.protobuf:protobuf-java:3.6.1")
     compile("javax.annotation:javax.annotation-api:1.3.2")
