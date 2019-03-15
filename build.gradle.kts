@@ -39,6 +39,7 @@ subprojects {
         publishing {
             publications {
                 create<MavenPublication>("mavenJava") {
+                    from(components["java"])
                     pom {
                         url.set("http://zulia.io")
                         licenses {
