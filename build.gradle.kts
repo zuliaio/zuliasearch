@@ -74,7 +74,7 @@ subprojects {
                             url.set("https://github.com/zuliaio/zuliasearch")
                         }
                         name.set(project.name)
-                        description.set(project.description)
+                        description.set(project.name)
                     }
                 }
                 repositories {

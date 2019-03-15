@@ -1,5 +1,6 @@
 package io.zulia.client.result;
 
+import io.zulia.fields.Mapper;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
@@ -50,6 +51,20 @@ public class QueryResult extends Result {
 			}
 		}
 		return documents;
+	}
+
+	public <T> List<T> getMappedDocuments(Mapper<T> mapper) throws Exception {
+		List<T> items = new ArrayList<>();
+		for (ScoredResult scoredResult : queryResponse.getResultsList()) {
+			T item = mapper.fromScoredResult(scoredResult);
+			if (item != null) {
+				items.add(item);
+			}
+			else {
+				throw new IllegalStateException("Cannot get results without fetch type of full");
+			}
+		}
+		return items;
 	}
 
 	public Document getFirstDocument() {
