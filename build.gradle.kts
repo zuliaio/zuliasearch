@@ -36,11 +36,6 @@ subprojects {
 
     if (project.hasProperty("sonatypeUsername")) {
 
-        signing {
-            sign(publishing.publications["mavenJava"])
-        }
-
-
         publishing {
             publications {
                 create<MavenPublication>("mavenJava") {
@@ -92,8 +87,12 @@ subprojects {
                     }
                 }
             }
+
         }
 
+        signing {
+            sign(publishing.publications["mavenJava"])
+        }
     }
 
 
