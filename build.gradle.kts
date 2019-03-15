@@ -37,7 +37,7 @@ subprojects {
     if (project.hasProperty("sonatypeUsername")) {
 
         signing {
-            sign(configurations.archives.get())
+            sign(publishing.publications["mavenJava"])
         }
 
 
@@ -120,13 +120,13 @@ subprojects {
     val sourcesJar = tasks.register<Jar>("sourcesJar") {
         dependsOn(JavaPlugin.CLASSES_TASK_NAME)
         archiveClassifier.set("sources")
-        from(sourceSets.getByName("main").allSource)
+        from(sourceSets.main.get().allJava)
     }
 
     val javadocJar = tasks.register<Jar>("javadocJar") {
         dependsOn(JavaPlugin.JAVADOC_TASK_NAME)
         archiveClassifier.set("javadoc")
-        from(tasks["javadoc"])
+        from(tasks.javadoc)
     }
 
     artifacts.add("archives", sourcesJar)
