@@ -34,6 +34,21 @@ subprojects {
     apply(plugin = "maven-publish")
 
 
+    val sourcesJar = tasks.register<Jar>("sourcesJar") {
+        dependsOn(JavaPlugin.CLASSES_TASK_NAME)
+        archiveClassifier.set("sources")
+        from(sourceSets.main.get().allJava)
+    }
+
+    val javadocJar = tasks.register<Jar>("javadocJar") {
+        dependsOn(JavaPlugin.JAVADOC_TASK_NAME)
+        archiveClassifier.set("javadoc")
+        from(tasks.javadoc)
+    }
+
+    artifacts.add("archives", sourcesJar)
+    artifacts.add("archives", javadocJar)
+
     if (project.hasProperty("sonatypeUsername")) {
 
         publishing {
@@ -119,20 +134,7 @@ subprojects {
 
     }
 
-    val sourcesJar = tasks.register<Jar>("sourcesJar") {
-        dependsOn(JavaPlugin.CLASSES_TASK_NAME)
-        archiveClassifier.set("sources")
-        from(sourceSets.main.get().allJava)
-    }
 
-    val javadocJar = tasks.register<Jar>("javadocJar") {
-        dependsOn(JavaPlugin.JAVADOC_TASK_NAME)
-        archiveClassifier.set("javadoc")
-        from(tasks.javadoc)
-    }
-
-    artifacts.add("archives", sourcesJar)
-    artifacts.add("archives", javadocJar)
 
 
 }
