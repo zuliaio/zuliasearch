@@ -5,7 +5,7 @@ plugins {
 description = "Zulia Server"
 
 
-val luceneVersion = "7.5.0"
+val luceneVersion = "7.7.1"
 
 
 defaultTasks("build", "installDist")
@@ -34,7 +34,7 @@ dependencies {
 
     compile("info.debatty:java-lsh:0.11")
 
-    compile("org.mongodb:mongodb-driver-sync:3.9.0")
+    compile("org.mongodb:mongodb-driver-sync:3.10.1")
 
 }
 
