@@ -1,7 +1,6 @@
 package io.zulia.server.analysis.similarity;
 
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
-import org.apache.lucene.util.BytesRef;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,13 +36,5 @@ public class TFSimilarity extends TFIDFSimilarity {
 		return 1f;
 	}
 
-	@Override
-	public float sloppyFreq(int distance) {
-		return 1f;
-	}
 
-	@Override
-	public float scorePayload(int doc, int start, int end, BytesRef payload) {
-		return 1f;
-	}
 }

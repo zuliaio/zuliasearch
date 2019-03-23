@@ -5,7 +5,7 @@ plugins {
 description = "Zulia Server"
 
 
-val luceneVersion = "7.7.1"
+val luceneVersion = "8.0.0"
 
 
 defaultTasks("build", "installDist")

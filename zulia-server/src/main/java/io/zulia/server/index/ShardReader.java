@@ -177,7 +177,7 @@ public class ShardReader implements AutoCloseable {
 			collector = getSortingCollector(sortRequest, hasMoreAmount, after);
 		}
 		else {
-			collector = TopScoreDocCollector.create(hasMoreAmount, after);
+			collector = TopScoreDocCollector.create(hasMoreAmount, after, Integer.MAX_VALUE);
 		}
 
 		ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder = ZuliaQuery.ShardQueryResponse.newBuilder();
@@ -462,7 +462,7 @@ public class ShardReader implements AutoCloseable {
 		Sort sort = new Sort();
 		sort.setSort(sortFields.toArray(new SortField[sortFields.size()]));
 
-		collector = TopFieldCollector.create(sort, hasMoreAmount, after, true, true, true, true);
+		collector = TopFieldCollector.create(sort, hasMoreAmount, after, Integer.MAX_VALUE);
 		return collector;
 	}
 
