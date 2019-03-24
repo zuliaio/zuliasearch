@@ -17,9 +17,9 @@ public class SavedFieldsMapper<T> {
 
 	private final Class<T> clazz;
 
-	private HashSet<SavedFieldInfo<T>> savedFields;
+	private final HashSet<SavedFieldInfo<T>> savedFields;
 
-	private HashSet<SavedEmbeddedFieldInfo<T>> savedEmbeddedFields;
+	private final HashSet<SavedEmbeddedFieldInfo<T>> savedEmbeddedFields;
 
 	public SavedFieldsMapper(Class<T> clazz) {
 		this.clazz = clazz;

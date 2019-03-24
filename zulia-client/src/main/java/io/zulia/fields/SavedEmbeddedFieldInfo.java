@@ -14,7 +14,7 @@ public class SavedEmbeddedFieldInfo<T> {
 	private final String fieldName;
 	private final Field field;
 	private final SavedFieldsMapper savedFieldMapper;
-	private boolean fieldIsList;
+	private final boolean fieldIsList;
 
 	public SavedEmbeddedFieldInfo(Field field, String fieldName) {
 		this.fieldName = fieldName;

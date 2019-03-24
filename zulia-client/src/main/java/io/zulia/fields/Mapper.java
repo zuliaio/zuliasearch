@@ -29,15 +29,15 @@ public class Mapper<T> {
 
 	private final Class<T> clazz;
 
-	private SavedFieldsMapper<T> savedFieldsMapper;
+	private final SavedFieldsMapper<T> savedFieldsMapper;
 
-	private FieldConfigMapper<T> fieldConfigMapper;
+	private final FieldConfigMapper<T> fieldConfigMapper;
 
-	private UniqueIdFieldInfo<T> uniqueIdField;
+	private final UniqueIdFieldInfo<T> uniqueIdField;
 
-	private List<DefaultSearchFieldInfo<T>> defaultSearchFields = new ArrayList<>();
+	private final List<DefaultSearchFieldInfo<T>> defaultSearchFields = new ArrayList<>();
 
-	private Settings settings;
+	private final Settings settings;
 
 	public Mapper(Class<T> clazz) {
 
@@ -51,6 +51,7 @@ public class Mapper<T> {
 
 		List<Field> allFields = AnnotationUtil.getNonStaticFields(clazz, true);
 
+		UniqueIdFieldInfo uf = null;
 		for (Field f : allFields) {
 			f.setAccessible(true);
 
@@ -72,8 +73,8 @@ public class Mapper<T> {
 
 				@SuppressWarnings("unused") UniqueId uniqueId = f.getAnnotation(UniqueId.class);
 
-				if (uniqueIdField == null) {
-					uniqueIdField = new UniqueIdFieldInfo<>(f, fieldName);
+				if (uf == null) {
+					uf = new UniqueIdFieldInfo<>(f, fieldName);
 
 					if (!String.class.equals(f.getType())) {
 						throw new RuntimeException("Unique id field must be a String in class <" + clazz.getSimpleName() + ">");
@@ -104,12 +105,17 @@ public class Mapper<T> {
 			fields.add(fieldName);
 
 		}
-		if (uniqueIdField == null) {
+		if (uf == null) {
 			throw new RuntimeException("A unique id field must be defined for class <" + clazz.getSimpleName() + ">");
 		}
 
+		this.uniqueIdField = uf;
+
 		if (clazz.isAnnotationPresent(Settings.class)) {
 			settings = clazz.getAnnotation(Settings.class);
+		}
+		else {
+			settings = null;
 		}
 
 	}

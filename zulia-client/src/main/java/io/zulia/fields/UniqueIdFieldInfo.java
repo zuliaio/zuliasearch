@@ -29,7 +29,7 @@ public class UniqueIdFieldInfo<T> {
 	}
 
 	public void populate(T newInstance, Document savedDocument) throws Exception {
-		Object value = savedDocument.get("_id");
+		Object value = savedDocument.get(fieldName);
 		field.set(newInstance, value);
 	}
 
