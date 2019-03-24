@@ -5,6 +5,12 @@ import io.zulia.client.command.*;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.result.*;
+import io.zulia.fields.Mapper;
+import io.zulia.message.ZuliaQuery.ScoredResult;
+import io.zulia.util.ResultHelper;
+import org.bson.Document;
+
+import java.util.function.Consumer;
 
 public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 
@@ -150,6 +156,34 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 
 	public QueryResult query(Query query) throws Exception {
 		return execute(query);
+	}
+
+	public <T> void queryAllMappedDocument(Query query, Mapper<T> mapper, Consumer<T> mappedDocumentHandler) throws Exception {
+		queryAllScoredResult(query, scoredResult -> {
+			try {
+				mappedDocumentHandler.accept(mapper.fromScoredResult(scoredResult));
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		});
+	}
+
+	public void queryAllDocument(Query query, Consumer<Document> documentHandler) throws Exception {
+		queryAllScoredResult(query, scoredResult -> documentHandler.accept(ResultHelper.getDocumentFromScoredResult(scoredResult)));
+	}
+
+	public void queryAllScoredResult(Query query, Consumer<ScoredResult> scoredResultHandler) throws Exception {
+		queryAll(query, queryResult -> queryResult.getResults().forEach(scoredResultHandler));
+	}
+
+	public void queryAll(Query query, Consumer<QueryResult> resultHandler) throws Exception {
+		QueryResult queryResult = query(query);
+		while (queryResult.hasResults()) {
+			resultHandler.accept(queryResult);
+			query.setLastResult(queryResult);
+			queryResult = query(query);
+		}
 	}
 
 	public ListenableFuture<QueryResult> queryAsync(Query query) throws Exception {

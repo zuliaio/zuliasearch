@@ -12,11 +12,11 @@ import static io.zulia.message.ZuliaIndex.Superbit;
 
 public class FieldConfigBuilder {
 	private final FieldConfig.FieldType fieldType;
-	private String storedFieldName;
-	private List<IndexAs> indexAsList;
-	private List<FacetAs> facetAsList;
-	private List<SortAs> sortAsList;
-	private List<ProjectAs> projectAsList;
+	private final String storedFieldName;
+	private final List<IndexAs> indexAsList;
+	private final List<FacetAs> facetAsList;
+	private final List<SortAs> sortAsList;
+	private final List<ProjectAs> projectAsList;
 
 	public FieldConfigBuilder(String storedFieldName, FieldConfig.FieldType fieldType) {
 		this.storedFieldName = storedFieldName;
