@@ -28,7 +28,7 @@ dependencies {
     compile("javax.xml.bind:jaxb-api:2.3.0")
     compile("javax.annotation:javax.annotation-api:1.3.2")
 
-    compile("com.google.protobuf:protobuf-java-util:3.6.1")
+    compile("com.google.protobuf:protobuf-java-util:3.7.1")
 
     compile("com.cedarsoftware:json-io:4.10.0")
 
