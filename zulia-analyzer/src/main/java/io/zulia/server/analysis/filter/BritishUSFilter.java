@@ -5,10 +5,10 @@ import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.glassfish.grizzly.utils.Charsets;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 
 /**
  * Created by Matt Davis on 9/22/16.
@@ -26,7 +26,7 @@ public class BritishUSFilter extends TokenFilter {
 
 		try {
 			URL url = BritishUSFilter.class.getResource("/british.txt");
-			String text = Resources.toString(url, Charsets.UTF8_CHARSET);
+			String text = Resources.toString(url, Charset.forName("UTF-8"));
 			String[] lines = text.split("\n");
 			for (String line : lines) {
 				if (!line.startsWith("UK\tUS")) {

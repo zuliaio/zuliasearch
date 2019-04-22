@@ -4,19 +4,17 @@ plugins {
 
 description = "Zulia Server"
 
-
-val luceneVersion = "7.7.1"
+val luceneVersion: String by project
 
 
 defaultTasks("build", "installDist")
 
 dependencies {
-    compile(project(":zulia-common"))
+    compile(project(":zulia-query-parser"))
     compile(project(":zulia-client")) //needed for admin tools
 
     compile("org.apache.lucene:lucene-facet:$luceneVersion")
-    compile("org.apache.lucene:lucene-queryparser:$luceneVersion")
-    compile("org.apache.lucene:lucene-analyzers-common:$luceneVersion")
+
     compile("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
     compile("com.beust:jcommander:1.72")
@@ -32,7 +30,7 @@ dependencies {
 
     compile("com.cedarsoftware:json-io:4.10.0")
 
-    compile("info.debatty:java-lsh:0.11")
+
 
     compile("org.mongodb:mongodb-driver-sync:3.10.1")
 
