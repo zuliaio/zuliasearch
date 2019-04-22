@@ -13,6 +13,7 @@ dependencies {
     compile(project(":zulia-query-parser"))
     compile(project(":zulia-client")) //needed for admin tools
 
+    compile("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
     compile("org.apache.lucene:lucene-facet:$luceneVersion")
 
     compile("org.apache.lucene:lucene-highlighter:$luceneVersion")
