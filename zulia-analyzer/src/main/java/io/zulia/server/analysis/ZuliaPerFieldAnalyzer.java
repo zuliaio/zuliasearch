@@ -150,7 +150,6 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 				TokenStream tok = src;
 				TokenStream lastTok = src;
 
-
 				List<ZuliaIndex.AnalyzerSettings.Filter> filterList = analyzerSettings.getFilterList();
 				for (ZuliaIndex.AnalyzerSettings.Filter filter : filterList) {
 					if (ZuliaIndex.AnalyzerSettings.Filter.LOWERCASE.equals(filter)) {
