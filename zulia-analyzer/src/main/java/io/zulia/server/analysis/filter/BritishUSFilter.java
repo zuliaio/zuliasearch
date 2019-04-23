@@ -8,7 +8,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Created by Matt Davis on 9/22/16.
@@ -26,7 +26,7 @@ public class BritishUSFilter extends TokenFilter {
 
 		try {
 			URL url = BritishUSFilter.class.getResource("/british.txt");
-			String text = Resources.toString(url, Charset.forName("UTF-8"));
+			String text = Resources.toString(url, StandardCharsets.UTF_8);
 			String[] lines = text.split("\n");
 			for (String line : lines) {
 				if (!line.startsWith("UK\tUS")) {

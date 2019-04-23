@@ -1,9 +1,7 @@
 package io.zulia.util;
 
-import io.zulia.ZuliaConstants;
-
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 
@@ -23,13 +21,7 @@ public class HttpHelper {
 				sb.append(key);
 				sb.append('=');
 
-				try {
-					sb.append(URLEncoder.encode((String) value, ZuliaConstants.UTF8));
-				}
-				catch (UnsupportedEncodingException e) {
-					//should not be possible
-					throw new RuntimeException(e);
-				}
+				sb.append(URLEncoder.encode((String) value, StandardCharsets.UTF_8));
 
 			}
 			else if (value instanceof List) {
@@ -42,13 +34,9 @@ public class HttpHelper {
 
 					sb.append(key);
 					sb.append('=');
-					try {
-						sb.append(URLEncoder.encode(item, ZuliaConstants.UTF8));
-					}
-					catch (UnsupportedEncodingException e) {
-						//should not be possible
-						throw new RuntimeException(e);
-					}
+
+					sb.append(URLEncoder.encode(item, StandardCharsets.UTF_8));
+
 				}
 			}
 		}

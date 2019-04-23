@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 
 public class ZuliaRESTClient {
@@ -100,7 +101,7 @@ public class ZuliaRESTClient {
 			else {
 				bytes = StreamHelper.getBytesFromStream(conn.getInputStream());
 			}
-			throw new IOException("Request failed with <" + conn.getResponseCode() + ">: " + new String(bytes, ZuliaConstants.UTF8));
+			throw new IOException("Request failed with <" + conn.getResponseCode() + ">: " + new String(bytes, StandardCharsets.UTF_8));
 		}
 	}
 
