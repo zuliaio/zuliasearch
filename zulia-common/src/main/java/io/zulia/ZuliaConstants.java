@@ -63,8 +63,6 @@ public interface ZuliaConstants {
 
 	String FORMAT = "format";
 
-	//General
-	String UTF8 = "UTF-8";
 
 	String TIMESTAMP_FIELD = "_lmtsf_";
 	String STORED_META_FIELD = "_lmsmf_";

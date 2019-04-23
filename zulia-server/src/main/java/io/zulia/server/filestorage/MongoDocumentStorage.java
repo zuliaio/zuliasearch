@@ -22,7 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -211,12 +211,11 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	public void getAssociatedDocuments(OutputStream outputstream, Document filter) throws IOException {
-		Charset charset = Charset.forName("UTF-8");
 
 		GridFSBucket gridFS = createGridFSConnection();
 		GridFSFindIterable gridFSFiles = gridFS.find(filter);
-		outputstream.write("{\n".getBytes(charset));
-		outputstream.write(" \"associatedDocs\": [\n".getBytes(charset));
+		outputstream.write("{\n".getBytes(StandardCharsets.UTF_8));
+		outputstream.write(" \"associatedDocs\": [\n".getBytes(StandardCharsets.UTF_8));
 
 		boolean first = true;
 		for (GridFSFile gridFSFile : gridFSFiles) {
@@ -224,22 +223,22 @@ public class MongoDocumentStorage implements DocumentStorage {
 				first = false;
 			}
 			else {
-				outputstream.write(",\n".getBytes(charset));
+				outputstream.write(",\n".getBytes(StandardCharsets.UTF_8));
 			}
 
 			Document metadata = gridFSFile.getMetadata();
 
 			String uniqueId = metadata.getString(DOCUMENT_UNIQUE_ID_KEY);
 			String uniquieIdKeyValue = "  { \"uniqueId\": \"" + uniqueId + "\", ";
-			outputstream.write(uniquieIdKeyValue.getBytes(charset));
+			outputstream.write(uniquieIdKeyValue.getBytes(StandardCharsets.UTF_8));
 
 			String filename = gridFSFile.getFilename();
 			String filenameKeyValue = "\"filename\": \"" + filename + "\", ";
-			outputstream.write(filenameKeyValue.getBytes(charset));
+			outputstream.write(filenameKeyValue.getBytes(StandardCharsets.UTF_8));
 
 			Date uploadDate = gridFSFile.getUploadDate();
 			String uploadDateKeyValue = "\"uploadDate\": {\"$date\":" + uploadDate.getTime() + "}";
-			outputstream.write(uploadDateKeyValue.getBytes(charset));
+			outputstream.write(uploadDateKeyValue.getBytes(StandardCharsets.UTF_8));
 
 			metadata.remove(TIMESTAMP);
 			metadata.remove(DOCUMENT_UNIQUE_ID_KEY);
@@ -248,13 +247,13 @@ public class MongoDocumentStorage implements DocumentStorage {
 			if (!metadata.isEmpty()) {
 				String metaJson = metadata.toJson();
 				String metaString = ", \"meta\": " + metaJson;
-				outputstream.write(metaString.getBytes(charset));
+				outputstream.write(metaString.getBytes(StandardCharsets.UTF_8));
 			}
 
-			outputstream.write(" }".getBytes(charset));
+			outputstream.write(" }".getBytes(StandardCharsets.UTF_8));
 
 		}
-		outputstream.write("\n ]\n}".getBytes(charset));
+		outputstream.write("\n ]\n}".getBytes(StandardCharsets.UTF_8));
 	}
 
 	@Override
