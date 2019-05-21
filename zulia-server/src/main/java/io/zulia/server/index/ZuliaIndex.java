@@ -99,10 +99,6 @@ public class ZuliaIndex {
 	private ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 
-	static {
-		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
-	}
-
 	private IndexMapping indexMapping;
 	private FacetsConfig facetsConfig;
 
@@ -115,6 +111,7 @@ public class ZuliaIndex {
 		this.indexService = indexService;
 
 		this.facetsConfig = new FacetsConfig();
+		this.facetsConfig.setIndexFieldName("myField", "$facets.float");
 
 		this.documentStorage = documentStorage;
 
