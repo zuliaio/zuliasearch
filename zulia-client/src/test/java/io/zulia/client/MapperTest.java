@@ -6,6 +6,7 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Set;
 
 public class MapperTest {
@@ -22,7 +23,7 @@ public class MapperTest {
 		Assert.assertEquals(doc.getString("field1"), "test");
 		Assert.assertEquals((int) doc.getInteger("field2"), 14);
 		Assert.assertEquals(doc.getList("field3", String.class).size(), 2);
-		Assert.assertEquals(((Set<Integer>) doc.get("field4")).size(), 3);
+		Assert.assertEquals(((Collection<Integer>) doc.get("field4")).size(), 3);
 
 		System.out.println(doc);
 

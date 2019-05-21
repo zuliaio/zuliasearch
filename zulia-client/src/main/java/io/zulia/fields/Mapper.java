@@ -1,5 +1,6 @@
 package io.zulia.fields;
 
+import com.google.gson.Gson;
 import io.zulia.client.command.CreateIndex;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
@@ -29,7 +30,7 @@ public class Mapper<T> {
 
 	private final Class<T> clazz;
 
-	private final SavedFieldsMapper<T> savedFieldsMapper;
+	private final Gson gson = new Gson();
 
 	private final FieldConfigMapper<T> fieldConfigMapper;
 
@@ -43,8 +44,6 @@ public class Mapper<T> {
 
 		this.clazz = clazz;
 
-		this.savedFieldsMapper = new SavedFieldsMapper<>(clazz);
-
 		this.fieldConfigMapper = new FieldConfigMapper<>(clazz, "");
 
 		HashSet<String> fields = new HashSet<>();
@@ -57,7 +56,6 @@ public class Mapper<T> {
 
 			String fieldName = f.getName();
 
-			savedFieldsMapper.setupField(f);
 			fieldConfigMapper.setupField(f);
 
 			if (f.isAnnotationPresent(UniqueId.class)) {
@@ -187,15 +185,15 @@ public class Mapper<T> {
 		return resultDocumentBuilder;
 	}
 
-	public Document toDocument(T object) throws Exception {
-		return savedFieldsMapper.toDocument(object);
+	public Document toDocument(T object) {
+		String json = gson.toJson(object);
+		return Document.parse(json);
 	}
 
-	public T fromDocument(Document savedDocument) throws Exception {
+	public T fromDocument(Document savedDocument) {
 		if (savedDocument != null) {
-			T newInstance = savedFieldsMapper.fromDBObject(savedDocument);
-			uniqueIdField.populate(newInstance, savedDocument);
-			return newInstance;
+			String json = savedDocument.toJson();
+			return gson.fromJson(json, clazz);
 		}
 		return null;
 	}
