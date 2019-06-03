@@ -33,6 +33,10 @@ subprojects {
     apply(plugin = "signing")
     apply(plugin = "maven-publish")
 
+    java {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
 
     val sourcesJar = tasks.register<Jar>("sourcesJar") {
         dependsOn(JavaPlugin.CLASSES_TASK_NAME)
