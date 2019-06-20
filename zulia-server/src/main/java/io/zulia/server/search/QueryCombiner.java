@@ -21,6 +21,7 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
 import io.zulia.server.index.ZuliaIndex;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 import java.util.ArrayList;
@@ -422,7 +423,8 @@ public class QueryCombiner {
 						String a = sortValues1.getSortValue(sortValueIndex).getStringValue();
 						String b = sortValues2.getSortValue(sortValueIndex).getStringValue();
 
-						compare = Comparator.nullsLast(String::compareTo).compare(a, b);
+						//compare = Comparator.nullsLast(String::compareTo).compare(a, b);
+						compare = Comparator.nullsLast(BytesRef::compareTo).compare(new BytesRef(a), new BytesRef(b));
 					}
 
 					if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {
