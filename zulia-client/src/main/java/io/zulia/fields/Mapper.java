@@ -1,11 +1,8 @@
 package io.zulia.fields;
 
-import com.google.gson.Gson;
 import io.zulia.client.command.CreateIndex;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
-import io.zulia.client.result.BatchFetchResult;
-import io.zulia.client.result.FetchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.annotations.AsField;
 import io.zulia.fields.annotations.DefaultSearch;
@@ -16,7 +13,6 @@ import io.zulia.fields.annotations.Settings;
 import io.zulia.fields.annotations.UniqueId;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.util.AnnotationUtil;
-import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.lang.reflect.Field;
@@ -24,13 +20,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import static io.zulia.message.ZuliaQuery.ScoredResult;
-
-public class Mapper<T> {
+public class Mapper<T> extends GsonDocumentMapper<T> {
 
 	private final Class<T> clazz;
-
-	private final Gson gson = new Gson();
 
 	private final FieldConfigMapper<T> fieldConfigMapper;
 
@@ -41,6 +33,7 @@ public class Mapper<T> {
 	private final Settings settings;
 
 	public Mapper(Class<T> clazz) {
+		super(clazz);
 
 		this.clazz = clazz;
 
@@ -165,37 +158,12 @@ public class Mapper<T> {
 		return store;
 	}
 
-	public List<T> fromBatchFetchResult(BatchFetchResult batchFetchResult) throws Exception {
-		return batchFetchResult.getDocuments(this);
-	}
-
-	public T fromFetchResult(FetchResult fetchResult) throws Exception {
-		return fetchResult.getDocument(this);
-	}
-
-	public T fromScoredResult(ScoredResult scoredResult) throws Exception {
-		return fromDocument(ResultHelper.getDocumentFromScoredResult(scoredResult));
-	}
-
 	public ResultDocBuilder toResultDocumentBuilder(T object) throws Exception {
 		String uniqueId = uniqueIdField.build(object);
 		Document document = toDocument(object);
 		ResultDocBuilder resultDocumentBuilder = new ResultDocBuilder();
 		resultDocumentBuilder.setDocument(document).setUniqueId(uniqueId);
 		return resultDocumentBuilder;
-	}
-
-	public Document toDocument(T object) {
-		String json = gson.toJson(object);
-		return Document.parse(json);
-	}
-
-	public T fromDocument(Document savedDocument) {
-		if (savedDocument != null) {
-			String json = savedDocument.toJson();
-			return gson.fromJson(json, clazz);
-		}
-		return null;
 	}
 
 }

@@ -1,6 +1,6 @@
 package io.zulia.client.result;
 
-import io.zulia.fields.Mapper;
+import io.zulia.fields.GsonDocumentMapper;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
@@ -68,7 +68,7 @@ public class FetchResult extends Result {
 		return null;
 	}
 
-	public <T> T getDocument(Mapper<T> mapper) throws Exception {
+	public <T> T getDocument(GsonDocumentMapper<T> mapper) throws Exception {
 		if (fetchResponse.hasResultDocument()) {
 			Document document = getDocument();
 			return mapper.fromDocument(document);
