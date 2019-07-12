@@ -225,7 +225,7 @@ public class ZuliaD {
 	}
 
 	public static void setLuceneStatic() {
-		BooleanQuery.setMaxClauseCount(16 * 1024);
+		BooleanQuery.setMaxClauseCount(128 * 1024);
 		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
 	}
 }
