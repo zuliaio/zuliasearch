@@ -1,6 +1,6 @@
 package io.zulia.client.result;
 
-import io.zulia.fields.Mapper;
+import io.zulia.fields.GsonDocumentMapper;
 import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 import java.util.ArrayList;
@@ -34,13 +34,13 @@ public class BatchFetchResult extends Result {
 		}
 	}
 
-	public <T> List<T> getDocuments(Mapper<T> mapper) throws Exception {
+	public <T> List<T> getDocuments(GsonDocumentMapper<T> mapper) throws Exception {
 		ArrayList<T> list = new ArrayList<>();
 		getDocuments(mapper, list::add);
 		return list;
 	}
 
-	public <T> void getDocuments(Mapper<T> mapper, Consumer<T> docHandler) throws Exception {
+	public <T> void getDocuments(GsonDocumentMapper<T> mapper, Consumer<T> docHandler) throws Exception {
 
 		while (fetchResults.hasNext()) {
 			FetchResult fetchResult = new FetchResult(fetchResults.next());
@@ -50,6 +50,5 @@ public class BatchFetchResult extends Result {
 		}
 
 	}
-
 
 }
