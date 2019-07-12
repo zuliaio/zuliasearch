@@ -1,6 +1,6 @@
 package io.zulia.client.result;
 
-import io.zulia.fields.Mapper;
+import io.zulia.fields.GsonDocumentMapper;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
@@ -53,7 +53,7 @@ public class QueryResult extends Result {
 		return documents;
 	}
 
-	public <T> List<T> getMappedDocuments(Mapper<T> mapper) throws Exception {
+	public <T> List<T> getMappedDocuments(GsonDocumentMapper<T> mapper) throws Exception {
 		List<T> items = new ArrayList<>();
 		for (ScoredResult scoredResult : queryResponse.getResultsList()) {
 			T item = mapper.fromScoredResult(scoredResult);
