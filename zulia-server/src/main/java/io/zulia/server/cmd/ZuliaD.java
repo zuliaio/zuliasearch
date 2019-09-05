@@ -100,7 +100,7 @@ public class ZuliaD {
 				config = prefix + File.separator + config;
 			}
 
-			System.out.println("Path: " + config);
+			LOG.info("Path: " + config);
 
 			ZuliaConfig zuliaConfig = GSON.fromJson(new FileReader(config), ZuliaConfig.class);
 			LOG.info("Using config <" + config + ">");
