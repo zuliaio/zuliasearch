@@ -6,7 +6,6 @@ description = "Zulia Server"
 
 val luceneVersion: String by project
 
-
 defaultTasks("build", "installDist")
 
 dependencies {
@@ -31,17 +30,12 @@ dependencies {
 
     compile("com.cedarsoftware:json-io:4.10.0")
 
-
-
     compile("org.mongodb:mongodb-driver-sync:3.10.1")
-
 }
-
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
 zuliaScriptTask.applicationName = "zulia"
 zuliaScriptTask.mainClassName = "io.zulia.server.cmd.Zulia"
-
 
 val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
     applicationName = "zuliad"
@@ -57,6 +51,61 @@ val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") 
     }
 }
 
+val zuliaDumpScriptTask = tasks.register<CreateStartScripts>("createZuliaDumpScript") {
+    applicationName = "zuliadump"
+    mainClassName = "io.zulia.server.cmd.ZuliaDump"
+    outputDir = zuliaScriptTask.outputDir
+    classpath = zuliaScriptTask.classpath
+
+    doLast {
+        val unixScriptFile = file(unixScript)
+        val text = unixScriptFile.readText(Charsets.UTF_8)
+        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
+        unixScriptFile.writeText(newText, Charsets.UTF_8)
+    }
+}
+
+val zuliaRestoreScriptTask = tasks.register<CreateStartScripts>("createZuliaRestoreScript") {
+    applicationName = "zuliarestore"
+    mainClassName = "io.zulia.server.cmd.ZuliaRestore"
+    outputDir = zuliaScriptTask.outputDir
+    classpath = zuliaScriptTask.classpath
+
+    doLast {
+        val unixScriptFile = file(unixScript)
+        val text = unixScriptFile.readText(Charsets.UTF_8)
+        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
+        unixScriptFile.writeText(newText, Charsets.UTF_8)
+    }
+}
+
+val zuliaExportScriptTask = tasks.register<CreateStartScripts>("createZuliaExportScript") {
+    applicationName = "zuliaexport"
+    mainClassName = "io.zulia.server.cmd.ZuliaExport"
+    outputDir = zuliaScriptTask.outputDir
+    classpath = zuliaScriptTask.classpath
+
+    doLast {
+        val unixScriptFile = file(unixScript)
+        val text = unixScriptFile.readText(Charsets.UTF_8)
+        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
+        unixScriptFile.writeText(newText, Charsets.UTF_8)
+    }
+}
+
+val zuliaImportScriptTask = tasks.register<CreateStartScripts>("createZuliaImportScript") {
+    applicationName = "zuliaimport"
+    mainClassName = "io.zulia.server.cmd.ZuliaImport"
+    outputDir = zuliaScriptTask.outputDir
+    classpath = zuliaScriptTask.classpath
+
+    doLast {
+        val unixScriptFile = file(unixScript)
+        val text = unixScriptFile.readText(Charsets.UTF_8)
+        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
+        unixScriptFile.writeText(newText, Charsets.UTF_8)
+    }
+}
 
 distributions {
     main {
@@ -64,11 +113,20 @@ distributions {
             from(zuliaDScriptTask) {
                 into("bin")
             }
+            from(zuliaDumpScriptTask) {
+                into("bin")
+            }
+            from(zuliaRestoreScriptTask) {
+                into("bin")
+            }
+            from(zuliaExportScriptTask) {
+                into("bin")
+            }
+            from(zuliaImportScriptTask) {
+                into("bin")
+            }
             fileMode = 777
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
-
     }
 }
-
-
