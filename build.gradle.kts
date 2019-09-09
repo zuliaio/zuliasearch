@@ -1,6 +1,5 @@
 import org.ajoberstar.reckon.gradle.ReckonExtension
 
-
 plugins {
     java
     maven
@@ -15,10 +14,6 @@ configure<ReckonExtension> {
     scopeFromProp()
     stageFromProp("rc", "final")
 }
-
-
-
-
 
 allprojects {
     group = "io.zulia"
@@ -124,8 +119,6 @@ subprojects {
         mavenCentral()
     }
 
-
-
     dependencies {
         testCompile("org.testng:testng:6.14.3")
     }
@@ -137,8 +130,5 @@ subprojects {
         jvmArgs = listOf("-Xmx1500m")
 
     }
-
-
-
 
 }
