@@ -46,30 +46,20 @@ public class MongoDocumentStorage implements DocumentStorage {
 	private static final String ENABLESHARDING = "enablesharding";
 	private static final String ADMIN = "admin";
 	public static final String SHARDCOLLECTION = "shardcollection";
+	private final boolean sharded;
 
 	private MongoClient mongoClient;
 	private String database;
 	private String indexName;
 
+	private volatile boolean inited = false;
+
 	public MongoDocumentStorage(MongoClient mongoClient, String indexName, String dbName, boolean sharded) {
 		this.mongoClient = mongoClient;
 		this.indexName = indexName;
 		this.database = dbName;
+		this.sharded = sharded;
 
-		MongoDatabase storageDb = mongoClient.getDatabase(database);
-		MongoCollection<Document> coll = storageDb.getCollection(ASSOCIATED_FILES + "." + FILES);
-		coll.createIndex(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
-		coll.createIndex(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
-
-		if (sharded) {
-
-			MongoDatabase adminDb = mongoClient.getDatabase(ADMIN);
-			Document enableCommand = new Document();
-			enableCommand.put(ENABLESHARDING, database);
-			adminDb.runCommand(enableCommand);
-
-			shardCollection(storageDb, adminDb, ASSOCIATED_FILES + "." + CHUNKS);
-		}
 	}
 
 	private void shardCollection(MongoDatabase db, MongoDatabase adminDb, String collectionName) {
@@ -81,6 +71,26 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	private GridFSBucket createGridFSConnection() {
+		synchronized (this) {
+			if (!inited) {
+				MongoDatabase storageDb = mongoClient.getDatabase(database);
+				MongoCollection<Document> coll = storageDb.getCollection(ASSOCIATED_FILES + "." + FILES);
+				coll.createIndex(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
+				coll.createIndex(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
+
+				if (sharded) {
+
+					MongoDatabase adminDb = mongoClient.getDatabase(ADMIN);
+					Document enableCommand = new Document();
+					enableCommand.put(ENABLESHARDING, database);
+					adminDb.runCommand(enableCommand);
+
+					shardCollection(storageDb, adminDb, ASSOCIATED_FILES + "." + CHUNKS);
+				}
+				inited = true;
+			}
+		}
+
 		MongoDatabase db = mongoClient.getDatabase(database);
 		return GridFSBuckets.create(db, ASSOCIATED_FILES);
 	}
