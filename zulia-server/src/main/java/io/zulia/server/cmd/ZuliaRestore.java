@@ -72,7 +72,7 @@ public class ZuliaRestore {
 			jCommander.parse(args);
 
 			WorkPool threadPool = new WorkPool(4);
-			ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(zuliaRestoreArgs.address, zuliaRestoreArgs.port);
+			ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(zuliaRestoreArgs.address, zuliaRestoreArgs.port).setNodeUpdateEnabled(false);
 			ZuliaWorkPool workPool = new ZuliaWorkPool(zuliaPoolConfig);
 
 			String dir = zuliaRestoreArgs.dir;
