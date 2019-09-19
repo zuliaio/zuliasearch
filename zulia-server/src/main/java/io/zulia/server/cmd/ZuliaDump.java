@@ -63,7 +63,7 @@ public class ZuliaDump {
 
 			jCommander.parse(args);
 
-			ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(zuliaDumpArgs.address, zuliaDumpArgs.port);
+			ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(zuliaDumpArgs.address, zuliaDumpArgs.port).setNodeUpdateEnabled(false);
 			ZuliaWorkPool workPool = new ZuliaWorkPool(zuliaPoolConfig);
 
 			String index = zuliaDumpArgs.index;
