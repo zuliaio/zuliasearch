@@ -59,8 +59,17 @@ public class ZuliaD {
 	}
 
 	@Parameters
-	public static class AddNodeArgs {
+	public static class ListNodesArgs {
 
+	}
+
+	@Parameters
+	public static class AddNodeArgs {
+		@Parameter(names = "--server", description = "Server to remove from cluster", required = true)
+		private String server;
+
+		@Parameter(names = "--servicePort", description = "Service port of server to remove from cluster", required = true)
+		private int servicePort;
 	}
 
 	@Parameters
@@ -82,13 +91,15 @@ public class ZuliaD {
 		StartArgs startArgs = new StartArgs();
 		AddNodeArgs addNodeArgs = new AddNodeArgs();
 		RemoveNodeArgs removeNodeArgs = new RemoveNodeArgs();
+		ListNodesArgs listNodesArgs = new ListNodesArgs();
 
 		JCommander jCommander = JCommander.newBuilder().addObject(zuliaDArgs).addCommand("start", startArgs).addCommand("addNode", addNodeArgs)
-				.addCommand("removeNode", removeNodeArgs).build();
+				.addCommand("removeNode", removeNodeArgs).addCommand("listNodes", listNodesArgs).build();
 		try {
 			jCommander.parse(args);
 
-			if (jCommander.getParsedCommand() == null) {
+			String parsedCommand = jCommander.getParsedCommand();
+			if (parsedCommand == null) {
 				jCommander.usage();
 				System.exit(2);
 			}
@@ -157,7 +168,7 @@ public class ZuliaD {
 				LOG.info("Created Single Node Service");
 			}
 
-			if ("start".equals(jCommander.getParsedCommand())) {
+			if ("start".equals(parsedCommand)) {
 				setLuceneStatic();
 
 				Collection<Node> nodes = nodeService.getNodes();
@@ -176,7 +187,7 @@ public class ZuliaD {
 					LOG.severe("Looks like you're trying to run in cluster mode but you haven't configured cluster:true in the config.");
 				}
 			}
-			else if ("addNode".equals(jCommander.getParsedCommand())) {
+			else if ("addNode".equals(parsedCommand)) {
 				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
 						.setRestPort(zuliaConfig.getRestPort()).build();
 
@@ -187,11 +198,14 @@ public class ZuliaD {
 				displayNodes(nodeService, "Registered Nodes:");
 
 			}
-			else if ("removeNode".equals(jCommander.getParsedCommand())) {
+			else if ("removeNode".equals(parsedCommand)) {
 
 				LOG.info("Removing node: " + removeNodeArgs.server + ":" + removeNodeArgs.servicePort);
 				nodeService.removeNode(removeNodeArgs.server, removeNodeArgs.servicePort);
 
+				displayNodes(nodeService, "Registered Nodes:");
+			}
+			else if ("listNodes".equals(parsedCommand)) {
 				displayNodes(nodeService, "Registered Nodes:");
 			}
 
