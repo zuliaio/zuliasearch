@@ -13,6 +13,7 @@ description = "Zulia Common"
 
 val grpcVersion: String by project
 val mongoDriverVersion: String by project
+val protobufVersion: String by project
 
 
 dependencies {
@@ -29,7 +30,7 @@ dependencies {
 protobuf {
 
     protoc {
-        artifact = "com.google.protobuf:protoc:3.7.1"
+        artifact = "com.google.protobuf:protoc:$protobufVersion"
     }
     plugins {
         id("grpc") {
