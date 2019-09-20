@@ -11,7 +11,7 @@ dependencies {
 
 
     compile("org.apache.lucene:lucene-analyzers-common:$luceneVersion")
-    compile("info.debatty:java-lsh:0.11")
+    compile("info.debatty:java-lsh:0.12")
 
 
 }
