@@ -4,26 +4,16 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.base.Charsets;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.protobuf.util.JsonFormat;
-import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
-import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.doc.ResultDocBuilder;
 import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaIndex;
-import org.bson.Document;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,21 +22,7 @@ public class ZuliaRestore {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaDump.class.getSimpleName());
 
-	private static final Gson GSON = new GsonBuilder().create();
-
-	public static class ZuliaRestoreArgs {
-
-		@Parameter(names = "--help", help = true)
-		private boolean help;
-
-		@Parameter(names = "--address", description = "Zulia Server Address", order = 1)
-		private String address = "localhost";
-
-		@Parameter(names = "--port", description = "Zulia Port", order = 2)
-		private Integer port = 32191;
-
-		@Parameter(names = "--index", description = "Index name to dump.")
-		private String index;
+	public static class ZuliaRestoreArgs extends ZuliaBaseArgs {
 
 		@Parameter(names = "--idField", description = "ID field name, defaults to 'id'")
 		private String idField = "id";
@@ -71,7 +47,6 @@ public class ZuliaRestore {
 
 			jCommander.parse(args);
 
-			WorkPool threadPool = new WorkPool(4);
 			ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(zuliaRestoreArgs.address, zuliaRestoreArgs.port).setNodeUpdateEnabled(false);
 			ZuliaWorkPool workPool = new ZuliaWorkPool(zuliaPoolConfig);
 
@@ -82,14 +57,14 @@ public class ZuliaRestore {
 
 			if (index != null) {
 				// restore only this index
-				restore(threadPool, workPool, dir, index, idField, drop);
+				restore(workPool, dir, index, idField, drop);
 			}
 			else {
 				// walk dir and restore everything
 				Files.list(Paths.get(dir)).forEach(indexDir -> {
 					try {
 						String ind = indexDir.getFileName().toString();
-						restore(threadPool, workPool, dir, ind, idField, drop);
+						restore(workPool, dir, ind, idField, drop);
 					}
 					catch (Exception e) {
 						LOG.log(Level.SEVERE, "There was a problem restoring index <" + indexDir.getFileName() + ">", e);
@@ -116,7 +91,7 @@ public class ZuliaRestore {
 
 	}
 
-	private static void restore(WorkPool threadPool, ZuliaWorkPool workPool, String dir, String index, String idField, boolean drop) throws Exception {
+	private static void restore(ZuliaWorkPool workPool, String dir, String index, String idField, boolean drop) throws Exception {
 		String recordsFilename = dir + File.separator + index + File.separator + index + ".json";
 		String settingsFilename = dir + File.separator + index + File.separator + index + "_settings.json";
 
@@ -133,44 +108,9 @@ public class ZuliaRestore {
 			workPool.createIndex(indexConfig);
 			LOG.info("Finished creating index <" + index + ">");
 
-			LOG.info("Starting to index records for index <" + index + ">");
 			AtomicInteger count = new AtomicInteger();
-			try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
-				String line;
-				while ((line = b.readLine()) != null) {
-					final String record = line;
-					threadPool.executeAsync((Callable<Void>) () -> {
-						try {
-							Document document = Document.parse(record);
-							String id = document.getString(idField);
-							if (id == null) {
-								if (document.get(idField) instanceof String) {
-									id = document.getString(idField);
-								}
-							}
-
-							if (id == null) {
-								throw new RuntimeException("No id for record: " + document.toJson());
-							}
-
-							document.put("indexTime", new Date());
-
-							Store store = new Store(id, index);
-							store.setResultDocument(new ResultDocBuilder().setDocument(document));
-							workPool.store(store);
-
-							if (count.incrementAndGet() % 10000 == 0) {
-								LOG.info("So far indexed <" + count + "> for index <" + index + ">");
-							}
-							return null;
-						}
-						catch (Exception e) {
-							LOG.log(Level.SEVERE, e.getMessage());
-							return null;
-						}
-					});
-				}
-			}
+			LOG.info("Starting to index records for index <" + index + ">");
+			ZuliaCmdUtil.index(recordsFilename, idField, index, workPool, count);
 			LOG.info("Finished indexing for index <" + index + "> with total records: " + count);
 		}
 		else {

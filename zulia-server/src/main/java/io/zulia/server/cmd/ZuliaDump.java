@@ -13,7 +13,6 @@ import io.zulia.log.LogUtil;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,19 +23,7 @@ public class ZuliaDump {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaDump.class.getSimpleName());
 
-	public static class ZuliaDumpArgs {
-
-		@Parameter(names = "--help", help = true)
-		private boolean help;
-
-		@Parameter(names = "--address", description = "Zulia Server Address", order = 1)
-		private String address = "localhost";
-
-		@Parameter(names = "--port", description = "Zulia Port", order = 2)
-		private Integer port = 32191;
-
-		@Parameter(names = "--index", description = "Index name to dump.")
-		private String index;
+	public static class ZuliaDumpArgs extends ZuliaBaseArgs {
 
 		@Parameter(names = "--indexes", description = "Comma separated or name* for wild card multiple index names.")
 		private String indexes;
@@ -118,7 +105,6 @@ public class ZuliaDump {
 	}
 
 	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out) throws Exception {
-		io.zulia.client.command.Query zuliaQuery;
 
 		// create zuliadump dir first
 		String zuliaDumpDir = out + File.separator + "zuliadump";
@@ -136,35 +122,9 @@ public class ZuliaDump {
 		String settingsFilename = indOutputDir + File.separator + index + "_settings.json";
 
 		AtomicInteger count = new AtomicInteger();
-
-		try (FileWriter fileWriter = new FileWriter(new File(recordsFilename), Charsets.UTF_8)) {
-			LOG.info("Dumping index <" + index + ">");
-			zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
-
-			workPool.queryAll(zuliaQuery, queryResult -> {
-
-				long totalHits = queryResult.getTotalHits();
-
-				queryResult.getDocuments().forEach(doc -> {
-					try {
-						fileWriter.write(doc.toJson());
-						fileWriter.write(System.lineSeparator());
-
-						if (count.incrementAndGet() % 10000 == 0) {
-							LOG.info("So far written <" + count + "> of <" + totalHits + ">");
-						}
-
-					}
-					catch (IOException e) {
-						LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
-					}
-
-				});
-
-			});
-
-			LOG.info("Finished dumping index <" + index + ">");
-		}
+		LOG.info("Dumping index <" + index + ">");
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count);
+		LOG.info("Finished dumping index <" + index + ">, total: " + count);
 
 		try (FileWriter fileWriter = new FileWriter(new File(settingsFilename), Charsets.UTF_8)) {
 			LOG.info("Writing settings for index <" + index + ">");
