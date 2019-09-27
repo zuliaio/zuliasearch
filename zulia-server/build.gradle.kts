@@ -5,6 +5,8 @@ plugins {
 description = "Zulia Server"
 
 val luceneVersion: String by project
+val mongoDriverVersion: String by project
+val protobufVersion: String by project
 
 defaultTasks("build", "installDist")
 
@@ -17,7 +19,7 @@ dependencies {
 
     compile("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
-    compile("com.beust:jcommander:1.72")
+    compile("com.beust:jcommander:1.78")
 
     compile("org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.27")
     compile("org.glassfish.jersey.inject:jersey-hk2:2.27")
@@ -26,11 +28,11 @@ dependencies {
     compile("javax.xml.bind:jaxb-api:2.3.0")
     compile("javax.annotation:javax.annotation-api:1.3.2")
 
-    compile("com.google.protobuf:protobuf-java-util:3.7.1")
+    compile("com.google.protobuf:protobuf-java-util:$protobufVersion")
 
-    compile("com.cedarsoftware:json-io:4.10.0")
+    compile("com.cedarsoftware:json-io:4.10.1")
 
-    compile("org.mongodb:mongodb-driver-sync:3.10.1")
+    compile("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
