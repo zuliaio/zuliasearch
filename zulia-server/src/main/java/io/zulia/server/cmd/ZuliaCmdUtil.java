@@ -36,7 +36,6 @@ import java.util.logging.Logger;
 public class ZuliaCmdUtil {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaCmdUtil.class.getSimpleName());
-	private static final WorkPool threadPool = new WorkPool(4);
 
 	public static NodeService getNodeService(ZuliaConfig zuliaConfig) {
 		if (zuliaConfig.isCluster()) {
@@ -70,7 +69,6 @@ public class ZuliaCmdUtil {
 	}
 
 	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count) throws Exception {
-
 		try (FileWriter fileWriter = new FileWriter(new File(recordsFilename), Charsets.UTF_8)) {
 			Query zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
 
@@ -99,6 +97,7 @@ public class ZuliaCmdUtil {
 	}
 
 	public static void index(String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count) throws Exception {
+		WorkPool threadPool = new WorkPool(4);
 		try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
 			String line;
 			while ((line = b.readLine()) != null) {
@@ -135,6 +134,9 @@ public class ZuliaCmdUtil {
 					}
 				});
 			}
+		}
+		finally {
+			threadPool.shutdown();
 		}
 
 	}
