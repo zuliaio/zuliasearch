@@ -679,6 +679,13 @@ public class ZuliaIndex {
 		return OptimizeResponse.newBuilder().build();
 	}
 
+	public ReindexResponse reindex(ReindexRequest request) throws IOException {
+		for (final ZuliaShard shard : primaryShardMap.values()) {
+			shard.reindex();
+		}
+		return ReindexResponse.newBuilder().build();
+	}
+
 	public GetNumberOfDocsResponse getNumberOfDocs(InternalGetNumberOfDocsRequest request) throws Exception {
 
 		List<Future<ShardCountResponse>> responses = new ArrayList<>();
