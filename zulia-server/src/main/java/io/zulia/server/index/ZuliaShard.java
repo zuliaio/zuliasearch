@@ -1,5 +1,6 @@
 package io.zulia.server.index;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
@@ -13,8 +14,12 @@ import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.server.search.QueryCacheKey;
+import io.zulia.util.ZuliaUtil;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
+import org.bson.Document;
 
 import java.io.IOException;
 import java.util.List;
@@ -86,6 +91,45 @@ public class ZuliaShard {
 
 		if (shardWriteManager.needsIdleCommit()) {
 			forceCommit();
+		}
+	}
+
+	public void reindex() throws IOException {
+		shardReaderManager.maybeRefreshBlocking();
+		ShardReader shardReader = shardReaderManager.acquire();
+
+		try {
+			shardReader.streamAllDocs(d -> {
+				try {
+					IndexableField f = d.getField(ZuliaConstants.TIMESTAMP_FIELD);
+					long timestamp = f.numericValue().longValue();
+
+					ZuliaQuery.ScoredResult.Builder srBuilder = ZuliaQuery.ScoredResult.newBuilder();
+					String uniqueId = d.get(ZuliaConstants.ID_FIELD);
+
+					Document mongoDocument = null;
+					Document metadata = null;
+
+					BytesRef metaRef = d.getBinaryValue(ZuliaConstants.STORED_META_FIELD);
+					if (metaRef != null) {
+						metadata = ZuliaUtil.byteArrayToMongoDocument(metaRef.bytes);
+					}
+
+					BytesRef docRef = d.getBinaryValue(ZuliaConstants.STORED_DOC_FIELD);
+					if (docRef != null) {
+						mongoDocument = ZuliaUtil.byteArrayToMongoDocument(docRef.bytes);
+					}
+
+					shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			});
+			forceCommit();
+		}
+		finally {
+			shardReaderManager.decRef(shardReader);
 		}
 	}
 

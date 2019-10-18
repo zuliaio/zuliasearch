@@ -44,6 +44,7 @@ import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -55,6 +56,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -812,4 +814,26 @@ public class ShardReader implements AutoCloseable {
 
 	}
 
+	public void streamAllDocs(Consumer<Document> documentConsumer) throws IOException {
+
+		int maxDoc = indexReader.maxDoc();
+		for (LeafReaderContext leaf : indexReader.leaves()) {
+			Bits leafLiveDocs = leaf.reader().getLiveDocs();
+			DocIdSetIterator allDocs = DocIdSetIterator.all(maxDoc);
+			if (leafLiveDocs != null) {
+				allDocs = new FilteredDocIdSetIterator(allDocs) {
+					@Override
+					protected boolean match(int doc) {
+						return leafLiveDocs.get(doc);
+					}
+				};
+			}
+			int docId;
+			while ((docId = allDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+				Document d = indexReader.document(docId);
+				documentConsumer.accept(d);
+			}
+
+		}
+	}
 }
