@@ -201,4 +201,14 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	public void getIndexSettings(GetIndexSettingsRequest request, StreamObserver<GetIndexSettingsResponse> responseObserver) {
 		getIndexSettingsServerRequest.handleRequest(request, responseObserver);
 	}
+
+	@Override
+	public void internalReindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
+
+	}
+
+	@Override
+	public void reindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
+
+	}
 }

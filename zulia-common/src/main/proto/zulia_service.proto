@@ -35,6 +35,8 @@ service ZuliaService {
     rpc InternalGetTerms (InternalGetTermsRequest) returns (InternalGetTermsResponse);
     rpc GetNodes (GetNodesRequest) returns (GetNodesResponse);
     rpc GetIndexSettings (GetIndexSettingsRequest) returns (GetIndexSettingsResponse);
+    rpc Reindex (ReindexRequest) returns (ReindexResponse);
+    rpc InternalReindex (ReindexRequest) returns (ReindexResponse);
 }
 
 message IndexRouting {
@@ -261,3 +263,10 @@ message GetIndexSettingsResponse {
     IndexSettings indexSettings = 1;
 }
 
+message ReindexRequest {
+
+}
+
+message ReindexResponse {
+
+}
