@@ -264,7 +264,7 @@ message GetIndexSettingsResponse {
 }
 
 message ReindexRequest {
-
+    string indexName = 1;
 }
 
 message ReindexResponse {

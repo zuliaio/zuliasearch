@@ -27,6 +27,7 @@ import io.zulia.server.index.federator.GetNumberOfDocsRequestFederator;
 import io.zulia.server.index.federator.GetTermsRequestFederator;
 import io.zulia.server.index.federator.OptimizeRequestFederator;
 import io.zulia.server.index.federator.QueryRequestFederator;
+import io.zulia.server.index.federator.ReindexRequestFederator;
 import io.zulia.server.index.router.DeleteRequestRouter;
 import io.zulia.server.index.router.FetchRequestRouter;
 import io.zulia.server.index.router.StoreRequestRouter;
@@ -459,8 +460,19 @@ public class ZuliaIndexManager {
 
 	public OptimizeResponse internalOptimize(OptimizeRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		i.optimize(request);
 		return OptimizeRequestFederator.internalOptimize(i, request);
+	}
+
+	public ReindexResponse reindex(ReindexRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		ReindexRequestFederator federator = new ReindexRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+				internalClient);
+		return federator.getResponse(request);
+	}
+
+	public ReindexResponse internalReindex(ReindexRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return ReindexRequestFederator.internalReindex(i, request);
 	}
 
 	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {

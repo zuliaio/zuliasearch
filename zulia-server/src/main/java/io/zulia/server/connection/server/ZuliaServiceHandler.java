@@ -35,6 +35,8 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	private final InternalGetTermsServerRequest internalGetTermsServerRequest;
 	private final GetNodesServerRequest getNodesServerRequest;
 	private final GetIndexSettingsServerRequest getIndexSettingsServerRequest;
+	private final ReindexServerRequest reindexServerRequest;
+	private final InternalReindexServerRequest internalReindexRequest;
 
 	public ZuliaServiceHandler(ZuliaIndexManager indexManager) {
 		internalQueryServerRequest = new InternalQueryServerRequest(indexManager);
@@ -64,6 +66,8 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 		internalGetTermsServerRequest = new InternalGetTermsServerRequest(indexManager);
 		getNodesServerRequest = new GetNodesServerRequest(indexManager);
 		getIndexSettingsServerRequest = new GetIndexSettingsServerRequest(indexManager);
+		reindexServerRequest = new ReindexServerRequest(indexManager);
+		internalReindexRequest = new InternalReindexServerRequest(indexManager);
 
 	}
 
@@ -204,11 +208,11 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 
 	@Override
 	public void internalReindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
-
+		internalReindexRequest.handleRequest(request, responseObserver);
 	}
 
 	@Override
 	public void reindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
-
+		reindexServerRequest.handleRequest(request, responseObserver);
 	}
 }
