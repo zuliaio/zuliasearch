@@ -105,14 +105,17 @@ public class ZuliaCmdUtil {
 				threadPool.executeAsync((Callable<Void>) () -> {
 					try {
 						Document document = Document.parse(record);
-						String id = document.getString(idField);
+						String id = null;
+						if (idField != null) {
+							id = document.getString(idField);
+						}
 						if (id == null) {
-							if (document.get(idField) instanceof String) {
-								id = document.getString(idField);
-							}
+							// fall through to just "id"
+							id = document.getString("id");
 						}
 
 						if (id == null) {
+							// if still null, throw exception
 							throw new RuntimeException("No id for record: " + document.toJson());
 						}
 
