@@ -33,15 +33,23 @@ public class ZuliaRESTClient {
 		fetchAssociated(uniqueId, indexName, fileName, new FileOutputStream(outputFile));
 	}
 
+	public HttpURLConnection fetchAssociated(String uniqueId, String indexName, String fileName) throws IOException {
+
+		HashMap<String, Object> parameters = createParameters(uniqueId, indexName, fileName);
+
+		String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);
+		HttpURLConnection conn = createGetConnection(url);
+		handlePossibleError(conn);
+		return conn;
+
+	}
+
 	public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination) throws IOException {
 		InputStream source = null;
 		HttpURLConnection conn = null;
 
 		try {
-			HashMap<String, Object> parameters = new HashMap<>();
-			parameters.put(ZuliaConstants.ID, uniqueId);
-			parameters.put(ZuliaConstants.FILE_NAME, fileName);
-			parameters.put(ZuliaConstants.INDEX, indexName);
+			HashMap<String, Object> parameters = createParameters(uniqueId, indexName, fileName);
 
 			String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);
 			conn = createGetConnection(url);
@@ -54,6 +62,14 @@ public class ZuliaRESTClient {
 		finally {
 			closeStreams(source, destination, conn);
 		}
+	}
+
+	protected HashMap<String, Object> createParameters(String uniqueId, String indexName, String fileName) {
+		HashMap<String, Object> parameters = new HashMap<>();
+		parameters.put(ZuliaConstants.ID, uniqueId);
+		parameters.put(ZuliaConstants.FILE_NAME, fileName);
+		parameters.put(ZuliaConstants.INDEX, indexName);
+		return parameters;
 	}
 
 	public void storeAssociated(String uniqueId, String indexName, String fileName, File fileToStore) throws IOException {
@@ -69,10 +85,7 @@ public class ZuliaRESTClient {
 		OutputStream destination = null;
 		try {
 
-			HashMap<String, Object> parameters = new HashMap<>();
-			parameters.put(ZuliaConstants.ID, uniqueId);
-			parameters.put(ZuliaConstants.FILE_NAME, fileName);
-			parameters.put(ZuliaConstants.INDEX, indexName);
+			HashMap<String, Object> parameters = createParameters(uniqueId, indexName, fileName);
 			if (metadata != null) {
 				parameters.put(ZuliaConstants.META_JSON, metadata.toJson());
 			}
