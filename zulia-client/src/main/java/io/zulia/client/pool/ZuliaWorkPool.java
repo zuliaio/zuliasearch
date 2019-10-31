@@ -218,4 +218,12 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 	public ListenableFuture<GetIndexConfigResult> getIndexConfigAsync(GetIndexConfig getIndexConfig) throws Exception {
 		return executeAsync(getIndexConfig);
 	}
+
+	public ReindexResult reindex(Reindex reindex) throws Exception {
+		return execute(reindex);
+	}
+
+	public ListenableFuture<ReindexResult> reindexAsync(Reindex reindex) throws Exception {
+		return executeAsync(reindex);
+	}
 }
