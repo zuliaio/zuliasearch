@@ -2,6 +2,7 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Query;
+import io.zulia.client.command.Reindex;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 public class StartStopTest {
 
@@ -30,6 +32,8 @@ public class StartStopTest {
 	private final String uniqueIdPrefix = "myId-";
 
 	private final String[] issns = new String[] { "1234-1234", "3333-1234", "1234-5555", "1234-4444", "2222-2222" };
+	private final String[] eissns = new String[] { "3234-1234", "4333-1234", "5234-5555", "6234-4444", "9222-2222" };
+
 	private int totalRecords = COUNT_PER_ISSN * issns.length;
 
 	private ZuliaWorkPool zuliaWorkPool;
@@ -64,7 +68,7 @@ public class StartStopTest {
 	public void index() throws Exception {
 		int id = 0;
 		{
-			for (String issn : issns) {
+			for (int j = 0; j < issns.length; j++) {
 				for (int i = 0; i < COUNT_PER_ISSN; i++) {
 					boolean half = (i % 2 == 0);
 					boolean tenth = (i % 10 == 0);
@@ -74,7 +78,8 @@ public class StartStopTest {
 					String uniqueId = uniqueIdPrefix + id;
 
 					Document mongoDocument = new Document();
-					mongoDocument.put("issn", issn);
+					mongoDocument.put("issn", issns[j]);
+					mongoDocument.put("eissn", eissns[j]);
 					mongoDocument.put("title", "Facet Userguide");
 
 					if (half) { // 1/2 of input
@@ -115,6 +120,37 @@ public class StartStopTest {
 	}
 
 	@Test(dependsOnMethods = "index")
+	public void reindex() throws Exception {
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.addDefaultSearchField("title");
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("uid", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD));
+		indexConfig.setIndexName(FACET_TEST_INDEX);
+		indexConfig.setNumberOfShards(1);
+
+		zuliaWorkPool.createIndex(indexConfig);
+
+		zuliaWorkPool.reindex(new Reindex(FACET_TEST_INDEX));
+
+		Query query = new Query(FACET_TEST_INDEX, null, 0).addCountRequest("eissn");
+
+		QueryResult queryResult = zuliaWorkPool.query(query);
+
+		List<FacetCount> eissnCounts = queryResult.getFacetCounts("eissn");
+
+		Assert.assertEquals(eissnCounts.size(), eissns.length);
+
+		for (FacetCount eissnCount : eissnCounts) {
+			Assert.assertEquals(eissnCount.getCount(), COUNT_PER_ISSN);
+		}
+	}
+
+	@Test(dependsOnMethods = "reindex")
 	public void restart() throws Exception {
 		TestHelper.stopNodes();
 		Thread.sleep(2000);
@@ -171,7 +207,6 @@ public class StartStopTest {
 
 			Assert.assertEquals(qr.getTotalHits(), totalRecords / 10, "Total record count after drill down mismatch");
 
-
 		}
 
 		{
@@ -189,7 +224,6 @@ public class StartStopTest {
 			QueryResult qr = zuliaWorkPool.query(q);
 
 			Assert.assertEquals(qr.getTotalHits(), totalRecords / 2, "Total record count after drill down mismatch");
-
 
 		}
 
@@ -246,8 +280,6 @@ public class StartStopTest {
 			Assert.assertEquals(qr.getTotalHits(), totalRecords / 2, "Total record count filtered on half mismatch");
 
 		}
-
-
 
 	}
 
