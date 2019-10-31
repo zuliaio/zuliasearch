@@ -10,6 +10,7 @@ import io.zulia.client.command.GetIndexes;
 import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.GetNumberOfDocs;
 import io.zulia.client.command.OptimizeIndex;
+import io.zulia.client.command.Reindex;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.ClearIndexResult;
@@ -20,6 +21,7 @@ import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.GetNumberOfDocsResult;
 import io.zulia.client.result.OptimizeIndexResult;
 import io.zulia.client.result.QueryResult;
+import io.zulia.client.result.ReindexResult;
 import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaQuery;
@@ -130,6 +132,10 @@ public class Zulia {
 	public static class DeleteCmd {
 	}
 
+	@Parameters(commandNames = "reindex", commandDescription = "Reindexes the given index in --index argument.")
+	public static class ReindexCmd {
+	}
+
 	public static void main(String[] args) {
 
 		LogUtil.init();
@@ -142,10 +148,11 @@ public class Zulia {
 		GetCurrentNodesCmd getCurrentNodes = new GetCurrentNodesCmd();
 		GetFieldsCmd getFields = new GetFieldsCmd();
 		DeleteCmd delete = new DeleteCmd();
+		ReindexCmd reindex = new ReindexCmd();
 		QueryCmd query = new QueryCmd();
 
 		JCommander jCommander = JCommander.newBuilder().addObject(zuliaArgs).addCommand(getIndexesCmd).addCommand(query).addCommand(clear).addCommand(getCount)
-				.addCommand(getCurrentNodes).addCommand(getFields).addCommand(delete).addCommand(optimize).build();
+				.addCommand(getCurrentNodes).addCommand(getFields).addCommand(delete).addCommand(reindex).addCommand(optimize).build();
 		try {
 
 			ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(zuliaArgs.address, zuliaArgs.port);
@@ -370,6 +377,11 @@ public class Zulia {
 				System.out.println("Deleting index: " + index);
 				DeleteIndexResult response = workPool.execute(new DeleteIndex(index));
 				System.out.println("Deleted index: " + index);
+			}
+			else if ("reindex".equals(jCommander.getParsedCommand())) {
+				System.out.println("Reindexing index: " + index);
+				ReindexResult response = workPool.execute(new Reindex(index));
+				System.out.println("Reindexing index: " + index);
 			}
 			else if ("optimize".equals(jCommander.getParsedCommand())) {
 				System.out.println("Optimizing index: " + index);
