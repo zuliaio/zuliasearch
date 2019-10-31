@@ -22,8 +22,10 @@ import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 public class ZuliaShard {
@@ -37,6 +39,9 @@ public class ZuliaShard {
 	private final String indexName;
 
 	private final boolean primary;
+
+	private String trackingId;
+	private HashSet<String> trackedIds;
 
 	public ZuliaShard(ShardWriteManager shardWriteManager, boolean primary) throws Exception {
 
@@ -95,16 +100,26 @@ public class ZuliaShard {
 	}
 
 	public void reindex() throws IOException {
+
+		final String myTrackingId = UUID.randomUUID().toString();
+		synchronized (this) {
+			trackingId = myTrackingId;
+			trackedIds = new HashSet<>();
+		}
+
 		shardReaderManager.maybeRefreshBlocking();
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
 			shardReader.streamAllDocs(d -> {
+				if (!myTrackingId.equals(trackingId)) {
+					throw new RuntimeException("Reindex interrupted by another reindex");
+				}
+
 				try {
 					IndexableField f = d.getField(ZuliaConstants.TIMESTAMP_FIELD);
 					long timestamp = f.numericValue().longValue();
 
-					ZuliaQuery.ScoredResult.Builder srBuilder = ZuliaQuery.ScoredResult.newBuilder();
 					String uniqueId = d.get(ZuliaConstants.ID_FIELD);
 
 					Document mongoDocument = null;
@@ -120,12 +135,20 @@ public class ZuliaShard {
 						mongoDocument = ZuliaUtil.byteArrayToMongoDocument(docRef.bytes);
 					}
 
-					shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
+					if (!trackedIds.contains(uniqueId)) {
+						shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
+					}
 				}
 				catch (Exception e) {
 					throw new RuntimeException(e);
 				}
 			});
+			synchronized (this) {
+				if (myTrackingId.equals(trackingId)) {
+					trackingId = null;
+					trackedIds = new HashSet<>();
+				}
+			}
 			forceCommit();
 		}
 		finally {
@@ -142,6 +165,10 @@ public class ZuliaShard {
 			throw new IllegalStateException("Cannot index document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
 
+		if (trackingId != null) {
+			trackedIds.add(uniqueId);
+		}
+
 		shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
 		if (shardWriteManager.markedChangedCheckIfCommitNeeded()) {
 			forceCommit();
@@ -152,6 +179,10 @@ public class ZuliaShard {
 	public void deleteDocument(String uniqueId) throws Exception {
 		if (!primary) {
 			throw new IllegalStateException("Cannot delete document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+		}
+
+		if (trackingId != null) {
+			trackedIds.add(uniqueId);
 		}
 
 		shardWriteManager.deleteDocuments(uniqueId);
