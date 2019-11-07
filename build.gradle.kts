@@ -7,7 +7,7 @@ plugins {
     signing
     `maven-publish`
     id("org.ajoberstar.reckon") version "0.9.0"
-    id("com.google.protobuf") version "0.8.8" apply false
+    id("com.google.protobuf") version "0.8.10" apply false
 }
 
 configure<ReckonExtension> {
@@ -120,7 +120,7 @@ subprojects {
     }
 
     dependencies {
-        testCompile("org.testng:testng:6.14.3")
+        testImplementation("org.testng:testng:6.14.3")
     }
 
     tasks.withType<Test> {

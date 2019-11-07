@@ -2,6 +2,7 @@ import com.google.protobuf.gradle.*
 
 plugins {
     id("com.google.protobuf")
+    `java-library`
 }
 
 
@@ -17,12 +18,12 @@ val protobufVersion: String by project
 
 
 dependencies {
-    compile("io.grpc:grpc-netty-shaded:$grpcVersion")
-    compile("io.grpc:grpc-protobuf:$grpcVersion")
-    compile("io.grpc:grpc-stub:$grpcVersion")
-    compile("org.mongodb:bson:$mongoDriverVersion")
-    compile("org.apache.commons:commons-pool2:2.7.0")
-    compile("javax.annotation:javax.annotation-api:1.3.2")
+    api("io.grpc:grpc-netty-shaded:$grpcVersion")
+    api("io.grpc:grpc-protobuf:$grpcVersion")
+    api("io.grpc:grpc-stub:$grpcVersion")
+    api("org.mongodb:bson:$mongoDriverVersion")
+    api("org.apache.commons:commons-pool2:2.7.0")
+    api("javax.annotation:javax.annotation-api:1.3.2")
 }
 
 

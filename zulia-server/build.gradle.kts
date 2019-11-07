@@ -1,5 +1,6 @@
 plugins {
     application
+    `java-library`
 }
 
 description = "Zulia Server"
@@ -11,28 +12,28 @@ val protobufVersion: String by project
 defaultTasks("build", "installDist")
 
 dependencies {
-    compile(project(":zulia-query-parser"))
-    compile(project(":zulia-client")) //needed for admin tools
+    api(project(":zulia-query-parser"))
+    api(project(":zulia-client")) //needed for admin tools
 
-    compile("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
-    compile("org.apache.lucene:lucene-facet:$luceneVersion")
+    api("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
+    api("org.apache.lucene:lucene-facet:$luceneVersion")
 
-    compile("org.apache.lucene:lucene-highlighter:$luceneVersion")
+    api("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
-    compile("com.beust:jcommander:1.78")
+    api("com.beust:jcommander:1.78")
 
-    compile("org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.27")
-    compile("org.glassfish.jersey.inject:jersey-hk2:2.27")
+    api("org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.27")
+    api("org.glassfish.jersey.inject:jersey-hk2:2.27")
 
-    compile("javax.activation:activation:1.1.1")
-    compile("javax.xml.bind:jaxb-api:2.3.0")
-    compile("javax.annotation:javax.annotation-api:1.3.2")
+    api("javax.activation:activation:1.1.1")
+    api("javax.xml.bind:jaxb-api:2.3.0")
+    api("javax.annotation:javax.annotation-api:1.3.2")
 
-    compile("com.google.protobuf:protobuf-java-util:$protobufVersion")
+    api("com.google.protobuf:protobuf-java-util:$protobufVersion")
 
-    compile("com.cedarsoftware:json-io:4.10.1")
+    api("com.cedarsoftware:json-io:4.10.1")
 
-    compile("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
+    api("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
