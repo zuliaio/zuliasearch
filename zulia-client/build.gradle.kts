@@ -1,6 +1,10 @@
+plugins {
+    `java-library`
+}
+
 description = "Zulia Client"
 
 dependencies {
-    compile(project(":zulia-common"))
+    api(project(":zulia-common"))
 }
 
