@@ -473,9 +473,11 @@ public class QueryResource {
 				responseBuilder.append("\"id\": ");
 				responseBuilder.append("\"").append(sr.getUniqueId()).append("\"");
 				responseBuilder.append(",");
-				responseBuilder.append("\"score\": ");
-				responseBuilder.append(sr.getScore());
-				responseBuilder.append(",");
+				if (!Double.isNaN(sr.getScore())) {
+					responseBuilder.append("\"score\": ");
+					responseBuilder.append(sr.getScore());
+					responseBuilder.append(",");
+				}
 				responseBuilder.append("\"indexName\": ");
 				responseBuilder.append("\"").append(sr.getIndexName()).append("\"");
 
