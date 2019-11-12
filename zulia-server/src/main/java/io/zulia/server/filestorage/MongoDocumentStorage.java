@@ -2,7 +2,6 @@ package io.zulia.server.filestorage;
 
 import com.google.protobuf.ByteString;
 import com.mongodb.BasicDBObject;
-import com.mongodb.Block;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -280,7 +279,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	public void deleteAssociatedDocument(String uniqueId, String fileName) {
 		GridFSBucket gridFS = createGridFSConnection();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, getGridFsId(uniqueId, fileName)))
-				.forEach((Block<GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
+				.forEach((Consumer<? super GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
 
 	}
 
@@ -288,7 +287,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	public void deleteAssociatedDocuments(String uniqueId) {
 		GridFSBucket gridFS = createGridFSConnection();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, uniqueId))
-				.forEach((Block<GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
+				.forEach((Consumer<? super GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
 	}
 
 }
