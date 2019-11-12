@@ -176,7 +176,6 @@ public class ShardReader implements AutoCloseable {
 
 		boolean sorting = (sortRequest != null) && !sortRequest.getFieldSortList().isEmpty();
 		if (sorting) {
-
 			collector = getSortingCollector(sortRequest, hasMoreAmount, after);
 		}
 		else {
@@ -423,7 +422,10 @@ public class ShardReader implements AutoCloseable {
 			String sortField = fs.getSortField();
 			ZuliaIndex.FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
 
-			if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
+			if ("zuliaScore".equals(sortField)) {
+				sortFields.add(new SortField(null, SortField.Type.SCORE, reverse));
+			}
+			else if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
 
 				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
 				if (reverse) {
@@ -463,7 +465,7 @@ public class ShardReader implements AutoCloseable {
 
 		}
 		Sort sort = new Sort();
-		sort.setSort(sortFields.toArray(new SortField[sortFields.size()]));
+		sort.setSort(sortFields.toArray(new SortField[0]));
 
 		collector = TopFieldCollector.create(sort, hasMoreAmount, after, Integer.MAX_VALUE);
 		return collector;
