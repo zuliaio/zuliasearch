@@ -84,4 +84,5 @@ public interface ZuliaConstants {
 	String BATCH_SIZE = "batchSize";
 	String CURSOR = "cursor";
 
+	String SCORE_FIELD = "zuliaScore";
 }

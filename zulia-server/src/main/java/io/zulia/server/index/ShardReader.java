@@ -575,6 +575,11 @@ public class ShardReader implements AutoCloseable {
 			ZuliaQuery.FieldSort fieldSort = sortRequest.getFieldSort(c);
 			String sortField = fieldSort.getSortField();
 
+			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+				sortValues.addSortValue(ZuliaQuery.SortValue.newBuilder().setExists(false));
+				continue;
+			}
+
 			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
 
 			ZuliaQuery.SortValue.Builder sortValueBuilder = ZuliaQuery.SortValue.newBuilder().setExists(true);
