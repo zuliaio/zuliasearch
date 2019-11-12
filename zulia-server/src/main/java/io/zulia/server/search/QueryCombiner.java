@@ -1,5 +1,6 @@
 package io.zulia.server.search;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
@@ -393,7 +394,10 @@ public class QueryCombiner {
 
 					FieldConfig.FieldType sortType = sortTypeMap.get(sortField);
 
-					if (FieldConfig.FieldType.NUMERIC_INT.equals(sortType)) {
+					if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+						compare = scoreCompare.compare(o1, o2);
+					}
+					else if (FieldConfig.FieldType.NUMERIC_INT.equals(sortType)) {
 						Integer a = sortValues1.getSortValue(sortValueIndex).getIntegerValue();
 						Integer b = sortValues2.getSortValue(sortValueIndex).getIntegerValue();
 
