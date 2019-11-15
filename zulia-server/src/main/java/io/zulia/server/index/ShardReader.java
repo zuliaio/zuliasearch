@@ -204,7 +204,11 @@ public class ShardReader implements AutoCloseable {
 			throw e;
 		}
 
-		ScoreDoc[] results = collector.topDocs().scoreDocs;
+		TopDocs topDocs = collector.topDocs();
+		ScoreDoc[] results = topDocs.scoreDocs;
+		if (sorting && (collector.scoreMode() != ScoreMode.COMPLETE_NO_SCORES)) {
+			TopFieldCollector.populateScores(topDocs.scoreDocs, indexSearcher, query);
+		}
 
 		int totalHits = collector.getTotalHits();
 

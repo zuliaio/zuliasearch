@@ -1,6 +1,7 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
+import io.zulia.ZuliaConstants;
 import io.zulia.client.command.Query;
 import io.zulia.client.command.Reindex;
 import io.zulia.client.command.Store;
@@ -23,6 +24,9 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+
+import static io.zulia.message.ZuliaQuery.FieldSort.Direction.ASCENDING;
+import static io.zulia.message.ZuliaQuery.FieldSort.Direction.DESCENDING;
 
 public class StartStopTest {
 
@@ -120,6 +124,25 @@ public class StartStopTest {
 	}
 
 	@Test(dependsOnMethods = "index")
+	public void sortScore() throws Exception {
+		Query q = new Query(FACET_TEST_INDEX, "issn:1234*", 10);
+		q.addFieldSort(ZuliaConstants.SCORE_FIELD, ASCENDING);
+		QueryResult queryResult = zuliaWorkPool.query(q);
+
+		for (ZuliaQuery.ScoredResult result : queryResult.getResults()) {
+			Assert.assertTrue(result.getScore() > 0);
+		}
+
+		q = new Query(FACET_TEST_INDEX, "issn:1234*", 10);
+		q.addFieldSort(ZuliaConstants.SCORE_FIELD, DESCENDING);
+		queryResult = zuliaWorkPool.query(q);
+
+		for (ZuliaQuery.ScoredResult result : queryResult.getResults()) {
+			Assert.assertTrue(result.getScore() > 0);
+		}
+	}
+
+	@Test(dependsOnMethods = "sortScore")
 	public void reindex() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
