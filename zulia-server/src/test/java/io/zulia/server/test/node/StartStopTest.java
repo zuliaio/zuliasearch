@@ -125,21 +125,31 @@ public class StartStopTest {
 
 	@Test(dependsOnMethods = "index")
 	public void sortScore() throws Exception {
-		Query q = new Query(FACET_TEST_INDEX, "issn:1234*", 10);
+		Query q = new Query(FACET_TEST_INDEX, "issn:\"1234-1234\" OR country:US", 10);
 		q.addFieldSort(ZuliaConstants.SCORE_FIELD, ASCENDING);
 		QueryResult queryResult = zuliaWorkPool.query(q);
 
+		double lowScore = -1;
+		double highScore = -1;
 		for (ZuliaQuery.ScoredResult result : queryResult.getResults()) {
 			Assert.assertTrue(result.getScore() > 0);
+			if (lowScore < 0) {
+				lowScore = result.getScore();
+			}
 		}
 
-		q = new Query(FACET_TEST_INDEX, "issn:1234*", 10);
+		q = new Query(FACET_TEST_INDEX, "issn:\"1234-1234\" OR country:US", 10);
 		q.addFieldSort(ZuliaConstants.SCORE_FIELD, DESCENDING);
 		queryResult = zuliaWorkPool.query(q);
 
 		for (ZuliaQuery.ScoredResult result : queryResult.getResults()) {
 			Assert.assertTrue(result.getScore() > 0);
+			if (highScore < 0) {
+				highScore = result.getScore();
+			}
 		}
+
+		Assert.assertTrue(highScore > lowScore);
 	}
 
 	@Test(dependsOnMethods = "sortScore")
