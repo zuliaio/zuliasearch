@@ -175,6 +175,7 @@ public class ShardReader implements AutoCloseable {
 		TopDocsCollector<?> collector;
 
 		boolean sorting = (sortRequest != null) && !sortRequest.getFieldSortList().isEmpty();
+
 		if (sorting) {
 			collector = getSortingCollector(sortRequest, hasMoreAmount, after);
 		}
@@ -427,7 +428,7 @@ public class ShardReader implements AutoCloseable {
 			ZuliaIndex.FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
-				sortFields.add(new SortField(null, SortField.Type.SCORE, reverse));
+				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
 			}
 			else if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
 
