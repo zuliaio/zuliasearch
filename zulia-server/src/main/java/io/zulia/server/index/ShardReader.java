@@ -574,6 +574,7 @@ public class ShardReader implements AutoCloseable {
 		for (Object o : result.fields) {
 			if (o == null) {
 				sortValues.addSortValue(ZuliaQuery.SortValue.newBuilder().setExists(false));
+				c++;
 				continue;
 			}
 
@@ -581,7 +582,8 @@ public class ShardReader implements AutoCloseable {
 			String sortField = fieldSort.getSortField();
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
-				sortValues.addSortValue(ZuliaQuery.SortValue.newBuilder().setExists(false));
+				sortValues.addSortValue(ZuliaQuery.SortValue.newBuilder().setFloatValue(scoreDoc.score));
+				c++;
 				continue;
 			}
 
