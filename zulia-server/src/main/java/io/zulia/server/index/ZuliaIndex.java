@@ -532,7 +532,10 @@ public class ZuliaIndex {
 
 							ZuliaQuery.SortValue sortValue = sortValues.getSortValue(sortTermsIndex);
 
-							if (sortValue.getExists()) {
+							if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+								sortTerms[sortTermsIndex] = sortValue.getFloatValue();
+							}
+							else if (sortValue.getExists()) {
 								if (FieldTypeUtil.isNumericOrDateFieldType(sortType)) {
 									if (FieldTypeUtil.isNumericIntFieldType(sortType)) {
 										sortTerms[sortTermsIndex] = sortValue.getIntegerValue();
