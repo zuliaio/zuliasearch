@@ -17,6 +17,8 @@ public class FieldConfigBuilder {
 	private final List<FacetAs> facetAsList;
 	private final List<SortAs> sortAsList;
 	private final List<ProjectAs> projectAsList;
+	private String description;
+	private String displayName;
 
 	public FieldConfigBuilder(String storedFieldName, FieldConfig.FieldType fieldType) {
 		this.storedFieldName = storedFieldName;
@@ -128,6 +130,16 @@ public class FieldConfigBuilder {
 		return this;
 	}
 
+	public FieldConfigBuilder description(String description) {
+		this.description = description;
+		return this;
+	}
+
+	public FieldConfigBuilder displayName(String displayName) {
+		this.displayName = displayName;
+		return this;
+	}
+
 	public FieldConfig build() {
 		FieldConfig.Builder fcBuilder = FieldConfig.newBuilder();
 		fcBuilder.setStoredFieldName(storedFieldName);
@@ -136,7 +148,13 @@ public class FieldConfigBuilder {
 		fcBuilder.addAllFacetAs(facetAsList);
 		fcBuilder.addAllSortAs(sortAsList);
 		fcBuilder.addAllProjectAs(projectAsList);
-
+		if (description != null) {
+			fcBuilder.setDescription(description);
+		}
+		if (displayName != null) {
+			fcBuilder.setDisplayName(displayName);
+		}
 		return fcBuilder.build();
 	}
+
 }
