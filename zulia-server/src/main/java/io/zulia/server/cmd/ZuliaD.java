@@ -65,10 +65,10 @@ public class ZuliaD {
 
 	@Parameters
 	public static class AddNodeArgs {
-		@Parameter(names = "--server", description = "Server to remove from cluster", required = true)
+		@Parameter(names = "--server", description = "Server to add to the cluster", required = false)
 		private String server;
 
-		@Parameter(names = "--servicePort", description = "Service port of server to remove from cluster", required = true)
+		@Parameter(names = "--servicePort", description = "Service port of server to add to cluster", required = false)
 		private int servicePort;
 	}
 
