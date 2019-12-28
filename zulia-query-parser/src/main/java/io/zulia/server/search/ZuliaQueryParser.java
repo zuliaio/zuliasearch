@@ -61,6 +61,8 @@ public class ZuliaQueryParser extends QueryParser {
 	@Override
 	protected Query getRangeQuery(String field, String start, String end, boolean startInclusive, boolean endInclusive) throws ParseException {
 
+		field = rewriteCharLengthField(field);
+
 		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(field);
 		if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
 			return getNumericOrDateRange(field, start, end, startInclusive, endInclusive);
@@ -70,8 +72,15 @@ public class ZuliaQueryParser extends QueryParser {
 
 	}
 
+	protected String rewriteCharLengthField(String field) {
+		if (field.startsWith("|") && field.endsWith("|")) {
+			field = ZuliaConstants.CHAR_LENGTH_PREFIX + field.substring(1, field.length() - 1);
+		}
+		return field;
+	}
+
 	private Query getNumericOrDateRange(final String fieldName, final String start, final String end, final boolean startInclusive,
-			final boolean endInclusive) {
+										final boolean endInclusive) {
 		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(fieldName);
 		if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 			int min = start == null ? Integer.MIN_VALUE : Integer.parseInt(start);
