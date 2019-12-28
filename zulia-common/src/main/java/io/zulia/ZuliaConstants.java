@@ -70,6 +70,7 @@ public interface ZuliaConstants {
 	String ID_FIELD = "_lmidf_";
 	String FIELDS_LIST_FIELD = "_lmflf_";
 	String SUPERBIT_PREFIX = "_lmsb_";
+	String CHAR_LENGTH_PREFIX = "_lmcl_";
 
 	String HIGHLIGHT = "hl";
 
@@ -85,4 +86,5 @@ public interface ZuliaConstants {
 	String CURSOR = "cursor";
 
 	String SCORE_FIELD = "zuliaScore";
+
 }
