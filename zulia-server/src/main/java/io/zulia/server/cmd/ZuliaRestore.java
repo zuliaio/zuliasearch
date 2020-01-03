@@ -114,8 +114,14 @@ public class ZuliaRestore {
 			LOG.info("Finished indexing for index <" + index + "> with total records: " + count);
 		}
 		else {
-			System.err.println("Index <" + index + "> does not exist in the given dir <" + dir + ">");
-			System.exit(9);
+			if (index.endsWith(".json")) {
+				System.err.println("Please provide the path to the parent directory in --dir option.");
+				System.exit(9);
+			}
+			else {
+				System.err.println("Index <" + index + "> does not exist in the given dir <" + dir + ">");
+				System.exit(9);
+			}
 		}
 
 	}
