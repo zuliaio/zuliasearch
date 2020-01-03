@@ -119,7 +119,8 @@ public class ZuliaRestore {
 				System.exit(9);
 			}
 			else {
-				System.err.println("Index <" + index + "> does not exist in the given dir <" + dir + ">");
+				System.err.println("Index <" + index + "> does not exist in the given dir <" + dir
+						+ ">, please provide the path to the parent directory in --dir option.");
 				System.exit(9);
 			}
 		}
