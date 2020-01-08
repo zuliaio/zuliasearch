@@ -5,7 +5,7 @@ import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.connection.server.ZuliaServiceServer;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.rest.ZuliaRESTServiceManager;
+import io.zulia.server.rest.ZuliaRESTService;
 
 import java.util.Collection;
 import java.util.Timer;
@@ -64,8 +64,8 @@ public class ZuliaNode {
 		membershipTimer.scheduleAtFixedRate(membershipTask, 1000, 1000);
 
 		indexManager.init();
-		Micronaut.run(ZuliaRESTServiceManager.class);
 		zuliaServiceServer.start();
+		Micronaut.run(ZuliaRESTService.class);
 		LOG.info(getLogPrefix() + "started");
 
 	}

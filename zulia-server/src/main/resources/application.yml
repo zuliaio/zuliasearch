@@ -3,9 +3,13 @@ micronaut:
     port: 32192
     cors:
       enabled: true
+    netty:
+      log-level: TRACE
   application:
     name: zulia-service
 endpoints:
-    routes:
-        enabled: true
+  routes:
+    enabled: true
+mongodb:
+  uri: mongodb://localhost:27017/zulia
 

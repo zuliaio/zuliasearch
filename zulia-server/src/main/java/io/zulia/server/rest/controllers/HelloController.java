@@ -1,4 +1,4 @@
-package io.zulia.server.rest;
+package io.zulia.server.rest.controllers;
 
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
