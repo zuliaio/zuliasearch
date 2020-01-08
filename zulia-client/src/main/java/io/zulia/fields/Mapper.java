@@ -3,8 +3,6 @@ package io.zulia.fields;
 import io.zulia.client.command.CreateIndex;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
-import io.zulia.client.result.BatchFetchResult;
-import io.zulia.client.result.FetchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.annotations.AsField;
 import io.zulia.fields.annotations.DefaultSearch;
@@ -15,7 +13,6 @@ import io.zulia.fields.annotations.Settings;
 import io.zulia.fields.annotations.UniqueId;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.util.AnnotationUtil;
-import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.lang.reflect.Field;
@@ -23,27 +20,22 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-import static io.zulia.message.ZuliaQuery.ScoredResult;
-
-public class Mapper<T> {
+public class Mapper<T> extends GsonDocumentMapper<T> {
 
 	private final Class<T> clazz;
 
-	private SavedFieldsMapper<T> savedFieldsMapper;
+	private final FieldConfigMapper<T> fieldConfigMapper;
 
-	private FieldConfigMapper<T> fieldConfigMapper;
+	private final UniqueIdFieldInfo<T> uniqueIdField;
 
-	private UniqueIdFieldInfo<T> uniqueIdField;
+	private final List<DefaultSearchFieldInfo<T>> defaultSearchFields = new ArrayList<>();
 
-	private List<DefaultSearchFieldInfo<T>> defaultSearchFields = new ArrayList<>();
-
-	private Settings settings;
+	private final Settings settings;
 
 	public Mapper(Class<T> clazz) {
+		super(clazz);
 
 		this.clazz = clazz;
-
-		this.savedFieldsMapper = new SavedFieldsMapper<>(clazz);
 
 		this.fieldConfigMapper = new FieldConfigMapper<>(clazz, "");
 
@@ -51,12 +43,12 @@ public class Mapper<T> {
 
 		List<Field> allFields = AnnotationUtil.getNonStaticFields(clazz, true);
 
+		UniqueIdFieldInfo uf = null;
 		for (Field f : allFields) {
 			f.setAccessible(true);
 
 			String fieldName = f.getName();
 
-			savedFieldsMapper.setupField(f);
 			fieldConfigMapper.setupField(f);
 
 			if (f.isAnnotationPresent(UniqueId.class)) {
@@ -72,8 +64,8 @@ public class Mapper<T> {
 
 				@SuppressWarnings("unused") UniqueId uniqueId = f.getAnnotation(UniqueId.class);
 
-				if (uniqueIdField == null) {
-					uniqueIdField = new UniqueIdFieldInfo<>(f, fieldName);
+				if (uf == null) {
+					uf = new UniqueIdFieldInfo<>(f, fieldName);
 
 					if (!String.class.equals(f.getType())) {
 						throw new RuntimeException("Unique id field must be a String in class <" + clazz.getSimpleName() + ">");
@@ -104,12 +96,17 @@ public class Mapper<T> {
 			fields.add(fieldName);
 
 		}
-		if (uniqueIdField == null) {
+		if (uf == null) {
 			throw new RuntimeException("A unique id field must be defined for class <" + clazz.getSimpleName() + ">");
 		}
 
+		this.uniqueIdField = uf;
+
 		if (clazz.isAnnotationPresent(Settings.class)) {
 			settings = clazz.getAnnotation(Settings.class);
+		}
+		else {
+			settings = null;
 		}
 
 	}
@@ -161,37 +158,12 @@ public class Mapper<T> {
 		return store;
 	}
 
-	public List<T> fromBatchFetchResult(BatchFetchResult batchFetchResult) throws Exception {
-		return batchFetchResult.getDocuments(this);
-	}
-
-	public T fromFetchResult(FetchResult fetchResult) throws Exception {
-		return fetchResult.getDocument(this);
-	}
-
-	public T fromScoredResult(ScoredResult scoredResult) throws Exception {
-		return fromDocument(ResultHelper.getDocumentFromScoredResult(scoredResult));
-	}
-
 	public ResultDocBuilder toResultDocumentBuilder(T object) throws Exception {
 		String uniqueId = uniqueIdField.build(object);
 		Document document = toDocument(object);
 		ResultDocBuilder resultDocumentBuilder = new ResultDocBuilder();
 		resultDocumentBuilder.setDocument(document).setUniqueId(uniqueId);
 		return resultDocumentBuilder;
-	}
-
-	public Document toDocument(T object) throws Exception {
-		return savedFieldsMapper.toDocument(object);
-	}
-
-	public T fromDocument(Document savedDocument) throws Exception {
-		if (savedDocument != null) {
-			T newInstance = savedFieldsMapper.fromDBObject(savedDocument);
-			uniqueIdField.populate(newInstance, savedDocument);
-			return newInstance;
-		}
-		return null;
 	}
 
 }

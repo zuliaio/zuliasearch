@@ -29,8 +29,8 @@ import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
+import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
-import io.zulia.server.index.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ZuliaMultiFieldQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
@@ -99,10 +99,6 @@ public class ZuliaIndex {
 	private ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 
-	static {
-		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
-	}
-
 	private IndexMapping indexMapping;
 	private FacetsConfig facetsConfig;
 
@@ -115,6 +111,7 @@ public class ZuliaIndex {
 		this.indexService = indexService;
 
 		this.facetsConfig = new FacetsConfig();
+		this.facetsConfig.setIndexFieldName("myField", "$facets.float");
 
 		this.documentStorage = documentStorage;
 
@@ -284,9 +281,16 @@ public class ZuliaIndex {
 			else {
 				document = new Document();
 			}
+			Document metadata;
+			if (resultDocument.getMetadata() != null) {
+				metadata = ZuliaUtil.byteArrayToMongoDocument(resultDocument.getMetadata().toByteArray());
+			}
+			else {
+				metadata = new Document();
+			}
 
 			ZuliaShard s = findShardFromUniqueId(uniqueId);
-			s.index(uniqueId, timestamp, document, resultDocument.getMetadataList());
+			s.index(uniqueId, timestamp, document, metadata);
 
 		}
 
@@ -474,7 +478,7 @@ public class ZuliaIndex {
 			}
 		}
 		catch (ParseException e) {
-			throw new Exception("Invalid Query: " + zuliaQuery.getQ());
+			throw new IllegalArgumentException("Invalid Query: " + zuliaQuery.getQ());
 		}
 	}
 
@@ -528,7 +532,10 @@ public class ZuliaIndex {
 
 							ZuliaQuery.SortValue sortValue = sortValues.getSortValue(sortTermsIndex);
 
-							if (sortValue.getExists()) {
+							if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+								sortTerms[sortTermsIndex] = sortValue.getFloatValue();
+							}
+							else if (sortValue.getExists()) {
 								if (FieldTypeUtil.isNumericOrDateFieldType(sortType)) {
 									if (FieldTypeUtil.isNumericIntFieldType(sortType)) {
 										sortTerms[sortTermsIndex] = sortValue.getIntegerValue();
@@ -675,6 +682,13 @@ public class ZuliaIndex {
 		return OptimizeResponse.newBuilder().build();
 	}
 
+	public ReindexResponse reindex(ReindexRequest request) throws IOException {
+		for (final ZuliaShard shard : primaryShardMap.values()) {
+			shard.reindex();
+		}
+		return ReindexResponse.newBuilder().build();
+	}
+
 	public GetNumberOfDocsResponse getNumberOfDocs(InternalGetNumberOfDocsRequest request) throws Exception {
 
 		List<Future<ShardCountResponse>> responses = new ArrayList<>();
@@ -691,9 +705,7 @@ public class ZuliaIndex {
 		GetNumberOfDocsResponse.Builder responseBuilder = GetNumberOfDocsResponse.newBuilder();
 
 		responseBuilder.setNumberOfDocs(0);
-		for (Future<ShardCountResponse> response : responses)
-
-		{
+		for (Future<ShardCountResponse> response : responses) {
 			try {
 				ShardCountResponse scr = response.get();
 				responseBuilder.addShardCountResponse(scr);
@@ -874,14 +886,13 @@ public class ZuliaIndex {
 
 	}
 
-	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long clusterTime, HashMap<String, String> metadataMap)
-			throws Exception {
+	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long clusterTime, Document metadata) throws Exception {
 
-		documentStorage.storeAssociatedDocument(uniqueId, fileName, is, clusterTime, metadataMap);
+		documentStorage.storeAssociatedDocument(uniqueId, fileName, is, clusterTime, metadata);
 
 	}
 
-	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) throws IOException {
+	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) {
 
 		return documentStorage.getAssociatedDocumentStream(uniqueId, fileName);
 

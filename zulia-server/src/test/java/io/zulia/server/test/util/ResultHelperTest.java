@@ -1,6 +1,8 @@
 package io.zulia.server.test.util;
 
+import com.google.protobuf.ByteString;
 import io.zulia.util.ResultHelper;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -48,5 +50,28 @@ public class ResultHelperTest {
 		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1"), "val2");
 		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "myfield"), 40);
 
+	}
+
+	@Test
+	public void testSerialization() {
+		Document testMongoDocument = new Document();
+		testMongoDocument.put("field1", "someVal");
+		testMongoDocument.put("myfield", 40);
+
+		{
+			byte[] bytes = ZuliaUtil.mongoDocumentToByteArray(testMongoDocument);
+			Document testMongoDocumentReborn = ZuliaUtil.byteArrayToMongoDocument(bytes);
+
+			Assert.assertEquals(testMongoDocumentReborn.getString("field1"), "someVal");
+			Assert.assertEquals((int) testMongoDocumentReborn.getInteger("myfield"), 40);
+		}
+
+		{
+			ByteString byteString = ZuliaUtil.mongoDocumentToByteString(testMongoDocument);
+			Document testMongoDocumentReborn = ZuliaUtil.byteStringToMongoDocument(byteString);
+
+			Assert.assertEquals(testMongoDocumentReborn.getString("field1"), "someVal");
+			Assert.assertEquals((int) testMongoDocumentReborn.getInteger("myfield"), 40);
+		}
 	}
 }

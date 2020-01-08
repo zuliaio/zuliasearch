@@ -26,6 +26,7 @@ public class ClientIndexConfig {
 	private Integer shardQueryCacheMaxAmount;
 	private Integer indexWeight;
 	private Integer ramBufferMB;
+	private Integer numberOfReplicas;
 
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
@@ -159,6 +160,14 @@ public class ClientIndexConfig {
 		this.indexWeight = indexWeight;
 	}
 
+	public Integer getNumberOfReplicas() {
+		return numberOfReplicas;
+	}
+
+	public void setNumberOfReplicas(Integer numberOfReplicas) {
+		this.numberOfReplicas = numberOfReplicas;
+	}
+
 	public void addAnalyzerSetting(String name, AnalyzerSettings.Tokenizer tokenizer, Iterable<AnalyzerSettings.Filter> filterList, Similarity similarity) {
 
 		AnalyzerSettings.Builder analyzerSettings = AnalyzerSettings.newBuilder();
@@ -194,12 +203,15 @@ public class ClientIndexConfig {
 		if (indexName != null) {
 			isb.setIndexName(indexName);
 		}
+
 		if (defaultSearchFields != null) {
 			isb.addAllDefaultSearchField(defaultSearchFields);
 		}
+
 		if (requestFactor != null) {
 			isb.setRequestFactor(requestFactor);
 		}
+
 		if (minShardRequest != null) {
 			isb.setMinShardRequest(minShardRequest);
 		}
@@ -207,9 +219,11 @@ public class ClientIndexConfig {
 		if (shardCommitInterval != null) {
 			isb.setShardCommitInterval(shardCommitInterval);
 		}
+
 		if (idleTimeWithoutCommit != null) {
 			isb.setIdleTimeWithoutCommit(idleTimeWithoutCommit);
 		}
+
 		if (shardTolerance != null) {
 			isb.setShardTolerance(shardTolerance);
 		}
@@ -235,19 +249,31 @@ public class ClientIndexConfig {
 	}
 
 	public void configure(IndexSettings indexSettings) {
+		this.indexName = indexSettings.getIndexName();
 		this.numberOfShards = indexSettings.getNumberOfShards();
+		this.numberOfReplicas = indexSettings.getNumberOfReplicas();
 		this.defaultSearchFields = indexSettings.getDefaultSearchFieldList();
-		this.requestFactor = indexSettings.getRequestFactor();
-		this.minShardRequest = indexSettings.getMinShardRequest();
-		this.shardCommitInterval = indexSettings.getShardCommitInterval();
-		this.idleTimeWithoutCommit = indexSettings.getIdleTimeWithoutCommit();
-		this.shardTolerance = indexSettings.getShardTolerance();
-		this.fieldMap = new TreeMap<>();
-		this.indexWeight = indexSettings.getIndexWeight();
 
+		this.analyzerSettingsMap = new TreeMap<>();
+		for (AnalyzerSettings analyzerSettings : indexSettings.getAnalyzerSettingsList()) {
+			analyzerSettingsMap.put(analyzerSettings.getName(), analyzerSettings);
+		}
+
+		this.fieldMap = new TreeMap<>();
 		for (FieldConfig fc : indexSettings.getFieldConfigList()) {
 			fieldMap.put(fc.getStoredFieldName(), fc);
 		}
+
+		this.requestFactor = indexSettings.getRequestFactor();
+		this.minShardRequest = indexSettings.getMinShardRequest();
+		this.shardTolerance = indexSettings.getShardTolerance();
+		this.shardQueryCacheSize = indexSettings.getShardQueryCacheSize();
+		this.shardQueryCacheMaxAmount = indexSettings.getShardQueryCacheMaxAmount();
+		this.idleTimeWithoutCommit = indexSettings.getIdleTimeWithoutCommit();
+		this.shardCommitInterval = indexSettings.getShardCommitInterval();
+
+		this.indexWeight = indexSettings.getIndexWeight();
+		this.ramBufferMB = indexSettings.getRamBufferMB();
 
 	}
 

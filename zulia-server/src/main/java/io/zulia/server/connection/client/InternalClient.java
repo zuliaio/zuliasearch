@@ -12,6 +12,7 @@ import io.zulia.server.connection.client.handler.InternalGetNumberOfDocsHandler;
 import io.zulia.server.connection.client.handler.InternalGetTermsHandler;
 import io.zulia.server.connection.client.handler.InternalOptimizeHandler;
 import io.zulia.server.connection.client.handler.InternalQueryHandler;
+import io.zulia.server.connection.client.handler.InternalReindexHandler;
 import io.zulia.server.connection.client.handler.InternalStoreHandler;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 
@@ -21,6 +22,7 @@ import java.util.logging.Logger;
 
 public class InternalClient {
 	private final static Logger LOG = Logger.getLogger(InternalClient.class.getSimpleName());
+
 
 	private ConcurrentHashMap<String, GenericObjectPool<InternalRpcConnection>> internalConnectionPoolMap;
 
@@ -35,6 +37,7 @@ public class InternalClient {
 	private final InternalGetTermsHandler internalGetTermsHandler;
 	private final InternalCreateIndexHandler internalCreateIndexHandler;
 	private final InternalDeleteIndexHandler internalDeleteIndexHandler;
+	private final InternalReindexHandler internalReindexHandler;
 
 	public InternalClient() {
 
@@ -51,6 +54,7 @@ public class InternalClient {
 		internalGetTermsHandler = new InternalGetTermsHandler(this);
 		internalCreateIndexHandler = new InternalCreateIndexHandler(this);
 		internalDeleteIndexHandler = new InternalDeleteIndexHandler(this);
+		internalReindexHandler = new InternalReindexHandler(this);
 	}
 
 	public void close() {
@@ -176,5 +180,9 @@ public class InternalClient {
 
 	public DeleteIndexResponse deleteIndex(Node node, DeleteIndexRequest request) throws Exception {
 		return internalDeleteIndexHandler.handleRequest(node, request);
+	}
+
+	public ReindexResponse reindex(Node node, ReindexRequest request) throws Exception {
+		return internalReindexHandler.handleRequest(node, request);
 	}
 }

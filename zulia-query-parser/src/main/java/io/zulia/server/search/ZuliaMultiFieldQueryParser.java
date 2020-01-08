@@ -3,21 +3,9 @@ package io.zulia.server.search;
 import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.MultiPhraseQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.*;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * Created by Matt Davis on 5/14/16.
@@ -195,8 +183,7 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 						}
 						clauses.add(builder.build());
 					}
-				}
-				else {
+				} else {
 					clauses.addAll(termClauses);
 				}
 			}
@@ -204,6 +191,10 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 				return null;
 			return getMultiFieldQuery(clauses);
 		}
+
+		//mdavis
+		field = rewriteCharLengthField(field);
+
 		Query q = super.getFieldQuery(field, queryText, quoted);
 		return q;
 	}

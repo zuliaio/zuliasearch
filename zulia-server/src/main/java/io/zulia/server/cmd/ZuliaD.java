@@ -8,11 +8,15 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.mongodb.MongoClient;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import io.zulia.log.LogUtil;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
+import io.zulia.server.config.cluster.MongoAuth;
 import io.zulia.server.config.cluster.MongoNodeService;
 import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.config.single.SingleNodeService;
@@ -55,8 +59,17 @@ public class ZuliaD {
 	}
 
 	@Parameters
-	public static class AddNodeArgs {
+	public static class ListNodesArgs {
 
+	}
+
+	@Parameters
+	public static class AddNodeArgs {
+		@Parameter(names = "--server", description = "Server to add to the cluster", required = false)
+		private String server;
+
+		@Parameter(names = "--servicePort", description = "Service port of server to add to cluster", required = false)
+		private int servicePort;
 	}
 
 	@Parameters
@@ -78,13 +91,15 @@ public class ZuliaD {
 		StartArgs startArgs = new StartArgs();
 		AddNodeArgs addNodeArgs = new AddNodeArgs();
 		RemoveNodeArgs removeNodeArgs = new RemoveNodeArgs();
+		ListNodesArgs listNodesArgs = new ListNodesArgs();
 
 		JCommander jCommander = JCommander.newBuilder().addObject(zuliaDArgs).addCommand("start", startArgs).addCommand("addNode", addNodeArgs)
-				.addCommand("removeNode", removeNodeArgs).build();
+				.addCommand("removeNode", removeNodeArgs).addCommand("listNodes", listNodesArgs).build();
 		try {
 			jCommander.parse(args);
 
-			if (jCommander.getParsedCommand() == null) {
+			String parsedCommand = jCommander.getParsedCommand();
+			if (parsedCommand == null) {
 				jCommander.usage();
 				System.exit(2);
 			}
@@ -96,12 +111,16 @@ public class ZuliaD {
 				config = prefix + File.separator + config;
 			}
 
-			System.out.println("Path: " + config);
+			LOG.info("Path: " + config);
 
 			ZuliaConfig zuliaConfig = GSON.fromJson(new FileReader(config), ZuliaConfig.class);
 			LOG.info("Using config <" + config + ">");
 
 			String dataDir = zuliaConfig.getDataPath();
+			if (prefix != null && !dataDir.startsWith(File.separator)) {
+				dataDir = prefix + File.separator + dataDir;
+				zuliaConfig.setDataPath(dataDir);
+			}
 			Path dataPath = Paths.get(dataDir);
 
 			NodeService nodeService;
@@ -128,7 +147,17 @@ public class ZuliaD {
 					serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
 				}
 
-				MongoProvider.setMongoClient(new MongoClient(serverAddressList));
+				MongoClientSettings.Builder mongoBuilder = MongoClientSettings.builder().applyToClusterSettings(builder -> builder.hosts(serverAddressList));
+
+				MongoAuth mongoAuth = zuliaConfig.getMongoAuth();
+				if (mongoAuth != null) {
+					mongoBuilder.credential(
+							MongoCredential.createCredential(mongoAuth.getUsername(), mongoAuth.getDatabase(), mongoAuth.getPassword().toCharArray()));
+				}
+
+				MongoClient mongoClient = MongoClients.create(mongoBuilder.build());
+
+				MongoProvider.setMongoClient(mongoClient);
 				LOG.info("Created Mongo Client: " + MongoProvider.getMongoClient());
 
 				nodeService = new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
@@ -139,7 +168,7 @@ public class ZuliaD {
 				LOG.info("Created Single Node Service");
 			}
 
-			if ("start".equals(jCommander.getParsedCommand())) {
+			if ("start".equals(parsedCommand)) {
 				setLuceneStatic();
 
 				Collection<Node> nodes = nodeService.getNodes();
@@ -158,7 +187,7 @@ public class ZuliaD {
 					LOG.severe("Looks like you're trying to run in cluster mode but you haven't configured cluster:true in the config.");
 				}
 			}
-			else if ("addNode".equals(jCommander.getParsedCommand())) {
+			else if ("addNode".equals(parsedCommand)) {
 				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
 						.setRestPort(zuliaConfig.getRestPort()).build();
 
@@ -169,11 +198,14 @@ public class ZuliaD {
 				displayNodes(nodeService, "Registered Nodes:");
 
 			}
-			else if ("removeNode".equals(jCommander.getParsedCommand())) {
+			else if ("removeNode".equals(parsedCommand)) {
 
 				LOG.info("Removing node: " + removeNodeArgs.server + ":" + removeNodeArgs.servicePort);
 				nodeService.removeNode(removeNodeArgs.server, removeNodeArgs.servicePort);
 
+				displayNodes(nodeService, "Registered Nodes:");
+			}
+			else if ("listNodes".equals(parsedCommand)) {
 				displayNodes(nodeService, "Registered Nodes:");
 			}
 
@@ -207,7 +239,7 @@ public class ZuliaD {
 	}
 
 	public static void setLuceneStatic() {
-		BooleanQuery.setMaxClauseCount(16 * 1024);
+		BooleanQuery.setMaxClauseCount(128 * 1024);
 		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
 	}
 }

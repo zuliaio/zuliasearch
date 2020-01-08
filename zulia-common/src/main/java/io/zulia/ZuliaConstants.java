@@ -35,7 +35,7 @@ public interface ZuliaConstants {
 	String ROWS = "rows";
 	String ID = "id";
 	String FILE_NAME = "fileName";
-	String META = "meta";
+	String META_JSON = "metaJson";
 	String INDEX = "index";
 	String FACET = "facet";
 	String SORT = "sort";
@@ -63,8 +63,6 @@ public interface ZuliaConstants {
 
 	String FORMAT = "format";
 
-	//General
-	String UTF8 = "UTF-8";
 
 	String TIMESTAMP_FIELD = "_lmtsf_";
 	String STORED_META_FIELD = "_lmsmf_";
@@ -72,6 +70,7 @@ public interface ZuliaConstants {
 	String ID_FIELD = "_lmidf_";
 	String FIELDS_LIST_FIELD = "_lmflf_";
 	String SUPERBIT_PREFIX = "_lmsb_";
+	String CHAR_LENGTH_PREFIX = "_lmcl_";
 
 	String HIGHLIGHT = "hl";
 
@@ -85,5 +84,7 @@ public interface ZuliaConstants {
 	String BATCH = "batch";
 	String BATCH_SIZE = "batchSize";
 	String CURSOR = "cursor";
+
+	String SCORE_FIELD = "zuliaScore";
 
 }
