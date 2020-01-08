@@ -1,5 +1,6 @@
 package io.zulia.server.search;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
@@ -21,6 +22,7 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
 import io.zulia.server.index.ZuliaIndex;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
 import java.util.ArrayList;
@@ -40,6 +42,7 @@ import java.util.stream.Collectors;
 public class QueryCombiner {
 
 	private final static Comparator<ScoredResult> scoreCompare = new ScoreCompare();
+	private final static Comparator<ScoredResult> reverseScoreCompare = new ReverseScoreCompare();
 
 	private final static Logger log = Logger.getLogger(QueryCombiner.class.getSimpleName());
 
@@ -392,41 +395,52 @@ public class QueryCombiner {
 
 					FieldConfig.FieldType sortType = sortTypeMap.get(sortField);
 
-					if (FieldConfig.FieldType.NUMERIC_INT.equals(sortType)) {
-						Integer a = sortValues1.getSortValue(sortValueIndex).getIntegerValue();
-						Integer b = sortValues2.getSortValue(sortValueIndex).getIntegerValue();
-
-						compare = Comparator.nullsLast(Integer::compareTo).compare(a, b);
-					}
-					else if (FieldConfig.FieldType.NUMERIC_LONG.equals(sortType) || FieldConfig.FieldType.DATE.equals(sortType)) {
-						Long a = sortValues1.getSortValue(sortValueIndex).getLongValue();
-						Long b = sortValues2.getSortValue(sortValueIndex).getLongValue();
-
-						compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
-					}
-					else if (FieldConfig.FieldType.NUMERIC_FLOAT.equals(sortType)) {
-
-						Float a = sortValues1.getSortValue(sortValueIndex).getFloatValue();
-						Float b = sortValues2.getSortValue(sortValueIndex).getFloatValue();
-
-						compare = Comparator.nullsLast(Float::compareTo).compare(a, b);
-					}
-					else if (FieldConfig.FieldType.NUMERIC_DOUBLE.equals(sortType)) {
-
-						Double a = sortValues1.getSortValue(sortValueIndex).getDoubleValue();
-						Double b = sortValues2.getSortValue(sortValueIndex).getDoubleValue();
-
-						compare = Comparator.nullsLast(Double::compareTo).compare(a, b);
+					if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+						if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {
+							compare = scoreCompare.compare(o1, o2);
+						}
+						else {
+							compare = reverseScoreCompare.compare(o1, o2);
+						}
 					}
 					else {
-						String a = sortValues1.getSortValue(sortValueIndex).getStringValue();
-						String b = sortValues2.getSortValue(sortValueIndex).getStringValue();
+						if (FieldConfig.FieldType.NUMERIC_INT.equals(sortType)) {
+							Integer a = sortValues1.getSortValue(sortValueIndex).getIntegerValue();
+							Integer b = sortValues2.getSortValue(sortValueIndex).getIntegerValue();
 
-						compare = Comparator.nullsLast(String::compareTo).compare(a, b);
-					}
+							compare = Comparator.nullsLast(Integer::compareTo).compare(a, b);
+						}
+						else if (FieldConfig.FieldType.NUMERIC_LONG.equals(sortType) || FieldConfig.FieldType.DATE.equals(sortType)) {
+							Long a = sortValues1.getSortValue(sortValueIndex).getLongValue();
+							Long b = sortValues2.getSortValue(sortValueIndex).getLongValue();
 
-					if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {
-						compare *= -1;
+							compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+						}
+						else if (FieldConfig.FieldType.NUMERIC_FLOAT.equals(sortType)) {
+
+							Float a = sortValues1.getSortValue(sortValueIndex).getFloatValue();
+							Float b = sortValues2.getSortValue(sortValueIndex).getFloatValue();
+
+							compare = Comparator.nullsLast(Float::compareTo).compare(a, b);
+						}
+						else if (FieldConfig.FieldType.NUMERIC_DOUBLE.equals(sortType)) {
+
+							Double a = sortValues1.getSortValue(sortValueIndex).getDoubleValue();
+							Double b = sortValues2.getSortValue(sortValueIndex).getDoubleValue();
+
+							compare = Comparator.nullsLast(Double::compareTo).compare(a, b);
+						}
+						else {
+							String a = sortValues1.getSortValue(sortValueIndex).getStringValue();
+							String b = sortValues2.getSortValue(sortValueIndex).getStringValue();
+
+							//compare = Comparator.nullsLast(String::compareTo).compare(a, b);
+							compare = Comparator.nullsLast(BytesRef::compareTo).compare(new BytesRef(a), new BytesRef(b));
+						}
+
+						if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {
+							compare *= -1;
+						}
 					}
 
 					if (compare != 0) {

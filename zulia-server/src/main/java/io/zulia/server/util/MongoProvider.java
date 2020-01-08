@@ -1,6 +1,6 @@
 package io.zulia.server.util;
 
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 
 public class MongoProvider {
 

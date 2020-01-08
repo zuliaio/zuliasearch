@@ -1,4 +1,4 @@
-package io.zulia.server.index.field;
+package io.zulia.server.field;
 
 import io.zulia.message.ZuliaIndex.FieldConfig;
 

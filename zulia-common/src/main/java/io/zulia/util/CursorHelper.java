@@ -1,6 +1,6 @@
 package io.zulia.util;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 import static io.zulia.message.ZuliaQuery.LastIndexResult;
@@ -13,10 +13,8 @@ import static io.zulia.message.ZuliaQuery.ScoredResult;
  */
 public class CursorHelper {
 
-	private static Charset utf8Charset = Charset.forName("utf-8");
-
 	public static String getStaticIndexCursor(LastResult lastResult) {
-		return new String(Base64.getEncoder().encode(lastResult.toByteArray()), utf8Charset);
+		return new String(Base64.getEncoder().encode(lastResult.toByteArray()), StandardCharsets.UTF_8);
 	}
 
 	public static String getUniqueSortedCursor(LastResult lastResult) {
@@ -32,12 +30,12 @@ public class CursorHelper {
 			lastResultBuilder.addLastIndexResult(lastIndexResultBuilder);
 		}
 
-		return new String(Base64.getEncoder().encode(lastResultBuilder.build().toByteArray()), utf8Charset);
+		return new String(Base64.getEncoder().encode(lastResultBuilder.build().toByteArray()), StandardCharsets.UTF_8);
 	}
 
 	public static LastResult getLastResultFromCursor(String cursor) {
 		try {
-			return LastResult.parseFrom(Base64.getDecoder().decode(cursor.getBytes(utf8Charset)));
+			return LastResult.parseFrom(Base64.getDecoder().decode(cursor.getBytes(StandardCharsets.UTF_8)));
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Invalid cursor");

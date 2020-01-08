@@ -1,7 +1,7 @@
 package io.zulia.server.index;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
-import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaQuery;
@@ -14,12 +14,18 @@ import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.server.search.QueryCacheKey;
+import io.zulia.util.ZuliaUtil;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
+import org.bson.Document;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 public class ZuliaShard {
@@ -33,6 +39,9 @@ public class ZuliaShard {
 	private final String indexName;
 
 	private final boolean primary;
+
+	private String trackingId;
+	private HashSet<String> trackedIds;
 
 	public ZuliaShard(ShardWriteManager shardWriteManager, boolean primary) throws Exception {
 
@@ -73,7 +82,6 @@ public class ZuliaShard {
 		}
 	}
 
-
 	public void forceCommit() throws IOException {
 		if (!primary) {
 			throw new IllegalStateException("Cannot force commit from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
@@ -91,16 +99,77 @@ public class ZuliaShard {
 		}
 	}
 
+	public void reindex() throws IOException {
+
+		final String myTrackingId = UUID.randomUUID().toString();
+		synchronized (this) {
+			trackingId = myTrackingId;
+			trackedIds = new HashSet<>();
+		}
+
+		shardReaderManager.maybeRefreshBlocking();
+		ShardReader shardReader = shardReaderManager.acquire();
+
+		try {
+			shardReader.streamAllDocs(d -> {
+				if (!myTrackingId.equals(trackingId)) {
+					throw new RuntimeException("Reindex interrupted by another reindex");
+				}
+
+				try {
+					IndexableField f = d.getField(ZuliaConstants.TIMESTAMP_FIELD);
+					long timestamp = f.numericValue().longValue();
+
+					String uniqueId = d.get(ZuliaConstants.ID_FIELD);
+
+					Document mongoDocument = null;
+					Document metadata = null;
+
+					BytesRef metaRef = d.getBinaryValue(ZuliaConstants.STORED_META_FIELD);
+					if (metaRef != null) {
+						metadata = ZuliaUtil.byteArrayToMongoDocument(metaRef.bytes);
+					}
+
+					BytesRef docRef = d.getBinaryValue(ZuliaConstants.STORED_DOC_FIELD);
+					if (docRef != null) {
+						mongoDocument = ZuliaUtil.byteArrayToMongoDocument(docRef.bytes);
+					}
+
+					if (!trackedIds.contains(uniqueId)) {
+						shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
+					}
+				}
+				catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			});
+			synchronized (this) {
+				if (myTrackingId.equals(trackingId)) {
+					trackingId = null;
+					trackedIds = new HashSet<>();
+				}
+			}
+			forceCommit();
+		}
+		finally {
+			shardReaderManager.decRef(shardReader);
+		}
+	}
+
 	public void close() throws IOException {
 		shardWriteManager.close();
 	}
 
-	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<Metadata> metadataList) throws Exception {
+	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
 		if (!primary) {
 			throw new IllegalStateException("Cannot index document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
 
-		shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadataList);
+		if (trackingId != null) {
+			trackedIds.add(uniqueId);
+		}
+
+		shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
 		if (shardWriteManager.markedChangedCheckIfCommitNeeded()) {
 			forceCommit();
 		}
@@ -110,6 +179,10 @@ public class ZuliaShard {
 	public void deleteDocument(String uniqueId) throws Exception {
 		if (!primary) {
 			throw new IllegalStateException("Cannot delete document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+		}
+
+		if (trackingId != null) {
+			trackedIds.add(uniqueId);
 		}
 
 		shardWriteManager.deleteDocuments(uniqueId);

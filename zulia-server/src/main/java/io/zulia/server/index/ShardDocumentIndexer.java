@@ -2,13 +2,12 @@ package io.zulia.server.index;
 
 import info.debatty.java.lsh.SuperBit;
 import io.zulia.ZuliaConstants;
-import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.index.field.BooleanFieldIndexer;
 import io.zulia.server.index.field.DateFieldIndexer;
 import io.zulia.server.index.field.DoubleFieldIndexer;
-import io.zulia.server.index.field.FieldTypeUtil;
 import io.zulia.server.index.field.FloatFieldIndexer;
 import io.zulia.server.index.field.IntFieldIndexer;
 import io.zulia.server.index.field.LongFieldIndexer;
@@ -42,7 +41,7 @@ public class ShardDocumentIndexer {
 
 	}
 
-	public Document getIndexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, List<ZuliaBase.Metadata> metadataList) throws Exception {
+	public Document getIndexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
 		Document luceneDocument = new Document();
 
 		addStoredFieldsForDocument(mongoDocument, luceneDocument);
@@ -54,13 +53,7 @@ public class ShardDocumentIndexer {
 
 		luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(mongoDocument))));
 
-		org.bson.Document metadataMongoDoc = new org.bson.Document();
-
-		for (ZuliaBase.Metadata metadata : metadataList) {
-			metadataMongoDoc.put(metadata.getKey(), metadata.getValue());
-		}
-
-		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadataMongoDoc))));
+		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadata))));
 
 		return luceneDocument;
 

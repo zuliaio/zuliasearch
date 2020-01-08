@@ -1,6 +1,5 @@
 package io.zulia.server.analysis.filter;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.Resources;
 import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.TokenFilter;
@@ -9,6 +8,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Created by Matt Davis on 9/22/16.
@@ -25,8 +25,8 @@ public class BritishUSFilter extends TokenFilter {
 		CharArrayMap<char[]> charMap = new CharArrayMap<>(2000, false);
 
 		try {
-			URL url = Resources.getResource(BritishUSFilter.class, "british.txt");
-			String text = Resources.toString(url, Charsets.UTF_8);
+			URL url = BritishUSFilter.class.getResource("/british.txt");
+			String text = Resources.toString(url, StandardCharsets.UTF_8);
 			String[] lines = text.split("\n");
 			for (String line : lines) {
 				if (!line.startsWith("UK\tUS")) {

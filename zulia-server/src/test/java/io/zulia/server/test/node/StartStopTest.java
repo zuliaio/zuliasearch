@@ -1,7 +1,9 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
+import io.zulia.ZuliaConstants;
 import io.zulia.client.command.Query;
+import io.zulia.client.command.Reindex;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -10,7 +12,9 @@ import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex.FacetAs.DateHandling;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -19,6 +23,10 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
+
+import static io.zulia.message.ZuliaQuery.FieldSort.Direction.ASCENDING;
+import static io.zulia.message.ZuliaQuery.FieldSort.Direction.DESCENDING;
 
 public class StartStopTest {
 
@@ -28,6 +36,8 @@ public class StartStopTest {
 	private final String uniqueIdPrefix = "myId-";
 
 	private final String[] issns = new String[] { "1234-1234", "3333-1234", "1234-5555", "1234-4444", "2222-2222" };
+	private final String[] eissns = new String[] { "3234-1234", "4333-1234", "5234-5555", "6234-4444", "9222-2222" };
+
 	private int totalRecords = COUNT_PER_ISSN * issns.length;
 
 	private ZuliaWorkPool zuliaWorkPool;
@@ -55,8 +65,6 @@ public class StartStopTest {
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 
-		System.out.println("Creating index?");
-
 		zuliaWorkPool.createIndex(indexConfig);
 	}
 
@@ -64,7 +72,7 @@ public class StartStopTest {
 	public void index() throws Exception {
 		int id = 0;
 		{
-			for (String issn : issns) {
+			for (int j = 0; j < issns.length; j++) {
 				for (int i = 0; i < COUNT_PER_ISSN; i++) {
 					boolean half = (i % 2 == 0);
 					boolean tenth = (i % 10 == 0);
@@ -74,11 +82,13 @@ public class StartStopTest {
 					String uniqueId = uniqueIdPrefix + id;
 
 					Document mongoDocument = new Document();
-					mongoDocument.put("issn", issn);
+					mongoDocument.put("issn", issns[j]);
+					mongoDocument.put("eissn", eissns[j]);
 					mongoDocument.put("title", "Facet Userguide");
 
 					if (half) { // 1/2 of input
 						mongoDocument.put("country", "US");
+
 					}
 					else { // 1/2 of input
 						mongoDocument.put("country", "France");
@@ -99,7 +109,13 @@ public class StartStopTest {
 					}
 
 					Store s = new Store(uniqueId, FACET_TEST_INDEX);
-					s.setResultDocument(ResultDocBuilder.newBuilder().setDocument(mongoDocument));
+
+					ResultDocBuilder resultDocumentBuilder = ResultDocBuilder.newBuilder().setDocument(mongoDocument);
+					if (half) {
+						resultDocumentBuilder.setMetadata(new Document("test", "someValue"));
+					}
+
+					s.setResultDocument(resultDocumentBuilder);
 
 					zuliaWorkPool.store(s);
 				}
@@ -108,6 +124,67 @@ public class StartStopTest {
 	}
 
 	@Test(dependsOnMethods = "index")
+	public void sortScore() throws Exception {
+		Query q = new Query(FACET_TEST_INDEX, "issn:\"1234-1234\" OR country:US", 10);
+		q.addFieldSort(ZuliaConstants.SCORE_FIELD, ASCENDING);
+		QueryResult queryResult = zuliaWorkPool.query(q);
+
+		double lowScore = -1;
+		double highScore = -1;
+		for (ZuliaQuery.ScoredResult result : queryResult.getResults()) {
+			Assert.assertTrue(result.getScore() > 0);
+			if (lowScore < 0) {
+				lowScore = result.getScore();
+			}
+		}
+
+		q = new Query(FACET_TEST_INDEX, "issn:\"1234-1234\" OR country:US", 10);
+		q.addFieldSort(ZuliaConstants.SCORE_FIELD, DESCENDING);
+		queryResult = zuliaWorkPool.query(q);
+
+		for (ZuliaQuery.ScoredResult result : queryResult.getResults()) {
+			Assert.assertTrue(result.getScore() > 0);
+			if (highScore < 0) {
+				highScore = result.getScore();
+			}
+		}
+
+		Assert.assertTrue(highScore > lowScore);
+	}
+
+	@Test(dependsOnMethods = "sortScore")
+	public void reindex() throws Exception {
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.addDefaultSearchField("title");
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("uid", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index().displayName("Accession Number"));
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+		indexConfig.addFieldConfig(
+				FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data"));
+		indexConfig.setIndexName(FACET_TEST_INDEX);
+		indexConfig.setNumberOfShards(1);
+
+		zuliaWorkPool.createIndex(indexConfig);
+
+		zuliaWorkPool.reindex(new Reindex(FACET_TEST_INDEX));
+
+		Query query = new Query(FACET_TEST_INDEX, null, 0).addCountRequest("eissn");
+
+		QueryResult queryResult = zuliaWorkPool.query(query);
+
+		List<FacetCount> eissnCounts = queryResult.getFacetCounts("eissn");
+
+		Assert.assertEquals(eissnCounts.size(), eissns.length);
+
+		for (FacetCount eissnCount : eissnCounts) {
+			Assert.assertEquals(eissnCount.getCount(), COUNT_PER_ISSN);
+		}
+	}
+
+	@Test(dependsOnMethods = "reindex")
 	public void restart() throws Exception {
 		TestHelper.stopNodes();
 		Thread.sleep(2000);
@@ -207,6 +284,34 @@ public class StartStopTest {
 			QueryResult qr = zuliaWorkPool.query(q);
 
 			Assert.assertEquals(qr.getTotalHits(), COUNT_PER_ISSN / 2, "Total record count after drill down mismatch");
+
+		}
+
+		{
+			Query q = new Query(FACET_TEST_INDEX, "country:US", 10).setResultFetchType(ZuliaQuery.FetchType.META);
+
+			QueryResult qr = zuliaWorkPool.query(q);
+
+			for (ZuliaQuery.ScoredResult result : qr.getResults()) {
+				Document metadata = ZuliaUtil.byteStringToMongoDocument(result.getResultDocument().getMetadata());
+				Assert.assertEquals(metadata.getString("test"), "someValue");
+			}
+
+			Assert.assertEquals(qr.getTotalHits(), totalRecords / 2, "Total record count filtered on half mismatch");
+
+		}
+
+		{
+			Query q = new Query(FACET_TEST_INDEX, "country:US", 10).setResultFetchType(ZuliaQuery.FetchType.FULL);
+
+			QueryResult qr = zuliaWorkPool.query(q);
+
+			for (ZuliaQuery.ScoredResult result : qr.getResults()) {
+				Document metadata = ZuliaUtil.byteStringToMongoDocument(result.getResultDocument().getMetadata());
+				Assert.assertEquals(metadata.getString("test"), "someValue");
+			}
+
+			Assert.assertEquals(qr.getTotalHits(), totalRecords / 2, "Total record count filtered on half mismatch");
 
 		}
 

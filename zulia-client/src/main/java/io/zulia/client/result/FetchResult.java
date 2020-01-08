@@ -1,18 +1,15 @@
 package io.zulia.client.result;
 
-import io.zulia.fields.Mapper;
+import io.zulia.fields.GsonDocumentMapper;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static io.zulia.message.ZuliaBase.AssociatedDocument;
-import static io.zulia.message.ZuliaBase.Metadata;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 public class FetchResult extends Result {
@@ -53,14 +50,10 @@ public class FetchResult extends Result {
 		return null;
 	}
 
-	public Map<String, String> getMeta() {
+	public Document getMeta() {
 		if (fetchResponse.hasResultDocument()) {
 			ResultDocument rd = fetchResponse.getResultDocument();
-			HashMap<String, String> metadata = new HashMap<>();
-			for (Metadata md : rd.getMetadataList()) {
-				metadata.put(md.getKey(), md.getValue());
-			}
-			return metadata;
+			return ZuliaUtil.byteStringToMongoDocument(rd.getMetadata());
 		}
 		return null;
 	}
@@ -75,7 +68,7 @@ public class FetchResult extends Result {
 		return null;
 	}
 
-	public <T> T getDocument(Mapper<T> mapper) throws Exception {
+	public <T> T getDocument(GsonDocumentMapper<T> mapper) throws Exception {
 		if (fetchResponse.hasResultDocument()) {
 			Document document = getDocument();
 			return mapper.fromDocument(document);

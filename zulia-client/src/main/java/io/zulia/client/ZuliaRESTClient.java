@@ -3,6 +3,7 @@ package io.zulia.client;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
 import io.zulia.util.StreamHelper;
+import org.bson.Document;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -12,9 +13,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.Map;
 
 public class ZuliaRESTClient {
 	private String server;
@@ -33,15 +33,23 @@ public class ZuliaRESTClient {
 		fetchAssociated(uniqueId, indexName, fileName, new FileOutputStream(outputFile));
 	}
 
+	public HttpURLConnection fetchAssociated(String uniqueId, String indexName, String fileName) throws IOException {
+
+		HashMap<String, Object> parameters = createParameters(uniqueId, indexName, fileName);
+
+		String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);
+		HttpURLConnection conn = createGetConnection(url);
+		handlePossibleError(conn);
+		return conn;
+
+	}
+
 	public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination) throws IOException {
 		InputStream source = null;
 		HttpURLConnection conn = null;
 
 		try {
-			HashMap<String, Object> parameters = new HashMap<>();
-			parameters.put(ZuliaConstants.ID, uniqueId);
-			parameters.put(ZuliaConstants.FILE_NAME, fileName);
-			parameters.put(ZuliaConstants.INDEX, indexName);
+			HashMap<String, Object> parameters = createParameters(uniqueId, indexName, fileName);
 
 			String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);
 			conn = createGetConnection(url);
@@ -56,6 +64,14 @@ public class ZuliaRESTClient {
 		}
 	}
 
+	protected HashMap<String, Object> createParameters(String uniqueId, String indexName, String fileName) {
+		HashMap<String, Object> parameters = new HashMap<>();
+		parameters.put(ZuliaConstants.ID, uniqueId);
+		parameters.put(ZuliaConstants.FILE_NAME, fileName);
+		parameters.put(ZuliaConstants.INDEX, indexName);
+		return parameters;
+	}
+
 	public void storeAssociated(String uniqueId, String indexName, String fileName, File fileToStore) throws IOException {
 		storeAssociated(uniqueId, indexName, fileName, new FileInputStream(fileToStore));
 	}
@@ -64,22 +80,14 @@ public class ZuliaRESTClient {
 		storeAssociated(uniqueId, indexName, fileName, null, source);
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Map<String, String> meta, InputStream source) throws IOException {
+	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws IOException {
 		HttpURLConnection conn = null;
 		OutputStream destination = null;
 		try {
 
-			HashMap<String, Object> parameters = new HashMap<>();
-			parameters.put(ZuliaConstants.ID, uniqueId);
-			parameters.put(ZuliaConstants.FILE_NAME, fileName);
-			parameters.put(ZuliaConstants.INDEX, indexName);
-			if (meta != null) {
-				ArrayList<Object> list = new ArrayList<>();
-				parameters.put(ZuliaConstants.META, list);
-				for (String key : meta.keySet()) {
-					String value = meta.get(key);
-					list.add(key + ":" + value);
-				}
+			HashMap<String, Object> parameters = createParameters(uniqueId, indexName, fileName);
+			if (metadata != null) {
+				parameters.put(ZuliaConstants.META_JSON, metadata.toJson());
 			}
 
 			String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);
@@ -106,7 +114,7 @@ public class ZuliaRESTClient {
 			else {
 				bytes = StreamHelper.getBytesFromStream(conn.getInputStream());
 			}
-			throw new IOException("Request failed with <" + conn.getResponseCode() + ">: " + new String(bytes, ZuliaConstants.UTF8));
+			throw new IOException("Request failed with <" + conn.getResponseCode() + ">: " + new String(bytes, StandardCharsets.UTF_8));
 		}
 	}
 

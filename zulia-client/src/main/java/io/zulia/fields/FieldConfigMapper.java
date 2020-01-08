@@ -34,9 +34,9 @@ public class FieldConfigMapper<T> {
 
 	private final Class<T> clazz;
 
-	private HashMap<String, FieldConfig> fieldConfigMap;
+	private final HashMap<String, FieldConfig> fieldConfigMap;
 
-	private List<FieldConfigMapper<?>> embeddedFieldConfigMappers;
+	private final List<FieldConfigMapper<?>> embeddedFieldConfigMappers;
 
 	public FieldConfigMapper(Class<T> clazz, String prefix) {
 		this.clazz = clazz;

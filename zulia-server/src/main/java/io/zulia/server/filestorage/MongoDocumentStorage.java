@@ -2,8 +2,7 @@ package io.zulia.server.filestorage;
 
 import com.google.protobuf.ByteString;
 import com.mongodb.BasicDBObject;
-import com.mongodb.Block;
-import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.gridfs.GridFSBucket;
@@ -13,8 +12,8 @@ import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
 import com.mongodb.client.model.IndexOptions;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
-import io.zulia.message.ZuliaBase.Metadata;
 import io.zulia.message.ZuliaQuery.FetchType;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 import java.io.ByteArrayInputStream;
@@ -22,12 +21,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -48,30 +45,20 @@ public class MongoDocumentStorage implements DocumentStorage {
 	private static final String ENABLESHARDING = "enablesharding";
 	private static final String ADMIN = "admin";
 	public static final String SHARDCOLLECTION = "shardcollection";
+	private final boolean sharded;
 
 	private MongoClient mongoClient;
 	private String database;
 	private String indexName;
 
+	private volatile boolean inited = false;
+
 	public MongoDocumentStorage(MongoClient mongoClient, String indexName, String dbName, boolean sharded) {
 		this.mongoClient = mongoClient;
 		this.indexName = indexName;
 		this.database = dbName;
+		this.sharded = sharded;
 
-		MongoDatabase storageDb = mongoClient.getDatabase(database);
-		MongoCollection<Document> coll = storageDb.getCollection(ASSOCIATED_FILES + "." + FILES);
-		coll.createIndex(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
-		coll.createIndex(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
-
-		if (sharded) {
-
-			MongoDatabase adminDb = mongoClient.getDatabase(ADMIN);
-			Document enableCommand = new Document();
-			enableCommand.put(ENABLESHARDING, database);
-			adminDb.runCommand(enableCommand);
-
-			shardCollection(storageDb, adminDb, ASSOCIATED_FILES + "." + CHUNKS);
-		}
 	}
 
 	private void shardCollection(MongoDatabase db, MongoDatabase adminDb, String collectionName) {
@@ -83,6 +70,26 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	private GridFSBucket createGridFSConnection() {
+		synchronized (this) {
+			if (!inited) {
+				MongoDatabase storageDb = mongoClient.getDatabase(database);
+				MongoCollection<Document> coll = storageDb.getCollection(ASSOCIATED_FILES + "." + FILES);
+				coll.createIndex(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
+				coll.createIndex(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
+
+				if (sharded) {
+
+					MongoDatabase adminDb = mongoClient.getDatabase(ADMIN);
+					Document enableCommand = new Document();
+					enableCommand.put(ENABLESHARDING, database);
+					adminDb.runCommand(enableCommand);
+
+					shardCollection(storageDb, adminDb, ASSOCIATED_FILES + "." + CHUNKS);
+				}
+				inited = true;
+			}
+		}
+
 		MongoDatabase db = mongoClient.getDatabase(database);
 		return GridFSBuckets.create(db, ASSOCIATED_FILES);
 	}
@@ -100,21 +107,19 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Map<String, String> metadataMap) throws Exception {
+	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadata) throws Exception {
 		GridFSBucket gridFS = createGridFSConnection();
 
 		deleteAssociatedDocument(uniqueId, fileName);
 
-		GridFSUploadOptions gridFSUploadOptions = getGridFSUploadOptions(uniqueId, fileName, timestamp, metadataMap);
+		GridFSUploadOptions gridFSUploadOptions = getGridFSUploadOptions(uniqueId, fileName, timestamp, metadata);
 		gridFS.uploadFromStream(fileName, is, gridFSUploadOptions);
 	}
 
-	private GridFSUploadOptions getGridFSUploadOptions(String uniqueId, String fileName, long timestamp, Map<String, String> metadataMap) {
-		Document metadata = new Document();
-		if (metadataMap != null) {
-			for (String key : metadataMap.keySet()) {
-				metadata.put(key, metadataMap.get(key));
-			}
+	private GridFSUploadOptions getGridFSUploadOptions(String uniqueId, String fileName, long timestamp, Document metadata) {
+
+		if (metadata == null) {
+			metadata = new Document();
 		}
 		metadata.put(TIMESTAMP, timestamp);
 		metadata.put(DOCUMENT_UNIQUE_ID_KEY, uniqueId);
@@ -130,9 +135,12 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 		ByteArrayInputStream byteInputStream = new ByteArrayInputStream(bytes);
 
-		Map<String, String> metadata = new HashMap<>();
-		for (Metadata meta : doc.getMetadataList()) {
-			metadata.put(meta.getKey(), meta.getValue());
+		Document metadata;
+		if (doc.getMetadata() != null) {
+			metadata = ZuliaUtil.byteArrayToMongoDocument(doc.getMetadata().toByteArray());
+		}
+		else {
+			metadata = new Document();
 		}
 
 		storeAssociatedDocument(doc.getDocumentUniqueId(), doc.getFilename(), byteInputStream, doc.getTimestamp(), metadata);
@@ -196,9 +204,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 		aBuilder.setTimestamp(timestamp);
 
 		aBuilder.setDocumentUniqueId((String) metadata.remove(DOCUMENT_UNIQUE_ID_KEY));
-		for (String field : metadata.keySet()) {
-			aBuilder.addMetadata(Metadata.newBuilder().setKey(field).setValue((String) metadata.get(field)));
-		}
+		aBuilder.setMetadata(ZuliaUtil.mongoDocumentToByteString(metadata));
 
 		if (FetchType.FULL.equals(fetchType)) {
 
@@ -214,12 +220,11 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	public void getAssociatedDocuments(OutputStream outputstream, Document filter) throws IOException {
-		Charset charset = Charset.forName("UTF-8");
 
 		GridFSBucket gridFS = createGridFSConnection();
 		GridFSFindIterable gridFSFiles = gridFS.find(filter);
-		outputstream.write("{\n".getBytes(charset));
-		outputstream.write(" \"associatedDocs\": [\n".getBytes(charset));
+		outputstream.write("{\n".getBytes(StandardCharsets.UTF_8));
+		outputstream.write(" \"associatedDocs\": [\n".getBytes(StandardCharsets.UTF_8));
 
 		boolean first = true;
 		for (GridFSFile gridFSFile : gridFSFiles) {
@@ -227,22 +232,22 @@ public class MongoDocumentStorage implements DocumentStorage {
 				first = false;
 			}
 			else {
-				outputstream.write(",\n".getBytes(charset));
+				outputstream.write(",\n".getBytes(StandardCharsets.UTF_8));
 			}
 
 			Document metadata = gridFSFile.getMetadata();
 
 			String uniqueId = metadata.getString(DOCUMENT_UNIQUE_ID_KEY);
 			String uniquieIdKeyValue = "  { \"uniqueId\": \"" + uniqueId + "\", ";
-			outputstream.write(uniquieIdKeyValue.getBytes(charset));
+			outputstream.write(uniquieIdKeyValue.getBytes(StandardCharsets.UTF_8));
 
 			String filename = gridFSFile.getFilename();
 			String filenameKeyValue = "\"filename\": \"" + filename + "\", ";
-			outputstream.write(filenameKeyValue.getBytes(charset));
+			outputstream.write(filenameKeyValue.getBytes(StandardCharsets.UTF_8));
 
 			Date uploadDate = gridFSFile.getUploadDate();
 			String uploadDateKeyValue = "\"uploadDate\": {\"$date\":" + uploadDate.getTime() + "}";
-			outputstream.write(uploadDateKeyValue.getBytes(charset));
+			outputstream.write(uploadDateKeyValue.getBytes(StandardCharsets.UTF_8));
 
 			metadata.remove(TIMESTAMP);
 			metadata.remove(DOCUMENT_UNIQUE_ID_KEY);
@@ -251,13 +256,13 @@ public class MongoDocumentStorage implements DocumentStorage {
 			if (!metadata.isEmpty()) {
 				String metaJson = metadata.toJson();
 				String metaString = ", \"meta\": " + metaJson;
-				outputstream.write(metaString.getBytes(charset));
+				outputstream.write(metaString.getBytes(StandardCharsets.UTF_8));
 			}
 
-			outputstream.write(" }".getBytes(charset));
+			outputstream.write(" }".getBytes(StandardCharsets.UTF_8));
 
 		}
-		outputstream.write("\n ]\n}".getBytes(charset));
+		outputstream.write("\n ]\n}".getBytes(StandardCharsets.UTF_8));
 	}
 
 	@Override
@@ -274,7 +279,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	public void deleteAssociatedDocument(String uniqueId, String fileName) {
 		GridFSBucket gridFS = createGridFSConnection();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, getGridFsId(uniqueId, fileName)))
-				.forEach((Block<GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
+				.forEach((Consumer<? super GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
 
 	}
 
@@ -282,7 +287,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	public void deleteAssociatedDocuments(String uniqueId) {
 		GridFSBucket gridFS = createGridFSConnection();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, uniqueId))
-				.forEach((Block<GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
+				.forEach((Consumer<? super GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
 	}
 
 }

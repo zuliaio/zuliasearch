@@ -1,5 +1,6 @@
 package io.zulia.util;
 
+import com.google.protobuf.ByteString;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.Document;
@@ -51,10 +52,24 @@ public class ZuliaUtil {
 		return outputBuffer.toByteArray();
 	}
 
-	public static Document byteArrayToMongoDocument(byte[] byteArray) {
-		BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(byteArray));
+	public static ByteString mongoDocumentToByteString(Document mongoDocument) {
+		return ByteString.copyFrom(mongoDocumentToByteArray(mongoDocument));
+	}
 
-		return documentCodec.decode(bsonReader, DecoderContext.builder().build());
+	public static Document byteStringToMongoDocument(ByteString bytes) {
+		if (bytes != null) {
+			return byteArrayToMongoDocument(bytes.toByteArray());
+		}
+		return new Document();
+	}
+
+	public static Document byteArrayToMongoDocument(byte[] byteArray) {
+		if (byteArray != null && byteArray.length != 0) {
+			BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(byteArray));
+
+			return documentCodec.decode(bsonReader, DecoderContext.builder().build());
+		}
+		return new Document();
 	}
 
 	public static int computeLevenshteinDistance(String string1, String string2) {

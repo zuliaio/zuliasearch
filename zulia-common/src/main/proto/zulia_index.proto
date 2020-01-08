@@ -63,6 +63,8 @@ message FieldConfig {
     repeated FacetAs facetAs = 4;
     repeated SortAs sortAs = 5;
     repeated ProjectAs projectAs = 6;
+    string displayName = 7;
+    string description = 8;
 }
 
 message AnalyzerSettings {

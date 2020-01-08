@@ -12,9 +12,10 @@ import io.zulia.server.analysis.highlight.ZuliaHighlighter;
 import io.zulia.server.analysis.similarity.ConstantSimilarity;
 import io.zulia.server.analysis.similarity.TFSimilarity;
 import io.zulia.server.config.ServerIndexConfig;
-import io.zulia.server.index.field.FieldTypeUtil;
+import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.QueryResultCache;
+import io.zulia.server.util.FieldAndSubFields;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.analysis.Analyzer;
@@ -43,16 +44,19 @@ import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -149,6 +153,7 @@ public class ShardReader implements AutoCloseable {
 		if (useCache) {
 			ZuliaQuery.ShardQueryResponse cacheShardResponse = qrc.getCachedShardQueryResponse(queryCacheKey);
 			if (cacheShardResponse != null) {
+				LOG.info("Returning results from cache for query <" + query + "> from index <" + indexName + "> with shard number <" + shardNumber + ">");
 				return cacheShardResponse;
 			}
 		}
@@ -170,12 +175,12 @@ public class ShardReader implements AutoCloseable {
 		TopDocsCollector<?> collector;
 
 		boolean sorting = (sortRequest != null) && !sortRequest.getFieldSortList().isEmpty();
-		if (sorting) {
 
+		if (sorting) {
 			collector = getSortingCollector(sortRequest, hasMoreAmount, after);
 		}
 		else {
-			collector = TopScoreDocCollector.create(hasMoreAmount, after);
+			collector = TopScoreDocCollector.create(hasMoreAmount, after, Integer.MAX_VALUE);
 		}
 
 		ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder = ZuliaQuery.ShardQueryResponse.newBuilder();
@@ -200,7 +205,11 @@ public class ShardReader implements AutoCloseable {
 			throw e;
 		}
 
-		ScoreDoc[] results = collector.topDocs().scoreDocs;
+		TopDocs topDocs = collector.topDocs();
+		ScoreDoc[] results = topDocs.scoreDocs;
+		if (sorting && (collector.scoreMode() != ScoreMode.COMPLETE_NO_SCORES)) {
+			TopFieldCollector.populateScores(topDocs.scoreDocs, indexSearcher, query);
+		}
 
 		int totalHits = collector.getTotalHits();
 
@@ -418,7 +427,10 @@ public class ShardReader implements AutoCloseable {
 			String sortField = fs.getSortField();
 			ZuliaIndex.FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
 
-			if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
+			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
+			}
+			else if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
 
 				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
 				if (reverse) {
@@ -458,9 +470,9 @@ public class ShardReader implements AutoCloseable {
 
 		}
 		Sort sort = new Sort();
-		sort.setSort(sortFields.toArray(new SortField[sortFields.size()]));
+		sort.setSort(sortFields.toArray(new SortField[0]));
 
-		collector = TopFieldCollector.create(sort, hasMoreAmount, after, true, true, true, true);
+		collector = TopFieldCollector.create(sort, hasMoreAmount, after, Integer.MAX_VALUE);
 		return collector;
 	}
 
@@ -524,12 +536,7 @@ public class ShardReader implements AutoCloseable {
 
 		if (ZuliaQuery.FetchType.FULL.equals(resultFetchType) || ZuliaQuery.FetchType.META.equals(resultFetchType)) {
 			BytesRef metaRef = d.getBinaryValue(ZuliaConstants.STORED_META_FIELD);
-			org.bson.Document metaMongoDoc = new org.bson.Document();
-			metaMongoDoc.putAll(ZuliaUtil.byteArrayToMongoDocument(metaRef.bytes));
-
-			for (String key : metaMongoDoc.keySet()) {
-				rdBuilder.addMetadata(ZuliaBase.Metadata.newBuilder().setKey(key).setValue(((String) metaMongoDoc.get(key))));
-			}
+			rdBuilder.setMetadata(ByteString.copyFrom(metaRef.bytes));
 		}
 
 		if (ZuliaQuery.FetchType.FULL.equals(resultFetchType)) {
@@ -567,11 +574,18 @@ public class ShardReader implements AutoCloseable {
 		for (Object o : result.fields) {
 			if (o == null) {
 				sortValues.addSortValue(ZuliaQuery.SortValue.newBuilder().setExists(false));
+				c++;
 				continue;
 			}
 
 			ZuliaQuery.FieldSort fieldSort = sortRequest.getFieldSort(c);
 			String sortField = fieldSort.getSortField();
+
+			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+				sortValues.addSortValue(ZuliaQuery.SortValue.newBuilder().setFloatValue(scoreDoc.score));
+				c++;
+				continue;
+			}
 
 			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
 
@@ -679,28 +693,91 @@ public class ShardReader implements AutoCloseable {
 
 	}
 
-	private ZuliaBase.ResultDocument filterDocument(ZuliaBase.ResultDocument rd, List<String> fieldsToReturn, List<String> fieldsToMask,
+	private ZuliaBase.ResultDocument filterDocument(ZuliaBase.ResultDocument rd, Collection<String> fieldsToReturn, Collection<String> fieldsToMask,
 			org.bson.Document mongoDocument) {
 
 		ZuliaBase.ResultDocument.Builder resultDocBuilder = rd.toBuilder();
 
-		if (!fieldsToReturn.isEmpty()) {
-			for (String key : new ArrayList<>(mongoDocument.keySet())) {
-				if (!fieldsToReturn.contains(key)) {
-					mongoDocument.remove(key);
-				}
-			}
-		}
-		if (!fieldsToMask.isEmpty()) {
-			for (String field : fieldsToMask) {
-				mongoDocument.remove(field);
-			}
-		}
+		filterDocument(fieldsToReturn, fieldsToMask, mongoDocument);
 
-		ByteString document = ByteString.copyFrom(ZuliaUtil.mongoDocumentToByteArray(mongoDocument));
+		ByteString document = ZuliaUtil.mongoDocumentToByteString(mongoDocument);
 		resultDocBuilder.setDocument(document);
 
 		return resultDocBuilder.build();
+
+	}
+
+	private void filterDocument(Collection<String> fieldsToReturn, Collection<String> fieldsToMask, org.bson.Document mongoDocument) {
+
+		if (fieldsToReturn.isEmpty() && !fieldsToMask.isEmpty()) {
+			FieldAndSubFields fieldsToMaskObj = new FieldAndSubFields(fieldsToMask);
+			for (String topLevelField : fieldsToMaskObj.getTopLevelFields()) {
+				Map<String, Set<String>> topLevelToChildren = fieldsToMaskObj.getTopLevelToChildren();
+				if (!topLevelToChildren.containsKey(topLevelField)) {
+					mongoDocument.remove(topLevelField);
+				}
+				else {
+					Object subDoc = mongoDocument.get(topLevelField);
+					ZuliaUtil.handleLists(subDoc, subDocItem -> {
+						if (subDocItem instanceof org.bson.Document) {
+
+							Collection<String> subFieldsToMask =
+									topLevelToChildren.get(topLevelField) != null ? topLevelToChildren.get(topLevelField) : Collections.emptyList();
+
+							filterDocument(Collections.emptyList(), subFieldsToMask, (org.bson.Document) subDocItem);
+						}
+						else if (subDocItem == null) {
+
+						}
+						else {
+							//TODO: warn user?
+						}
+					});
+				}
+			}
+		}
+		else if (!fieldsToReturn.isEmpty()) {
+			FieldAndSubFields fieldsToReturnObj = new FieldAndSubFields(fieldsToReturn);
+			FieldAndSubFields fieldsToMaskObj = new FieldAndSubFields(fieldsToMask);
+
+			Set<String> topLevelFieldsToReturn = fieldsToReturnObj.getTopLevelFields();
+			Set<String> topLevelFieldsToMask = fieldsToMaskObj.getTopLevelFields();
+			Map<String, Set<String>> topLevelToChildrenToMask = fieldsToMaskObj.getTopLevelToChildren();
+			Map<String, Set<String>> topLevelToChildrenToReturn = fieldsToReturnObj.getTopLevelToChildren();
+
+			ArrayList<String> allDocumentKeys = new ArrayList<>(mongoDocument.keySet());
+			for (String topLevelField : allDocumentKeys) {
+
+				if ((!topLevelFieldsToReturn.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField))
+						|| topLevelFieldsToMask.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField)) {
+					mongoDocument.remove(topLevelField);
+				}
+
+				if (topLevelToChildrenToReturn.containsKey(topLevelField) || topLevelToChildrenToMask.containsKey(topLevelField)) {
+					Object subDoc = mongoDocument.get(topLevelField);
+					ZuliaUtil.handleLists(subDoc, subDocItem -> {
+						if (subDocItem instanceof org.bson.Document) {
+
+							Collection<String> subFieldsToReturn = topLevelToChildrenToReturn.get(topLevelField) != null ?
+									topLevelToChildrenToReturn.get(topLevelField) :
+									Collections.emptyList();
+
+							Collection<String> subFieldsToMask =
+									topLevelToChildrenToMask.get(topLevelField) != null ? topLevelToChildrenToMask.get(topLevelField) : Collections.emptyList();
+
+							filterDocument(subFieldsToReturn, subFieldsToMask, (org.bson.Document) subDocItem);
+						}
+						else if (subDocItem == null) {
+
+						}
+						else {
+							//TODO: warn user?
+						}
+					});
+
+				}
+			}
+		}
 
 	}
 
@@ -751,4 +828,26 @@ public class ShardReader implements AutoCloseable {
 
 	}
 
+	public void streamAllDocs(Consumer<Document> documentConsumer) throws IOException {
+
+		int maxDoc = indexReader.maxDoc();
+		for (LeafReaderContext leaf : indexReader.leaves()) {
+			Bits leafLiveDocs = leaf.reader().getLiveDocs();
+			DocIdSetIterator allDocs = DocIdSetIterator.all(maxDoc);
+			if (leafLiveDocs != null) {
+				allDocs = new FilteredDocIdSetIterator(allDocs) {
+					@Override
+					protected boolean match(int doc) {
+						return leafLiveDocs.get(doc);
+					}
+				};
+			}
+			int docId;
+			while ((docId = allDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+				Document d = indexReader.document(docId);
+				documentConsumer.accept(d);
+			}
+
+		}
+	}
 }
