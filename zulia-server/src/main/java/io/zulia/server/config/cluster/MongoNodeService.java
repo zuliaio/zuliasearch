@@ -24,7 +24,7 @@ public class MongoNodeService implements NodeService {
 	private static final String REST_PORT = "restPort";
 	private static final String HEARTBEAT = "heartbeat";
 
-	private final MongoClient mongoClient;
+	private MongoClient mongoClient;
 	private final String clusterName;
 
 	public MongoNodeService(MongoClient mongoClient, String clusterName) {
@@ -100,12 +100,14 @@ public class MongoNodeService implements NodeService {
 	}
 
 	private Document nodeToDocument(Node node) {
-		return new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort()).append(SERVICE_PORT, node.getServicePort()).append(REST_PORT, node.getRestPort());
+		return new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort()).append(SERVICE_PORT, node.getServicePort())
+				.append(REST_PORT, node.getRestPort());
 	}
 
 	private Node documentToNode(Document d) {
 		if (d != null) {
-			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT)).setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0).build();
+			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT))
+					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0).build();
 		}
 		return null;
 	}

@@ -1,4 +1,4 @@
-package io.zulia.server.rest;
+package io.zulia.server.rest.controllers;
 
 import com.cedarsoftware.util.io.JsonWriter;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -18,6 +18,8 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 
+import javax.annotation.Nullable;
+import javax.inject.Inject;
 import java.io.Writer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -41,28 +43,31 @@ public class QueryController {
 
 	private final static Logger LOG = Logger.getLogger(QueryController.class.getSimpleName());
 
+	@Inject
 	private ZuliaIndexManager indexManager;
-
-	public QueryController(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
 
 	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8", MediaType.TEXT_PLAIN + ";charset=utf-8" })
-	public HttpResponse get(@Parameter(ZuliaConstants.INDEX) List<String> indexName, @Parameter(ZuliaConstants.QUERY) String query,
-			@Parameter(ZuliaConstants.QUERY_FIELD) List<String> queryFields, @Parameter(ZuliaConstants.FILTER_QUERY) List<String> filterQueries,
-			@Parameter(ZuliaConstants.FILTER_QUERY_JSON) List<String> filterJsonQueries, @Parameter(ZuliaConstants.FIELDS) List<String> fields,
-			@Parameter(ZuliaConstants.FETCH) Boolean fetch, @Parameter(ZuliaConstants.ROWS) int rows, @Parameter(ZuliaConstants.FACET) List<String> facet,
-			@Parameter(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @Parameter(ZuliaConstants.DEFAULT_OP) String defaultOperator,
-			@Parameter(ZuliaConstants.SORT) List<String> sort, @Parameter(ZuliaConstants.PRETTY) boolean pretty,
-			@Parameter(ZuliaConstants.DISMAX) Boolean dismax, @Parameter(ZuliaConstants.DISMAX_TIE) Float dismaxTie,
-			@Parameter(ZuliaConstants.MIN_MATCH) Integer mm, @Parameter(ZuliaConstants.SIMILARITY) List<String> similarity,
-			@Parameter(ZuliaConstants.DEBUG) Boolean debug, @Parameter(ZuliaConstants.DONT_CACHE) Boolean dontCache,
-			@Parameter(ZuliaConstants.START) Integer start, @Parameter(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
-			@Parameter(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList, @Parameter(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
-			@Parameter(ZuliaConstants.COS_SIM_JSON) List<String> cosineSimJsonList, @Parameter(ZuliaConstants.FORMAT) @QueryValue("json") String format,
-			@Parameter(ZuliaConstants.BATCH) boolean batch, @Parameter(ZuliaConstants.BATCH_SIZE) @QueryValue("500") Integer batchSize,
-			@Parameter(ZuliaConstants.CURSOR) String cursor) {
+	public HttpResponse get(@QueryValue(ZuliaConstants.INDEX) List<String> indexName,
+			@QueryValue(value = ZuliaConstants.QUERY, defaultValue = "*:*") String query,
+			@Nullable @QueryValue(ZuliaConstants.QUERY_FIELD) List<String> queryFields,
+			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY) List<String> filterQueries,
+			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY_JSON) List<String> filterJsonQueries,
+			@Nullable @QueryValue(ZuliaConstants.FIELDS) List<String> fields, @Nullable @QueryValue(ZuliaConstants.FETCH) Boolean fetch,
+			@Nullable @QueryValue(ZuliaConstants.ROWS) Integer rows, @Nullable @QueryValue(ZuliaConstants.FACET) List<String> facet,
+			@Nullable @QueryValue(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @Nullable @QueryValue(ZuliaConstants.DEFAULT_OP) String defaultOperator,
+			@Nullable @QueryValue(ZuliaConstants.SORT) List<String> sort, @Nullable @QueryValue(ZuliaConstants.PRETTY) Boolean pretty,
+			@Nullable @QueryValue(ZuliaConstants.DISMAX) Boolean dismax, @Nullable @QueryValue(ZuliaConstants.DISMAX_TIE) Float dismaxTie,
+			@Nullable @QueryValue(ZuliaConstants.MIN_MATCH) Integer mm, @Nullable @QueryValue(ZuliaConstants.SIMILARITY) List<String> similarity,
+			@Nullable @QueryValue(ZuliaConstants.DEBUG) Boolean debug, @Nullable @QueryValue(ZuliaConstants.DONT_CACHE) Boolean dontCache,
+			@Nullable @QueryValue(ZuliaConstants.START) Integer start, @Nullable @QueryValue(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
+			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
+			@Nullable @QueryValue(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
+			@Nullable @QueryValue(ZuliaConstants.COS_SIM_JSON) List<String> cosineSimJsonList,
+			@Nullable @QueryValue(value = ZuliaConstants.FORMAT, defaultValue = "json") String format,
+			@Nullable @QueryValue(ZuliaConstants.BATCH) Boolean batch,
+			@Nullable @QueryValue(value = ZuliaConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
+			@Nullable @QueryValue(ZuliaConstants.CURSOR) String cursor) {
 
 		QueryRequest.Builder qrBuilder = QueryRequest.newBuilder().addAllIndex(indexName);
 

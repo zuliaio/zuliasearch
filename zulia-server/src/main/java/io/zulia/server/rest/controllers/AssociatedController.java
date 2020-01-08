@@ -1,4 +1,4 @@
-package io.zulia.server.rest;
+package io.zulia.server.rest.controllers;
 
 import io.micronaut.context.annotation.Parameter;
 import io.micronaut.core.io.Streamable;
@@ -16,8 +16,6 @@ import org.bson.Document;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -63,27 +61,20 @@ public class AssociatedController {
 	@Post
 	@Produces(MediaType.TEXT_XML)
 	public HttpResponse post(@Parameter(ZuliaConstants.ID) String uniqueId, @Parameter(ZuliaConstants.FILE_NAME) String fileName,
-			@Parameter(ZuliaConstants.INDEX) String indexName, @Parameter(ZuliaConstants.META) List<String> meta, @Body InputStream is) throws Exception {
+			@Parameter(ZuliaConstants.INDEX) String indexName, @Parameter(ZuliaConstants.META_JSON) String metaJson, @Body InputStream is) throws Exception {
 		if (uniqueId != null && fileName != null && indexName != null) {
 
-			HashMap<String, String> metaMap = new HashMap<>();
-			if (meta != null) {
-				for (String m : meta) {
-					int colonIndex = m.indexOf(":");
-					if (colonIndex != -1) {
-						String key = m.substring(0, colonIndex);
-						String value = m.substring(colonIndex + 1).trim();
-						metaMap.put(key, value);
-					}
-					else {
-						throw new Exception("Meta must be in the form key:value");
-					}
-				}
+			Document metadata;
+			if (metaJson != null) {
+				metadata = Document.parse(metaJson);
+			}
+			else {
+				metadata = new Document();
 			}
 
 			try {
 
-				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, metaMap);
+				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, metadata);
 
 				return HttpResponse.created("Stored associated document with uniqueId <" + uniqueId + "> and fileName <" + fileName + ">")
 						.status(ZuliaConstants.SUCCESS);

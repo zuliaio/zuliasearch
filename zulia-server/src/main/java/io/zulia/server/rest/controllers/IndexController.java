@@ -1,4 +1,4 @@
-package io.zulia.server.rest;
+package io.zulia.server.rest.controllers;
 
 import com.cedarsoftware.util.io.JsonWriter;
 import com.google.protobuf.util.JsonFormat;
