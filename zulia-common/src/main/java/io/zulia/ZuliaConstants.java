@@ -71,6 +71,7 @@ public interface ZuliaConstants {
 	String FIELDS_LIST_FIELD = "_lmflf_";
 	String SUPERBIT_PREFIX = "_lmsb_";
 	String CHAR_LENGTH_PREFIX = "_lmcl_";
+	String LIST_LENGTH_PREFIX = "_lmll_";
 
 	String HIGHLIGHT = "hl";
 

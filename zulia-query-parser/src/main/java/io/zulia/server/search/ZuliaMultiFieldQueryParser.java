@@ -193,7 +193,7 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 		}
 
 		//mdavis
-		field = rewriteCharLengthField(field);
+		field = rewriteLengthField(field);
 
 		Query q = super.getFieldQuery(field, queryText, quoted);
 		return q;
