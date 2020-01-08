@@ -1,9 +1,7 @@
 package io.zulia.server.index.field;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import io.zulia.ZuliaConstants;
+import org.apache.lucene.document.*;
 
 public class StringFieldIndexer extends FieldIndexer {
 
@@ -22,8 +20,11 @@ public class StringFieldIndexer extends FieldIndexer {
 
 	@Override
 	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) throws Exception {
+
 		if (value != null) {
-			d.add((new Field(indexedFieldName, value.toString(), notStoredTextField)));
+			String val = value.toString();
+			d.add((new Field(indexedFieldName, val, notStoredTextField)));
+			d.add(new IntPoint(ZuliaConstants.CHAR_LENGTH_PREFIX + indexedFieldName, val.length()));
 		}
 	}
 

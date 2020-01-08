@@ -12,6 +12,7 @@ import org.bson.io.BasicOutputBuffer;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ZuliaUtil {
@@ -19,31 +20,35 @@ public class ZuliaUtil {
 	private static final DocumentCodec documentCodec = new DocumentCodec();
 
 	public static void handleLists(Object o, Consumer<? super Object> action) {
+		handleLists(o, action, new AtomicInteger());
+	}
+
+	public static void handleLists(Object o, Consumer<? super Object> action, AtomicInteger listSize) {
 		if (o instanceof Collection) {
 			Collection<?> c = (Collection<?>) o;
+			listSize.addAndGet(c.size() + 1);
 			c.stream().filter(Objects::nonNull).forEach(obj -> {
 				if (obj instanceof Collection) {
 					handleLists(obj, action);
-				}
-				else {
+				} else {
 					action.accept(obj);
 				}
 			});
-		}
-		else if (o instanceof Object[]) {
+		} else if (o instanceof Object[]) {
 			Object[] arr = (Object[]) o;
+			listSize.addAndGet(arr.length + 1);
 			for (Object obj : arr) {
 				if (obj != null) {
 					action.accept(action);
 				}
 			}
-		}
-		else {
+		} else {
 			if (o != null) {
 				action.accept(o);
 			}
 		}
 	}
+
 
 	public static byte[] mongoDocumentToByteArray(Document mongoDocument) {
 		BasicOutputBuffer outputBuffer = new BasicOutputBuffer();
