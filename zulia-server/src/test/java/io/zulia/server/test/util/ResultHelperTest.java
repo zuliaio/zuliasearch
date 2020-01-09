@@ -4,8 +4,8 @@ import com.google.protobuf.ByteString;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,16 +39,16 @@ public class ResultHelperTest {
 		docs.add(embeddedDocumentFour);
 		testMongoDocument.put("thisfield", docs);
 
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key1"), Arrays.asList("val1", "someval"));
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key2"), Arrays.asList("val2"));
+		Assertions.assertEquals(Arrays.asList("val1", "someval"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key1"));
+		Assertions.assertEquals(Arrays.asList("val2"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key2"));
 
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield"), "1");
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield1"), null);
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1.otherfield"), null);
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "thing"), null);
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "field1"), "someVal");
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1"), "val2");
-		Assert.assertEquals(ResultHelper.getValueFromMongoDocument(testMongoDocument, "myfield"), 40);
+		Assertions.assertEquals("1", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield"));
+		Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield1"));
+		Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1.otherfield"));
+		Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "thing"));
+		Assertions.assertEquals("someVal", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field1"));
+		Assertions.assertEquals("val2", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1"));
+		Assertions.assertEquals(40, ResultHelper.getValueFromMongoDocument(testMongoDocument, "myfield"));
 
 	}
 
@@ -62,16 +62,16 @@ public class ResultHelperTest {
 			byte[] bytes = ZuliaUtil.mongoDocumentToByteArray(testMongoDocument);
 			Document testMongoDocumentReborn = ZuliaUtil.byteArrayToMongoDocument(bytes);
 
-			Assert.assertEquals(testMongoDocumentReborn.getString("field1"), "someVal");
-			Assert.assertEquals((int) testMongoDocumentReborn.getInteger("myfield"), 40);
+			Assertions.assertEquals("someVal", testMongoDocumentReborn.getString("field1"));
+			Assertions.assertEquals(40, (int) testMongoDocumentReborn.getInteger("myfield"));
 		}
 
 		{
 			ByteString byteString = ZuliaUtil.mongoDocumentToByteString(testMongoDocument);
 			Document testMongoDocumentReborn = ZuliaUtil.byteStringToMongoDocument(byteString);
 
-			Assert.assertEquals(testMongoDocumentReborn.getString("field1"), "someVal");
-			Assert.assertEquals((int) testMongoDocumentReborn.getInteger("myfield"), 40);
+			Assertions.assertEquals("someVal", testMongoDocumentReborn.getString("field1"));
+			Assertions.assertEquals(40, (int) testMongoDocumentReborn.getInteger("myfield"));
 		}
 	}
 }
