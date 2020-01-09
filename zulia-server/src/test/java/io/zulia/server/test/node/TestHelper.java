@@ -98,7 +98,7 @@ public class TestHelper {
 			i++;
 
 			ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
-			zuliaNode.start();
+			zuliaNode.start(false);
 
 			zuliaNodes.add(zuliaNode);
 		}
