@@ -37,7 +37,6 @@ import io.zulia.util.ZuliaThreadFactory;
 import org.apache.lucene.search.Query;
 import org.bson.Document;
 
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -54,7 +53,6 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-@Singleton
 public class ZuliaIndexManager {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaIndexManager.class.getName());
@@ -104,7 +102,8 @@ public class ZuliaIndexManager {
 	}
 
 	public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
-		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":" + nodeRemoved.getServicePort());
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":" + nodeRemoved
+				.getServicePort());
 		internalClient.removeNode(nodeRemoved);
 		this.currentOtherNodesActive = currentOtherNodesActive;
 	}
@@ -360,7 +359,8 @@ public class ZuliaIndexManager {
 		indexSettings = indexSettings.toBuilder().setUpdateTime(currentTimeMillis).build();
 		indexService.createIndex(indexSettings);
 
-		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient, this);
+		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
+				this);
 
 		try {
 			List<CreateIndexResponse> send = createIndexRequestFederator.send(InternalCreateIndexRequest.newBuilder().setIndexName(indexName).build());
@@ -396,7 +396,8 @@ public class ZuliaIndexManager {
 	public DeleteIndexResponse deleteIndex(DeleteIndexRequest request) throws Exception {
 		LOG.info(getLogPrefix() + "Received delete index request for <" + request.getIndexName() + ">");
 
-		DeleteIndexRequestFederator deleteIndexRequestFederator = new DeleteIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient, this);
+		DeleteIndexRequestFederator deleteIndexRequestFederator = new DeleteIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
+				this);
 
 		List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
 
@@ -438,7 +439,8 @@ public class ZuliaIndexManager {
 
 	public ClearResponse clear(ClearRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		ClearRequestFederator federator = new ClearRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool, internalClient);
+		ClearRequestFederator federator = new ClearRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+				internalClient);
 		return federator.getResponse(request);
 	}
 

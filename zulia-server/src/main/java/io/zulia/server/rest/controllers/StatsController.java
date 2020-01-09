@@ -1,14 +1,13 @@
 package io.zulia.server.rest.controllers;
 
 import com.cedarsoftware.util.io.JsonWriter;
-import io.micronaut.context.annotation.Parameter;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
-import io.zulia.server.index.ZuliaIndexManager;
 import org.bson.Document;
 
 /**
@@ -20,15 +19,9 @@ public class StatsController {
 
 	private static final int MB = 1024 * 1024;
 
-	private ZuliaIndexManager indexManager;
-
-	public StatsController(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
-
 	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
-	public HttpResponse<String> get(@Parameter(ZuliaConstants.PRETTY) boolean pretty) {
+	public HttpResponse<String> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
 		try {
 
@@ -47,11 +40,11 @@ public class StatsController {
 				docString = JsonWriter.formatJson(docString);
 			}
 
-			return HttpResponse.created(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return HttpResponse.created("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

@@ -92,4 +92,7 @@ public class ZuliaNode {
 		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
 	}
 
+	public ZuliaIndexManager getIndexManager() {
+		return indexManager;
+	}
 }

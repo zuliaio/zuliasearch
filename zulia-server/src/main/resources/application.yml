@@ -7,9 +7,13 @@ micronaut:
       log-level: TRACE
   application:
     name: zulia-service
+  router:
+    static-resources:
+      swagger:
+        paths: classpath:META-INF/swagger
+        mapping: /swagger/**
 endpoints:
   routes:
     enabled: true
-mongodb:
-  uri: mongodb://localhost:27017/zulia
+
 

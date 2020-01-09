@@ -1,15 +1,16 @@
 package io.zulia.server.rest.controllers;
 
 import com.cedarsoftware.util.io.JsonWriter;
-import io.micronaut.context.annotation.Parameter;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.node.ZuliaNode;
+import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -29,15 +30,12 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
 @Controller(ZuliaConstants.NODES_URL)
 public class NodesController {
 
-	private ZuliaIndexManager indexManager;
-
-	public NodesController(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
-
 	@Get
 	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-	public HttpResponse get(@Parameter(ZuliaConstants.PRETTY) boolean pretty, @Parameter(ZuliaConstants.ACTIVE) boolean active) {
+	public HttpResponse<?> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
+			@QueryValue(value = ZuliaConstants.ACTIVE, defaultValue = "false") Boolean active) {
+
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		try {
 			GetNodesResponse getNodesResponse = indexManager.getNodes(GetNodesRequest.newBuilder().setActiveOnly(active).build());
@@ -89,11 +87,11 @@ public class NodesController {
 				docString = JsonWriter.formatJson(docString);
 			}
 
-			return HttpResponse.created(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return HttpResponse.created("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

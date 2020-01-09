@@ -1,6 +1,5 @@
 package io.zulia.server.rest.controllers;
 
-import io.micronaut.context.annotation.Parameter;
 import io.micronaut.core.io.Streamable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -9,11 +8,14 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
+import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.StreamHelper;
 import org.bson.Document;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Level;
@@ -28,40 +30,45 @@ public class AssociatedController {
 
 	private final static Logger LOG = Logger.getLogger(AssociatedController.class.getSimpleName());
 
-	private ZuliaIndexManager indexManager;
-
-	public AssociatedController(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
-
 	@Get
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public HttpResponse get(@Parameter(ZuliaConstants.ID) final String uniqueId, @Parameter(ZuliaConstants.FILE_NAME) final String fileName,
-			@Parameter(ZuliaConstants.INDEX) final String indexName) {
+	public HttpResponse<?> get(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.FILE_NAME) final String fileName,
+			@QueryValue(ZuliaConstants.INDEX) final String indexName) {
 
-		Streamable stream = ((outputStream, charset) -> {
-			if (uniqueId != null && fileName != null && indexName != null) {
-				InputStream is = indexManager.getAssociatedDocumentStream(indexName, uniqueId, fileName);
-				if (is != null) {
-					StreamHelper.copyStream(is, outputStream);
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+
+		try {
+			Streamable stream = ((outputStream, charset) -> {
+				if (uniqueId != null && fileName != null && indexName != null) {
+					InputStream is = indexManager.getAssociatedDocumentStream(indexName, uniqueId, fileName);
+					if (is != null) {
+						StreamHelper.copyStream(is, outputStream);
+					}
+					else {
+						throw new IOException("Cannot find associated document with uniqueId <" + uniqueId + "> with fileName <" + fileName + ">");
+					}
 				}
 				else {
-					throw new IOException("Cannot find associated document with uniqueId <" + uniqueId + "> with fileName <" + fileName + ">");
+					throw new IOException(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
 				}
-			}
-			else {
-				throw new IOException(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
-			}
-		});
+			});
 
-		return HttpResponse.created(stream).status(ZuliaConstants.SUCCESS).header("content-disposition", "attachment; filename = " + fileName)
-				.contentType(MediaType.APPLICATION_OCTET_STREAM);
+			return HttpResponse.ok(stream).status(ZuliaConstants.SUCCESS).header("content-disposition", "attachment; filename = " + fileName)
+					.contentType(MediaType.APPLICATION_OCTET_STREAM);
+		}
+		catch (Exception e) {
+			return HttpResponse.serverError(e.getMessage());
+		}
 	}
 
 	@Post
 	@Produces(MediaType.TEXT_XML)
-	public HttpResponse post(@Parameter(ZuliaConstants.ID) String uniqueId, @Parameter(ZuliaConstants.FILE_NAME) String fileName,
-			@Parameter(ZuliaConstants.INDEX) String indexName, @Parameter(ZuliaConstants.META_JSON) String metaJson, @Body InputStream is) throws Exception {
+	public HttpResponse<?> post(@QueryValue(ZuliaConstants.ID) String uniqueId, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
+			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, @Body InputStream is)
+			throws Exception {
+
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+
 		if (uniqueId != null && fileName != null && indexName != null) {
 
 			Document metadata;
@@ -76,13 +83,13 @@ public class AssociatedController {
 
 				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, metadata);
 
-				return HttpResponse.created("Stored associated document with uniqueId <" + uniqueId + "> and fileName <" + fileName + ">")
+				return HttpResponse.ok("Stored associated document with uniqueId <" + uniqueId + "> and fileName <" + fileName + ">")
 						.status(ZuliaConstants.SUCCESS);
 
 			}
 			catch (Exception e) {
 				LOG.log(Level.SEVERE, e.getMessage(), e);
-				return HttpResponse.created(e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+				return HttpResponse.ok(e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 			}
 		}
 		else {
@@ -93,7 +100,9 @@ public class AssociatedController {
 
 	@Get("/all")
 	@Produces(MediaType.APPLICATION_JSON)
-	public HttpResponse get(@Parameter(ZuliaConstants.INDEX) final String indexName, @Parameter(ZuliaConstants.QUERY) String query) {
+	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) final String indexName, @Nullable @QueryValue(ZuliaConstants.QUERY) String query) {
+
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		Streamable stream = (outputStream, charset) -> {
 			Document filter;
@@ -107,7 +116,7 @@ public class AssociatedController {
 			indexManager.getAssociatedDocuments(indexName, outputStream, filter);
 		};
 
-		return HttpResponse.created(stream).status(ZuliaConstants.SUCCESS);
+		return HttpResponse.ok(stream).status(ZuliaConstants.SUCCESS);
 
 	}
 }
