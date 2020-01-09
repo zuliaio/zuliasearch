@@ -120,11 +120,12 @@ subprojects {
     }
 
     dependencies {
-        testImplementation("org.testng:testng:6.14.3")
+        //testImplementation("org.testng:testng:6.14.3")
+        testImplementation("org.junit.jupiter:junit-jupiter:5.5.2")
     }
 
     tasks.withType<Test> {
-        useTestNG()
+        useJUnitPlatform()
         systemProperty("mongoTestConnection", "mongodb://127.0.0.1:27017")
         workingDir = file("build/")
         jvmArgs = listOf("-Xmx1500m")
