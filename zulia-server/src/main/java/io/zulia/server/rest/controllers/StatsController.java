@@ -1,36 +1,27 @@
-package io.zulia.server.rest;
+package io.zulia.server.rest.controllers;
 
 import com.cedarsoftware.util.io.JsonWriter;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
-import io.zulia.server.index.ZuliaIndexManager;
 import org.bson.Document;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 /**
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
-@Path(ZuliaConstants.STATS_URL)
-public class StatsResource {
+@Controller(ZuliaConstants.STATS_URL)
+public class StatsController {
 
 	private static final int MB = 1024 * 1024;
 
-	private ZuliaIndexManager indexManager;
-
-	public StatsResource(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
-
-	@GET
+	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
-	public Response get(@Context Response response, @QueryParam(ZuliaConstants.PRETTY) boolean pretty) {
+	public HttpResponse<String> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
 		try {
 
@@ -49,11 +40,11 @@ public class StatsResource {
 				docString = JsonWriter.formatJson(docString);
 			}
 
-			return Response.status(ZuliaConstants.SUCCESS).entity(docString).build();
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return Response.status(ZuliaConstants.INTERNAL_ERROR).entity("Failed to get cluster membership: " + e.getMessage()).build();
+			return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

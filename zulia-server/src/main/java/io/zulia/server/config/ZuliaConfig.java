@@ -3,9 +3,11 @@ package io.zulia.server.config;
 import io.zulia.server.config.cluster.MongoAuth;
 import io.zulia.server.config.cluster.MongoServer;
 
+import javax.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
 
+@Singleton
 public class ZuliaConfig {
 
 	private String dataPath = "data";

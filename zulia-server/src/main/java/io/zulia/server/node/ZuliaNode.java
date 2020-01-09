@@ -1,10 +1,11 @@
 package io.zulia.server.node;
 
+import io.micronaut.runtime.Micronaut;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.connection.server.ZuliaServiceServer;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.rest.ZuliaRESTServiceManager;
+import io.zulia.server.rest.ZuliaRESTService;
 
 import java.util.Collection;
 import java.util.Timer;
@@ -15,7 +16,6 @@ import static io.zulia.message.ZuliaBase.Node;
 public class ZuliaNode {
 
 	private final ZuliaIndexManager indexManager;
-	private final ZuliaRESTServiceManager restServiceManager;
 
 	private final ZuliaServiceServer zuliaServiceServer;
 
@@ -30,7 +30,6 @@ public class ZuliaNode {
 		this.zuliaConfig = zuliaConfig;
 		this.nodeService = nodeService;
 		this.indexManager = new ZuliaIndexManager(zuliaConfig, nodeService);
-		this.restServiceManager = new ZuliaRESTServiceManager(zuliaConfig, indexManager);
 
 		this.zuliaServiceServer = new ZuliaServiceServer(zuliaConfig, indexManager);
 
@@ -65,19 +64,16 @@ public class ZuliaNode {
 		membershipTimer.scheduleAtFixedRate(membershipTask, 1000, 1000);
 
 		indexManager.init();
-		restServiceManager.start();
 		zuliaServiceServer.start();
+		Micronaut.run(ZuliaRESTService.class);
 		LOG.info(getLogPrefix() + "started");
 
 	}
-
-
 
 	public void shutdown() {
 		LOG.info(getLogPrefix() + "stopping");
 		membershipTimer.cancel();
 		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
-		restServiceManager.shutdown();
 		zuliaServiceServer.shutdown();
 		indexManager.shutdown();
 		LOG.info(getLogPrefix() + "stopped");
@@ -96,4 +92,7 @@ public class ZuliaNode {
 		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
 	}
 
+	public ZuliaIndexManager getIndexManager() {
+		return indexManager;
+	}
 }

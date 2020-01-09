@@ -10,10 +10,12 @@ import io.zulia.server.config.NodeService;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+@Singleton
 public class MongoNodeService implements NodeService {
 
 	private static final String NODES = "nodes";
@@ -22,7 +24,7 @@ public class MongoNodeService implements NodeService {
 	private static final String REST_PORT = "restPort";
 	private static final String HEARTBEAT = "heartbeat";
 
-	private final MongoClient mongoClient;
+	private MongoClient mongoClient;
 	private final String clusterName;
 
 	public MongoNodeService(MongoClient mongoClient, String clusterName) {
@@ -35,7 +37,6 @@ public class MongoNodeService implements NodeService {
 	}
 
 	private MongoCollection<Document> getCollection() {
-		//return mongoClient.getDatabase(clusterName).getCollection(NODES).withWriteConcern(WriteConcern.MAJORITY);
 		return mongoClient.getDatabase(clusterName).getCollection(NODES);
 	}
 

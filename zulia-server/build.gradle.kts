@@ -8,6 +8,7 @@ description = "Zulia Server"
 val luceneVersion: String by project
 val mongoDriverVersion: String by project
 val protobufVersion: String by project
+val micronautVersion: String by project
 
 defaultTasks("build", "installDist")
 
@@ -34,6 +35,20 @@ dependencies {
     api("com.cedarsoftware:json-io:4.10.1")
 
     api("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
+
+    implementation("io.reactivex.rxjava2:rxjava:2.2.0")
+
+    annotationProcessor("io.micronaut:micronaut-inject-java:$micronautVersion")
+    implementation("io.micronaut:micronaut-http-client:$micronautVersion")
+    implementation("io.micronaut:micronaut-http-server-netty:$micronautVersion")
+    implementation("io.micronaut:micronaut-inject:$micronautVersion")
+    implementation("io.micronaut:micronaut-runtime:$micronautVersion")
+
+    compileOnly("io.micronaut:micronaut-inject-java:$micronautVersion")
+    testCompile("junit:junit:4.12")
+
+    implementation("javax.annotation:javax.annotation-api:1.3.2")
+    annotationProcessor("javax.annotation:javax.annotation-api:1.3.2")
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
