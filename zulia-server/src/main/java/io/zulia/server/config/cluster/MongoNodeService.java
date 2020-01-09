@@ -37,7 +37,6 @@ public class MongoNodeService implements NodeService {
 	}
 
 	private MongoCollection<Document> getCollection() {
-		//return mongoClient.getDatabase(clusterName).getCollection(NODES).withWriteConcern(WriteConcern.MAJORITY);
 		return mongoClient.getDatabase(clusterName).getCollection(NODES);
 	}
 

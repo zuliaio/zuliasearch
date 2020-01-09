@@ -1,14 +1,15 @@
 package io.zulia.server.rest.controllers;
 
 import com.cedarsoftware.util.io.JsonWriter;
-import io.micronaut.context.annotation.Parameter;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
+import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 
 import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
@@ -21,44 +22,35 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 @Controller(ZuliaConstants.FIELDS_URL)
 public class FieldsController {
 
-	private ZuliaIndexManager indexManager;
-
-	public FieldsController(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
-
 	@Get
 	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-	public HttpResponse get(@Parameter(ZuliaConstants.INDEX) final String indexName, @Parameter(ZuliaConstants.PRETTY) boolean pretty) {
+	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) final String indexName,
+			@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
-		if (indexName != null) {
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
-			GetFieldNamesRequest fieldNamesRequest = GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
+		GetFieldNamesRequest fieldNamesRequest = GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
 
-			GetFieldNamesResponse fieldNamesResponse;
+		GetFieldNamesResponse fieldNamesResponse;
 
-			try {
-				fieldNamesResponse = indexManager.getFieldNames(fieldNamesRequest);
+		try {
+			fieldNamesResponse = indexManager.getFieldNames(fieldNamesRequest);
 
-				Document mongoDocument = new Document();
-				mongoDocument.put("index", indexName);
-				mongoDocument.put("fields", fieldNamesResponse.getFieldNameList());
+			Document mongoDocument = new Document();
+			mongoDocument.put("index", indexName);
+			mongoDocument.put("fields", fieldNamesResponse.getFieldNameList());
 
-				String docString = mongoDocument.toJson();
+			String docString = mongoDocument.toJson();
 
-				if (pretty) {
-					docString = JsonWriter.formatJson(docString);
-				}
-
-				return HttpResponse.created(docString).status(ZuliaConstants.SUCCESS);
-
+			if (pretty) {
+				docString = JsonWriter.formatJson(docString);
 			}
-			catch (Exception e) {
-				return HttpResponse.created("Failed to fetch fields for index <" + indexName + ">: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
-			}
+
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+
 		}
-		else {
-			return HttpResponse.created("No index defined").status(ZuliaConstants.INTERNAL_ERROR);
+		catch (Exception e) {
+			return HttpResponse.ok("Failed to fetch fields for index <" + indexName + ">: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

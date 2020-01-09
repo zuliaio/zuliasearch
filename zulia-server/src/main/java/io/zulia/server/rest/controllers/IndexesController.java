@@ -8,6 +8,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
+import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 
 import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesRequest;
@@ -17,18 +18,14 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
-@Controller("/")
+@Controller(ZuliaConstants.INDEXES_URL)
 public class IndexesController {
 
-	private ZuliaIndexManager indexManager;
-
-	public IndexesController(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
-
-	@Get(ZuliaConstants.INDEXES_URL)
+	@Get
 	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-	public HttpResponse get() {
+	public HttpResponse<?> get() {
+
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		try {
 			GetIndexesResponse getIndexesResponse = indexManager.getIndexes(GetIndexesRequest.newBuilder().build());
@@ -37,15 +34,13 @@ public class IndexesController {
 			mongoDocument.put("indexes", getIndexesResponse.getIndexNameList());
 			String docString = mongoDocument.toJson();
 
-			if (true) {
-				docString = JsonWriter.formatJson(docString);
-			}
+			docString = JsonWriter.formatJson(docString);
 
-			return HttpResponse.created(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return HttpResponse.created("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

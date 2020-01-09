@@ -13,13 +13,13 @@ import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
+import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.CursorHelper;
 import io.zulia.util.ResultHelper;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
 
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 import java.io.Writer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,270 +43,277 @@ public class QueryController {
 
 	private final static Logger LOG = Logger.getLogger(QueryController.class.getSimpleName());
 
-	@Inject
-	private ZuliaIndexManager indexManager;
-
 	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8", MediaType.TEXT_PLAIN + ";charset=utf-8" })
-	public HttpResponse get(@QueryValue(ZuliaConstants.INDEX) List<String> indexName,
+	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) List<String> indexName,
 			@QueryValue(value = ZuliaConstants.QUERY, defaultValue = "*:*") String query,
 			@Nullable @QueryValue(ZuliaConstants.QUERY_FIELD) List<String> queryFields,
 			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY) List<String> filterQueries,
 			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY_JSON) List<String> filterJsonQueries,
-			@Nullable @QueryValue(ZuliaConstants.FIELDS) List<String> fields, @Nullable @QueryValue(ZuliaConstants.FETCH) Boolean fetch,
-			@Nullable @QueryValue(ZuliaConstants.ROWS) Integer rows, @Nullable @QueryValue(ZuliaConstants.FACET) List<String> facet,
+			@Nullable @QueryValue(ZuliaConstants.FIELDS) List<String> fields, @QueryValue(value = ZuliaConstants.FETCH, defaultValue = "true") Boolean fetch,
+			@QueryValue(ZuliaConstants.ROWS) Integer rows, @Nullable @QueryValue(ZuliaConstants.FACET) List<String> facet,
 			@Nullable @QueryValue(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @Nullable @QueryValue(ZuliaConstants.DEFAULT_OP) String defaultOperator,
-			@Nullable @QueryValue(ZuliaConstants.SORT) List<String> sort, @Nullable @QueryValue(ZuliaConstants.PRETTY) Boolean pretty,
-			@Nullable @QueryValue(ZuliaConstants.DISMAX) Boolean dismax, @Nullable @QueryValue(ZuliaConstants.DISMAX_TIE) Float dismaxTie,
-			@Nullable @QueryValue(ZuliaConstants.MIN_MATCH) Integer mm, @Nullable @QueryValue(ZuliaConstants.SIMILARITY) List<String> similarity,
-			@Nullable @QueryValue(ZuliaConstants.DEBUG) Boolean debug, @Nullable @QueryValue(ZuliaConstants.DONT_CACHE) Boolean dontCache,
-			@Nullable @QueryValue(ZuliaConstants.START) Integer start, @Nullable @QueryValue(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
+			@Nullable @QueryValue(ZuliaConstants.SORT) List<String> sort, @QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
+			@Nullable @QueryValue(value = ZuliaConstants.DISMAX, defaultValue = "false") Boolean dismax,
+			@Nullable @QueryValue(ZuliaConstants.DISMAX_TIE) Float dismaxTie, @Nullable @QueryValue(ZuliaConstants.MIN_MATCH) Integer mm,
+			@Nullable @QueryValue(ZuliaConstants.SIMILARITY) List<String> similarity,
+			@QueryValue(value = ZuliaConstants.DEBUG, defaultValue = "false") Boolean debug,
+			@QueryValue(value = ZuliaConstants.DONT_CACHE, defaultValue = "false") Boolean dontCache, @Nullable @QueryValue(ZuliaConstants.START) Integer start,
+			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
 			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
 			@Nullable @QueryValue(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
 			@Nullable @QueryValue(ZuliaConstants.COS_SIM_JSON) List<String> cosineSimJsonList,
-			@Nullable @QueryValue(value = ZuliaConstants.FORMAT, defaultValue = "json") String format,
-			@Nullable @QueryValue(ZuliaConstants.BATCH) Boolean batch,
-			@Nullable @QueryValue(value = ZuliaConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
+			@QueryValue(value = ZuliaConstants.FORMAT, defaultValue = "json") String format,
+			@QueryValue(value = ZuliaConstants.BATCH, defaultValue = "false") Boolean batch,
+			@QueryValue(value = ZuliaConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
 			@Nullable @QueryValue(ZuliaConstants.CURSOR) String cursor) {
+
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		QueryRequest.Builder qrBuilder = QueryRequest.newBuilder().addAllIndex(indexName);
 
-		boolean outputCursor = false;
-		if (cursor != null) {
-			if (!cursor.equals("0")) {
-				qrBuilder.setLastResult(CursorHelper.getLastResultFromCursor(cursor));
+		try {
+			boolean outputCursor = false;
+			if (cursor != null) {
+				if (!cursor.equals("0")) {
+					qrBuilder.setLastResult(CursorHelper.getLastResultFromCursor(cursor));
+				}
+				outputCursor = true;
+				if (sort == null || sort.isEmpty()) {
+					return HttpResponse.created("Sort on unique value or value combination is required to use a cursor (i.e. id or title,id)")
+							.status(ZuliaConstants.INTERNAL_ERROR);
+				}
 			}
-			outputCursor = true;
-			if (sort == null || sort.isEmpty()) {
-				return HttpResponse.created("Sort on unique value or value combination is required to use a cursor (i.e. id or title,id)")
-						.status(ZuliaConstants.INTERNAL_ERROR);
+
+			if (debug != null) {
+				qrBuilder.setDebug(debug);
 			}
-		}
 
-		if (debug != null) {
-			qrBuilder.setDebug(debug);
-		}
-
-		if (start != null) {
-			qrBuilder.setStart(start);
-		}
-
-		if (dontCache != null) {
-			qrBuilder.setDontCache(dontCache);
-		}
-
-		Query.Builder queryBuilder = Query.newBuilder();
-		if (query != null) {
-			queryBuilder.setQ(query);
-		}
-		if (mm != null) {
-			queryBuilder.setMm(mm);
-		}
-		if (dismax != null) {
-			queryBuilder.setDismax(dismax);
-			if (dismaxTie != null) {
-				queryBuilder.setDismaxTie(dismaxTie);
+			if (start != null) {
+				qrBuilder.setStart(start);
 			}
-		}
-		if (!queryFields.isEmpty()) {
-			queryBuilder.addAllQf(queryFields);
-		}
-		if (defaultOperator != null) {
-			if (defaultOperator.equalsIgnoreCase("AND")) {
-				queryBuilder.setDefaultOp(Query.Operator.AND);
+
+			if (dontCache != null) {
+				qrBuilder.setDontCache(dontCache);
 			}
-			else if (defaultOperator.equalsIgnoreCase("OR")) {
-				queryBuilder.setDefaultOp(Query.Operator.OR);
+
+			Query.Builder queryBuilder = Query.newBuilder();
+			if (query != null) {
+				queryBuilder.setQ(query);
 			}
-			else {
-				HttpResponse.created("Invalid default operator <" + defaultOperator + ">").status(ZuliaConstants.INTERNAL_ERROR);
+			if (mm != null) {
+				queryBuilder.setMm(mm);
 			}
-		}
+			if (dismax != null) {
+				queryBuilder.setDismax(dismax);
+				if (dismaxTie != null) {
+					queryBuilder.setDismaxTie(dismaxTie);
+				}
+			}
+			if (queryFields != null) {
+				queryBuilder.addAllQf(queryFields);
+			}
+			if (defaultOperator != null) {
+				if (defaultOperator.equalsIgnoreCase("AND")) {
+					queryBuilder.setDefaultOp(Query.Operator.AND);
+				}
+				else if (defaultOperator.equalsIgnoreCase("OR")) {
+					queryBuilder.setDefaultOp(Query.Operator.OR);
+				}
+				else {
+					HttpResponse.created("Invalid default operator <" + defaultOperator + ">").status(ZuliaConstants.INTERNAL_ERROR);
+				}
+			}
 
-		qrBuilder.setQuery(queryBuilder);
+			qrBuilder.setQuery(queryBuilder);
 
-		if (similarity != null) {
-			for (String sim : similarity) {
-				if (sim.contains(":")) {
-					int i = sim.indexOf(":");
-					String field = sim.substring(0, i);
-					String simType = sim.substring(i + 1);
+			if (similarity != null) {
+				for (String sim : similarity) {
+					if (sim.contains(":")) {
+						int i = sim.indexOf(":");
+						String field = sim.substring(0, i);
+						String simType = sim.substring(i + 1);
 
-					FieldSimilarity.Builder fieldSimilarity = FieldSimilarity.newBuilder();
-					fieldSimilarity.setField(field);
+						FieldSimilarity.Builder fieldSimilarity = FieldSimilarity.newBuilder();
+						fieldSimilarity.setField(field);
 
-					if (simType.equalsIgnoreCase("bm25")) {
-						fieldSimilarity.setSimilarity(Similarity.BM25);
-					}
-					else if (simType.equalsIgnoreCase("constant")) {
-						fieldSimilarity.setSimilarity(Similarity.CONSTANT);
-					}
-					else if (simType.equalsIgnoreCase("tf")) {
-						fieldSimilarity.setSimilarity(Similarity.TF);
-					}
-					else if (simType.equalsIgnoreCase("tfidf")) {
-						fieldSimilarity.setSimilarity(Similarity.TFIDF);
+						if (simType.equalsIgnoreCase("bm25")) {
+							fieldSimilarity.setSimilarity(Similarity.BM25);
+						}
+						else if (simType.equalsIgnoreCase("constant")) {
+							fieldSimilarity.setSimilarity(Similarity.CONSTANT);
+						}
+						else if (simType.equalsIgnoreCase("tf")) {
+							fieldSimilarity.setSimilarity(Similarity.TF);
+						}
+						else if (simType.equalsIgnoreCase("tfidf")) {
+							fieldSimilarity.setSimilarity(Similarity.TFIDF);
+						}
+						else {
+							HttpResponse.created("Unknown similarity type <" + simType + ">").status(ZuliaConstants.INTERNAL_ERROR);
+						}
+
+						qrBuilder.addFieldSimilarity(fieldSimilarity);
 					}
 					else {
-						HttpResponse.created("Unknown similarity type <" + simType + ">").status(ZuliaConstants.INTERNAL_ERROR);
+						HttpResponse.created("Similarity <" + sim + "> should be in the form field:simType").status(ZuliaConstants.INTERNAL_ERROR);
 					}
-
-					qrBuilder.addFieldSimilarity(fieldSimilarity);
-				}
-				else {
-					HttpResponse.created("Similarity <" + sim + "> should be in the form field:simType").status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
-		}
 
-		if (filterQueries != null) {
-			for (String filterQuery : filterQueries) {
-				Query filterQueryBuilder = Query.newBuilder().setQ(filterQuery).build();
-				qrBuilder.addFilterQuery(filterQueryBuilder);
-			}
-		}
-
-		if (cosineSimJsonList != null) {
-			for (String cosineSimJson : cosineSimJsonList) {
-				try {
-					CosineSimRequest.Builder consineSimRequest = CosineSimRequest.newBuilder();
-					JsonFormat.parser().merge(cosineSimJson, consineSimRequest);
-					qrBuilder.addCosineSimRequest(consineSimRequest);
-				}
-				catch (InvalidProtocolBufferException e) {
-					return HttpResponse.created("Failed to parse cosine sim json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-							.status(ZuliaConstants.INTERNAL_ERROR);
-				}
-
-			}
-		}
-
-		if (filterJsonQueries != null) {
-			for (String filterJsonQuery : filterJsonQueries) {
-				try {
-					Query.Builder filterQueryBuilder = Query.newBuilder();
-					JsonFormat.parser().merge(filterJsonQuery, filterQueryBuilder);
+			if (filterQueries != null) {
+				for (String filterQuery : filterQueries) {
+					Query filterQueryBuilder = Query.newBuilder().setQ(filterQuery).build();
 					qrBuilder.addFilterQuery(filterQueryBuilder);
 				}
-				catch (InvalidProtocolBufferException e) {
-					return HttpResponse.created("Failed to parse filter json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-							.status(ZuliaConstants.INTERNAL_ERROR);
-				}
 			}
-		}
 
-		if (highlightList != null) {
-			for (String hl : highlightList) {
-				HighlightRequest highlightRequest = HighlightRequest.newBuilder().setField(hl).build();
-				qrBuilder.addHighlightRequest(highlightRequest);
-			}
-		}
+			if (cosineSimJsonList != null) {
+				for (String cosineSimJson : cosineSimJsonList) {
+					try {
+						CosineSimRequest.Builder consineSimRequest = CosineSimRequest.newBuilder();
+						JsonFormat.parser().merge(cosineSimJson, consineSimRequest);
+						qrBuilder.addCosineSimRequest(consineSimRequest);
+					}
+					catch (InvalidProtocolBufferException e) {
+						return HttpResponse.created("Failed to parse cosine sim json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+								.status(ZuliaConstants.INTERNAL_ERROR);
+					}
 
-		if (highlightJsonList != null) {
-			for (String hlJson : highlightJsonList) {
-				try {
-					HighlightRequest.Builder hlBuilder = HighlightRequest.newBuilder();
-					JsonFormat.parser().merge(hlJson, hlBuilder);
-					qrBuilder.addHighlightRequest(hlBuilder);
-				}
-				catch (InvalidProtocolBufferException e) {
-					return HttpResponse.created("Failed to parse highlight json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-							.status(ZuliaConstants.INTERNAL_ERROR);
-				}
-			}
-		}
-
-		if (analyzeJsonList != null) {
-			for (String alJson : analyzeJsonList) {
-				try {
-					AnalysisRequest.Builder analyzeRequestBuilder = AnalysisRequest.newBuilder();
-					JsonFormat.parser().merge(alJson, analyzeRequestBuilder);
-					qrBuilder.addAnalysisRequest(analyzeRequestBuilder);
-				}
-				catch (InvalidProtocolBufferException e) {
-					return HttpResponse.created("Failed to parse analyzer json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-							.status(ZuliaConstants.INTERNAL_ERROR);
-				}
-			}
-		}
-
-		if (fields != null) {
-			for (String field : fields) {
-				if (field.startsWith("-")) {
-					qrBuilder.addDocumentMaskedFields(field.substring(1, field.length()));
-				}
-				else {
-					qrBuilder.addDocumentFields(field);
-				}
-			}
-		}
-
-		qrBuilder.setResultFetchType(FetchType.FULL);
-		if (fetch != null && !fetch) {
-			qrBuilder.setResultFetchType(FetchType.NONE);
-		}
-
-		FacetRequest.Builder frBuilder = FacetRequest.newBuilder();
-		for (String f : facet) {
-			Integer count = null;
-			if (f.contains(":")) {
-				String countString = f.substring(f.indexOf(":") + 1);
-				f = f.substring(0, f.indexOf(":"));
-				try {
-					count = Integer.parseInt(countString);
-				}
-				catch (Exception e) {
-					return HttpResponse.created("Invalid facet count <" + countString + "> for facet <" + f + ">").status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
 
-			CountRequest.Builder countBuilder = CountRequest.newBuilder();
-			Facet zuliaFacet = Facet.newBuilder().setLabel(f).build();
-			CountRequest.Builder facetBuilder = countBuilder.setFacetField(zuliaFacet);
-			if (count != null) {
-				facetBuilder.setMaxFacets(count);
-			}
-
-			frBuilder.addCountRequest(facetBuilder);
-		}
-		if (drillDowns != null) {
-			for (String drillDown : drillDowns) {
-				if (drillDown.contains(":")) {
-					String value = drillDown.substring(drillDown.indexOf(":") + 1);
-					String field = drillDown.substring(0, drillDown.indexOf(":"));
-					frBuilder.addDrillDown(Facet.newBuilder().setLabel(field).setValue(value));
+			if (filterJsonQueries != null) {
+				for (String filterJsonQuery : filterJsonQueries) {
+					try {
+						Query.Builder filterQueryBuilder = Query.newBuilder();
+						JsonFormat.parser().merge(filterJsonQuery, filterQueryBuilder);
+						qrBuilder.addFilterQuery(filterQueryBuilder);
+					}
+					catch (InvalidProtocolBufferException e) {
+						return HttpResponse.created("Failed to parse filter json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+								.status(ZuliaConstants.INTERNAL_ERROR);
+					}
 				}
 			}
-		}
 
-		qrBuilder.setFacetRequest(frBuilder);
-
-		SortRequest.Builder sortRequest = SortRequest.newBuilder();
-		for (String sortField : sort) {
-
-			FieldSort.Builder fieldSort = FieldSort.newBuilder();
-			if (sortField.contains(":")) {
-				String sortDir = sortField.substring(sortField.indexOf(":") + 1);
-				sortField = sortField.substring(0, sortField.indexOf(":"));
-
-				if ("-1".equals(sortDir) || "DESC".equalsIgnoreCase(sortDir)) {
-					fieldSort.setDirection(FieldSort.Direction.DESCENDING);
-				}
-				else if ("1".equals(sortDir) || "ASC".equalsIgnoreCase(sortDir)) {
-					fieldSort.setDirection(FieldSort.Direction.ASCENDING);
-				}
-				else {
-					return HttpResponse.created("Invalid sort direction <" + sortDir + "> for field <" + sortField + ">.  Expecting -1/1 or DESC/ASC")
-							.status(ZuliaConstants.INTERNAL_ERROR);
+			if (highlightList != null) {
+				for (String hl : highlightList) {
+					HighlightRequest highlightRequest = HighlightRequest.newBuilder().setField(hl).build();
+					qrBuilder.addHighlightRequest(highlightRequest);
 				}
 			}
-			fieldSort.setSortField(sortField);
-			sortRequest.addFieldSort(fieldSort);
-		}
-		qrBuilder.setSortRequest(sortRequest);
-		qrBuilder.setAmount(rows);
 
-		try {
+			if (highlightJsonList != null) {
+				for (String hlJson : highlightJsonList) {
+					try {
+						HighlightRequest.Builder hlBuilder = HighlightRequest.newBuilder();
+						JsonFormat.parser().merge(hlJson, hlBuilder);
+						qrBuilder.addHighlightRequest(hlBuilder);
+					}
+					catch (InvalidProtocolBufferException e) {
+						return HttpResponse.created("Failed to parse highlight json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+								.status(ZuliaConstants.INTERNAL_ERROR);
+					}
+				}
+			}
+
+			if (analyzeJsonList != null) {
+				for (String alJson : analyzeJsonList) {
+					try {
+						AnalysisRequest.Builder analyzeRequestBuilder = AnalysisRequest.newBuilder();
+						JsonFormat.parser().merge(alJson, analyzeRequestBuilder);
+						qrBuilder.addAnalysisRequest(analyzeRequestBuilder);
+					}
+					catch (InvalidProtocolBufferException e) {
+						return HttpResponse.created("Failed to parse analyzer json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+								.status(ZuliaConstants.INTERNAL_ERROR);
+					}
+				}
+			}
+
+			if (fields != null) {
+				for (String field : fields) {
+					if (field.startsWith("-")) {
+						qrBuilder.addDocumentMaskedFields(field.substring(1));
+					}
+					else {
+						qrBuilder.addDocumentFields(field);
+					}
+				}
+			}
+
+			qrBuilder.setResultFetchType(FetchType.FULL);
+			if (fetch != null && !fetch) {
+				qrBuilder.setResultFetchType(FetchType.NONE);
+			}
+
+			FacetRequest.Builder frBuilder = FacetRequest.newBuilder();
+			if (facet != null) {
+				for (String f : facet) {
+					Integer count = null;
+					if (f.contains(":")) {
+						String countString = f.substring(f.indexOf(":") + 1);
+						f = f.substring(0, f.indexOf(":"));
+						try {
+							count = Integer.parseInt(countString);
+						}
+						catch (Exception e) {
+							return HttpResponse.created("Invalid facet count <" + countString + "> for facet <" + f + ">")
+									.status(ZuliaConstants.INTERNAL_ERROR);
+						}
+					}
+
+					CountRequest.Builder countBuilder = CountRequest.newBuilder();
+					Facet zuliaFacet = Facet.newBuilder().setLabel(f).build();
+					CountRequest.Builder facetBuilder = countBuilder.setFacetField(zuliaFacet);
+					if (count != null) {
+						facetBuilder.setMaxFacets(count);
+					}
+
+					frBuilder.addCountRequest(facetBuilder);
+				}
+			}
+
+			if (drillDowns != null) {
+				for (String drillDown : drillDowns) {
+					if (drillDown.contains(":")) {
+						String value = drillDown.substring(drillDown.indexOf(":") + 1);
+						String field = drillDown.substring(0, drillDown.indexOf(":"));
+						frBuilder.addDrillDown(Facet.newBuilder().setLabel(field).setValue(value));
+					}
+				}
+			}
+
+			qrBuilder.setFacetRequest(frBuilder);
+
+			if (sort != null) {
+				SortRequest.Builder sortRequest = SortRequest.newBuilder();
+				for (String sortField : sort) {
+
+					FieldSort.Builder fieldSort = FieldSort.newBuilder();
+					if (sortField.contains(":")) {
+						String sortDir = sortField.substring(sortField.indexOf(":") + 1);
+						sortField = sortField.substring(0, sortField.indexOf(":"));
+
+						if ("-1".equals(sortDir) || "DESC".equalsIgnoreCase(sortDir)) {
+							fieldSort.setDirection(FieldSort.Direction.DESCENDING);
+						}
+						else if ("1".equals(sortDir) || "ASC".equalsIgnoreCase(sortDir)) {
+							fieldSort.setDirection(FieldSort.Direction.ASCENDING);
+						}
+						else {
+							return HttpResponse.created("Invalid sort direction <" + sortDir + "> for field <" + sortField + ">.  Expecting -1/1 or DESC/ASC")
+									.status(ZuliaConstants.INTERNAL_ERROR);
+						}
+					}
+					fieldSort.setSortField(sortField);
+					sortRequest.addFieldSort(fieldSort);
+				}
+				qrBuilder.setSortRequest(sortRequest);
+			}
+			qrBuilder.setAmount(rows);
+
 			if (format.equals("json")) {
 				QueryResponse qr = indexManager.query(qrBuilder.build());
 				String response = getStandardResponse(qr, !pretty, outputCursor);
@@ -315,10 +322,10 @@ public class QueryController {
 					response = JsonWriter.formatJson(response);
 				}
 
-				return HttpResponse.created(response).status(ZuliaConstants.SUCCESS).contentType(MediaType.APPLICATION_JSON_TYPE);
+				return HttpResponse.ok(response).status(ZuliaConstants.SUCCESS).contentType(MediaType.APPLICATION_JSON_TYPE);
 			}
 			else {
-				if (fields != null && !fields.isEmpty() || (!facet.isEmpty() && rows == 0)) {
+				if (fields != null && !fields.isEmpty()) {
 					if (batch) {
 						qrBuilder.setAmount(batchSize);
 
@@ -356,47 +363,45 @@ public class QueryController {
 						LocalDateTime now = LocalDateTime.now();
 						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
 
-						return HttpResponse.created(writable).status(ZuliaConstants.SUCCESS)
+						return HttpResponse.ok(writable).status(ZuliaConstants.SUCCESS)
 								.header("content-disposition", "attachment; filename = " + "zuliaDownload_" + now.format(formatter) + ".csv")
 								.contentType(MediaType.APPLICATION_OCTET_STREAM);
 					}
 					else {
-
 						QueryResponse qr = indexManager.query(qrBuilder.build());
-						if (rows == 0 && !facet.isEmpty()) {
-							StringBuilder response = new StringBuilder();
-							response.append("facetName,facetKey,facetValue\n");
-
-							for (FacetGroup facetGroup : qr.getFacetGroupList()) {
-								for (FacetCount facetCount : facetGroup.getFacetCountList()) {
-									response.append(facetGroup.getCountRequest().getFacetField().getLabel());
-									response.append(",");
-									response.append(facetCount.getFacet());
-									response.append(",");
-									response.append(Long.valueOf(facetCount.getCount()));
-									response.append("\n");
-								}
-
-							}
-							return HttpResponse.created(response.toString()).status(ZuliaConstants.SUCCESS)
-									.contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
-						}
-						else {
-							String response = getCSVDocumentResponse(fields, qr);
-							return HttpResponse.created(response).status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
-						}
+						String response = getCSVDocumentResponse(fields, qr);
+						return HttpResponse.ok(response).status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 					}
 				}
+				else if (facet != null && !facet.isEmpty() && rows == 0) {
+					QueryResponse qr = indexManager.query(qrBuilder.build());
+
+					StringBuilder response = new StringBuilder();
+					response.append("facetName,facetKey,facetValue\n");
+
+					for (FacetGroup facetGroup : qr.getFacetGroupList()) {
+						for (FacetCount facetCount : facetGroup.getFacetCountList()) {
+							response.append(facetGroup.getCountRequest().getFacetField().getLabel());
+							response.append(",");
+							response.append(facetCount.getFacet());
+							response.append(",");
+							response.append(Long.valueOf(facetCount.getCount()));
+							response.append("\n");
+						}
+
+					}
+					return HttpResponse.ok(response.toString()).status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
+				}
 				else {
-					return HttpResponse.created(
-							"Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0")
+					return HttpResponse
+							.ok("Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0")
 							.status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 				}
 			}
 		}
 		catch (Exception e) {
 			LOG.log(Level.SEVERE, e.getMessage(), e);
-			return HttpResponse.created(e.getClass().getSimpleName() + ":" + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError(e.getClass().getSimpleName() + ":" + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

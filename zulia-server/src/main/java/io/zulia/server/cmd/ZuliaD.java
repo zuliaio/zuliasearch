@@ -23,6 +23,7 @@ import io.zulia.server.config.single.SingleNodeService;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
+import io.zulia.server.util.ZuliaNodeProvider;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.BooleanQuery;
 
@@ -181,6 +182,8 @@ public class ZuliaD {
 					displayNodes(nodeService, "Registered nodes:");
 
 					ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
+
+					ZuliaNodeProvider.setZuliaNode(zuliaNode);
 					zuliaNode.start();
 				}
 				else {

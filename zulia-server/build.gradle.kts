@@ -43,10 +43,8 @@ dependencies {
     implementation("io.micronaut:micronaut-http-server-netty:$micronautVersion")
     implementation("io.micronaut:micronaut-inject:$micronautVersion")
     implementation("io.micronaut:micronaut-runtime:$micronautVersion")
-    implementation("io.micronaut.configuration:micronaut-mongo-reactive:1.3.0")
 
     compileOnly("io.micronaut:micronaut-inject-java:$micronautVersion")
-    compileOnly("org.mongodb:mongodb-java-driver:$mongoDriverVersion")
     testCompile("junit:junit:4.12")
 
     implementation("javax.annotation:javax.annotation-api:1.3.2")
