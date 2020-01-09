@@ -199,8 +199,7 @@ public class ZuliaIndexManager {
 		return i.getAssociatedDocumentStream(uniqueId, fileName);
 	}
 
-	public void storeAssociatedDocument(String indexName, String uniqueId, String fileName, InputStream is, Document metadata)
-			throws Exception {
+	public void storeAssociatedDocument(String indexName, String uniqueId, String fileName, InputStream is, Document metadata) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
 		long timestamp = System.currentTimeMillis();
 		i.storeAssociatedDocument(uniqueId, fileName, is, timestamp, metadata);

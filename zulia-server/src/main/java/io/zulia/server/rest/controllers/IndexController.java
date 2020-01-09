@@ -1,36 +1,32 @@
-package io.zulia.server.rest;
+package io.zulia.server.rest.controllers;
 
 import com.cedarsoftware.util.io.JsonWriter;
 import com.google.protobuf.util.JsonFormat;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import io.zulia.server.util.ZuliaNodeProvider;
 
 /**
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
-@Path(ZuliaConstants.INDEX_URL)
-public class IndexResource {
+@Controller(ZuliaConstants.INDEX_URL)
+public class IndexController {
 
-	private ZuliaIndexManager indexManager;
+	@Get
+	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
+	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) String index,
+			@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
-	public IndexResource(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
-
-	@GET
-	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
-	public Response get(@Context Response response, @QueryParam(ZuliaConstants.INDEX) String index, @QueryParam(ZuliaConstants.PRETTY) boolean pretty) {
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		try {
 			StringBuilder responseBuilder = new StringBuilder();
@@ -50,11 +46,11 @@ public class IndexResource {
 				docString = JsonWriter.formatJson(docString);
 			}
 
-			return Response.status(ZuliaConstants.SUCCESS).entity(docString).build();
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return Response.status(ZuliaConstants.INTERNAL_ERROR).entity("Failed to get index names: " + e.getMessage()).build();
+			return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}

@@ -1,18 +1,18 @@
-package io.zulia.server.rest;
+package io.zulia.server.rest.controllers;
 
 import com.cedarsoftware.util.io.JsonWriter;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.node.ZuliaNode;
+import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
@@ -27,18 +27,15 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
  * Created by Payam Meyer on 8/7/17.
  * @author pmeyer
  */
-@Path(ZuliaConstants.NODES_URL)
-public class NodesResource {
+@Controller(ZuliaConstants.NODES_URL)
+public class NodesController {
 
-	private ZuliaIndexManager indexManager;
+	@Get
+	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
+	public HttpResponse<?> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
+			@QueryValue(value = ZuliaConstants.ACTIVE, defaultValue = "false") Boolean active) {
 
-	public NodesResource(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
-
-	@GET
-	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
-	public Response get(@Context Response response, @QueryParam(ZuliaConstants.PRETTY) boolean pretty, @QueryParam(ZuliaConstants.ACTIVE) boolean active) {
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		try {
 			GetNodesResponse getNodesResponse = indexManager.getNodes(GetNodesRequest.newBuilder().setActiveOnly(active).build());
@@ -90,11 +87,11 @@ public class NodesResource {
 				docString = JsonWriter.formatJson(docString);
 			}
 
-			return Response.status(ZuliaConstants.SUCCESS).entity(docString).build();
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return Response.status(ZuliaConstants.INTERNAL_ERROR).entity("Failed to get cluster membership: " + e.getMessage()).build();
+			return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
 		}
 
 	}
