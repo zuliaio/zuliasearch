@@ -45,6 +45,10 @@ public class ZuliaNode {
 	}
 
 	public void start() throws Exception {
+		start(true);
+	}
+
+	public void start(boolean startREST) throws Exception {
 		LOG.info(getLogPrefix() + "starting");
 		MembershipTask membershipTask = new MembershipTask(zuliaConfig, nodeService) {
 
@@ -65,7 +69,9 @@ public class ZuliaNode {
 
 		indexManager.init();
 		zuliaServiceServer.start();
-		Micronaut.run(ZuliaRESTService.class);
+		if (startREST) {
+			Micronaut.run(ZuliaRESTService.class);
+		}
 		LOG.info(getLogPrefix() + "started");
 
 	}
