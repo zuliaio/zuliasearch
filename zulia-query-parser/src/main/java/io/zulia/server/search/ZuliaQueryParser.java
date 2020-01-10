@@ -63,6 +63,10 @@ public class ZuliaQueryParser extends QueryParser {
 
 		field = rewriteLengthField(field);
 
+		if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
+			return getNumericOrDateRange(field, start, end, startInclusive, endInclusive, FieldConfig.FieldType.NUMERIC_INT);
+		}
+
 		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(field);
 		if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
 			return getNumericOrDateRange(field, start, end, startInclusive, endInclusive);
@@ -74,18 +78,24 @@ public class ZuliaQueryParser extends QueryParser {
 
 	protected String rewriteLengthField(String field) {
 		if (field.startsWith("|||") && field.endsWith("|||")) {
-			field = ZuliaConstants.LIST_LENGTH_PREFIX + field.substring(1, field.length() - 1);
+			field = ZuliaConstants.LIST_LENGTH_PREFIX + field.substring(3, field.length() - 3);
 		} else if (field.startsWith("||") && field.endsWith("||")) {
 
-		} else if (field.startsWith("|") && field.endsWith("|")) {
+		}
+		else if (field.startsWith("|") && field.endsWith("|")) {
 			field = ZuliaConstants.CHAR_LENGTH_PREFIX + field.substring(1, field.length() - 1);
 		}
 		return field;
 	}
 
 	private Query getNumericOrDateRange(final String fieldName, final String start, final String end, final boolean startInclusive,
-										final boolean endInclusive) {
+			final boolean endInclusive) {
 		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(fieldName);
+		return getNumericOrDateRange(fieldName, start, end, startInclusive, endInclusive, fieldType);
+	}
+
+	private Query getNumericOrDateRange(String fieldName, String start, String end, boolean startInclusive, boolean endInclusive,
+			FieldConfig.FieldType fieldType) {
 		if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 			int min = start == null ? Integer.MIN_VALUE : Integer.parseInt(start);
 			int max = end == null ? Integer.MAX_VALUE : Integer.parseInt(end);
@@ -154,6 +164,14 @@ public class ZuliaQueryParser extends QueryParser {
 	protected Query newTermQuery(Term term) {
 		String field = term.field();
 		String text = term.text();
+
+		field = rewriteLengthField(field);
+
+		if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
+			if (Ints.tryParse(text) != null) {
+				return getNumericOrDateRange(field, text, text, true, true, FieldConfig.FieldType.NUMERIC_INT);
+			}
+		}
 
 		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(field);
 		if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
