@@ -16,11 +16,17 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -35,8 +41,8 @@ public class StartStopTest {
     private final int COUNT_PER_ISSN = 10;
     private final String uniqueIdPrefix = "myId-";
 
-    private final String[] issns = new String[]{"1234-1234", "3333-1234", "1234-5555", "1234-4444", "2222-2222"};
-    private final String[] eissns = new String[]{"3234-1234", "4333-1234", "5234-5555", "6234-4444", "9222-2222"};
+    private final String[] issns = new String[] { "1234-1234", "3333-1234", "1234-5555", "1234-4444", "2222-2222" };
+    private final String[] eissns = new String[] { "3234-1234", "4333-1234", "5234-5555", "6234-4444", "9222-2222" };
 
     private int totalRecords = COUNT_PER_ISSN * issns.length;
 
@@ -62,6 +68,7 @@ public class StartStopTest {
         indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index());
         indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
         indexConfig.addFieldConfig(FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD));
+        indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
         indexConfig.setIndexName(FACET_TEST_INDEX);
         indexConfig.setNumberOfShards(1);
 
@@ -89,19 +96,24 @@ public class StartStopTest {
 
                     if (half) { // 1/2 of input
                         mongoDocument.put("country", "US");
+                        mongoDocument.put("testList", Arrays.asList("one", "two"));
 
-                    } else { // 1/2 of input
+                    }
+                    else { // 1/2 of input
                         mongoDocument.put("country", "France");
+                        mongoDocument.put("testList", Arrays.asList("a", "b", "c"));
                     }
 
                     if (tenth) { // 1/10 of input
 
                         Date d = Date.from(LocalDate.of(2014, Month.OCTOBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
                         mongoDocument.put("date", d);
-                    } else if (half) { // 2/5 of input
+                    }
+                    else if (half) { // 2/5 of input
                         Date d = Date.from(LocalDate.of(2013, Month.SEPTEMBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
                         mongoDocument.put("date", d);
-                    } else { // 1/2 of input
+                    }
+                    else { // 1/2 of input
                         Date d = Date.from(LocalDate.of(2013, 8, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
                         mongoDocument.put("date", d);
                     }
@@ -152,6 +164,30 @@ public class StartStopTest {
     }
 
     @Test
+    @Order(3)
+    public void lengthTest() throws Exception {
+        Query q = new Query(FACET_TEST_INDEX, null, 0);
+        QueryResult queryResult = zuliaWorkPool.query(q);
+        long total = queryResult.getTotalHits();
+
+        q = new Query(FACET_TEST_INDEX, "|country|:2", 0);
+        queryResult = zuliaWorkPool.query(q);
+        Assertions.assertEquals(total / 2, queryResult.getTotalHits());
+
+        q = new Query(FACET_TEST_INDEX, "|country|:[0 TO 1]", 0);
+        queryResult = zuliaWorkPool.query(q);
+        Assertions.assertEquals(0, queryResult.getTotalHits());
+
+        q = new Query(FACET_TEST_INDEX, "|||testList|||:3", 0);
+        queryResult = zuliaWorkPool.query(q);
+        Assertions.assertEquals(total / 2, queryResult.getTotalHits());
+
+        q = new Query(FACET_TEST_INDEX, "|||testList|||:[2 TO 3]", 0);
+        queryResult = zuliaWorkPool.query(q);
+        Assertions.assertEquals(total, queryResult.getTotalHits());
+    }
+
+    @Test
     @Order(4)
     public void reindex() throws Exception {
         ClientIndexConfig indexConfig = new ClientIndexConfig();
@@ -164,6 +200,7 @@ public class StartStopTest {
         indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
         indexConfig.addFieldConfig(
                 FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data"));
+        indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
         indexConfig.setIndexName(FACET_TEST_INDEX);
         indexConfig.setNumberOfShards(1);
 

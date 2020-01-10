@@ -1,5 +1,6 @@
 package io.zulia.server.analysis;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
 import io.zulia.server.analysis.filter.BritishUSFilter;
@@ -73,6 +74,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 				else {
 					a = new KeywordAnalyzer();
 				}
+				newFieldAnalyzers.put(ZuliaConstants.CHAR_LENGTH_PREFIX + indexFieldName, new WhitespaceAnalyzer());
 			}
 			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
 				a = new BooleanAnalyzer();
@@ -94,6 +96,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 			}
 
 			newFieldAnalyzers.put(indexFieldName, a);
+			newFieldAnalyzers.put(ZuliaConstants.LIST_LENGTH_PREFIX + indexFieldName, new WhitespaceAnalyzer());
 
 		}
 
