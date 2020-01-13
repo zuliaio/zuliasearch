@@ -74,11 +74,9 @@ public class TestHelper {
 
 		ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
 		for (ZuliaBase.Node node : nodeService.getNodes()) {
-			System.out.println("Adding node: " + node.getServerAddress());
 			zuliaPoolConfig.addNode(node);
 		}
 
-		System.out.println("Returning?");
 		return new ZuliaWorkPool(zuliaPoolConfig);
 
 	}
