@@ -379,9 +379,22 @@ public class Zulia {
 				System.out.println("Deleted index: " + index);
 			}
 			else if ("reindex".equals(jCommander.getParsedCommand())) {
-				System.out.println("Reindexing index: " + index);
-				ReindexResult response = workPool.execute(new Reindex(index));
-				System.out.println("Reindexing index: " + index);
+				if (index.contains("*")) {
+					GetIndexesResult indexesResult = workPool.getIndexes();
+					for (String ind : indexesResult.getIndexNames()) {
+						if (ind.startsWith(index.replace("*", ""))) {
+							System.out.println("Reindexing index: " + ind);
+							ReindexResult response = workPool.execute(new Reindex(ind));
+							System.out.println("Reindexed index: " + ind);
+						}
+					}
+				}
+				else {
+					System.out.println("Reindexing index: " + index);
+					ReindexResult response = workPool.execute(new Reindex(index));
+					System.out.println("Reindexed index: " + index);
+				}
+
 			}
 			else if ("optimize".equals(jCommander.getParsedCommand())) {
 				System.out.println("Optimizing index: " + index);
