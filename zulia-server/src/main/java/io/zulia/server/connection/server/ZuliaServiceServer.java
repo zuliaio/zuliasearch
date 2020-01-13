@@ -29,6 +29,5 @@ public class ZuliaServiceServer {
 
 	public void shutdown() {
 		server.shutdown();
-
 	}
 }

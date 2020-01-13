@@ -15,5 +15,8 @@ micronaut:
 endpoints:
   routes:
     enabled: true
+  stop:
+    enabled: true
+    sensitive: true
 
 

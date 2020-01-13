@@ -1,5 +1,7 @@
 package io.zulia.server.node;
 
+import io.micronaut.context.ApplicationContext;
+import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.runtime.Micronaut;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
@@ -9,6 +11,7 @@ import io.zulia.server.rest.ZuliaRESTService;
 
 import java.util.Collection;
 import java.util.Timer;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
@@ -24,6 +27,7 @@ public class ZuliaNode {
 	private final ZuliaConfig zuliaConfig;
 
 	private static final Logger LOG = Logger.getLogger(ZuliaNode.class.getName());
+	private ApplicationContext micronautService;
 
 	public ZuliaNode(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
@@ -70,7 +74,8 @@ public class ZuliaNode {
 		indexManager.init();
 		zuliaServiceServer.start();
 		if (startREST) {
-			Micronaut.run(ZuliaRESTService.class);
+			micronautService = Micronaut.build(null).mainClass(ZuliaRESTService.class).properties(
+					CollectionUtils.mapOf("micronaut.server.host", zuliaConfig.getServerAddress(), "micronaut.server.port", zuliaConfig.getRestPort())).start();
 		}
 		LOG.info(getLogPrefix() + "started");
 
@@ -82,7 +87,28 @@ public class ZuliaNode {
 		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		zuliaServiceServer.shutdown();
 		indexManager.shutdown();
+		if (micronautService != null) {
+			try {
+				Thread thread = new Thread(this::stopMicronautServer);
+				thread.setContextClassLoader(getClass().getClassLoader());
+				thread.start();
+			}
+			catch (Exception e) {
+				LOG.log(Level.SEVERE, "Failed to stop Micronaut", e);
+			}
+		}
+
 		LOG.info(getLogPrefix() + "stopped");
+	}
+
+	private void stopMicronautServer() {
+		try {
+			Thread.sleep(500L);
+		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+		}
+		this.micronautService.stop();
 	}
 
 	public static boolean isEqual(Node node1, Node node2) {
