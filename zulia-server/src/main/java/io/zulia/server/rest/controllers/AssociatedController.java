@@ -1,6 +1,6 @@
 package io.zulia.server.rest.controllers;
 
-import io.micronaut.core.io.Streamable;
+import io.micronaut.core.io.Writable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.MutableHttpResponse;
@@ -34,8 +34,6 @@ public class AssociatedController {
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
 	public HttpResponse<?> get(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.FILE_NAME) final String fileName,
 			@QueryValue(ZuliaConstants.INDEX) final String indexName) {
-
-		System.out.println("Request coming...");
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -100,7 +98,7 @@ public class AssociatedController {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
-		Streamable stream = (outputStream, charset) -> {
+		Writable writable = out -> {
 			Document filter;
 			if (query != null) {
 				filter = Document.parse(query);
@@ -108,11 +106,10 @@ public class AssociatedController {
 			else {
 				filter = new Document();
 			}
-
-			indexManager.getAssociatedDocuments(indexName, outputStream, filter);
+			indexManager.getAssociatedDocuments(indexName, out, filter);
 		};
 
-		return HttpResponse.ok(stream).status(ZuliaConstants.SUCCESS);
+		return HttpResponse.ok(writable).status(ZuliaConstants.SUCCESS);
 
 	}
 }

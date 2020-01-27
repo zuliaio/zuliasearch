@@ -55,7 +55,7 @@ import org.bson.Document;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -898,9 +898,9 @@ public class ZuliaIndex {
 
 	}
 
-	public void getAssociatedDocuments(OutputStream outputStream, Document filter) throws IOException {
+	public void getAssociatedDocuments(Writer writer, Document filter) throws IOException {
 
-		documentStorage.getAssociatedDocuments(outputStream, filter);
+		documentStorage.getAssociatedDocuments(writer, filter);
 
 	}
 

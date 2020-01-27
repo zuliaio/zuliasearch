@@ -6,7 +6,7 @@ import org.bson.Document;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.util.List;
 
 public interface DocumentStorage {
@@ -17,7 +17,7 @@ public interface DocumentStorage {
 
 	AssociatedDocument getAssociatedDocument(String uniqueId, String filename, FetchType fetchType) throws Exception;
 
-	void getAssociatedDocuments(OutputStream outputstream, Document filter) throws IOException;
+	void getAssociatedDocuments(Writer writer, Document filter) throws IOException;
 
 	void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadataMap) throws Exception;
 

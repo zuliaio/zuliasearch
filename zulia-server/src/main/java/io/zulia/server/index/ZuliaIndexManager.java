@@ -39,7 +39,7 @@ import org.bson.Document;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -206,9 +206,9 @@ public class ZuliaIndexManager {
 
 	}
 
-	public void getAssociatedDocuments(String indexName, OutputStream outputStream, Document filter) throws IOException {
+	public void getAssociatedDocuments(String indexName, Writer writer, Document filter) throws IOException {
 		ZuliaIndex i = getIndexFromName(indexName);
-		i.getAssociatedDocuments(outputStream, filter);
+		i.getAssociatedDocuments(writer, filter);
 	}
 
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
