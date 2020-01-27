@@ -51,7 +51,7 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY) List<String> filterQueries,
 			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY_JSON) List<String> filterJsonQueries,
 			@Nullable @QueryValue(ZuliaConstants.FIELDS) List<String> fields, @QueryValue(value = ZuliaConstants.FETCH, defaultValue = "true") Boolean fetch,
-			@QueryValue(ZuliaConstants.ROWS) Integer rows, @Nullable @QueryValue(ZuliaConstants.FACET) List<String> facet,
+			@QueryValue(value = ZuliaConstants.ROWS, defaultValue = "0") Integer rows, @Nullable @QueryValue(ZuliaConstants.FACET) List<String> facet,
 			@Nullable @QueryValue(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @Nullable @QueryValue(ZuliaConstants.DEFAULT_OP) String defaultOperator,
 			@Nullable @QueryValue(ZuliaConstants.SORT) List<String> sort, @QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
 			@Nullable @QueryValue(value = ZuliaConstants.DISMAX, defaultValue = "false") Boolean dismax,
