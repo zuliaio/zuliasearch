@@ -3,20 +3,20 @@ package io.zulia.server.rest.controllers;
 import io.micronaut.core.io.Streamable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
+import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.server.types.files.StreamedFile;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
-import io.zulia.util.StreamHelper;
 import org.bson.Document;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,26 +35,22 @@ public class AssociatedController {
 	public HttpResponse<?> get(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.FILE_NAME) final String fileName,
 			@QueryValue(ZuliaConstants.INDEX) final String indexName) {
 
+		System.out.println("Request coming...");
+
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		try {
-			Streamable stream = ((outputStream, charset) -> {
-				if (uniqueId != null && fileName != null && indexName != null) {
-					InputStream is = indexManager.getAssociatedDocumentStream(indexName, uniqueId, fileName);
-					if (is != null) {
-						StreamHelper.copyStream(is, outputStream);
-					}
-					else {
-						throw new IOException("Cannot find associated document with uniqueId <" + uniqueId + "> with fileName <" + fileName + ">");
-					}
-				}
-				else {
-					throw new IOException(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
-				}
-			});
 
-			return HttpResponse.ok(stream).status(ZuliaConstants.SUCCESS).header("content-disposition", "attachment; filename = " + fileName)
-					.contentType(MediaType.APPLICATION_OCTET_STREAM);
+			if (uniqueId != null && fileName != null && indexName != null) {
+				InputStream is = indexManager.getAssociatedDocumentStream(indexName, uniqueId, fileName);
+				StreamedFile attach = new StreamedFile(is, MediaType.of(MediaType.ALL_TYPE)).attach(fileName);
+				MutableHttpResponse<StreamedFile> ok = HttpResponse.ok(attach);
+				attach.process(ok);
+				return ok;
+			}
+			else {
+				return HttpResponse.serverError(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
+			}
 		}
 		catch (Exception e) {
 			return HttpResponse.serverError(e.getMessage());
