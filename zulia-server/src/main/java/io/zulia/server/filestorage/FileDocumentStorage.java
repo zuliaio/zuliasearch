@@ -7,7 +7,7 @@ import org.bson.Document;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.Writer;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -35,7 +35,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void getAssociatedDocuments(OutputStream outputstream, Document filter) throws IOException {
+	public void getAssociatedDocuments(Writer writer, Document filter) throws IOException {
 		throw new RuntimeException("Not implemented");
 	}
 
