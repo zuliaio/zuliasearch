@@ -1,5 +1,9 @@
 package io.zulia.client;
 
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.client.HttpClient;
+import io.micronaut.http.client.multipart.MultipartBody;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
 import io.zulia.util.StreamHelper;
@@ -12,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -72,37 +77,23 @@ public class ZuliaRESTClient {
 		return parameters;
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, File fileToStore) throws IOException {
+	public void storeAssociated(String uniqueId, String indexName, String fileName, File fileToStore) throws Exception {
 		storeAssociated(uniqueId, indexName, fileName, new FileInputStream(fileToStore));
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, InputStream source) throws IOException {
+	public void storeAssociated(String uniqueId, String indexName, String fileName, InputStream source) throws Exception {
 		storeAssociated(uniqueId, indexName, fileName, null, source);
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws IOException {
-		HttpURLConnection conn = null;
-		OutputStream destination = null;
-		try {
+	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws Exception {
 
-			HashMap<String, Object> parameters = createParameters(uniqueId, indexName, fileName);
-			if (metadata != null) {
-				parameters.put(ZuliaConstants.META_JSON, metadata.toJson());
-			}
-
-			String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);
-
-			conn = createPostConnection(url);
-
-			destination = conn.getOutputStream();
-
-			StreamHelper.copyStream(source, destination);
-
-			handlePossibleError(conn);
+		String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, null);
+		try (HttpClient client = HttpClient.create(new URI(url).toURL())) {
+			MultipartBody requestBody = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
+					.addPart("file", fileName, MediaType.forFilename(fileName), source, 0).build();
+			client.toBlocking().exchange(HttpRequest.POST(url, requestBody).contentType(MediaType.MULTIPART_FORM_DATA), String.class);
 		}
-		finally {
-			closeStreams(source, destination, conn);
-		}
+
 	}
 
 	private void handlePossibleError(HttpURLConnection conn) throws IOException {
@@ -142,16 +133,6 @@ public class ZuliaRESTClient {
 		}
 	}
 
-	protected HttpURLConnection createPostConnection(String url) throws IOException {
-		HttpURLConnection conn;
-		conn = (HttpURLConnection) (new URL(url)).openConnection();
-		conn.setDoInput(true);
-		conn.setDoOutput(true);
-		conn.setRequestMethod(ZuliaConstants.POST);
-		conn.connect();
-		return conn;
-	}
-
 	protected HttpURLConnection createGetConnection(String url) throws IOException {
 		HttpURLConnection conn;
 		conn = (HttpURLConnection) (new URL(url)).openConnection();
@@ -161,4 +142,5 @@ public class ZuliaRESTClient {
 		conn.connect();
 		return conn;
 	}
+
 }

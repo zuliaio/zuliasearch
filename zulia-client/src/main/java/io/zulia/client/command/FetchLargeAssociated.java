@@ -38,7 +38,7 @@ public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult
 			zuliaRESTClient.fetchAssociated(uniqueId, indexName, fileName, destination);
 		}
 		else {
-			throw new Exception("File or output stream must be set");
+			throw new Exception("A writer must be set");
 		}
 		return new FetchLargeAssociatedResult();
 	}
