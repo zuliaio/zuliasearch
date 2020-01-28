@@ -4,19 +4,23 @@ import io.micronaut.core.io.Writable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.MutableHttpResponse;
-import io.micronaut.http.annotation.Body;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
+import io.reactivex.Single;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
+import org.reactivestreams.Publisher;
 
 import javax.annotation.Nullable;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,15 +59,14 @@ public class AssociatedController {
 		}
 	}
 
-	@Post
-	@Produces(MediaType.TEXT_XML)
-	public HttpResponse<?> post(@QueryValue(ZuliaConstants.ID) String uniqueId, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, @Body InputStream is)
+	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
+	public Single<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
+			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file)
 			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
-		if (uniqueId != null && fileName != null && indexName != null) {
+		if (id != null && fileName != null && indexName != null) {
 
 			Document metadata;
 			if (metaJson != null) {
@@ -73,17 +76,28 @@ public class AssociatedController {
 				metadata = new Document();
 			}
 
+			File tempFile = File.createTempFile(file.getFilename(), "upload_temp");
 			try {
+				Publisher<Boolean> uploadPublisher = file.transferTo(tempFile);
+				return Single.fromPublisher(uploadPublisher).map(success -> {
+					if (success) {
+						indexManager.storeAssociatedDocument(indexName, id, fileName, new FileInputStream(tempFile), metadata);
 
-				indexManager.storeAssociatedDocument(indexName, uniqueId, fileName, is, metadata);
-
-				return HttpResponse.ok("Stored associated document with uniqueId <" + uniqueId + "> and fileName <" + fileName + ">")
-						.status(ZuliaConstants.SUCCESS);
+						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">")
+								.status(ZuliaConstants.SUCCESS);
+					}
+					else {
+						return HttpResponse.serverError("Failed to store associated document with uniqueId <" + id + "> and filename <" + fileName + ">");
+					}
+				});
 
 			}
 			catch (Exception e) {
 				LOG.log(Level.SEVERE, e.getMessage(), e);
-				return HttpResponse.ok(e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+				throw e;
+			}
+			finally {
+				tempFile.delete();
 			}
 		}
 		else {

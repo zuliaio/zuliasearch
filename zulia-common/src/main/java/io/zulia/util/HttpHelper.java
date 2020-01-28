@@ -2,11 +2,11 @@ package io.zulia.util;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class HttpHelper {
-	public static String createQuery(HashMap<String, Object> parameters) {
+	public static String createQuery(Map<String, Object> parameters) {
 
 		StringBuilder sb = new StringBuilder();
 
@@ -43,7 +43,7 @@ public class HttpHelper {
 		return sb.toString();
 	}
 
-	public static String createRequestUrl(String server, int restPort, String url, HashMap<String, Object> parameters) {
+	public static String createRequestUrl(String server, int restPort, String url, Map<String, Object> parameters) {
 		String fullUrl = ("http://" + server + ":" + restPort + url);
 		if (parameters == null || parameters.isEmpty()) {
 			return fullUrl;
