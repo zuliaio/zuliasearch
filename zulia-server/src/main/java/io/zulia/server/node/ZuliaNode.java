@@ -74,7 +74,7 @@ public class ZuliaNode {
 		indexManager.init();
 		zuliaServiceServer.start();
 		if (startREST) {
-			micronautService = Micronaut.build(null).mainClass(ZuliaRESTService.class).properties(
+			micronautService = Micronaut.build((String) null).mainClass(ZuliaRESTService.class).properties(
 					CollectionUtils.mapOf("micronaut.server.host", zuliaConfig.getServerAddress(), "micronaut.server.port", zuliaConfig.getRestPort())).start();
 		}
 		LOG.info(getLogPrefix() + "started");
