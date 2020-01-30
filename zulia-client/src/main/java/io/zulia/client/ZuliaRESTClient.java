@@ -90,7 +90,8 @@ public class ZuliaRESTClient {
 		String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, null);
 		try (HttpClient client = HttpClient.create(new URI(url).toURL())) {
 			MultipartBody requestBody = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
-					.addPart("metaJson", metadata.toJson()).addPart("file", fileName, MediaType.forFilename(fileName), source, 0).build();
+					.addPart("metaJson", metadata != null ? metadata.toJson() : null).addPart("file", fileName, MediaType.forFilename(fileName), source, 0)
+					.build();
 			client.toBlocking().exchange(HttpRequest.POST(url, requestBody).contentType(MediaType.MULTIPART_FORM_DATA), String.class);
 		}
 
