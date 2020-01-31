@@ -5,6 +5,10 @@ micronaut:
       enabled: true
     netty:
       log-level: TRACE
+    multipart:
+      max-file-size: 1024MB
+      max-request-size: 250MB
+      enabled: true
   application:
     name: zulia-service
   router:
