@@ -838,7 +838,10 @@ public class ShardReader implements AutoCloseable {
 				allDocs = new FilteredDocIdSetIterator(allDocs) {
 					@Override
 					protected boolean match(int doc) {
-						return leafLiveDocs.get(doc);
+						if (doc < leafLiveDocs.length()) {
+							return leafLiveDocs.get(doc);
+						}
+						return false;
 					}
 				};
 			}
