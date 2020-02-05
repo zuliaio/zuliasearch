@@ -71,6 +71,7 @@ public class StartStopTest {
         indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
         indexConfig.setIndexName(FACET_TEST_INDEX);
         indexConfig.setNumberOfShards(1);
+        indexConfig.setShardCommitInterval(20); //force some commits
 
         zuliaWorkPool.createIndex(indexConfig);
     }
@@ -129,6 +130,7 @@ public class StartStopTest {
 
                     zuliaWorkPool.store(s);
                 }
+
             }
         }
     }
@@ -144,7 +146,7 @@ public class StartStopTest {
         double highScore = -1;
         for (ZuliaQuery.ScoredResult result : queryResult.getResults()) {
             Assertions.assertTrue(result.getScore() > 0);
-            if (lowScore < 0) {
+            if (lowScore < 0 || result.getScore() < lowScore) {
                 lowScore = result.getScore();
             }
         }
@@ -155,7 +157,7 @@ public class StartStopTest {
 
         for (ZuliaQuery.ScoredResult result : queryResult.getResults()) {
             Assertions.assertTrue(result.getScore() > 0);
-            if (highScore < 0) {
+            if (highScore < 0 || result.getScore() > highScore) {
                 highScore = result.getScore();
             }
         }
