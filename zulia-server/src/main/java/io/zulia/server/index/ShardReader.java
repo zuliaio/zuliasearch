@@ -15,6 +15,7 @@ import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.QueryResultCache;
+import io.zulia.server.search.ZuliaQueryParser;
 import io.zulia.server.util.FieldAndSubFields;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
@@ -424,11 +425,20 @@ public class ShardReader implements AutoCloseable {
 		for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
 			boolean reverse = ZuliaQuery.FieldSort.Direction.DESCENDING.equals(fs.getDirection());
 
+			String rewrittenField = ZuliaQueryParser.rewriteLengthFields(fs.getSortField());
+
 			String sortField = fs.getSortField();
 			ZuliaIndex.FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
+			}
+			else if (!rewrittenField.equals(sortField)) {
+				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
+				if (reverse) {
+					sortedNumericSelector = SortedNumericSelector.Type.MAX;
+				}
+				sortFields.add(new SortedNumericSortField(rewrittenField, SortField.Type.INT, reverse, sortedNumericSelector));
 			}
 			else if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
 
@@ -588,6 +598,10 @@ public class ShardReader implements AutoCloseable {
 			}
 
 			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
+
+			if (!ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
+				fieldTypeForSortField = ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT;
+			}
 
 			ZuliaQuery.SortValue.Builder sortValueBuilder = ZuliaQuery.SortValue.newBuilder().setExists(true);
 			if (FieldTypeUtil.isNumericOrDateFieldType(fieldTypeForSortField)) {

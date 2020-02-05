@@ -61,7 +61,7 @@ public class ZuliaQueryParser extends QueryParser {
 	@Override
 	protected Query getRangeQuery(String field, String start, String end, boolean startInclusive, boolean endInclusive) throws ParseException {
 
-		field = rewriteLengthField(field);
+		field = rewriteLengthFields(field);
 
 		if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
 			return getNumericOrDateRange(field, start, end, startInclusive, endInclusive, FieldConfig.FieldType.NUMERIC_INT);
@@ -76,10 +76,11 @@ public class ZuliaQueryParser extends QueryParser {
 
 	}
 
-	protected String rewriteLengthField(String field) {
+	public static String rewriteLengthFields(String field) {
 		if (field.startsWith("|||") && field.endsWith("|||")) {
 			field = ZuliaConstants.LIST_LENGTH_PREFIX + field.substring(3, field.length() - 3);
-		} else if (field.startsWith("||") && field.endsWith("||")) {
+		}
+		else if (field.startsWith("||") && field.endsWith("||")) {
 
 		}
 		else if (field.startsWith("|") && field.endsWith("|")) {
@@ -165,7 +166,7 @@ public class ZuliaQueryParser extends QueryParser {
 		String field = term.field();
 		String text = term.text();
 
-		field = rewriteLengthField(field);
+		field = rewriteLengthFields(field);
 
 		if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
 			if (Ints.tryParse(text) != null) {

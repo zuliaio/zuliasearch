@@ -1,7 +1,12 @@
 package io.zulia.server.index.field;
 
 import io.zulia.ZuliaConstants;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.TextField;
 
 public class StringFieldIndexer extends FieldIndexer {
 
@@ -24,7 +29,9 @@ public class StringFieldIndexer extends FieldIndexer {
 		if (value != null) {
 			String val = value.toString();
 			d.add((new Field(indexedFieldName, val, notStoredTextField)));
-			d.add(new IntPoint(ZuliaConstants.CHAR_LENGTH_PREFIX + indexedFieldName, val.length()));
+			int length = val.length();
+			d.add(new IntPoint(ZuliaConstants.CHAR_LENGTH_PREFIX + indexedFieldName, length));
+			d.add(new SortedNumericDocValuesField(ZuliaConstants.CHAR_LENGTH_PREFIX + indexedFieldName, length));
 		}
 	}
 

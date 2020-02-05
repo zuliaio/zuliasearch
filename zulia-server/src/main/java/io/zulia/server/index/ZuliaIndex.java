@@ -33,6 +33,7 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ZuliaMultiFieldQueryParser;
+import io.zulia.server.search.ZuliaQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
@@ -526,6 +527,11 @@ public class ZuliaIndex {
 
 							String sortField = fs.getSortField();
 							FieldConfig.FieldType sortType = indexConfig.getFieldTypeForSortField(sortField);
+
+							if (!ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
+								sortType = FieldConfig.FieldType.NUMERIC_LONG;
+							}
+
 							if (sortType == null) {
 								throw new Exception(sortField + " is not defined as a sortable field");
 							}

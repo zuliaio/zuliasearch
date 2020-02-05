@@ -199,6 +199,19 @@ public class StartStopTest {
         q = new Query(FACET_TEST_INDEX, "|||testList|||:[2 TO 3]", 0);
         queryResult = zuliaWorkPool.query(q);
         Assertions.assertEquals(total, queryResult.getTotalHits());
+
+        q = new Query(FACET_TEST_INDEX, null, (int) total / 2).addFieldSort("|country|");
+        queryResult = zuliaWorkPool.query(q);
+        for (Document document : queryResult.getDocuments()) {
+            Assertions.assertEquals(document.getString("country"), "US");
+        }
+
+        q = new Query(FACET_TEST_INDEX, null, (int) total / 2).addFieldSort("|country|", DESCENDING);
+        queryResult = zuliaWorkPool.query(q);
+        for (Document document : queryResult.getDocuments()) {
+            Assertions.assertEquals(document.getString("country"), "France");
+        }
+
     }
 
     @Test
