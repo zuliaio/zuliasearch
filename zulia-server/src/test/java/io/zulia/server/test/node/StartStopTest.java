@@ -82,57 +82,69 @@ public class StartStopTest {
         int id = 0;
         {
             for (int j = 0; j < issns.length; j++) {
+                String issn = issns[j];
+                String eissn = eissns[j];
+
                 for (int i = 0; i < COUNT_PER_ISSN; i++) {
-                    boolean half = (i % 2 == 0);
-                    boolean tenth = (i % 10 == 0);
-
+                    indexRecord(id, issn, eissn, i);
                     id++;
+                }
 
-                    String uniqueId = uniqueIdPrefix + id;
-
-                    Document mongoDocument = new Document();
-                    mongoDocument.put("issn", issns[j]);
-                    mongoDocument.put("eissn", eissns[j]);
-                    mongoDocument.put("title", "Facet Userguide");
-
-                    if (half) { // 1/2 of input
-                        mongoDocument.put("country", "US");
-                        mongoDocument.put("testList", Arrays.asList("one", "two"));
-
-                    }
-                    else { // 1/2 of input
-                        mongoDocument.put("country", "France");
-                        mongoDocument.put("testList", Arrays.asList("a", "b", "c"));
-                    }
-
-                    if (tenth) { // 1/10 of input
-
-                        Date d = Date.from(LocalDate.of(2014, Month.OCTOBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
-                        mongoDocument.put("date", d);
-                    }
-                    else if (half) { // 2/5 of input
-                        Date d = Date.from(LocalDate.of(2013, Month.SEPTEMBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
-                        mongoDocument.put("date", d);
-                    }
-                    else { // 1/2 of input
-                        Date d = Date.from(LocalDate.of(2013, 8, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
-                        mongoDocument.put("date", d);
-                    }
-
-                    Store s = new Store(uniqueId, FACET_TEST_INDEX);
-
-                    ResultDocBuilder resultDocumentBuilder = ResultDocBuilder.newBuilder().setDocument(mongoDocument);
-                    if (half) {
-                        resultDocumentBuilder.setMetadata(new Document("test", "someValue"));
-                    }
-
-                    s.setResultDocument(resultDocumentBuilder);
-
-                    zuliaWorkPool.store(s);
+                //overwrite a few records with the same values
+                for (int i = 1; i <= 2; i++) {
+                    indexRecord(id - i, issn, eissn, i);
                 }
 
             }
         }
+    }
+
+    private void indexRecord(int id, String issn, String eissn, int i) throws Exception {
+        boolean half = (i % 2 == 0);
+        boolean tenth = (i % 10 == 0);
+
+        String uniqueId = uniqueIdPrefix + id;
+
+        Document mongoDocument = new Document();
+        mongoDocument.put("issn", issn);
+        mongoDocument.put("eissn", eissn);
+        mongoDocument.put("title", "Facet Userguide");
+
+        if (half) { // 1/2 of input
+            mongoDocument.put("country", "US");
+            mongoDocument.put("testList", Arrays.asList("one", "two"));
+
+        }
+        else { // 1/2 of input
+            mongoDocument.put("country", "France");
+            mongoDocument.put("testList", Arrays.asList("a", "b", "c"));
+        }
+
+        if (tenth) { // 1/10 of input
+
+            Date d = Date.from(LocalDate.of(2014, Month.OCTOBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
+            mongoDocument.put("date", d);
+        }
+        else if (half) { // 2/5 of input
+            Date d = Date.from(LocalDate.of(2013, Month.SEPTEMBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
+            mongoDocument.put("date", d);
+        }
+        else { // 1/2 of input
+            Date d = Date.from(LocalDate.of(2013, 8, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
+            mongoDocument.put("date", d);
+        }
+
+        Store s = new Store(uniqueId, FACET_TEST_INDEX);
+
+        ResultDocBuilder resultDocumentBuilder = ResultDocBuilder.newBuilder().setDocument(mongoDocument);
+        if (half) {
+            resultDocumentBuilder.setMetadata(new Document("test", "someValue"));
+        }
+
+        s.setResultDocument(resultDocumentBuilder);
+
+        zuliaWorkPool.store(s);
+
     }
 
     @Test
