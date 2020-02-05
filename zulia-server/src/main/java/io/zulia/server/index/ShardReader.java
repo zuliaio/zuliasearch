@@ -833,6 +833,7 @@ public class ShardReader implements AutoCloseable {
 		int maxDoc = indexReader.maxDoc();
 		for (LeafReaderContext leaf : indexReader.leaves()) {
 			Bits leafLiveDocs = leaf.reader().getLiveDocs();
+			System.out.println(leaf.reader().maxDoc());
 			DocIdSetIterator allDocs = DocIdSetIterator.all(maxDoc);
 			if (leafLiveDocs != null) {
 				allDocs = new FilteredDocIdSetIterator(allDocs) {
@@ -846,7 +847,10 @@ public class ShardReader implements AutoCloseable {
 				};
 			}
 			int docId;
+
+			System.out.println(leaf.docBase);
 			while ((docId = allDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+				leaf.reader().document()
 				Document d = indexReader.document(docId);
 				documentConsumer.accept(d);
 			}
