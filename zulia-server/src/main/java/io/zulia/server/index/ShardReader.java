@@ -830,27 +830,20 @@ public class ShardReader implements AutoCloseable {
 
 	public void streamAllDocs(Consumer<Document> documentConsumer) throws IOException {
 
-		int maxDoc = indexReader.maxDoc();
 		for (LeafReaderContext leaf : indexReader.leaves()) {
 			Bits leafLiveDocs = leaf.reader().getLiveDocs();
-			System.out.println(leaf.reader().maxDoc());
-			DocIdSetIterator allDocs = DocIdSetIterator.all(maxDoc);
+			DocIdSetIterator allDocs = DocIdSetIterator.range(leaf.docBase, leaf.docBase + leaf.reader().maxDoc());
 			if (leafLiveDocs != null) {
 				allDocs = new FilteredDocIdSetIterator(allDocs) {
 					@Override
 					protected boolean match(int doc) {
-						if (doc < leafLiveDocs.length()) {
-							return leafLiveDocs.get(doc);
-						}
-						return false;
+						return leafLiveDocs.get(doc - leaf.docBase);
 					}
 				};
 			}
 			int docId;
 
-			System.out.println(leaf.docBase);
 			while ((docId = allDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-				leaf.reader().document()
 				Document d = indexReader.document(docId);
 				documentConsumer.accept(d);
 			}
