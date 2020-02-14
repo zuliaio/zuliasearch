@@ -363,21 +363,24 @@ public class QueryCombiner {
 			for (FieldSort fieldSort : fieldSortList) {
 				String sortField = fieldSort.getSortField();
 
-				for (ZuliaIndex index : indexes) {
-					FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);
+				if (ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
 
-					FieldConfig.FieldType indexSortType = index.getSortFieldType(sortField);
-					if (currentSortType == null) {
-						sortTypeMap.put(sortField, indexSortType);
-					}
-					else {
-						if (!currentSortType.equals(indexSortType)) {
-							log.severe("Sort fields must be defined the same in all indexes searched in a single query");
-							String message =
-									"Cannot sort on field <" + sortField + ">: found type: <" + currentSortType + "> then type: <" + indexSortType + ">";
-							log.severe(message);
+					for (ZuliaIndex index : indexes) {
+						FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);
 
-							throw new Exception(message);
+						FieldConfig.FieldType indexSortType = index.getSortFieldType(sortField);
+						if (currentSortType == null) {
+							sortTypeMap.put(sortField, indexSortType);
+						}
+						else {
+							if (!currentSortType.equals(indexSortType)) {
+								log.severe("Sort fields must be defined the same in all indexes searched in a single query");
+								String message =
+										"Cannot sort on field <" + sortField + ">: found type: <" + currentSortType + "> then type: <" + indexSortType + ">";
+								log.severe(message);
+
+								throw new Exception(message);
+							}
 						}
 					}
 				}
@@ -394,6 +397,10 @@ public class QueryCombiner {
 					String sortField = fs.getSortField();
 
 					FieldConfig.FieldType sortType = sortTypeMap.get(sortField);
+
+					if (!ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
+						sortType = FieldConfig.FieldType.NUMERIC_LONG;
+					}
 
 					if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 						if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {

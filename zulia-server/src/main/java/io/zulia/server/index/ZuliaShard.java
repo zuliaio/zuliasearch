@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
 public class ZuliaShard {
@@ -111,6 +112,7 @@ public class ZuliaShard {
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
+			AtomicInteger count = new AtomicInteger();
 			shardReader.streamAllDocs(d -> {
 				if (!myTrackingId.equals(trackingId)) {
 					throw new RuntimeException("Reindex interrupted by another reindex");
@@ -138,6 +140,7 @@ public class ZuliaShard {
 					if (!trackedIds.contains(uniqueId)) {
 						shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
 					}
+					count.getAndIncrement();
 				}
 				catch (Exception e) {
 					throw new RuntimeException(e);
@@ -149,6 +152,7 @@ public class ZuliaShard {
 					trackedIds = new HashSet<>();
 				}
 			}
+			LOG.info("Reindexed <" + count.get() + "> documents for shard <" + shardNumber + "> for index <" + indexName + ">");
 			forceCommit();
 		}
 		finally {
