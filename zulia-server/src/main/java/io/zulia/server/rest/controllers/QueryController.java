@@ -383,7 +383,7 @@ public class QueryController {
 						for (FacetCount facetCount : facetGroup.getFacetCountList()) {
 							response.append(facetGroup.getCountRequest().getFacetField().getLabel());
 							response.append(",");
-							response.append(facetCount.getFacet());
+							response.append("\"").append(facetCount.getFacet()).append("\"");
 							response.append(",");
 							response.append(Long.valueOf(facetCount.getCount()));
 							response.append("\n");
