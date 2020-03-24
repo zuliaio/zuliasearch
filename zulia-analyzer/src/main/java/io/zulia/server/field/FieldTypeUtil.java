@@ -1,5 +1,6 @@
 package io.zulia.server.field;
 
+import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 
 public class FieldTypeUtil {
@@ -27,5 +28,13 @@ public class FieldTypeUtil {
 	public static boolean isNumericOrDateFieldType(FieldConfig.FieldType fieldType) {
 		return isNumericIntFieldType(fieldType) || isNumericLongFieldType(fieldType) || isNumericFloatFieldType(fieldType) || isNumericDoubleFieldType(
 				fieldType) || isDateFieldType(fieldType);
+	}
+
+	public static boolean isBooleanFieldType(FieldConfig.FieldType fieldType) {
+		return FieldConfig.FieldType.BOOL.equals(fieldType);
+	}
+
+	public static boolean isStringFieldType(FieldConfig.FieldType fieldType) {
+		return ZuliaIndex.FieldConfig.FieldType.STRING.equals(fieldType);
 	}
 }
