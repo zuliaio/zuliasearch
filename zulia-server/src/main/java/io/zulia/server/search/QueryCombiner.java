@@ -3,6 +3,7 @@ package io.zulia.server.search;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaIndex.FieldConfig;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.CountRequest;
@@ -21,6 +22,7 @@ import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
+import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.index.ZuliaIndex;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -411,37 +413,45 @@ public class QueryCombiner {
 						}
 					}
 					else {
-						if (FieldConfig.FieldType.NUMERIC_INT.equals(sortType)) {
-							Integer a = sortValues1.getSortValue(sortValueIndex).getIntegerValue();
-							Integer b = sortValues2.getSortValue(sortValueIndex).getIntegerValue();
+						ZuliaQuery.SortValue sortValue1 = sortValues1.getSortValue(sortValueIndex);
+						ZuliaQuery.SortValue sortValue2 = sortValues2.getSortValue(sortValueIndex);
+
+						if (FieldTypeUtil.isNumericIntFieldType(sortType)) {
+							Integer a = sortValue1.getExists() ? sortValue1.getIntegerValue() : null;
+							Integer b = sortValue2.getExists() ? sortValue2.getIntegerValue() : null;
 
 							compare = Comparator.nullsLast(Integer::compareTo).compare(a, b);
 						}
-						else if (FieldConfig.FieldType.NUMERIC_LONG.equals(sortType) || FieldConfig.FieldType.DATE.equals(sortType)) {
-							Long a = sortValues1.getSortValue(sortValueIndex).getLongValue();
-							Long b = sortValues2.getSortValue(sortValueIndex).getLongValue();
+						else if (FieldTypeUtil.isNumericLongFieldType(sortType)) {
+							Long a = sortValue1.getExists() ? sortValue1.getLongValue() : null;
+							Long b = sortValue2.getExists() ? sortValue2.getLongValue() : null;
 
 							compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
 						}
-						else if (FieldConfig.FieldType.NUMERIC_FLOAT.equals(sortType)) {
+						else if (FieldTypeUtil.isDateFieldType(sortType)) {
+							Long a = sortValue1.getExists() ? sortValue1.getDateValue() : null;
+							Long b = sortValue2.getExists() ? sortValue2.getDateValue() : null;
 
-							Float a = sortValues1.getSortValue(sortValueIndex).getFloatValue();
-							Float b = sortValues2.getSortValue(sortValueIndex).getFloatValue();
+							compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+						}
+						else if (FieldTypeUtil.isNumericFloatFieldType(sortType)) {
+
+							Float a = sortValue1.getExists() ? sortValue1.getFloatValue() : null;
+							Float b = sortValue2.getExists() ? sortValue2.getFloatValue() : null;
 
 							compare = Comparator.nullsLast(Float::compareTo).compare(a, b);
 						}
-						else if (FieldConfig.FieldType.NUMERIC_DOUBLE.equals(sortType)) {
+						else if (FieldTypeUtil.isNumericDoubleFieldType(sortType)) {
 
-							Double a = sortValues1.getSortValue(sortValueIndex).getDoubleValue();
-							Double b = sortValues2.getSortValue(sortValueIndex).getDoubleValue();
+							Double a = sortValue1.getExists() ? sortValue1.getDoubleValue() : null;
+							Double b = sortValue2.getExists() ? sortValue2.getDoubleValue() : null;
 
 							compare = Comparator.nullsLast(Double::compareTo).compare(a, b);
 						}
 						else {
-							String a = sortValues1.getSortValue(sortValueIndex).getStringValue();
-							String b = sortValues2.getSortValue(sortValueIndex).getStringValue();
+							String a = sortValue1.getExists() ? sortValue1.getStringValue() : null;
+							String b = sortValue2.getExists() ? sortValue2.getStringValue() : null;
 
-							//compare = Comparator.nullsLast(String::compareTo).compare(a, b);
 							compare = Comparator.nullsLast(BytesRef::compareTo).compare(new BytesRef(a), new BytesRef(b));
 						}
 
