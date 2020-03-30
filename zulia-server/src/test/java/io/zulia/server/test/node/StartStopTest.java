@@ -62,7 +62,7 @@ public class StartStopTest {
         ClientIndexConfig indexConfig = new ClientIndexConfig();
         indexConfig.addDefaultSearchField("title");
         indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
-        indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+        indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
         indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
         indexConfig.addFieldConfig(FieldConfigBuilder.create("uid", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
         indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index().sort());
@@ -219,14 +219,14 @@ public class StartStopTest {
     public void reindex() throws Exception {
         ClientIndexConfig indexConfig = new ClientIndexConfig();
         indexConfig.addDefaultSearchField("title");
-        indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD));
-        indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+        indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
+        indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
         indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
         indexConfig.addFieldConfig(FieldConfigBuilder.create("uid", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
         indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index().displayName("Accession Number"));
         indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
         indexConfig.addFieldConfig(
-                FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data"));
+                FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data").sort());
         indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
         indexConfig.setIndexName(FACET_TEST_INDEX);
         indexConfig.setNumberOfShards(1);
@@ -319,7 +319,7 @@ public class StartStopTest {
         }
 
         {
-            Query q = new Query(FACET_TEST_INDEX, "title:userguide", 10).addDrillDown("date", "2013-08-04");
+            Query q = new Query(FACET_TEST_INDEX, "title:userguide", 10).addDrillDown("date", "2012-08-04");
 
             QueryResult qr = zuliaWorkPool.query(q);
 
@@ -382,13 +382,13 @@ public class StartStopTest {
         }
 
         {
-            Query q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("date", ASCENDING);
+            Query q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("date", ASCENDING).addFieldSort("issn", ASCENDING);
 
             QueryResult qr = zuliaWorkPool.query(q);
 
             Document firstDateDocument = qr.getFirstDocument();
 
-            q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("date", DESCENDING);
+            q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("date", DESCENDING).addFieldSort("issn", DESCENDING);
 
             qr = zuliaWorkPool.query(q);
 
