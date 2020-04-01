@@ -2,7 +2,10 @@ package io.zulia.client;
 
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.MediaType;
+import io.micronaut.http.client.DefaultHttpClient;
+import io.micronaut.http.client.DefaultHttpClientConfiguration;
 import io.micronaut.http.client.HttpClient;
+import io.micronaut.http.client.HttpClientConfiguration;
 import io.micronaut.http.client.multipart.MultipartBody;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
@@ -16,7 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -88,7 +93,9 @@ public class ZuliaRESTClient {
 	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws Exception {
 
 		String url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, null);
-		try (HttpClient client = HttpClient.create(new URI(url).toURL())) {
+
+		try (HttpClient client = createClient(url)) {
+
 			MultipartBody.Builder builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
 					.addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
 
@@ -146,6 +153,13 @@ public class ZuliaRESTClient {
 		conn.setRequestMethod(ZuliaConstants.GET);
 		conn.connect();
 		return conn;
+	}
+
+	private HttpClient createClient(String url) throws MalformedURLException, URISyntaxException {
+		URL uri = new URI(url).toURL();
+		HttpClientConfiguration clientConfiguration = new DefaultHttpClientConfiguration();
+		clientConfiguration.setMaxContentLength(256 * 1024);
+		return new DefaultHttpClient(uri, clientConfiguration);
 	}
 
 }
