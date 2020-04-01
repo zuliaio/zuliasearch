@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 
 public class ZuliaRESTClient {
@@ -158,7 +159,8 @@ public class ZuliaRESTClient {
 	private HttpClient createClient(String url) throws MalformedURLException, URISyntaxException {
 		URL uri = new URI(url).toURL();
 		HttpClientConfiguration clientConfiguration = new DefaultHttpClientConfiguration();
-		clientConfiguration.setMaxContentLength(256 * 1024);
+		clientConfiguration.setMaxContentLength(1024 * 1024 * 1024);
+		clientConfiguration.setReadTimeout(Duration.ofSeconds(300));
 		return new DefaultHttpClient(uri, clientConfiguration);
 	}
 

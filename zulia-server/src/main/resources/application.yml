@@ -1,15 +1,16 @@
 micronaut:
-  client:
-    max-content-length: 256MB
+  http:
+    client:
+      max-content-length: 1073741824
   server:
+    max-request-size: 1073741824
     port: 32192
     cors:
       enabled: true
     netty:
       log-level: TRACE
     multipart:
-      max-file-size: 4096MB
-      max-request-size: 250MB
+      max-file-size: 1073741824
       enabled: true
   application:
     name: zulia-service

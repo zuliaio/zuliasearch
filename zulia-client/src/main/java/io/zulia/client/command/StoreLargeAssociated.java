@@ -6,6 +6,7 @@ import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.result.StoreLargeAssociatedResult;
 import org.bson.Document;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -56,7 +57,7 @@ public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult
 	public StoreLargeAssociatedResult execute(ZuliaRESTClient zuliaRESTClient) throws Exception {
 		InputStream input = source;
 		if (fileToStore != null) {
-			input = new FileInputStream(fileToStore);
+			input = new BufferedInputStream(new FileInputStream(fileToStore));
 		}
 
 		if (input != null) {
