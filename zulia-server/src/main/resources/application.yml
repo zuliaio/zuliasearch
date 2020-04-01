@@ -1,4 +1,6 @@
 micronaut:
+  client:
+    max-content-length: 256MB
   server:
     port: 32192
     cors:
