@@ -8,6 +8,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import io.zulia.client.command.Query;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.StoreLargeAssociated;
 import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.doc.ResultDocBuilder;
@@ -25,13 +26,18 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class ZuliaCmdUtil {
 
@@ -68,7 +74,8 @@ public class ZuliaCmdUtil {
 		}
 	}
 
-	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count) throws Exception {
+	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, String idField,
+			Set<String> uniqueIds) throws Exception {
 		try (FileWriter fileWriter = new FileWriter(new File(recordsFilename), Charsets.UTF_8)) {
 			Query zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
 
@@ -78,6 +85,9 @@ public class ZuliaCmdUtil {
 
 				queryResult.getDocuments().forEach(doc -> {
 					try {
+						if (uniqueIds != null) {
+							uniqueIds.add(doc.getString(idField));
+						}
 						fileWriter.write(doc.toJson());
 						fileWriter.write(System.lineSeparator());
 
@@ -96,7 +106,8 @@ public class ZuliaCmdUtil {
 		}
 	}
 
-	public static void index(String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count) throws Exception {
+	public static void index(String inputDir, String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count)
+			throws Exception {
 		WorkPool threadPool = new WorkPool(4);
 		try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
 			String line;
@@ -124,6 +135,20 @@ public class ZuliaCmdUtil {
 						Store store = new Store(id, index);
 						store.setResultDocument(new ResultDocBuilder().setDocument(document));
 						workPool.store(store);
+
+						if (Files.exists(Paths.get(inputDir + File.separator + id.replaceAll("/", "_") + ".zip"))) {
+							try (ZipFile zipFile = new ZipFile(Paths.get(inputDir + File.separator + id.replaceAll("/", "_") + ".zip").toFile())) {
+								while (zipFile.entries().hasMoreElements()) {
+									ZipEntry entry = zipFile.entries().nextElement();
+									try {
+										workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, entry.getName(), zipFile.getInputStream(entry)));
+									}
+									catch (Throwable t) {
+										LOG.log(Level.SEVERE, "Could not restore associated file <" + entry.getName() + ">", t);
+									}
+								}
+							}
+						}
 
 						int i = count.incrementAndGet();
 						if (i % 10000 == 0) {
