@@ -36,6 +36,8 @@ dependencies {
 
     api("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
+    api("org.apache.commons:commons-compress:1.20")
+
     implementation("io.reactivex.rxjava2:rxjava:2.2.0")
 
     annotationProcessor("io.micronaut:micronaut-inject-java:$micronautVersion")
