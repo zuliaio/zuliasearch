@@ -92,8 +92,9 @@ public class ZuliaRestore {
 	}
 
 	private static void restore(ZuliaWorkPool workPool, String dir, String index, String idField, boolean drop) throws Exception {
-		String recordsFilename = dir + File.separator + index + File.separator + index + ".json";
-		String settingsFilename = dir + File.separator + index + File.separator + index + "_settings.json";
+		String inputDir = dir + File.separator + index;
+		String recordsFilename = inputDir + File.separator + index + ".json";
+		String settingsFilename = inputDir + File.separator + index + "_settings.json";
 
 		if (Files.exists(Paths.get(settingsFilename)) && Files.exists(Paths.get(recordsFilename))) {
 			if (drop) {
@@ -110,7 +111,7 @@ public class ZuliaRestore {
 
 			AtomicInteger count = new AtomicInteger();
 			LOG.info("Starting to index records for index <" + index + ">");
-			ZuliaCmdUtil.index(recordsFilename, idField, index, workPool, count);
+			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count);
 			LOG.info("Finished indexing for index <" + index + "> with total records: " + count);
 		}
 		else {

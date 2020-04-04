@@ -1,5 +1,7 @@
 package io.zulia.server.rest.controllers;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import io.micronaut.core.io.Writable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -22,6 +24,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,6 +55,30 @@ public class AssociatedController {
 			}
 			else {
 				return HttpResponse.serverError(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
+			}
+		}
+		catch (Exception e) {
+			return HttpResponse.serverError(e.getMessage());
+		}
+	}
+
+	@Get("/allForId")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public HttpResponse<?> get(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.INDEX) final String indexName) {
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		try {
+			if (uniqueId != null && indexName != null) {
+				List<String> associatedDocuments = indexManager.getAssociatedFilenames(indexName, uniqueId);
+				JsonObject jsonObject = new JsonObject();
+				JsonArray jsonArray = new JsonArray();
+				for (String filename : associatedDocuments) {
+					jsonArray.add(filename);
+				}
+				jsonObject.add("filenames", jsonArray);
+				return HttpResponse.ok(jsonObject);
+			}
+			else {
+				return HttpResponse.serverError("Provide uniqueId and index.");
 			}
 		}
 		catch (Exception e) {
@@ -108,7 +135,7 @@ public class AssociatedController {
 
 	@Get("/all")
 	@Produces(MediaType.APPLICATION_JSON)
-	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) final String indexName, @Nullable @QueryValue(ZuliaConstants.QUERY) String query) {
+	public HttpResponse<?> getAll(@QueryValue(ZuliaConstants.INDEX) final String indexName, @Nullable @QueryValue(ZuliaConstants.QUERY) String query) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -120,10 +147,11 @@ public class AssociatedController {
 			else {
 				filter = new Document();
 			}
-			indexManager.getAssociatedDocuments(indexName, out, filter);
+			indexManager.getAssociatedFilenames(indexName, out, filter);
 		};
 
 		return HttpResponse.ok(writable).status(ZuliaConstants.SUCCESS);
 
 	}
+
 }

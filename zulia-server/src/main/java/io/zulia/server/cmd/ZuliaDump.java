@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.google.common.base.Charsets;
 import com.google.protobuf.util.JsonFormat;
+import io.zulia.client.command.FetchLargeAssociated;
 import io.zulia.client.command.GetIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -12,12 +13,16 @@ import io.zulia.client.result.GetIndexesResult;
 import io.zulia.log.LogUtil;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.ZipOutputStream;
 
 public class ZuliaDump {
 
@@ -36,6 +41,12 @@ public class ZuliaDump {
 
 		@Parameter(names = "--rows", description = "Number of records to return. [Defaults to 1000]")
 		private Integer rows = 1000;
+
+		@Parameter(names = "--includeAssociatedDocs", description = "Include Associated Documents in the dump.")
+		private boolean includeAssociatedDocs = false;
+
+		@Parameter(names = "--idField", description = "ID Field Name. [Defaults to id]")
+		private String idField = "id";
 	}
 
 	public static void main(String[] args) {
@@ -55,6 +66,7 @@ public class ZuliaDump {
 
 			String index = zuliaDumpArgs.index;
 			String indexes = zuliaDumpArgs.indexes;
+			boolean includeAssociatedDocs = zuliaDumpArgs.includeAssociatedDocs;
 
 			if (index == null && indexes == null) {
 				LOG.log(Level.SEVERE, "Please pass in an index name.");
@@ -65,25 +77,37 @@ public class ZuliaDump {
 			String q = zuliaDumpArgs.q;
 			Integer rows = zuliaDumpArgs.rows;
 			String out = zuliaDumpArgs.out;
+			String idField = zuliaDumpArgs.idField;
+
+			Set<String> uniqueIds = new HashSet<>();
 
 			if (indexes != null) {
 
 				if (indexes.contains(",")) {
 					for (String ind : indexes.split(",")) {
-						queryAndWriteOutput(workPool, ind, q, rows, out);
+						queryAndWriteOutput(workPool, ind, q, rows, out, idField, uniqueIds);
+						if (includeAssociatedDocs) {
+							fetchAssociatedDocs(workPool, ind, out, uniqueIds);
+						}
 					}
 				}
 				else if (indexes.contains("*")) {
 					GetIndexesResult indexesResult = workPool.getIndexes();
 					for (String ind : indexesResult.getIndexNames()) {
 						if (ind.startsWith(indexes.replace("*", ""))) {
-							queryAndWriteOutput(workPool, ind, q, rows, out);
+							queryAndWriteOutput(workPool, ind, q, rows, out, idField, uniqueIds);
+							if (includeAssociatedDocs) {
+								fetchAssociatedDocs(workPool, ind, out, uniqueIds);
+							}
 						}
 					}
 				}
 			}
 			else {
-				queryAndWriteOutput(workPool, index, q, rows, out);
+				queryAndWriteOutput(workPool, index, q, rows, out, idField, uniqueIds);
+				if (includeAssociatedDocs) {
+					fetchAssociatedDocs(workPool, index, out, uniqueIds);
+				}
 			}
 
 		}
@@ -104,10 +128,11 @@ public class ZuliaDump {
 
 	}
 
-	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out) throws Exception {
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String outputDir, String idField,
+			Set<String> uniqueIds) throws Exception {
 
 		// create zuliadump dir first
-		String zuliaDumpDir = out + File.separator + "zuliadump";
+		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
 		if (!Files.exists(Paths.get(zuliaDumpDir))) {
 			Files.createDirectory(Paths.get(zuliaDumpDir));
 		}
@@ -123,7 +148,7 @@ public class ZuliaDump {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Dumping index <" + index + ">");
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds);
 		LOG.info("Finished dumping index <" + index + ">, total: " + count);
 
 		try (FileWriter fileWriter = new FileWriter(new File(settingsFilename), Charsets.UTF_8)) {
@@ -133,6 +158,23 @@ public class ZuliaDump {
 			LOG.info("Finished writing settings for index <" + index + ">");
 		}
 
+	}
+
+	private static void fetchAssociatedDocs(ZuliaWorkPool workPool, String index, String outputDir, Set<String> uniqueIds) throws Exception {
+
+		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
+		String indOutputDir = zuliaDumpDir + File.separator + index;
+
+		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + " documents.");
+		AtomicInteger count = new AtomicInteger(0);
+		for (String uniqueId : uniqueIds) {
+			workPool.fetchLargeAssociated(new FetchLargeAssociated(uniqueId, index,
+					new ZipOutputStream(new FileOutputStream(Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()))));
+			if (count.incrementAndGet() % 1000 == 0) {
+				LOG.info("Associated docs dumped so far: " + count);
+			}
+		}
+		LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + " documents.");
 	}
 
 }
