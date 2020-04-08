@@ -101,7 +101,7 @@ public class ZuliaRESTClient {
 			while ((output = br.readLine()) != null) {
 				JsonArray filenames = new JsonParser().parse(output).getAsJsonObject().getAsJsonArray("filenames");
 				for (int i = 0; i < filenames.size(); i++) {
-					String filename = filenames.get(0).getAsString();
+					String filename = filenames.get(i).getAsString();
 					parameters = createParameters(uniqueId, indexName, filename);
 
 					url = HttpHelper.createRequestUrl(server, restPort, ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, parameters);
