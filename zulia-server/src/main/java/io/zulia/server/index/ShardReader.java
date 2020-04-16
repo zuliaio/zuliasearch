@@ -66,8 +66,8 @@ public class ShardReader implements AutoCloseable {
 
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
 
-	private final static Pattern sortedDocValuesMessage = Pattern.compile(
-			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Use UninvertingReader or index with docvalues\\.");
+	private final static Pattern sortedDocValuesMessage = Pattern
+			.compile("unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Re-index with correct docvalues type.");
 
 	private final static Set<String> fetchSet = Collections
 			.unmodifiableSet(new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD)));
@@ -425,6 +425,9 @@ public class ShardReader implements AutoCloseable {
 		for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
 			boolean reverse = ZuliaQuery.FieldSort.Direction.DESCENDING.equals(fs.getDirection());
 
+			//TODO check sort before the exception like done with facets
+			//if (!indexConfig.existingFacet(label)) {
+
 			String rewrittenField = ZuliaQueryParser.rewriteLengthFields(fs.getSortField());
 
 			String sortField = fs.getSortField();
@@ -451,7 +454,7 @@ public class ShardReader implements AutoCloseable {
 				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
 					type = SortField.Type.INT;
 				}
-				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType)) {
+				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType) || FieldTypeUtil.isDateFieldType(sortFieldType)) {
 					type = SortField.Type.LONG;
 				}
 				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
@@ -460,13 +463,24 @@ public class ShardReader implements AutoCloseable {
 				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
 					type = SortField.Type.DOUBLE;
 				}
-				else if (FieldTypeUtil.isDateFieldType(sortFieldType)) {
-					type = SortField.Type.LONG;
-				}
 				else {
 					throw new Exception("Invalid numeric sort type <" + sortFieldType + "> for sort field <" + sortField + ">");
 				}
-				sortFields.add(new SortedNumericSortField(sortField, type, reverse, sortedNumericSelector));
+
+				SortedNumericSortField e = new SortedNumericSortField(sortField, type, reverse, sortedNumericSelector);
+				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
+					e.setMissingValue(fs.getMissingFirst() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
+				}
+				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType) || FieldTypeUtil.isDateFieldType(sortFieldType)) {
+					e.setMissingValue(fs.getMissingFirst() ? Long.MIN_VALUE : Long.MAX_VALUE);
+				}
+				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
+					e.setMissingValue(fs.getMissingFirst() ? Float.MIN_VALUE : Float.MAX_VALUE);
+				}
+				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
+					e.setMissingValue(fs.getMissingFirst() ? Double.MIN_VALUE : Double.MAX_VALUE);
+				}
+				sortFields.add(e);
 			}
 			else {
 
@@ -475,7 +489,9 @@ public class ShardReader implements AutoCloseable {
 					sortedSetSelector = SortedSetSelector.Type.MAX;
 				}
 
-				sortFields.add(new SortedSetSortField(sortField, reverse, sortedSetSelector));
+				SortedSetSortField setSortField = new SortedSetSortField(sortField, reverse, sortedSetSelector);
+				setSortField.setMissingValue(fs.getMissingFirst() ? SortField.STRING_FIRST : SortField.STRING_LAST);
+				sortFields.add(setSortField);
 			}
 
 		}
