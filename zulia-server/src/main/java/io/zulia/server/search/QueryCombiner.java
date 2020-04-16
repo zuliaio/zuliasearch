@@ -420,39 +420,72 @@ public class QueryCombiner {
 							Integer a = sortValue1.getExists() ? sortValue1.getIntegerValue() : null;
 							Integer b = sortValue2.getExists() ? sortValue2.getIntegerValue() : null;
 
-							compare = Comparator.nullsLast(Integer::compareTo).compare(a, b);
+							if (fs.getMissingFirst()) {
+								compare = Comparator.nullsFirst(Integer::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Integer::compareTo).compare(a, b);
+							}
 						}
 						else if (FieldTypeUtil.isNumericLongFieldType(sortType)) {
 							Long a = sortValue1.getExists() ? sortValue1.getLongValue() : null;
 							Long b = sortValue2.getExists() ? sortValue2.getLongValue() : null;
 
-							compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+							if (fs.getMissingFirst()) {
+								compare = Comparator.nullsFirst(Long::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+							}
 						}
 						else if (FieldTypeUtil.isDateFieldType(sortType)) {
 							Long a = sortValue1.getExists() ? sortValue1.getDateValue() : null;
 							Long b = sortValue2.getExists() ? sortValue2.getDateValue() : null;
 
-							compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+							if (fs.getMissingFirst()) {
+								compare = Comparator.nullsFirst(Long::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+							}
 						}
 						else if (FieldTypeUtil.isNumericFloatFieldType(sortType)) {
 
 							Float a = sortValue1.getExists() ? sortValue1.getFloatValue() : null;
 							Float b = sortValue2.getExists() ? sortValue2.getFloatValue() : null;
 
-							compare = Comparator.nullsLast(Float::compareTo).compare(a, b);
+							if (fs.getMissingFirst()) {
+								compare = Comparator.nullsFirst(Float::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Float::compareTo).compare(a, b);
+							}
 						}
 						else if (FieldTypeUtil.isNumericDoubleFieldType(sortType)) {
 
 							Double a = sortValue1.getExists() ? sortValue1.getDoubleValue() : null;
 							Double b = sortValue2.getExists() ? sortValue2.getDoubleValue() : null;
 
-							compare = Comparator.nullsLast(Double::compareTo).compare(a, b);
+							if (fs.getMissingFirst()) {
+								compare = Comparator.nullsFirst(Double::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Double::compareTo).compare(a, b);
+							}
+
 						}
 						else {
 							String a = sortValue1.getExists() ? sortValue1.getStringValue() : null;
 							String b = sortValue2.getExists() ? sortValue2.getStringValue() : null;
 
-							compare = Comparator.nullsLast(BytesRef::compareTo).compare(new BytesRef(a), new BytesRef(b));
+							if (fs.getMissingFirst()) {
+								compare = Comparator.nullsFirst(BytesRef::compareTo)
+										.compare(a != null ? new BytesRef(a) : null, b != null ? new BytesRef(b) : null);
+							}
+							else {
+								compare = Comparator.nullsLast(BytesRef::compareTo)
+										.compare(a != null ? new BytesRef(a) : null, b != null ? new BytesRef(b) : null);
+							}
 						}
 
 						if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {

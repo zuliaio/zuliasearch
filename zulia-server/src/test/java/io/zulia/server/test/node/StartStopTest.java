@@ -111,6 +111,10 @@ public class StartStopTest {
 		mongoDocument.put("issn", issn);
 		mongoDocument.put("eissn", eissn);
 
+		if (id != 0) {
+			mongoDocument.put("an", id);
+		}
+
 		if (!issn.equals("3331-3333")) {
 			if (half) {
 				mongoDocument.put("title", "Facet Userguide");
@@ -233,7 +237,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("uid", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index().displayName("Accession Number"));
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index().displayName("Accession Number").sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
 		indexConfig.addFieldConfig(
 				FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data").sort());
@@ -295,6 +299,55 @@ public class StartStopTest {
 			for (@SuppressWarnings("unused") FacetCount fc : qr.getFacetCounts("date")) {
 				//System.out.println(fc);
 			}
+
+		}
+
+		{
+
+			Query q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("title", ASCENDING);
+			QueryResult qr = zuliaWorkPool.query(q);
+
+			Assertions.assertEquals(1, qr.getDocuments().size(), "Only one record should be returned");
+			Assertions.assertEquals("Facet Userguide", qr.getFirstDocument().get("title"), "First Title should be Facet Userguide");
+
+			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("title", ASCENDING, true);
+			qr = zuliaWorkPool.query(q);
+
+			Assertions.assertEquals(1, qr.getDocuments().size(), "Only one record should be returned");
+			Assertions.assertNull(qr.getFirstDocument().get("title"), "First Title should be null");
+
+			q = new Query(FACET_TEST_INDEX, null, 3).addFieldSort("title", DESCENDING, true);
+			qr = zuliaWorkPool.query(q);
+
+			Assertions.assertEquals(3, qr.getDocuments().size(), "Three records should be returned");
+			Assertions.assertEquals("Special Userguide", qr.getFirstDocument().get("title"), "First Title should be Special Userguide");
+
+			q = new Query(FACET_TEST_INDEX, null, 3).addFieldSort("title", DESCENDING, false);
+			qr = zuliaWorkPool.query(q);
+
+			Assertions.assertEquals(3, qr.getDocuments().size(), "Three records should be returned");
+			Assertions.assertNull(qr.getFirstDocument().get("title"), "First Title should be null");
+
+			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", ASCENDING, false);
+			qr = zuliaWorkPool.query(q);
+
+			Assertions.assertEquals(1, qr.getFirstDocument().get("an"), "First AN should be 1");
+
+			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", DESCENDING, false);
+			qr = zuliaWorkPool.query(q);
+
+			Assertions.assertNull(qr.getFirstDocument().get("an"), "First AN should be null");
+
+			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", ASCENDING, true);
+			qr = zuliaWorkPool.query(q);
+
+			Assertions.assertNull(qr.getFirstDocument().get("an"), "First AN should be null");
+
+			q = new Query(FACET_TEST_INDEX, null, 10).addFieldSort("an", DESCENDING, true);
+			qr = zuliaWorkPool.query(q);
+
+			Assertions.assertEquals(59, qr.getDocuments().get(0).get("an"), "First AN should be 59");
+			Assertions.assertEquals(50, qr.getDocuments().get(9).get("an"), "First AN should be 50");
 
 		}
 
