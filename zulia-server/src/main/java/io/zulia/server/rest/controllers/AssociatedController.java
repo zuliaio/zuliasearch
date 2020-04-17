@@ -108,14 +108,16 @@ public class AssociatedController {
 				Publisher<Boolean> uploadPublisher = file.transferTo(tempFile);
 				return Single.fromPublisher(uploadPublisher).map(success -> {
 					if (success) {
-						indexManager.storeAssociatedDocument(indexName, id, fileName, new FileInputStream(tempFile), metadata);
-
+						try (FileInputStream is = new FileInputStream(tempFile)) {
+							indexManager.storeAssociatedDocument(indexName, id, fileName, is, metadata);
+						}
 						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">")
 								.status(ZuliaConstants.SUCCESS);
 					}
 					else {
 						return HttpResponse.serverError("Failed to store associated document with uniqueId <" + id + "> and filename <" + fileName + ">");
 					}
+
 				});
 
 			}
