@@ -469,16 +469,16 @@ public class ShardReader implements AutoCloseable {
 
 				SortedNumericSortField e = new SortedNumericSortField(sortField, type, reverse, sortedNumericSelector);
 				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
-					e.setMissingValue(fs.getMissingFirst() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
+					e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
 				}
 				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType) || FieldTypeUtil.isDateFieldType(sortFieldType)) {
-					e.setMissingValue(fs.getMissingFirst() ? Long.MIN_VALUE : Long.MAX_VALUE);
+					e.setMissingValue(!fs.getMissingLast() ? Long.MIN_VALUE : Long.MAX_VALUE);
 				}
 				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
-					e.setMissingValue(fs.getMissingFirst() ? Float.MIN_VALUE : Float.MAX_VALUE);
+					e.setMissingValue(!fs.getMissingLast() ? Float.MIN_VALUE : Float.MAX_VALUE);
 				}
 				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
-					e.setMissingValue(fs.getMissingFirst() ? Double.MIN_VALUE : Double.MAX_VALUE);
+					e.setMissingValue(!fs.getMissingLast() ? Double.MIN_VALUE : Double.MAX_VALUE);
 				}
 				sortFields.add(e);
 			}
@@ -490,7 +490,7 @@ public class ShardReader implements AutoCloseable {
 				}
 
 				SortedSetSortField setSortField = new SortedSetSortField(sortField, reverse, sortedSetSelector);
-				setSortField.setMissingValue(fs.getMissingFirst() ? SortField.STRING_FIRST : SortField.STRING_LAST);
+				setSortField.setMissingValue(!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
 				sortFields.add(setSortField);
 			}
 

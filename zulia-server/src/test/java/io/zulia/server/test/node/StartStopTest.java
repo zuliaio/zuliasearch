@@ -304,46 +304,46 @@ public class StartStopTest {
 
 		{
 
-			Query q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("title", ASCENDING);
+			Query q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("title", ASCENDING, true);
 			QueryResult qr = zuliaWorkPool.query(q);
 
 			Assertions.assertEquals(1, qr.getDocuments().size(), "Only one record should be returned");
 			Assertions.assertEquals("Facet Userguide", qr.getFirstDocument().get("title"), "First Title should be Facet Userguide");
 
-			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("title", ASCENDING, true);
+			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("title", ASCENDING, false);
 			qr = zuliaWorkPool.query(q);
 
 			Assertions.assertEquals(1, qr.getDocuments().size(), "Only one record should be returned");
 			Assertions.assertNull(qr.getFirstDocument().get("title"), "First Title should be null");
 
-			q = new Query(FACET_TEST_INDEX, null, 3).addFieldSort("title", DESCENDING, true);
+			q = new Query(FACET_TEST_INDEX, null, 3).addFieldSort("title", DESCENDING, false);
 			qr = zuliaWorkPool.query(q);
 
 			Assertions.assertEquals(3, qr.getDocuments().size(), "Three records should be returned");
 			Assertions.assertEquals("Special Userguide", qr.getFirstDocument().get("title"), "First Title should be Special Userguide");
 
-			q = new Query(FACET_TEST_INDEX, null, 3).addFieldSort("title", DESCENDING, false);
+			q = new Query(FACET_TEST_INDEX, null, 3).addFieldSort("title", DESCENDING, true);
 			qr = zuliaWorkPool.query(q);
 
 			Assertions.assertEquals(3, qr.getDocuments().size(), "Three records should be returned");
 			Assertions.assertNull(qr.getFirstDocument().get("title"), "First Title should be null");
 
-			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", ASCENDING, false);
+			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", ASCENDING, true);
 			qr = zuliaWorkPool.query(q);
 
 			Assertions.assertEquals(1, qr.getFirstDocument().get("an"), "First AN should be 1");
 
-			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", DESCENDING, false);
+			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", DESCENDING, true);
 			qr = zuliaWorkPool.query(q);
 
 			Assertions.assertNull(qr.getFirstDocument().get("an"), "First AN should be null");
 
-			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", ASCENDING, true);
+			q = new Query(FACET_TEST_INDEX, null, 1).addFieldSort("an", ASCENDING, false);
 			qr = zuliaWorkPool.query(q);
 
 			Assertions.assertNull(qr.getFirstDocument().get("an"), "First AN should be null");
 
-			q = new Query(FACET_TEST_INDEX, null, 10).addFieldSort("an", DESCENDING, true);
+			q = new Query(FACET_TEST_INDEX, null, 10).addFieldSort("an", DESCENDING, false);
 			qr = zuliaWorkPool.query(q);
 
 			Assertions.assertEquals(59, qr.getDocuments().get(0).get("an"), "First AN should be 59");
