@@ -475,10 +475,10 @@ public class ShardReader implements AutoCloseable {
 					e.setMissingValue(!fs.getMissingLast() ? Long.MIN_VALUE : Long.MAX_VALUE);
 				}
 				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
-					e.setMissingValue(!fs.getMissingLast() ? Float.MIN_VALUE : Float.MAX_VALUE);
+					e.setMissingValue(!fs.getMissingLast() ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY);
 				}
 				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
-					e.setMissingValue(!fs.getMissingLast() ? Double.MIN_VALUE : Double.MAX_VALUE);
+					e.setMissingValue(!fs.getMissingLast() ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
 				}
 				sortFields.add(e);
 			}
@@ -880,4 +880,5 @@ public class ShardReader implements AutoCloseable {
 
 		}
 	}
+
 }
