@@ -441,11 +441,11 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 		return this;
 	}
 
-	public Query addFieldSort(String sort, Direction direction, boolean missingFirst) {
+	public Query addFieldSort(String sort, Direction direction, boolean missingLast) {
 		if (fieldSorts.isEmpty()) {
 			this.fieldSorts = new ArrayList<>();
 		}
-		fieldSorts.add(FieldSort.newBuilder().setSortField(sort).setDirection(direction).setMissingFirst(missingFirst).build());
+		fieldSorts.add(FieldSort.newBuilder().setSortField(sort).setDirection(direction).setMissingLast(missingLast).build());
 		return this;
 	}
 

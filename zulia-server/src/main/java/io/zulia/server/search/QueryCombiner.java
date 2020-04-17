@@ -420,7 +420,7 @@ public class QueryCombiner {
 							Integer a = sortValue1.getExists() ? sortValue1.getIntegerValue() : null;
 							Integer b = sortValue2.getExists() ? sortValue2.getIntegerValue() : null;
 
-							if (fs.getMissingFirst()) {
+							if (!fs.getMissingLast()) {
 								compare = Comparator.nullsFirst(Integer::compareTo).compare(a, b);
 							}
 							else {
@@ -431,7 +431,7 @@ public class QueryCombiner {
 							Long a = sortValue1.getExists() ? sortValue1.getLongValue() : null;
 							Long b = sortValue2.getExists() ? sortValue2.getLongValue() : null;
 
-							if (fs.getMissingFirst()) {
+							if (!fs.getMissingLast()) {
 								compare = Comparator.nullsFirst(Long::compareTo).compare(a, b);
 							}
 							else {
@@ -442,7 +442,7 @@ public class QueryCombiner {
 							Long a = sortValue1.getExists() ? sortValue1.getDateValue() : null;
 							Long b = sortValue2.getExists() ? sortValue2.getDateValue() : null;
 
-							if (fs.getMissingFirst()) {
+							if (!fs.getMissingLast()) {
 								compare = Comparator.nullsFirst(Long::compareTo).compare(a, b);
 							}
 							else {
@@ -454,7 +454,7 @@ public class QueryCombiner {
 							Float a = sortValue1.getExists() ? sortValue1.getFloatValue() : null;
 							Float b = sortValue2.getExists() ? sortValue2.getFloatValue() : null;
 
-							if (fs.getMissingFirst()) {
+							if (!fs.getMissingLast()) {
 								compare = Comparator.nullsFirst(Float::compareTo).compare(a, b);
 							}
 							else {
@@ -466,7 +466,7 @@ public class QueryCombiner {
 							Double a = sortValue1.getExists() ? sortValue1.getDoubleValue() : null;
 							Double b = sortValue2.getExists() ? sortValue2.getDoubleValue() : null;
 
-							if (fs.getMissingFirst()) {
+							if (!fs.getMissingLast()) {
 								compare = Comparator.nullsFirst(Double::compareTo).compare(a, b);
 							}
 							else {
@@ -478,7 +478,7 @@ public class QueryCombiner {
 							String a = sortValue1.getExists() ? sortValue1.getStringValue() : null;
 							String b = sortValue2.getExists() ? sortValue2.getStringValue() : null;
 
-							if (fs.getMissingFirst()) {
+							if (!fs.getMissingLast()) {
 								compare = Comparator.nullsFirst(BytesRef::compareTo)
 										.compare(a != null ? new BytesRef(a) : null, b != null ? new BytesRef(b) : null);
 							}
