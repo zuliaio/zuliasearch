@@ -111,10 +111,12 @@ public class AssociatedController {
 						try (FileInputStream is = new FileInputStream(tempFile)) {
 							indexManager.storeAssociatedDocument(indexName, id, fileName, is, metadata);
 						}
+						tempFile.delete();
 						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">")
 								.status(ZuliaConstants.SUCCESS);
 					}
 					else {
+						tempFile.delete();
 						return HttpResponse.serverError("Failed to store associated document with uniqueId <" + id + "> and filename <" + fileName + ">");
 					}
 
@@ -122,12 +124,11 @@ public class AssociatedController {
 
 			}
 			catch (Exception e) {
+				tempFile.delete();
 				LOG.log(Level.SEVERE, e.getMessage(), e);
 				throw e;
 			}
-			finally {
-				tempFile.delete();
-			}
+
 		}
 		else {
 			throw new Exception(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
