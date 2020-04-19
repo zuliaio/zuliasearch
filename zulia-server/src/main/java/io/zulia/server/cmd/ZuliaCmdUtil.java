@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -84,6 +83,7 @@ public class ZuliaCmdUtil {
 			workPool.queryAll(zuliaQuery, queryResult -> {
 
 				long totalHits = queryResult.getTotalHits();
+				LOG.info("Found <" + totalHits + "> for index <" + index + ">");
 
 				queryResult.getDocuments().forEach(doc -> {
 					try {
@@ -98,7 +98,7 @@ public class ZuliaCmdUtil {
 						}
 
 					}
-					catch (IOException e) {
+					catch (Exception e) {
 						LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
 					}
 
