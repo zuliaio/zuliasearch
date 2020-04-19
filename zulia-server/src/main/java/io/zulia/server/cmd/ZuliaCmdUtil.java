@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -78,6 +79,7 @@ public class ZuliaCmdUtil {
 	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, String idField,
 			Set<String> uniqueIds) throws Exception {
 		try (FileWriter fileWriter = new FileWriter(new File(recordsFilename), Charsets.UTF_8)) {
+
 			Query zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
 
 			workPool.queryAll(zuliaQuery, queryResult -> {
@@ -98,13 +100,20 @@ public class ZuliaCmdUtil {
 						}
 
 					}
-					catch (Exception e) {
+					catch (IOException e) {
+						LOG.log(Level.SEVERE, "Could not write record <" + doc + "> for index <" + index + ">", e);
+					}
+					catch (Throwable e) {
 						LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
 					}
 
 				});
 			});
 
+		}
+		catch (Throwable e) {
+			LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
+			throw e;
 		}
 	}
 
