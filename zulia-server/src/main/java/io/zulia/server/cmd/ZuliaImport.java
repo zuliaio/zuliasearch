@@ -69,12 +69,13 @@ public class ZuliaImport {
 	}
 
 	private static void doImport(ZuliaWorkPool workPool, String dir, String index, String idField) throws Exception {
-		String recordsFilename = dir + File.separator + index + File.separator + index + ".json";
+		String inputDir = dir + File.separator + index;
+		String recordsFilename = inputDir + File.separator + index + ".json";
 
 		if (Files.exists(Paths.get(recordsFilename))) {
 			AtomicInteger count = new AtomicInteger();
 			LOG.info("Starting to index records for index <" + index + ">");
-			ZuliaCmdUtil.index(recordsFilename, idField, index, workPool, count);
+			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count);
 			LOG.info("Finished indexing for index <" + index + "> with total records: " + count);
 		}
 		else {

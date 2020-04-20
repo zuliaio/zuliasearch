@@ -174,7 +174,6 @@ public class MongoDocumentStorage implements DocumentStorage {
 		}
 
 		InputStream is = gridFS.openDownloadStream(file.getObjectId());
-		;
 
 		Document metadata = file.getMetadata();
 
