@@ -206,7 +206,12 @@ public class ZuliaIndexManager {
 
 	}
 
-	public void getAssociatedDocuments(String indexName, Writer writer, Document filter) throws IOException {
+	public List<String> getAssociatedFilenames(String indexName, String uniqueId) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		return i.getAssociatedFilenames(uniqueId);
+	}
+
+	public void getAssociatedFilenames(String indexName, Writer writer, Document filter) throws IOException {
 		ZuliaIndex i = getIndexFromName(indexName);
 		i.getAssociatedDocuments(writer, filter);
 	}

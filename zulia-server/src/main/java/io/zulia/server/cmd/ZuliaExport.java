@@ -11,6 +11,7 @@ import io.zulia.log.LogUtil;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -101,7 +102,11 @@ public class ZuliaExport {
 	}
 
 	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out) throws Exception {
-		io.zulia.client.command.Query zuliaQuery;
+		queryAndWriteOutput(workPool, index, q, rows, out, null, null);
+	}
+
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out, String idField, Set<String> uniqueIds)
+			throws Exception {
 
 		// create zuliaexport dir first
 		String zuliaExportDir = out + File.separator + "zuliaexport";
@@ -119,7 +124,7 @@ public class ZuliaExport {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Exporting from index <" + index + ">");
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds);
 		LOG.info("Finished exporting from index <" + index + ">, total: " + count);
 
 	}

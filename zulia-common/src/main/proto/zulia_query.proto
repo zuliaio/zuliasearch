@@ -62,6 +62,7 @@ message FieldSort {
 
     string sortField = 1;
     Direction direction = 2; // default ASC
+    bool missingLast = 3;
 }
 
 enum FetchType {

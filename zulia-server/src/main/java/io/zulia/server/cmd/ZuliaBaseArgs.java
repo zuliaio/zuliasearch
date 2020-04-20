@@ -13,6 +13,6 @@ public class ZuliaBaseArgs {
 	@Parameter(names = "--port", description = "Zulia Port", order = 2)
 	public Integer port = 32191;
 
-	@Parameter(names = "--index", description = "Index name to dump/restore.")
+	@Parameter(names = "--index", description = "Index name")
 	public String index;
 }
