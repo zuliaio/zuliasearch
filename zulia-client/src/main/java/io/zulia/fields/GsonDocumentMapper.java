@@ -20,12 +20,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.SignStyle;
+import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.List;
 
 public class GsonDocumentMapper<T> {
 
-	private static final DateTimeFormatter MONGO_UTC_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+	private static final DateTimeFormatter MONGO_UTC_FORMAT = new DateTimeFormatterBuilder().appendPattern("yyyy-MM-dd'T'HH:mm:ss.")
+			.appendValue(ChronoField.MILLI_OF_SECOND, 1, 3, SignStyle.NEVER).appendPattern("'Z'").toFormatter();
 
 	private final Class<T> clazz;
 	private final Gson gson = new GsonBuilder().registerTypeAdapter(Date.class, new DateSerializer()).registerTypeAdapter(Date.class, new DateDeserializer())
