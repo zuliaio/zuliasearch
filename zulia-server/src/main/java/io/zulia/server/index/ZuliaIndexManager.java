@@ -15,7 +15,7 @@ import io.zulia.server.config.single.FSIndexService;
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.connection.server.validation.CreateIndexRequestValidator;
 import io.zulia.server.connection.server.validation.QueryRequestValidator;
-import io.zulia.server.exceptions.IndexDoesNotExist;
+import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
@@ -357,7 +357,7 @@ public class ZuliaIndexManager {
 
 		}
 		indexSettings = indexSettings.toBuilder().setUpdateTime(currentTimeMillis).build();
-		indexService.createIndex(indexSettings);
+		indexService.storeIndex(indexSettings);
 
 		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
 				this);
@@ -508,10 +508,10 @@ public class ZuliaIndexManager {
 		return GetIndexSettingsResponse.newBuilder().setIndexSettings(i.getIndexConfig().getIndexSettings()).build();
 	}
 
-	private ZuliaIndex getIndexFromName(String indexName) throws IndexDoesNotExist {
+	private ZuliaIndex getIndexFromName(String indexName) throws IndexDoesNotExistException {
 		ZuliaIndex i = indexMap.get(indexName);
 		if (i == null) {
-			throw new IndexDoesNotExist(indexName);
+			throw new IndexDoesNotExistException(indexName);
 		}
 		return i;
 	}
