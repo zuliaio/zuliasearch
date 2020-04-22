@@ -3,6 +3,7 @@ package io.zulia.server.search;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaIndex.FieldConfig;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.CountRequest;
@@ -21,6 +22,7 @@ import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
+import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.index.ZuliaIndex;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -363,21 +365,24 @@ public class QueryCombiner {
 			for (FieldSort fieldSort : fieldSortList) {
 				String sortField = fieldSort.getSortField();
 
-				for (ZuliaIndex index : indexes) {
-					FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);
+				if (ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
 
-					FieldConfig.FieldType indexSortType = index.getSortFieldType(sortField);
-					if (currentSortType == null) {
-						sortTypeMap.put(sortField, indexSortType);
-					}
-					else {
-						if (!currentSortType.equals(indexSortType)) {
-							log.severe("Sort fields must be defined the same in all indexes searched in a single query");
-							String message =
-									"Cannot sort on field <" + sortField + ">: found type: <" + currentSortType + "> then type: <" + indexSortType + ">";
-							log.severe(message);
+					for (ZuliaIndex index : indexes) {
+						FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);
 
-							throw new Exception(message);
+						FieldConfig.FieldType indexSortType = index.getSortFieldType(sortField);
+						if (currentSortType == null) {
+							sortTypeMap.put(sortField, indexSortType);
+						}
+						else {
+							if (!currentSortType.equals(indexSortType)) {
+								log.severe("Sort fields must be defined the same in all indexes searched in a single query");
+								String message =
+										"Cannot sort on field <" + sortField + ">: found type: <" + currentSortType + "> then type: <" + indexSortType + ">";
+								log.severe(message);
+
+								throw new Exception(message);
+							}
 						}
 					}
 				}
@@ -395,6 +400,10 @@ public class QueryCombiner {
 
 					FieldConfig.FieldType sortType = sortTypeMap.get(sortField);
 
+					if (!ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
+						sortType = FieldConfig.FieldType.NUMERIC_LONG;
+					}
+
 					if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 						if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {
 							compare = scoreCompare.compare(o1, o2);
@@ -404,38 +413,79 @@ public class QueryCombiner {
 						}
 					}
 					else {
-						if (FieldConfig.FieldType.NUMERIC_INT.equals(sortType)) {
-							Integer a = sortValues1.getSortValue(sortValueIndex).getIntegerValue();
-							Integer b = sortValues2.getSortValue(sortValueIndex).getIntegerValue();
+						ZuliaQuery.SortValue sortValue1 = sortValues1.getSortValue(sortValueIndex);
+						ZuliaQuery.SortValue sortValue2 = sortValues2.getSortValue(sortValueIndex);
 
-							compare = Comparator.nullsLast(Integer::compareTo).compare(a, b);
+						if (FieldTypeUtil.isNumericIntFieldType(sortType)) {
+							Integer a = sortValue1.getExists() ? sortValue1.getIntegerValue() : null;
+							Integer b = sortValue2.getExists() ? sortValue2.getIntegerValue() : null;
+
+							if (!fs.getMissingLast()) {
+								compare = Comparator.nullsFirst(Integer::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Integer::compareTo).compare(a, b);
+							}
 						}
-						else if (FieldConfig.FieldType.NUMERIC_LONG.equals(sortType) || FieldConfig.FieldType.DATE.equals(sortType)) {
-							Long a = sortValues1.getSortValue(sortValueIndex).getLongValue();
-							Long b = sortValues2.getSortValue(sortValueIndex).getLongValue();
+						else if (FieldTypeUtil.isNumericLongFieldType(sortType)) {
+							Long a = sortValue1.getExists() ? sortValue1.getLongValue() : null;
+							Long b = sortValue2.getExists() ? sortValue2.getLongValue() : null;
 
-							compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+							if (!fs.getMissingLast()) {
+								compare = Comparator.nullsFirst(Long::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+							}
 						}
-						else if (FieldConfig.FieldType.NUMERIC_FLOAT.equals(sortType)) {
+						else if (FieldTypeUtil.isDateFieldType(sortType)) {
+							Long a = sortValue1.getExists() ? sortValue1.getDateValue() : null;
+							Long b = sortValue2.getExists() ? sortValue2.getDateValue() : null;
 
-							Float a = sortValues1.getSortValue(sortValueIndex).getFloatValue();
-							Float b = sortValues2.getSortValue(sortValueIndex).getFloatValue();
-
-							compare = Comparator.nullsLast(Float::compareTo).compare(a, b);
+							if (!fs.getMissingLast()) {
+								compare = Comparator.nullsFirst(Long::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Long::compareTo).compare(a, b);
+							}
 						}
-						else if (FieldConfig.FieldType.NUMERIC_DOUBLE.equals(sortType)) {
+						else if (FieldTypeUtil.isNumericFloatFieldType(sortType)) {
 
-							Double a = sortValues1.getSortValue(sortValueIndex).getDoubleValue();
-							Double b = sortValues2.getSortValue(sortValueIndex).getDoubleValue();
+							Float a = sortValue1.getExists() ? sortValue1.getFloatValue() : null;
+							Float b = sortValue2.getExists() ? sortValue2.getFloatValue() : null;
 
-							compare = Comparator.nullsLast(Double::compareTo).compare(a, b);
+							if (!fs.getMissingLast()) {
+								compare = Comparator.nullsFirst(Float::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Float::compareTo).compare(a, b);
+							}
+						}
+						else if (FieldTypeUtil.isNumericDoubleFieldType(sortType)) {
+
+							Double a = sortValue1.getExists() ? sortValue1.getDoubleValue() : null;
+							Double b = sortValue2.getExists() ? sortValue2.getDoubleValue() : null;
+
+							if (!fs.getMissingLast()) {
+								compare = Comparator.nullsFirst(Double::compareTo).compare(a, b);
+							}
+							else {
+								compare = Comparator.nullsLast(Double::compareTo).compare(a, b);
+							}
+
 						}
 						else {
-							String a = sortValues1.getSortValue(sortValueIndex).getStringValue();
-							String b = sortValues2.getSortValue(sortValueIndex).getStringValue();
+							String a = sortValue1.getExists() ? sortValue1.getStringValue() : null;
+							String b = sortValue2.getExists() ? sortValue2.getStringValue() : null;
 
-							//compare = Comparator.nullsLast(String::compareTo).compare(a, b);
-							compare = Comparator.nullsLast(BytesRef::compareTo).compare(new BytesRef(a), new BytesRef(b));
+							if (!fs.getMissingLast()) {
+								compare = Comparator.nullsFirst(BytesRef::compareTo)
+										.compare(a != null ? new BytesRef(a) : null, b != null ? new BytesRef(b) : null);
+							}
+							else {
+								compare = Comparator.nullsLast(BytesRef::compareTo)
+										.compare(a != null ? new BytesRef(a) : null, b != null ? new BytesRef(b) : null);
+							}
 						}
 
 						if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {

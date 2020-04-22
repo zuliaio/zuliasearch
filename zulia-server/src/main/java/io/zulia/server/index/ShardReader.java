@@ -15,6 +15,7 @@ import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.QueryResultCache;
+import io.zulia.server.search.ZuliaQueryParser;
 import io.zulia.server.util.FieldAndSubFields;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
@@ -65,8 +66,8 @@ public class ShardReader implements AutoCloseable {
 
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
 
-	private final static Pattern sortedDocValuesMessage = Pattern.compile(
-			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Use UninvertingReader or index with docvalues\\.");
+	private final static Pattern sortedDocValuesMessage = Pattern
+			.compile("unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Re-index with correct docvalues type.");
 
 	private final static Set<String> fetchSet = Collections
 			.unmodifiableSet(new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD)));
@@ -424,11 +425,23 @@ public class ShardReader implements AutoCloseable {
 		for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
 			boolean reverse = ZuliaQuery.FieldSort.Direction.DESCENDING.equals(fs.getDirection());
 
+			//TODO check sort before the exception like done with facets
+			//if (!indexConfig.existingFacet(label)) {
+
+			String rewrittenField = ZuliaQueryParser.rewriteLengthFields(fs.getSortField());
+
 			String sortField = fs.getSortField();
 			ZuliaIndex.FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
+			}
+			else if (!rewrittenField.equals(sortField)) {
+				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
+				if (reverse) {
+					sortedNumericSelector = SortedNumericSelector.Type.MAX;
+				}
+				sortFields.add(new SortedNumericSortField(rewrittenField, SortField.Type.INT, reverse, sortedNumericSelector));
 			}
 			else if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
 
@@ -441,7 +454,7 @@ public class ShardReader implements AutoCloseable {
 				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
 					type = SortField.Type.INT;
 				}
-				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType)) {
+				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType) || FieldTypeUtil.isDateFieldType(sortFieldType)) {
 					type = SortField.Type.LONG;
 				}
 				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
@@ -450,13 +463,24 @@ public class ShardReader implements AutoCloseable {
 				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
 					type = SortField.Type.DOUBLE;
 				}
-				else if (FieldTypeUtil.isDateFieldType(sortFieldType)) {
-					type = SortField.Type.LONG;
-				}
 				else {
 					throw new Exception("Invalid numeric sort type <" + sortFieldType + "> for sort field <" + sortField + ">");
 				}
-				sortFields.add(new SortedNumericSortField(sortField, type, reverse, sortedNumericSelector));
+
+				SortedNumericSortField e = new SortedNumericSortField(sortField, type, reverse, sortedNumericSelector);
+				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
+					e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
+				}
+				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType) || FieldTypeUtil.isDateFieldType(sortFieldType)) {
+					e.setMissingValue(!fs.getMissingLast() ? Long.MIN_VALUE : Long.MAX_VALUE);
+				}
+				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
+					e.setMissingValue(!fs.getMissingLast() ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY);
+				}
+				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
+					e.setMissingValue(!fs.getMissingLast() ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
+				}
+				sortFields.add(e);
 			}
 			else {
 
@@ -465,7 +489,9 @@ public class ShardReader implements AutoCloseable {
 					sortedSetSelector = SortedSetSelector.Type.MAX;
 				}
 
-				sortFields.add(new SortedSetSortField(sortField, reverse, sortedSetSelector));
+				SortedSetSortField setSortField = new SortedSetSortField(sortField, reverse, sortedSetSelector);
+				setSortField.setMissingValue(!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
+				sortFields.add(setSortField);
 			}
 
 		}
@@ -588,6 +614,10 @@ public class ShardReader implements AutoCloseable {
 			}
 
 			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
+
+			if (!ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
+				fieldTypeForSortField = ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT;
+			}
 
 			ZuliaQuery.SortValue.Builder sortValueBuilder = ZuliaQuery.SortValue.newBuilder().setExists(true);
 			if (FieldTypeUtil.isNumericOrDateFieldType(fieldTypeForSortField)) {
@@ -850,4 +880,5 @@ public class ShardReader implements AutoCloseable {
 
 		}
 	}
+
 }

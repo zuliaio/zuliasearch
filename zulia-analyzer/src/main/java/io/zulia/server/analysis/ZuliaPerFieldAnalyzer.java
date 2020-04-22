@@ -6,6 +6,7 @@ import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
 import io.zulia.server.analysis.filter.BritishUSFilter;
 import io.zulia.server.analysis.filter.CaseProtectedWordsFilter;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.field.FieldTypeUtil;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -79,16 +80,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
 				a = new BooleanAnalyzer();
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT.equals(fieldType)) {
-				a = new WhitespaceAnalyzer();
-			}
-			else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_LONG.equals(fieldType)) {
-				a = new WhitespaceAnalyzer();
-			}
-			else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_FLOAT.equals(fieldType)) {
-				a = new WhitespaceAnalyzer();
-			}
-			else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_DOUBLE.equals(fieldType)) {
+			else if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
 				a = new WhitespaceAnalyzer();
 			}
 			else {

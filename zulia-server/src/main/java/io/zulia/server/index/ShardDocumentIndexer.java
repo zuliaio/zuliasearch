@@ -121,25 +121,25 @@ public class ShardDocumentIndexer {
 			String indexedFieldName = indexAs.getIndexFieldName();
 			luceneDocument.add(new StringField(ZuliaConstants.FIELDS_LIST_FIELD, indexedFieldName, Field.Store.NO));
 
-			if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT.equals(fieldType)) {
+			if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 				IntFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_LONG.equals(fieldType)) {
+			else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
 				LongFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_FLOAT.equals(fieldType)) {
+			else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
 				FloatFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_DOUBLE.equals(fieldType)) {
+			else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
 				DoubleFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fieldType)) {
+			else if (FieldTypeUtil.isDateFieldType(fieldType)) {
 				DateFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
+			else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
 				BooleanFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.STRING.equals(fieldType)) {
+			else if (FieldTypeUtil.isStringFieldType(fieldType)) {
 				StringFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
 			else {
@@ -157,7 +157,7 @@ public class ShardDocumentIndexer {
 			if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
 				ZuliaUtil.handleLists(o, obj -> {
 
-					if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fieldType)) {
+					if (FieldTypeUtil.isDateFieldType(fieldType)) {
 						if (obj instanceof Date) {
 
 							Date date = (Date) obj;
@@ -175,16 +175,16 @@ public class ShardDocumentIndexer {
 
 							Number number = (Number) obj;
 							SortedNumericDocValuesField docValue = null;
-							if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT.equals(fieldType)) {
+							if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 								docValue = new SortedNumericDocValuesField(sortFieldName, number.intValue());
 							}
-							else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_LONG.equals(fieldType)) {
+							else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
 								docValue = new SortedNumericDocValuesField(sortFieldName, number.longValue());
 							}
-							else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_FLOAT.equals(fieldType)) {
+							else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
 								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.floatToSortableInt(number.floatValue()));
 							}
-							else if (ZuliaIndex.FieldConfig.FieldType.NUMERIC_DOUBLE.equals(fieldType)) {
+							else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
 								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.doubleToSortableLong(number.doubleValue()));
 							}
 							else {

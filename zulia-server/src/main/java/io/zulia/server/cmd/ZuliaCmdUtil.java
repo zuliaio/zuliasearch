@@ -8,6 +8,7 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import io.zulia.client.command.Query;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.StoreLargeAssociated;
 import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.doc.ResultDocBuilder;
@@ -18,16 +19,23 @@ import io.zulia.server.config.cluster.MongoNodeService;
 import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.config.single.SingleNodeService;
 import io.zulia.server.util.MongoProvider;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.bson.Document;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -68,16 +76,22 @@ public class ZuliaCmdUtil {
 		}
 	}
 
-	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count) throws Exception {
+	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, String idField,
+			Set<String> uniqueIds) throws Exception {
 		try (FileWriter fileWriter = new FileWriter(new File(recordsFilename), Charsets.UTF_8)) {
+
 			Query zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
 
 			workPool.queryAll(zuliaQuery, queryResult -> {
 
 				long totalHits = queryResult.getTotalHits();
+				LOG.info("Found <" + totalHits + "> for index <" + index + ">");
 
 				queryResult.getDocuments().forEach(doc -> {
 					try {
+						if (uniqueIds != null) {
+							uniqueIds.add(doc.getString(idField));
+						}
 						fileWriter.write(doc.toJson());
 						fileWriter.write(System.lineSeparator());
 
@@ -87,6 +101,9 @@ public class ZuliaCmdUtil {
 
 					}
 					catch (IOException e) {
+						LOG.log(Level.SEVERE, "Could not write record <" + doc + "> for index <" + index + ">", e);
+					}
+					catch (Throwable e) {
 						LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
 					}
 
@@ -94,9 +111,14 @@ public class ZuliaCmdUtil {
 			});
 
 		}
+		catch (Throwable e) {
+			LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
+			throw e;
+		}
 	}
 
-	public static void index(String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count) throws Exception {
+	public static void index(String inputDir, String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count)
+			throws Exception {
 		WorkPool threadPool = new WorkPool(4);
 		try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
 			String line;
@@ -124,6 +146,24 @@ public class ZuliaCmdUtil {
 						Store store = new Store(id, index);
 						store.setResultDocument(new ResultDocBuilder().setDocument(document));
 						workPool.store(store);
+
+						if (Files.exists(Paths.get(inputDir + File.separator + id.replaceAll("/", "_") + ".zip"))) {
+
+							try (ZipArchiveInputStream inputStream = new ZipArchiveInputStream(
+									new FileInputStream(Paths.get(inputDir + File.separator + id.replaceAll("/", "_") + ".zip").toFile()))) {
+								ZipArchiveEntry zipEntry;
+								while ((zipEntry = inputStream.getNextZipEntry()) != null) {
+									try {
+										workPool.storeLargeAssociated(
+												new StoreLargeAssociated(id, index, zipEntry.getName(), new ByteArrayInputStream(inputStream.readAllBytes())));
+									}
+									catch (Throwable t) {
+										LOG.log(Level.SEVERE, "Could not restore associated file <" + zipEntry.getName() + ">", t);
+									}
+								}
+							}
+
+						}
 
 						int i = count.incrementAndGet();
 						if (i % 10000 == 0) {
