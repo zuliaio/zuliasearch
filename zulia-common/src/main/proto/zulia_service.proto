@@ -251,6 +251,7 @@ message GetNodesRequest {
 message GetNodesResponse {
     repeated Node node = 1;
     repeated IndexMapping indexMapping = 2;
+    repeated IndexAlias indexAlias = 3;
 }
 
 message GetIndexSettingsRequest {
