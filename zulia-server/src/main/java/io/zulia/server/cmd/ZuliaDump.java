@@ -165,7 +165,7 @@ public class ZuliaDump {
 		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
 		String indOutputDir = zuliaDumpDir + File.separator + index;
 
-		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + " documents.");
+		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + "> documents.");
 		AtomicInteger count = new AtomicInteger(0);
 		for (String uniqueId : uniqueIds) {
 			workPool.fetchLargeAssociated(new FetchLargeAssociated(uniqueId, index,
@@ -174,7 +174,7 @@ public class ZuliaDump {
 				LOG.info("Associated docs dumped so far: " + count);
 			}
 		}
-		LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + " documents.");
+		LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents.");
 	}
 
 }

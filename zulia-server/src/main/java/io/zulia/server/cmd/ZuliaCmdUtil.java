@@ -81,6 +81,7 @@ public class ZuliaCmdUtil {
 		try (FileWriter fileWriter = new FileWriter(new File(recordsFilename), Charsets.UTF_8)) {
 
 			Query zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
+			zuliaQuery.addFieldSort(idField);
 
 			workPool.queryAll(zuliaQuery, queryResult -> {
 
@@ -95,7 +96,7 @@ public class ZuliaCmdUtil {
 						fileWriter.write(doc.toJson());
 						fileWriter.write(System.lineSeparator());
 
-						if (count.incrementAndGet() % 10000 == 0) {
+						if (count.incrementAndGet() % 1000 == 0) {
 							LOG.info("So far written <" + count + "> of <" + totalHits + ">");
 						}
 
