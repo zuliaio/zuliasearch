@@ -8,6 +8,7 @@ import com.google.protobuf.util.JsonFormat;
 import io.zulia.client.command.FetchLargeAssociated;
 import io.zulia.client.command.GetIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
+import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.GetIndexesResult;
 import io.zulia.log.LogUtil;
@@ -167,14 +168,28 @@ public class ZuliaDump {
 
 		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + "> documents.");
 		AtomicInteger count = new AtomicInteger(0);
+		WorkPool threadPool = new WorkPool(4);
 		for (String uniqueId : uniqueIds) {
-			workPool.fetchLargeAssociated(new FetchLargeAssociated(uniqueId, index,
-					new ZipOutputStream(new FileOutputStream(Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()))));
-			if (count.incrementAndGet() % 1000 == 0) {
-				LOG.info("Associated docs dumped so far: " + count);
-			}
+			threadPool.executeAsync(() -> {
+
+				workPool.fetchLargeAssociated(new FetchLargeAssociated(uniqueId, index,
+						new ZipOutputStream(new FileOutputStream(Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()))));
+				if (count.incrementAndGet() % 1000 == 0) {
+					LOG.info("Associated docs dumped so far: " + count);
+				}
+
+				return null;
+			});
 		}
 		LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents.");
+
+		try {
+			threadPool.shutdown();
+		}
+		catch (Throwable t) {
+			LOG.log(Level.SEVERE, "Could not shut down the thread pool.", t);
+			System.exit(9);
+		}
 	}
 
 }
