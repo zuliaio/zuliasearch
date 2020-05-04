@@ -77,11 +77,13 @@ public class ZuliaCmdUtil {
 	}
 
 	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, String idField,
-			Set<String> uniqueIds) throws Exception {
+			Set<String> uniqueIds, boolean sortById) throws Exception {
 		try (FileWriter fileWriter = new FileWriter(new File(recordsFilename), Charsets.UTF_8)) {
 
 			Query zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
-			zuliaQuery.addFieldSort(idField);
+			if (sortById) {
+				zuliaQuery.addFieldSort(idField);
+			}
 
 			workPool.queryAll(zuliaQuery, queryResult -> {
 
