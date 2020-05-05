@@ -46,6 +46,9 @@ public class ZuliaDump {
 		@Parameter(names = "--includeAssociatedDocs", description = "Include Associated Documents in the dump.")
 		private boolean includeAssociatedDocs = false;
 
+		@Parameter(names = "--sortById", description = "Sort results by Id.")
+		private boolean sortById = false;
+
 		@Parameter(names = "--idField", description = "ID Field Name. [Defaults to id]")
 		private String idField = "id";
 	}
@@ -79,6 +82,7 @@ public class ZuliaDump {
 			Integer rows = zuliaDumpArgs.rows;
 			String out = zuliaDumpArgs.out;
 			String idField = zuliaDumpArgs.idField;
+			boolean sortById = zuliaDumpArgs.sortById;
 
 			Set<String> uniqueIds = new HashSet<>();
 
@@ -86,7 +90,7 @@ public class ZuliaDump {
 
 				if (indexes.contains(",")) {
 					for (String ind : indexes.split(",")) {
-						queryAndWriteOutput(workPool, ind, q, rows, out, idField, uniqueIds);
+						queryAndWriteOutput(workPool, ind, q, rows, out, idField, uniqueIds, sortById);
 						if (includeAssociatedDocs) {
 							fetchAssociatedDocs(workPool, ind, out, uniqueIds);
 						}
@@ -96,7 +100,7 @@ public class ZuliaDump {
 					GetIndexesResult indexesResult = workPool.getIndexes();
 					for (String ind : indexesResult.getIndexNames()) {
 						if (ind.startsWith(indexes.replace("*", ""))) {
-							queryAndWriteOutput(workPool, ind, q, rows, out, idField, uniqueIds);
+							queryAndWriteOutput(workPool, ind, q, rows, out, idField, uniqueIds, sortById);
 							if (includeAssociatedDocs) {
 								fetchAssociatedDocs(workPool, ind, out, uniqueIds);
 							}
@@ -105,7 +109,7 @@ public class ZuliaDump {
 				}
 			}
 			else {
-				queryAndWriteOutput(workPool, index, q, rows, out, idField, uniqueIds);
+				queryAndWriteOutput(workPool, index, q, rows, out, idField, uniqueIds, sortById);
 				if (includeAssociatedDocs) {
 					fetchAssociatedDocs(workPool, index, out, uniqueIds);
 				}
@@ -130,7 +134,7 @@ public class ZuliaDump {
 	}
 
 	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String outputDir, String idField,
-			Set<String> uniqueIds) throws Exception {
+			Set<String> uniqueIds, boolean sortById) throws Exception {
 
 		// create zuliadump dir first
 		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
@@ -149,7 +153,7 @@ public class ZuliaDump {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Dumping index <" + index + ">");
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds, sortById);
 		LOG.info("Finished dumping index <" + index + ">, total: " + count);
 
 		try (FileWriter fileWriter = new FileWriter(new File(settingsFilename), Charsets.UTF_8)) {

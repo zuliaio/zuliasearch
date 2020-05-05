@@ -102,11 +102,11 @@ public class ZuliaExport {
 	}
 
 	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out) throws Exception {
-		queryAndWriteOutput(workPool, index, q, rows, out, null, null);
+		queryAndWriteOutput(workPool, index, q, rows, out, null, null, false);
 	}
 
-	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out, String idField, Set<String> uniqueIds)
-			throws Exception {
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out, String idField, Set<String> uniqueIds,
+			boolean sortById) throws Exception {
 
 		// create zuliaexport dir first
 		String zuliaExportDir = out + File.separator + "zuliaexport";
@@ -124,7 +124,7 @@ public class ZuliaExport {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Exporting from index <" + index + ">");
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds, sortById);
 		LOG.info("Finished exporting from index <" + index + ">, total: " + count);
 
 	}
