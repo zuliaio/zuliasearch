@@ -1,7 +1,6 @@
 package io.zulia.util;
 
 import com.google.protobuf.ByteString;
-import com.mongodb.MongoClientSettings;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.Document;
@@ -9,7 +8,6 @@ import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.io.BasicOutputBuffer;
 
 import java.nio.ByteBuffer;
@@ -18,13 +16,9 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
-import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
-
 public class ZuliaUtil {
 
-	private static final CodecRegistry pojoCodecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
-			fromProviders(PojoCodecProvider.builder().automatic(true).build()));
+	private static CodecRegistry pojoCodecRegistry;
 
 	public static void handleLists(Object o, Consumer<? super Object> action) {
 		handleLists(o, action, new AtomicInteger());
@@ -63,7 +57,13 @@ public class ZuliaUtil {
 		BasicOutputBuffer outputBuffer = new BasicOutputBuffer();
 		BsonBinaryWriter writer = new BsonBinaryWriter(outputBuffer);
 
-		new DocumentCodec(pojoCodecRegistry).encode(writer, mongoDocument, EncoderContext.builder().isEncodingCollectibleDocument(true).build());
+		EncoderContext encoderContext = EncoderContext.builder().isEncodingCollectibleDocument(true).build();
+		if (pojoCodecRegistry != null) {
+			new DocumentCodec(pojoCodecRegistry).encode(writer, mongoDocument, encoderContext);
+		}
+		else {
+			new DocumentCodec().encode(writer, mongoDocument, encoderContext);
+		}
 		return outputBuffer.toByteArray();
 	}
 
@@ -135,5 +135,13 @@ public class ZuliaUtil {
 		if (b <= a && b <= c)
 			return b;
 		return c;
+	}
+
+	public static void setPojoCodecRegistry(CodecRegistry pojoCodecRegistry) {
+		ZuliaUtil.pojoCodecRegistry = pojoCodecRegistry;
+	}
+
+	public static CodecRegistry getPojoCodecRegistry() {
+		return pojoCodecRegistry;
 	}
 }
