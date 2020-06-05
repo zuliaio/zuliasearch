@@ -1,12 +1,15 @@
 package io.zulia.util;
 
 import com.google.protobuf.ByteString;
+import com.mongodb.MongoClientSettings;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.Document;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.io.BasicOutputBuffer;
 
 import java.nio.ByteBuffer;
@@ -15,9 +18,13 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+
 public class ZuliaUtil {
 
-	private static final DocumentCodec documentCodec = new DocumentCodec();
+	private static final CodecRegistry pojoCodecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
+			fromProviders(PojoCodecProvider.builder().automatic(true).build()));
 
 	public static void handleLists(Object o, Consumer<? super Object> action) {
 		handleLists(o, action, new AtomicInteger());
@@ -30,11 +37,13 @@ public class ZuliaUtil {
 			c.stream().filter(Objects::nonNull).forEach(obj -> {
 				if (obj instanceof Collection) {
 					handleLists(obj, action);
-				} else {
+				}
+				else {
 					action.accept(obj);
 				}
 			});
-		} else if (o instanceof Object[]) {
+		}
+		else if (o instanceof Object[]) {
 			Object[] arr = (Object[]) o;
 			listSize.addAndGet(arr.length + 1);
 			for (Object obj : arr) {
@@ -42,18 +51,19 @@ public class ZuliaUtil {
 					action.accept(action);
 				}
 			}
-		} else {
+		}
+		else {
 			if (o != null) {
 				action.accept(o);
 			}
 		}
 	}
 
-
 	public static byte[] mongoDocumentToByteArray(Document mongoDocument) {
 		BasicOutputBuffer outputBuffer = new BasicOutputBuffer();
 		BsonBinaryWriter writer = new BsonBinaryWriter(outputBuffer);
-		new DocumentCodec().encode(writer, mongoDocument, EncoderContext.builder().isEncodingCollectibleDocument(true).build());
+
+		new DocumentCodec(pojoCodecRegistry).encode(writer, mongoDocument, EncoderContext.builder().isEncodingCollectibleDocument(true).build());
 		return outputBuffer.toByteArray();
 	}
 
@@ -71,8 +81,7 @@ public class ZuliaUtil {
 	public static Document byteArrayToMongoDocument(byte[] byteArray) {
 		if (byteArray != null && byteArray.length != 0) {
 			BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(byteArray));
-
-			return documentCodec.decode(bsonReader, DecoderContext.builder().build());
+			return new DocumentCodec(pojoCodecRegistry).decode(bsonReader, DecoderContext.builder().build());
 		}
 		return new Document();
 	}
