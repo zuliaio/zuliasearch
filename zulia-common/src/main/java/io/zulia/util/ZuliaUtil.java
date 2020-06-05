@@ -81,7 +81,13 @@ public class ZuliaUtil {
 	public static Document byteArrayToMongoDocument(byte[] byteArray) {
 		if (byteArray != null && byteArray.length != 0) {
 			BsonBinaryReader bsonReader = new BsonBinaryReader(ByteBuffer.wrap(byteArray));
-			return new DocumentCodec(pojoCodecRegistry).decode(bsonReader, DecoderContext.builder().build());
+			DecoderContext decoderContext = DecoderContext.builder().build();
+			if (pojoCodecRegistry != null) {
+				return new DocumentCodec(pojoCodecRegistry).decode(bsonReader, decoderContext);
+			}
+			else {
+				return new DocumentCodec().decode(bsonReader, decoderContext);
+			}
 		}
 		return new Document();
 	}
