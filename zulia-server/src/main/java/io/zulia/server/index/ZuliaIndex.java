@@ -809,7 +809,13 @@ public class ZuliaIndex {
 			if (field.startsWith(FacetsConfig.DEFAULT_INDEX_FIELD_NAME)) {
 				toRemove.add(field);
 			}
-			if (field.startsWith(ZuliaConstants.SUPERBIT_PREFIX)) {
+			else if (field.startsWith(ZuliaConstants.SUPERBIT_PREFIX)) {
+				toRemove.add(field);
+			}
+			else if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX)) {
+				toRemove.add(field);
+			}
+			else if (field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
 				toRemove.add(field);
 			}
 		}
