@@ -155,7 +155,7 @@ public class ShardDocumentIndexer {
 			String sortFieldName = sortAs.getSortFieldName();
 
 			if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
-				ZuliaUtil.handleLists(o, obj -> {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 
 					if (FieldTypeUtil.isDateFieldType(fieldType)) {
 						if (obj instanceof Date) {
@@ -204,7 +204,7 @@ public class ShardDocumentIndexer {
 				});
 			}
 			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
-				ZuliaUtil.handleLists(o, obj -> {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					if (obj instanceof Boolean) {
 						String text = obj.toString();
 						SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));
@@ -218,7 +218,7 @@ public class ShardDocumentIndexer {
 				});
 			}
 			else if (ZuliaIndex.FieldConfig.FieldType.STRING.equals(fieldType)) {
-				ZuliaUtil.handleLists(o, obj -> {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					String text = o.toString();
 
 					ZuliaIndex.SortAs.StringHandling stringHandling = sortAs.getStringHandling();
@@ -259,7 +259,7 @@ public class ShardDocumentIndexer {
 
 			if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
 				ZuliaIndex.FacetAs.DateHandling dateHandling = fa.getDateHandling();
-				ZuliaUtil.handleLists(o, obj -> {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					if (obj instanceof Date) {
 						LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
 
@@ -284,7 +284,7 @@ public class ShardDocumentIndexer {
 				});
 			}
 			else {
-				ZuliaUtil.handleLists(o, obj -> {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					String string = obj.toString();
 					addFacet(doc, facetName, string);
 				});
