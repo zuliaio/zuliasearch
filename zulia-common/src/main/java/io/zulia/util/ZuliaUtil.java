@@ -43,27 +43,28 @@ public class ZuliaUtil {
 	public static void handleLists(Object o, Consumer<? super Object> action, AtomicInteger listSize) {
 		if (o instanceof Collection) {
 			Collection<?> c = (Collection<?>) o;
-			listSize.addAndGet(c.size() + 1);
 			c.stream().filter(Objects::nonNull).forEach(obj -> {
 				if (obj instanceof Collection) {
-					handleLists(obj, action);
+					handleLists(obj, action, listSize);
 				}
 				else {
+					listSize.incrementAndGet();
 					action.accept(obj);
 				}
 			});
 		}
 		else if (o instanceof Object[]) {
 			Object[] arr = (Object[]) o;
-			listSize.addAndGet(arr.length + 1);
 			for (Object obj : arr) {
 				if (obj != null) {
+					listSize.incrementAndGet();
 					action.accept(action);
 				}
 			}
 		}
 		else {
 			if (o != null) {
+				listSize.incrementAndGet();
 				action.accept(o);
 			}
 		}
@@ -166,4 +167,5 @@ public class ZuliaUtil {
 	public static CodecRegistry getPojoCodecRegistry() {
 		return pojoCodecRegistry;
 	}
+
 }
