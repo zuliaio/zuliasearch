@@ -12,13 +12,29 @@ import org.bson.io.BasicOutputBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ZuliaUtil {
 
 	private static CodecRegistry pojoCodecRegistry;
+
+	public static void handleListsUniqueValues(Object o, Consumer<? super Object> action) {
+		handleListsUniqueValues(o, action, new AtomicInteger(), new AtomicInteger());
+	}
+
+	public static void handleListsUniqueValues(Object o, Consumer<? super Object> action, AtomicInteger listSize, AtomicInteger setSize) {
+		Set<Object> objects = new LinkedHashSet<>();
+		handleLists(o, objects::add, listSize);
+
+		for (Object object : objects) {
+			setSize.incrementAndGet();
+			action.accept(object);
+		}
+	}
 
 	public static void handleLists(Object o, Consumer<? super Object> action) {
 		handleLists(o, action, new AtomicInteger());
