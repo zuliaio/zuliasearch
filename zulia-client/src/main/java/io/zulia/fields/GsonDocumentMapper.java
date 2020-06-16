@@ -16,6 +16,7 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -49,8 +50,15 @@ public class GsonDocumentMapper<T> {
 
 		@Override
 		public Date deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-			String dateString = json.getAsJsonObject().get("$date").getAsString();
-			return Date.from(LocalDateTime.from(MONGO_UTC_FORMAT.parse(dateString)).toInstant(ZoneOffset.UTC));
+			JsonElement date = json.getAsJsonObject().get("$date");
+			if (date.isJsonObject()) {
+				Instant instant = Instant.ofEpochSecond(date.getAsJsonObject().get("$numberLong").getAsLong());
+				return Date.from(instant);
+			}
+			else {
+				String dateString = date.getAsString();
+				return Date.from(LocalDateTime.from(MONGO_UTC_FORMAT.parse(dateString)).toInstant(ZoneOffset.UTC));
+			}
 		}
 	}
 
