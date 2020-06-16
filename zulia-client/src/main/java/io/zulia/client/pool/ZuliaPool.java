@@ -7,6 +7,7 @@ import io.zulia.cache.MetaKeys;
 import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.base.Command;
 import io.zulia.client.command.base.MultiIndexRoutableCommand;
+import io.zulia.client.command.base.RESTCommand;
 import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.config.ZuliaPoolConfig;
@@ -153,48 +154,54 @@ public class ZuliaPool {
 					selectedNode = tempList.get(randomNodeIndex);
 				}
 
-				final Node finalSelectedNode = selectedNode;
-				GenericObjectPool<ZuliaConnection> nodePool = zuliaConnectionPoolMap.computeIfAbsent(getNodeKey(selectedNode), (String key) -> {
-					GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig(); //
-					poolConfig.setMaxIdle(maxIdle);
-					poolConfig.setMaxTotal(maxConnections);
-					return new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection), poolConfig);
-				});
-
-				boolean valid = true;
-
-				zuliaConnection = nodePool.borrowObject();
-				R r;
-				try {
-					r = command.executeTimed(zuliaConnection);
-					return r;
+				if (command instanceof RESTCommand) {
+					zuliaRestPool.getNodeKey(getNodeKey(selectedNode), new Restpool());
 				}
-				catch (StatusRuntimeException e) {
+				else {
 
-					if (!Status.INVALID_ARGUMENT.equals(e.getStatus())) {
-						valid = false;
+					final Node finalSelectedNode = selectedNode;
+					GenericObjectPool<ZuliaConnection> nodePool = zuliaConnectionPoolMap.computeIfAbsent(getNodeKey(selectedNode), (String key) -> {
+						GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig(); //
+						poolConfig.setMaxIdle(maxIdle);
+						poolConfig.setMaxTotal(maxConnections);
+						return new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection), poolConfig);
+					});
+
+					boolean valid = true;
+
+					zuliaConnection = nodePool.borrowObject();
+					R r;
+					try {
+						r = command.executeTimed(zuliaConnection);
+						return r;
 					}
+					catch (StatusRuntimeException e) {
 
-					Metadata trailers = e.getTrailers();
-					if (trailers.containsKey(MetaKeys.ERROR_KEY)) {
-						String errorMessage = trailers.get(MetaKeys.ERROR_KEY);
 						if (!Status.INVALID_ARGUMENT.equals(e.getStatus())) {
-							throw new Exception(command.getClass().getSimpleName() + ": " + errorMessage);
+							valid = false;
+						}
+
+						Metadata trailers = e.getTrailers();
+						if (trailers.containsKey(MetaKeys.ERROR_KEY)) {
+							String errorMessage = trailers.get(MetaKeys.ERROR_KEY);
+							if (!Status.INVALID_ARGUMENT.equals(e.getStatus())) {
+								throw new Exception(command.getClass().getSimpleName() + ": " + errorMessage);
+							}
+							else {
+								throw new IllegalArgumentException(command.getClass().getSimpleName() + ":" + errorMessage);
+							}
 						}
 						else {
-							throw new IllegalArgumentException(command.getClass().getSimpleName() + ":" + errorMessage);
+							throw e;
 						}
 					}
-					else {
-						throw e;
-					}
-				}
-				finally {
-					if (valid) {
-						nodePool.returnObject(zuliaConnection);
-					}
-					else {
-						nodePool.invalidateObject(zuliaConnection);
+					finally {
+						if (valid) {
+							nodePool.returnObject(zuliaConnection);
+						}
+						else {
+							nodePool.invalidateObject(zuliaConnection);
+						}
 					}
 				}
 
