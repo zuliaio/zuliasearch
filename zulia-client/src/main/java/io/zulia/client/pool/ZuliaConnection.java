@@ -48,6 +48,7 @@ public class ZuliaConnection {
 	}
 
 	public ZuliaRESTClient getRestClient() throws Exception {
+		//Create a map of server/port to client and clean it up when needed
 		return new ZuliaRESTClient(node.getServerAddress(), node.getRestPort());
 	}
 

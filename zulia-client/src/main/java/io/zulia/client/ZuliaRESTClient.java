@@ -9,6 +9,7 @@ import io.micronaut.http.client.DefaultHttpClientConfiguration;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.HttpClientConfiguration;
 import io.micronaut.http.client.multipart.MultipartBody;
+import io.micronaut.runtime.ApplicationConfiguration;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
 import io.zulia.util.StreamHelper;
@@ -33,9 +34,16 @@ import java.util.HashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import static java.time.temporal.ChronoUnit.SECONDS;
+
 public class ZuliaRESTClient {
 	private String server;
 	private int restPort;
+
+	//TODO
+	//Change client base url to be url of zulia only (i.e. zulia:32192/ not zulia:32192/associated/blah
+	//Add rest of url to each call
+	//Fetch associated needs to use micronaut as well
 
 	public ZuliaRESTClient(String server) {
 		this(server, ZuliaConstants.DEFAULT_REST_SERVICE_PORT);
@@ -99,7 +107,7 @@ public class ZuliaRESTClient {
 			ZipOutputStream zipOutputStream = (ZipOutputStream) destination;
 
 			while ((output = br.readLine()) != null) {
-				JsonArray filenames = new JsonParser().parse(output).getAsJsonObject().getAsJsonArray("filenames");
+				JsonArray filenames = JsonParser.parseString(output).getAsJsonObject().getAsJsonArray("filenames");
 				for (int i = 0; i < filenames.size(); i++) {
 					String filename = filenames.get(i).getAsString();
 					parameters = createParameters(uniqueId, indexName, filename);
@@ -211,9 +219,16 @@ public class ZuliaRESTClient {
 
 	private HttpClient createClient(String url) throws MalformedURLException, URISyntaxException {
 		URL uri = new URI(url).toURL();
-		HttpClientConfiguration clientConfiguration = new DefaultHttpClientConfiguration();
+		DefaultHttpClientConfiguration.DefaultConnectionPoolConfiguration defaultConnectionPoolConfiguration = new DefaultHttpClientConfiguration.DefaultConnectionPoolConfiguration();
+		defaultConnectionPoolConfiguration.setEnabled(true);
+		defaultConnectionPoolConfiguration.setAcquireTimeout(Duration.of(30, SECONDS));
+		defaultConnectionPoolConfiguration.setMaxConnections(32);
+		defaultConnectionPoolConfiguration.setMaxPendingAcquires(64);
+		ApplicationConfiguration applicationConfiguration = new ApplicationConfiguration();
+		HttpClientConfiguration clientConfiguration = new DefaultHttpClientConfiguration(defaultConnectionPoolConfiguration, applicationConfiguration);
 		clientConfiguration.setMaxContentLength(1024 * 1024 * 1024);
 		clientConfiguration.setReadTimeout(Duration.ofSeconds(300));
+
 		return new DefaultHttpClient(uri, clientConfiguration);
 	}
 
