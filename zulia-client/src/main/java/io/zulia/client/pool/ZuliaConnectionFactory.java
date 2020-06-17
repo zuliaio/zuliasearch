@@ -16,7 +16,7 @@ public class ZuliaConnectionFactory extends BasePooledObjectFactory<ZuliaConnect
 	}
 
 	@Override
-	public ZuliaConnection create() throws Exception {
+	public ZuliaConnection create() {
 		ZuliaConnection lc = new ZuliaConnection(node);
 		lc.open(compressedConnection);
 		return lc;
@@ -30,7 +30,7 @@ public class ZuliaConnectionFactory extends BasePooledObjectFactory<ZuliaConnect
 	}
 
 	@Override
-	public void destroyObject(PooledObject<ZuliaConnection> p) throws Exception {
+	public void destroyObject(PooledObject<ZuliaConnection> p) {
 		p.getObject().close();
 	}
 }

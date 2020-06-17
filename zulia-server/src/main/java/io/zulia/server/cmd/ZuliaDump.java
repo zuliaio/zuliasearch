@@ -14,7 +14,6 @@ import io.zulia.client.result.GetIndexesResult;
 import io.zulia.log.LogUtil;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -23,7 +22,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.zip.ZipOutputStream;
 
 public class ZuliaDump {
 
@@ -176,8 +174,8 @@ public class ZuliaDump {
 		for (String uniqueId : uniqueIds) {
 			threadPool.executeAsync(() -> {
 
-				workPool.fetchLargeAssociated(new FetchLargeAssociated(uniqueId, index,
-						new ZipOutputStream(new FileOutputStream(Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()))));
+				workPool.fetchLargeAssociated(
+						new FetchLargeAssociated(uniqueId, index, Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()));
 				if (count.incrementAndGet() % 1000 == 0) {
 					LOG.info("Associated docs dumped so far: " + count);
 				}

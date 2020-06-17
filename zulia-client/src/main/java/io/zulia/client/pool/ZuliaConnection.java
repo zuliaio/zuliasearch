@@ -2,14 +2,16 @@ package io.zulia.client.pool;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.zulia.client.ZuliaRESTClient;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceGrpc;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ZuliaConnection {
+
+	private static final Logger LOG = Logger.getLogger(ZuliaConnection.class.getName());
 
 	private Node node;
 
@@ -22,12 +24,12 @@ public class ZuliaConnection {
 
 	private static AtomicLong connectionNumberGen = new AtomicLong();
 
-	public ZuliaConnection(Node node) throws IOException {
+	public ZuliaConnection(Node node) {
 		this.node = node;
 		this.connectionNumber = connectionNumberGen.getAndIncrement();
 	}
 
-	public void open(boolean compressedConnection) throws IOException {
+	public void open(boolean compressedConnection) {
 
 		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(node.getServerAddress(), node.getServicePort())
 				.maxInboundMessageSize(256 * 1024 * 1024).usePlaintext();
@@ -43,13 +45,8 @@ public class ZuliaConnection {
 			asyncStub = asyncStub.withCompression("gzip");
 		}
 
-		System.err.println("INFO: Connecting to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
+		LOG.info("Connecting to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
 
-	}
-
-	public ZuliaRESTClient getRestClient() throws Exception {
-		//Create a map of server/port to client and clean it up when needed
-		return new ZuliaRESTClient(node.getServerAddress(), node.getRestPort());
 	}
 
 	public ZuliaServiceGrpc.ZuliaServiceBlockingStub getService() {
@@ -65,15 +62,14 @@ public class ZuliaConnection {
 	 */
 	public void close() {
 
-		System.err.println("INFO: Closing connection to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
+		LOG.info("Closing connection to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
 		try {
 			if (channel != null) {
 				channel.shutdownNow();
 			}
 		}
 		catch (Exception e) {
-			System.err.println("ERROR: Exception: " + e);
-			e.printStackTrace();
+			LOG.log(Level.SEVERE, "Exception closing: ", e);
 		}
 		channel = null;
 		blockingStub = null;

@@ -18,6 +18,7 @@ import org.bson.Document;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
@@ -165,19 +166,15 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) {
+	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) throws Exception {
 		GridFSBucket gridFS = createGridFSConnection();
 		GridFSFile file = gridFS.find(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, getGridFsId(uniqueId, fileName))).first();
 
 		if (file == null) {
-			return null;
+			throw new FileNotFoundException("File <" + fileName + "> does not exist for <" + uniqueId + "> on index <" + indexName + ">");
 		}
 
-		InputStream is = gridFS.openDownloadStream(file.getObjectId());
-
-		Document metadata = file.getMetadata();
-
-		return is;
+		return gridFS.openDownloadStream(file.getObjectId());
 	}
 
 	@Override
@@ -188,8 +185,9 @@ public class MongoDocumentStorage implements DocumentStorage {
 			if (null != file) {
 				return loadGridFSToAssociatedDocument(gridFS, file, fetchType);
 			}
+			throw new FileNotFoundException("File <" + fileName + "> does not exist for <" + uniqueId + "> on index <" + indexName + ">");
 		}
-		return null;
+		throw new IllegalArgumentException("Fetch Type is None for File <" + fileName + "> for <" + uniqueId + "> on index <" + indexName + ">");
 	}
 
 	private AssociatedDocument loadGridFSToAssociatedDocument(GridFSBucket gridFS, GridFSFile file, FetchType fetchType) throws IOException {
