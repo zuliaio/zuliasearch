@@ -904,7 +904,7 @@ public class ZuliaIndex {
 
 	}
 
-	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) {
+	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) throws Exception {
 
 		return documentStorage.getAssociatedDocumentStream(uniqueId, fileName);
 

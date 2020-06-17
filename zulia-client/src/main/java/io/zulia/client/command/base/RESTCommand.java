@@ -9,8 +9,8 @@ public abstract class RESTCommand<R extends Result> extends Command<R> {
 	public abstract R execute(ZuliaRESTClient zuliaRESTClient) throws Exception;
 
 	@Override
-	public R execute(ZuliaConnection zuliaConnection) throws Exception {
-		return execute(zuliaConnection.getRestClient());
+	public R execute(ZuliaConnection zuliaConnection) {
+		return null;
 	}
 
 }

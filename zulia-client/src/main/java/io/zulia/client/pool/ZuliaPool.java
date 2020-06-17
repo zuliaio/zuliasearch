@@ -4,6 +4,7 @@ import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.zulia.cache.MetaKeys;
+import io.zulia.client.ZuliaRESTClient;
 import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.base.Command;
 import io.zulia.client.command.base.MultiIndexRoutableCommand;
@@ -21,11 +22,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
 import static io.zulia.message.ZuliaIndex.IndexMapping;
 
 public class ZuliaPool {
+
+	private static final Logger LOG = Logger.getLogger(ZuliaPool.class.getName());
 
 	protected class ZuliaNodeUpdateThread extends Thread {
 
@@ -64,9 +68,10 @@ public class ZuliaPool {
 	private final boolean compressedConnection;
 
 	private ConcurrentHashMap<String, GenericObjectPool<ZuliaConnection>> zuliaConnectionPoolMap;
+	private final ConcurrentHashMap<String, ZuliaRESTClient> zuliaRestPoolMap;
 	private IndexRouting indexRouting;
 
-	public ZuliaPool(final ZuliaPoolConfig zuliaPoolConfig) throws Exception {
+	public ZuliaPool(final ZuliaPoolConfig zuliaPoolConfig) {
 		nodes = zuliaPoolConfig.getNodes();
 		retries = zuliaPoolConfig.getDefaultRetries();
 		maxIdle = zuliaPoolConfig.getMaxIdle();
@@ -76,6 +81,7 @@ public class ZuliaPool {
 		compressedConnection = zuliaPoolConfig.isCompressedConnection();
 
 		zuliaConnectionPoolMap = new ConcurrentHashMap<>();
+		zuliaRestPoolMap = new ConcurrentHashMap<>();
 
 		if (zuliaPoolConfig.isNodeUpdateEnabled()) {
 			ZuliaNodeUpdateThread mut = new ZuliaNodeUpdateThread();
@@ -98,9 +104,10 @@ public class ZuliaPool {
 		removedNodes.addAll(zuliaConnectionPoolMap.keySet());
 		removedNodes.removeAll(newKeys);
 		for (String removedNode : removedNodes) {
-			System.err.println("Removing not active node: " + removedNode);
-			GenericObjectPool<ZuliaConnection> remove = zuliaConnectionPoolMap.remove(removedNode);
-			remove.close();
+			LOG.info("Removing not active node: " + removedNode);
+			zuliaConnectionPoolMap.remove(removedNode).close();
+			;
+			zuliaRestPoolMap.remove(removedNode).close();
 		}
 
 		this.nodes = nodes;
@@ -154,13 +161,17 @@ public class ZuliaPool {
 					selectedNode = tempList.get(randomNodeIndex);
 				}
 
+				String nodeKey = getNodeKey(selectedNode);
 				if (command instanceof RESTCommand) {
-					zuliaRestPool.getNodeKey(getNodeKey(selectedNode), new Restpool());
+					Node finalSelectedNode = selectedNode;
+					ZuliaRESTClient restClient = zuliaRestPoolMap
+							.computeIfAbsent(nodeKey, s -> new ZuliaRESTClient(finalSelectedNode.getServerAddress(), finalSelectedNode.getRestPort()));
+					return ((RESTCommand<R>) command).execute(restClient);
 				}
 				else {
 
 					final Node finalSelectedNode = selectedNode;
-					GenericObjectPool<ZuliaConnection> nodePool = zuliaConnectionPoolMap.computeIfAbsent(getNodeKey(selectedNode), (String key) -> {
+					GenericObjectPool<ZuliaConnection> nodePool = zuliaConnectionPoolMap.computeIfAbsent(nodeKey, (String key) -> {
 						GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig(); //
 						poolConfig.setMaxIdle(maxIdle);
 						poolConfig.setMaxTotal(maxConnections);
@@ -217,8 +228,11 @@ public class ZuliaPool {
 
 	}
 
-	public void close() throws Exception {
+	public void close() {
 		for (GenericObjectPool<ZuliaConnection> pool : zuliaConnectionPoolMap.values()) {
+			pool.close();
+		}
+		for (ZuliaRESTClient pool : zuliaRestPoolMap.values()) {
 			pool.close();
 		}
 		isClosed = true;

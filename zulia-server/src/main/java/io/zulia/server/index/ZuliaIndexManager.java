@@ -68,7 +68,7 @@ public class ZuliaIndexManager {
 	private Node thisNode;
 	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
 
-	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
+	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) {
 
 		this.zuliaConfig = zuliaConfig;
 
@@ -194,7 +194,7 @@ public class ZuliaIndexManager {
 		return FetchRequestRouter.internalFetch(i, request);
 	}
 
-	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws IOException {
+	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
 		return i.getAssociatedDocumentStream(uniqueId, fileName);
 	}
