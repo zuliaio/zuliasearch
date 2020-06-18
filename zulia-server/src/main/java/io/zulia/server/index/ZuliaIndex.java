@@ -192,6 +192,7 @@ public class ZuliaIndex {
 		LOG.info("Shutting shard pool for <" + indexName + ">");
 		shardPool.shutdownNow();
 
+		LOG.info("Deleting primary shard.");
 		for (Integer shardNumber : primaryShardMap.keySet()) {
 			unloadShard(shardNumber);
 			if (terminate) {
@@ -199,7 +200,9 @@ public class ZuliaIndex {
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
 			}
 		}
+		LOG.info("Deleted primary shard.");
 
+		LOG.info("Deleting replicas");
 		for (Integer shardNumber : replicaShardMap.keySet()) {
 			unloadShard(shardNumber);
 			if (terminate) {
@@ -207,6 +210,8 @@ public class ZuliaIndex {
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
 			}
 		}
+		LOG.info("Deleted replicas");
+		LOG.info("Shut down shard pool for <" + indexName + ">");
 
 	}
 
@@ -263,7 +268,9 @@ public class ZuliaIndex {
 
 		unload(true);
 
+		LOG.info("Dropping document storage.");
 		documentStorage.drop();
+		LOG.info("Dropped document storage.");
 
 	}
 
@@ -904,7 +911,7 @@ public class ZuliaIndex {
 
 	}
 
-	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) {
+	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) throws Exception {
 
 		return documentStorage.getAssociatedDocumentStream(uniqueId, fileName);
 
