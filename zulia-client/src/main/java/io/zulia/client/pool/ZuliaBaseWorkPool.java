@@ -1,8 +1,8 @@
 package io.zulia.client.pool;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import io.zulia.client.command.base.BaseCommand;
 import io.zulia.client.command.base.CallableCommand;
-import io.zulia.client.command.base.Command;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.result.Result;
 
@@ -30,12 +30,12 @@ public class ZuliaBaseWorkPool extends WorkPool {
 		this.zuliaPool = zuliaPool;
 	}
 
-	public <R extends Result> ListenableFuture<R> executeAsync(Command<R> command) {
+	public <R extends Result> ListenableFuture<R> executeAsync(BaseCommand<R> command) {
 		CallableCommand<R> callableCommand = new CallableCommand<>(zuliaPool, command);
 		return executeAsync(callableCommand);
 	}
 
-	public <R extends Result> R execute(Command<R> command) throws Exception {
+	public <R extends Result> R execute(BaseCommand<R> command) throws Exception {
 		CallableCommand<R> callableCommand = new CallableCommand<>(zuliaPool, command);
 		return execute(callableCommand);
 	}
