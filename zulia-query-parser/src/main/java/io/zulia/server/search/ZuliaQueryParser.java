@@ -1,9 +1,5 @@
 package io.zulia.server.search;
 
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Floats;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.server.config.ServerIndexConfig;
@@ -17,6 +13,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -162,47 +159,50 @@ public class ZuliaQueryParser extends QueryParser {
 	}
 
 	@Override
-	protected Query newTermQuery(Term term) {
+	protected Query newTermQuery(Term term, float boost) {
 		String field = term.field();
 		String text = term.text();
 
 		field = rewriteLengthFields(field);
 
 		if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
-			if (Ints.tryParse(text) != null) {
-				return getNumericOrDateRange(field, text, text, true, true, FieldConfig.FieldType.NUMERIC_INT);
-			}
+			return new BoostQuery(IntPoint.newExactQuery(field, Integer.parseInt(text)), boost);
 		}
 
 		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(field);
 		if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
 			if (FieldTypeUtil.isDateFieldType(fieldType)) {
 				try {
-					getDateAsLong(text);
-					return getNumericOrDateRange(field, text, text, true, true);
+					Long dateLong = getDateAsLong(text);
+					return new BoostQuery(LongPoint.newExactQuery(field, dateLong), boost);
 				}
 				catch (Exception e) {
 					return new MatchNoDocsQuery(field + " expects date");
 				}
 			}
 			else {
-				if (FieldTypeUtil.isNumericIntFieldType(fieldType) && Ints.tryParse(text) != null) {
-					return getNumericOrDateRange(field, text, text, true, true);
+				try {
+					if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+						return new BoostQuery(IntPoint.newExactQuery(field, Integer.parseInt(text)), boost);
+					}
+					else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+						return new BoostQuery(LongPoint.newExactQuery(field, Long.parseLong(text)), boost);
+					}
+					else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+						return new BoostQuery(FloatPoint.newExactQuery(field, Float.parseFloat(text)), boost);
+					}
+					else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+						return new BoostQuery(DoublePoint.newExactQuery(field, Double.parseDouble(text)), boost);
+					}
 				}
-				else if (FieldTypeUtil.isNumericLongFieldType(fieldType) && Longs.tryParse(text) != null) {
-					return getNumericOrDateRange(field, text, text, true, true);
-				}
-				else if (FieldTypeUtil.isNumericFloatFieldType(fieldType) && Floats.tryParse(text) != null) {
-					return getNumericOrDateRange(field, text, text, true, true);
-				}
-				else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType) && Doubles.tryParse(text) != null) {
-					return getNumericOrDateRange(field, text, text, true, true);
+				catch (NumberFormatException e) {
+					return new MatchNoDocsQuery(field + " expects numeric of type <" + fieldType + ">");
 				}
 			}
-			return new MatchNoDocsQuery(field + " expects numeric");
+
 		}
 
-		return super.newTermQuery(term);
+		return super.newTermQuery(term, boost);
 	}
 
 	@Override
