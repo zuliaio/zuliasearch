@@ -994,7 +994,7 @@ public class ZuliaIndex {
 
 		FetchType associatedFetchType = fetchRequest.getAssociatedFetchType();
 		if (!FetchType.NONE.equals(associatedFetchType)) {
-			if (fetchRequest.getFilename() != null) {
+			if (fetchRequest.getFilename() != null && !fetchRequest.getFilename().isEmpty()) {
 				AssociatedDocument ad = getAssociatedDocument(uniqueId, fetchRequest.getFilename(), associatedFetchType);
 				if (ad != null) {
 					frBuilder.addAssociatedDocument(ad);
