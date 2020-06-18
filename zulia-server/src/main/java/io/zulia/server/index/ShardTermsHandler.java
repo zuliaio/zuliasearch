@@ -9,7 +9,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BoostAttribute;
-import org.apache.lucene.search.FuzzyTermsEnum;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
@@ -24,6 +24,18 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 public class ShardTermsHandler {
+
+	public static class PublicFuzzyQuery extends FuzzyQuery {
+
+		public PublicFuzzyQuery(Term term, int maxEdits, int prefixLength, int maxExpansions, boolean transpositions) {
+			super(term, maxEdits, prefixLength, maxExpansions, transpositions);
+		}
+
+		@Override
+		public TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException {
+			return super.getTermsEnum(terms, atts);
+		}
+	}
 
 	private final DirectoryReader indexReader;
 
@@ -105,8 +117,14 @@ public class ShardTermsHandler {
 
 					if (hasFuzzyTerm) {
 						ZuliaBase.FuzzyTerm fuzzyTerm = request.getFuzzyTerm();
-						FuzzyTermsEnum termsEnum = new FuzzyTermsEnum(terms, atts, new Term(fieldName, fuzzyTerm.getTerm()), fuzzyTerm.getEditDistance(),
-								fuzzyTerm.getPrefixLength(), !fuzzyTerm.getNoTranspositions());
+
+						Term term = new Term(fieldName, fuzzyTerm.getTerm());
+
+						PublicFuzzyQuery fuzzyQuery = new PublicFuzzyQuery(term, fuzzyTerm.getEditDistance(), fuzzyTerm.getPrefixLength(),
+								FuzzyQuery.defaultMaxExpansions, !fuzzyTerm.getNoTranspositions());
+
+						TermsEnum termsEnum = fuzzyQuery.getTermsEnum(terms, atts);
+
 						BytesRef text = termsEnum.term();
 
 						handleTerm(termsMap, termsEnum, text, termFilter, termMatch);

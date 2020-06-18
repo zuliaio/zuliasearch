@@ -16,7 +16,7 @@ public abstract class FieldIndexer {
 
 	public void index(Document document, String storedFieldName, Object storedValue, String indexedFieldName) throws Exception {
 
-		AtomicInteger listSize = new AtomicInteger(-1);
+		AtomicInteger listSize = new AtomicInteger();
 		ZuliaUtil.handleLists(storedValue, obj -> {
 			try {
 				handleValue(document, storedFieldName, obj, indexedFieldName);
@@ -28,10 +28,9 @@ public abstract class FieldIndexer {
 
 		//if stored value is a list or array
 		int size = listSize.get();
-		if (size != -1) {
-			document.add(new IntPoint(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName, size));
-			document.add(new SortedNumericDocValuesField(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName, size));
-		}
+
+		document.add(new IntPoint(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName, size));
+		document.add(new SortedNumericDocValuesField(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName, size));
 
 	}
 
