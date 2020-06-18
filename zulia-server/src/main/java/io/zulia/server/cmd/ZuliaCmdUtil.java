@@ -85,33 +85,38 @@ public class ZuliaCmdUtil {
 				zuliaQuery.addFieldSort(idField);
 			}
 
-			workPool.queryAll(zuliaQuery, queryResult -> {
+			try {
+				workPool.queryAll(zuliaQuery, queryResult -> {
 
-				long totalHits = queryResult.getTotalHits();
-				LOG.info("Found <" + totalHits + "> for index <" + index + ">");
+					long totalHits = queryResult.getTotalHits();
+					LOG.info("Found <" + totalHits + "> for index <" + index + ">");
 
-				queryResult.getDocuments().forEach(doc -> {
-					try {
-						if (uniqueIds != null) {
-							uniqueIds.add(doc.getString(idField));
+					queryResult.getDocuments().forEach(doc -> {
+						try {
+							if (uniqueIds != null) {
+								uniqueIds.add(doc.getString(idField));
+							}
+							fileWriter.write(doc.toJson());
+							fileWriter.write(System.lineSeparator());
+
+							if (count.incrementAndGet() % 1000 == 0) {
+								LOG.info("So far written <" + count + "> of <" + totalHits + ">");
+							}
+
 						}
-						fileWriter.write(doc.toJson());
-						fileWriter.write(System.lineSeparator());
-
-						if (count.incrementAndGet() % 1000 == 0) {
-							LOG.info("So far written <" + count + "> of <" + totalHits + ">");
+						catch (IOException e) {
+							LOG.log(Level.SEVERE, "Could not write record <" + doc + "> for index <" + index + ">", e);
+						}
+						catch (Throwable e) {
+							LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
 						}
 
-					}
-					catch (IOException e) {
-						LOG.log(Level.SEVERE, "Could not write record <" + doc + "> for index <" + index + ">", e);
-					}
-					catch (Throwable e) {
-						LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
-					}
-
+					});
 				});
-			});
+			}
+			catch (Throwable t) {
+				LOG.log(Level.SEVERE, "Query failed for index <" + index + ">", t);
+			}
 
 		}
 		catch (Throwable e) {

@@ -3,7 +3,7 @@ package io.zulia.client.command.base;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.Result;
 
-public abstract class Command<R extends Result> {
+public abstract class GrpcCommand<R extends Result> implements BaseCommand<R> {
 
 	public abstract R execute(ZuliaConnection zuliaConnection) throws Exception;
 
