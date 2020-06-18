@@ -7,10 +7,10 @@ import java.util.concurrent.Callable;
 
 public class CallableCommand<R extends Result> implements Callable<R> {
 
-	private Command<R> command;
+	private BaseCommand<R> command;
 	private ZuliaPool zuliaPool;
 
-	public CallableCommand(ZuliaPool zuliaPool, Command<R> command) {
+	public CallableCommand(ZuliaPool zuliaPool, BaseCommand<R> command) {
 		this.zuliaPool = zuliaPool;
 		this.command = command;
 	}

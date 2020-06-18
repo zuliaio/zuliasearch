@@ -21,7 +21,7 @@ public interface DocumentStorage {
 
 	void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadataMap) throws Exception;
 
-	InputStream getAssociatedDocumentStream(String uniqueId, String filename);
+	InputStream getAssociatedDocumentStream(String uniqueId, String filename) throws Exception;
 
 	List<String> getAssociatedFilenames(String uniqueId) throws Exception;
 
