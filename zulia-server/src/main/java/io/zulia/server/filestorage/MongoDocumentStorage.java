@@ -185,9 +185,8 @@ public class MongoDocumentStorage implements DocumentStorage {
 			if (null != file) {
 				return loadGridFSToAssociatedDocument(gridFS, file, fetchType);
 			}
-			throw new FileNotFoundException("File <" + fileName + "> does not exist for <" + uniqueId + "> on index <" + indexName + ">");
 		}
-		throw new IllegalArgumentException("Fetch Type is None for File <" + fileName + "> for <" + uniqueId + "> on index <" + indexName + ">");
+		return null;
 	}
 
 	private AssociatedDocument loadGridFSToAssociatedDocument(GridFSBucket gridFS, GridFSFile file, FetchType fetchType) throws IOException {
