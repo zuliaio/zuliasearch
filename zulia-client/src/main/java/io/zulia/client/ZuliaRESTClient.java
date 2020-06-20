@@ -23,6 +23,7 @@ import java.net.URL;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -30,12 +31,17 @@ import static io.micronaut.http.HttpRequest.GET;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class ZuliaRESTClient {
+
+	private static final Logger LOG = Logger.getLogger(ZuliaRESTClient.class.getName());
+
 	private final DefaultHttpClient client;
 
 	public ZuliaRESTClient(String server, int restPort) {
 		URL uri;
 		try {
-			uri = new URI("http://" + server + ":" + restPort).toURL();
+			String urlString = "http://" + server + ":" + restPort;
+			LOG.info("Opening REST pool to " + urlString);
+			uri = new URI(urlString).toURL();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
