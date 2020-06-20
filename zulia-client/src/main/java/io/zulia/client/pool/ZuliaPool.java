@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
@@ -102,12 +103,25 @@ public class ZuliaPool {
 		}
 
 		Set<String> removedNodes = new HashSet<>(zuliaConnectionPoolMap.keySet());
+		removedNodes.addAll(zuliaRestPoolMap.keySet());
 		removedNodes.removeAll(newKeys);
 		for (String removedNode : removedNodes) {
-			LOG.info("Removing not active node: " + removedNode);
-			zuliaConnectionPoolMap.remove(removedNode).close();
-			;
-			zuliaRestPoolMap.remove(removedNode).close();
+			try {
+
+				GenericObjectPool<ZuliaConnection> connection = zuliaConnectionPoolMap.remove(removedNode);
+				if (connection != null) {
+					connection.close();
+				}
+
+				ZuliaRESTClient restClient = zuliaRestPoolMap.remove(removedNode);
+				if (restClient != null) {
+					restClient.close();
+				}
+
+			}
+			catch (Exception e) {
+				LOG.log(Level.SEVERE, "Failed to remove node " + removedNode, e);
+			}
 		}
 
 		this.nodes = nodes;
