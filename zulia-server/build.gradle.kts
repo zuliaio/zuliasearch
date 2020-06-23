@@ -18,17 +18,9 @@ dependencies {
 
     api("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
     api("org.apache.lucene:lucene-facet:$luceneVersion")
-
     api("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
     api("com.beust:jcommander:1.78")
-
-    api("org.glassfish.jersey.containers:jersey-container-grizzly2-http:2.27")
-    api("org.glassfish.jersey.inject:jersey-hk2:2.27")
-
-    api("javax.activation:activation:1.1.1")
-    api("javax.xml.bind:jaxb-api:2.3.0")
-    api("javax.annotation:javax.annotation-api:1.3.2")
 
     api("com.google.protobuf:protobuf-java-util:$protobufVersion")
 
@@ -38,19 +30,22 @@ dependencies {
 
     api("org.apache.commons:commons-compress:1.20")
 
-    implementation("io.reactivex.rxjava2:rxjava:2.2.0")
-
-    annotationProcessor("io.micronaut:micronaut-inject-java:$micronautVersion")
-    implementation("io.micronaut:micronaut-http-client:$micronautVersion")
-    implementation("io.micronaut:micronaut-http-server-netty:$micronautVersion")
-    implementation("io.micronaut:micronaut-inject:$micronautVersion")
-    implementation("io.micronaut:micronaut-runtime:$micronautVersion")
-
-    compileOnly("io.micronaut:micronaut-inject-java:$micronautVersion")
-    testCompile("junit:junit:4.12")
-
-    implementation("javax.annotation:javax.annotation-api:1.3.2")
-    annotationProcessor("javax.annotation:javax.annotation-api:1.3.2")
+    annotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+    annotationProcessor("io.micronaut:micronaut-inject-java")
+    annotationProcessor("io.micronaut:micronaut-validation")
+    implementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+    implementation("io.micronaut:micronaut-inject")
+    implementation("io.micronaut:micronaut-validation")
+    implementation("io.micronaut:micronaut-runtime")
+    implementation("io.micronaut:micronaut-http-server-netty")
+    implementation("io.micronaut:micronaut-http-client")
+    runtimeOnly("ch.qos.logback:logback-classic")
+    testAnnotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+    testAnnotationProcessor("io.micronaut:micronaut-inject-java")
+    testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("io.micronaut.test:micronaut-test-junit5")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
