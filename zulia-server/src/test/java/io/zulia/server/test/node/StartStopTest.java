@@ -460,9 +460,6 @@ public class StartStopTest {
 			Date firstDate = firstDateDocument.getDate("date");
 			Date lastDate = lastDateDocument.getDate("date");
 
-			System.out.println(firstDate);
-			System.out.println(lastDate);
-
 			Assertions.assertTrue(firstDate.compareTo(lastDate) < 0, "First date: " + firstDate + " lastDate: " + lastDate);
 		}
 
