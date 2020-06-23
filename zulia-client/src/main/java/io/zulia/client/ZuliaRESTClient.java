@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpVersion;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.client.DefaultHttpClientConfiguration;
 import io.micronaut.http.client.HttpClientConfiguration;
@@ -55,6 +56,7 @@ public class ZuliaRESTClient {
 		HttpClientConfiguration clientConfiguration = new DefaultHttpClientConfiguration(defaultConnectionPoolConfiguration, applicationConfiguration);
 		clientConfiguration.setMaxContentLength(1024 * 1024 * 1024);
 		clientConfiguration.setReadTimeout(Duration.ofSeconds(300));
+		clientConfiguration.setHttpVersion(HttpVersion.HTTP_2_0);
 
 		client = new DefaultHttpClient(uri, clientConfiguration);
 	}
