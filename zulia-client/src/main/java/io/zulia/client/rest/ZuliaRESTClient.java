@@ -1,17 +1,12 @@
-package io.zulia.client;
+package io.zulia.client.rest;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
-import io.micronaut.http.HttpVersion;
 import io.micronaut.http.MediaType;
-import io.micronaut.http.client.DefaultHttpClientConfiguration;
-import io.micronaut.http.client.HttpClientConfiguration;
 import io.micronaut.http.client.multipart.MultipartBody;
-import io.micronaut.http.client.netty.DefaultHttpClient;
-import io.micronaut.runtime.ApplicationConfiguration;
 import io.reactivex.Flowable;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
@@ -19,9 +14,6 @@ import org.bson.Document;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URI;
-import java.net.URL;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -29,36 +21,17 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static io.micronaut.http.HttpRequest.GET;
-import static java.time.temporal.ChronoUnit.SECONDS;
 
 public class ZuliaRESTClient {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaRESTClient.class.getName());
 
-	private final DefaultHttpClient client;
+	private final MicronautHttpClient client;
+	private final String url;
 
 	public ZuliaRESTClient(String server, int restPort) {
-		URL uri;
-		try {
-			String urlString = "http://" + server + ":" + restPort;
-			LOG.info("Opening REST pool to " + urlString);
-			uri = new URI(urlString).toURL();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		DefaultHttpClientConfiguration.DefaultConnectionPoolConfiguration defaultConnectionPoolConfiguration = new DefaultHttpClientConfiguration.DefaultConnectionPoolConfiguration();
-		defaultConnectionPoolConfiguration.setEnabled(true);
-		defaultConnectionPoolConfiguration.setAcquireTimeout(Duration.of(60, SECONDS));
-		defaultConnectionPoolConfiguration.setMaxConnections(64);
-		defaultConnectionPoolConfiguration.setMaxPendingAcquires(64);
-		ApplicationConfiguration applicationConfiguration = new ApplicationConfiguration();
-		HttpClientConfiguration clientConfiguration = new DefaultHttpClientConfiguration(defaultConnectionPoolConfiguration, applicationConfiguration);
-		clientConfiguration.setMaxContentLength(1024 * 1024 * 1024);
-		clientConfiguration.setReadTimeout(Duration.ofSeconds(300));
-		clientConfiguration.setHttpVersion(HttpVersion.HTTP_2_0);
-
-		client = new DefaultHttpClient(uri, clientConfiguration);
+		url = "http://" + server + ":" + restPort;
+		client = MicronautHttpClient.createClient(url);
 	}
 
 	public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination, boolean closeStream) throws Exception {
@@ -144,6 +117,7 @@ public class ZuliaRESTClient {
 	}
 
 	public void close() {
+		LOG.info("Closing REST client pool to " + url);
 		client.close();
 	}
 
