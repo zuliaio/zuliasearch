@@ -4,7 +4,6 @@ import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.zulia.cache.MetaKeys;
-import io.zulia.client.ZuliaRESTClient;
 import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.base.BaseCommand;
 import io.zulia.client.command.base.GrpcCommand;
@@ -13,6 +12,7 @@ import io.zulia.client.command.base.RESTCommand;
 import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.config.ZuliaPoolConfig;
+import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.Result;
 import org.apache.commons.pool2.impl.GenericObjectPool;
@@ -50,7 +50,9 @@ public class ZuliaPool {
 					catch (InterruptedException ignored) {
 
 					}
-					updateNodes();
+					if (!isClosed) {
+						updateNodes();
+					}
 
 				}
 				catch (Throwable ignored) {

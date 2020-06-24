@@ -1,7 +1,7 @@
 package io.zulia.client.command;
 
-import io.zulia.client.ZuliaRESTClient;
 import io.zulia.client.command.base.RESTCommand;
+import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.result.FetchLargeAssociatedResult;
 
 import java.io.File;
