@@ -70,6 +70,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("testBool", FieldType.BOOL).index());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -113,6 +114,37 @@ public class StartStopTest {
 
 		if (id != 0) {
 			mongoDocument.put("an", id);
+		}
+
+		if (id == 0) {
+			mongoDocument.put("testBool", true);
+		}
+		else if (id == 1) {
+			mongoDocument.put("testBool", 1);
+		}
+		else if (id == 2) {
+			mongoDocument.put("testBool", "Yes");
+		}
+		else if (id == 3) {
+			mongoDocument.put("testBool", "true");
+		}
+		else if (id == 4) {
+			mongoDocument.put("testBool", "Y");
+		}
+		else if (id == 5) {
+			mongoDocument.put("testBool", "T");
+		}
+		else if (id == 6) {
+			mongoDocument.put("testBool", false);
+		}
+		else if (id == 7) {
+			mongoDocument.put("testBool", "False");
+		}
+		else if (id == 8) {
+			mongoDocument.put("testBool", "F");
+		}
+		else if (id == 9) {
+			mongoDocument.put("testBool", 0);
 		}
 
 		if (!issn.equals("3331-3333")) {
@@ -226,6 +258,54 @@ public class StartStopTest {
 			Assertions.assertEquals(document.getString("country"), "France");
 		}
 
+	}
+
+	@Test
+	@Order(3)
+	public void boolTest() throws Exception {
+		Query q = new Query(FACET_TEST_INDEX, "testBool:true", 0);
+		QueryResult queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(6, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:1", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(6, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:True", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(6, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:y", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(6, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:yes", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(6, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:false", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(4, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:0", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(4, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:no", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(4, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:f", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(4, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:fake", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(0, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, "testBool:*", 0);
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(10, queryResult.getTotalHits());
 	}
 
 	@Test
