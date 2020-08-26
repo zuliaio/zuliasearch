@@ -1,5 +1,6 @@
 package io.zulia.server.index.field;
 
+import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -33,14 +34,16 @@ public class BooleanFieldIndexer extends FieldIndexer {
 			}
 			else if (value instanceof String) {
 				String v = (String) value;
-				if (v.startsWith("T") || v.startsWith("F") || v.startsWith("Y") || v.startsWith("N") || v.startsWith("t") || v.startsWith("f") || v
-						.startsWith("y") || v.startsWith("n") || v.startsWith("0") || v.startsWith("1")) {
-					d.add((new Field(indexedFieldName, v, notStoredTextField)));
+				if (BooleanAnalyzer.truePattern.matcher(v).matches()) {
+					d.add((new Field(indexedFieldName, BooleanAnalyzer.TRUE_TOKEN, notStoredTextField)));
+				}
+				else if (BooleanAnalyzer.falsePattern.matcher(v).matches()) {
+					d.add((new Field(indexedFieldName, BooleanAnalyzer.FALSE_TOKEN, notStoredTextField)));
 				}
 				else {
 					throw new Exception(
-							"String for Boolean field must start with 'Y','y','N','n','T','t','F','f','0', or '1' for <" + storedFieldName + "> and found <" + v
-									+ ">");
+							"String for Boolean field be 'Yes', 'No', 'Y', 'N', '1', '0', 'True', 'False', 'T', 'F' (case insensitive) for <" + storedFieldName
+									+ "> and found <" + v + ">");
 				}
 			}
 			else if (value instanceof Number) {
