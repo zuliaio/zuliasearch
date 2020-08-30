@@ -32,7 +32,7 @@ public interface ZuliaConstants {
 	String QUERY = "q";
 	String QUERY_FIELD = "qf";
 	String FILTER_QUERY = "fq";
-	String FILTER_QUERY_JSON = "fqJson";
+	String QUERY_JSON = "qJson";
 	String ROWS = "rows";
 	String ID = "id";
 	String FILE_NAME = "fileName";

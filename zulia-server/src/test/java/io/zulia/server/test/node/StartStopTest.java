@@ -62,6 +62,7 @@ public class StartStopTest {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
@@ -112,6 +113,7 @@ public class StartStopTest {
 		mongoDocument.put("issn", issn);
 		mongoDocument.put("eissn", eissn);
 
+		mongoDocument.put("id", id);
 		if (id != 0) {
 			mongoDocument.put("an", id);
 		}
@@ -309,10 +311,22 @@ public class StartStopTest {
 	}
 
 	@Test
+	@Order(3)
+	public void termTest() throws Exception {
+		Query q = new Query(FACET_TEST_INDEX, null, 0);
+		q.addTermQuery(Arrays.asList("1", "2", "3", "4"), "id");
+		q.setDebug(true);
+		QueryResult queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(4, queryResult.getTotalHits());
+
+	}
+
+	@Test
 	@Order(4)
 	public void reindex() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
