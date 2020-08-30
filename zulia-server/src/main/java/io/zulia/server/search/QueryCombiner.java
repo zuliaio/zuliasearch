@@ -13,7 +13,6 @@ import io.zulia.message.ZuliaQuery.FieldSort;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
 import io.zulia.message.ZuliaQuery.LastIndexResult;
 import io.zulia.message.ZuliaQuery.LastResult;
-import io.zulia.message.ZuliaQuery.Query;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
@@ -64,8 +63,6 @@ public class QueryCombiner {
 
 	private SortRequest sortRequest;
 
-	private Query query;
-
 	private final Collection<ZuliaIndex> indexes;
 	private final Map<String, Integer> indexToShardCount;
 
@@ -85,7 +82,6 @@ public class QueryCombiner {
 		this.lastResult = request.getLastResult();
 		this.sortRequest = request.getSortRequest();
 		this.start = request.getStart();
-		this.query = request.getQuery();
 		this.analysisRequestList = request.getAnalysisRequestList();
 
 		this.isShort = false;
@@ -570,7 +566,6 @@ public class QueryCombiner {
 							if (diff > shardTolerance) {
 								String msg = "Result set did not return the most relevant documents for index <" + indexName + "> with shard tolerance <"
 										+ shardTolerance + ">\n";
-								msg += "    Query <" + query + ">\n";
 								msg += "    Last for index from shard <" + lastForIndex.getShard() + "> has score <" + lastForIndex.getScore() + ">\n";
 								msg += "    Next for shard <" + next.getShard() + "> has score <" + next.getScore() + ">\n";
 								msg += "    Last for shards: \n";

@@ -52,25 +52,22 @@ message InternalQueryRequest {
 
 message QueryRequest {
     repeated string index = 1;
-    Query query = 2;
+    repeated Query query = 2;
     uint32 amount = 3;
-    repeated Query filterQuery = 4;
-    FacetRequest facetRequest = 5;
-    SortRequest sortRequest = 6;
-    uint32 start = 7;
-    LastResult lastResult = 8;
-    FetchType resultFetchType = 9;
-    repeated string documentFields = 10;
-    repeated string documentMaskedFields = 11;
-    bool fetchFull = 12;
-    repeated FieldSimilarity fieldSimilarity = 13;
-    repeated HighlightRequest highlightRequest = 14;
-    repeated AnalysisRequest analysisRequest = 15;
-    bool debug = 16;
-    repeated CosineSimRequest cosineSimRequest = 17;
-    bool dontCache = 18;
-    MasterSlaveSettings masterSlaveSettings = 19;
-    repeated Query scoredQuery = 20;
+    FacetRequest facetRequest = 4;
+    SortRequest sortRequest = 5;
+    uint32 start = 6;
+    LastResult lastResult = 7;
+    FetchType resultFetchType = 8;
+    repeated string documentFields = 9;
+    repeated string documentMaskedFields = 10;
+    bool fetchFull = 11;
+    repeated FieldSimilarity fieldSimilarity = 12;
+    repeated HighlightRequest highlightRequest = 13;
+    repeated AnalysisRequest analysisRequest = 14;
+    bool debug = 15;
+    bool dontCache = 16;
+    MasterSlaveSettings masterSlaveSettings = 17;
 }
 
 message QueryResponse {

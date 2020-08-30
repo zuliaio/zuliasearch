@@ -6,6 +6,7 @@ import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.QueryResult;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FieldSort.Direction;
+import io.zulia.message.ZuliaQuery.Query.QueryType;
 import io.zulia.message.ZuliaServiceGrpc;
 
 import java.util.ArrayList;
@@ -19,7 +20,6 @@ import java.util.Set;
 
 import static io.zulia.message.ZuliaBase.Similarity;
 import static io.zulia.message.ZuliaQuery.AnalysisRequest;
-import static io.zulia.message.ZuliaQuery.CosineSimRequest;
 import static io.zulia.message.ZuliaQuery.CountRequest;
 import static io.zulia.message.ZuliaQuery.Facet;
 import static io.zulia.message.ZuliaQuery.FacetRequest;
@@ -49,8 +49,10 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 	private List<Facet> drillDowns = Collections.emptyList();
 	private List<FieldSort> fieldSorts = Collections.emptyList();
 	private Set<String> queryFields = Collections.emptySet();
-	private List<ZuliaQuery.Query> filterQueries = Collections.emptyList();
-	private List<ZuliaQuery.Query> scoredQueries = Collections.emptyList();
+	private List<ZuliaQuery.Query.Builder> filterQueries = Collections.emptyList();
+	private List<ZuliaQuery.Query.Builder> scoredQueries = Collections.emptyList();
+	private List<ZuliaQuery.Query.Builder> termQueries = Collections.emptyList();
+	private List<ZuliaQuery.Query.Builder> cosineSimQueries = Collections.emptyList();
 	private List<ZuliaQuery.HighlightRequest> highlightRequests = Collections.emptyList();
 	private List<ZuliaQuery.AnalysisRequest> analysisRequests = Collections.emptyList();
 	private Integer minimumNumberShouldMatch;
@@ -59,7 +61,7 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 	private Set<String> documentFields = Collections.emptySet();
 	private Set<String> documentMaskedFields = Collections.emptySet();
 	private List<FieldSimilarity> fieldSimilarities = Collections.emptyList();
-	private List<CosineSimRequest> cosineSimRequests = Collections.emptyList();
+
 	private Boolean dismax;
 	private Float dismaxTie;
 	private Boolean dontCache;
@@ -200,22 +202,39 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 		return this;
 	}
 
-	public Query addCosineSim(String field, double[] vector, double similarity) {
+	public Query addTermQuery(Iterable<String> terms, String... field) {
 
-		CosineSimRequest.Builder builder = CosineSimRequest.newBuilder().setField(field).setSimilarity(similarity);
-		for (int i = 0; i < vector.length; i++) {
-			builder.addVector(vector[i]);
-		}
-		addCosineSim(builder.build());
+		ZuliaQuery.Query.Builder builder = ZuliaQuery.Query.newBuilder().addAllQf(Arrays.asList(field)).addAllTerm(terms);
+		builder.setQueryType(QueryType.TERMS);
+		addTermQuery(builder);
 		return this;
 	}
 
-	private Query addCosineSim(CosineSimRequest cosineSimRequest) {
-		if (cosineSimRequests.isEmpty()) {
-			cosineSimRequests = new ArrayList<>();
+	private Query addTermQuery(ZuliaQuery.Query.Builder termQuery) {
+		if (termQueries.isEmpty()) {
+			termQueries = new ArrayList<>();
 		}
+		termQueries.add(termQuery);
 
-		cosineSimRequests.add(cosineSimRequest);
+		return this;
+	}
+
+	public Query addCosineSim(double[] vector, double similarity, String... field) {
+
+		ZuliaQuery.Query.Builder builder = ZuliaQuery.Query.newBuilder().addAllQf(Arrays.asList(field)).setVectorSimilarity(similarity);
+		for (int i = 0; i < vector.length; i++) {
+			builder.addVector(vector[i]);
+		}
+		addCosineSim(builder);
+		return this;
+	}
+
+	private Query addCosineSim(ZuliaQuery.Query.Builder cosineSimQuery) {
+		if (cosineSimQueries.isEmpty()) {
+			cosineSimQueries = new ArrayList<>();
+		}
+		cosineSimQuery.setQueryType(QueryType.VECTOR);
+		cosineSimQueries.add(cosineSimQuery);
 
 		return this;
 	}
@@ -240,11 +259,11 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 		return this;
 	}
 
-	public List<ZuliaQuery.Query> getFilterQueries() {
+	public List<ZuliaQuery.Query.Builder> getFilterQueries() {
 		return filterQueries;
 	}
 
-	public void setFilterQueries(List<ZuliaQuery.Query> filterQueries) {
+	public void setFilterQueries(List<ZuliaQuery.Query.Builder> filterQueries) {
 		this.filterQueries = filterQueries;
 	}
 
@@ -270,6 +289,14 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 		}
 
 		ZuliaQuery.Query.Builder builder = ZuliaQuery.Query.newBuilder();
+		builder.setQueryType(QueryType.FILTER);
+		fillInQuery(query, queryFields, defaultOperator, minimumNumberShouldMatch, builder);
+		filterQueries.add(builder);
+		return this;
+	}
+
+	private void fillInQuery(String query, Collection<String> queryFields, Operator defaultOperator, Integer minimumNumberShouldMatch,
+			ZuliaQuery.Query.Builder builder) {
 		if (query != null && !query.isEmpty()) {
 			builder.setQ(query);
 		}
@@ -282,53 +309,45 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 		if (queryFields != null && !queryFields.isEmpty()) {
 			builder.addAllQf(queryFields);
 		}
-		filterQueries.add(builder.build());
-		return this;
 	}
 
-	public List<ZuliaQuery.Query> getScoredQueries() {
+	public List<ZuliaQuery.Query.Builder> getScoredQueries() {
 		return scoredQueries;
 	}
 
-	public void setScoredQueries(List<ZuliaQuery.Query> scoredQueries) {
+	public void setScoredQueries(List<ZuliaQuery.Query.Builder> scoredQueries) {
 		this.scoredQueries = scoredQueries;
 	}
 
 	public Query addScoredQuery(String query) {
-		return addScoredQuery(query, null, null, null);
+		return addScoredQuery(query, null, null, null, true);
 	}
 
 	public Query addScoredQuery(String query, Collection<String> queryFields) {
-		return addScoredQuery(query, queryFields, null, null);
+		return addScoredQuery(query, queryFields, null, null, true);
 	}
 
 	public Query addScoredQuery(String query, Collection<String> queryFields, Operator defaultOperator) {
-		return addScoredQuery(query, queryFields, defaultOperator, null);
+		return addScoredQuery(query, queryFields, defaultOperator, null, true);
 	}
 
 	public Query addScoredQuery(String query, Collection<String> queryFields, Integer minimumNumberShouldMatch) {
-		return addScoredQuery(query, queryFields, null, minimumNumberShouldMatch);
+		return addScoredQuery(query, queryFields, null, minimumNumberShouldMatch, true);
 	}
 
-	public Query addScoredQuery(String query, Collection<String> queryFields, Operator defaultOperator, Integer minimumNumberShouldMatch) {
+	public Query addScoredQuery(String query, Collection<String> queryFields, Integer minimumNumberShouldMatch, boolean must) {
+		return addScoredQuery(query, queryFields, null, minimumNumberShouldMatch, must);
+	}
+
+	public Query addScoredQuery(String query, Collection<String> queryFields, Operator defaultOperator, Integer minimumNumberShouldMatch, boolean must) {
 		if (scoredQueries.isEmpty()) {
 			this.scoredQueries = new ArrayList<>();
 		}
 
 		ZuliaQuery.Query.Builder builder = ZuliaQuery.Query.newBuilder();
-		if (query != null && !query.isEmpty()) {
-			builder.setQ(query);
-		}
-		if (minimumNumberShouldMatch != null) {
-			builder.setMm(minimumNumberShouldMatch);
-		}
-		if (defaultOperator != null) {
-			builder.setDefaultOp(defaultOperator);
-		}
-		if (queryFields != null && !queryFields.isEmpty()) {
-			builder.addAllQf(queryFields);
-		}
-		scoredQueries.add(builder.build());
+		builder.setQueryType(must ? QueryType.SCORE_MUST : QueryType.SCORE_SHOULD);
+		fillInQuery(query, queryFields, defaultOperator, minimumNumberShouldMatch, builder);
+		scoredQueries.add(builder);
 		return this;
 	}
 
@@ -523,28 +542,29 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 			requestBuilder.setDebug(debug);
 		}
 
-		ZuliaQuery.Query.Builder queryBuilder = ZuliaQuery.Query.newBuilder();
+		ZuliaQuery.Query.Builder mainQueryBuilder = ZuliaQuery.Query.newBuilder();
 		if (query != null) {
-			queryBuilder.setQ(query);
+			mainQueryBuilder.setQ(query);
 		}
 		if (minimumNumberShouldMatch != null) {
-			queryBuilder.setMm(minimumNumberShouldMatch);
+			mainQueryBuilder.setMm(minimumNumberShouldMatch);
 		}
 		if (!queryFields.isEmpty()) {
-			queryBuilder.addAllQf(queryFields);
+			mainQueryBuilder.addAllQf(queryFields);
 		}
 		if (defaultOperator != null) {
-			queryBuilder.setDefaultOp(defaultOperator);
+			mainQueryBuilder.setDefaultOp(defaultOperator);
 		}
 
 		if (dismax != null) {
-			queryBuilder.setDismax(dismax);
+			mainQueryBuilder.setDismax(dismax);
 			if (dismaxTie != null) {
-				queryBuilder.setDismaxTie(dismaxTie);
+				mainQueryBuilder.setDismaxTie(dismaxTie);
 			}
 		}
 
-		requestBuilder.setQuery(queryBuilder);
+		mainQueryBuilder.setQueryType(QueryType.SCORE_MUST);
+		requestBuilder.addQuery(mainQueryBuilder);
 
 		if (lastResult != null) {
 			requestBuilder.setLastResult(lastResult);
@@ -569,12 +589,20 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 
 		}
 
-		if (!filterQueries.isEmpty()) {
-			requestBuilder.addAllFilterQuery(filterQueries);
+		for (ZuliaQuery.Query.Builder filterQuery : filterQueries) {
+			requestBuilder.addQuery(filterQuery.setQueryType(QueryType.FILTER));
 		}
 
-		if (!scoredQueries.isEmpty()) {
-			requestBuilder.addAllScoredQuery(scoredQueries);
+		for (ZuliaQuery.Query.Builder cosineSimQuery : cosineSimQueries) {
+			requestBuilder.addQuery(cosineSimQuery.setQueryType(QueryType.VECTOR));
+		}
+
+		for (ZuliaQuery.Query.Builder termQuery : termQueries) {
+			requestBuilder.addQuery(termQuery.setQueryType(QueryType.TERMS));
+		}
+
+		for (ZuliaQuery.Query.Builder scoredQuery : scoredQueries) {
+			requestBuilder.addQuery(scoredQuery);
 		}
 
 		if (!highlightRequests.isEmpty()) {
@@ -588,11 +616,6 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 		if (resultFetchType != null) {
 			requestBuilder.setResultFetchType(resultFetchType);
 		}
-
-		if (!cosineSimRequests.isEmpty()) {
-			requestBuilder.addAllCosineSimRequest(cosineSimRequests);
-		}
-
 		if (dontCache != null) {
 			requestBuilder.setDontCache(dontCache);
 		}
