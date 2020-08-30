@@ -6,17 +6,30 @@ import "zulia_base.proto";
 option java_package = "io.zulia.message";
 
 message Query {
+    enum QueryType {
+        FILTER = 0;
+        SCORE_MUST = 1;
+        SCORE_SHOULD = 2;
+        TERMS = 3;
+        VECTOR = 4;
+    }
+
     enum Operator {
         OR = 0;
         AND = 1;
     }
 
-    string q = 1;
-    Operator defaultOp = 2; // default OR
-    repeated string qf = 3;
-    uint32 mm = 4; // default 0
-    bool dismax = 5;
-    float dismaxTie = 6; // default 0
+    QueryType queryType = 1;
+    string q = 2;
+    Operator defaultOp = 3; // default OR
+    repeated string qf = 4;
+    uint32 mm = 5; // default 0
+    bool dismax = 6;
+    float dismaxTie = 7; // default 0
+
+    repeated string term = 8;
+    double vectorSimilarity = 9;
+    repeated double vector = 10;
 
 }
 
@@ -156,13 +169,6 @@ message AnalysisResult {
     AnalysisRequest analysisRequest = 1;
     repeated string token = 2;
     repeated Term terms = 3;
-}
-
-
-message CosineSimRequest {
-    string field = 1;
-    double similarity = 2;
-    repeated double vector = 3;
 }
 
 message FieldSimilarity {

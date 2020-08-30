@@ -49,8 +49,8 @@ public class QueryController {
 			@QueryValue(value = ZuliaConstants.QUERY, defaultValue = "*:*") String query,
 			@Nullable @QueryValue(ZuliaConstants.QUERY_FIELD) List<String> queryFields,
 			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY) List<String> filterQueries,
-			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY_JSON) List<String> filterJsonQueries,
-			@Nullable @QueryValue(ZuliaConstants.FIELDS) List<String> fields, @QueryValue(value = ZuliaConstants.FETCH, defaultValue = "true") Boolean fetch,
+			@Nullable @QueryValue(ZuliaConstants.QUERY_JSON) List<String> queryJsonList, @Nullable @QueryValue(ZuliaConstants.FIELDS) List<String> fields,
+			@QueryValue(value = ZuliaConstants.FETCH, defaultValue = "true") Boolean fetch,
 			@QueryValue(value = ZuliaConstants.ROWS, defaultValue = "0") Integer rows, @Nullable @QueryValue(ZuliaConstants.FACET) List<String> facet,
 			@Nullable @QueryValue(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @Nullable @QueryValue(ZuliaConstants.DEFAULT_OP) String defaultOperator,
 			@Nullable @QueryValue(ZuliaConstants.SORT) List<String> sort, @QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
@@ -62,7 +62,6 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
 			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
 			@Nullable @QueryValue(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
-			@Nullable @QueryValue(ZuliaConstants.COS_SIM_JSON) List<String> cosineSimJsonList,
 			@QueryValue(value = ZuliaConstants.FORMAT, defaultValue = "json") String format,
 			@QueryValue(value = ZuliaConstants.BATCH, defaultValue = "false") Boolean batch,
 			@QueryValue(value = ZuliaConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
@@ -97,35 +96,36 @@ public class QueryController {
 				qrBuilder.setDontCache(dontCache);
 			}
 
-			Query.Builder queryBuilder = Query.newBuilder();
+			Query.Builder mainQueryBuilder = Query.newBuilder();
 			if (query != null) {
-				queryBuilder.setQ(query);
+				mainQueryBuilder.setQ(query);
 			}
 			if (mm != null) {
-				queryBuilder.setMm(mm);
+				mainQueryBuilder.setMm(mm);
 			}
 			if (dismax != null) {
-				queryBuilder.setDismax(dismax);
+				mainQueryBuilder.setDismax(dismax);
 				if (dismaxTie != null) {
-					queryBuilder.setDismaxTie(dismaxTie);
+					mainQueryBuilder.setDismaxTie(dismaxTie);
 				}
 			}
 			if (queryFields != null) {
-				queryBuilder.addAllQf(queryFields);
+				mainQueryBuilder.addAllQf(queryFields);
 			}
 			if (defaultOperator != null) {
 				if (defaultOperator.equalsIgnoreCase("AND")) {
-					queryBuilder.setDefaultOp(Query.Operator.AND);
+					mainQueryBuilder.setDefaultOp(Query.Operator.AND);
 				}
 				else if (defaultOperator.equalsIgnoreCase("OR")) {
-					queryBuilder.setDefaultOp(Query.Operator.OR);
+					mainQueryBuilder.setDefaultOp(Query.Operator.OR);
 				}
 				else {
 					HttpResponse.created("Invalid default operator <" + defaultOperator + ">").status(ZuliaConstants.INTERNAL_ERROR);
 				}
 			}
+			mainQueryBuilder.setQueryType(Query.QueryType.SCORE_MUST);
 
-			qrBuilder.setQuery(queryBuilder);
+			qrBuilder.addQuery(mainQueryBuilder);
 
 			if (similarity != null) {
 				for (String sim : similarity) {
@@ -163,35 +163,20 @@ public class QueryController {
 
 			if (filterQueries != null) {
 				for (String filterQuery : filterQueries) {
-					Query filterQueryBuilder = Query.newBuilder().setQ(filterQuery).build();
-					qrBuilder.addFilterQuery(filterQueryBuilder);
+					Query filterQueryBuilder = Query.newBuilder().setQ(filterQuery).setQueryType(Query.QueryType.FILTER).build();
+					qrBuilder.addQuery(filterQueryBuilder);
 				}
 			}
 
-			if (cosineSimJsonList != null) {
-				for (String cosineSimJson : cosineSimJsonList) {
+			if (queryJsonList != null) {
+				for (String queryJson : queryJsonList) {
 					try {
-						CosineSimRequest.Builder consineSimRequest = CosineSimRequest.newBuilder();
-						JsonFormat.parser().merge(cosineSimJson, consineSimRequest);
-						qrBuilder.addCosineSimRequest(consineSimRequest);
+						Query.Builder subQueryBuilder = Query.newBuilder();
+						JsonFormat.parser().merge(queryJson, subQueryBuilder);
+						qrBuilder.addQuery(subQueryBuilder);
 					}
 					catch (InvalidProtocolBufferException e) {
-						return HttpResponse.created("Failed to parse cosine sim json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-								.status(ZuliaConstants.INTERNAL_ERROR);
-					}
-
-				}
-			}
-
-			if (filterJsonQueries != null) {
-				for (String filterJsonQuery : filterJsonQueries) {
-					try {
-						Query.Builder filterQueryBuilder = Query.newBuilder();
-						JsonFormat.parser().merge(filterJsonQuery, filterQueryBuilder);
-						qrBuilder.addFilterQuery(filterQueryBuilder);
-					}
-					catch (InvalidProtocolBufferException e) {
-						return HttpResponse.created("Failed to parse filter json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
+						return HttpResponse.created("Failed to parse query json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
 								.status(ZuliaConstants.INTERNAL_ERROR);
 					}
 				}

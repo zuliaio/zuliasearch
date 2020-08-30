@@ -14,7 +14,6 @@ import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.ShardMapping;
 import io.zulia.message.ZuliaQuery;
-import io.zulia.message.ZuliaQuery.CosineSimRequest;
 import io.zulia.message.ZuliaQuery.Facet;
 import io.zulia.message.ZuliaQuery.FacetRequest;
 import io.zulia.message.ZuliaQuery.FetchType;
@@ -50,6 +49,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
@@ -345,83 +345,132 @@ public class ZuliaIndex {
 
 	}
 
-	public BooleanQuery handleCosineSimQuery(CosineSimRequest cosineSimRequest) {
+	public Query handleTermQuery(ZuliaQuery.Query query) {
 
-		double vector[] = new double[cosineSimRequest.getVectorCount()];
-		for (int i = 0; i < cosineSimRequest.getVectorCount(); i++) {
-			vector[i] = cosineSimRequest.getVector(i);
+		if (query.getQfList().isEmpty()) {
+			throw new IllegalArgumentException("Term query must give at least one query field (qf)");
+		}
+		else if (query.getQfList().size() == 1) {
+			return getTermInSetQuery(query, query.getQfList().get(0));
+		}
+		else {
+			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
+			booleanQueryBuilder.setMinimumNumberShouldMatch(query.getMm());
+			for (String field : query.getQfList()) {
+				TermInSetQuery inSetQuery = getTermInSetQuery(query, field);
+				booleanQueryBuilder.add(inSetQuery, BooleanClause.Occur.SHOULD);
+			}
+			return booleanQueryBuilder.build();
 		}
 
-		SuperBit superBit = indexConfig.getSuperBitForField(cosineSimRequest.getField());
+	}
+
+	private TermInSetQuery getTermInSetQuery(ZuliaQuery.Query query, String field) {
+		List<BytesRef> termBytesRef = new ArrayList<>();
+		for (String term : query.getTermList()) {
+			termBytesRef.add(new BytesRef(term));
+		}
+
+		return new TermInSetQuery(field, termBytesRef);
+	}
+
+	public Query handleCosineSimQuery(ZuliaQuery.Query query) {
+
+		if (query.getVectorList().isEmpty()) {
+			throw new IllegalArgumentException("Vector must not be empty for cosine sim query");
+		}
+
+		double[] vector = new double[query.getVectorCount()];
+		for (int i = 0; i < query.getVectorCount(); i++) {
+			vector[i] = query.getVector(i);
+		}
+
+		if (query.getQfList().isEmpty()) {
+			throw new IllegalArgumentException("Cosine sim query must give at least one query field (qf)");
+		}
+		else if (query.getQfList().size() == 1) {
+			return getCosineSimQuery(query, vector, query.getQfList().get(0));
+		}
+		else {
+			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
+			booleanQueryBuilder.setMinimumNumberShouldMatch(query.getMm());
+			for (String field : query.getQfList()) {
+				Query inSetQuery = getCosineSimQuery(query, vector, field);
+				booleanQueryBuilder.add(inSetQuery, BooleanClause.Occur.SHOULD);
+			}
+			return booleanQueryBuilder.build();
+		}
+	}
+
+	private Query getCosineSimQuery(ZuliaQuery.Query query, double[] vector, String field) {
+		SuperBit superBit = indexConfig.getSuperBitForField(field);
 		boolean[] signature = superBit.signature(vector);
 
-		int mm = (int) ((1 - (Math.acos(cosineSimRequest.getSimilarity()) / Math.PI)) * signature.length);
+		int mm = (int) ((1 - (Math.acos(query.getVectorSimilarity()) / Math.PI)) * signature.length);
 		BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
 		booleanQueryBuilder.setMinimumNumberShouldMatch(mm);
 		for (int i = 0; i < signature.length; i++) {
-			String fieldName = ZuliaConstants.SUPERBIT_PREFIX + "." + cosineSimRequest.getField() + "." + i;
+			String fieldName = ZuliaConstants.SUPERBIT_PREFIX + "." + field + "." + i;
 			booleanQueryBuilder
 					.add(new BooleanClause(new TermQuery(new org.apache.lucene.index.Term(fieldName, signature[i] ? "1" : "0")), BooleanClause.Occur.SHOULD));
 		}
 
 		return booleanQueryBuilder.build();
-
 	}
 
 	public Query getQuery(QueryRequest qr) throws Exception {
 
-		Query q = parseQueryToLucene(qr.getQuery());
+		List<BooleanClause> clauses = new ArrayList<>();
 
-		Map<String, Set<String>> facetToValues = new HashMap<>();
+		for (ZuliaQuery.Query query : qr.getQueryList()) {
+			BooleanClause.Occur occur = BooleanClause.Occur.FILTER;
+			Query luceneQuery;
+			if (query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS) {
+				luceneQuery = handleTermQuery(query);
+			}
+			else if (query.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR) {
+				luceneQuery = handleCosineSimQuery(query);
+				occur = BooleanClause.Occur.MUST;
+			}
+			else {
+				luceneQuery = parseQueryToLucene(query);
+				if (query.getQueryType() == ZuliaQuery.Query.QueryType.SCORE_MUST) {
+					occur = BooleanClause.Occur.MUST;
+				}
+				else if (query.getQueryType() == ZuliaQuery.Query.QueryType.SCORE_SHOULD) {
+					occur = BooleanClause.Occur.SHOULD;
+				}
+				//defaults to filter
+			}
+
+			clauses.add(new BooleanClause(luceneQuery, occur));
+
+		}
+
 		if (qr.hasFacetRequest()) {
 			FacetRequest facetRequest = qr.getFacetRequest();
 
 			List<Facet> drillDownList = facetRequest.getDrillDownList();
 			if (!drillDownList.isEmpty()) {
-				for (Facet drillDown : drillDownList) {
-					String key = drillDown.getLabel();
-					String value = drillDown.getValue();
-					if (!facetToValues.containsKey(key)) {
-						facetToValues.put(key, new HashSet<>());
-					}
-					facetToValues.get(key).add(value);
-				}
-			}
-		}
-
-		if (!qr.getFilterQueryList().isEmpty() || !qr.getCosineSimRequestList().isEmpty() || !facetToValues.isEmpty() || !qr.getScoredQueryList().isEmpty()) {
-			BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
-			for (ZuliaQuery.Query filterQuery : qr.getFilterQueryList()) {
-				Query filterLuceneQuery = parseQueryToLucene(filterQuery);
-				booleanQuery.add(filterLuceneQuery, BooleanClause.Occur.FILTER);
-			}
-
-			if (!facetToValues.isEmpty()) {
 				DrillDownQuery drillDownQuery = new DrillDownQuery(facetsConfig);
-				for (Map.Entry<String, Set<String>> entry : facetToValues.entrySet()) {
-					String indexFieldName = entry.getKey();
-					for (String value : entry.getValue()) {
-						drillDownQuery.add(indexFieldName, value);
-					}
+				for (Facet drillDown : drillDownList) {
+					drillDownQuery.add(drillDown.getLabel(), drillDown.getValue());
 				}
-				booleanQuery.add(drillDownQuery, BooleanClause.Occur.FILTER);
+				clauses.add(new BooleanClause(drillDownQuery, BooleanClause.Occur.FILTER));
 			}
 
-			for (CosineSimRequest cosineSimRequest : qr.getCosineSimRequestList()) {
-				BooleanQuery cosineQuery = handleCosineSimQuery(cosineSimRequest);
-				booleanQuery.add(cosineQuery, BooleanClause.Occur.MUST);
-			}
-
-			for (ZuliaQuery.Query scoredQuery : qr.getScoredQueryList()) {
-				Query scoredLuceneQuery = parseQueryToLucene(scoredQuery);
-				booleanQuery.add(scoredLuceneQuery, BooleanClause.Occur.MUST);
-			}
-
-			booleanQuery.add(q, BooleanClause.Occur.MUST);
-			q = booleanQuery.build();
 		}
 
-		return q;
+		if (clauses.size() == 1) {
+			return clauses.get(0).getQuery();
+		}
+
+		BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
+		for (BooleanClause clause : clauses) {
+			booleanQuery.add(clause);
+		}
+
+		return booleanQuery.build();
 
 	}
 
@@ -592,13 +641,18 @@ public class ZuliaIndex {
 			fieldSimilarityMap.put(fieldSimilarity.getField(), fieldSimilarity.getSimilarity());
 		}
 
-		for (CosineSimRequest cosineSimRequest : queryRequest.getCosineSimRequestList()) {
-			io.zulia.message.ZuliaIndex.Superbit superbitConfig = indexConfig.getSuperBitConfigForField(cosineSimRequest.getField());
+		for (ZuliaQuery.Query cosineSimQuery : queryRequest.getQueryList()) {
+			if (cosineSimQuery.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR) {
 
-			int sigLength = superbitConfig.getInputDim() * superbitConfig.getBatches();
-			for (int i = 0; i < sigLength; i++) {
-				String fieldName = ZuliaConstants.SUPERBIT_PREFIX + "." + cosineSimRequest.getField() + "." + i;
-				fieldSimilarityMap.put(fieldName, Similarity.CONSTANT);
+				for (String field : cosineSimQuery.getQfList()) {
+					io.zulia.message.ZuliaIndex.Superbit superbitConfig = indexConfig.getSuperBitConfigForField(field);
+
+					int sigLength = superbitConfig.getInputDim() * superbitConfig.getBatches();
+					for (int i = 0; i < sigLength; i++) {
+						String fieldName = ZuliaConstants.SUPERBIT_PREFIX + "." + field + "." + i;
+						fieldSimilarityMap.put(fieldName, Similarity.CONSTANT);
+					}
+				}
 			}
 
 		}
