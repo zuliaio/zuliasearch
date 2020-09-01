@@ -315,10 +315,20 @@ public class StartStopTest {
 	public void termTest() throws Exception {
 		Query q = new Query(FACET_TEST_INDEX, null, 0);
 		q.addTermQuery(Arrays.asList("1", "2", "3", "4"), "id");
-		q.setDebug(true);
 		QueryResult queryResult = zuliaWorkPool.query(q);
 		Assertions.assertEquals(4, queryResult.getTotalHits());
 
+		q = new Query(FACET_TEST_INDEX, null, 0);
+		q.addTermQuery(Arrays.asList("1", "2", "3", "4"), "id");
+		q.addFilterQuery("testBool:true");
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(4, queryResult.getTotalHits());
+
+		q = new Query(FACET_TEST_INDEX, null, 0);
+		q.addTermQuery(Arrays.asList("1", "2", "3", "4"), "id");
+		q.addFilterQuery("country:US");
+		queryResult = zuliaWorkPool.query(q);
+		Assertions.assertEquals(2, queryResult.getTotalHits());
 	}
 
 	@Test
