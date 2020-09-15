@@ -38,22 +38,6 @@ public class Zulia {
 
 	private static final DecimalFormat df = new DecimalFormat("#.00");
 
-	public static class ZuliaArgs {
-
-		@Parameter(names = "--help", help = true)
-		private boolean help;
-
-		@Parameter(names = "--address", description = "Zulia Server Address", order = 1)
-		private String address = "localhost";
-
-		@Parameter(names = "--port", description = "Zulia Port", order = 2)
-		private Integer port = 32191;
-
-		@Parameter(names = "--index", description = "Index name", order = 3)
-		private String index;
-
-	}
-
 	@Parameters(commandNames = "query", commandDescription = "Queries the given index in --index argument.")
 	public static class QueryCmd {
 
@@ -140,7 +124,7 @@ public class Zulia {
 
 		LogUtil.init();
 
-		ZuliaArgs zuliaArgs = new ZuliaArgs();
+		ZuliaBaseArgs zuliaArgs = new ZuliaBaseArgs();
 		GetIndexesCmd getIndexesCmd = new GetIndexesCmd();
 		ClearCmd clear = new ClearCmd();
 		OptimizeCmd optimize = new OptimizeCmd();
@@ -155,15 +139,15 @@ public class Zulia {
 				.addCommand(getCurrentNodes).addCommand(getFields).addCommand(delete).addCommand(reindex).addCommand(optimize).build();
 		try {
 
-			ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(zuliaArgs.address, zuliaArgs.port);
-			ZuliaWorkPool workPool = new ZuliaWorkPool(config);
-
 			jCommander.parse(args);
 
 			if (jCommander.getParsedCommand() == null) {
 				jCommander.usage();
 				System.exit(2);
 			}
+
+			ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(zuliaArgs.address, zuliaArgs.port);
+			ZuliaWorkPool workPool = new ZuliaWorkPool(config);
 
 			if ("getIndexes".equalsIgnoreCase(jCommander.getParsedCommand())) {
 				GetIndexes getIndexes = new GetIndexes();
