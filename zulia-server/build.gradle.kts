@@ -18,6 +18,7 @@ dependencies {
 
     api("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
     api("org.apache.lucene:lucene-facet:$luceneVersion")
+    api("org.apache.lucene:lucene-expressions:$luceneVersion")
     api("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
     api("com.beust:jcommander:1.78")
@@ -46,6 +47,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+
+    //implementation("org.graalvm.js:js:20.2.0")
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")

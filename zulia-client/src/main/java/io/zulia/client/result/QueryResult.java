@@ -8,6 +8,7 @@ import io.zulia.message.ZuliaQuery.LastResult;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.util.ResultHelper;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 import java.util.ArrayList;
@@ -48,6 +49,20 @@ public class QueryResult extends Result {
 			}
 			else {
 				throw new IllegalStateException("Cannot get results without fetch type of full");
+			}
+		}
+		return documents;
+	}
+
+	public List<Document> getMetaDocuments() {
+		List<Document> documents = new ArrayList<>();
+		for (ScoredResult scoredResult : queryResponse.getResultsList()) {
+			Document metadata = ZuliaUtil.byteStringToMongoDocument(scoredResult.getResultDocument().getMetadata());
+			if (metadata != null) {
+				documents.add(metadata);
+			}
+			else {
+				throw new IllegalStateException("Cannot get meta document without fetch type of meta or full");
 			}
 		}
 		return documents;

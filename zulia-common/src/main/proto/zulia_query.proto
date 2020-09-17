@@ -24,12 +24,16 @@ message Query {
     Operator defaultOp = 3; // default OR
     repeated string qf = 4;
     uint32 mm = 5; // default 0
+
     bool dismax = 6;
     float dismaxTie = 7; // default 0
 
     repeated string term = 8;
+
     double vectorSimilarity = 9;
     repeated double vector = 10;
+
+    string scoreFunction = 11;
 
 }
 
