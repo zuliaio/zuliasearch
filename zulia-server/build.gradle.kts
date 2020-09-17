@@ -48,7 +48,7 @@ dependencies {
     testImplementation("io.micronaut.test:micronaut-test-junit5")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
-    //implementation("org.graalvm.js:js:20.2.0")
+    implementation("org.graalvm.js:js:20.2.0")
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
