@@ -38,7 +38,15 @@ public class FieldConfigBuilder {
 	}
 
 	public FieldConfigBuilder indexAs(String analyzerName) {
+		return indexWithAnalyzer(analyzerName);
+	}
+
+	public FieldConfigBuilder indexWithAnalyzer(String analyzerName) {
 		return indexAs(analyzerName, storedFieldName);
+	}
+
+	public FieldConfigBuilder indexAsField(String fieldName) {
+		return indexAs(null, fieldName);
 	}
 
 	public FieldConfigBuilder indexAs(String analyzerName, String indexedFieldName) {
