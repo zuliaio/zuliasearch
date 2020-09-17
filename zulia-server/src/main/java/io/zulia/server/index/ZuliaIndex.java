@@ -40,12 +40,17 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.apache.lucene.expressions.Expression;
+import org.apache.lucene.expressions.SimpleBindings;
+import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -422,6 +427,10 @@ public class ZuliaIndex {
 
 		List<BooleanClause> clauses = new ArrayList<>();
 
+		if (qr.getQueryList().isEmpty()) {
+			clauses.add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER));
+		}
+
 		for (ZuliaQuery.Query query : qr.getQueryList()) {
 			BooleanClause.Occur occur = BooleanClause.Occur.FILTER;
 			Query luceneQuery;
@@ -441,6 +450,11 @@ public class ZuliaIndex {
 					occur = BooleanClause.Occur.SHOULD;
 				}
 				//defaults to filter
+			}
+
+			String scoreFunction = query.getScoreFunction();
+			if (scoreFunction != null && !scoreFunction.isEmpty()) {
+				luceneQuery = handleScoreFunction(query.getScoreFunction(), luceneQuery);
 			}
 
 			clauses.add(new BooleanClause(luceneQuery, occur));
@@ -471,6 +485,45 @@ public class ZuliaIndex {
 		}
 
 		return booleanQuery.build();
+
+	}
+
+	private FunctionScoreQuery handleScoreFunction(String scoreFunction, Query query) throws java.text.ParseException {
+
+		SimpleBindings bindings = new SimpleBindings();
+
+		Expression expr = JavascriptCompiler.compile(scoreFunction);
+		bindings.add("score", DoubleValuesSource.SCORES);
+		for (String var : expr.variables) {
+			if (!"score".equals(var)) {
+				FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForSortField(var);
+				if (fieldType == null) {
+					throw new IllegalArgumentException("Score Function references unknown sort field <" + var + ">");
+				}
+
+				if (fieldType == FieldConfig.FieldType.NUMERIC_INT) {
+					bindings.add(var, DoubleValuesSource.fromIntField(var));
+				}
+				else if (fieldType == FieldConfig.FieldType.NUMERIC_LONG) {
+					bindings.add(var, DoubleValuesSource.fromLongField(var));
+				}
+				else if (fieldType == FieldConfig.FieldType.NUMERIC_FLOAT) {
+					bindings.add(var, DoubleValuesSource.fromFloatField(var));
+				}
+				else if (fieldType == FieldConfig.FieldType.NUMERIC_DOUBLE) {
+					bindings.add(var, DoubleValuesSource.fromDoubleField(var));
+				}
+				else if (fieldType == FieldConfig.FieldType.DATE) {
+					bindings.add(var, DoubleValuesSource.fromLongField(var));
+				}
+				else {
+					throw new IllegalArgumentException("Score Function references sort field with non numeric or date type <" + var + ">");
+				}
+			}
+			//
+		}
+
+		return new FunctionScoreQuery(query, expr.getDoubleValuesSource(bindings));
 
 	}
 

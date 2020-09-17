@@ -2,6 +2,7 @@ package io.zulia.client.pool;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import io.zulia.client.command.*;
+import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.result.*;
@@ -158,8 +159,12 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(query);
 	}
 
-	public <T> void queryAllMappedDocument(Query query, Mapper<T> mapper, Consumer<T> mappedDocumentHandler) throws Exception {
-		queryAllScoredResult(query, scoredResult -> {
+	public SearchResult search(Search search) throws Exception {
+		return execute(search);
+	}
+
+	public <T> void queryAllAsMappedDocument(Query query, Mapper<T> mapper, Consumer<T> mappedDocumentHandler) throws Exception {
+		queryAllAsScoredResult(query, scoredResult -> {
 			try {
 				mappedDocumentHandler.accept(mapper.fromScoredResult(scoredResult));
 			}
@@ -169,12 +174,31 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		});
 	}
 
-	public void queryAllDocument(Query query, Consumer<Document> documentHandler) throws Exception {
-		queryAllScoredResult(query, scoredResult -> documentHandler.accept(ResultHelper.getDocumentFromScoredResult(scoredResult)));
+	public <T> void searchAllAsMappedDocument(Search search, Mapper<T> mapper, Consumer<T> mappedDocumentHandler) throws Exception {
+		searchAllAsScoredResult(search, scoredResult -> {
+			try {
+				mappedDocumentHandler.accept(mapper.fromScoredResult(scoredResult));
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		});
 	}
 
-	public void queryAllScoredResult(Query query, Consumer<ScoredResult> scoredResultHandler) throws Exception {
+	public void queryAllAsDocument(Query query, Consumer<Document> documentHandler) throws Exception {
+		queryAllAsScoredResult(query, scoredResult -> documentHandler.accept(ResultHelper.getDocumentFromScoredResult(scoredResult)));
+	}
+
+	public void searchAllAsDocument(Search search, Consumer<Document> documentHandler) throws Exception {
+		searchAllAsScoredResult(search, scoredResult -> documentHandler.accept(ResultHelper.getDocumentFromScoredResult(scoredResult)));
+	}
+
+	public void queryAllAsScoredResult(Query query, Consumer<ScoredResult> scoredResultHandler) throws Exception {
 		queryAll(query, queryResult -> queryResult.getResults().forEach(scoredResultHandler));
+	}
+
+	public void searchAllAsScoredResult(Search search, Consumer<ScoredResult> scoredResultHandler) throws Exception {
+		searchAll(search, queryResult -> queryResult.getResults().forEach(scoredResultHandler));
 	}
 
 	public void queryAll(Query query, Consumer<QueryResult> resultHandler) throws Exception {
@@ -186,8 +210,21 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		}
 	}
 
+	public void searchAll(Search search, Consumer<SearchResult> resultHandler) throws Exception {
+		SearchResult searchResult = search(search);
+		while (searchResult.hasResults()) {
+			resultHandler.accept(searchResult);
+			search.setLastResult(searchResult);
+			searchResult = search(search);
+		}
+	}
+
 	public ListenableFuture<QueryResult> queryAsync(Query query) throws Exception {
 		return executeAsync(query);
+	}
+
+	public ListenableFuture<SearchResult> searchAsync(Search search) throws Exception {
+		return executeAsync(search);
 	}
 
 	public StoreResult store(Store store) throws Exception {
