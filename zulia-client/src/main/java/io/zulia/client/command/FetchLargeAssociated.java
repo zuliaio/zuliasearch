@@ -1,6 +1,7 @@
 package io.zulia.client.command;
 
 import io.zulia.client.command.base.RESTCommand;
+import io.zulia.client.command.base.ShardRoutableCommand;
 import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.result.FetchLargeAssociatedResult;
 
@@ -8,7 +9,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 
-public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult> {
+public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult> implements ShardRoutableCommand {
 
 	private boolean closeStream;
 	private String uniqueId;
@@ -55,6 +56,16 @@ public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult
 		this.uniqueId = uniqueId;
 		this.indexName = indexName;
 		this.outputFile = outputFile;
+	}
+
+	@Override
+	public String getUniqueId() {
+		return uniqueId;
+	}
+
+	@Override
+	public String getIndexName() {
+		return indexName;
 	}
 
 	@Override
