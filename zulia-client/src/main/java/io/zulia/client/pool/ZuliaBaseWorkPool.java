@@ -40,6 +40,10 @@ public class ZuliaBaseWorkPool extends WorkPool {
 		return execute(callableCommand);
 	}
 
+	public void updateNodesAndRouting() throws Exception {
+		zuliaPool.updateNodesAndRouting();
+	}
+
 	public void updateNodes(List<Node> nodes) throws Exception {
 		zuliaPool.updateNodes(nodes);
 	}

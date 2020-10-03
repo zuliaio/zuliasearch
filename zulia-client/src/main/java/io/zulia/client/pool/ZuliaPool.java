@@ -3,6 +3,7 @@ package io.zulia.client.pool;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
+import io.zulia.ZuliaConstants;
 import io.zulia.cache.MetaKeys;
 import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.base.BaseCommand;
@@ -51,7 +52,7 @@ public class ZuliaPool {
 
 					}
 					if (!isClosed) {
-						updateNodes();
+						updateNodesAndRouting();
 					}
 
 				}
@@ -70,6 +71,7 @@ public class ZuliaPool {
 	private final boolean compressedConnection;
 	private final ConcurrentHashMap<String, GenericObjectPool<ZuliaConnection>> zuliaConnectionPoolMap;
 	private final ConcurrentHashMap<String, ZuliaRESTClient> zuliaRestPoolMap;
+	private final ConcurrentHashMap<String, Node> nodeKeyToNode;
 
 	private boolean isClosed;
 	private List<Node> nodes;
@@ -86,6 +88,11 @@ public class ZuliaPool {
 
 		zuliaConnectionPoolMap = new ConcurrentHashMap<>();
 		zuliaRestPoolMap = new ConcurrentHashMap<>();
+		nodeKeyToNode = new ConcurrentHashMap<>();
+
+		for (Node node : nodes) {
+			nodeKeyToNode.put(getNodeKey(node), node);
+		}
 
 		if (zuliaPoolConfig.isNodeUpdateEnabled()) {
 			ZuliaNodeUpdateThread mut = new ZuliaNodeUpdateThread();
@@ -101,7 +108,9 @@ public class ZuliaPool {
 
 		Set<String> newKeys = new HashSet<>();
 		for (Node node : nodes) {
-			newKeys.add(getNodeKey(node));
+			String nodeKey = getNodeKey(node);
+			newKeys.add(nodeKey);
+			nodeKeyToNode.put(nodeKey, node);
 		}
 
 		Set<String> removedNodes = new HashSet<>(zuliaConnectionPoolMap.keySet());
@@ -137,7 +146,7 @@ public class ZuliaPool {
 		indexRouting = new IndexRouting(list);
 	}
 
-	public void updateNodes() throws Exception {
+	public void updateNodesAndRouting() throws Exception {
 		GetNodesResult getNodesResult = execute(new GetNodes().setActiveOnly(true));
 		updateNodes(getNodesResult.getNodes());
 		updateIndexMappings(getNodesResult.getIndexMappings());
@@ -179,9 +188,24 @@ public class ZuliaPool {
 
 				String nodeKey = getNodeKey(selectedNode);
 				if (command instanceof RESTCommand) {
-					Node finalSelectedNode = selectedNode;
-					ZuliaRESTClient restClient = zuliaRestPoolMap
-							.computeIfAbsent(nodeKey, s -> new ZuliaRESTClient(finalSelectedNode.getServerAddress(), finalSelectedNode.getRestPort()));
+					int restPort = selectedNode.getRestPort();
+
+					System.out.println(restPort);
+					if (selectedNode.getRestPort() == 0) {
+						Node fullSelectedNode = nodeKeyToNode.get(nodeKey);
+						if (fullSelectedNode != null) {
+
+							restPort = fullSelectedNode.getRestPort();
+						}
+						else {
+							LOG.warning("Failed to find rest port for <" + nodeKey + "> using default");
+							restPort = ZuliaConstants.DEFAULT_REST_SERVICE_PORT;
+						}
+					}
+
+					int finalRestPort = restPort;
+					final String finalServer = selectedNode.getServerAddress();
+					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey, s -> new ZuliaRESTClient(finalServer, finalRestPort));
 					return ((RESTCommand<R>) command).execute(restClient);
 				}
 				else {
