@@ -190,7 +190,6 @@ public class ZuliaPool {
 				if (command instanceof RESTCommand) {
 					int restPort = selectedNode.getRestPort();
 
-					System.out.println(restPort);
 					if (selectedNode.getRestPort() == 0) {
 						Node fullSelectedNode = nodeKeyToNode.get(nodeKey);
 						if (fullSelectedNode != null) {
