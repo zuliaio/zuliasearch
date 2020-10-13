@@ -210,4 +210,9 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		QueryResponse queryResponse = service.query(getRequest());
 		return new SearchResult(queryResponse);
 	}
+
+	@Override
+	public String toString() {
+		return queryRequest.toString();
+	}
 }
