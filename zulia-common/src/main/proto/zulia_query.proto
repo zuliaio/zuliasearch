@@ -12,6 +12,8 @@ message Query {
         SCORE_SHOULD = 2;
         TERMS = 3;
         VECTOR = 4;
+        TERMS_NOT = 5;
+        FILTER_NOT = 6;
     }
 
     enum Operator {

@@ -38,6 +38,16 @@ public class TermQuery implements QueryBuilder {
 		return this;
 	}
 
+	public QueryBuilder exclude() {
+		builder.setQueryType(ZuliaQuery.Query.QueryType.TERMS_NOT);
+		return this;
+	}
+
+	public QueryBuilder include() {
+		builder.setQueryType(ZuliaQuery.Query.QueryType.TERMS);
+		return this;
+	}
+
 	public TermQuery clearTerms() {
 		builder.clearTerm();
 		return this;
