@@ -7,10 +7,15 @@ import java.util.List;
 
 public abstract class StandardQuery implements QueryBuilder {
 
-	private ZuliaQuery.Query.Builder queryBuilder;
+	private final ZuliaQuery.Query.Builder queryBuilder;
 
 	public StandardQuery(String query) {
-		queryBuilder = ZuliaQuery.Query.newBuilder().setQ(query);
+
+		queryBuilder = ZuliaQuery.Query.newBuilder();
+
+		if (query != null) {
+			queryBuilder.setQ(query);
+		}
 	}
 
 	public StandardQuery setQuery(String query) {

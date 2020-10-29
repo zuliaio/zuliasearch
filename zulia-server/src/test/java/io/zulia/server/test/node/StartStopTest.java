@@ -7,6 +7,7 @@ import io.zulia.client.command.Reindex;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.MatchAllQuery;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
@@ -479,6 +480,19 @@ public class StartStopTest {
 		s.addQuery(new FilterQuery("country:US"));
 		searchResult = zuliaWorkPool.search(s);
 		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new TermQuery("id").addTerm("1").addTerm("2").addTerm("3").addTerm("4").exclude());
+		s.addQuery(new FilterQuery("country:US"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(28, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new TermQuery("id").addTerm("1").addTerm("2").addTerm("3").addTerm("4").exclude());
+		s.addQuery(new FilterQuery("country:US").exclude());
+		s.addQuery(new MatchAllQuery()); //need to use match all because all other queries are negated
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(28, searchResult.getTotalHits());
 	}
 
 	@Test

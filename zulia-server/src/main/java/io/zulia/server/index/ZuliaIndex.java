@@ -434,8 +434,12 @@ public class ZuliaIndex {
 		for (ZuliaQuery.Query query : qr.getQueryList()) {
 			BooleanClause.Occur occur = BooleanClause.Occur.FILTER;
 			Query luceneQuery;
-			if (query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS) {
+			if ((query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS)) {
 				luceneQuery = handleTermQuery(query);
+			}
+			else if (query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS_NOT) {
+				luceneQuery = handleTermQuery(query);
+				occur = BooleanClause.Occur.MUST_NOT;
 			}
 			else if (query.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR) {
 				luceneQuery = handleCosineSimQuery(query);
@@ -448,6 +452,9 @@ public class ZuliaIndex {
 				}
 				else if (query.getQueryType() == ZuliaQuery.Query.QueryType.SCORE_SHOULD) {
 					occur = BooleanClause.Occur.SHOULD;
+				}
+				else if (query.getQueryType() == ZuliaQuery.Query.QueryType.FILTER_NOT) {
+					occur = BooleanClause.Occur.MUST_NOT;
 				}
 				//defaults to filter
 			}
