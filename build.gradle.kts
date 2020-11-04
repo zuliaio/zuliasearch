@@ -6,7 +6,7 @@ plugins {
     idea
     signing
     `maven-publish`
-    id("org.ajoberstar.reckon") version "0.12.0"
+    id("org.ajoberstar.reckon") version "0.13.0"
     id("com.google.protobuf") version "0.8.12" apply false
 }
 
