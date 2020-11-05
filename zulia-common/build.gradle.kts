@@ -24,7 +24,7 @@ dependencies {
     api("org.mongodb:bson:$mongoDriverVersion")
     api("org.apache.commons:commons-pool2:2.7.0")
     api("javax.annotation:javax.annotation-api:1.3.2")
-    api("com.google.guava:guava:29.0-jre")
+    api("com.google.guava:guava:30.0-jre")
 }
 
 
