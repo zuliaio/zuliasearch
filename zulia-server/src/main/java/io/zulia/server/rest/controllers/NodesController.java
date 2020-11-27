@@ -50,7 +50,7 @@ public class NodesController {
 				memberObj.put("restPort", node.getRestPort());
 				memberObj.put("heartbeat", node.getHeartbeat());
 
-				Document indexMappingObj = new Document();
+				List<Document> indexMappingList = new ArrayList<>();
 				for (IndexMapping indexMapping : getNodesResponse.getIndexMappingList()) {
 
 					TreeSet<Integer> primaryShards = new TreeSet<>();
@@ -68,12 +68,14 @@ public class NodesController {
 					}
 
 					Document shards = new Document();
-					indexMappingObj.put(indexMapping.getIndexName(), shards);
+					shards.put("name", indexMapping.getIndexName());
+					shards.put("size", indexMapping.getSerializedSize());
 					shards.put("primary", primaryShards);
 					shards.put("replica", replicaShards);
 
+					indexMappingList.add(shards);
 				}
-				memberObj.put("indexMapping", indexMappingObj);
+				memberObj.put("indexMappings", indexMappingList);
 
 				memberObjList.add(memberObj);
 
