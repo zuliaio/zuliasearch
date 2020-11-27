@@ -127,4 +127,8 @@ public class ZuliaNode {
 	public ZuliaIndexManager getIndexManager() {
 		return indexManager;
 	}
+
+	public ZuliaConfig getZuliaConfig() {
+		return zuliaConfig;
+	}
 }
