@@ -8,7 +8,10 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
+import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
+
+import java.io.File;
 
 /**
  * Created by Payam Meyer on 8/7/17.
@@ -29,10 +32,18 @@ public class StatsController {
 
 			Runtime runtime = Runtime.getRuntime();
 
+			File dataDir = new File(ZuliaNodeProvider.getZuliaNode().getZuliaConfig().getDataPath());
+			double freeDataDirSpaceGB = dataDir.getFreeSpace() / (1024.0 * 1024 * 1024);
+			double totalDataDirSpaceGB = dataDir.getTotalSpace() / (1024.0 * 1024 * 1024);
+			double usedDataDirSpaceGB = totalDataDirSpaceGB - freeDataDirSpaceGB;
+
 			mongoDocument.put("jvmUsedMemoryMB", (runtime.totalMemory() - runtime.freeMemory()) / MB);
 			mongoDocument.put("jvmFreeMemoryMB", runtime.freeMemory() / MB);
 			mongoDocument.put("jvmTotalMemoryMB", runtime.totalMemory() / MB);
 			mongoDocument.put("jvmMaxMemoryMB", runtime.maxMemory() / MB);
+			mongoDocument.put("freeDataDirSpaceGB", freeDataDirSpaceGB);
+			mongoDocument.put("totalDataDirSpaceGB", totalDataDirSpaceGB);
+			mongoDocument.put("usedDataDirSpaceGB", usedDataDirSpaceGB);
 
 			String docString = mongoDocument.toJson();
 
