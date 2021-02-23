@@ -64,8 +64,8 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
 			@QueryValue(value = ZuliaConstants.FORMAT, defaultValue = "json") String format,
 			@QueryValue(value = ZuliaConstants.BATCH, defaultValue = "false") Boolean batch,
-			@QueryValue(value = ZuliaConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
-			@Nullable @QueryValue(ZuliaConstants.CURSOR) String cursor) {
+			@QueryValue(value = ZuliaConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize, @Nullable @QueryValue(ZuliaConstants.CURSOR) String cursor,
+			@QueryValue(value = ZuliaConstants.TRUNCATE, defaultValue = "false") Boolean truncate) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -301,7 +301,7 @@ public class QueryController {
 
 			if (format.equals("json")) {
 				QueryResponse qr = indexManager.query(qrBuilder.build());
-				String response = getStandardResponse(qr, !pretty, outputCursor);
+				String response = getStandardResponse(qr, !pretty, outputCursor, truncate);
 
 				if (pretty) {
 					response = JsonWriter.formatJson(response);
@@ -400,7 +400,7 @@ public class QueryController {
 
 	}
 
-	private String getStandardResponse(QueryResponse qr, boolean strict, boolean cursor) throws InvalidProtocolBufferException {
+	private String getStandardResponse(QueryResponse qr, boolean strict, boolean cursor, boolean truncate) throws InvalidProtocolBufferException {
 		StringBuilder responseBuilder = new StringBuilder();
 		responseBuilder.append("{");
 		responseBuilder.append("\"totalHits\": ");
@@ -488,6 +488,10 @@ public class QueryController {
 							responseBuilder.append(document.toJson());
 						}
 						else {
+							if (truncate) {
+								truncateDocumentValues(document);
+							}
+
 							responseBuilder.append(document.toJson(JsonWriterSettings.builder().indent(true).build()));
 						}
 					}
@@ -581,6 +585,49 @@ public class QueryController {
 		responseBuilder.append("}");
 
 		return responseBuilder.toString();
+	}
+
+	private void truncateDocumentValues(Document document) {
+		for (String key : document.keySet()) {
+			if (document.get(key) instanceof Document) {
+				truncateDocumentValues((Document) document.get(key));
+			}
+			if (document.get(key) instanceof String) {
+				String value = (String) document.get(key);
+				if (value.length() > 750) {
+					document.put(key, value.substring(0, 750) + "...truncated for UI...");
+				}
+			}
+			if (document.get(key) instanceof List) {
+				List<?> o = (List<?>) document.get(key);
+				if (!o.isEmpty()) {
+					if (o.get(0) instanceof Document) {
+						for (Object oDoc : o) {
+							Document subDoc = (Document) oDoc;
+							for (String subKey : subDoc.keySet()) {
+								Object subValue = subDoc.get(subKey);
+								if (subValue instanceof List) {
+									if (!((List<?>) subValue).isEmpty()) {
+										if (((List<?>) subValue).get(0) instanceof String) {
+											if (((List<String>) subValue).size() > 10) {
+												List<String> value = ((List<String>) subValue).subList(0, 10);
+												value.add("list truncated for UI");
+												subDoc.put(subKey, value);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					else if (o.size() > 10 && o.get(0) instanceof String) {
+						List<String> value = ((List<String>) o).subList(0, 10);
+						value.add("list truncated for UI");
+						document.put(key, value);
+					}
+				}
+			}
+		}
 	}
 
 	private String getCSVDocumentResponse(List<String> fields, QueryResponse qr) throws Exception {
