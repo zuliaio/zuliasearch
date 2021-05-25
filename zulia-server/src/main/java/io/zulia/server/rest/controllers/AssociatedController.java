@@ -2,6 +2,7 @@ package io.zulia.server.rest.controllers;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.io.Writable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -20,7 +21,6 @@ import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
