@@ -2,14 +2,11 @@ package io.zulia.client.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micronaut.core.annotation.AnnotationMetadataResolver;
-import io.micronaut.core.convert.ConversionService;
 import io.micronaut.core.io.ResourceResolver;
 import io.micronaut.http.HttpVersion;
-import io.micronaut.http.bind.DefaultRequestBinderRegistry;
 import io.micronaut.http.client.DefaultHttpClientConfiguration;
 import io.micronaut.http.client.HttpClientConfiguration;
 import io.micronaut.http.client.LoadBalancer;
-import io.micronaut.http.client.filter.DefaultHttpClientFilterResolver;
 import io.micronaut.http.client.netty.DefaultHttpClient;
 import io.micronaut.http.client.netty.ssl.NettyClientSslBuilder;
 import io.micronaut.http.codec.MediaTypeCodecRegistry;
@@ -17,14 +14,11 @@ import io.micronaut.jackson.ObjectMapperFactory;
 import io.micronaut.jackson.codec.JsonMediaTypeCodec;
 import io.micronaut.jackson.codec.JsonStreamMediaTypeCodec;
 import io.micronaut.runtime.ApplicationConfiguration;
-import io.micronaut.websocket.context.WebSocketBeanRegistry;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
 import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.logging.Logger;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
@@ -34,10 +28,8 @@ public class MicronautHttpClient extends DefaultHttpClient {
 	private static final Logger LOG = Logger.getLogger(MicronautHttpClient.class.getName());
 
 	public MicronautHttpClient(URL url, HttpClientConfiguration clientConfiguration) {
-		super(LoadBalancer.fixed(url), HttpVersion.HTTP_2_0, clientConfiguration, null,
-				new DefaultHttpClientFilterResolver(AnnotationMetadataResolver.DEFAULT, Collections.emptyList()), null,
-				new DefaultThreadFactory(MicronautHttpClient.class, true), new NettyClientSslBuilder(new ResourceResolver()), createDefaultMediaTypeRegistry(),
-				WebSocketBeanRegistry.EMPTY, new DefaultRequestBinderRegistry(ConversionService.SHARED), null, NioSocketChannel::new, null);
+		super(LoadBalancer.fixed(url), clientConfiguration, null, new DefaultThreadFactory(MicronautHttpClient.class, true),
+				new NettyClientSslBuilder(new ResourceResolver()), createDefaultMediaTypeRegistry(), AnnotationMetadataResolver.DEFAULT, null);
 
 	}
 
