@@ -6,11 +6,15 @@ import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import io.zulia.client.command.Fetch;
+import io.zulia.client.command.FetchAllAssociated;
 import io.zulia.client.command.Query;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.StoreLargeAssociated;
 import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.AssociatedResult;
+import io.zulia.client.result.FetchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
@@ -40,6 +44,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static io.zulia.message.ZuliaQuery.FetchType.META;
 
 public class ZuliaCmdUtil {
 
@@ -125,9 +131,9 @@ public class ZuliaCmdUtil {
 		}
 	}
 
-	public static void index(String inputDir, String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count)
-			throws Exception {
-		WorkPool threadPool = new WorkPool(4);
+	public static void index(String inputDir, String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count,
+			Integer threads, Boolean skipExistingFiles) throws Exception {
+		WorkPool threadPool = new WorkPool(threads);
 		try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
 			String line;
 			while ((line = b.readLine()) != null) {
@@ -162,8 +168,16 @@ public class ZuliaCmdUtil {
 								ZipArchiveEntry zipEntry;
 								while ((zipEntry = inputStream.getNextZipEntry()) != null) {
 									try {
-										workPool.storeLargeAssociated(
-												new StoreLargeAssociated(id, index, zipEntry.getName(), new ByteArrayInputStream(inputStream.readAllBytes())));
+										if (skipExistingFiles) {
+											if (!fileExists(workPool, id, zipEntry.getName(), index)) {
+												workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, zipEntry.getName(),
+														new ByteArrayInputStream(inputStream.readAllBytes())));
+											}
+										}
+										else {
+											workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, zipEntry.getName(),
+													new ByteArrayInputStream(inputStream.readAllBytes())));
+										}
 									}
 									catch (Throwable t) {
 										LOG.log(Level.SEVERE, "Could not restore associated file <" + zipEntry.getName() + ">", t);
@@ -192,4 +206,20 @@ public class ZuliaCmdUtil {
 
 	}
 
+	private static boolean fileExists(ZuliaWorkPool zuliaWorkPool, String id, String fileName, String indexName) throws Exception {
+
+		Fetch fetchAssociated = new FetchAllAssociated(id, indexName).setAssociatedFetchType(META);
+
+		FetchResult fetch = zuliaWorkPool.fetch(fetchAssociated);
+		if (fetch.getAssociatedDocumentCount() > 0) {
+			for (AssociatedResult assDoc : fetch.getAssociatedDocuments()) {
+				if (assDoc.getFilename().equals(fileName)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+
+	}
 }
