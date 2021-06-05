@@ -5,6 +5,7 @@ import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.server.config.ZuliaConfig;
 import org.bson.Document;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
@@ -72,5 +73,18 @@ public class FileDocumentStorage implements DocumentStorage {
 	@Override
 	public void deleteAllDocuments() {
 		throw new RuntimeException("Not implemented");
+	}
+
+	private static String getPathToDocument(String uniqueId) {
+		String hexHash = Integer.toHexString(uniqueId.hashCode());
+		String piece1 = hexHash.substring(0, 2);
+		String piece2 = hexHash.substring(2, 5);
+		String piece3 = hexHash.substring(5);
+
+		return piece1 + File.separator + piece2 + File.separator + piece3;
+	}
+
+	public static void main(String[] args) {
+		System.out.println(getPathToDocument("someDoc"));
 	}
 }
