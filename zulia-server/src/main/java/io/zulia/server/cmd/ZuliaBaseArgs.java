@@ -15,4 +15,10 @@ public class ZuliaBaseArgs {
 
 	@Parameter(names = "--index", description = "Index name")
 	public String index;
+
+	@Parameter(names = "--skipExistingFiles", description = "Skip storing files if they already exist.")
+	public Boolean skipExistingFiles = false;
+
+	@Parameter(names = "--threads", description = "Number of threads to use for restoring.")
+	public Integer threads = 4;
 }
