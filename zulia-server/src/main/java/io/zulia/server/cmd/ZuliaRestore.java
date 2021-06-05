@@ -54,17 +54,19 @@ public class ZuliaRestore {
 			String index = zuliaRestoreArgs.index;
 			String idField = zuliaRestoreArgs.idField;
 			Boolean drop = zuliaRestoreArgs.drop;
+			Integer threads = zuliaRestoreArgs.threads;
+			Boolean skipExistingFiles = zuliaRestoreArgs.skipExistingFiles;
 
 			if (index != null) {
 				// restore only this index
-				restore(workPool, dir, index, idField, drop);
+				restore(workPool, dir, index, idField, drop, threads, skipExistingFiles);
 			}
 			else {
 				// walk dir and restore everything
 				Files.list(Paths.get(dir)).forEach(indexDir -> {
 					try {
 						String ind = indexDir.getFileName().toString();
-						restore(workPool, dir, ind, idField, drop);
+						restore(workPool, dir, ind, idField, drop, threads, skipExistingFiles);
 					}
 					catch (Exception e) {
 						LOG.log(Level.SEVERE, "There was a problem restoring index <" + indexDir.getFileName() + ">", e);
@@ -91,7 +93,8 @@ public class ZuliaRestore {
 
 	}
 
-	private static void restore(ZuliaWorkPool workPool, String dir, String index, String idField, boolean drop) throws Exception {
+	private static void restore(ZuliaWorkPool workPool, String dir, String index, String idField, Boolean drop, Integer threads, Boolean skipExistingFiles)
+			throws Exception {
 		String inputDir = dir + File.separator + index;
 		String recordsFilename = inputDir + File.separator + index + ".json";
 		String settingsFilename = inputDir + File.separator + index + "_settings.json";
@@ -111,7 +114,7 @@ public class ZuliaRestore {
 
 			AtomicInteger count = new AtomicInteger();
 			LOG.info("Starting to index records for index <" + index + ">");
-			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count);
+			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count, threads, skipExistingFiles);
 			LOG.info("Finished indexing for index <" + index + "> with total records: " + count);
 		}
 		else {

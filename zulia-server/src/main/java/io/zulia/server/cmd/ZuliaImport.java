@@ -45,9 +45,11 @@ public class ZuliaImport {
 			String dir = zuliaImportArgs.dir;
 			String index = zuliaImportArgs.index;
 			String idField = zuliaImportArgs.idField;
+			Integer threads = zuliaImportArgs.threads;
+			Boolean skipExistingFiles = zuliaImportArgs.skipExistingFiles;
 
 			if (index != null) {
-				doImport(workPool, dir, index, idField);
+				doImport(workPool, dir, index, idField, threads, skipExistingFiles);
 			}
 
 		}
@@ -68,14 +70,15 @@ public class ZuliaImport {
 
 	}
 
-	private static void doImport(ZuliaWorkPool workPool, String dir, String index, String idField) throws Exception {
+	private static void doImport(ZuliaWorkPool workPool, String dir, String index, String idField, Integer threads, Boolean skipExistingFiles)
+			throws Exception {
 		String inputDir = dir + File.separator + index;
 		String recordsFilename = inputDir + File.separator + index + ".json";
 
 		if (Files.exists(Paths.get(recordsFilename))) {
 			AtomicInteger count = new AtomicInteger();
 			LOG.info("Starting to index records for index <" + index + ">");
-			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count);
+			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count, threads, skipExistingFiles);
 			LOG.info("Finished indexing for index <" + index + "> with total records: " + count);
 		}
 		else {
