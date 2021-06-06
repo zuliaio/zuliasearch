@@ -4,7 +4,6 @@ import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
 import org.bson.Document;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.util.List;
@@ -17,7 +16,7 @@ public interface DocumentStorage {
 
 	AssociatedDocument getAssociatedDocument(String uniqueId, String filename, FetchType fetchType) throws Exception;
 
-	void getAssociatedDocuments(Writer writer, Document filter) throws IOException;
+	void getAssociatedDocuments(Writer writer, Document filter) throws Exception;
 
 	void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadataMap) throws Exception;
 
@@ -25,12 +24,12 @@ public interface DocumentStorage {
 
 	List<String> getAssociatedFilenames(String uniqueId) throws Exception;
 
-	void deleteAssociatedDocument(String uniqueId, String fileName);
+	void deleteAssociatedDocument(String uniqueId, String fileName) throws Exception;
 
-	void deleteAssociatedDocuments(String uniqueId);
+	void deleteAssociatedDocuments(String uniqueId) throws Exception;
 
-	void drop();
+	void drop() throws Exception;
 
-	void deleteAllDocuments();
+	void deleteAllDocuments() throws Exception;
 
 }
