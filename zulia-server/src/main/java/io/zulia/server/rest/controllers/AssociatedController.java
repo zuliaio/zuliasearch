@@ -150,7 +150,13 @@ public class AssociatedController {
 			else {
 				filter = new Document();
 			}
-			indexManager.getAssociatedFilenames(indexName, out, filter);
+			try {
+				indexManager.getAssociatedFilenames(indexName, out, filter);
+			}
+			catch (Exception e) {
+				LOG.log(Level.SEVERE, e.getMessage(), e);
+				HttpResponse.serverError(e.getMessage());
+			}
 		};
 
 		return HttpResponse.ok(writable).status(ZuliaConstants.SUCCESS);

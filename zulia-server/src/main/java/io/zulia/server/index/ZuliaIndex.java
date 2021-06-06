@@ -1035,7 +1035,7 @@ public class ZuliaIndex {
 		return documentStorage.getAssociatedFilenames(uniqueId);
 	}
 
-	public void getAssociatedDocuments(Writer writer, Document filter) throws IOException {
+	public void getAssociatedDocuments(Writer writer, Document filter) throws Exception {
 
 		documentStorage.getAssociatedDocuments(writer, filter);
 
