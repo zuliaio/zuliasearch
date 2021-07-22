@@ -58,7 +58,7 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaConstants.DISMAX_TIE) Float dismaxTie, @Nullable @QueryValue(ZuliaConstants.MIN_MATCH) Integer mm,
 			@Nullable @QueryValue(ZuliaConstants.SIMILARITY) List<String> similarity,
 			@QueryValue(value = ZuliaConstants.DEBUG, defaultValue = "false") Boolean debug,
-			@QueryValue(value = ZuliaConstants.DONT_CACHE, defaultValue = "false") Boolean dontCache, @Nullable @QueryValue(ZuliaConstants.START) Integer start,
+			@QueryValue(value = ZuliaConstants.DONT_CACHE, defaultValue = "true") Boolean dontCache, @Nullable @QueryValue(ZuliaConstants.START) Integer start,
 			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
 			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
 			@Nullable @QueryValue(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
