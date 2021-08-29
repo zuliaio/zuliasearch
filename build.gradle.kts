@@ -2,7 +2,6 @@ import org.ajoberstar.reckon.gradle.ReckonExtension
 
 plugins {
     java
-    maven
     idea
     signing
     `maven-publish`
@@ -23,7 +22,6 @@ defaultTasks("build")
 subprojects {
 
     apply(plugin = "java")
-    apply(plugin = "maven")
     apply(plugin = "idea")
     apply(plugin = "signing")
     apply(plugin = "maven-publish")
