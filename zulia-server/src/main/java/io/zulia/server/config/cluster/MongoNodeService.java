@@ -7,10 +7,10 @@ import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.Updates;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
+import jakarta.inject.Singleton;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

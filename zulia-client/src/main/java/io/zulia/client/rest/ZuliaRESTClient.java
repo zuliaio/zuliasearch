@@ -7,11 +7,12 @@ import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.client.multipart.MultipartBody;
-import io.reactivex.Flowable;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
 import org.bson.Document;
+import reactor.core.publisher.Flux;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -31,19 +32,26 @@ public class ZuliaRESTClient {
 
 	public ZuliaRESTClient(String server, int restPort) {
 		url = "http://" + server + ":" + restPort;
+
 		client = MicronautHttpClient.createClient(url);
+
 	}
 
 	public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination, boolean closeStream) throws Exception {
 
 		try {
-			Flowable<HttpResponse<byte[]>> data = client
-					.exchange(GET(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName))),
-							byte[].class);
 
-			data.blockingSubscribe(httpResponse -> {
-				destination.write(Objects.requireNonNull(httpResponse.body(), "No body for file"));
+			Flux<HttpResponse<byte[]>> data = Flux.from(client.exchange(
+					GET(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName))),
+					byte[].class));
 
+			data.subscribe(httpResponse -> {
+				try {
+					destination.write(Objects.requireNonNull(httpResponse.body(), "No body for file"));
+				}
+				catch (IOException e) {
+					throw new RuntimeException("Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage());
+				}
 			}, throwable -> {
 				throw new RuntimeException(
 						"Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + throwable.getMessage());

@@ -14,12 +14,12 @@ import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
-import io.reactivex.Single;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -87,7 +87,7 @@ public class AssociatedController {
 	}
 
 	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
-	public Single<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
+	public Publisher<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
 			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file)
 			throws Exception {
 
@@ -106,10 +106,14 @@ public class AssociatedController {
 			File tempFile = File.createTempFile(file.getFilename(), "upload_temp");
 			try {
 				Publisher<Boolean> uploadPublisher = file.transferTo(tempFile);
-				return Single.fromPublisher(uploadPublisher).map(success -> {
+				return Mono.from(uploadPublisher).map(success -> {
 					if (success) {
 						try (FileInputStream is = new FileInputStream(tempFile)) {
 							indexManager.storeAssociatedDocument(indexName, id, fileName, is, metadata);
+						}
+						catch (Throwable t) {
+							return HttpResponse.serverError(
+									"Failed to store associated document with uniqueId <" + id + "> and filename <" + fileName + "> due to: " + t.getMessage());
 						}
 						tempFile.delete();
 						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">")
