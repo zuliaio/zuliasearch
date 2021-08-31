@@ -107,6 +107,7 @@ public class ZuliaRESTClient {
 					String.class);
 		}
 		catch (Exception e) {
+			System.err.println("Failed to store file <" + fileName + ">");
 			LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
 			throw e;
 		}
