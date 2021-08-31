@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -94,19 +95,22 @@ public class ZuliaRESTClient {
 
 	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws Exception {
 
+		MultipartBody.Builder builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
+				.addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
+
+		if (metadata != null) {
+			builder.addPart("metaJson", metadata.toJson());
+		}
+
 		try (source) {
-
-			MultipartBody.Builder builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
-					.addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
-
-			if (metadata != null) {
-				builder.addPart("metaJson", metadata.toJson());
-			}
-
 			client.toBlocking().exchange(HttpRequest.POST(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, builder.build()).contentType(MediaType.MULTIPART_FORM_DATA),
 					String.class);
-
 		}
+		catch (Exception e) {
+			LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
+			throw e;
+		}
+
 	}
 
 	private HashMap<String, Object> createParameters(String uniqueId, String indexName) {
