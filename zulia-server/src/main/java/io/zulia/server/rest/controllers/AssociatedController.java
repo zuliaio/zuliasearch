@@ -9,24 +9,34 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.multipart.MultipartException;
+import io.micronaut.http.multipart.PartData;
 import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
+import io.micronaut.scheduling.TaskExecutors;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
-import reactor.core.Exceptions;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.List;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,6 +48,10 @@ import java.util.logging.Logger;
 public class AssociatedController {
 
 	private final static Logger LOG = Logger.getLogger(AssociatedController.class.getSimpleName());
+
+	@Inject
+	@Named(TaskExecutors.IO)
+	ExecutorService ioExecutor;
 
 	@Get
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
@@ -88,27 +102,8 @@ public class AssociatedController {
 		}
 	}
 
-	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
-	public Publisher<HttpResponse<?>> post(Publisher<StreamingFileUpload> data) throws Exception {
-
-		return Flux.from(data).subscribeOn(Schedulers.boundedElastic()).flatMap((StreamingFileUpload upload) -> {
-			return Flux.from(upload).map((pd) -> {
-				try {
-					return pd.getBytes();
-				}
-				catch (IOException e) {
-					throw Exceptions.propagate(e);
-				}
-			});
-		}).collect(LongAdder::new, (adder, bytes) -> adder.add((long) bytes.length)).map((adder) -> {
-			return HttpResponse.ok(adder.longValue());
-		});
-	}
-
-		/*
-	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
 	public Publisher<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, Publisher<StreamingFileUpload> file)
+			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file)
 			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
@@ -126,7 +121,7 @@ public class AssociatedController {
 			File tempFile = File.createTempFile(file.getFilename(), "upload_temp");
 			try {
 
-				Publisher<Boolean> uploadPublisher = file.transferTo(tempFile);
+				Publisher<Boolean> uploadPublisher = transferToStream(ioExecutor, file, new FileOutputStream(tempFile));
 				return Flux.from(uploadPublisher).map(success -> {
 					if (success) {
 						try (FileInputStream is = new FileInputStream(tempFile)) {
@@ -160,7 +155,6 @@ public class AssociatedController {
 		}
 
 	}
-		 */
 
 	@Get("/all")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -186,6 +180,63 @@ public class AssociatedController {
 		};
 
 		return HttpResponse.ok(writable).status(ZuliaConstants.SUCCESS);
+
+	}
+
+	public static Publisher<Boolean> transferToStream(ExecutorService ioExecutor, StreamingFileUpload fileUpload, OutputStream outputStream) {
+
+		return Mono.<Boolean>create(emitter ->
+
+				Flux.from(fileUpload).subscribeOn(Schedulers.fromExecutorService(ioExecutor)).subscribe(new Subscriber<PartData>() {
+					Subscription subscription;
+
+					@Override
+					public void onSubscribe(Subscription s) {
+						subscription = s;
+						subscription.request(1);
+					}
+
+					@Override
+					public void onNext(PartData o) {
+						try {
+							outputStream.write(o.getBytes());
+							subscription.request(1);
+						}
+						catch (IOException e) {
+							handleError(e);
+						}
+					}
+
+					@Override
+					public void onError(Throwable t) {
+						emitter.error(t);
+						try {
+							if (outputStream != null) {
+								outputStream.close();
+							}
+						}
+						catch (IOException e) {
+							System.err.println("Failed to close file stream : " + fileUpload.getName());
+						}
+					}
+
+					@Override
+					public void onComplete() {
+						try {
+							outputStream.close();
+							emitter.success(true);
+						}
+						catch (IOException e) {
+							System.err.println("Failed to close file stream : " + fileUpload.getName());
+							emitter.success(false);
+						}
+					}
+
+					private void handleError(Throwable t) {
+						subscription.cancel();
+						onError(new MultipartException("Error transferring file: " + fileUpload.getName(), t));
+					}
+				})).flux();
 
 	}
 
