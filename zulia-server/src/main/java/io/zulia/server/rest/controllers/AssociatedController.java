@@ -19,10 +19,9 @@ import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.List;
 import java.util.logging.Level;
@@ -88,8 +87,8 @@ public class AssociatedController {
 
 	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
 	public Publisher<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file)
-			throws Exception {
+			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson,
+			Publisher<StreamingFileUpload> file) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -103,6 +102,17 @@ public class AssociatedController {
 				metadata = new Document();
 			}
 
+			return Flux.from(file).subscribeOn(Schedulers.boundedElastic()).flatMap((StreamingFileUpload upload) -> Flux.from(upload).mapNotNull((pd) -> {
+				try {
+					indexManager.storeAssociatedDocument(indexName, id, fileName, pd.getInputStream(), metadata);
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+				return null;
+			}));
+
+			/*
 			File tempFile = File.createTempFile(file.getFilename(), "upload_temp");
 			try {
 				Publisher<Boolean> uploadPublisher = file.transferTo(tempFile);
@@ -132,6 +142,8 @@ public class AssociatedController {
 				LOG.log(Level.SEVERE, e.getMessage(), e);
 				throw e;
 			}
+
+			 */
 
 		}
 		else {
