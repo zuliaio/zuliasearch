@@ -12,8 +12,6 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
-import io.micronaut.http.multipart.MultipartException;
-import io.micronaut.http.multipart.PartData;
 import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
 import io.zulia.ZuliaConstants;
@@ -21,12 +19,14 @@ import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
-import reactor.core.publisher.Mono;
+import reactor.core.Exceptions;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -89,8 +89,26 @@ public class AssociatedController {
 	}
 
 	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
-	public Publisher<Boolean> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file)
+	public Publisher<HttpResponse<?>> post(Publisher<StreamingFileUpload> data) throws Exception {
+
+		return Flux.from(data).subscribeOn(Schedulers.boundedElastic()).flatMap((StreamingFileUpload upload) -> {
+			return Flux.from(upload).map((pd) -> {
+				try {
+					return pd.getBytes();
+				}
+				catch (IOException e) {
+					throw Exceptions.propagate(e);
+				}
+			});
+		}).collect(LongAdder::new, (adder, bytes) -> adder.add((long) bytes.length)).map((adder) -> {
+			return HttpResponse.ok(adder.longValue());
+		});
+	}
+
+		/*
+	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
+	public Publisher<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
+			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, Publisher<StreamingFileUpload> file)
 			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
@@ -105,59 +123,9 @@ public class AssociatedController {
 				metadata = new Document();
 			}
 
-			return Mono.<Boolean>create(emitter ->
-
-					file.subscribe(new Subscriber<>() {
-						Subscription subscription;
-
-						@Override
-						public void onSubscribe(Subscription s) {
-							subscription = s;
-							subscription.request(1);
-						}
-
-						@Override
-						public void onNext(PartData o) {
-							try {
-								indexManager.storeAssociatedDocument(indexName, id, fileName, o.getInputStream(), metadata);
-								subscription.request(1);
-							}
-							catch (Exception e) {
-								handleError(e);
-							}
-						}
-
-						@Override
-						public void onError(Throwable t) {
-							emitter.error(t);
-							try {
-
-							}
-							catch (Exception e) {
-								e.printStackTrace();
-							}
-						}
-
-						@Override
-						public void onComplete() {
-							try {
-								System.out.println("Finished upload");
-								emitter.success(true);
-							}
-							catch (Exception e) {
-								emitter.success(false);
-							}
-						}
-
-						private void handleError(Throwable t) {
-							subscription.cancel();
-							onError(new MultipartException("Error transferring file: " + file.getName(), t));
-						}
-					})).flux();
-
-			/*
 			File tempFile = File.createTempFile(file.getFilename(), "upload_temp");
 			try {
+
 				Publisher<Boolean> uploadPublisher = file.transferTo(tempFile);
 				return Flux.from(uploadPublisher).map(success -> {
 					if (success) {
@@ -185,7 +153,6 @@ public class AssociatedController {
 				LOG.log(Level.SEVERE, e.getMessage(), e);
 				throw e;
 			}
-			 */
 
 		}
 		else {
@@ -193,6 +160,7 @@ public class AssociatedController {
 		}
 
 	}
+		 */
 
 	@Get("/all")
 	@Produces(MediaType.APPLICATION_JSON)
