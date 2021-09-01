@@ -174,9 +174,7 @@ public class AssociatedController {
 				metadata = new Document();
 			}
 
-			OutputStream associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, id, fileName, metadata);
-
-			try {
+			try (OutputStream associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, id, fileName, metadata)) {
 
 				Publisher<Boolean> uploadPublisher = transferToStream(ioExecutor, file, associatedDocumentOutputStream);
 				return Flux.from(uploadPublisher).map(success -> {
