@@ -30,9 +30,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -177,24 +174,17 @@ public class AssociatedController {
 				metadata = new Document();
 			}
 
-			File tempFile = File.createTempFile(file.getFilename(), "upload_temp");
+			OutputStream associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, id, fileName, metadata);
+
 			try {
 
-				Publisher<Boolean> uploadPublisher = transferToStream(ioExecutor, file, new FileOutputStream(tempFile));
+				Publisher<Boolean> uploadPublisher = transferToStream(ioExecutor, file, associatedDocumentOutputStream);
 				return Flux.from(uploadPublisher).map(success -> {
 					if (success) {
-						try (FileInputStream is = new FileInputStream(tempFile)) {
-							indexManager.storeAssociatedDocument(indexName, id, fileName, is, metadata);
-						}
-						catch (Throwable t) {
-							return HttpResponse.serverError(
-									"Failed to store associated document with uniqueId <" + id + "> and filename <" + fileName + "> due to: " + t.getMessage());
-						}
-						tempFile.delete();
-						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">").status(ZuliaConstants.SUCCESS);
+						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">")
+								.status(ZuliaConstants.SUCCESS);
 					}
 					else {
-						tempFile.delete();
 						return HttpResponse.serverError("Failed to store associated document with uniqueId <" + id + "> and filename <" + fileName + ">");
 					}
 
@@ -202,7 +192,6 @@ public class AssociatedController {
 
 			}
 			catch (Exception e) {
-				tempFile.delete();
 				LOG.log(Level.SEVERE, e.getMessage(), e);
 				throw e;
 			}

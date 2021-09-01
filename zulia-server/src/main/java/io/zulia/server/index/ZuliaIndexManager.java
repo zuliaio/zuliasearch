@@ -39,6 +39,7 @@ import org.bson.Document;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.Collections;
@@ -199,11 +200,10 @@ public class ZuliaIndexManager {
 		return i.getAssociatedDocumentStream(uniqueId, fileName);
 	}
 
-	public void storeAssociatedDocument(String indexName, String uniqueId, String fileName, InputStream is, Document metadata) throws Exception {
+	public OutputStream getAssociatedDocumentOutputStream(String indexName, String uniqueId, String fileName, Document metadata) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
 		long timestamp = System.currentTimeMillis();
-		i.storeAssociatedDocument(uniqueId, fileName, is, timestamp, metadata);
-
+		return i.getAssociatedDocumentOutputStream(uniqueId, fileName, timestamp, metadata);
 	}
 
 	public List<String> getAssociatedFilenames(String indexName, String uniqueId) throws Exception {

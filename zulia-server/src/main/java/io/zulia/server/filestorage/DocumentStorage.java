@@ -5,6 +5,7 @@ import io.zulia.message.ZuliaQuery.FetchType;
 import org.bson.Document;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public interface DocumentStorage {
 
 	void getAssociatedDocuments(Writer writer, Document filter) throws Exception;
 
-	void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadataMap) throws Exception;
+	OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) throws Exception;
 
 	InputStream getAssociatedDocumentStream(String uniqueId, String filename) throws Exception;
 
