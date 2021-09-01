@@ -96,7 +96,7 @@ public class ZuliaRESTClient {
 	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws Exception {
 
 		MultipartBody.Builder builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
-				.addPart("file", fileName, MediaType.forFilename(fileName), source.readAllBytes());
+				.addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
 
 		if (metadata != null) {
 			builder.addPart("metaJson", metadata.toJson());

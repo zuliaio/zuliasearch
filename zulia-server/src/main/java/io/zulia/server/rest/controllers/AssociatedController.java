@@ -12,6 +12,8 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.multipart.MultipartException;
+import io.micronaut.http.multipart.PartData;
 import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
 import io.zulia.ZuliaConstants;
@@ -19,8 +21,9 @@ import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
+import reactor.core.publisher.Mono;
 
 import java.io.InputStream;
 import java.util.List;
@@ -86,9 +89,9 @@ public class AssociatedController {
 	}
 
 	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
-	public Publisher<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson,
-			Publisher<StreamingFileUpload> file) throws Exception {
+	public Publisher<Boolean> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
+			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file)
+			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -102,21 +105,61 @@ public class AssociatedController {
 				metadata = new Document();
 			}
 
-			return Flux.from(file).subscribeOn(Schedulers.boundedElastic()).flatMap((StreamingFileUpload upload) -> Flux.from(upload).mapNotNull((pd) -> {
-				try {
-					indexManager.storeAssociatedDocument(indexName, id, fileName, pd.getInputStream(), metadata);
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
-				return null;
-			}));
+			return Mono.<Boolean>create(emitter ->
+
+					file.subscribe(new Subscriber<>() {
+						Subscription subscription;
+
+						@Override
+						public void onSubscribe(Subscription s) {
+							subscription = s;
+							subscription.request(1);
+						}
+
+						@Override
+						public void onNext(PartData o) {
+							try {
+								indexManager.storeAssociatedDocument(indexName, id, fileName, o.getInputStream(), metadata);
+								subscription.request(1);
+							}
+							catch (Exception e) {
+								handleError(e);
+							}
+						}
+
+						@Override
+						public void onError(Throwable t) {
+							emitter.error(t);
+							try {
+
+							}
+							catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
+
+						@Override
+						public void onComplete() {
+							try {
+								System.out.println("Finished upload");
+								emitter.success(true);
+							}
+							catch (Exception e) {
+								emitter.success(false);
+							}
+						}
+
+						private void handleError(Throwable t) {
+							subscription.cancel();
+							onError(new MultipartException("Error transferring file: " + file.getName(), t));
+						}
+					})).flux();
 
 			/*
 			File tempFile = File.createTempFile(file.getFilename(), "upload_temp");
 			try {
 				Publisher<Boolean> uploadPublisher = file.transferTo(tempFile);
-				return Mono.from(uploadPublisher).map(success -> {
+				return Flux.from(uploadPublisher).map(success -> {
 					if (success) {
 						try (FileInputStream is = new FileInputStream(tempFile)) {
 							indexManager.storeAssociatedDocument(indexName, id, fileName, is, metadata);
@@ -142,7 +185,6 @@ public class AssociatedController {
 				LOG.log(Level.SEVERE, e.getMessage(), e);
 				throw e;
 			}
-
 			 */
 
 		}
