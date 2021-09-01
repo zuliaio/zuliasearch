@@ -103,8 +103,12 @@ public class ZuliaRESTClient {
 		}
 
 		try {
-			client.toBlocking().exchange(HttpRequest.POST(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, builder.build()).contentType(MediaType.MULTIPART_FORM_DATA),
-					String.class);
+			Flux<HttpResponse<String>> flowable = Flux.from(client.exchange(
+					HttpRequest.POST(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, builder).contentType(MediaType.MULTIPART_FORM_DATA)
+							.accept(MediaType.forFilename(fileName)), String.class));
+			HttpResponse<String> response = flowable.blockFirst();
+			System.out.println("Response: " + response.code());
+			System.out.println("Body: " + response.body());
 		}
 		catch (Exception e) {
 			System.err.println("Failed to store file <" + fileName + ">");
