@@ -51,6 +51,8 @@ public class AssociatedController {
 	@Named(TaskExecutors.IO)
 	ExecutorService ioExecutor;
 
+	//work around for
+	//https://github.com/micronaut-projects/micronaut-core/issues/6084
 	public static Publisher<Boolean> transferToStream(ExecutorService ioExecutor, StreamingFileUpload fileUpload, OutputStream outputStream) {
 
 		return Mono.<Boolean>create(emitter ->
@@ -159,8 +161,7 @@ public class AssociatedController {
 
 	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
 	public Publisher<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file)
-			throws Exception {
+			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -174,15 +175,29 @@ public class AssociatedController {
 				metadata = new Document();
 			}
 
-			try (OutputStream associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, id, fileName, metadata)) {
-
+			OutputStream associatedDocumentOutputStream;
+			try {
+				associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, id, fileName, metadata);
 				Publisher<Boolean> uploadPublisher = transferToStream(ioExecutor, file, associatedDocumentOutputStream);
 				return Flux.from(uploadPublisher).map(success -> {
 					if (success) {
+						try {
+							associatedDocumentOutputStream.close();
+						}
+						catch (IOException e) {
+							LOG.log(Level.SEVERE, "Failed to close stream: " + e.getMessage(), e);
+						}
 						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">")
 								.status(ZuliaConstants.SUCCESS);
+
 					}
 					else {
+						try {
+							associatedDocumentOutputStream.close();
+						}
+						catch (IOException e) {
+							LOG.log(Level.SEVERE, "Failed to close stream: " + e.getMessage(), e);
+						}
 						return HttpResponse.serverError("Failed to store associated document with uniqueId <" + id + "> and filename <" + fileName + ">");
 					}
 
@@ -191,12 +206,12 @@ public class AssociatedController {
 			}
 			catch (Exception e) {
 				LOG.log(Level.SEVERE, e.getMessage(), e);
-				throw e;
+				return Mono.just(HttpResponse.serverError("Failed to store <" + id + "> in index <" + indexName + "> for file <" + fileName + ">"));
 			}
 
 		}
 		else {
-			throw new Exception(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
+			return Mono.just(HttpResponse.serverError(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required"));
 		}
 
 	}
