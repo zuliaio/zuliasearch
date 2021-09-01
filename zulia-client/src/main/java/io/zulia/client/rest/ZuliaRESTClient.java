@@ -102,7 +102,7 @@ public class ZuliaRESTClient {
 			builder.addPart("metaJson", metadata.toJson());
 		}
 
-		try (source) {
+		try {
 			client.toBlocking().exchange(HttpRequest.POST(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, builder.build()).contentType(MediaType.MULTIPART_FORM_DATA),
 					String.class);
 		}

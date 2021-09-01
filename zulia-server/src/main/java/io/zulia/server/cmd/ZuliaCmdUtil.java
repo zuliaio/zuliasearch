@@ -66,8 +66,8 @@ public class ZuliaCmdUtil {
 
 			MongoAuth mongoAuth = zuliaConfig.getMongoAuth();
 			if (mongoAuth != null) {
-				mongoBuilder
-						.credential(MongoCredential.createCredential(mongoAuth.getUsername(), mongoAuth.getDatabase(), mongoAuth.getPassword().toCharArray()));
+				mongoBuilder.credential(
+						MongoCredential.createCredential(mongoAuth.getUsername(), mongoAuth.getDatabase(), mongoAuth.getPassword().toCharArray()));
 			}
 
 			MongoClient mongoClient = MongoClients.create(mongoBuilder.build());
@@ -171,12 +171,12 @@ public class ZuliaCmdUtil {
 										if (skipExistingFiles) {
 											if (!fileExists(workPool, id, zipEntry.getName(), index)) {
 												workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, zipEntry.getName(),
-														new ByteArrayInputStream(inputStream.readAllBytes())));
+														new ByteArrayInputStream(inputStream.readAllBytes()), true));
 											}
 										}
 										else {
 											workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, zipEntry.getName(),
-													new ByteArrayInputStream(inputStream.readAllBytes())));
+													new ByteArrayInputStream(inputStream.readAllBytes()), true));
 										}
 									}
 									catch (Throwable t) {
