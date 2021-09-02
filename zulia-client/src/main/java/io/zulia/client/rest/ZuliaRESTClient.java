@@ -95,16 +95,23 @@ public class ZuliaRESTClient {
 
 	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws Exception {
 
-		MultipartBody.Builder builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
-				.addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
-
+		MultipartBody.Builder builder;
 		if (metadata != null) {
-			builder.addPart("metaJson", metadata.toJson());
+			builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
+					.addPart("metaJson", metadata.toJson()).addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
+		}
+		else {
+			builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
+					.addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
 		}
 
-		try (source) {
-			client.toBlocking().exchange(HttpRequest.POST(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, builder.build()).contentType(MediaType.MULTIPART_FORM_DATA),
-					String.class);
+		try {
+			Flux<HttpResponse<String>> from = Flux.from(
+					client.exchange(HttpRequest.POST("/upload", builder).contentType(MediaType.MULTIPART_FORM_DATA).accept(MediaType.TEXT_PLAIN),
+							String.class));
+			HttpResponse<String> response = from.blockFirst();
+			System.out.println("Response: " + response.code());
+			System.out.println("Body: " + response.body());
 		}
 		catch (Exception e) {
 			System.err.println("Failed to store file <" + fileName + ">");
