@@ -95,6 +95,7 @@ public class AssociatedController {
 					public void onComplete() {
 						try {
 							outputStream.close();
+							fileUpload.delete();
 							emitter.success(true);
 						}
 						catch (IOException e) {
@@ -182,7 +183,7 @@ public class AssociatedController {
 
 			OutputStream associatedDocumentOutputStream;
 			try {
-				associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream((String) indexName, (String) id, (String) fileName, metaDoc);
+				associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, id, fileName, metaDoc);
 				Publisher<Boolean> uploadPublisher = transferToStream(ioExecutor, file, associatedDocumentOutputStream);
 				return Flux.from(uploadPublisher).map(success -> {
 					if (success) {
