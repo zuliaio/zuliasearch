@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -160,24 +161,28 @@ public class AssociatedController {
 	}
 
 	@Post(consumes = MediaType.MULTIPART_FORM_DATA)
-	public Publisher<HttpResponse<?>> post(@QueryValue(ZuliaConstants.ID) String id, @QueryValue(ZuliaConstants.FILE_NAME) String fileName,
-			@QueryValue(ZuliaConstants.INDEX) String indexName, @Nullable @QueryValue(ZuliaConstants.META_JSON) String metaJson, StreamingFileUpload file) {
+	@Produces(MediaType.TEXT_PLAIN)
+	public Publisher<HttpResponse<?>> post(StreamingFileUpload file, Map<String, Object> metadata) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
+		String id = metadata.get("id").toString();
+		String fileName = metadata.get("fileName").toString();
+		String indexName = metadata.get("indexName").toString();
+
 		if (id != null && fileName != null && indexName != null) {
 
-			Document metadata;
-			if (metaJson != null) {
-				metadata = Document.parse(metaJson);
+			Document metaDoc;
+			if (metadata.containsKey("metaJson")) {
+				metaDoc = Document.parse(metadata.get("metaJson").toString());
 			}
 			else {
-				metadata = new Document();
+				metaDoc = new Document();
 			}
 
 			OutputStream associatedDocumentOutputStream;
 			try {
-				associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, id, fileName, metadata);
+				associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream((String) indexName, (String) id, (String) fileName, metaDoc);
 				Publisher<Boolean> uploadPublisher = transferToStream(ioExecutor, file, associatedDocumentOutputStream);
 				return Flux.from(uploadPublisher).map(success -> {
 					if (success) {

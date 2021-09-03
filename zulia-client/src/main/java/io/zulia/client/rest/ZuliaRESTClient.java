@@ -27,14 +27,39 @@ import static io.micronaut.http.HttpRequest.GET;
 public class ZuliaRESTClient {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaRESTClient.class.getName());
-
-	private final MicronautHttpClient client;
 	private final String url;
+	private MicronautHttpClient client;
 
 	public ZuliaRESTClient(String server, int restPort) {
 		url = "http://" + server + ":" + restPort;
 
 		client = MicronautHttpClient.createClient(url);
+
+	}
+
+	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws Exception {
+
+		MultipartBody body;
+		if (metadata != null) {
+			body = MultipartBody.builder().addPart("id", uniqueId).addPart("indexName", indexName).addPart("fileName", fileName)
+					.addPart("metaJson", metadata.toJson()).addPart("file", fileName, MediaType.forFilename(fileName), source, 0).build();
+		}
+		else {
+			body = MultipartBody.builder().addPart("id", uniqueId).addPart("indexName", indexName).addPart("fileName", fileName)
+					.addPart("file", fileName, MediaType.forFilename(fileName), source, 0).build();
+		}
+
+		try {
+			Flux<HttpResponse<String>> from = Flux.from(client.exchange(
+					HttpRequest.POST(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, body).contentType(MediaType.MULTIPART_FORM_DATA).accept(MediaType.TEXT_PLAIN),
+					String.class));
+			from.blockFirst();
+		}
+		catch (Exception e) {
+			System.err.println("Failed to store file <" + fileName + ">");
+			LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
+			throw e;
+		}
 
 	}
 
@@ -89,34 +114,6 @@ public class ZuliaRESTClient {
 					zipOutputStream.close();
 				}
 			}
-		}
-
-	}
-
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws Exception {
-
-		MultipartBody.Builder builder;
-		if (metadata != null) {
-			builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
-					.addPart("metaJson", metadata.toJson()).addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
-		}
-		else {
-			builder = MultipartBody.builder().addPart("id", uniqueId).addPart("index", indexName).addPart("fileName", fileName)
-					.addPart("file", fileName, MediaType.forFilename(fileName), source, 0);
-		}
-
-		try {
-			Flux<HttpResponse<String>> from = Flux.from(
-					client.exchange(HttpRequest.POST("/upload", builder).contentType(MediaType.MULTIPART_FORM_DATA).accept(MediaType.TEXT_PLAIN),
-							String.class));
-			HttpResponse<String> response = from.blockFirst();
-			System.out.println("Response: " + response.code());
-			System.out.println("Body: " + response.body());
-		}
-		catch (Exception e) {
-			System.err.println("Failed to store file <" + fileName + ">");
-			LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
-			throw e;
 		}
 
 	}
