@@ -58,7 +58,7 @@ public class AssociatedController {
 
 		return Mono.<Boolean>create(emitter ->
 
-				Flux.from(fileUpload).subscribeOn(Schedulers.fromExecutorService(ioExecutor)).subscribe(new Subscriber<PartData>() {
+				Flux.from(fileUpload).subscribeOn(Schedulers.fromExecutorService(ioExecutor)).subscribe(new Subscriber<>() {
 					Subscription subscription;
 
 					@Override
@@ -95,7 +95,6 @@ public class AssociatedController {
 					public void onComplete() {
 						try {
 							outputStream.close();
-							fileUpload.delete();
 							emitter.success(true);
 						}
 						catch (IOException e) {

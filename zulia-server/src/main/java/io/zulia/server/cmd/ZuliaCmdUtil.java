@@ -15,6 +15,7 @@ import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.AssociatedResult;
 import io.zulia.client.result.FetchResult;
+import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
@@ -28,7 +29,6 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.bson.Document;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
@@ -168,15 +168,14 @@ public class ZuliaCmdUtil {
 								ZipArchiveEntry zipEntry;
 								while ((zipEntry = inputStream.getNextZipEntry()) != null) {
 									try {
+										byte[] associatedBytes = inputStream.readAllBytes();
 										if (skipExistingFiles) {
 											if (!fileExists(workPool, id, zipEntry.getName(), index)) {
-												workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, zipEntry.getName(),
-														new ByteArrayInputStream(inputStream.readAllBytes()), true));
+												storeAssociatedDoc(index, workPool, id, zipEntry, associatedBytes);
 											}
 										}
 										else {
-											workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, zipEntry.getName(),
-													new ByteArrayInputStream(inputStream.readAllBytes()), true));
+											storeAssociatedDoc(index, workPool, id, zipEntry, associatedBytes);
 										}
 									}
 									catch (Throwable t) {
@@ -204,6 +203,17 @@ public class ZuliaCmdUtil {
 			threadPool.shutdown();
 		}
 
+	}
+
+	private static void storeAssociatedDoc(String index, ZuliaWorkPool workPool, String id, ZipArchiveEntry zipEntry, byte[] associatedBytes) throws Exception {
+		if (associatedBytes.length > 32 * 1024 * 1024) {
+			workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, zipEntry.getName(), associatedBytes));
+		}
+		else {
+			Store associatedDocStore = new Store(id, index);
+			associatedDocStore.addAssociatedDocument(AssociatedBuilder.newBuilder().setDocument(associatedBytes).setFilename(zipEntry.getName()));
+			workPool.store(associatedDocStore);
+		}
 	}
 
 	private static boolean fileExists(ZuliaWorkPool zuliaWorkPool, String id, String fileName, String indexName) throws Exception {

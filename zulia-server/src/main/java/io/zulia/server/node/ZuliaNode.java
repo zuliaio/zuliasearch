@@ -10,6 +10,7 @@ import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.rest.ZuliaRESTService;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,15 +19,12 @@ import static io.zulia.message.ZuliaBase.Node;
 
 public class ZuliaNode {
 
+	private static final Logger LOG = Logger.getLogger(ZuliaNode.class.getName());
 	private final ZuliaIndexManager indexManager;
-
 	private final ZuliaServiceServer zuliaServiceServer;
-
 	private final Timer membershipTimer;
 	private final NodeService nodeService;
 	private final ZuliaConfig zuliaConfig;
-
-	private static final Logger LOG = Logger.getLogger(ZuliaNode.class.getName());
 	private ApplicationContext micronautService;
 
 	public ZuliaNode(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
@@ -46,6 +44,15 @@ public class ZuliaNode {
 			}
 		});
 
+	}
+
+	public static boolean isEqual(Node node1, Node node2) {
+		return (node1.getServerAddress().equals(node2.getServerAddress()) && node1.getServicePort() == node2.getServicePort());
+	}
+
+	public static Node nodeFromConfig(ZuliaConfig zuliaConfig) {
+		return Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
+				.setRestPort(zuliaConfig.getRestPort()).build();
 	}
 
 	public void start() throws Exception {
@@ -74,8 +81,9 @@ public class ZuliaNode {
 		indexManager.init();
 		zuliaServiceServer.start();
 		if (startREST) {
-			micronautService = Micronaut.build((String) null).mainClass(ZuliaRESTService.class).properties(
-					CollectionUtils.mapOf("micronaut.server.host", zuliaConfig.getServerAddress(), "micronaut.server.port", zuliaConfig.getRestPort())).start();
+			Map<String, Object> properties = CollectionUtils.mapOf("micronaut.server.host", zuliaConfig.getServerAddress(), "micronaut.server.port",
+					zuliaConfig.getRestPort());
+			micronautService = Micronaut.build((String) null).mainClass(ZuliaRESTService.class).properties(properties).start();
 		}
 		LOG.info(getLogPrefix() + "started");
 
@@ -109,15 +117,6 @@ public class ZuliaNode {
 			Thread.currentThread().interrupt();
 		}
 		this.micronautService.stop();
-	}
-
-	public static boolean isEqual(Node node1, Node node2) {
-		return (node1.getServerAddress().equals(node2.getServerAddress()) && node1.getServicePort() == node2.getServicePort());
-	}
-
-	public static Node nodeFromConfig(ZuliaConfig zuliaConfig) {
-		return Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
-				.setRestPort(zuliaConfig.getRestPort()).build();
 	}
 
 	private String getLogPrefix() {

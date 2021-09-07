@@ -13,7 +13,6 @@ import org.bson.Document;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Objects;
@@ -37,28 +36,32 @@ public class ZuliaRESTClient {
 
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, InputStream source) throws Exception {
+	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, byte[] bytes) throws Exception {
 
 		MultipartBody body;
 		if (metadata != null) {
 			body = MultipartBody.builder().addPart("id", uniqueId).addPart("indexName", indexName).addPart("fileName", fileName)
-					.addPart("metaJson", metadata.toJson()).addPart("file", fileName, MediaType.forFilename(fileName), source, 0).build();
+					.addPart("metaJson", metadata.toJson()).addPart("file", fileName, MediaType.forFilename(fileName), bytes).build();
 		}
 		else {
 			body = MultipartBody.builder().addPart("id", uniqueId).addPart("indexName", indexName).addPart("fileName", fileName)
-					.addPart("file", fileName, MediaType.forFilename(fileName), source, 0).build();
+					.addPart("file", fileName, MediaType.forFilename(fileName), bytes).build();
 		}
 
 		try {
-			Flux<HttpResponse<String>> from = Flux.from(client.exchange(
+			Flux<HttpResponse<String>> post = Flux.from(client.exchange(
 					HttpRequest.POST(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, body).contentType(MediaType.MULTIPART_FORM_DATA).accept(MediaType.TEXT_PLAIN),
 					String.class));
-			from.blockFirst();
+			post.blockFirst();
 		}
 		catch (Exception e) {
-			System.err.println("Failed to store file <" + fileName + ">");
-			LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
-			throw e;
+			if (e.getMessage().startsWith("Out of size:")) {
+				LOG.log(Level.WARNING, "Failed to store file <" + fileName + "> due to mismatch size.");
+			}
+			else {
+				LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
+				throw e;
+			}
 		}
 
 	}
