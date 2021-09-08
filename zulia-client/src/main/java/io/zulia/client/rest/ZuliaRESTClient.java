@@ -12,6 +12,7 @@ import io.zulia.util.HttpHelper;
 import org.bson.Document;
 import reactor.core.publisher.Flux;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -93,6 +94,33 @@ public class ZuliaRESTClient {
 		}
 	}
 
+	public void fetchAssociatedMetadata(String uniqueId, String indexName, String fileName, OutputStream destination) {
+
+		try {
+
+			Flux<HttpResponse<byte[]>> data = Flux.from(client.exchange(
+					GET(ZuliaConstants.ASSOCIATED_DOCUMENTS_METADATA_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName))),
+					byte[].class));
+
+			data.subscribe(httpResponse -> {
+				try {
+					destination.write(Objects.requireNonNull(httpResponse.body(), "No body for file"));
+				}
+				catch (IOException e) {
+					throw new RuntimeException("Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage());
+				}
+			}, throwable -> {
+				throw new RuntimeException(
+						"Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + throwable.getMessage());
+			});
+		}
+		catch (Throwable throwable) {
+			LOG.log(Level.SEVERE,
+					"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + throwable.getMessage());
+		}
+
+	}
+
 	public void fetchAssociated(String uniqueId, String indexName, OutputStream destination, boolean closeStream) throws Exception {
 
 		String allIdsJson = client.toBlocking()
@@ -106,8 +134,12 @@ public class ZuliaRESTClient {
 
 			for (int i = 0; i < filenames.size(); i++) {
 				String filename = filenames.get(i).getAsString();
-				zipOutputStream.putNextEntry(new ZipEntry(filename));
+				String fileDir = filename + File.separator;
+				zipOutputStream.putNextEntry(new ZipEntry(fileDir));
+				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename));
 				fetchAssociated(uniqueId, indexName, filename, zipOutputStream, false);
+				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename.replaceFirst("\\..*$", "") + "_metadata.json"));
+				fetchAssociatedMetadata(uniqueId, indexName, filename, zipOutputStream);
 			}
 
 		}

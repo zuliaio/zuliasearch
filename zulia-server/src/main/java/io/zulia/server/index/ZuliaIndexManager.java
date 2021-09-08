@@ -1,10 +1,12 @@
 package io.zulia.server.index;
 
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.ShardMapping;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.NodeService;
@@ -193,6 +195,11 @@ public class ZuliaIndexManager {
 	public FetchResponse internalFetch(FetchRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
 		return FetchRequestRouter.internalFetch(i, request);
+	}
+
+	public ZuliaBase.AssociatedDocument getAssociatedDocument(String indexName, String uniqueId, String fileName) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		return i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.FULL);
 	}
 
 	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws Exception {

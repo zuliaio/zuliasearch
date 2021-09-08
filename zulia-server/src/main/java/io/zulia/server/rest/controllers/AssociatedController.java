@@ -18,6 +18,7 @@ import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
 import io.micronaut.scheduling.TaskExecutors;
 import io.zulia.ZuliaConstants;
+import io.zulia.message.ZuliaBase;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import jakarta.inject.Inject;
@@ -30,6 +31,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -108,6 +110,33 @@ public class AssociatedController {
 						onError(new MultipartException("Error transferring file: " + fileUpload.getName(), t));
 					}
 				})).flux();
+
+	}
+
+	@Get("/metadata")
+	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	public HttpResponse<?> getMetadata(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.FILE_NAME) final String fileName,
+			@QueryValue(ZuliaConstants.INDEX) final String indexName) {
+
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+
+		try {
+
+			if (uniqueId != null && fileName != null && indexName != null) {
+				ZuliaBase.AssociatedDocument associatedDocument = indexManager.getAssociatedDocument(indexName, uniqueId, fileName);
+				StreamedFile attach = new StreamedFile(new ByteArrayInputStream(associatedDocument.getMetadata().toByteArray()),
+						MediaType.of(MediaType.ALL_TYPE)).attach(fileName);
+				MutableHttpResponse<StreamedFile> ok = HttpResponse.ok(attach);
+				attach.process(ok);
+				return ok;
+			}
+			else {
+				return HttpResponse.serverError(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
+			}
+		}
+		catch (Exception e) {
+			return HttpResponse.serverError(e.getMessage());
+		}
 
 	}
 
