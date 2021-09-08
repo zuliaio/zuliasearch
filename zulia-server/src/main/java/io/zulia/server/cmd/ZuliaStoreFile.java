@@ -9,24 +9,12 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.log.LogUtil;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.logging.Logger;
 
 public class ZuliaStoreFile {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaStoreFile.class.getSimpleName());
-
-	public static class ZuliaStoreFileArgs extends ZuliaBaseArgs {
-
-		@Parameter(names = "--id", description = "Record id to associate file", required = true)
-		private String id = "id";
-
-		@Parameter(names = "--fileName", description = "File name in Zulia", required = true)
-		private String fileName;
-
-		@Parameter(names = "--fileToStore", description = "File to store in Zulia", required = true)
-		private String fileToStore;
-
-	}
 
 	public static void main(String[] args) {
 
@@ -52,7 +40,7 @@ public class ZuliaStoreFile {
 			}
 
 			StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(zuliaStoreFileArgs.id, zuliaStoreFileArgs.index, zuliaStoreFileArgs.fileName,
-					fileToStore);
+					Files.readAllBytes(fileToStore.toPath()));
 			workPool.storeLargeAssociated(storeLargeAssociated);
 
 		}
@@ -70,6 +58,19 @@ public class ZuliaStoreFile {
 			e.printStackTrace();
 			System.exit(1);
 		}
+
+	}
+
+	public static class ZuliaStoreFileArgs extends ZuliaBaseArgs {
+
+		@Parameter(names = "--id", description = "Record id to associate file", required = true)
+		private String id = "id";
+
+		@Parameter(names = "--fileName", description = "File name in Zulia", required = true)
+		private String fileName;
+
+		@Parameter(names = "--fileToStore", description = "File to store in Zulia", required = true)
+		private String fileToStore;
 
 	}
 

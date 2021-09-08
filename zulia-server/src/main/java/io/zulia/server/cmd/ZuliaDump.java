@@ -154,7 +154,7 @@ public class ZuliaDump {
 		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds, sortById);
 		LOG.info("Finished dumping index <" + index + ">, total: " + count);
 
-		try (FileWriter fileWriter = new FileWriter(new File(settingsFilename), Charsets.UTF_8)) {
+		try (FileWriter fileWriter = new FileWriter(settingsFilename, Charsets.UTF_8)) {
 			LOG.info("Writing settings for index <" + index + ">");
 			JsonFormat.Printer printer = JsonFormat.printer();
 			fileWriter.write(printer.print(workPool.getIndexConfig(new GetIndexConfig(index)).getIndexConfig().getIndexSettings()));

@@ -51,13 +51,13 @@ public class MicronautHttpClient extends DefaultHttpClient {
 		}
 		DefaultHttpClientConfiguration.DefaultConnectionPoolConfiguration defaultConnectionPoolConfiguration = new DefaultHttpClientConfiguration.DefaultConnectionPoolConfiguration();
 		defaultConnectionPoolConfiguration.setEnabled(true);
-		defaultConnectionPoolConfiguration.setAcquireTimeout(Duration.of(60, SECONDS));
+		defaultConnectionPoolConfiguration.setAcquireTimeout(Duration.of(90, SECONDS));
 		defaultConnectionPoolConfiguration.setMaxConnections(64);
 		defaultConnectionPoolConfiguration.setMaxPendingAcquires(64);
 		ApplicationConfiguration applicationConfiguration = new ApplicationConfiguration();
 		HttpClientConfiguration clientConfiguration = new DefaultHttpClientConfiguration(defaultConnectionPoolConfiguration, applicationConfiguration);
 		clientConfiguration.setMaxContentLength(1024 * 1024 * 1024);
-		clientConfiguration.setReadTimeout(Duration.ofSeconds(300));
+		clientConfiguration.setReadTimeout(Duration.ofSeconds(600));
 		clientConfiguration.setHttpVersion(HttpVersion.HTTP_2_0);
 
 		return new MicronautHttpClient(uri, clientConfiguration);

@@ -61,6 +61,7 @@ import org.bson.Document;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -1019,10 +1020,8 @@ public class ZuliaIndex {
 
 	}
 
-	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long clusterTime, Document metadata) throws Exception {
-
-		documentStorage.storeAssociatedDocument(uniqueId, fileName, is, clusterTime, metadata);
-
+	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long clusterTime, Document metadata) throws Exception {
+		return documentStorage.getAssociatedDocumentOutputStream(uniqueId, fileName, clusterTime, metadata);
 	}
 
 	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) throws Exception {

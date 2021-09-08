@@ -16,11 +16,11 @@ import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Date;
@@ -107,13 +107,14 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadata) throws Exception {
+	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadata) {
 		GridFSBucket gridFS = createGridFSConnection();
 
 		deleteAssociatedDocument(uniqueId, fileName);
 
 		GridFSUploadOptions gridFSUploadOptions = getGridFSUploadOptions(uniqueId, fileName, timestamp, metadata);
-		gridFS.uploadFromStream(fileName, is, gridFSUploadOptions);
+
+		return gridFS.openUploadStream(fileName, gridFSUploadOptions);
 	}
 
 	private GridFSUploadOptions getGridFSUploadOptions(String uniqueId, String fileName, long timestamp, Document metadata) {
@@ -133,17 +134,17 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 		byte[] bytes = doc.getDocument().toByteArray();
 
-		ByteArrayInputStream byteInputStream = new ByteArrayInputStream(bytes);
-
 		Document metadata;
-		if (doc.getMetadata() != null) {
+		if (!doc.getMetadata().isEmpty()) {
 			metadata = ZuliaUtil.byteArrayToMongoDocument(doc.getMetadata().toByteArray());
 		}
 		else {
 			metadata = new Document();
 		}
 
-		storeAssociatedDocument(doc.getDocumentUniqueId(), doc.getFilename(), byteInputStream, doc.getTimestamp(), metadata);
+		try (OutputStream outputStream = getAssociatedDocumentOutputStream(doc.getDocumentUniqueId(), doc.getFilename(), doc.getTimestamp(), metadata)) {
+			outputStream.write(bytes);
+		}
 	}
 
 	@Override

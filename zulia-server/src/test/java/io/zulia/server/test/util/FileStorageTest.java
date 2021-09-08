@@ -10,13 +10,12 @@ import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.QueryResult;
+import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex;
 import org.bson.Document;
 
-import java.io.FileInputStream;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Random;
@@ -51,7 +50,7 @@ public class FileStorageTest {
 					Document meta = new Document();
 					meta.put("extension", "pdf");
 					meta.put("contentType", "application/pdf");
-					fileStorageTest.storeFile(doc.getString("id"), file.toFile().getName(), meta, new FileInputStream(file.toFile()), true);
+					fileStorageTest.storeFile(doc.getString("id"), file.toFile().getName(), meta, Files.readAllBytes(file));
 				}
 				catch (Exception e) {
 					e.printStackTrace();
@@ -127,14 +126,21 @@ public class FileStorageTest {
 		zuliaWorkPool.createIndex(createOrUpdateIndex);
 	}
 
-	private void storeFile(String documentId, String filename, Document meta, InputStream content, boolean closeStream) throws Exception {
+	private void storeFile(String documentId, String filename, Document meta, byte[] content) throws Exception {
 
 		zuliaWorkPool.delete(new DeleteAssociated(documentId, TEST_INDEX, filename));
 
-		StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(documentId, TEST_INDEX, filename, content, closeStream);
-		storeLargeAssociated.setMeta(meta);
+		if (content.length > 32 * 1024 * 1024) {
+			StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(documentId, TEST_INDEX, filename, content);
+			storeLargeAssociated.setMeta(meta);
+			zuliaWorkPool.storeLargeAssociated(storeLargeAssociated);
+		}
+		else {
+			Store associatedDocStore = new Store(documentId, TEST_INDEX);
+			associatedDocStore.addAssociatedDocument(AssociatedBuilder.newBuilder().setDocument(content).setFilename(filename).setMetadata(meta));
+			zuliaWorkPool.store(associatedDocStore);
+		}
 
-		zuliaWorkPool.storeLargeAssociated(storeLargeAssociated);
 	}
 
 	private void indexDocument(Document document) throws Exception {

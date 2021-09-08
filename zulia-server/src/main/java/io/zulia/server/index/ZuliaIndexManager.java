@@ -1,10 +1,12 @@
 package io.zulia.server.index;
 
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.ShardMapping;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.NodeService;
@@ -39,6 +41,7 @@ import org.bson.Document;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.Collections;
@@ -194,16 +197,20 @@ public class ZuliaIndexManager {
 		return FetchRequestRouter.internalFetch(i, request);
 	}
 
+	public ZuliaBase.AssociatedDocument getAssociatedDocument(String indexName, String uniqueId, String fileName) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		return i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.FULL);
+	}
+
 	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
 		return i.getAssociatedDocumentStream(uniqueId, fileName);
 	}
 
-	public void storeAssociatedDocument(String indexName, String uniqueId, String fileName, InputStream is, Document metadata) throws Exception {
+	public OutputStream getAssociatedDocumentOutputStream(String indexName, String uniqueId, String fileName, Document metadata) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
 		long timestamp = System.currentTimeMillis();
-		i.storeAssociatedDocument(uniqueId, fileName, is, timestamp, metadata);
-
+		return i.getAssociatedDocumentOutputStream(uniqueId, fileName, timestamp, metadata);
 	}
 
 	public List<String> getAssociatedFilenames(String indexName, String uniqueId) throws Exception {

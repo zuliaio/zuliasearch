@@ -20,6 +20,7 @@ public interface ZuliaConstants {
 
 	String ASSOCIATED_DOCUMENTS_URL = "/associatedDocs";
 	String ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL = "/associatedDocs/allForId";
+	String ASSOCIATED_DOCUMENTS_METADATA_URL = "/associatedDocs/metadata";
 	String QUERY_URL = "query";
 	String FETCH_URL = "fetch";
 	String FIELDS_URL = "fields";
