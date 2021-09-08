@@ -14,6 +14,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -55,13 +56,13 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void storeAssociatedDocument(String uniqueId, String fileName, InputStream is, long timestamp, Document metadataMap) throws Exception {
+	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) throws Exception {
 		String pathForUniqueId = createPathForUniqueIdIfNotExists(uniqueId);
-		try (FileOutputStream outputStream = new FileOutputStream(Path.of(pathForUniqueId, fileName).toFile())) {
-			is.transferTo(outputStream);
-		}
 		metadataMap.put(TIMESTAMP, timestamp);
 		Files.write(Path.of(pathForUniqueId, fileName + ".metadata"), Collections.singleton(metadataMap.toJson()));
+
+		return new FileOutputStream(Path.of(pathForUniqueId, fileName).toFile());
+
 	}
 
 	@Override
