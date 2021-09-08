@@ -125,7 +125,7 @@ public class AssociatedController {
 			if (uniqueId != null && fileName != null && indexName != null) {
 				ZuliaBase.AssociatedDocument associatedDocument = indexManager.getAssociatedDocument(indexName, uniqueId, fileName);
 				StreamedFile attach = new StreamedFile(new ByteArrayInputStream(associatedDocument.getMetadata().toByteArray()),
-						MediaType.of(MediaType.ALL_TYPE)).attach(fileName);
+						MediaType.of(MediaType.APPLICATION_JSON)).attach(fileName);
 				MutableHttpResponse<StreamedFile> ok = HttpResponse.ok(attach);
 				attach.process(ok);
 				return ok;

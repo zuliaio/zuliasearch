@@ -9,12 +9,14 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.client.multipart.MultipartBody;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
+import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.logging.Level;
@@ -75,17 +77,15 @@ public class ZuliaRESTClient {
 					GET(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName))),
 					byte[].class));
 
-			data.subscribe(httpResponse -> {
+			data.doOnNext(httpResponse -> {
 				try {
 					destination.write(Objects.requireNonNull(httpResponse.body(), "No body for file"));
 				}
 				catch (IOException e) {
 					throw new RuntimeException("Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage());
 				}
-			}, throwable -> {
-				throw new RuntimeException(
-						"Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + throwable.getMessage());
-			});
+			}).blockLast();
+
 		}
 		finally {
 			if (closeStream) {
@@ -102,17 +102,17 @@ public class ZuliaRESTClient {
 					GET(ZuliaConstants.ASSOCIATED_DOCUMENTS_METADATA_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName))),
 					byte[].class));
 
-			data.subscribe(httpResponse -> {
+			data.doOnNext(httpResponse -> {
 				try {
-					destination.write(Objects.requireNonNull(httpResponse.body(), "No body for file"));
+					Document document = ZuliaUtil.byteArrayToMongoDocument(httpResponse.body());
+					destination.write(Objects.requireNonNull(document.toJson().getBytes(StandardCharsets.UTF_8), "No body for file"));
 				}
 				catch (IOException e) {
-					throw new RuntimeException("Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage());
+					throw new RuntimeException(
+							"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage());
 				}
-			}, throwable -> {
-				throw new RuntimeException(
-						"Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + throwable.getMessage());
-			});
+			}).blockLast();
+
 		}
 		catch (Throwable throwable) {
 			LOG.log(Level.SEVERE,
@@ -138,7 +138,7 @@ public class ZuliaRESTClient {
 				zipOutputStream.putNextEntry(new ZipEntry(fileDir));
 				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename));
 				fetchAssociated(uniqueId, indexName, filename, zipOutputStream, false);
-				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename.replaceFirst("\\..*$", "") + "_metadata.json"));
+				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename + "_metadata.json"));
 				fetchAssociatedMetadata(uniqueId, indexName, filename, zipOutputStream);
 			}
 

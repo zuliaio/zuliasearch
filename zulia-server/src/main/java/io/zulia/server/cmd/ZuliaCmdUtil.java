@@ -31,19 +31,25 @@ import org.bson.Document;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
 
 import static io.zulia.message.ZuliaQuery.FetchType.META;
 
@@ -84,7 +90,7 @@ public class ZuliaCmdUtil {
 
 	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, String idField,
 			Set<String> uniqueIds, boolean sortById) throws Exception {
-		try (FileWriter fileWriter = new FileWriter(new File(recordsFilename), Charsets.UTF_8)) {
+		try (FileWriter fileWriter = new FileWriter(recordsFilename, Charsets.UTF_8)) {
 
 			Query zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
 			if (sortById) {
@@ -163,25 +169,62 @@ public class ZuliaCmdUtil {
 
 						if (Files.exists(Paths.get(inputDir + File.separator + id.replaceAll("/", "_") + ".zip"))) {
 
+							File destDir = new File(inputDir + File.separator + UUID.randomUUID() + "_tempWork");
+							byte[] buffer = new byte[1024];
 							try (ZipArchiveInputStream inputStream = new ZipArchiveInputStream(
 									new FileInputStream(Paths.get(inputDir + File.separator + id.replaceAll("/", "_") + ".zip").toFile()))) {
 								ZipArchiveEntry zipEntry;
 								while ((zipEntry = inputStream.getNextZipEntry()) != null) {
-									try {
-										byte[] associatedBytes = inputStream.readAllBytes();
-										if (skipExistingFiles) {
-											if (!fileExists(workPool, id, zipEntry.getName(), index)) {
-												storeAssociatedDoc(index, workPool, id, zipEntry, associatedBytes);
+									decompressZipEntryToDisk(destDir, buffer, inputStream, zipEntry);
+								}
+							}
+
+							// ensure the file was extractable
+							if (Files.exists(destDir.toPath())) {
+								List<Path> tempFiles = Files.list(destDir.toPath()).collect(Collectors.toList());
+								for (Path path : tempFiles) {
+									if (path.toFile().isDirectory()) {
+										try {
+
+											List<Path> filesPaths = Files.list(path).collect(Collectors.toList());
+											Document meta = null;
+											byte[] associatedBytes = new byte[0];
+											String filename = null;
+											for (Path filePath : filesPaths) {
+												try {
+													if (filePath.toFile().getName().endsWith("_metadata.json")) {
+														meta = Document.parse(Files.readString(filePath));
+													}
+													else {
+														associatedBytes = Files.readAllBytes(filePath);
+														filename = filePath.toFile().getName();
+													}
+												}
+												catch (Throwable t) {
+													LOG.log(Level.SEVERE, "Could not restore associated file <" + filename + ">", t);
+												}
+											}
+
+											if (skipExistingFiles) {
+												if (!fileExists(workPool, id, filename, index)) {
+													storeAssociatedDoc(index, workPool, id, filename, meta, associatedBytes);
+												}
+											}
+											else {
+												storeAssociatedDoc(index, workPool, id, filename, meta, associatedBytes);
 											}
 										}
-										else {
-											storeAssociatedDoc(index, workPool, id, zipEntry, associatedBytes);
+										catch (Throwable t) {
+											LOG.log(Level.SEVERE, "Could not list the individual files for dir <" + path.getFileName() + ">");
 										}
 									}
-									catch (Throwable t) {
-										LOG.log(Level.SEVERE, "Could not restore associated file <" + zipEntry.getName() + ">", t);
+									else {
+										LOG.log(Level.SEVERE, "Top level file that shouldn't exist: " + path.getFileName());
 									}
 								}
+
+								// clean up temp work
+								Files.walk(destDir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 							}
 
 						}
@@ -193,7 +236,7 @@ public class ZuliaCmdUtil {
 						return null;
 					}
 					catch (Exception e) {
-						LOG.log(Level.SEVERE, e.getMessage());
+						LOG.log(Level.SEVERE, e.getMessage(), e);
 						return null;
 					}
 				});
@@ -205,13 +248,46 @@ public class ZuliaCmdUtil {
 
 	}
 
-	private static void storeAssociatedDoc(String index, ZuliaWorkPool workPool, String id, ZipArchiveEntry zipEntry, byte[] associatedBytes) throws Exception {
+	/**
+	 * Based on: https://www.baeldung.com/java-compress-and-uncompress
+	 * @param destDir
+	 * @param buffer
+	 * @param inputStream
+	 * @param zipEntry
+	 * @throws IOException
+	 */
+	private static void decompressZipEntryToDisk(File destDir, byte[] buffer, ZipArchiveInputStream inputStream, ZipArchiveEntry zipEntry) throws IOException {
+		File newFile = newFile(destDir, zipEntry);
+		if (zipEntry.isDirectory()) {
+			if (!newFile.isDirectory() && !newFile.mkdirs()) {
+				throw new IOException("Failed to create directory " + newFile);
+			}
+		}
+		else {
+			// fix for Windows-created archives
+			File parent = newFile.getParentFile();
+			if (!parent.isDirectory() && !parent.mkdirs()) {
+				throw new IOException("Failed to create directory " + parent);
+			}
+
+			// write file content
+			FileOutputStream fos = new FileOutputStream(newFile);
+			int len;
+			while ((len = inputStream.read(buffer)) > 0) {
+				fos.write(buffer, 0, len);
+			}
+			fos.close();
+		}
+	}
+
+	private static void storeAssociatedDoc(String index, ZuliaWorkPool workPool, String id, String filename, Document meta, byte[] associatedBytes)
+			throws Exception {
 		if (associatedBytes.length > 32 * 1024 * 1024) {
-			workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, zipEntry.getName(), associatedBytes));
+			workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, filename, associatedBytes).setMeta(meta));
 		}
 		else {
 			Store associatedDocStore = new Store(id, index);
-			associatedDocStore.addAssociatedDocument(AssociatedBuilder.newBuilder().setDocument(associatedBytes).setFilename(zipEntry.getName()));
+			associatedDocStore.addAssociatedDocument(AssociatedBuilder.newBuilder().setDocument(associatedBytes).setMetadata(meta).setFilename(filename));
 			workPool.store(associatedDocStore);
 		}
 	}
@@ -231,5 +307,18 @@ public class ZuliaCmdUtil {
 
 		return false;
 
+	}
+
+	private static File newFile(File destinationDir, ZipEntry zipEntry) throws IOException {
+		File destFile = new File(destinationDir, zipEntry.getName());
+
+		String destDirPath = destinationDir.getCanonicalPath();
+		String destFilePath = destFile.getCanonicalPath();
+
+		if (!destFilePath.startsWith(destDirPath + File.separator)) {
+			throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+		}
+
+		return destFile;
 	}
 }
