@@ -223,9 +223,10 @@ public class ZuliaCmdUtil {
 									}
 								}
 
-								// clean up temp work
-								Files.walk(destDir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 							}
+
+							// clean up temp work
+							Files.walk(destDir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 
 						}
 
