@@ -45,11 +45,8 @@ public class TestHelper {
         mongoTestInstance = new MongoTestInstance();
 
 		if(isInMemoryMongoTestInstanceRequired()) {
-
 			mongoTestInstance.start();
-			mongoTestInstance.updateTestInstanceSystemProperty();
 		}
-
 
 		String mongoServer = getMongoServer();
 

@@ -24,11 +24,6 @@ public class MongoTestInstance {
         return testInstanceUrl;
     }
 
-    public void updateTestInstanceSystemProperty() {
-        System.setProperty(TestHelper.MONGO_TEST_CONNECTION, testInstanceUrl);
-    }
-
-
     public void shutdown() {
         if(mongodProcess != null) {
             mongodProcess.stop();
