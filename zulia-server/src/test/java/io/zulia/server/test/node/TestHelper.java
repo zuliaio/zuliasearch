@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TestHelper {
 
@@ -29,6 +31,8 @@ public class TestHelper {
 	public static final String TEST_CLUSTER_NAME = "zuliaTest";
 
 	public static final String MONGO_TEST_CONNECTION_DEFAULT = "mongodb://127.0.0.1:27017";
+
+    private static final Pattern MONGO_URL_PATTERN = Pattern.compile("([^:]+)://([^:]+):(\\d+)");
 
 	private static final MongoNodeService nodeService;
 	private static MongoTestInstance mongoTestInstance;
@@ -38,9 +42,10 @@ public class TestHelper {
 		LogUtil.init();
 		ZuliaD.setLuceneStatic();
 
+        mongoTestInstance = new MongoTestInstance();
+
 		if(isInMemoryMongoTestInstanceRequired()) {
 
-			mongoTestInstance = new MongoTestInstance();
 			mongoTestInstance.start();
 			mongoTestInstance.updateTestInstanceSystemProperty();
 		}
@@ -111,7 +116,10 @@ public class TestHelper {
 			zuliaConfig.setServerAddress("localhost");
 			zuliaConfig.setCluster(true);
 			zuliaConfig.setClusterName(TEST_CLUSTER_NAME);
-			zuliaConfig.setMongoServers(Collections.singletonList(new MongoServer(getMongoServer(), 27017)));
+
+			String mongoServerUrl = getMongoServer();
+			zuliaConfig.setMongoServers(Collections.singletonList(new MongoServer(mongoServerUrl, parseMongoPort(mongoServerUrl))));
+
 			zuliaConfig.setDataPath("/tmp/zuliaTest/node" + i);
 			zuliaConfig.setRestPort(node.getRestPort());
 			zuliaConfig.setServicePort(node.getServicePort());
@@ -142,8 +150,26 @@ public class TestHelper {
 
 	}
 
+	public static void shutdownTestMongoInstance() {
+	    mongoTestInstance.shutdown();
+    }
+
 	private static boolean isInMemoryMongoTestInstanceRequired() {
 		return StringUtils.isEmpty(System.getProperty(MONGO_TEST_CONNECTION));
 	}
+
+    private static Integer parseMongoPort(String mongoInstanceUrl) {
+        Matcher matcher = MONGO_URL_PATTERN.matcher(mongoInstanceUrl);
+
+        if (matcher.find()) {
+
+            return Integer.valueOf(matcher.group(3));
+
+        } else {
+            throw new IllegalArgumentException("A Mongo Instance URL was provided with an invalid format: " + mongoInstanceUrl);
+        }
+    }
+
+
 
 }
