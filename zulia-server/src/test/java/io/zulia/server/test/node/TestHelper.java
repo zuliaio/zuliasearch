@@ -10,7 +10,9 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoNodeService;
 import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.node.ZuliaNode;
+import io.zulia.server.test.mongo.MongoTestInstance;
 import io.zulia.server.util.MongoProvider;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -29,11 +31,20 @@ public class TestHelper {
 	public static final String MONGO_TEST_CONNECTION_DEFAULT = "mongodb://127.0.0.1:27017";
 
 	private static final MongoNodeService nodeService;
+	private static MongoTestInstance mongoTestInstance;
 
 	static {
 
 		LogUtil.init();
 		ZuliaD.setLuceneStatic();
+
+		if(isInMemoryMongoTestInstanceRequired()) {
+
+			mongoTestInstance = new MongoTestInstance();
+			mongoTestInstance.start();
+			mongoTestInstance.updateTestInstanceSystemProperty();
+		}
+
 
 		String mongoServer = getMongoServer();
 
@@ -61,11 +72,22 @@ public class TestHelper {
 
 	private static String getMongoServer() {
 
-		String mongoServer = System.getProperty(MONGO_TEST_CONNECTION);
-		if (mongoServer == null) {
-			mongoServer = MONGO_TEST_CONNECTION_DEFAULT;
-			System.out.println(mongoServer);
+		String mongoServer;
+
+		if(isInMemoryMongoTestInstanceRequired()) {
+
+			mongoServer = mongoTestInstance.getInstanceUrl();
+
+		} else {
+
+			mongoServer = System.getProperty(MONGO_TEST_CONNECTION);
+
+			if(StringUtils.isEmpty(mongoServer)) {
+				mongoServer = MONGO_TEST_CONNECTION_DEFAULT;
+			}
 		}
+
+		System.out.println(mongoServer);
 
 		return mongoServer;
 	}
@@ -118,6 +140,10 @@ public class TestHelper {
 			zuliaNode.shutdown();
 		}
 
+	}
+
+	private static boolean isInMemoryMongoTestInstanceRequired() {
+		return StringUtils.isEmpty(System.getProperty(MONGO_TEST_CONNECTION));
 	}
 
 }
