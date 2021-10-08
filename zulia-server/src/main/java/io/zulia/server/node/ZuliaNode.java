@@ -27,6 +27,8 @@ public class ZuliaNode {
 	private final ZuliaConfig zuliaConfig;
 	private ApplicationContext micronautService;
 
+	private boolean started;
+
 	public ZuliaNode(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
 		this.zuliaConfig = zuliaConfig;
@@ -40,7 +42,9 @@ public class ZuliaNode {
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				shutdown();
+				if (started) {
+					shutdown();
+				}
 			}
 		});
 
@@ -87,6 +91,7 @@ public class ZuliaNode {
 		}
 		LOG.info(getLogPrefix() + "started");
 
+		started = true;
 	}
 
 	public void shutdown() {
@@ -107,6 +112,8 @@ public class ZuliaNode {
 		}
 
 		LOG.info(getLogPrefix() + "stopped");
+
+		started = false;
 	}
 
 	private void stopMicronautServer() {
