@@ -101,7 +101,14 @@ subprojects {
 
     tasks.withType<Test> {
         useJUnitPlatform()
-        systemProperty("mongoTestConnection", "mongodb://127.0.0.1:27017")
+
+        /*
+            By default, the unit tests will use an ephemeral, in-memory MongoDB instance for testing the logic.
+            If an external mongoDB instance is required/needed, then uncomment the following line and define the connection
+            URL for the target mongo instance
+        */
+        //systemProperty("mongoTestConnection", "mongodb://127.0.0.1:27017");
+
         workingDir = file("build/")
         jvmArgs = listOf("-Xmx1500m")
 
