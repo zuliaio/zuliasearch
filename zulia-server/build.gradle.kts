@@ -47,7 +47,7 @@ dependencies {
     testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.0.0")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.1.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
     //implementation("org.graalvm.js:js:20.2.0")
