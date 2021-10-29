@@ -338,6 +338,5 @@ public class HierarchicalFacetTest {
 	public void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
-		TestHelper.shutdownTestMongoInstance();
 	}
 }

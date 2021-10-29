@@ -32,7 +32,7 @@ public class TestHelper {
 
 	public static final String MONGO_TEST_CONNECTION_DEFAULT = "mongodb://127.0.0.1:27017";
 
-    private static final Pattern MONGO_URL_PATTERN = Pattern.compile("([^:]+)://([^:]+):(\\d+)");
+	private static final Pattern MONGO_URL_PATTERN = Pattern.compile("([^:]+)://([^:]+):(\\d+)");
 
 	private static final MongoNodeService nodeService;
 	private static MongoTestInstance mongoTestInstance;
@@ -42,10 +42,11 @@ public class TestHelper {
 		LogUtil.init();
 		ZuliaD.setLuceneStatic();
 
-        mongoTestInstance = new MongoTestInstance();
+		mongoTestInstance = new MongoTestInstance();
 
-		if(isInMemoryMongoTestInstanceRequired()) {
+		if (isInMemoryMongoTestInstanceRequired()) {
 			mongoTestInstance.start();
+			Runtime.getRuntime().addShutdownHook(new Thread(TestHelper::shutdownTestMongoInstance));
 		}
 
 		String mongoServer = getMongoServer();
@@ -76,15 +77,16 @@ public class TestHelper {
 
 		String mongoServer;
 
-		if(isInMemoryMongoTestInstanceRequired()) {
+		if (isInMemoryMongoTestInstanceRequired()) {
 
 			mongoServer = mongoTestInstance.getInstanceUrl();
 
-		} else {
+		}
+		else {
 
 			mongoServer = System.getProperty(MONGO_TEST_CONNECTION);
 
-			if(StringUtils.isEmpty(mongoServer)) {
+			if (StringUtils.isEmpty(mongoServer)) {
 				mongoServer = MONGO_TEST_CONNECTION_DEFAULT;
 			}
 		}
@@ -147,26 +149,25 @@ public class TestHelper {
 
 	}
 
-	public static void shutdownTestMongoInstance() {
-	    mongoTestInstance.shutdown();
-    }
+	protected static void shutdownTestMongoInstance() {
+		mongoTestInstance.shutdown();
+	}
 
 	private static boolean isInMemoryMongoTestInstanceRequired() {
 		return StringUtils.isEmpty(System.getProperty(MONGO_TEST_CONNECTION));
 	}
 
-    private static Integer parseMongoPort(String mongoInstanceUrl) {
-        Matcher matcher = MONGO_URL_PATTERN.matcher(mongoInstanceUrl);
+	private static Integer parseMongoPort(String mongoInstanceUrl) {
+		Matcher matcher = MONGO_URL_PATTERN.matcher(mongoInstanceUrl);
 
-        if (matcher.find()) {
+		if (matcher.find()) {
 
-            return Integer.valueOf(matcher.group(3));
+			return Integer.valueOf(matcher.group(3));
 
-        } else {
-            throw new IllegalArgumentException("A Mongo Instance URL was provided with an invalid format: " + mongoInstanceUrl);
-        }
-    }
-
-
+		}
+		else {
+			throw new IllegalArgumentException("A Mongo Instance URL was provided with an invalid format: " + mongoInstanceUrl);
+		}
+	}
 
 }
