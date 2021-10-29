@@ -91,4 +91,6 @@ public interface ZuliaConstants {
 	String SCORE_FIELD = "zuliaScore";
 	String TRUNCATE = "truncate";
 
+	String FACET_PATH_DELIMITER = "/";
+
 }

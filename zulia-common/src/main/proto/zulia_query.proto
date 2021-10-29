@@ -42,6 +42,7 @@ message Query {
 message Facet {
     string label = 1;
     string value = 2;
+    repeated  string path = 3;
 }
 
 message FacetRequest {

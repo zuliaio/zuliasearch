@@ -1,5 +1,6 @@
 package io.zulia.server.index;
 
+import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.protobuf.ByteString;
 import io.zulia.ZuliaConstants;
@@ -62,18 +63,22 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
+
 public class ShardReader implements AutoCloseable {
+
+	private static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
 
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
 
-	private final static Pattern sortedDocValuesMessage = Pattern
-			.compile("unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Re-index with correct docvalues type.");
+	private final static Pattern sortedDocValuesMessage = Pattern.compile(
+			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Re-index with correct docvalues type.");
 
-	private final static Set<String> fetchSet = Collections
-			.unmodifiableSet(new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD)));
+	private final static Set<String> fetchSet = Collections.unmodifiableSet(
+			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD)));
 
-	private final static Set<String> fetchSetWithMeta = Collections
-			.unmodifiableSet(new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD)));
+	private final static Set<String> fetchSetWithMeta = Collections.unmodifiableSet(
+			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD)));
 
 	private final static Set<String> fetchSetWithDocument = Collections.unmodifiableSet(new HashSet<>(
 			Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD, ZuliaConstants.STORED_DOC_FIELD)));
@@ -353,7 +358,8 @@ public class ShardReader implements AutoCloseable {
 
 		for (ZuliaQuery.CountRequest countRequest : facetRequest.getCountRequestList()) {
 
-			String label = countRequest.getFacetField().getLabel();
+			ZuliaQuery.Facet facetField = countRequest.getFacetField();
+			String label = facetField.getLabel();
 
 			if (!indexConfig.existingFacet(label)) {
 				throw new IllegalArgumentException(label + " is not defined as a facetable field");
@@ -384,7 +390,13 @@ public class ShardReader implements AutoCloseable {
 					}
 				}
 
-				facetResult = facets.getTopChildren(numOfFacets, label);
+				if (indexConfig.isHierarchicalFacet(label)) {
+					facetResult = facets.getTopChildren(numOfFacets, label, facetField.getPathList().toArray(new String[0]));
+				}
+				else {
+					facetResult = facets.getTopChildren(numOfFacets, label);
+				}
+
 			}
 			catch (UncheckedExecutionException e) {
 				Throwable cause = e.getCause();
@@ -666,8 +678,8 @@ public class ShardReader implements AutoCloseable {
 					TokenStream tokenStream = zuliaPerFieldAnalyzer.tokenStream(indexField, content);
 
 					try {
-						TextFragment[] bestTextFragments = highlighter
-								.getBestTextFragments(tokenStream, content, false, highlightRequest.getNumberOfFragments());
+						TextFragment[] bestTextFragments = highlighter.getBestTextFragments(tokenStream, content, false,
+								highlightRequest.getNumberOfFragments());
 						for (TextFragment bestTextFragment : bestTextFragments) {
 							if (bestTextFragment != null && bestTextFragment.getScore() > 0) {
 								highLightResult.addFragments(bestTextFragment.toString());
@@ -694,9 +706,8 @@ public class ShardReader implements AutoCloseable {
 
 		Query query = new TermQuery(new org.apache.lucene.index.Term(ZuliaConstants.ID_FIELD, uniqueId));
 
-		ZuliaQuery.ShardQueryResponse segmentResponse = this
-				.queryShard(query, null, 1, null, null, null, null, resultFetchType, fieldsToReturn, fieldsToMask, Collections.emptyList(),
-						Collections.emptyList(), false);
+		ZuliaQuery.ShardQueryResponse segmentResponse = this.queryShard(query, null, 1, null, null, null, null, resultFetchType, fieldsToReturn, fieldsToMask,
+				Collections.emptyList(), Collections.emptyList(), false);
 
 		List<ZuliaQuery.ScoredResult> scoredResultList = segmentResponse.getScoredResultList();
 		if (!scoredResultList.isEmpty()) {

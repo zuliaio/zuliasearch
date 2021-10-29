@@ -127,6 +127,7 @@ message FacetAs {
     }
     string facetName = 1;
     DateHandling dateHandling = 2;
+    bool hierarchical = 3;
 }
 
 message SortAs {
