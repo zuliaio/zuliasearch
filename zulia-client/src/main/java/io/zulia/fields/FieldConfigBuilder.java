@@ -65,22 +65,42 @@ public class FieldConfigBuilder {
 	}
 
 	public FieldConfigBuilder facet() {
-		return facetAs(null, storedFieldName);
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(storedFieldName).setHierarchical(false);
+		return facetAs(builder.build());
+	}
+
+	public FieldConfigBuilder facetHierarchical() {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(storedFieldName).setHierarchical(true);
+		return facetAs(builder.build());
 	}
 
 	public FieldConfigBuilder facetAs(String facetName) {
-		return facetAs(null, facetName);
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setHierarchical(false);
+		return facetAs(builder.build());
+	}
+
+	public FieldConfigBuilder facetAsHierarchical(String facetName) {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setHierarchical(true);
+		return facetAs(builder.build());
 	}
 
 	public FieldConfigBuilder facetAs(FacetAs.DateHandling dateHandling) {
-		return facetAs(dateHandling, storedFieldName);
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(storedFieldName).setDateHandling(dateHandling).setHierarchical(false);
+		return facetAs(builder.build());
 	}
 
-	public FieldConfigBuilder facetAs(FacetAs.DateHandling dateHandling, String facetName) {
-		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName);
-		if (dateHandling != null) {
-			builder.setDateHandling(dateHandling);
-		}
+	public FieldConfigBuilder facetAsHierarchical(FacetAs.DateHandling dateHandling) {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(storedFieldName).setDateHandling(dateHandling).setHierarchical(true);
+		return facetAs(builder.build());
+	}
+
+	public FieldConfigBuilder facetAs(String facetName, FacetAs.DateHandling dateHandling) {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setDateHandling(dateHandling).setHierarchical(false);
+		return facetAs(builder.build());
+	}
+
+	public FieldConfigBuilder facetAsHierarchical(String facetName, FacetAs.DateHandling dateHandling) {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setDateHandling(dateHandling).setHierarchical(true);
 		return facetAs(builder.build());
 	}
 

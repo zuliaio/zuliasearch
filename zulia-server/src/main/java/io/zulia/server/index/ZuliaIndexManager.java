@@ -168,8 +168,7 @@ public class ZuliaIndexManager {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
 		}
 
-		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService);
-		zuliaIndex.setIndexMapping(indexMapping);
+		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexMapping);
 
 		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
 

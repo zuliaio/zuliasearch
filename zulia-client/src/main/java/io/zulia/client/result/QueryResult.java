@@ -1,6 +1,7 @@
 package io.zulia.client.result;
 
 import io.zulia.fields.GsonDocumentMapper;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
@@ -12,6 +13,7 @@ import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class QueryResult extends Result {
@@ -106,6 +108,20 @@ public class QueryResult extends Result {
 	public List<FacetCount> getFacetCounts(String fieldName) {
 		for (FacetGroup fg : queryResponse.getFacetGroupList()) {
 			if (fieldName.equals(fg.getCountRequest().getFacetField().getLabel())) {
+				return fg.getFacetCountList();
+			}
+		}
+		return null;
+	}
+
+	public List<FacetCount> getFacetCountsForPath(String fieldName, String... paths) {
+		return getFacetCountsForPath(fieldName, Arrays.asList(paths));
+	}
+
+	public List<FacetCount> getFacetCountsForPath(String fieldName, List<String> paths) {
+		for (FacetGroup fg : queryResponse.getFacetGroupList()) {
+			ZuliaQuery.Facet facetField = fg.getCountRequest().getFacetField();
+			if (fieldName.equals(facetField.getLabel()) && facetField.getPathList().equals(paths)) {
 				return fg.getFacetCountList();
 			}
 		}

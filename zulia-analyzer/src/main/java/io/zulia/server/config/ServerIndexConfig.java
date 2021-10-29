@@ -132,6 +132,7 @@ public class ServerIndexConfig {
 		}
 	}
 
+
 	public IndexSettings getIndexSettings() {
 		return indexSettings;
 	}
@@ -146,8 +147,16 @@ public class ServerIndexConfig {
 		return null;
 	}
 
+	public Set<String> getFacetFields() {
+		return facetAsMap.keySet();
+	}
+
 	public boolean existingFacet(String facet) {
 		return facetAsMap.containsKey(facet);
+	}
+
+	public boolean isHierarchicalFacet(String facet) {
+		return facetAsMap.get(facet).getHierarchical();
 	}
 
 	public SuperBit getSuperBitForField(String field) {

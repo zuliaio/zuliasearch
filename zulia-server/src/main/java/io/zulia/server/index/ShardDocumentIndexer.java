@@ -1,5 +1,6 @@
 package io.zulia.server.index;
 
+import com.google.common.base.Splitter;
 import info.debatty.java.lsh.SuperBit;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
@@ -23,7 +24,6 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
@@ -32,7 +32,11 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
+import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
+
 public class ShardDocumentIndexer {
+
+	private static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
 
 	private final ServerIndexConfig indexConfig;
 
@@ -264,13 +268,22 @@ public class ShardDocumentIndexer {
 						LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
 
 						if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
-							String date = String.format("%02d%02d%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
-							addFacet(doc, facetName, date);
+							if (fa.getHierarchical()) {
+								doc.add(new FacetField(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
+							}
+							else {
+								String date = String.format("%02d%02d%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
+								addFacet(doc, facetName, date);
+							}
 						}
 						else if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
-
-							String date = String.format("%02d-%02d-%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
-							addFacet(doc, facetName, date);
+							if (fa.getHierarchical()) {
+								doc.add(new FacetField(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
+							}
+							else {
+								String date = String.format("%02d-%02d-%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
+								addFacet(doc, facetName, date);
+							}
 						}
 						else {
 							throw new RuntimeException("Not handled date handling <" + dateHandling + "> for facet <" + fa.getFacetName() + ">");
@@ -286,7 +299,15 @@ public class ShardDocumentIndexer {
 			else {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					String string = obj.toString();
-					addFacet(doc, facetName, string);
+					if (!string.isEmpty()) {
+						if (fa.getHierarchical()) {
+							List<String> path = facetPathSplitter.splitToList(string);
+							doc.add(new FacetField(facetName, path.toArray(new String[0])));
+						}
+						else {
+							doc.add(new FacetField(facetName, string));
+						}
+					}
 				});
 			}
 
@@ -296,8 +317,6 @@ public class ShardDocumentIndexer {
 	private void addFacet(Document doc, String facetName, String value) {
 		if (!value.isEmpty()) {
 			doc.add(new FacetField(facetName, value));
-			//doc.add(new SortedSetDocValuesFacetField(facetName, value));
-			doc.add(new StringField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME + "." + facetName, new BytesRef(value), Field.Store.NO));
 		}
 	}
 
