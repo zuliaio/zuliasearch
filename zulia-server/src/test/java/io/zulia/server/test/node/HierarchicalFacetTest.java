@@ -23,6 +23,7 @@ import org.opentest4j.AssertionFailedError;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -56,6 +57,8 @@ public class HierarchicalFacetTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("path", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facetHierarchical().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("date", FieldType.DATE).index().facetHierarchical().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("normalFacet", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("normalFacetList", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -68,9 +71,7 @@ public class HierarchicalFacetTest {
 	public void index() throws Exception {
 		int id = 0;
 		{
-			for (int j = 0; j < paths.length; j++) {
-				String path = paths[j];
-
+			for (String path : paths) {
 				for (int i = 0; i < COUNT_PER_PATH; i++) {
 					indexRecord(id, path, i);
 					id++;
@@ -95,6 +96,7 @@ public class HierarchicalFacetTest {
 		Document mongoDocument = new Document();
 		mongoDocument.put("path", path);
 		mongoDocument.put("path2", path);
+		mongoDocument.put("normalFacet", path);
 
 		mongoDocument.put("id", id);
 
@@ -106,10 +108,12 @@ public class HierarchicalFacetTest {
 		else if (half) { // 2/5 of input
 			Date d = Date.from(LocalDate.of(2013, Month.SEPTEMBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
 			mongoDocument.put("date", d);
+			mongoDocument.put("normalFacetList", Arrays.asList("value1", "something"));
 		}
 		else { // 1/2 of input
 			Date d = Date.from(LocalDate.of(2012, 8, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
 			mongoDocument.put("date", d);
+			mongoDocument.put("normalFacetList", Arrays.asList("value2", "something2"));
 		}
 
 		Store s = new Store(uniqueId, FACET_TEST_INDEX);
