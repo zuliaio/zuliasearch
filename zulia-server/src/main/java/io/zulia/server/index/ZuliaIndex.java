@@ -800,6 +800,7 @@ public class ZuliaIndex {
 	public void configureFacets() {
 		for (String facetField : indexConfig.getFacetFields()) {
 			facetsConfig.setHierarchical(facetField, indexConfig.isHierarchicalFacet(facetField));
+			facetsConfig.setMultiValued(facetField, true);
 		}
 	}
 
