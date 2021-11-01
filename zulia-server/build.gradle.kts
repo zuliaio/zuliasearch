@@ -59,7 +59,7 @@ zuliaScriptTask.mainClassName = "io.zulia.server.cmd.Zulia"
 
 val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
     applicationName = "zuliad"
-    mainClassName = "io.zulia.server.cmd.ZuliaD"
+    mainClass.set("io.zulia.server.cmd.ZuliaD")
     outputDir = zuliaScriptTask.outputDir
     classpath = zuliaScriptTask.classpath
 
@@ -73,7 +73,7 @@ val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") 
 
 val zuliaDumpScriptTask = tasks.register<CreateStartScripts>("createZuliaDumpScript") {
     applicationName = "zuliadump"
-    mainClassName = "io.zulia.server.cmd.ZuliaDump"
+    mainClass.set("io.zulia.server.cmd.ZuliaDump")
     outputDir = zuliaScriptTask.outputDir
     classpath = zuliaScriptTask.classpath
 
@@ -87,7 +87,7 @@ val zuliaDumpScriptTask = tasks.register<CreateStartScripts>("createZuliaDumpScr
 
 val zuliaRestoreScriptTask = tasks.register<CreateStartScripts>("createZuliaRestoreScript") {
     applicationName = "zuliarestore"
-    mainClassName = "io.zulia.server.cmd.ZuliaRestore"
+    mainClass.set("io.zulia.server.cmd.ZuliaRestore")
     outputDir = zuliaScriptTask.outputDir
     classpath = zuliaScriptTask.classpath
 
@@ -101,7 +101,7 @@ val zuliaRestoreScriptTask = tasks.register<CreateStartScripts>("createZuliaRest
 
 val zuliaExportScriptTask = tasks.register<CreateStartScripts>("createZuliaExportScript") {
     applicationName = "zuliaexport"
-    mainClassName = "io.zulia.server.cmd.ZuliaExport"
+    mainClass.set("io.zulia.server.cmd.ZuliaExport")
     outputDir = zuliaScriptTask.outputDir
     classpath = zuliaScriptTask.classpath
 
@@ -115,7 +115,7 @@ val zuliaExportScriptTask = tasks.register<CreateStartScripts>("createZuliaExpor
 
 val zuliaImportScriptTask = tasks.register<CreateStartScripts>("createZuliaImportScript") {
     applicationName = "zuliaimport"
-    mainClassName = "io.zulia.server.cmd.ZuliaImport"
+    mainClass.set("io.zulia.server.cmd.ZuliaImport")
     outputDir = zuliaScriptTask.outputDir
     classpath = zuliaScriptTask.classpath
 
@@ -130,7 +130,7 @@ val zuliaImportScriptTask = tasks.register<CreateStartScripts>("createZuliaImpor
 
 val zuliaFetchFileScriptTask = tasks.register<CreateStartScripts>("createZuliaFetchFileScript") {
     applicationName = "zuliafetchfile"
-    mainClassName = "io.zulia.server.cmd.ZuliaFetchFile"
+    mainClass.set("io.zulia.server.cmd.ZuliaFetchFile")
     outputDir = zuliaScriptTask.outputDir
     classpath = zuliaScriptTask.classpath
 
@@ -144,7 +144,7 @@ val zuliaFetchFileScriptTask = tasks.register<CreateStartScripts>("createZuliaFe
 
 val zuliaStoreFileScriptTask = tasks.register<CreateStartScripts>("createZuliaStoreFileScript") {
     applicationName = "zuliastorefile"
-    mainClassName = "io.zulia.server.cmd.ZuliaStoreFile"
+    mainClass.set("io.zulia.server.cmd.ZuliaStoreFile")
     outputDir = zuliaScriptTask.outputDir
     classpath = zuliaScriptTask.classpath
 
