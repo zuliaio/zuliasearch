@@ -192,10 +192,20 @@ public class ShardReader implements AutoCloseable {
 		ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder = ZuliaQuery.ShardQueryResponse.newBuilder();
 
 		try {
-			if ((facetRequest != null) && !facetRequest.getCountRequestList().isEmpty()) {
+			boolean hasFacetRequests = (facetRequest != null) && !facetRequest.getCountRequestList().isEmpty();
+			boolean hasStatRequests = (facetRequest != null) && !facetRequest.getStatRequestList().isEmpty();
 
-				searchWithFacets(facetRequest, query, indexSearcher, collector, shardQueryReponseBuilder);
+			if (hasFacetRequests || hasStatRequests) {
+				FacetsCollector facetsCollector = new FacetsCollector();
+				indexSearcher.search(query, MultiCollector.wrap(collector, facetsCollector));
 
+				if (hasFacetRequests) {
+					List<ZuliaQuery.FacetGroup> facetGroups = handleFacets(facetRequest.getCountRequestList(), facetsCollector);
+					shardQueryReponseBuilder.addAllFacetGroup(facetGroups);
+				}
+				if (hasStatRequests) {
+					List<ZuliaQuery.StatGroup> statGroups = handleStats(facetRequest.getStatRequestList(), facetsCollector);
+				}
 			}
 			else {
 				indexSearcher.search(query, collector);
@@ -260,6 +270,14 @@ public class ShardReader implements AutoCloseable {
 		}
 		return segmentResponse;
 
+	}
+
+	private List<ZuliaQuery.StatGroup> handleStats(List<ZuliaQuery.StatRequest> statRequestList, FacetsCollector facetsCollector) {
+		List<ZuliaQuery.StatGroup> statGroups = new ArrayList<>();
+
+		//TODO
+
+		return statGroups;
 	}
 
 	private List<AnalysisHandler> getAnalysisHandlerList(List<ZuliaQuery.AnalysisRequest> analysisRequests) throws Exception {
@@ -349,14 +367,12 @@ public class ShardReader implements AutoCloseable {
 		};
 	}
 
-	private void searchWithFacets(ZuliaQuery.FacetRequest facetRequest, Query q, IndexSearcher indexSearcher, TopDocsCollector<?> collector,
-			ZuliaQuery.ShardQueryResponse.Builder segmentReponseBuilder) throws Exception {
-		FacetsCollector facetsCollector = new FacetsCollector();
-		indexSearcher.search(q, MultiCollector.wrap(collector, facetsCollector));
-
+	private List<ZuliaQuery.FacetGroup> handleFacets(List<ZuliaQuery.CountRequest> countRequests, FacetsCollector facetsCollector) throws IOException {
 		Facets facets = getFacets(facetsCollector);
 
-		for (ZuliaQuery.CountRequest countRequest : facetRequest.getCountRequestList()) {
+		List<ZuliaQuery.FacetGroup> facetGroups = new ArrayList<>();
+
+		for (ZuliaQuery.CountRequest countRequest : countRequests) {
 
 			ZuliaQuery.Facet facetField = countRequest.getFacetField();
 			String label = facetField.getLabel();
@@ -427,8 +443,9 @@ public class ShardReader implements AutoCloseable {
 					fg.addFacetCount(facetCountBuilder);
 				}
 			}
-			segmentReponseBuilder.addFacetGroup(fg);
+			facetGroups.add(fg.build());
 		}
+		return facetGroups;
 	}
 
 	private TopDocsCollector<?> getSortingCollector(ZuliaQuery.SortRequest sortRequest, int hasMoreAmount, FieldDoc after) throws Exception {
