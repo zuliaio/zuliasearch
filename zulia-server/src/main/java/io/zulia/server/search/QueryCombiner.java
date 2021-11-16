@@ -7,7 +7,6 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.CountRequest;
-import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
 import io.zulia.message.ZuliaQuery.FieldSort;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
@@ -24,7 +23,6 @@ import io.zulia.server.analysis.frequency.TermFreq;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.index.ZuliaIndex;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,11 +32,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class QueryCombiner {
 
@@ -171,63 +165,18 @@ public class QueryCombiner {
 			}
 		}
 
-		Map<CountRequest, Map<String, AtomicLong>> facetCountsMap = new HashMap<>();
-		Map<CountRequest, Map<String, FixedBitSet>> shardsReturnedMap = new HashMap<>();
-		Map<CountRequest, FixedBitSet> fullResultsMap = new HashMap<>();
-		Map<CountRequest, long[]> minForShardMap = new HashMap<>();
+		Map<CountRequest, FacetCombiner> facetCombinerMap = new HashMap<>();
 
 		Map<AnalysisRequest, Map<String, Term.Builder>> analysisRequestToTermMap = new HashMap<>();
 
 		int shardIndex = 0;
 
 		for (ShardQueryResponse sr : shardResponses) {
-
 			for (FacetGroup fg : sr.getFacetGroupList()) {
-
 				CountRequest countRequest = fg.getCountRequest();
-				Map<String, AtomicLong> facetCounts = facetCountsMap.get(countRequest);
-				Map<String, FixedBitSet> shardsReturned = shardsReturnedMap.get(countRequest);
-				FixedBitSet fullResults = fullResultsMap.get(countRequest);
-				long[] minForShard = minForShardMap.get(countRequest);
-
-				if (facetCounts == null) {
-					facetCounts = new HashMap<>();
-					facetCountsMap.put(countRequest, facetCounts);
-
-					shardsReturned = new HashMap<>();
-					shardsReturnedMap.put(countRequest, shardsReturned);
-
-					fullResults = new FixedBitSet(shardResponses.size());
-					fullResultsMap.put(countRequest, fullResults);
-
-					minForShard = new long[shardResponses.size()];
-					minForShardMap.put(countRequest, minForShard);
-				}
-
-				for (FacetCount fc : fg.getFacetCountList()) {
-					String facet = fc.getFacet();
-					AtomicLong facetSum = facetCounts.get(facet);
-					FixedBitSet shardSet = shardsReturned.get(facet);
-
-					if (facetSum == null) {
-						facetSum = new AtomicLong();
-						facetCounts.put(facet, facetSum);
-						shardSet = new FixedBitSet(shardResponses.size());
-						shardsReturned.put(facet, shardSet);
-					}
-					long count = fc.getCount();
-					facetSum.addAndGet(count);
-					shardSet.set(shardIndex);
-
-					minForShard[shardIndex] = count;
-				}
-
-				int shardFacets = countRequest.getShardFacets();
-				int facetCountCount = fg.getFacetCountCount();
-				if (facetCountCount < shardFacets || (shardFacets == -1)) {
-					fullResults.set(shardIndex);
-					minForShard[shardIndex] = 0;
-				}
+				FacetCombiner facetCombiner = facetCombinerMap.computeIfAbsent(countRequest,
+						countRequest1 -> new FacetCombiner(countRequest, shardResponses.size()));
+				facetCombiner.handleFacetGroupForShard(fg, shardIndex);
 			}
 
 			for (AnalysisResult analysisResult : sr.getAnalysisResultList()) {
@@ -270,80 +219,8 @@ public class QueryCombiner {
 			}
 		}
 
-		for (CountRequest countRequest : facetCountsMap.keySet()) {
-
-			FacetGroup.Builder fg = FacetGroup.newBuilder();
-			fg.setCountRequest(countRequest);
-			Map<String, AtomicLong> facetCounts = facetCountsMap.get(countRequest);
-			Map<String, FixedBitSet> shardsReturned = shardsReturnedMap.get(countRequest);
-			FixedBitSet fullResults = fullResultsMap.get(countRequest);
-			long[] minForShard = minForShardMap.get(countRequest);
-
-			int numberOfShards = shardResponses.size();
-			long maxValuePossibleMissing = 0;
-			for (int i = 0; i < numberOfShards; i++) {
-				maxValuePossibleMissing += minForShard[i];
-			}
-
-			boolean computeError = countRequest.getMaxFacets() > 0 && countRequest.getShardFacets() > 0 && numberOfShards > 1;
-			boolean computePossibleMissing = computeError && (maxValuePossibleMissing != 0);
-
-			SortedSet<FacetCountResult> sortedFacetResults = facetCounts.keySet().stream()
-					.map(facet -> new FacetCountResult(facet, facetCounts.get(facet).get())).collect(Collectors.toCollection(TreeSet::new));
-
-			Integer maxCount = countRequest.getMaxFacets();
-
-			long minCountReturned = 0;
-
-			int count = 0;
-			for (FacetCountResult facet : sortedFacetResults) {
-
-				FixedBitSet shardCount = shardsReturned.get(facet.getFacet());
-				shardCount.or(fullResults);
-
-				FacetCount.Builder facetCountBuilder = FacetCount.newBuilder().setFacet(facet.getFacet()).setCount(facet.getCount());
-
-				long maxWithError = 0;
-				if (computeError) {
-					long maxError = 0;
-					if (shardCount.cardinality() < numberOfShards) {
-						for (int i = 0; i < numberOfShards; i++) {
-							if (!shardCount.get(i)) {
-								maxError += minForShard[i];
-							}
-						}
-					}
-					facetCountBuilder.setMaxError(maxError);
-					maxWithError = maxError + facet.getCount();
-				}
-
-				count++;
-
-				if (maxCount > 0 && count > maxCount) {
-
-					if (computePossibleMissing) {
-						if (maxWithError > maxValuePossibleMissing) {
-							maxValuePossibleMissing = maxWithError;
-						}
-					}
-					else {
-						break;
-					}
-				}
-				else {
-					fg.addFacetCount(facetCountBuilder);
-					minCountReturned = facet.getCount();
-				}
-			}
-
-			if (!sortedFacetResults.isEmpty()) {
-				if (maxValuePossibleMissing > minCountReturned) {
-					fg.setPossibleMissing(true);
-					fg.setMaxValuePossibleMissing(maxValuePossibleMissing);
-				}
-			}
-
-			builder.addFacetGroup(fg);
+		for (FacetCombiner facetCombiner : facetCombinerMap.values()) {
+			builder.addFacetGroup(facetCombiner.getCombinedFacetGroup());
 		}
 
 		List<ScoredResult> mergedResults = new ArrayList<>((int) returnedHits);
