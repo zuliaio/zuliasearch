@@ -2,6 +2,7 @@ package io.zulia.server.search;
 
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaIndex.FieldConfig;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.CountRequest;
@@ -13,6 +14,7 @@ import io.zulia.message.ZuliaQuery.LastResult;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
+import io.zulia.message.ZuliaQuery.StatRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
@@ -135,6 +137,7 @@ public class QueryCombiner {
 		int resultsSize = Math.min(amount, (int) returnedHits);
 
 		Map<CountRequest, FacetCombiner> facetCombinerMap = new HashMap<>();
+		Map<StatRequest, StatCombiner> statCombinerMap = new HashMap<>();
 
 		Map<AnalysisRequest, Map<String, Term.Builder>> analysisRequestToTermMap = new HashMap<>();
 
@@ -146,6 +149,12 @@ public class QueryCombiner {
 				FacetCombiner facetCombiner = facetCombinerMap.computeIfAbsent(countRequest,
 						countRequest1 -> new FacetCombiner(countRequest, shardResponses.size()));
 				facetCombiner.handleFacetGroupForShard(fg, shardIndex);
+			}
+
+			for (ZuliaQuery.StatGroup sg : sr.getStatGroupList()) {
+				StatRequest statRequest = sg.getStatRequest();
+				StatCombiner statCombiner = statCombinerMap.computeIfAbsent(statRequest, statRequest1 -> new StatCombiner(statRequest, shardResponses.size()));
+				statCombiner.handleStatGroupForShard(sg, shardIndex);
 			}
 
 			for (AnalysisResult analysisResult : sr.getAnalysisResultList()) {
@@ -185,6 +194,10 @@ public class QueryCombiner {
 
 		for (FacetCombiner facetCombiner : facetCombinerMap.values()) {
 			builder.addFacetGroup(facetCombiner.getCombinedFacetGroup());
+		}
+
+		for (StatCombiner statCombiner : statCombinerMap.values()) {
+			builder.addStatGroup(statCombiner.getCombinedStatGroup());
 		}
 
 		Map<String, ScoredResult[]> lastIndexResultMap = createLastIndexResultMapWithPreviousLastResults();
