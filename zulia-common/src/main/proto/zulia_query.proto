@@ -53,7 +53,9 @@ message FacetRequest {
 
 message StatRequest {
     string numericField = 1;
-    string facetField = 2;
+    Facet facetField = 2;
+    uint32 maxFacets = 3; // default 10, set to -1 to get all
+    uint32 shardFacets = 4; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
 }
 
 message CountRequest {
@@ -61,7 +63,6 @@ message CountRequest {
     uint32 maxFacets = 2; // default 10, set to -1 to get all
     uint32 shardFacets = 3; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
 }
-
 
 message FacetCount {
     string facet = 1;
@@ -88,7 +89,8 @@ message FacetStats {
 
 message StatGroup {
     StatRequest statRequest = 1;
-    FacetStats facetStats = 2;
+    FacetStats globalStats = 2;
+    repeated FacetStats facetStats = 3;
 }
 
 message SortRequest {
