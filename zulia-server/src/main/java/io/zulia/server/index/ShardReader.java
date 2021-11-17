@@ -16,6 +16,7 @@ import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.QueryResultCache;
+import io.zulia.server.search.TaxonomyStatsHandler;
 import io.zulia.server.search.ZuliaQueryParser;
 import io.zulia.server.util.FieldAndSubFields;
 import io.zulia.util.ResultHelper;
@@ -24,7 +25,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetResult;
-import org.apache.lucene.facet.Facets;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
@@ -121,10 +121,6 @@ public class ShardReader implements AutoCloseable {
 		taxoReader.close();
 	}
 
-	public Facets getFacets(FacetsCollector facetsCollector) throws IOException {
-		return new FastTaxonomyFacetCounts(taxoReader, facetsConfig, facetsCollector);
-	}
-
 	public int getTotalFacets() {
 		return taxoReader.getSize();
 	}
@@ -205,6 +201,7 @@ public class ShardReader implements AutoCloseable {
 				}
 				if (hasStatRequests) {
 					List<ZuliaQuery.StatGroup> statGroups = handleStats(facetRequest.getStatRequestList(), facetsCollector);
+					shardQueryReponseBuilder.addAllStatGroup(statGroups);
 				}
 			}
 			else {
@@ -272,10 +269,57 @@ public class ShardReader implements AutoCloseable {
 
 	}
 
-	private List<ZuliaQuery.StatGroup> handleStats(List<ZuliaQuery.StatRequest> statRequestList, FacetsCollector facetsCollector) {
+	private List<ZuliaQuery.StatGroup> handleStats(List<ZuliaQuery.StatRequest> statRequestList, FacetsCollector facetsCollector) throws IOException {
 		List<ZuliaQuery.StatGroup> statGroups = new ArrayList<>();
 
-		//TODO
+		TaxonomyStatsHandler facets = new TaxonomyStatsHandler(taxoReader, facetsCollector, statRequestList, indexConfig);
+
+		for (ZuliaQuery.StatRequest statRequest : statRequestList) {
+
+			ZuliaQuery.StatGroup.Builder statGroupBuilder = ZuliaQuery.StatGroup.newBuilder();
+			statGroupBuilder.setStatRequest(statRequest);
+			String label = statRequest.getFacetField().getLabel();
+			if (!label.isEmpty()) {
+
+				int numOfFacets;
+				if (indexConfig.getNumberOfShards() > 1) {
+					if (statRequest.getShardFacets() > 0) {
+						numOfFacets = statRequest.getShardFacets();
+					}
+					else if (statRequest.getShardFacets() == 0) {
+						numOfFacets = statRequest.getMaxFacets() * 10;
+					}
+					else {
+						numOfFacets = getTotalFacets();
+					}
+				}
+				else {
+					if (statRequest.getMaxFacets() > 0) {
+						numOfFacets = statRequest.getMaxFacets();
+					}
+					else {
+						numOfFacets = getTotalFacets();
+					}
+				}
+
+				if (indexConfig.isHierarchicalFacet(label)) {
+					List<ZuliaQuery.FacetStats> topChildren = facets.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
+							statRequest.getFacetField().getPathList().toArray(new String[0]));
+					statGroupBuilder.addAllFacetStats(topChildren);
+				}
+				else {
+					List<ZuliaQuery.FacetStats> topChildren = facets.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
+							statRequest.getFacetField().getPathList().toArray(new String[0]));
+					statGroupBuilder.addAllFacetStats(topChildren);
+				}
+
+			}
+			else {
+				ZuliaQuery.FacetStats globalStats = facets.getGlobalStatsForNumericField(statRequest.getNumericField());
+				statGroupBuilder.setGlobalStats(globalStats);
+			}
+
+		}
 
 		return statGroups;
 	}
@@ -368,7 +412,7 @@ public class ShardReader implements AutoCloseable {
 	}
 
 	private List<ZuliaQuery.FacetGroup> handleFacets(List<ZuliaQuery.CountRequest> countRequests, FacetsCollector facetsCollector) throws IOException {
-		Facets facets = getFacets(facetsCollector);
+		FastTaxonomyFacetCounts facets = new FastTaxonomyFacetCounts(taxoReader, facetsConfig, facetsCollector);
 
 		List<ZuliaQuery.FacetGroup> facetGroups = new ArrayList<>();
 

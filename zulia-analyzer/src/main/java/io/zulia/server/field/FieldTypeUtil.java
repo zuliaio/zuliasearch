@@ -26,8 +26,12 @@ public class FieldTypeUtil {
 	}
 
 	public static boolean isNumericOrDateFieldType(FieldConfig.FieldType fieldType) {
+		return isNumericFieldType(fieldType) || isDateFieldType(fieldType);
+	}
+
+	public static boolean isNumericFieldType(FieldConfig.FieldType fieldType) {
 		return isNumericIntFieldType(fieldType) || isNumericLongFieldType(fieldType) || isNumericFloatFieldType(fieldType) || isNumericDoubleFieldType(
-				fieldType) || isDateFieldType(fieldType);
+				fieldType);
 	}
 
 	public static boolean isBooleanFieldType(FieldConfig.FieldType fieldType) {
