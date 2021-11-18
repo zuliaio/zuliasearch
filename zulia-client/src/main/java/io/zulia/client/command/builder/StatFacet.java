@@ -9,17 +9,17 @@ public class StatFacet implements StatBuilder {
 
 	private final StatRequest.Builder statRequestBuilder;
 
-	public StatFacet(String numericField, String field) {
-		statRequestBuilder = StatRequest.newBuilder().setNumericField(numericField).setFacetField(ZuliaQuery.Facet.newBuilder().setLabel(field).build());
+	public StatFacet(String numericField, String facetField) {
+		statRequestBuilder = StatRequest.newBuilder().setNumericField(numericField).setFacetField(ZuliaQuery.Facet.newBuilder().setLabel(facetField).build());
 	}
 
-	public StatFacet(String numericField, String field, String... path) {
-		this(numericField, field, Arrays.asList(path));
+	public StatFacet(String numericField, String facetField, String... path) {
+		this(numericField, facetField, Arrays.asList(path));
 	}
 
-	public StatFacet(String numericField, String field, Iterable<String> path) {
+	public StatFacet(String numericField, String facetField, Iterable<String> path) {
 		statRequestBuilder = StatRequest.newBuilder().setNumericField(numericField)
-				.setFacetField(ZuliaQuery.Facet.newBuilder().setLabel(field).addAllPath(path).build());
+				.setFacetField(ZuliaQuery.Facet.newBuilder().setLabel(facetField).addAllPath(path).build());
 	}
 
 	public StatFacet setTopN(int topN) {

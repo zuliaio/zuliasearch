@@ -4,6 +4,7 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.Search;
+import io.zulia.client.command.builder.StatFacet;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.opentest4j.AssertionFailedError;
 
 import java.util.List;
 
@@ -27,6 +29,7 @@ public class StatTest {
 	public static final String STAT_TEST_INDEX = "stat";
 
 	private static ZuliaWorkPool zuliaWorkPool;
+	private static int repeatCount = 100;
 
 	@BeforeAll
 	public static void initAll() throws Exception {
@@ -57,11 +60,14 @@ public class StatTest {
 	@Test
 	@Order(2)
 	public void index() throws Exception {
-		indexRecord(1, "something special", "top/middle/bottom1", "value1", 3, List.of(3.5, 1.0));
-		indexRecord(2, "something really special", "top/middle/bottom2", "value2", 4, List.of(2.5));
-		indexRecord(3, "something special", "top/middle/bottom3", "value3", 3, List.of(0.5));
-		indexRecord(4, "something really special", "top/middle/bottom4", "value4", 4, List.of(3.0));
-		indexRecord(5, "something really special", "top/middle/bottom4", "value4", 4, List.of());
+
+		for (int i = 0; i < repeatCount; i++) {
+			indexRecord(i * 5, "something special", "top/middle/bottom1", "foo", 3, List.of(3.5, 1.0));
+			indexRecord(i * 5 + 1, "something really special", "top/middle/bottom2", "foo", 4, List.of(2.5));
+			indexRecord(i * 5 + 2, "something special", "top/middle/bottom3", "bar", 3, List.of(0.5));
+			indexRecord(i * 5 + 3, "something really special", "top/middle/bottom4", "bar", 4, List.of(3.0));
+			indexRecord(i * 5 + 4, "something really special", "top/middle/bottom4", null, 4, List.of());
+		}
 
 	}
 
@@ -97,10 +103,37 @@ public class StatTest {
 		FacetStats ratingStat = searchResult.getNumericFieldStat("rating");
 
 		Assertions.assertEquals(0.5, ratingStat.getMin().getDoubleValue(), 0.001);
-		Assertions.assertEquals(0.5, ratingStat.getMin().getDoubleValue(), 0.001);
-		Assertions.assertEquals(10.5, ratingStat.getSum().getDoubleValue(), 0.001);
-		Assertions.assertEquals(4, ratingStat.getDocCount());
-		Assertions.assertEquals(5, ratingStat.getValueCount());
+		Assertions.assertEquals(3.5, ratingStat.getMax().getDoubleValue(), 0.001);
+
+		Assertions.assertEquals(10.5 * repeatCount, ratingStat.getSum().getDoubleValue(), 0.001);
+		Assertions.assertEquals(4L * repeatCount, ratingStat.getDocCount());
+		Assertions.assertEquals(5L * repeatCount, ratingStat.getValueCount());
+
+		search.clearStat();
+		search.addStat(new StatFacet("rating", "normalFacet"));
+		searchResult = zuliaWorkPool.search(search);
+
+		List<FacetStats> ratingByFacet = searchResult.getFacetFieldStat("rating", "normalFacet");
+
+		for (FacetStats facetStats : ratingByFacet) {
+			if (facetStats.getFacet().equals("foo")) {
+				Assertions.assertEquals(1, facetStats.getMin().getDoubleValue(), 0.001);
+				Assertions.assertEquals(3.5, facetStats.getMax().getDoubleValue(), 0.001);
+				Assertions.assertEquals(7L * repeatCount, facetStats.getSum().getDoubleValue(), 0.001);
+				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getValueCount());
+			}
+			else if (facetStats.getFacet().equals("bar")) {
+				Assertions.assertEquals(0.5, facetStats.getMin().getDoubleValue(), 0.001);
+				Assertions.assertEquals(3.0, facetStats.getMax().getDoubleValue(), 0.001);
+				Assertions.assertEquals(3.5 * repeatCount, facetStats.getSum().getDoubleValue(), 0.001);
+				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
+			}
+			else {
+				throw new AssertionFailedError("Unexpect facet <" + facetStats.getFacet() + ">");
+			}
+		}
 
 	}
 
