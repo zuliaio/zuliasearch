@@ -74,11 +74,18 @@ public class TaxonomyStatsHandler {
 		private double doubleMaxValue = Double.NEGATIVE_INFINITY;
 
 		private long longSum;
-		private long longMinValue = Long.MIN_VALUE;
-		private long longMaxValue = Long.MAX_VALUE;
+		private long longMinValue = Long.MAX_VALUE;
+		private long longMaxValue = Long.MIN_VALUE;
 
-		public Stats() {
-
+		public Stats(boolean floatingPoint) {
+			if (floatingPoint) {
+				longMinValue = 0;
+				longMaxValue = 0;
+			}
+			else {
+				doubleMinValue = 0;
+				doubleMaxValue = 0;
+			}
 		}
 
 		public void newDoc() {
@@ -98,11 +105,11 @@ public class TaxonomyStatsHandler {
 
 		public void newValue(long newValue) {
 			this.longSum += newValue;
-			if (newValue < longSum) {
-				longSum = newValue;
+			if (newValue < longMinValue) {
+				longMinValue = newValue;
 			}
-			if (newValue > longSum) {
-				longSum = newValue;
+			if (newValue > longMaxValue) {
+				longMaxValue = newValue;
 			}
 			this.valueCount++;
 		}
@@ -151,6 +158,9 @@ public class TaxonomyStatsHandler {
 
 		if (global) {
 			this.fieldStats = new Stats[fieldsList.size()];
+			for (int i = 0; i < fieldStats.length; i++) {
+				this.fieldStats[i] = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldTypes.get(i)));
+			}
 		}
 		else {
 			this.fieldStats = null;
@@ -191,7 +201,12 @@ public class TaxonomyStatsHandler {
 					if (functionValue.advanceExact(doc)) {
 						if (ords != null) {
 							for (int i = 0; i < scratch.length; i++) {
-								docValuesForDocument(functionValue, fieldType, fieldFacetStats[f][scratch.ints[i]]);
+								Stats stats = fieldFacetStats[f][scratch.ints[i]];
+								if (stats == null) {
+									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
+									fieldFacetStats[f][scratch.ints[i]] = stats;
+								}
+								docValuesForDocument(functionValue, fieldType, stats);
 							}
 						}
 						if (fieldStats != null) {

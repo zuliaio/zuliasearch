@@ -319,6 +319,8 @@ public class ShardReader implements AutoCloseable {
 				statGroupBuilder.setGlobalStats(globalStats);
 			}
 
+			statGroups.add(statGroupBuilder.build());
+
 		}
 
 		return statGroups;
