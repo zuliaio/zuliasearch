@@ -34,6 +34,10 @@ public class FieldTypeUtil {
 				fieldType);
 	}
 
+	public static boolean isNumericFloatingPointFieldType(FieldConfig.FieldType fieldType) {
+		return isNumericFloatFieldType(fieldType) || isNumericDoubleFieldType(fieldType);
+	}
+
 	public static boolean isBooleanFieldType(FieldConfig.FieldType fieldType) {
 		return FieldConfig.FieldType.BOOL.equals(fieldType);
 	}

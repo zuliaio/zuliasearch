@@ -36,8 +36,6 @@ public class HierarchicalFacetTest {
 
 	private final String[] paths = new String[] { "1/2/3", "1/3/4", "3/20/13", "a/b/c", "one/two/three", "1", "2/3/blah", "4/5/1000", "a/bee/sea" };
 
-	private final int totalRecords = COUNT_PER_PATH * paths.length;
-
 	private static ZuliaWorkPool zuliaWorkPool;
 
 	@BeforeAll

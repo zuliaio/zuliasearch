@@ -43,6 +43,7 @@ public class StatCombiner {
 	}
 
 	public StatGroup getCombinedStatGroup() {
+
 		if (statGroups.size() == 1) {
 			return statGroups.get(0).getStatGroup();
 		}
