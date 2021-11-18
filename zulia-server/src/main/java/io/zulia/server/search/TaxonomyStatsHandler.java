@@ -314,7 +314,6 @@ public class TaxonomyStatsHandler {
 		while (ord != TaxonomyReader.INVALID_ORDINAL) {
 			Stats stat = stats[ord];
 			stat.ordinal = ord;
-			System.out.println(taxoReader.getPath(stat.ordinal) + ":" + stat.ordinal + ":" + stat.doubleSum);
 			if (stat.doubleSum > 0) {
 				doubleSumValues += stat.doubleSum;
 				if (stat.doubleSum > doubleBottomValue) {
@@ -347,7 +346,6 @@ public class TaxonomyStatsHandler {
 			FacetLabel child = taxoReader.getPath(stat.ordinal);
 			String label = child.components[cp.length];
 			facetStats[i] = createFacetStat(stat, label);
-			System.out.println(facetStats[i]);
 		}
 
 		return Arrays.asList(facetStats);
