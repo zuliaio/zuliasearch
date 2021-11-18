@@ -196,17 +196,42 @@ public class TaxonomyStatsHandler {
 				}
 
 				for (int f = 0; f < fieldsList.size(); f++) {
+
 					SortedNumericDocValues functionValue = functionValues[f];
 					ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(f);
 					if (functionValue.advanceExact(doc)) {
 						if (ords != null) {
+
 							for (int i = 0; i < scratch.length; i++) {
-								Stats stats = fieldFacetStats[f][scratch.ints[i]];
+								int ordIndex = scratch.ints[i];
+								Stats stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
 									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
-									fieldFacetStats[f][scratch.ints[i]] = stats;
+									fieldFacetStats[f][ordIndex] = stats;
 								}
-								docValuesForDocument(functionValue, fieldType, stats);
+								stats.newDoc();
+							}
+							for (int j = 0; j < functionValue.docValueCount(); j++) {
+								long value = functionValue.nextValue();
+
+								for (int i = 0; i < scratch.length; i++) {
+									int ordIndex = scratch.ints[i];
+									Stats stats = fieldFacetStats[f][ordIndex];
+
+									if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+										stats.newValue(NumericUtils.sortableLongToDouble(value));
+									}
+									else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+										stats.newValue(NumericUtils.sortableIntToFloat((int) value));
+									}
+									else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+										stats.newValue(value);
+									}
+									else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+										stats.newValue((int) value);
+									}
+
+								}
 							}
 						}
 						if (fieldStats != null) {
@@ -289,6 +314,7 @@ public class TaxonomyStatsHandler {
 		while (ord != TaxonomyReader.INVALID_ORDINAL) {
 			Stats stat = stats[ord];
 			stat.ordinal = ord;
+			System.out.println(taxoReader.getPath(stat.ordinal) + ":" + stat.ordinal + ":" + stat.doubleSum);
 			if (stat.doubleSum > 0) {
 				doubleSumValues += stat.doubleSum;
 				if (stat.doubleSum > doubleBottomValue) {
@@ -311,7 +337,7 @@ public class TaxonomyStatsHandler {
 			ord = siblings[ord];
 		}
 
-		if (doubleSumValues == 0) {
+		if (doubleSumValues == 0 && longSumValues == 0) {
 			return null;
 		}
 
@@ -321,6 +347,7 @@ public class TaxonomyStatsHandler {
 			FacetLabel child = taxoReader.getPath(stat.ordinal);
 			String label = child.components[cp.length];
 			facetStats[i] = createFacetStat(stat, label);
+			System.out.println(facetStats[i]);
 		}
 
 		return Arrays.asList(facetStats);

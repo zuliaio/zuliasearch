@@ -310,7 +310,9 @@ public class ShardReader implements AutoCloseable {
 				else {
 					List<ZuliaQuery.FacetStats> topChildren = facets.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
 							statRequest.getFacetField().getPathList().toArray(new String[0]));
-					statGroupBuilder.addAllFacetStats(topChildren);
+					if (topChildren != null) {
+						statGroupBuilder.addAllFacetStats(topChildren);
+					}
 				}
 
 			}
