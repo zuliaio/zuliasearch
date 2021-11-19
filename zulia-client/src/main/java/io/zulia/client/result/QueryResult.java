@@ -5,8 +5,10 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
+import io.zulia.message.ZuliaQuery.FacetStats;
 import io.zulia.message.ZuliaQuery.LastResult;
 import io.zulia.message.ZuliaQuery.ScoredResult;
+import io.zulia.message.ZuliaQuery.StatGroup;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
@@ -130,6 +132,44 @@ public class QueryResult extends Result {
 
 	public int getFacetGroupCount() {
 		return queryResponse.getFacetGroupCount();
+	}
+
+	public List<StatGroup> getStatGroups() {
+		return queryResponse.getStatGroupList();
+	}
+
+	public FacetStats getNumericFieldStat(String numericFieldName) {
+		for (StatGroup sg : queryResponse.getStatGroupList()) {
+			if (numericFieldName.equals(sg.getStatRequest().getNumericField()) && sg.getStatRequest().getFacetField().getLabel().isEmpty()) {
+				return sg.getGlobalStats();
+			}
+		}
+		return null;
+	}
+
+	public List<FacetStats> getFacetFieldStat(String numericFieldName, String facetField) {
+		if (facetField == null) {
+			facetField = "";
+		}
+		for (StatGroup sg : queryResponse.getStatGroupList()) {
+			if (numericFieldName.equals(sg.getStatRequest().getNumericField()) && facetField.equals(sg.getStatRequest().getFacetField().getLabel())) {
+				return sg.getFacetStatsList();
+			}
+		}
+		return null;
+	}
+
+	public List<FacetStats> getFacetFieldStat(String numericFieldName, String facetField, List<String> paths) {
+		if (facetField == null) {
+			facetField = "";
+		}
+		for (StatGroup sg : queryResponse.getStatGroupList()) {
+			if (numericFieldName.equals(sg.getStatRequest().getNumericField()) && facetField.equals(sg.getStatRequest().getFacetField().getLabel())
+					&& paths.equals(sg.getStatRequest().getFacetField().getPathList())) {
+				return sg.getFacetStatsList();
+			}
+		}
+		return null;
 	}
 
 	public List<AnalysisResult> getSummaryAnalysisResults() {
