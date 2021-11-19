@@ -313,22 +313,24 @@ public class TaxonomyStatsHandler {
 
 		while (ord != TaxonomyReader.INVALID_ORDINAL) {
 			Stats stat = stats[ord];
-			stat.ordinal = ord;
-			if (stat.doubleSum > 0) {
-				doubleSumValues += stat.doubleSum;
-				if (stat.doubleSum > doubleBottomValue) {
-					q.insertWithOverflow(stat);
-					if (q.size() == topN) {
-						doubleBottomValue = q.top().doubleSum;
+			if (stat != null) {
+				stat.ordinal = ord;
+				if (stat.doubleSum > 0) {
+					doubleSumValues += stat.doubleSum;
+					if (stat.doubleSum > doubleBottomValue) {
+						q.insertWithOverflow(stat);
+						if (q.size() == topN) {
+							doubleBottomValue = q.top().doubleSum;
+						}
 					}
 				}
-			}
-			else if (stat.longSum > 0) {
-				longSumValues += stat.longSum;
-				if (stat.longSum > longBottomValue) {
-					q.insertWithOverflow(stat);
-					if (q.size() == topN) {
-						longBottomValue = q.top().longSum;
+				else if (stat.longSum > 0) {
+					longSumValues += stat.longSum;
+					if (stat.longSum > longBottomValue) {
+						q.insertWithOverflow(stat);
+						if (q.size() == topN) {
+							longBottomValue = q.top().longSum;
+						}
 					}
 				}
 			}
