@@ -76,6 +76,7 @@ message QueryResponse {
     LastResult lastResult = 3;
     repeated FacetGroup facetGroup = 4;
     repeated AnalysisResult analysisResult = 5;
+    repeated StatGroup statGroup = 6;
 }
 
 message InternalQueryResponse {

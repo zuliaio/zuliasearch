@@ -48,6 +48,14 @@ message Facet {
 message FacetRequest {
     repeated CountRequest countRequest = 1;
     repeated Facet drillDown = 2;
+    repeated StatRequest statRequest = 3;
+}
+
+message StatRequest {
+    string numericField = 1;
+    Facet facetField = 2;
+    uint32 maxFacets = 3; // default 10, set to -1 to get all
+    uint32 shardFacets = 4; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
 }
 
 message CountRequest {
@@ -55,7 +63,6 @@ message CountRequest {
     uint32 maxFacets = 2; // default 10, set to -1 to get all
     uint32 shardFacets = 3; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
 }
-
 
 message FacetCount {
     string facet = 1;
@@ -68,6 +75,22 @@ message FacetGroup {
     repeated FacetCount facetCount = 2;
     bool possibleMissing = 3;
     uint64 maxValuePossibleMissing = 4; // default 0
+}
+
+message FacetStats {
+    string facet = 1;
+    SortValue min = 2;
+    SortValue max = 3;
+    SortValue sum = 4;
+    uint64 docCount = 5;
+    uint64 valueCount = 6;
+}
+
+
+message StatGroup {
+    StatRequest statRequest = 1;
+    FacetStats globalStats = 2;
+    repeated FacetStats facetStats = 3;
 }
 
 message SortRequest {
@@ -197,4 +220,5 @@ message ShardQueryResponse {
     ScoredResult next = 5;
     repeated FacetGroup facetGroup = 6;
     repeated AnalysisResult analysisResult = 7;
+    repeated StatGroup statGroup = 8;
 }

@@ -182,6 +182,16 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
+	public Search addStat(StatBuilder statBuilder) {
+		facetRequest.addStatRequest(statBuilder.getStatRequest());
+		return this;
+	}
+
+	public Search clearStat() {
+		facetRequest.clearStatRequest();
+		return this;
+	}
+
 	public Search addAnalysis(AnalysisBuilder analysisBuilder) {
 		queryRequest.addAnalysisRequest(analysisBuilder.getAnalysis());
 		return this;
