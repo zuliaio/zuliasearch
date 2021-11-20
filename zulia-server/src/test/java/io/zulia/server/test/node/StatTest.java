@@ -2,6 +2,8 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.MatchAllQuery;
 import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.StatFacet;
@@ -62,11 +64,13 @@ public class StatTest {
 	public void index() throws Exception {
 
 		for (int i = 0; i < repeatCount; i++) {
-			indexRecord(i * 5, "something special", "top1/middle/bottom1", "foo", 3, List.of(3.5, 1.0));
-			indexRecord(i * 5 + 1, "something really special", "top1/middle/bottom2", "foo", 4, List.of(2.5));
-			indexRecord(i * 5 + 2, "something special", "top2/middle/bottom3", "bar", 2, List.of(0.5));
-			indexRecord(i * 5 + 3, "something really special", "top3/middle/bottom4", "bar", 5, List.of(3.0));
-			indexRecord(i * 5 + 4, "something really special", "top3/middle/bottom4", null, 4, List.of());
+			int uniqueDocs = 6;
+			indexRecord(i * uniqueDocs, "something special", "top1/middle/bottom1", "foo", 3, List.of(3.5, 1.0));
+			indexRecord(i * uniqueDocs + 1, "something really special", "top1/middle/bottom2", "foo", 4, List.of(2.5));
+			indexRecord(i * uniqueDocs + 2, "something special", "top2/middle/bottom3", "bar", 2, List.of(0.5));
+			indexRecord(i * uniqueDocs + 3, "something really special", "top3/middle/bottom4", "bar", 5, List.of(3.0));
+			indexRecord(i * uniqueDocs + 4, "something really special", "top3/middle/bottom4", null, 4, List.of());
+			indexRecord(i * uniqueDocs + 5, "boring", "top4/middle/bottom5", "other", 1, List.of());
 		}
 
 	}
@@ -97,7 +101,8 @@ public class StatTest {
 
 		Search search = new Search(STAT_TEST_INDEX);
 		search.addStat(new NumericStat("rating"));
-
+		search.addQuery(new FilterQuery("title:boring").exclude());
+		search.addQuery(new MatchAllQuery());
 		SearchResult searchResult = zuliaWorkPool.search(search);
 
 		FacetStats ratingStat = searchResult.getNumericFieldStat("rating");
@@ -211,6 +216,8 @@ public class StatTest {
 	@Order(6)
 	public void confirm() throws Exception {
 		Search search = new Search(STAT_TEST_INDEX);
+		search.addQuery(new FilterQuery("title:boring").exclude());
+		search.addQuery(new MatchAllQuery());
 		search.addStat(new NumericStat("authorCount"));
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
