@@ -572,8 +572,7 @@ public class ShardReader implements AutoCloseable {
 			}
 
 		}
-		Sort sort = new Sort();
-		sort.setSort(sortFields.toArray(new SortField[0]));
+		Sort sort = new Sort(sortFields.toArray(new SortField[0]));
 
 		collector = TopFieldCollector.create(sort, hasMoreAmount, after, Integer.MAX_VALUE);
 		return collector;
