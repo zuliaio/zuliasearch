@@ -43,87 +43,14 @@ import java.util.stream.Collectors;
 
 public class TaxonomyStatsHandler {
 
-	public static class TopStatQueue extends PriorityQueue<Stats> {
-
-		public TopStatQueue(int topN) {
-			super(topN);
-		}
-
-		@Override
-		protected boolean lessThan(Stats a, Stats b) {
-			if (a.doubleSum < b.doubleSum || a.longSum < b.longSum) {
-				return true;
-			}
-			else if (a.doubleSum > b.doubleSum || a.longSum > b.longSum) {
-				return false;
-			}
-			else {
-				return a.ordinal > b.ordinal;
-			}
-		}
-	}
-
-	public static class Stats {
-
-		private int ordinal;
-		private long docCount;
-		private long valueCount;
-
-		private double doubleSum;
-		private double doubleMinValue = Double.POSITIVE_INFINITY;
-		private double doubleMaxValue = Double.NEGATIVE_INFINITY;
-
-		private long longSum;
-		private long longMinValue = Long.MAX_VALUE;
-		private long longMaxValue = Long.MIN_VALUE;
-
-		public Stats(boolean floatingPoint) {
-			if (floatingPoint) {
-				longMinValue = 0;
-				longMaxValue = 0;
-			}
-			else {
-				doubleMinValue = 0;
-				doubleMaxValue = 0;
-			}
-		}
-
-		public void newDoc() {
-			docCount++;
-		}
-
-		public void newValue(double newValue) {
-			this.doubleSum += newValue;
-			if (newValue < doubleMinValue) {
-				doubleMinValue = newValue;
-			}
-			if (newValue > doubleMaxValue) {
-				doubleMaxValue = newValue;
-			}
-			this.valueCount++;
-		}
-
-		public void newValue(long newValue) {
-			this.longSum += newValue;
-			if (newValue < longMinValue) {
-				longMinValue = newValue;
-			}
-			if (newValue > longMaxValue) {
-				longMaxValue = newValue;
-			}
-			this.valueCount++;
-		}
-	}
-
-	private final OrdinalsReader ordinalsReader;
-	private final List<String> fieldsList;
 	protected final Stats[][] fieldFacetStats;
 	protected final Stats[] fieldStats;
-
+	private final OrdinalsReader ordinalsReader;
+	private final List<String> fieldsList;
 	private final TaxonomyReader taxoReader;
+	private final List<ZuliaIndex.FieldConfig.FieldType> fieldTypes;
 	private int[] children;
 	private int[] siblings;
-	private final List<ZuliaIndex.FieldConfig.FieldType> fieldTypes;
 
 	public TaxonomyStatsHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests, ServerIndexConfig serverIndexConfig)
 			throws IOException {
@@ -190,7 +117,6 @@ public class TaxonomyStatsHandler {
 
 			int doc;
 			while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-
 				if (ords != null) {
 					ords.get(doc, scratch);
 				}
@@ -209,7 +135,7 @@ public class TaxonomyStatsHandler {
 									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
 									fieldFacetStats[f][ordIndex] = stats;
 								}
-								stats.newDoc();
+								stats.newDoc(true);
 							}
 							for (int j = 0; j < functionValue.docValueCount(); j++) {
 								long value = functionValue.nextValue();
@@ -217,20 +143,7 @@ public class TaxonomyStatsHandler {
 								for (int i = 0; i < scratch.length; i++) {
 									int ordIndex = scratch.ints[i];
 									Stats stats = fieldFacetStats[f][ordIndex];
-
-									if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-										stats.newValue(NumericUtils.sortableLongToDouble(value));
-									}
-									else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-										stats.newValue(NumericUtils.sortableIntToFloat((int) value));
-									}
-									else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-										stats.newValue(value);
-									}
-									else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-										stats.newValue((int) value);
-									}
-
+									addUpValue(fieldType, value, stats);
 								}
 							}
 						}
@@ -238,29 +151,48 @@ public class TaxonomyStatsHandler {
 							docValuesForDocument(functionValue, fieldType, fieldStats[f]);
 						}
 					}
+					else {
+						if (ords != null) {
+							for (int i = 0; i < scratch.length; i++) {
+								int ordIndex = scratch.ints[i];
+								Stats stats = fieldFacetStats[f][ordIndex];
+								if (stats == null) {
+									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
+									fieldFacetStats[f][ordIndex] = stats;
+								}
+								stats.newDoc(false);
+							}
+						}
+						if (fieldStats != null) {
+							Stats stats = fieldStats[f];
+							stats.newDoc(false);
+						}
+					}
 				}
 			}
 		}
 	}
 
+	private void addUpValue(ZuliaIndex.FieldConfig.FieldType fieldType, long value, Stats stats) {
+		if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+			stats.newValue(NumericUtils.sortableLongToDouble(value));
+		}
+		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+			stats.newValue(NumericUtils.sortableIntToFloat((int) value));
+		}
+		else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+			stats.newValue(value);
+		}
+		else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+			stats.newValue((int) value);
+		}
+	}
+
 	private void docValuesForDocument(SortedNumericDocValues functionValue, ZuliaIndex.FieldConfig.FieldType fieldType, Stats stats) throws IOException {
-		stats.newDoc();
+		stats.newDoc(true);
 		for (int j = 0; j < functionValue.docValueCount(); j++) {
 			long value = functionValue.nextValue();
-
-			if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-				stats.newValue(NumericUtils.sortableLongToDouble(value));
-			}
-			else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-				stats.newValue(NumericUtils.sortableIntToFloat((int) value));
-			}
-			else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-				stats.newValue(value);
-			}
-			else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-				stats.newValue((int) value);
-			}
-
+			addUpValue(fieldType, value, stats);
 		}
 	}
 
@@ -358,9 +290,85 @@ public class TaxonomyStatsHandler {
 		ZuliaQuery.SortValue min = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMinValue).setDoubleValue(stat.doubleMinValue).build();
 		ZuliaQuery.SortValue max = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMaxValue).setDoubleValue(stat.doubleMaxValue).build();
 
-		return ZuliaQuery.FacetStats.newBuilder().setFacet(label).setDocCount(stat.docCount).setValueCount(stat.valueCount).setSum(sum).setMin(min).setMax(max)
-				.build();
+		return ZuliaQuery.FacetStats.newBuilder().setFacet(label).setDocCount(stat.docCount).setAllDocCount(stat.allDocCount).setValueCount(stat.valueCount)
+				.setSum(sum).setMin(min).setMax(max).build();
 
+	}
+
+	public static class TopStatQueue extends PriorityQueue<Stats> {
+
+		public TopStatQueue(int topN) {
+			super(topN);
+		}
+
+		@Override
+		protected boolean lessThan(Stats a, Stats b) {
+			if (a.doubleSum < b.doubleSum || a.longSum < b.longSum) {
+				return true;
+			}
+			else if (a.doubleSum > b.doubleSum || a.longSum > b.longSum) {
+				return false;
+			}
+			else {
+				return a.ordinal > b.ordinal;
+			}
+		}
+	}
+
+	public static class Stats {
+
+		private int ordinal;
+		private long docCount;
+		private long allDocCount;
+		private long valueCount;
+
+		private double doubleSum;
+		private double doubleMinValue = Double.POSITIVE_INFINITY;
+		private double doubleMaxValue = Double.NEGATIVE_INFINITY;
+
+		private long longSum;
+		private long longMinValue = Long.MAX_VALUE;
+		private long longMaxValue = Long.MIN_VALUE;
+
+		public Stats(boolean floatingPoint) {
+			if (floatingPoint) {
+				longMinValue = 0;
+				longMaxValue = 0;
+			}
+			else {
+				doubleMinValue = 0;
+				doubleMaxValue = 0;
+			}
+		}
+
+		public void newDoc(boolean countNonNull) {
+			allDocCount++;
+			if (countNonNull) {
+				docCount++;
+			}
+		}
+
+		public void newValue(double newValue) {
+			this.doubleSum += newValue;
+			if (newValue < doubleMinValue) {
+				doubleMinValue = newValue;
+			}
+			if (newValue > doubleMaxValue) {
+				doubleMaxValue = newValue;
+			}
+			this.valueCount++;
+		}
+
+		public void newValue(long newValue) {
+			this.longSum += newValue;
+			if (newValue < longMinValue) {
+				longMinValue = newValue;
+			}
+			if (newValue > longMaxValue) {
+				longMaxValue = newValue;
+			}
+			this.valueCount++;
+		}
 	}
 
 }
