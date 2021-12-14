@@ -67,10 +67,11 @@ public class StatTest {
 			int uniqueDocs = 6;
 			indexRecord(i * uniqueDocs, "something special", "top1/middle/bottom1", "foo", 3, List.of(3.5, 1.0));
 			indexRecord(i * uniqueDocs + 1, "something really special", "top1/middle/bottom2", "foo", 4, List.of(2.5));
-			indexRecord(i * uniqueDocs + 2, "something special", "top2/middle/bottom3", "bar", 2, List.of(0.5));
-			indexRecord(i * uniqueDocs + 3, "something really special", "top3/middle/bottom4", "bar", 5, List.of(3.0));
-			indexRecord(i * uniqueDocs + 4, "something really special", "top3/middle/bottom4", null, 4, List.of());
-			indexRecord(i * uniqueDocs + 5, "boring", "top4/middle/bottom5", "other", 1, List.of());
+			indexRecord(i * uniqueDocs + 2, "something even more special", "top1/middle/bottom3", "foo", 2, null);
+			indexRecord(i * uniqueDocs + 3, "something special", "top2/middle/bottom3", "bar", 2, List.of(0.5));
+			indexRecord(i * uniqueDocs + 4, "something really special", "top3/middle/bottom4", "bar", 5, List.of(3.0));
+			indexRecord(i * uniqueDocs + 5, "something really special", "top3/middle/bottom4", null, 4, List.of());
+			indexRecord(i * uniqueDocs + 6, "boring", "top4/middle/bottom5", "other", 1, List.of());
 		}
 
 	}
@@ -103,7 +104,9 @@ public class StatTest {
 		search.addStat(new NumericStat("rating"));
 		search.addQuery(new FilterQuery("title:boring").exclude());
 		search.addQuery(new MatchAllQuery());
+		System.out.println(search);
 		SearchResult searchResult = zuliaWorkPool.search(search);
+		System.out.println("Hits: " + searchResult.getTotalHits());
 
 		FacetStats ratingStat = searchResult.getNumericFieldStat("rating");
 
@@ -112,6 +115,7 @@ public class StatTest {
 
 		Assertions.assertEquals(10.5 * repeatCount, ratingStat.getSum().getDoubleValue(), 0.001);
 		Assertions.assertEquals(4L * repeatCount, ratingStat.getDocCount());
+		Assertions.assertEquals(6L * repeatCount, ratingStat.getAllDocCount());
 		Assertions.assertEquals(5L * repeatCount, ratingStat.getValueCount());
 
 		search.clearStat();
@@ -126,6 +130,7 @@ public class StatTest {
 				Assertions.assertEquals(3.5, facetStats.getMax().getDoubleValue(), 0.001);
 				Assertions.assertEquals(7L * repeatCount, facetStats.getSum().getDoubleValue(), 0.001);
 				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getAllDocCount());
 				Assertions.assertEquals(3L * repeatCount, facetStats.getValueCount());
 			}
 			else if (facetStats.getFacet().equals("bar")) {
@@ -133,6 +138,7 @@ public class StatTest {
 				Assertions.assertEquals(3.0, facetStats.getMax().getDoubleValue(), 0.001);
 				Assertions.assertEquals(3.5 * repeatCount, facetStats.getSum().getDoubleValue(), 0.001);
 				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(2L * repeatCount, facetStats.getAllDocCount());
 				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
 			}
 			else {
@@ -152,6 +158,7 @@ public class StatTest {
 				Assertions.assertEquals(3.5, facetStats.getMax().getDoubleValue(), 0.001);
 				Assertions.assertEquals(7L * repeatCount, facetStats.getSum().getDoubleValue(), 0.001);
 				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getAllDocCount());
 				Assertions.assertEquals(3L * repeatCount, facetStats.getValueCount());
 			}
 			else if (facetStats.getFacet().equals("top2")) {
@@ -159,6 +166,7 @@ public class StatTest {
 				Assertions.assertEquals(0.5, facetStats.getMax().getDoubleValue(), 0.001);
 				Assertions.assertEquals(0.5 * repeatCount, facetStats.getSum().getDoubleValue(), 0.001);
 				Assertions.assertEquals(repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(repeatCount, facetStats.getAllDocCount());
 				Assertions.assertEquals(repeatCount, facetStats.getValueCount());
 			}
 			else if (facetStats.getFacet().equals("top3")) {
@@ -222,38 +230,40 @@ public class StatTest {
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
 
-		FacetStats ratingStat = searchResult.getNumericFieldStat("authorCount");
+		FacetStats authorCountStats = searchResult.getNumericFieldStat("authorCount");
 
-		Assertions.assertEquals(2, ratingStat.getMin().getLongValue());
-		Assertions.assertEquals(5, ratingStat.getMax().getLongValue());
+		Assertions.assertEquals(2, authorCountStats.getMin().getLongValue());
+		Assertions.assertEquals(5, authorCountStats.getMax().getLongValue());
 
-		Assertions.assertEquals(18L * repeatCount, ratingStat.getSum().getLongValue());
-		Assertions.assertEquals(5L * repeatCount, ratingStat.getDocCount());
-		Assertions.assertEquals(5L * repeatCount, ratingStat.getValueCount());
+		Assertions.assertEquals(20L * repeatCount, authorCountStats.getSum().getLongValue());
+		Assertions.assertEquals(6L * repeatCount, authorCountStats.getDocCount());
+		Assertions.assertEquals(6L * repeatCount, authorCountStats.getValueCount());
 
 		search.clearStat();
 		search.addStat(new StatFacet("authorCount", "normalFacet"));
 		searchResult = zuliaWorkPool.search(search);
 
-		List<FacetStats> ratingByFacet = searchResult.getFacetFieldStat("authorCount", "normalFacet");
+		List<FacetStats> authorCountByNormalFacet = searchResult.getFacetFieldStat("authorCount", "normalFacet");
 
-		for (FacetStats facetStats : ratingByFacet) {
+		for (FacetStats facetStats : authorCountByNormalFacet) {
 			if (facetStats.getFacet().equals("foo")) {
-				Assertions.assertEquals(3L, facetStats.getMin().getLongValue());
+				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
 				Assertions.assertEquals(4L, facetStats.getMax().getLongValue());
-				Assertions.assertEquals(7L * repeatCount, facetStats.getSum().getLongValue());
-				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
-				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
+				Assertions.assertEquals(9L * repeatCount, facetStats.getSum().getLongValue());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getAllDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getValueCount());
 			}
 			else if (facetStats.getFacet().equals("bar")) {
 				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
 				Assertions.assertEquals(5L, facetStats.getMax().getLongValue());
 				Assertions.assertEquals(7L * repeatCount, facetStats.getSum().getLongValue());
 				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(2L * repeatCount, facetStats.getAllDocCount());
 				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
 			}
 			else {
-				throw new AssertionFailedError("Unexpect facet <" + facetStats.getFacet() + ">");
+				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
 			}
 		}
 
@@ -265,17 +275,19 @@ public class StatTest {
 
 		for (FacetStats facetStats : ratingByPathFacet) {
 			if (facetStats.getFacet().equals("top1")) {
-				Assertions.assertEquals(3L, facetStats.getMin().getLongValue());
+				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
 				Assertions.assertEquals(4L, facetStats.getMax().getLongValue());
-				Assertions.assertEquals(7L * repeatCount, facetStats.getSum().getLongValue());
-				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
-				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
+				Assertions.assertEquals(9L * repeatCount, facetStats.getSum().getLongValue());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getAllDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getValueCount());
 			}
 			else if (facetStats.getFacet().equals("top2")) {
 				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
 				Assertions.assertEquals(2L, facetStats.getMax().getLongValue());
 				Assertions.assertEquals(2L * repeatCount, facetStats.getSum().getLongValue());
 				Assertions.assertEquals(repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(repeatCount, facetStats.getAllDocCount());
 				Assertions.assertEquals(repeatCount, facetStats.getValueCount());
 			}
 			else if (facetStats.getFacet().equals("top3")) {
@@ -283,10 +295,11 @@ public class StatTest {
 				Assertions.assertEquals(5L, facetStats.getMax().getLongValue());
 				Assertions.assertEquals(9L * repeatCount, facetStats.getSum().getLongValue());
 				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(2L * repeatCount, facetStats.getAllDocCount());
 				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
 			}
 			else {
-				throw new AssertionFailedError("Unexpect facet <" + facetStats.getFacet() + ">");
+				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
 			}
 		}
 	}

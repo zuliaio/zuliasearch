@@ -67,22 +67,16 @@ import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
 
 public class ShardReader implements AutoCloseable {
 
-	private static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
-
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
-
 	private final static Pattern sortedDocValuesMessage = Pattern.compile(
 			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Re-index with correct docvalues type.");
-
 	private final static Set<String> fetchSet = Collections.unmodifiableSet(
 			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD)));
-
 	private final static Set<String> fetchSetWithMeta = Collections.unmodifiableSet(
 			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD)));
-
 	private final static Set<String> fetchSetWithDocument = Collections.unmodifiableSet(new HashSet<>(
 			Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD, ZuliaConstants.STORED_DOC_FIELD)));
-
+	private static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
 	private final FacetsConfig facetsConfig;
 	private final DirectoryReader indexReader;
 	private final DirectoryTaxonomyReader taxoReader;

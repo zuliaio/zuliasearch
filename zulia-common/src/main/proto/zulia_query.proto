@@ -83,7 +83,8 @@ message FacetStats {
     SortValue max = 3;
     SortValue sum = 4;
     uint64 docCount = 5;
-    uint64 valueCount = 6;
+    uint64 allDocCount = 6;
+    uint64 valueCount = 7;
 }
 
 
