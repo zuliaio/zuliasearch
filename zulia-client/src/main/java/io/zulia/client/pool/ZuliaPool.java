@@ -124,10 +124,7 @@ public class ZuliaPool {
 					connection.close();
 				}
 
-				ZuliaRESTClient restClient = zuliaRestPoolMap.remove(removedNode);
-				if (restClient != null) {
-					restClient.close();
-				}
+				zuliaRestPoolMap.remove(removedNode);
 
 			}
 			catch (Exception e) {
@@ -271,9 +268,7 @@ public class ZuliaPool {
 		for (GenericObjectPool<ZuliaConnection> pool : zuliaConnectionPoolMap.values()) {
 			pool.close();
 		}
-		for (ZuliaRESTClient pool : zuliaRestPoolMap.values()) {
-			pool.close();
-		}
+
 		isClosed = true;
 	}
 
