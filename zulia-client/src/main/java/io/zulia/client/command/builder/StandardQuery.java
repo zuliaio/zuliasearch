@@ -1,8 +1,8 @@
 package io.zulia.client.command.builder;
 
 import io.zulia.message.ZuliaQuery;
+import org.jetbrains.annotations.NotNull;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 public abstract class StandardQuery implements QueryBuilder {

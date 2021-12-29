@@ -3,19 +3,22 @@ package io.zulia.client.rest;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.micronaut.http.HttpRequest;
-import io.micronaut.http.HttpResponse;
-import io.micronaut.http.MediaType;
-import io.micronaut.http.client.multipart.MultipartBody;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
 import io.zulia.util.ZuliaUtil;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okio.BufferedSink;
+import okio.Okio;
 import org.bson.Document;
-import reactor.core.publisher.Flux;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Objects;
@@ -24,38 +27,41 @@ import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static io.micronaut.http.HttpRequest.GET;
-
 public class ZuliaRESTClient {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaRESTClient.class.getName());
 	private final String url;
-	private MicronautHttpClient client;
+	private final OkHttpClient client;
 
 	public ZuliaRESTClient(String server, int restPort) {
 		url = "http://" + server + ":" + restPort;
 
-		client = MicronautHttpClient.createClient(url);
-
+		client = new OkHttpClient().newBuilder().build();
+		LOG.info("Created OkHttp client for url: " + url);
 	}
 
 	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, byte[] bytes) throws Exception {
 
-		MultipartBody body;
-		if (metadata != null) {
-			body = MultipartBody.builder().addPart("id", uniqueId).addPart("indexName", indexName).addPart("fileName", fileName)
-					.addPart("metaJson", metadata.toJson()).addPart("file", fileName, MediaType.forFilename(fileName), bytes).build();
-		}
-		else {
-			body = MultipartBody.builder().addPart("id", uniqueId).addPart("indexName", indexName).addPart("fileName", fileName)
-					.addPart("file", fileName, MediaType.forFilename(fileName), bytes).build();
-		}
-
 		try {
-			Flux<HttpResponse<String>> post = Flux.from(client.exchange(
-					HttpRequest.POST(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL, body).contentType(MediaType.MULTIPART_FORM_DATA).accept(MediaType.TEXT_PLAIN),
-					String.class));
-			post.blockFirst();
+
+			RequestBody body;
+			if (metadata != null) {
+				body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
+						.addFormDataPart("indexName", indexName).addFormDataPart("metaJson", metadata.toJson())
+						.addFormDataPart("file", fileName, RequestBody.create(bytes, MediaType.parse(URLConnection.guessContentTypeFromName(fileName))))
+						.build();
+			}
+			else {
+				body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
+						.addFormDataPart("indexName", indexName)
+						.addFormDataPart("file", fileName, RequestBody.create(bytes, MediaType.parse(URLConnection.guessContentTypeFromName(fileName))))
+						.build();
+			}
+
+			Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
+			Response response = client.newCall(request).execute();
+			response.close();
+
 		}
 		catch (Exception e) {
 			if (e.getMessage().startsWith("Out of size:")) {
@@ -72,59 +78,52 @@ public class ZuliaRESTClient {
 	public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination, boolean closeStream) throws Exception {
 
 		try {
-
-			Flux<HttpResponse<byte[]>> data = Flux.from(client.exchange(
-					GET(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName))),
-					byte[].class));
-
-			data.doOnNext(httpResponse -> {
-				try {
-					destination.write(Objects.requireNonNull(httpResponse.body(), "No body for file"));
-				}
-				catch (IOException e) {
-					throw new RuntimeException("Failed to fetch <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage());
-				}
-			}).blockLast();
-
+			OkHttpClient client = new OkHttpClient().newBuilder().build();
+			Request request = new Request.Builder().url(
+							url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
+					.method("GET", null).build();
+			Response response = client.newCall(request).execute();
+			BufferedSink sink = Okio.buffer(Okio.sink(destination));
+			sink.writeAll(Objects.requireNonNull(response.body(), "No body for file '" + fileName + "'.").source());
+			sink.close();
+			response.close();
 		}
 		finally {
 			if (closeStream) {
 				destination.close();
 			}
 		}
+
 	}
 
 	public void fetchAssociatedMetadata(String uniqueId, String indexName, String fileName, OutputStream destination) {
 
 		try {
-
-			Flux<HttpResponse<byte[]>> data = Flux.from(client.exchange(
-					GET(ZuliaConstants.ASSOCIATED_DOCUMENTS_METADATA_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName))),
-					byte[].class));
-
-			data.doOnNext(httpResponse -> {
-				try {
-					Document document = ZuliaUtil.byteArrayToMongoDocument(httpResponse.body());
-					destination.write(Objects.requireNonNull(document.toJson().getBytes(StandardCharsets.UTF_8), "No body for file"));
-				}
-				catch (IOException e) {
-					throw new RuntimeException(
-							"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage());
-				}
-			}).blockLast();
-
+			OkHttpClient client = new OkHttpClient().newBuilder().build();
+			Request request = new Request.Builder().url(
+							url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
+					.method("GET", null).build();
+			Response response = client.newCall(request).execute();
+			Document document = ZuliaUtil.byteArrayToMongoDocument(Objects.requireNonNull(response.body()).bytes());
+			destination.write(Objects.requireNonNull(document.toJson().getBytes(StandardCharsets.UTF_8), "No body for file"));
+			response.close();
 		}
-		catch (Throwable throwable) {
+		catch (Throwable t) {
 			LOG.log(Level.SEVERE,
-					"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + throwable.getMessage());
+					"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + t.getMessage());
 		}
 
 	}
 
 	public void fetchAssociated(String uniqueId, String indexName, OutputStream destination, boolean closeStream) throws Exception {
 
-		String allIdsJson = client.toBlocking()
-				.retrieve(GET(ZuliaConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName))));
+		OkHttpClient client = new OkHttpClient().newBuilder().build();
+		Request request = new Request.Builder().url(
+						url + ZuliaConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName)))
+				.method("GET", null).build();
+		Response response = client.newCall(request).execute();
+
+		String allIdsJson = Objects.requireNonNull(response.body()).string();
 		JsonObject result = JsonParser.parseString(allIdsJson).getAsJsonObject();
 		JsonArray filenames = result.getAsJsonArray("filenames");
 
@@ -149,6 +148,7 @@ public class ZuliaRESTClient {
 					zipOutputStream.close();
 				}
 			}
+			response.close();
 		}
 
 	}
@@ -166,11 +166,6 @@ public class ZuliaRESTClient {
 		parameters.put(ZuliaConstants.FILE_NAME, fileName);
 		parameters.put(ZuliaConstants.INDEX, indexName);
 		return parameters;
-	}
-
-	public void close() {
-		LOG.info("Closing REST client pool to " + url);
-		client.close();
 	}
 
 }
