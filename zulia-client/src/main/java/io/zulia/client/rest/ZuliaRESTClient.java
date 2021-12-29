@@ -78,7 +78,6 @@ public class ZuliaRESTClient {
 	public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination, boolean closeStream) throws Exception {
 
 		try {
-			OkHttpClient client = new OkHttpClient().newBuilder().build();
 			Request request = new Request.Builder().url(
 							url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
 					.method("GET", null).build();
@@ -99,7 +98,6 @@ public class ZuliaRESTClient {
 	public void fetchAssociatedMetadata(String uniqueId, String indexName, String fileName, OutputStream destination) {
 
 		try {
-			OkHttpClient client = new OkHttpClient().newBuilder().build();
 			Request request = new Request.Builder().url(
 							url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
 					.method("GET", null).build();
@@ -117,7 +115,6 @@ public class ZuliaRESTClient {
 
 	public void fetchAssociated(String uniqueId, String indexName, OutputStream destination, boolean closeStream) throws Exception {
 
-		OkHttpClient client = new OkHttpClient().newBuilder().build();
 		Request request = new Request.Builder().url(
 						url + ZuliaConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName)))
 				.method("GET", null).build();
