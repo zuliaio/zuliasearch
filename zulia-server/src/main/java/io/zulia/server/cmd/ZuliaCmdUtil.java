@@ -167,12 +167,12 @@ public class ZuliaCmdUtil {
 						store.setResultDocument(new ResultDocBuilder().setDocument(document));
 						workPool.store(store);
 
-						if (Files.exists(Paths.get(inputDir + File.separator + id.replaceAll("/", "_") + ".zip"))) {
+						String fullPathToFile = inputDir + File.separator + id.replaceAll("/", "_") + ".zip";
+						if (Files.exists(Paths.get(fullPathToFile))) {
 
 							File destDir = new File(inputDir + File.separator + UUID.randomUUID() + "_tempWork");
 							byte[] buffer = new byte[1024];
-							try (ZipArchiveInputStream inputStream = new ZipArchiveInputStream(
-									new FileInputStream(Paths.get(inputDir + File.separator + id.replaceAll("/", "_") + ".zip").toFile()))) {
+							try (ZipArchiveInputStream inputStream = new ZipArchiveInputStream(new FileInputStream(Paths.get(fullPathToFile).toFile()))) {
 								ZipArchiveEntry zipEntry;
 								while ((zipEntry = inputStream.getNextZipEntry()) != null) {
 									decompressZipEntryToDisk(destDir, buffer, inputStream, zipEntry);
@@ -223,10 +223,13 @@ public class ZuliaCmdUtil {
 									}
 								}
 
-							}
+								// clean up temp work
+								Files.walk(destDir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 
-							// clean up temp work
-							Files.walk(destDir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+							}
+							else {
+								//LOG.log(Level.SEVERE, "Could not extract file <" + fullPathToFile + ">");
+							}
 
 						}
 
