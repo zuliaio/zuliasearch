@@ -19,9 +19,13 @@ service ZuliaService {
     rpc InternalFetch (FetchRequest) returns (FetchResponse);
     rpc BatchFetch (BatchFetchRequest) returns (stream FetchResponse);
     rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
+    rpc CreateIndexAlias (CreateIndexAliasRequest) returns (CreateIndexAliasResponse);
     rpc InternalCreateIndex (InternalCreateIndexRequest) returns (CreateIndexResponse);
+    rpc InternalCreateIndexAlias (InternalCreateIndexAliasRequest) returns (CreateIndexAliasResponse);
     rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
+    rpc DeleteIndexAlias (DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
     rpc InternalDeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
+    rpc InternalDeleteIndexAlias (DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
     rpc GetIndexes (GetIndexesRequest) returns (GetIndexesResponse);
     rpc GetNumberOfDocs (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
     rpc InternalGetNumberOfDocs (InternalGetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
@@ -142,19 +146,38 @@ message CreateIndexRequest {
     IndexSettings indexSettings = 1;
 }
 
+
+message CreateIndexAliasRequest {
+    IndexAlias indexAlias = 1;
+}
+
 message InternalCreateIndexRequest {
     string indexName = 1;
+}
+
+message InternalCreateIndexAliasRequest {
+    string aliasName = 1;
 }
 
 
 message CreateIndexResponse {
 }
 
+message CreateIndexAliasResponse {
+}
+
 message DeleteIndexRequest {
     string indexName = 1;
 }
 
+message DeleteIndexAliasRequest {
+    string aliasName = 1;
+}
+
 message DeleteIndexResponse {
+}
+
+message DeleteIndexAliasResponse {
 }
 
 

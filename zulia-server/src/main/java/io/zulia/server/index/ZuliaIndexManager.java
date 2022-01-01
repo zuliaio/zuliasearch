@@ -3,6 +3,7 @@ package io.zulia.server.index;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
+import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.ShardMapping;
@@ -22,7 +23,9 @@ import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
 import io.zulia.server.index.federator.ClearRequestFederator;
+import io.zulia.server.index.federator.CreateIndexAliasRequestFederator;
 import io.zulia.server.index.federator.CreateIndexRequestFederator;
+import io.zulia.server.index.federator.DeleteIndexAliasRequestFederator;
 import io.zulia.server.index.federator.DeleteIndexRequestFederator;
 import io.zulia.server.index.federator.GetFieldNamesRequestFederator;
 import io.zulia.server.index.federator.GetNumberOfDocsRequestFederator;
@@ -68,8 +71,10 @@ public class ZuliaIndexManager {
 	private final ZuliaConfig zuliaConfig;
 	private final NodeService nodeService;
 
-	private Node thisNode;
+	private final Node thisNode;
 	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
+
+	private final ConcurrentHashMap<String, String> indexAliasMap;
 
 	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) {
 
@@ -88,6 +93,7 @@ public class ZuliaIndexManager {
 		this.internalClient = new InternalClient();
 
 		this.indexMap = new ConcurrentHashMap<>();
+		this.indexAliasMap = new ConcurrentHashMap<>();
 
 		this.pool = Executors.newCachedThreadPool(new ZuliaThreadFactory("manager"));
 
@@ -105,8 +111,8 @@ public class ZuliaIndexManager {
 	}
 
 	public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
-		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":" + nodeRemoved
-				.getServicePort());
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":"
+				+ nodeRemoved.getServicePort());
 		internalClient.removeNode(nodeRemoved);
 		this.currentOtherNodesActive = currentOtherNodesActive;
 	}
@@ -521,11 +527,90 @@ public class ZuliaIndexManager {
 	}
 
 	private ZuliaIndex getIndexFromName(String indexName) throws IndexDoesNotExistException {
+
+		String orgIndex = indexName;
+
+		if (indexAliasMap.containsKey(indexName)) {
+			indexName = indexAliasMap.get(indexName);
+		}
+
 		ZuliaIndex i = indexMap.get(indexName);
 		if (i == null) {
-			throw new IndexDoesNotExistException(indexName);
+
+			if (orgIndex.equals(indexName)) {
+				throw new IndexDoesNotExistException(indexName);
+			}
+			else {
+				throw new IndexDoesNotExistException(orgIndex + "->" + indexName);
+			}
 		}
 		return i;
 	}
 
+	public CreateIndexAliasResponse createIndexAlias(CreateIndexAliasRequest request) throws Exception {
+		IndexAlias indexAlias = request.getIndexAlias();
+
+		String aliasName = indexAlias.getAliasName();
+
+		if (aliasName.isEmpty()) {
+			throw new IllegalArgumentException("Alias name cannot be null or empty");
+		}
+
+		if (indexAlias.getIndexName().isEmpty()) {
+			throw new IllegalArgumentException("Index name cannot be null or empty");
+		}
+
+		IndexAlias existingAlias = indexService.getIndexAlias(aliasName);
+
+		indexService.storeIndexAlias(indexAlias);
+
+		CreateIndexAliasRequestFederator createIndexRequestFederator = new CreateIndexAliasRequestFederator(thisNode, currentOtherNodesActive, pool,
+				internalClient, this);
+
+		try {
+			@SuppressWarnings("unused") List<CreateIndexAliasResponse> send = createIndexRequestFederator.send(
+					InternalCreateIndexAliasRequest.newBuilder().setAliasName(aliasName).build());
+		}
+		catch (Exception e) {
+			if (existingAlias == null) {
+				LOG.log(Level.SEVERE, "Failed to update index alias <" + aliasName + ">: ", e);
+				throw new Exception("Failed to update index alias <" + aliasName + ">: " + e.getMessage());
+			}
+			else {
+				throw new Exception("Failed to create index alias <" + aliasName + ">: " + e.getMessage());
+
+			}
+		}
+
+		return CreateIndexAliasResponse.newBuilder().build();
+
+	}
+
+	public DeleteIndexAliasResponse deleteIndexAlias(DeleteIndexAliasRequest request) throws Exception {
+		indexService.removeIndexAlias(request.getAliasName());
+
+		DeleteIndexAliasRequestFederator deleteIndexAliasRequestFederator = new DeleteIndexAliasRequestFederator(thisNode, currentOtherNodesActive, pool,
+				internalClient, this);
+
+		try {
+			@SuppressWarnings("unused") List<DeleteIndexAliasResponse> send = deleteIndexAliasRequestFederator.send(request);
+		}
+		catch (Exception e) {
+			throw new Exception("Failed to delete index alias <" + request.getAliasName() + ">: " + e.getMessage());
+		}
+
+		return DeleteIndexAliasResponse.newBuilder().build();
+
+	}
+
+	public CreateIndexAliasResponse internalCreateIndexAlias(String aliasName) throws Exception {
+		IndexAlias indexAlias = indexService.getIndexAlias(aliasName);
+		indexAliasMap.put(indexAlias.getAliasName(), indexAlias.getIndexName());
+		return CreateIndexAliasResponse.newBuilder().build();
+	}
+
+	public DeleteIndexAliasResponse internalDeleteIndexAlias(DeleteIndexAliasRequest request) {
+		indexAliasMap.remove(request.getAliasName());
+		return DeleteIndexAliasResponse.newBuilder().build();
+	}
 }
