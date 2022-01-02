@@ -43,6 +43,14 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new CreateIndex(indexConfig));
 	}
 
+	public CreateIndexAliasResult createIndexAlias(CreateIndexAlias createIndexAlias) throws Exception {
+		return execute(createIndexAlias);
+	}
+
+	public CreateIndexAliasResult createIndexAlias(String aliasName, String indexName) throws Exception {
+		return execute(new CreateIndexAlias(aliasName, indexName));
+	}
+
 	public ListenableFuture<CreateIndexResult> createIndexAsync(CreateIndex createIndex) throws Exception {
 		return executeAsync(createIndex);
 	}
@@ -71,8 +79,16 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new DeleteIndex(indexName));
 	}
 
+	public DeleteIndexAliasResult deleteIndexAlias(String aliasName) throws Exception {
+		return execute(new DeleteIndexAlias(aliasName));
+	}
+
 	public ListenableFuture<DeleteIndexResult> deleteIndexAsync(String indexName) throws Exception {
 		return executeAsync(new DeleteIndex(indexName));
+	}
+
+	public DeleteIndexAliasResult deleteIndexAlias(DeleteIndexAlias deleteIndexAlias) throws Exception {
+		return execute(deleteIndexAlias);
 	}
 
 	public DeleteIndexResult deleteIndex(DeleteIndex deleteIndex) throws Exception {
@@ -263,4 +279,5 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 	public ListenableFuture<ReindexResult> reindexAsync(Reindex reindex) throws Exception {
 		return executeAsync(reindex);
 	}
+
 }

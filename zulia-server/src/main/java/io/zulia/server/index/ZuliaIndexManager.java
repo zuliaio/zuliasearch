@@ -76,7 +76,7 @@ public class ZuliaIndexManager {
 
 	private final ConcurrentHashMap<String, String> indexAliasMap;
 
-	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) {
+	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
 		this.zuliaConfig = zuliaConfig;
 
@@ -94,6 +94,10 @@ public class ZuliaIndexManager {
 
 		this.indexMap = new ConcurrentHashMap<>();
 		this.indexAliasMap = new ConcurrentHashMap<>();
+
+		for (IndexAlias indexAlias : indexService.getIndexAliases()) {
+			indexAliasMap.put(indexAlias.getAliasName(), indexAlias.getIndexName());
+		}
 
 		this.pool = Executors.newCachedThreadPool(new ZuliaThreadFactory("manager"));
 
@@ -266,11 +270,12 @@ public class ZuliaIndexManager {
 	private void populateIndexesAndIndexMap(QueryRequest queryRequest, Map<String, Query> queryMap, Set<ZuliaIndex> indexes) throws Exception {
 
 		for (String indexName : queryRequest.getIndexList()) {
+
 			ZuliaIndex index = getIndexFromName(indexName);
 			indexes.add(index);
 
 			Query query = index.getQuery(queryRequest);
-			queryMap.put(indexName, query);
+			queryMap.put(handleAlias(indexName), query);
 		}
 	}
 
@@ -529,10 +534,7 @@ public class ZuliaIndexManager {
 	private ZuliaIndex getIndexFromName(String indexName) throws IndexDoesNotExistException {
 
 		String orgIndex = indexName;
-
-		if (indexAliasMap.containsKey(indexName)) {
-			indexName = indexAliasMap.get(indexName);
-		}
+		indexName = handleAlias(indexName);
 
 		ZuliaIndex i = indexMap.get(indexName);
 		if (i == null) {
@@ -545,6 +547,13 @@ public class ZuliaIndexManager {
 			}
 		}
 		return i;
+	}
+
+	private String handleAlias(String indexName) {
+		if (indexAliasMap.containsKey(indexName)) {
+			indexName = indexAliasMap.get(indexName);
+		}
+		return indexName;
 	}
 
 	public CreateIndexAliasResponse createIndexAlias(CreateIndexAliasRequest request) throws Exception {

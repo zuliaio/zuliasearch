@@ -39,6 +39,8 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	private final InternalReindexServerRequest internalReindexRequest;
 	private final DeleteIndexAliasServerRequest deleteIndexAliasServerRequest;
 	private final CreateIndexAliasServerRequest createIndexAliasServerRequest;
+	private final InternalCreateIndexAliasServerRequest internalCreateIndexAliasServerRequest;
+	private final InternalDeleteIndexAliasServerRequest internalDeleteIndexAliasServerRequest;
 
 	public ZuliaServiceHandler(ZuliaIndexManager indexManager) {
 		internalQueryServerRequest = new InternalQueryServerRequest(indexManager);
@@ -72,6 +74,8 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 		internalReindexRequest = new InternalReindexServerRequest(indexManager);
 		deleteIndexAliasServerRequest = new DeleteIndexAliasServerRequest(indexManager);
 		createIndexAliasServerRequest = new CreateIndexAliasServerRequest(indexManager);
+		internalCreateIndexAliasServerRequest = new InternalCreateIndexAliasServerRequest(indexManager);
+		internalDeleteIndexAliasServerRequest = new InternalDeleteIndexAliasServerRequest(indexManager);
 	}
 
 	@Override
@@ -227,5 +231,15 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	@Override
 	public void deleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
 		deleteIndexAliasServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalCreateIndexAlias(InternalCreateIndexAliasRequest request, StreamObserver<CreateIndexAliasResponse> responseObserver) {
+		internalCreateIndexAliasServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalDeleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
+		internalDeleteIndexAliasServerRequest.handleRequest(request, responseObserver);
 	}
 }
