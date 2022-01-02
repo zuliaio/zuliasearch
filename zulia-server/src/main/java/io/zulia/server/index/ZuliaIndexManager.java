@@ -235,11 +235,14 @@ public class ZuliaIndexManager {
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
 
 		List<IndexMapping> indexMappingList = indexService.getIndexMappings();
+		List<IndexAlias> indexAliasesList = indexService.getIndexAliases();
 		if ((request.getActiveOnly())) {
-			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexMapping(indexMappingList).build();
+			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexMapping(indexMappingList)
+					.addAllIndexAlias(indexAliasesList).build();
 		}
 		else {
-			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexMapping(indexMappingList).build();
+			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexMapping(indexMappingList).addAllIndexAlias(indexAliasesList)
+					.build();
 		}
 	}
 

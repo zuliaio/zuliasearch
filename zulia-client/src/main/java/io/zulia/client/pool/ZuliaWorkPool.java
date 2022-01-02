@@ -115,6 +115,10 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(fetchLargeAssociated);
 	}
 
+	public GetFieldsResult getFields(String indexName) throws Exception {
+		return getFields(new GetFields(indexName));
+	}
+
 	public GetFieldsResult getFields(GetFields getFields) throws Exception {
 		return execute(getFields);
 	}
@@ -262,6 +266,10 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 	public void updateNodes() throws Exception {
 		GetNodesResult getNodesResult = execute(new GetNodes().setActiveOnly(true));
 		updateNodes(getNodesResult.getNodes());
+	}
+
+	public GetIndexConfigResult getIndexConfig(String indexName) throws Exception {
+		return getIndexConfig(new GetIndexConfig(indexName));
 	}
 
 	public GetIndexConfigResult getIndexConfig(GetIndexConfig getIndexConfig) throws Exception {

@@ -1,11 +1,20 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
+import io.zulia.client.command.Fetch;
+import io.zulia.client.command.GetTerms;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.FetchResult;
+import io.zulia.client.result.GetFieldsResult;
+import io.zulia.client.result.GetIndexConfigResult;
+import io.zulia.client.result.GetIndexesResult;
+import io.zulia.client.result.GetNodesResult;
+import io.zulia.client.result.GetNumberOfDocsResult;
+import io.zulia.client.result.GetTermsResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
@@ -118,6 +127,27 @@ public class AliasTest {
 		search.addQuery(new ScoredQuery("rating:[4.0 TO *]"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount * 2 * 3, searchResult.getTotalHits());
+
+		GetNumberOfDocsResult numberOfDocs = zuliaWorkPool.getNumberOfDocs("someAlias");
+		Assertions.assertEquals(repeatCount * 2 * uniqueDocs, numberOfDocs.getNumberOfDocs());
+
+		GetFieldsResult getFields = zuliaWorkPool.getFields("someAlias");
+		Assertions.assertEquals(3, getFields.getFieldNames().size());
+
+		GetTermsResult getTermsResult = zuliaWorkPool.execute(new GetTerms("someAlias", "title"));
+		Assertions.assertEquals(6, getTermsResult.getTerms().size());
+
+		GetIndexesResult indexes = zuliaWorkPool.getIndexes();
+		Assertions.assertEquals(1, indexes.getIndexNames().size());
+
+		GetNodesResult nodes = zuliaWorkPool.getNodes();
+		Assertions.assertEquals(1, nodes.getIndexAliases().size());
+
+		FetchResult fetch = zuliaWorkPool.fetch(new Fetch("1", "someAlias"));
+		Assertions.assertEquals("1", fetch.getDocument().getString("id"));
+
+		GetIndexConfigResult indexConfig = zuliaWorkPool.getIndexConfig("someAlias");
+		Assertions.assertEquals(indexConfig.getIndexConfig().getIndexName(), ALIAS_TEST_INDEX);
 
 	}
 
