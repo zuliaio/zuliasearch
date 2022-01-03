@@ -4,6 +4,7 @@ import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.command.base.SingleIndexRoutableCommand;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaConnection;
+import io.zulia.client.result.GetIndexConfigResult;
 import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsRequest;
 
 import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;

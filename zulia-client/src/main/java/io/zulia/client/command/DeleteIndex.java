@@ -10,7 +10,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
 
 /**
- * Deletes an index.  If index does not exist throwns an exception
+ * Deletes an index.  If index does not exist throws an exception
  * @author mdavis
  *
  */
