@@ -1,12 +1,12 @@
 package io.zulia.server.connection.server;
 
 import io.grpc.stub.StreamObserver;
-import io.zulia.message.ZuliaServiceGrpc;
+import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceImplBase;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.connection.server.handler.*;
 import io.zulia.server.index.ZuliaIndexManager;
 
-public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
+public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 
 	private final InternalQueryServerRequest internalQueryServerRequest;
 	private final QueryServerRequest queryServerRequest;
@@ -37,6 +37,10 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	private final GetIndexSettingsServerRequest getIndexSettingsServerRequest;
 	private final ReindexServerRequest reindexServerRequest;
 	private final InternalReindexServerRequest internalReindexRequest;
+	private final DeleteIndexAliasServerRequest deleteIndexAliasServerRequest;
+	private final CreateIndexAliasServerRequest createIndexAliasServerRequest;
+	private final InternalCreateIndexAliasServerRequest internalCreateIndexAliasServerRequest;
+	private final InternalDeleteIndexAliasServerRequest internalDeleteIndexAliasServerRequest;
 
 	public ZuliaServiceHandler(ZuliaIndexManager indexManager) {
 		internalQueryServerRequest = new InternalQueryServerRequest(indexManager);
@@ -68,7 +72,10 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 		getIndexSettingsServerRequest = new GetIndexSettingsServerRequest(indexManager);
 		reindexServerRequest = new ReindexServerRequest(indexManager);
 		internalReindexRequest = new InternalReindexServerRequest(indexManager);
-
+		deleteIndexAliasServerRequest = new DeleteIndexAliasServerRequest(indexManager);
+		createIndexAliasServerRequest = new CreateIndexAliasServerRequest(indexManager);
+		internalCreateIndexAliasServerRequest = new InternalCreateIndexAliasServerRequest(indexManager);
+		internalDeleteIndexAliasServerRequest = new InternalDeleteIndexAliasServerRequest(indexManager);
 	}
 
 	@Override
@@ -214,5 +221,25 @@ public class ZuliaServiceHandler extends ZuliaServiceGrpc.ZuliaServiceImplBase {
 	@Override
 	public void reindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
 		reindexServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void createIndexAlias(CreateIndexAliasRequest request, StreamObserver<CreateIndexAliasResponse> responseObserver) {
+		createIndexAliasServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void deleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
+		deleteIndexAliasServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalCreateIndexAlias(InternalCreateIndexAliasRequest request, StreamObserver<CreateIndexAliasResponse> responseObserver) {
+		internalCreateIndexAliasServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalDeleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
+		internalDeleteIndexAliasServerRequest.handleRequest(request, responseObserver);
 	}
 }

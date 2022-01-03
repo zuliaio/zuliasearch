@@ -1,6 +1,7 @@
 package io.zulia.server.config;
 
 import io.zulia.message.ZuliaIndex;
+import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 
@@ -8,11 +9,9 @@ import java.util.List;
 
 public interface IndexService {
 
-	String SETTINGS = "settings";
-
 	/**
 	 *
-	 * @return - all indexes for the cluster, {@code null} if nothing exists
+	 * @return - all indexes for the cluster
 	 */
 	List<IndexSettings> getIndexes() throws Exception;
 
@@ -26,12 +25,12 @@ public interface IndexService {
 
 	/**
 	 * create or update an index
-	 * shards cannot be changed after an index is created
+	 * number of shards cannot be changed after an index is created
 	 * time fields will be handled by the config storage
 	 *
 	 * @param indexSettings
 	 */
-	void createIndex(ZuliaIndex.IndexSettings indexSettings) throws Exception;
+	void storeIndex(ZuliaIndex.IndexSettings indexSettings) throws Exception;
 
 	/**
 	 * remove an index from the config storage
@@ -41,14 +40,14 @@ public interface IndexService {
 
 	/**
 	 *
-	 * @return - returns all index mapping for a cluster, {@code null} if nothing exists
+	 * @return - returns all index mapping for a cluster
 	 */
 	List<IndexMapping> getIndexMappings() throws Exception;
 
 	/**
 	 *
 	 * @param indexName - index name to fetch server mapping from
-	 * @return - index mapping for an index, {@code null} if nothing exists
+	 * @return - index mapping for an index
 	 */
 	IndexMapping getIndexMapping(String indexName) throws Exception;
 
@@ -63,5 +62,30 @@ public interface IndexService {
 	 * @param indexName - index name of mapping to remove
 	 */
 	void removeIndexMapping(String indexName) throws Exception;
+
+	/**
+	 *
+	 * @return - returns all index aliases for a cluster
+	 */
+	List<IndexAlias> getIndexAliases() throws Exception;
+
+	/**
+	 *
+	 * @param indexAlias - index alias to fetch
+	 * @return - index alias
+	 */
+	IndexAlias getIndexAlias(String indexAlias) throws Exception;
+
+	/**
+	 * Creates or updates index alias
+	 * @param indexAlias - index alias to create or update
+	 */
+	void storeIndexAlias(IndexAlias indexAlias) throws Exception;
+
+	/**
+	 * remove an index alias from the config storage
+	 * @param indexAlias - index alias to remove
+	 */
+	void removeIndexAlias(String indexAlias) throws Exception;
 
 }

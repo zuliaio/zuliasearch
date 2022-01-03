@@ -1,7 +1,6 @@
-package io.zulia.client.command;
+package io.zulia.client.result;
 
 import io.zulia.client.config.ClientIndexConfig;
-import io.zulia.client.result.Result;
 
 /**
  * Created by Payam Meyer on 4/3/17.

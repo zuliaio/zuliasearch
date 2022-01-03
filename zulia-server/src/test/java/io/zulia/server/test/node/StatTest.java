@@ -64,7 +64,7 @@ public class StatTest {
 	public void index() throws Exception {
 
 		for (int i = 0; i < repeatCount; i++) {
-			int uniqueDocs = 6;
+			int uniqueDocs = 7;
 			indexRecord(i * uniqueDocs, "something special", "top1/middle/bottom1", "foo", 3, List.of(3.5, 1.0));
 			indexRecord(i * uniqueDocs + 1, "something really special", "top1/middle/bottom2", "foo", 4, List.of(2.5));
 			indexRecord(i * uniqueDocs + 2, "something even more special", "top1/middle/bottom3", "foo", 2, null);

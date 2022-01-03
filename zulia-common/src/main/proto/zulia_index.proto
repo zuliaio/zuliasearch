@@ -10,6 +10,11 @@ message IndexMapping {
     repeated ShardMapping shardMapping = 3;
 }
 
+message IndexAlias {
+    string aliasName = 1;
+    string indexName = 2;
+}
+
 message ShardMapping {
     uint32 shardNumber = 1;
     Node primaryNode = 2;

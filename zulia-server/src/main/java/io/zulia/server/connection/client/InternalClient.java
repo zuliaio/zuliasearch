@@ -3,8 +3,10 @@ package io.zulia.server.connection.client;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.connection.client.handler.InternalClearHandler;
+import io.zulia.server.connection.client.handler.InternalCreateIndexAliasHandler;
 import io.zulia.server.connection.client.handler.InternalCreateIndexHandler;
 import io.zulia.server.connection.client.handler.InternalDeleteHandler;
+import io.zulia.server.connection.client.handler.InternalDeleteIndexAliasHandler;
 import io.zulia.server.connection.client.handler.InternalDeleteIndexHandler;
 import io.zulia.server.connection.client.handler.InternalFetchHandler;
 import io.zulia.server.connection.client.handler.InternalGetFieldNamesHandler;
@@ -38,6 +40,8 @@ public class InternalClient {
 	private final InternalCreateIndexHandler internalCreateIndexHandler;
 	private final InternalDeleteIndexHandler internalDeleteIndexHandler;
 	private final InternalReindexHandler internalReindexHandler;
+	private final InternalCreateIndexAliasHandler internalCreateIndexAliasHandler;
+	private final InternalDeleteIndexAliasHandler internalDeleteIndexAliasHandler;
 
 	public InternalClient() {
 
@@ -55,6 +59,8 @@ public class InternalClient {
 		internalCreateIndexHandler = new InternalCreateIndexHandler(this);
 		internalDeleteIndexHandler = new InternalDeleteIndexHandler(this);
 		internalReindexHandler = new InternalReindexHandler(this);
+		internalCreateIndexAliasHandler = new InternalCreateIndexAliasHandler(this);
+		internalDeleteIndexAliasHandler = new InternalDeleteIndexAliasHandler(this);
 	}
 
 	public void close() {
@@ -184,5 +190,13 @@ public class InternalClient {
 
 	public ReindexResponse reindex(Node node, ReindexRequest request) throws Exception {
 		return internalReindexHandler.handleRequest(node, request);
+	}
+
+	public CreateIndexAliasResponse createIndexAlias(Node node, InternalCreateIndexAliasRequest request) throws Exception {
+		return internalCreateIndexAliasHandler.handleRequest(node, request);
+	}
+
+	public DeleteIndexAliasResponse deleteIndexAlias(Node node, DeleteIndexAliasRequest request) throws Exception {
+		return internalDeleteIndexAliasHandler.handleRequest(node, request);
 	}
 }

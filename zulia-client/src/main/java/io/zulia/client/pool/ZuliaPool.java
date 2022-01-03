@@ -16,6 +16,7 @@ import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.Result;
+import io.zulia.message.ZuliaIndex;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
@@ -139,14 +140,14 @@ public class ZuliaPool {
 		return node.getServerAddress() + ":" + node.getServicePort();
 	}
 
-	public void updateIndexMappings(List<IndexMapping> list) {
-		indexRouting = new IndexRouting(list);
+	public void updateIndexMappings(List<IndexMapping> indexMappings, List<ZuliaIndex.IndexAlias> indexAliases) {
+		indexRouting = new IndexRouting(indexMappings, indexAliases);
 	}
 
 	public void updateNodesAndRouting() throws Exception {
 		GetNodesResult getNodesResult = execute(new GetNodes().setActiveOnly(true));
 		updateNodes(getNodesResult.getNodes());
-		updateIndexMappings(getNodesResult.getIndexMappings());
+		updateIndexMappings(getNodesResult.getIndexMappings(), getNodesResult.getIndexAliases());
 	}
 
 	public <R extends Result> R execute(BaseCommand<R> command) throws Exception {

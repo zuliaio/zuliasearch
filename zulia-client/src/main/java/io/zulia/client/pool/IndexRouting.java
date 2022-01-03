@@ -1,5 +1,7 @@
 package io.zulia.client.pool;
 
+import io.zulia.message.ZuliaIndex;
+import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.util.ShardUtil;
 
 import java.util.ArrayList;
@@ -19,11 +21,17 @@ public class IndexRouting {
 
 	private Random random = new Random();
 
+	private Map<String, String> aliasToIndex = new HashMap<>();
 	private Map<String, Map<Integer, Node>> indexMapping = new HashMap<>();
 	private Map<String, Integer> shardCountMapping = new HashMap<>();
 
-	public IndexRouting(List<IndexMapping> indexMappingList) {
-		for (IndexMapping im : indexMappingList) {
+	public IndexRouting(List<IndexMapping> indexMappings, List<IndexAlias> indexAliases) {
+
+		for (IndexAlias indexAlias : indexAliases) {
+			aliasToIndex.put(indexAlias.getAliasName(),indexAlias.getIndexName());
+		}
+
+		for (IndexMapping im : indexMappings) {
 			Map<Integer, Node> segmentMapping = new HashMap<>();
 			for (ShardMapping sg : im.getShardMappingList()) {
 				// TODO: Does this need to know primary or replica?
@@ -35,6 +43,9 @@ public class IndexRouting {
 	}
 
 	public Node getNode(String indexName, String uniqueId) {
+
+		indexName = handleAlias(indexName);
+
 		Integer numberOfShards = shardCountMapping.get(indexName);
 		if (numberOfShards == null) {
 			return null;
@@ -50,7 +61,11 @@ public class IndexRouting {
 		return shardMapping.get(shardNumber);
 	}
 
+
+
 	public Node getRandomNode(String indexName) {
+		indexName = handleAlias(indexName);
+
 		Integer numberOfShards = shardCountMapping.get(indexName);
 		if (numberOfShards == null) {
 			return null;
@@ -71,6 +86,8 @@ public class IndexRouting {
 		Set<Node> allNodes = new HashSet<>();
 
 		for (String indexName : indexNames) {
+			indexName = handleAlias(indexName);
+
 			Integer numberOfShards = shardCountMapping.get(indexName);
 			if (numberOfShards == null) {
 				return null;
@@ -89,6 +106,13 @@ public class IndexRouting {
 
 		int nodeIndex = random.nextInt(allNodesList.size());
 		return allNodesList.get(nodeIndex);
+	}
+
+	private String handleAlias(String indexName) {
+		if (aliasToIndex.containsKey(indexName)) {
+			indexName = aliasToIndex.get(indexName);
+		}
+		return indexName;
 	}
 
 }
