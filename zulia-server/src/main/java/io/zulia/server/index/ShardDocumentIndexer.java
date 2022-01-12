@@ -156,7 +156,7 @@ public class ShardDocumentIndexer {
 
 		ZuliaIndex.FieldConfig.FieldType fieldType = fc.getFieldType();
 		for (ZuliaIndex.SortAs sortAs : fc.getSortAsList()) {
-			String sortFieldName = sortAs.getSortFieldName();
+			String sortFieldName = sortAs.getSortFieldName() + ZuliaConstants.SORT_SUFFIX;
 
 			if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {

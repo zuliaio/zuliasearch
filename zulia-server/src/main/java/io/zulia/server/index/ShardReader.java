@@ -64,6 +64,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
+import static io.zulia.ZuliaConstants.SORT_SUFFIX;
 
 public class ShardReader implements AutoCloseable {
 
@@ -514,7 +515,7 @@ public class ShardReader implements AutoCloseable {
 				if (reverse) {
 					sortedNumericSelector = SortedNumericSelector.Type.MAX;
 				}
-				sortFields.add(new SortedNumericSortField(rewrittenField, SortField.Type.INT, reverse, sortedNumericSelector));
+				sortFields.add(new SortedNumericSortField(rewrittenField + ZuliaConstants.SORT_SUFFIX, SortField.Type.INT, reverse, sortedNumericSelector));
 			}
 			else if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
 
@@ -540,7 +541,7 @@ public class ShardReader implements AutoCloseable {
 					throw new Exception("Invalid numeric sort type <" + sortFieldType + "> for sort field <" + sortField + ">");
 				}
 
-				SortedNumericSortField e = new SortedNumericSortField(sortField, type, reverse, sortedNumericSelector);
+				SortedNumericSortField e = new SortedNumericSortField(sortField + SORT_SUFFIX, type, reverse, sortedNumericSelector);
 				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
 					e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
 				}
@@ -553,6 +554,7 @@ public class ShardReader implements AutoCloseable {
 				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
 					e.setMissingValue(!fs.getMissingLast() ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
 				}
+
 				sortFields.add(e);
 			}
 			else {
@@ -562,12 +564,14 @@ public class ShardReader implements AutoCloseable {
 					sortedSetSelector = SortedSetSelector.Type.MAX;
 				}
 
-				SortedSetSortField setSortField = new SortedSetSortField(sortField, reverse, sortedSetSelector);
+				SortedSetSortField setSortField = new SortedSetSortField(sortField + SORT_SUFFIX, reverse, sortedSetSelector);
 				setSortField.setMissingValue(!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
+				System.out.println(setSortField.getField());
 				sortFields.add(setSortField);
 			}
 
 		}
+
 		Sort sort = new Sort(sortFields.toArray(new SortField[0]));
 
 		collector = TopFieldCollector.create(sort, hasMoreAmount, after, Integer.MAX_VALUE);
@@ -669,6 +673,7 @@ public class ShardReader implements AutoCloseable {
 		ZuliaQuery.SortValues.Builder sortValues = ZuliaQuery.SortValues.newBuilder();
 
 		int c = 0;
+
 		for (Object o : result.fields) {
 			if (o == null) {
 				sortValues.addSortValue(ZuliaQuery.SortValue.newBuilder().setExists(false));

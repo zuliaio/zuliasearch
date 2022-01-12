@@ -76,7 +76,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("uid", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("testBool", FieldType.BOOL).index());
@@ -542,6 +542,7 @@ public class StartStopTest {
 	@Test
 	@Order(6)
 	public void confirm() throws Exception {
+
 		{
 			Query q = new Query(FACET_TEST_INDEX, "title:userguide", 0).addCountRequest("issn", 30);
 			QueryResult qr = zuliaWorkPool.query(q);

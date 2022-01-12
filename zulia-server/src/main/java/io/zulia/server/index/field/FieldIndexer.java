@@ -30,7 +30,7 @@ public abstract class FieldIndexer {
 		int size = listSize.get();
 
 		document.add(new IntPoint(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName, size));
-		document.add(new SortedNumericDocValuesField(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName, size));
+		document.add(new SortedNumericDocValuesField(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName + ZuliaConstants.SORT_SUFFIX, size));
 
 	}
 

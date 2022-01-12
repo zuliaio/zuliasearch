@@ -948,8 +948,11 @@ public class ZuliaIndex {
 			else if (field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
 				toRemove.add(field);
 			}
+			else if (field.endsWith(ZuliaConstants.SORT_SUFFIX)) {
+				toRemove.add(field);
+			}
 		}
-		fields.removeAll(toRemove);
+		toRemove.forEach(fields::remove);
 
 		responseBuilder.addAllFieldName(fields);
 		return responseBuilder.build();
