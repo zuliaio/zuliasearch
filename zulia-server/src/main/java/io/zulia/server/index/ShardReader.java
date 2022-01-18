@@ -566,7 +566,6 @@ public class ShardReader implements AutoCloseable {
 
 				SortedSetSortField setSortField = new SortedSetSortField(sortField + SORT_SUFFIX, reverse, sortedSetSelector);
 				setSortField.setMissingValue(!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
-				System.out.println(setSortField.getField());
 				sortFields.add(setSortField);
 			}
 
