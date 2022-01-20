@@ -343,7 +343,7 @@ public class ZuliaIndex {
 		if (deleteRequest.getDeleteAllAssociated()) {
 			documentStorage.deleteAssociatedDocuments(uniqueId);
 		}
-		else if (deleteRequest.getFilename() != null) {
+		else if (!deleteRequest.getFilename().isEmpty()) {
 			String fileName = deleteRequest.getFilename();
 			documentStorage.deleteAssociatedDocument(uniqueId, fileName);
 		}
