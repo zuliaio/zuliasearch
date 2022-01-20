@@ -127,7 +127,7 @@ public class ZuliaIndex {
 
 		this.zuliaPerFieldAnalyzer = new ZuliaPerFieldAnalyzer(indexConfig);
 
-		this.parsers = new GenericObjectPool<>(new BasePooledObjectFactory<ZuliaMultiFieldQueryParser>() {
+		this.parsers = new GenericObjectPool<>(new BasePooledObjectFactory<>() {
 
 			@Override
 			public ZuliaMultiFieldQueryParser create() {
