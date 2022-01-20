@@ -523,7 +523,8 @@ public class SortTest {
 	public void reindexTest() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD)
+				.sortAs("theId")); //change sort as to be theId instead of just id
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("stars", FieldType.NUMERIC_INT).index()); // no longer sortable
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("starsLong", FieldType.NUMERIC_LONG).index().sort());
@@ -556,9 +557,64 @@ public class SortTest {
 		Assertions.assertEquals("blah", searchResult.getFirstDocument().get("otherTitle"));
 
 		search.clearSort();
-		search.addSort(new Sort("otherTitle").descending()); //default missing first
+		search.addSort(new Sort("otherTitle").descending());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals("still more blah", searchResult.getFirstDocument().get("otherTitle"));
+
+		search.clearSort();
+		search.addSort(new Sort("theId").descending()); // use the new sort as id field
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals("99", searchResult.getFirstDocument().get("id")); // sorting as string so this is 99 instead of 199
+
+	}
+
+	@Test
+	@Order(14)
+	public void multiIndexTest() throws Exception {
+
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.addDefaultSearchField("magicNumber");
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.NUMERIC_INT).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("magicNumber", FieldType.NUMERIC_INT).index().sort());
+		indexConfig.setIndexName("anotherIndex");
+		indexConfig.setNumberOfShards(1);
+		indexConfig.setShardCommitInterval(20); //force some commits
+
+		zuliaWorkPool.createIndex(indexConfig);
+
+		indexConfig.setIndexName("anotherIndex2");
+		zuliaWorkPool.createIndex(indexConfig);
+
+		for (int id = 0; id < 200; id++) {
+
+			int magicNumber = 7;
+			if (id > 10) {
+				magicNumber = -1;
+			}
+
+			Document mongoDocument = new Document().append("id", id).append("magicNumber", magicNumber);
+			zuliaWorkPool.store(new Store(id + "", "anotherIndex", ResultDocBuilder.from(mongoDocument)));
+		}
+
+		for (int id = 0; id < 100; id++) {
+
+			int magicNumber = (id % 10) + 5;
+
+			Document mongoDocument = new Document().append("id", id).append("magicNumber", magicNumber);
+			zuliaWorkPool.store(new Store(id + "", "anotherIndex2", ResultDocBuilder.from(mongoDocument)));
+		}
+
+		SearchResult searchResult;
+		Search search = new Search("anotherIndex", "anotherIndex2").setAmount(1);
+
+		search.addSort(new Sort("magicNumber"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(-1, searchResult.getFirstDocument().get("magicNumber"));
+
+		search.clearSort();
+		search.addSort(new Sort("magicNumber").descending());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(14, searchResult.getFirstDocument().get("magicNumber"));
 
 	}
 
