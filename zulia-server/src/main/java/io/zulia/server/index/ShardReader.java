@@ -1,6 +1,5 @@
 package io.zulia.server.index;
 
-import com.google.common.base.Splitter;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.protobuf.ByteString;
 import io.zulia.ZuliaConstants;
@@ -63,7 +62,6 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
 import static io.zulia.ZuliaConstants.SORT_SUFFIX;
 
 public class ShardReader implements AutoCloseable {
@@ -77,7 +75,7 @@ public class ShardReader implements AutoCloseable {
 			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD)));
 	private final static Set<String> fetchSetWithDocument = Collections.unmodifiableSet(new HashSet<>(
 			Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD, ZuliaConstants.STORED_DOC_FIELD)));
-	private static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
+
 	private final FacetsConfig facetsConfig;
 	private final DirectoryReader indexReader;
 	private final DirectoryTaxonomyReader taxoReader;
@@ -336,15 +334,14 @@ public class ShardReader implements AutoCloseable {
 			Analyzer analyzer = zuliaPerFieldAnalyzer;
 
 			String analyzerOverride = analysisRequest.getAnalyzerOverride();
-			if (analyzerOverride != null && !analyzerOverride.isEmpty()) {
-				String analyzerName = analyzerOverride;
+			if (!analyzerOverride.isEmpty()) {
 
-				ZuliaIndex.AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsByName(analyzerName);
+				ZuliaIndex.AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsByName(analyzerOverride);
 				if (analyzerSettings != null) {
 					analyzer = ZuliaPerFieldAnalyzer.getAnalyzerForField(analyzerSettings);
 				}
 				else {
-					throw new RuntimeException("Invalid analyzer name <" + analyzerName + ">");
+					throw new RuntimeException("Invalid analyzer name <" + analyzerOverride + ">");
 				}
 			}
 

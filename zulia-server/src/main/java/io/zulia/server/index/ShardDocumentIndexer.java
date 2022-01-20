@@ -94,7 +94,7 @@ public class ShardDocumentIndexer {
 				if (o instanceof List) {
 					List<Number> values = (List<Number>) o;
 
-					double vec[] = new double[values.size()];
+					double[] vec = new double[values.size()];
 					int i = 0;
 					for (Number value : values) {
 						vec[i++] = value.doubleValue();
@@ -256,7 +256,7 @@ public class ShardDocumentIndexer {
 		}
 	}
 
-	private void handleFacetsForStoredField(Document doc, ZuliaIndex.FieldConfig fc, Object o) throws Exception {
+	private void handleFacetsForStoredField(Document doc, ZuliaIndex.FieldConfig fc, Object o) {
 		for (ZuliaIndex.FacetAs fa : fc.getFacetAsList()) {
 
 			String facetName = fa.getFacetName();

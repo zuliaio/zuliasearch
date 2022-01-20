@@ -8,8 +8,8 @@ import java.util.Set;
 
 public class FieldAndSubFields {
 
-	private Map<String, Set<String>> topLevelToChildren = new HashMap<>();
-	private Set<String> topLevelFields = new HashSet<>();
+	private final Map<String, Set<String>> topLevelToChildren = new HashMap<>();
+	private final Set<String> topLevelFields = new HashSet<>();
 
 	public FieldAndSubFields(Collection<String> fields) {
 		for (String field : fields) {
