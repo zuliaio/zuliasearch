@@ -949,6 +949,17 @@ public class StartStopTest {
 			Assertions.assertTrue(firstDate.compareTo(lastDate) < 0, "First date: " + firstDate + " lastDate: " + lastDate);
 		}
 
+		{
+			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:junkjunkjunk"));
+			s.addCountFacet(new CountFacet("issn"));
+
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			List<FacetCount> facetCounts = sr.getFacetCounts("issn");
+			Assertions.assertEquals(0, facetCounts.size());
+
+		}
+
 	}
 
 	@Test
