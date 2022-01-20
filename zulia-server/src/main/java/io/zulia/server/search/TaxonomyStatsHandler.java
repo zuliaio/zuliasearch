@@ -16,21 +16,21 @@
  */
 package io.zulia.server.search;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
+import org.apache.lucene.facet.FacetUtils;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.facet.taxonomy.DocValuesOrdinalsReader;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.OrdinalsReader;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.search.ConjunctionUtils;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -45,7 +45,7 @@ public class TaxonomyStatsHandler {
 
 	protected final Stats[][] fieldFacetStats;
 	protected final Stats[] fieldStats;
-	private final OrdinalsReader ordinalsReader;
+
 	private final List<String> fieldsList;
 	private final TaxonomyReader taxoReader;
 	private final List<ZuliaIndex.FieldConfig.FieldType> fieldTypes;
@@ -71,7 +71,6 @@ public class TaxonomyStatsHandler {
 			fieldTypes.add(fieldTypeForSortField);
 		}
 
-		this.ordinalsReader = new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
 		this.fieldsList = new ArrayList<>(numericFields);
 
 		if (facetLevel) {
@@ -100,36 +99,43 @@ public class TaxonomyStatsHandler {
 
 		final SortedNumericDocValues[] functionValues = new SortedNumericDocValues[fieldsList.size()];
 
-		IntsRef scratch = new IntsRef();
+		// temp storage of the doc values for a document
+		// because we iterate through the values twice (and the iterator is not resetable) and we do not want to have to create a new array each time
+		int[] documentValuesBuffer = new int[0];
+
 		for (MatchingDocs hits : matchingDocs) {
 
 			for (int f = 0; f < fieldsList.size(); f++) {
-				String field = fieldsList.get(f);
+				String field = fieldsList.get(f) + ZuliaConstants.SORT_SUFFIX;
 				functionValues[f] = DocValues.getSortedNumeric(hits.context.reader(), field);
 			}
 
 			DocIdSetIterator docs = hits.bits.iterator();
 
-			OrdinalsReader.OrdinalsSegmentReader ords = null;
+			SortedNumericDocValues ordinalValues = null;
 			if (fieldFacetStats != null) {
-				ords = ordinalsReader.getReader(hits.context);
+				ordinalValues = FacetUtils.loadOrdinalValues(hits.context.reader(), FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
+				docs = ConjunctionUtils.intersectIterators(List.of(hits.bits.iterator(), ordinalValues));
 			}
 
-			int doc;
-			while ((doc = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-				if (ords != null) {
-					ords.get(doc, scratch);
-				}
+			for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
 
 				for (int f = 0; f < fieldsList.size(); f++) {
 
 					SortedNumericDocValues functionValue = functionValues[f];
 					ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(f);
 					if (functionValue.advanceExact(doc)) {
-						if (ords != null) {
+						if (ordinalValues != null) {
 
-							for (int i = 0; i < scratch.length; i++) {
-								int ordIndex = scratch.ints[i];
+							int ordinalCount = ordinalValues.docValueCount();
+
+							if (ordinalCount > documentValuesBuffer.length) {
+								documentValuesBuffer = new int[ordinalCount];
+							}
+
+							for (int i = 0; i < ordinalCount; i++) {
+								int ordIndex = (int) ordinalValues.nextValue();
+								documentValuesBuffer[i] = ordIndex;
 								Stats stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
 									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
@@ -139,9 +145,8 @@ public class TaxonomyStatsHandler {
 							}
 							for (int j = 0; j < functionValue.docValueCount(); j++) {
 								long value = functionValue.nextValue();
-
-								for (int i = 0; i < scratch.length; i++) {
-									int ordIndex = scratch.ints[i];
+								for (int i = 0; i < ordinalCount; i++) {
+									int ordIndex = documentValuesBuffer[i];
 									Stats stats = fieldFacetStats[f][ordIndex];
 									addUpValue(fieldType, value, stats);
 								}
@@ -152,9 +157,10 @@ public class TaxonomyStatsHandler {
 						}
 					}
 					else {
-						if (ords != null) {
-							for (int i = 0; i < scratch.length; i++) {
-								int ordIndex = scratch.ints[i];
+						if (ordinalValues != null) {
+							int ordinalCount = ordinalValues.docValueCount();
+							for (int i = 0; i < ordinalCount; i++) {
+								int ordIndex = (int) ordinalValues.nextValue();
 								Stats stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
 									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
