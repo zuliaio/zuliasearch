@@ -231,6 +231,11 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 	}
 
 	public void searchAll(Search search, Consumer<SearchResult> resultHandler) throws Exception {
+
+		if (search.getAmount() <= 0) {
+			throw new IllegalArgumentException("Amount must be set to page size for search all");
+		}
+
 		SearchResult searchResult = search(search);
 		while (searchResult.hasResults()) {
 			resultHandler.accept(searchResult);
