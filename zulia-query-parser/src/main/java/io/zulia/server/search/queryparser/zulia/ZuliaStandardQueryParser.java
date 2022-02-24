@@ -97,9 +97,9 @@ import java.util.TooManyListenersException;
  *
  * @see ZuliaStandardQueryParser
  * @see StandardQueryConfigHandler
- * @see ZuliaSyntaxParser
- * @see ZuliaQueryNodeProcessorPipeline
- * @see ZuliaStandardQueryTreeBuilder
+ * @see StandardSyntaxParser
+ * @see StandardQueryNodeProcessorPipeline
+ * @see StandardQueryTreeBuilder
  */
 // copied from org.apache.lucene.queryparser.flexible.standard.StandardQueryParser within changes noted as zulia -
 public class ZuliaStandardQueryParser extends QueryParserHelper implements CommonQueryParserConfiguration {
@@ -450,4 +450,9 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 	public void setDateResolutionMap(Map<CharSequence, Resolution> dateRes) {
 		getQueryConfigHandler().set(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP, dateRes);
 	}
+
+	public void setMinMatch(Integer minMatch) {
+		getQueryConfigHandler().set(ZuliaQueryNodeProcessorPipeline.GLOBAL_MM, minMatch);
+	}
+
 }

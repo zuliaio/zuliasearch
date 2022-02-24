@@ -16,6 +16,7 @@
  */
 package io.zulia.server.search.queryparser.zulia.processors;
 
+import io.zulia.ZuliaConstants;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
@@ -44,90 +45,112 @@ import java.util.List;
  */
 public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
-  private boolean processChildren = true;
+	private boolean processChildren = true;
 
-  public ZuliaMultiFieldQueryNodeProcessor() {
-    // empty constructor
-  }
+	public ZuliaMultiFieldQueryNodeProcessor() {
+		// empty constructor
+	}
 
-  @Override
-  protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
+	@Override
+	protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
-    return node;
-  }
+		return node;
+	}
 
-  @Override
-  protected void processChildren(QueryNode queryTree) throws QueryNodeException {
+	@Override
+	protected void processChildren(QueryNode queryTree) throws QueryNodeException {
 
-    if (this.processChildren) {
-      super.processChildren(queryTree);
+		if (this.processChildren) {
+			super.processChildren(queryTree);
 
-    }
-    else {
-      this.processChildren = true;
-    }
-  }
+		}
+		else {
+			this.processChildren = true;
+		}
+	}
 
-  @Override
-  protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
+	@Override
+	protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
-    if (node instanceof FieldableNode) {
-      this.processChildren = false;
-      FieldableNode fieldNode = (FieldableNode) node;
+		if (node instanceof FieldableNode) {
+			this.processChildren = false;
+			FieldableNode fieldNode = (FieldableNode) node;
 
-      if (fieldNode.getField() != null) {
+			if (fieldNode.getField() != null) {
 
-        String fieldsStr = fieldNode.getField().toString();
+				String fieldsStr = fieldNode.getField().toString();
 
-        String[] fields = fieldsStr.split(",");
-        fieldNode.setField(fields[0]);
-        return getGroupQueryNode(fieldNode, fields);
-      }
+				String[] fields = fieldsStr.split(",");
 
-      if (fieldNode.getField() == null) {
-        CharSequence[] fields = getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
+				fieldNode.setField(rewriteLengthFields(fields[0]));
 
-        if (fields == null) {
-          throw new IllegalArgumentException("StandardQueryConfigHandler.ConfigurationKeys.MULTI_FIELDS should be set on the QueryConfigHandler");
-        }
+				if (fields.length == 1) {
+					return fieldNode;
+				}
+				else {
+					return getGroupQueryNode(fieldNode, fields);
+				}
+			}
 
-        if (fields.length > 0) {
-          fieldNode.setField(fields[0]);
+			if (fieldNode.getField() == null) {
+				CharSequence[] fields = getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
 
-          if (fields.length == 1) {
-            return fieldNode;
-          }
-          else {
-            return getGroupQueryNode(fieldNode, fields);
-          }
-        }
-      }
-    }
+				if (fields == null) {
+					throw new IllegalArgumentException("StandardQueryConfigHandler.ConfigurationKeys.MULTI_FIELDS should be set on the QueryConfigHandler");
+				}
 
-    return node;
-  }
+				if (fields.length > 0) {
+					fieldNode.setField(rewriteLengthFields(fields[0].toString()));
 
-  private QueryNode getGroupQueryNode(FieldableNode fieldNode, CharSequence[] fields) {
-    List<QueryNode> children = new ArrayList<>(fields.length);
+					if (fields.length == 1) {
+						return fieldNode;
+					}
+					else {
+						return getGroupQueryNode(fieldNode, fields);
+					}
+				}
+			}
+		}
 
-    children.add(fieldNode);
-    for (int i = 1; i < fields.length; i++) {
-      try {
-        fieldNode = (FieldableNode) fieldNode.cloneTree();
-        fieldNode.setField(fields[i]);
+		return node;
+	}
 
-        children.add(fieldNode);
-      }
-      catch (CloneNotSupportedException e) {
-        throw new RuntimeException(e);
-      }
-    }
+	private QueryNode getGroupQueryNode(FieldableNode fieldNode, CharSequence[] fields) {
+		List<QueryNode> children = new ArrayList<>(fields.length);
 
-    return new GroupQueryNode(new OrQueryNode(children));
-  }
+		children.add(fieldNode);
+		for (int i = 1; i < fields.length; i++) {
+			try {
+				fieldNode = (FieldableNode) fieldNode.cloneTree();
+				String field = fields[i].toString();
+				field = rewriteLengthFields(field);
+				fieldNode.setField(field);
 
-  @Override
-  protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
-    return children;
-  }
+				children.add(fieldNode);
+			}
+			catch (CloneNotSupportedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		return new GroupQueryNode(new OrQueryNode(children));
+	}
+
+	@Override
+	protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
+		return children;
+	}
+
+	public static String rewriteLengthFields(String field) {
+		if (field.startsWith("|||") && field.endsWith("|||")) {
+			field = ZuliaConstants.LIST_LENGTH_PREFIX + field.substring(3, field.length() - 3);
+		}
+		else if (field.startsWith("||") && field.endsWith("||")) {
+
+		}
+		else if (field.startsWith("|") && field.endsWith("|")) {
+			field = ZuliaConstants.CHAR_LENGTH_PREFIX + field.substring(1, field.length() - 1);
+		}
+		return field;
+	}
 }
