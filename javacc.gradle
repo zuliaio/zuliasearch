@@ -118,7 +118,7 @@ configure(project(":zulia-query-parser")) {
         description "Regenerate flexible query parser from ZuliaSyntaxParser.jj"
         group "generation"
 
-        javaccFile = file('src/main/java/io/zulia/server/search/queryparser/zulia/parser/ZuliaSyntaxParser.jj')
+        javaccFile = file('src/main/java/io/zulia/server/search/queryparser/parser/ZuliaSyntaxParser.jj')
 
         afterGenerate << commonCleanups
         afterGenerate << { FileTree generatedFiles ->

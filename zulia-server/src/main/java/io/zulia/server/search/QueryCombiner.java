@@ -20,6 +20,7 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
 import io.zulia.server.index.ZuliaIndex;
+import io.zulia.server.search.queryparser.legacy.ZuliaQueryParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;

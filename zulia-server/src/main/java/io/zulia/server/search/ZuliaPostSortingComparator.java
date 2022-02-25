@@ -7,6 +7,7 @@ import io.zulia.message.ZuliaQuery.FieldSort;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.message.ZuliaQuery.SortValues;
 import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.server.search.queryparser.legacy.ZuliaQueryParser;
 import org.apache.lucene.util.BytesRef;
 
 import java.util.Comparator;

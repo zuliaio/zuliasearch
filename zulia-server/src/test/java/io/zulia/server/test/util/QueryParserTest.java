@@ -4,7 +4,7 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
-import io.zulia.server.search.ZuliaMultiFieldQueryParser;
+import io.zulia.server.search.queryparser.legacy.ZuliaMultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;

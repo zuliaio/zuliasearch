@@ -16,7 +16,7 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.QueryResultCache;
 import io.zulia.server.search.TaxonomyStatsHandler;
-import io.zulia.server.search.ZuliaQueryParser;
+import io.zulia.server.search.queryparser.legacy.ZuliaQueryParser;
 import io.zulia.server.util.FieldAndSubFields;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
