@@ -3,7 +3,6 @@ package io.zulia.client.command.builder;
 import io.zulia.client.command.base.MultiIndexRoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
-import io.zulia.client.result.QueryResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Similarity;
@@ -122,7 +121,7 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return queryRequest.getLastResult();
 	}
 
-	public Search setLastResult(QueryResult lastQueryResult) {
+	public Search setLastResult(SearchResult lastQueryResult) {
 		return setLastResult(lastQueryResult.getLastResult());
 	}
 
