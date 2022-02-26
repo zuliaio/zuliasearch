@@ -185,7 +185,7 @@ public class ZuliaIndexManager {
 		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
 	}
 
-	public GetIndexesResponse getIndexes(GetIndexesRequest request) throws Exception {
+	public GetIndexesResponse getIndexes(@SuppressWarnings("unused") GetIndexesRequest request) throws Exception {
 		GetIndexesResponse.Builder getIndexesResponse = GetIndexesResponse.newBuilder();
 		for (IndexSettings indexSettings : indexService.getIndexes()) {
 			getIndexesResponse.addIndexName(indexSettings.getIndexName());
@@ -388,7 +388,7 @@ public class ZuliaIndexManager {
 				this);
 
 		try {
-			List<CreateIndexResponse> send = createIndexRequestFederator.send(InternalCreateIndexRequest.newBuilder().setIndexName(indexName).build());
+			@SuppressWarnings("unused") List<CreateIndexResponse> send = createIndexRequestFederator.send(InternalCreateIndexRequest.newBuilder().setIndexName(indexName).build());
 		}
 		catch (Exception e) {
 			if (existingIndex == null) {
@@ -424,7 +424,7 @@ public class ZuliaIndexManager {
 		DeleteIndexRequestFederator deleteIndexRequestFederator = new DeleteIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
 				this);
 
-		List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
+		@SuppressWarnings("unused") List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
 
 		String indexName = request.getIndexName();
 		indexService.removeIndex(indexName);

@@ -47,9 +47,9 @@ public class MongoDocumentStorage implements DocumentStorage {
 	public static final String SHARDCOLLECTION = "shardcollection";
 	private final boolean sharded;
 
-	private MongoClient mongoClient;
-	private String database;
-	private String indexName;
+	private final MongoClient mongoClient;
+	private final String database;
+	private final String indexName;
 
 	private volatile boolean inited = false;
 
@@ -262,7 +262,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<String> getAssociatedFilenames(String uniqueId) throws Exception {
+	public List<String> getAssociatedFilenames(String uniqueId) {
 		GridFSBucket gridFS = createGridFSConnection();
 		ArrayList<String> fileNames = new ArrayList<>();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, uniqueId))

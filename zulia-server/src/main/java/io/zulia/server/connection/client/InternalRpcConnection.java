@@ -39,12 +39,20 @@ public class InternalRpcConnection {
 		try {
 			if (channel != null) {
 				log.info("Closing connection to <" + memberAddress + ":" + internalServicePort + ">");
-				channel.shutdown().awaitTermination(15, TimeUnit.SECONDS);
+				channel.shutdown();
+				try {
+					channel.awaitTermination(15, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException ex) {
+					log.warning("connection to <" + memberAddress + ":" + internalServicePort + "> timed out on close");
+				}
+
 			}
 		}
 		catch (Exception e) {
 			log.log(Level.SEVERE, "Close Failed", e);
 		}
+
 		channel = null;
 		blockingStub = null;
 

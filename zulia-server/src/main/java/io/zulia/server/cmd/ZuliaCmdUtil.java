@@ -8,9 +8,11 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import io.zulia.client.command.Fetch;
 import io.zulia.client.command.FetchAllAssociated;
-import io.zulia.client.command.Query;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.StoreLargeAssociated;
+import io.zulia.client.command.builder.ScoredQuery;
+import io.zulia.client.command.builder.Search;
+import io.zulia.client.command.builder.Sort;
 import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.AssociatedResult;
@@ -92,13 +94,13 @@ public class ZuliaCmdUtil {
 			Set<String> uniqueIds, boolean sortById) throws Exception {
 		try (FileWriter fileWriter = new FileWriter(recordsFilename, Charsets.UTF_8)) {
 
-			Query zuliaQuery = new io.zulia.client.command.Query(index, q, rows);
+			Search zuliaQuery = new Search(index).addQuery(new ScoredQuery(q)).setAmount(rows);
 			if (sortById) {
-				zuliaQuery.addFieldSort(idField);
+				zuliaQuery.addSort(new Sort(idField));
 			}
 
 			try {
-				workPool.queryAll(zuliaQuery, queryResult -> {
+				workPool.searchAll(zuliaQuery, queryResult -> {
 
 					long totalHits = queryResult.getTotalHits();
 					LOG.info("Found <" + totalHits + "> for index <" + index + ">");

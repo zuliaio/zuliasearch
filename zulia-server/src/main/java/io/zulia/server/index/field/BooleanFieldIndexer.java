@@ -9,7 +9,7 @@ import org.apache.lucene.document.TextField;
 public class BooleanFieldIndexer extends FieldIndexer {
 
 	public static final BooleanFieldIndexer INSTANCE = new BooleanFieldIndexer();
-	private static FieldType notStoredTextField;
+	private static final FieldType notStoredTextField;
 
 	static {
 		notStoredTextField = new FieldType(TextField.TYPE_NOT_STORED);
