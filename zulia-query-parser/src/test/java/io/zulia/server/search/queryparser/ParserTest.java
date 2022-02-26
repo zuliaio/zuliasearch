@@ -47,7 +47,9 @@ public class ParserTest {
 		parser1.setDefaultFields(defaultFields);
 		parser1.setDefaultOperator(defaultOperator);
 		parser1.setMinimumNumberShouldMatch(minMatch);
-		return parser1.parse(query);
+		Query parse = parser1.parse(query);
+		System.out.println(parse);
+		return parse;
 	}
 
 	@Test
@@ -55,7 +57,17 @@ public class ParserTest {
 	public void basicTest() throws Exception {
 
 		Query q = parse("title:\"lung cancer\"", List.of("field1", "field2"), Operator.OR, 0, oldParser);
-		Query q2 = parse("title:\"lung cancer\"", List.of("field1", "field2"), Operator.OR, 0, oldParser);
+		Query q2 = parse("title:\"lung cancer\"", List.of("field1", "field2"), Operator.OR, 0, newParser);
+
+		Assertions.assertEquals(q, q2);
+
+		q = parse("*:*", List.of("field1", "field2"), Operator.OR, 0, oldParser);
+		q2 = parse("*:*", List.of("field1", "field2"), Operator.OR, 0, newParser);
+
+		Assertions.assertEquals(q, q2);
+
+		q = parse("*", List.of("field1", "field2"), Operator.OR, 0, oldParser);
+		q2 = parse("*", List.of("field1", "field2"), Operator.OR, 0, newParser);
 
 		Assertions.assertEquals(q, q2);
 	}

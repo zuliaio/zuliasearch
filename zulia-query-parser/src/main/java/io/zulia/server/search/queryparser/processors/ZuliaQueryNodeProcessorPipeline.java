@@ -24,6 +24,7 @@ public class ZuliaQueryNodeProcessorPipeline extends QueryNodeProcessorPipeline 
 		add(new WildcardQueryNodeProcessor());
 		//zulia - change MultiFieldQueryNodeProcessor to ZuliaMultiFieldQueryNodeProcessor
 		add(new ZuliaMultiFieldQueryNodeProcessor());
+		add(new ZuliaPureWildcardNodeProcessor());
 		add(new FuzzyQueryNodeProcessor());
 		add(new RegexpQueryNodeProcessor());
 		add(new MatchAllDocsQueryNodeProcessor());
