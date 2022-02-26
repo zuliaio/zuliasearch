@@ -192,6 +192,9 @@ public class TaxonomyStatsHandler {
 		else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 			stats.newValue((int) value);
 		}
+		else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
+			stats.newValue((int) value);
+		}
 	}
 
 	private void docValuesForDocument(SortedNumericDocValues functionValue, ZuliaIndex.FieldConfig.FieldType fieldType, Stats stats) throws IOException {
