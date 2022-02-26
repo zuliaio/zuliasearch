@@ -7,7 +7,7 @@ import io.zulia.message.ZuliaQuery.FieldSort;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.message.ZuliaQuery.SortValues;
 import io.zulia.server.field.FieldTypeUtil;
-import io.zulia.server.search.queryparser.legacy.ZuliaQueryParser;
+import io.zulia.server.search.queryparser.ZuliaParser;
 import org.apache.lucene.util.BytesRef;
 
 import java.util.Comparator;
@@ -45,7 +45,7 @@ public class ZuliaPostSortingComparator implements Comparator<ScoredResult> {
 
 			FieldConfig.FieldType sortType = sortTypeMap.get(sortField);
 
-			if (!ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
+			if (!ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
 				sortType = FieldConfig.FieldType.NUMERIC_LONG;
 			}
 

@@ -4,7 +4,7 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
-import io.zulia.server.search.queryparser.legacy.ZuliaMultiFieldQueryParser;
+import io.zulia.server.search.queryparser.legacy.ZuliaLegacyMultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Query;
@@ -40,7 +40,7 @@ public class QueryParserTest {
 		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
 		ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer = new ZuliaPerFieldAnalyzer(serverIndexConfig);
 
-		ZuliaMultiFieldQueryParser zuliaQueryParser = new ZuliaMultiFieldQueryParser(zuliaPerFieldAnalyzer, serverIndexConfig);
+		ZuliaLegacyMultiFieldQueryParser zuliaQueryParser = new ZuliaLegacyMultiFieldQueryParser(zuliaPerFieldAnalyzer, serverIndexConfig);
 		zuliaQueryParser.setSplitOnWhitespace(true);
 		zuliaQueryParser.setAutoGeneratePhraseQueries(true);
 

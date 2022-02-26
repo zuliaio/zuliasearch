@@ -4,6 +4,7 @@ import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.server.search.queryparser.ZuliaParser;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
@@ -23,13 +24,13 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
-public class ZuliaQueryParser extends QueryParser {
+public class ZuliaLegacyQueryParser extends QueryParser {
 
 	protected ServerIndexConfig indexConfig;
 
 	private int minimumNumberShouldMatch;
 
-	public ZuliaQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
+	public ZuliaLegacyQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
 		super(null, analyzer);
 		this.indexConfig = indexConfig;
 		setAllowLeadingWildcard(true);
@@ -58,7 +59,7 @@ public class ZuliaQueryParser extends QueryParser {
 	@Override
 	protected Query getRangeQuery(String field, String start, String end, boolean startInclusive, boolean endInclusive) throws ParseException {
 
-		field = rewriteLengthFields(field);
+		field = ZuliaParser.rewriteLengthFields(field);
 
 		if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
 			return getNumericOrDateRange(field, start, end, startInclusive, endInclusive, FieldConfig.FieldType.NUMERIC_INT);
@@ -71,19 +72,6 @@ public class ZuliaQueryParser extends QueryParser {
 
 		return super.getRangeQuery(field, start, end, startInclusive, endInclusive);
 
-	}
-
-	public static String rewriteLengthFields(String field) {
-		if (field.startsWith("|||") && field.endsWith("|||")) {
-			field = ZuliaConstants.LIST_LENGTH_PREFIX + field.substring(3, field.length() - 3);
-		}
-		else if (field.startsWith("||") && field.endsWith("||")) {
-
-		}
-		else if (field.startsWith("|") && field.endsWith("|")) {
-			field = ZuliaConstants.CHAR_LENGTH_PREFIX + field.substring(1, field.length() - 1);
-		}
-		return field;
 	}
 
 	private Query getNumericOrDateRange(final String fieldName, final String start, final String end, final boolean startInclusive,
@@ -163,7 +151,7 @@ public class ZuliaQueryParser extends QueryParser {
 		String field = term.field();
 		String text = term.text();
 
-		field = rewriteLengthFields(field);
+		field = ZuliaParser.rewriteLengthFields(field);
 
 		if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
 			return new BoostQuery(IntPoint.newExactQuery(field, Integer.parseInt(text)), boost);

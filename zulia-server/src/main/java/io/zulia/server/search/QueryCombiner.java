@@ -20,7 +20,7 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
 import io.zulia.server.index.ZuliaIndex;
-import io.zulia.server.search.queryparser.legacy.ZuliaQueryParser;
+import io.zulia.server.search.queryparser.ZuliaParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -340,7 +340,7 @@ public class QueryCombiner {
 			for (FieldSort fieldSort : fieldSortList) {
 				String sortField = fieldSort.getSortField();
 
-				if (ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
+				if (ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
 
 					for (ZuliaIndex index : indexes) {
 						FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);

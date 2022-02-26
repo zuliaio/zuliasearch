@@ -1,8 +1,11 @@
 package io.zulia.server.search.queryparser.legacy;
 
+import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.search.queryparser.ZuliaParser;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -24,14 +27,14 @@ import java.util.TreeSet;
  * @author mdavis
  * Copied mostly from org.apache.lucene.queryparser.classic.MultiFieldQueryParser
  */
-public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
+public class ZuliaLegacyMultiFieldQueryParser extends ZuliaLegacyQueryParser implements ZuliaParser {
 
 	protected List<String> fields;
 	protected Map<String, Float> boosts;
 	private float dismaxTie = 0;
 	private boolean dismax = false;
 
-	public ZuliaMultiFieldQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
+	public ZuliaLegacyMultiFieldQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
 		super(analyzer, indexConfig);
 	}
 
@@ -84,6 +87,22 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 		super.setDefaultField(null);
 		this.fields = new ArrayList<>(allFields);
 		this.boosts = boostMap;
+	}
+
+	@Override
+	public void setDefaultOperator(ZuliaQuery.Query.Operator defaultOperator) {
+		QueryParser.Operator operator = null;
+		if (defaultOperator.equals(ZuliaQuery.Query.Operator.OR)) {
+			operator = QueryParser.Operator.OR;
+		}
+		else if (defaultOperator.equals(ZuliaQuery.Query.Operator.AND)) {
+			operator = QueryParser.Operator.AND;
+		}
+		else {
+			//this should never happen
+			throw new IllegalArgumentException("Unknown operator type: <" + defaultOperator + ">");
+		}
+		setDefaultOperator(operator);
 	}
 
 	@Override
@@ -206,7 +225,7 @@ public class ZuliaMultiFieldQueryParser extends ZuliaQueryParser {
 		}
 
 		//mdavis
-		field = rewriteLengthFields(field);
+		field = ZuliaParser.rewriteLengthFields(field);
 
 		return super.getFieldQuery(field, queryText, quoted);
 	}

@@ -25,22 +25,22 @@ import java.util.List;
 /** A {@link ZuliaAnyQueryNode} represents an ANY operator performed on a list of nodes. */
 public class ZuliaAnyQueryNode extends AndQueryNode {
 
-	private int minimumMatchingmElements = 0;
+	private int minimumMatchingElements = 0;
 
 	/** @param clauses - the query nodes to be or'ed */
 	public ZuliaAnyQueryNode(List<QueryNode> clauses, int minimumMatchingElements) {
 		super(clauses);
-		this.minimumMatchingmElements = minimumMatchingElements;
+		this.minimumMatchingElements = minimumMatchingElements;
 	}
 
 	public int getMinimumMatchingElements() {
-		return this.minimumMatchingmElements;
+		return this.minimumMatchingElements;
 	}
 
 	@Override
 	public QueryNode cloneTree() throws CloneNotSupportedException {
 		ZuliaAnyQueryNode clone = (ZuliaAnyQueryNode) super.cloneTree();
-		clone.minimumMatchingmElements = this.minimumMatchingmElements;
+		clone.minimumMatchingElements = this.minimumMatchingElements;
 
 		return clone;
 	}
@@ -48,9 +48,9 @@ public class ZuliaAnyQueryNode extends AndQueryNode {
 	@Override
 	public String toString() {
 		if (getChildren() == null || getChildren().size() == 0)
-			return "<zany" + "'  matchelements=" + this.minimumMatchingmElements + "/>";
+			return "<zany" + "'  matchelements=" + this.minimumMatchingElements + "/>";
 		StringBuilder sb = new StringBuilder();
-		sb.append("<zany").append(" matchelements=").append(this.minimumMatchingmElements).append('>');
+		sb.append("<zany").append(" matchelements=").append(this.minimumMatchingElements).append('>');
 		for (QueryNode clause : getChildren()) {
 			sb.append("\n");
 			sb.append(clause.toString());
@@ -61,7 +61,7 @@ public class ZuliaAnyQueryNode extends AndQueryNode {
 
 	@Override
 	public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-		String anySTR = "ZANY " + this.minimumMatchingmElements;
+		String anySTR = "ZANY " + this.minimumMatchingElements;
 
 		StringBuilder sb = new StringBuilder();
 		if (getChildren() == null || getChildren().size() == 0) {

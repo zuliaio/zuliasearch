@@ -1,8 +1,8 @@
 package io.zulia.server.search.queryparser;
 
 import io.zulia.ZuliaConstants;
-import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.queryparser.processors.ZuliaQueryNodeProcessorPipeline;
@@ -15,20 +15,17 @@ import org.apache.lucene.search.Query;
 import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-public class ZuliaQueryParser {
+public class ZuliaFlexibleQueryParser implements ZuliaParser {
 
 	private final ServerIndexConfig indexConfig;
 	private final ZuliaStandardQueryParser zuliaStandardQueryParser;
 
-	private ZuliaIndex.IndexSettings indexSettings;
-
-	public ZuliaQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
+	public ZuliaFlexibleQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
 		zuliaStandardQueryParser = new ZuliaStandardQueryParser();
 		zuliaStandardQueryParser.setAnalyzer(analyzer);
 		this.indexConfig = indexConfig;
@@ -71,6 +68,7 @@ public class ZuliaQueryParser {
 
 	}
 
+	@Override
 	public void setDefaultFields(Collection<String> fields) {
 
 		Map<String, Float> boostMap = new HashMap<>();
@@ -113,15 +111,26 @@ public class ZuliaQueryParser {
 
 	}
 
+	@Override
 	public Query parse(String query) throws QueryNodeException {
 		return zuliaStandardQueryParser.parse(query, null);
 	}
 
-	public void setMultiFields(List<String> fields) {
-		zuliaStandardQueryParser.setMultiFields(fields.toArray(new String[0]));
+	@Override
+	public void setMinimumNumberShouldMatch(int minimumNumberShouldMatch) {
+		zuliaStandardQueryParser.setMinMatch(minimumNumberShouldMatch);
 	}
 
-	public void setMinMatch(int minMatch) {
-		zuliaStandardQueryParser.setMinMatch(minMatch);
+	@Override
+	public void setDefaultOperator(ZuliaQuery.Query.Operator operator) {
+		if (ZuliaQuery.Query.Operator.AND.equals(operator)) {
+			zuliaStandardQueryParser.setDefaultOperator(StandardQueryConfigHandler.Operator.AND);
+		}
+		else if (ZuliaQuery.Query.Operator.OR.equals(operator)) {
+			zuliaStandardQueryParser.setDefaultOperator(StandardQueryConfigHandler.Operator.OR);
+		}
+		else {
+			throw new IllegalArgumentException("Operator must be AND or OR");
+		}
 	}
 }

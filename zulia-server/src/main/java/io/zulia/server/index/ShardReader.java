@@ -16,7 +16,7 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.QueryResultCache;
 import io.zulia.server.search.TaxonomyStatsHandler;
-import io.zulia.server.search.queryparser.legacy.ZuliaQueryParser;
+import io.zulia.server.search.queryparser.ZuliaParser;
 import io.zulia.server.util.FieldAndSubFields;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
@@ -499,7 +499,7 @@ public class ShardReader implements AutoCloseable {
 			//TODO check sort before the exception like done with facets
 			//if (!indexConfig.existingFacet(label)) {
 
-			String rewrittenField = ZuliaQueryParser.rewriteLengthFields(fs.getSortField());
+			String rewrittenField = ZuliaParser.rewriteLengthFields(fs.getSortField());
 
 			String sortField = fs.getSortField();
 			ZuliaIndex.FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
@@ -688,7 +688,7 @@ public class ShardReader implements AutoCloseable {
 
 			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
 
-			if (!ZuliaQueryParser.rewriteLengthFields(sortField).equals(sortField)) {
+			if (!ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
 				fieldTypeForSortField = ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT;
 			}
 

@@ -16,7 +16,7 @@
  */
 package io.zulia.server.search.queryparser.processors;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.server.search.queryparser.ZuliaParser;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
@@ -82,7 +82,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
 				String[] fields = fieldsStr.split(",");
 
-				fieldNode.setField(rewriteLengthFields(fields[0]));
+				fieldNode.setField(ZuliaParser.rewriteLengthFields(fields[0]));
 
 				if (fields.length == 1) {
 					return fieldNode;
@@ -100,7 +100,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 				}
 
 				if (fields.length > 0) {
-					fieldNode.setField(rewriteLengthFields(fields[0].toString()));
+					fieldNode.setField(ZuliaParser.rewriteLengthFields(fields[0].toString()));
 
 					if (fields.length == 1) {
 						return fieldNode;
@@ -123,7 +123,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 			try {
 				fieldNode = (FieldableNode) fieldNode.cloneTree();
 				String field = fields[i].toString();
-				field = rewriteLengthFields(field);
+				field = ZuliaParser.rewriteLengthFields(field);
 				fieldNode.setField(field);
 
 				children.add(fieldNode);
@@ -141,16 +141,5 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 		return children;
 	}
 
-	public static String rewriteLengthFields(String field) {
-		if (field.startsWith("|||") && field.endsWith("|||")) {
-			field = ZuliaConstants.LIST_LENGTH_PREFIX + field.substring(3, field.length() - 3);
-		}
-		else if (field.startsWith("||") && field.endsWith("||")) {
 
-		}
-		else if (field.startsWith("|") && field.endsWith("|")) {
-			field = ZuliaConstants.CHAR_LENGTH_PREFIX + field.substring(1, field.length() - 1);
-		}
-		return field;
-	}
 }
