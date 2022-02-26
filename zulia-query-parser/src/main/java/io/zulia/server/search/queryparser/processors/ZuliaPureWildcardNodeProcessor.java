@@ -1,7 +1,6 @@
 package io.zulia.server.search.queryparser.processors;
 
 import io.zulia.ZuliaConstants;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
@@ -17,7 +16,7 @@ public class ZuliaPureWildcardNodeProcessor extends QueryNodeProcessorImpl {
 	}
 
 	@Override
-	protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
+	protected QueryNode postProcessNode(QueryNode node) {
 
 		if (node instanceof WildcardQueryNode) {
 			WildcardQueryNode wildcardQueryNode = (WildcardQueryNode) node;
