@@ -211,7 +211,6 @@ public class ShardDocumentIndexer {
 			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
 
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-					System.out.println("obj: " + obj);
 					if (obj instanceof Boolean) {
 						SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, (Boolean) obj ? 1 : 0);
 						d.add(docValue);
