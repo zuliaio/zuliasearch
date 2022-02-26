@@ -4,6 +4,7 @@ import com.google.common.base.Splitter;
 import info.debatty.java.lsh.SuperBit;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.index.field.BooleanFieldIndexer;
@@ -294,6 +295,19 @@ public class ShardDocumentIndexer {
 						throw new RuntimeException("Cannot facet date for document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName()
 								+ ">: excepted Date or Collection of Date, found <" + o.getClass().getSimpleName() + ">");
 					}
+				});
+			}
+			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fc.getFieldType())) {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
+					String string = obj.toString();
+
+					if (BooleanAnalyzer.truePattern.matcher(string).matches()) {
+						doc.add(new FacetField(facetName, "True"));
+					}
+					else if (BooleanAnalyzer.falsePattern.matcher(string).matches()) {
+						doc.add(new FacetField(facetName, "False"));
+					}
+
 				});
 			}
 			else {
