@@ -3,13 +3,13 @@ package io.zulia.server.test.util;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.CreateIndex;
 import io.zulia.client.command.DeleteAssociated;
-import io.zulia.client.command.Query;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.StoreLargeAssociated;
+import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.client.result.QueryResult;
+import io.zulia.client.result.SearchResult;
 import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
@@ -77,8 +77,8 @@ public class FileStorageTest {
 	}
 
 	private void query() throws Exception {
-		Query query = new Query(TEST_INDEX, "*:*", 10000);
-		QueryResult queryResult = zuliaWorkPool.query(query);
+		Search search = new Search(TEST_INDEX).setAmount(10000);
+		SearchResult queryResult = zuliaWorkPool.search(search);
 		System.out.println("Results: " + queryResult.getTotalHits());
 	}
 

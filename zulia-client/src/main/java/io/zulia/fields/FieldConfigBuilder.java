@@ -130,6 +130,11 @@ public class FieldConfigBuilder {
 		return this;
 	}
 
+	public FieldConfigBuilder sortAs(String sortFieldName) {
+		this.sortAsList.add(SortAs.newBuilder().setSortFieldName(sortFieldName).build());
+		return this;
+	}
+
 	public FieldConfigBuilder projectAsSuperBit(String field, int inputDim) {
 		Superbit superbit = Superbit.newBuilder().setInputDim(inputDim).build();
 		ProjectAs projectAs = ProjectAs.newBuilder().setField(field).setSuperbit(superbit).build();

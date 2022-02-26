@@ -24,7 +24,7 @@ public class MongoNodeService implements NodeService {
 	private static final String REST_PORT = "restPort";
 	private static final String HEARTBEAT = "heartbeat";
 
-	private MongoClient mongoClient;
+	private final MongoClient mongoClient;
 	private final String clusterName;
 
 	public MongoNodeService(MongoClient mongoClient, String clusterName) {

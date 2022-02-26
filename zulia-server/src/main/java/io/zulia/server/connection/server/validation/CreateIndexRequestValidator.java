@@ -72,6 +72,12 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 				}
 			}
 
+			for (ZuliaIndex.IndexAs indexAs : builder.getIndexAsList()) {
+				if (indexAs.getIndexFieldName().contains(",")) {
+					throw new IllegalArgumentException("Index as field name can not contain a comma");
+				}
+			}
+
 		}
 
 		return requestBuilder.build();

@@ -6,7 +6,7 @@ import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.client.result.QueryResult;
+import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
@@ -129,7 +129,7 @@ public class HierarchicalFacetTest {
 		search.addCountFacet(new CountFacet("path"));
 		search.addCountFacet(new CountFacet("date"));
 
-		QueryResult queryResult = zuliaWorkPool.search(search);
+		SearchResult queryResult = zuliaWorkPool.search(search);
 
 		List<FacetCount> paths = queryResult.getFacetCounts("path");
 
@@ -259,7 +259,7 @@ public class HierarchicalFacetTest {
 		search.addCountFacet(new CountFacet(pathField));
 		search.addCountFacet(new CountFacet("date"));
 
-		QueryResult queryResult = zuliaWorkPool.search(search);
+		SearchResult queryResult = zuliaWorkPool.search(search);
 
 		List<FacetCount> paths = queryResult.getFacetCounts(pathField);
 

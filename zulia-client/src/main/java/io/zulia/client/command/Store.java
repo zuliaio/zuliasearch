@@ -29,7 +29,12 @@ public class Store extends SimpleCommand<StoreRequest, StoreResult> implements S
 	public Store(String uniqueId, String indexName) {
 		this.uniqueId = uniqueId;
 		this.indexName = indexName;
-		this.associatedDocuments = new ArrayList<ZuliaBase.AssociatedDocument>();
+		this.associatedDocuments = new ArrayList<>();
+	}
+
+	public Store(String uniqueId, String indexName, ResultDocBuilder resultDocumentBuilder) {
+		this(uniqueId, indexName);
+		setResultDocument(resultDocumentBuilder);
 	}
 
 	@Override

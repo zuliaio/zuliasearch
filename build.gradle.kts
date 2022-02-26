@@ -17,6 +17,9 @@ configure<ReckonExtension> {
 allprojects {
     group = "io.zulia"
 }
+apply {
+    from("javacc.gradle")
+}
 
 defaultTasks("build")
 subprojects {

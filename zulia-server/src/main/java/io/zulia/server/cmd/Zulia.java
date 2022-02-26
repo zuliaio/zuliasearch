@@ -11,6 +11,11 @@ import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.GetNumberOfDocs;
 import io.zulia.client.command.OptimizeIndex;
 import io.zulia.client.command.Reindex;
+import io.zulia.client.command.builder.CountFacet;
+import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.ScoredQuery;
+import io.zulia.client.command.builder.Search;
+import io.zulia.client.command.builder.Sort;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.ClearIndexResult;
@@ -20,12 +25,11 @@ import io.zulia.client.result.GetIndexesResult;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.GetNumberOfDocsResult;
 import io.zulia.client.result.OptimizeIndexResult;
-import io.zulia.client.result.QueryResult;
 import io.zulia.client.result.ReindexResult;
+import io.zulia.client.result.SearchResult;
 import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaQuery;
-import io.zulia.message.ZuliaQuery.FieldSort.Direction;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
@@ -166,62 +170,73 @@ public class Zulia {
 
 			if ("query".equals(jCommander.getParsedCommand())) {
 
-				io.zulia.client.command.Query zuliaQuery;
+				Search search;
 				if (query.indexes != null) {
-					zuliaQuery = new io.zulia.client.command.Query(query.indexes, query.q, query.rows);
+					search = new Search(query.indexes);
 				}
 				else {
-					zuliaQuery = new io.zulia.client.command.Query(index, query.q, query.rows);
+					search = new Search(index);
 				}
+
+				search.setAmount(query.rows);
+
+				ScoredQuery scoredQuery = new ScoredQuery(query.q);
 
 				if (query.qf != null) {
-					query.qf.forEach(zuliaQuery::addQueryField);
-				}
-
-				zuliaQuery.setStart(query.start);
-
-				if (query.fetch.equalsIgnoreCase("full")) {
-					zuliaQuery.setResultFetchType(ZuliaQuery.FetchType.FULL);
+					query.qf.forEach(scoredQuery::addQueryField);
 				}
 
 				if (query.minimumNumberShouldMatch != null) {
-					zuliaQuery.setMinimumNumberShouldMatch(query.minimumNumberShouldMatch);
+					scoredQuery.setMinShouldMatch(query.minimumNumberShouldMatch);
+				}
+
+				search.addQuery(scoredQuery);
+
+				search.setStart(query.start);
+
+				if (query.fetch.equalsIgnoreCase("full")) {
+					search.setResultFetchType(ZuliaQuery.FetchType.FULL);
 				}
 
 				if (query.facets != null) {
 					for (String facet : query.facets) {
-						zuliaQuery.addCountRequest(facet, query.facetCount, query.facetShardCount);
+						search.addCountFacet(new CountFacet(facet).setTopN(query.facetCount).setTopNShard(query.facetShardCount));
 					}
 				}
 
 				if (query.sortFields != null) {
-					query.sortFields.forEach(zuliaQuery::addFieldSort);
+					for (String sortField : query.sortFields) {
+						search.addSort(new Sort(sortField));
+					}
+					;
 				}
 
 				if (query.sortDescFields != null) {
 					for (String sortDesc : query.sortDescFields) {
-						zuliaQuery.addFieldSort(sortDesc, Direction.DESCENDING);
+						search.addSort(new Sort(sortDesc).descending());
 					}
 				}
 
 				if (query.fq != null) {
-					query.fq.forEach(zuliaQuery::addFilterQuery);
+					for (String filterQuery : query.fq) {
+						search.addQuery(new FilterQuery(filterQuery));
+					}
 				}
 
 				if (query.fl != null) {
-					query.fl.forEach(zuliaQuery::addDocumentField);
+					query.fl.forEach(search::addDocumentField);
 				}
 
 				if (query.flMask != null) {
-					query.flMask.forEach(zuliaQuery::addDocumentMaskedField);
+					query.flMask.forEach(search::addDocumentMaskedField);
 				}
 
-				QueryResult qr = workPool.execute(zuliaQuery);
+				SearchResult searchResult = workPool.search(search);
 
-				List<ZuliaQuery.ScoredResult> srList = qr.getResults();
+				List<ZuliaQuery.ScoredResult> srList = searchResult.getResults();
 
-				System.out.println("QueryTime: " + (qr.getCommandTimeMs()) + "ms");
-				System.out.println("TotalResults: " + qr.getTotalHits());
+				System.out.println("QueryTime: " + (searchResult.getCommandTimeMs()) + "ms");
+				System.out.println("TotalResults: " + searchResult.getTotalHits());
 
 				System.out.println("Results:");
 
@@ -309,9 +324,9 @@ public class Zulia {
 					System.out.println();
 				}
 
-				if (!qr.getFacetGroups().isEmpty()) {
+				if (!searchResult.getFacetGroups().isEmpty()) {
 					System.out.println("Facets:");
-					for (ZuliaQuery.FacetGroup fg : qr.getFacetGroups()) {
+					for (ZuliaQuery.FacetGroup fg : searchResult.getFacetGroups()) {
 						System.out.println();
 						System.out.println("--Facet on " + fg.getCountRequest().getFacetField().getLabel() + "--");
 						for (ZuliaQuery.FacetCount fc : fg.getFacetCountList()) {
