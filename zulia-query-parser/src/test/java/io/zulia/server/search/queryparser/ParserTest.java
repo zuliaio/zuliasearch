@@ -70,6 +70,7 @@ public class ParserTest {
 		q2 = parse("*", List.of("field1", "field2"), Operator.OR, 0, newParser);
 
 		Assertions.assertEquals(q, q2);
+
 	}
 
 }
