@@ -209,16 +209,35 @@ public class ShardDocumentIndexer {
 				});
 			}
 			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
+
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
+					System.out.println("obj: " + obj);
 					if (obj instanceof Boolean) {
-						String text = obj.toString();
-						SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));
+						SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, (Boolean) obj ? 1 : 0);
 						d.add(docValue);
 					}
+					else if (obj instanceof Number) {
+						Number num = (Number) (obj);
+						if (num.intValue() == 1) {
+							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 1);
+							d.add(docValue);
+						}
+						else if (num.intValue() == 0) {
+							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 0);
+							d.add(docValue);
+						}
+					}
 					else {
-						throw new RuntimeException(
-								"Expecting boolean for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
-										+ ">");
+						String string = obj.toString();
+						if (BooleanAnalyzer.truePattern.matcher(string).matches()) {
+							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 1);
+							d.add(docValue);
+						}
+						else if (BooleanAnalyzer.falsePattern.matcher(string).matches()) {
+							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 0);
+							d.add(docValue);
+						}
+
 					}
 				});
 			}

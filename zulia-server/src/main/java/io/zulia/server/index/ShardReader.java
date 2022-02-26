@@ -512,7 +512,10 @@ public class ShardReader implements AutoCloseable {
 				if (reverse) {
 					sortedNumericSelector = SortedNumericSelector.Type.MAX;
 				}
-				sortFields.add(new SortedNumericSortField(rewrittenField + ZuliaConstants.SORT_SUFFIX, SortField.Type.INT, reverse, sortedNumericSelector));
+
+				SortedNumericSortField e = new SortedNumericSortField(rewrittenField + SORT_SUFFIX, SortField.Type.INT, reverse, sortedNumericSelector);
+				e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
+				sortFields.add(e);
 			}
 			else if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
 
@@ -552,6 +555,15 @@ public class ShardReader implements AutoCloseable {
 					e.setMissingValue(!fs.getMissingLast() ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
 				}
 
+				sortFields.add(e);
+			}
+			else if (FieldTypeUtil.isBooleanFieldType(sortFieldType)) {
+				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
+				if (reverse) {
+					sortedNumericSelector = SortedNumericSelector.Type.MAX;
+				}
+				SortedNumericSortField e = new SortedNumericSortField(rewrittenField + SORT_SUFFIX, SortField.Type.INT, reverse, sortedNumericSelector);
+				e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
 				sortFields.add(e);
 			}
 			else {
@@ -709,6 +721,9 @@ public class ShardReader implements AutoCloseable {
 				else if (FieldTypeUtil.isDateFieldType(fieldTypeForSortField)) {
 					sortValueBuilder.setDateValue((Long) o);
 				}
+			}
+			else if (FieldTypeUtil.isBooleanFieldType(fieldTypeForSortField)) {
+				sortValueBuilder.setIntegerValue((Integer) o);
 			}
 			else {
 				BytesRef b = (BytesRef) o;

@@ -74,7 +74,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("testBool", FieldType.BOOL).index().facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.create("testBool", FieldType.BOOL).index().facet().sort());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
