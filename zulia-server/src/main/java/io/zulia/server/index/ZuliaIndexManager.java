@@ -22,6 +22,7 @@ import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
+import io.zulia.server.filestorage.S3DocumentStorage;
 import io.zulia.server.index.federator.ClearRequestFederator;
 import io.zulia.server.index.federator.CreateIndexAliasRequestFederator;
 import io.zulia.server.index.federator.CreateIndexRequestFederator;
@@ -172,7 +173,14 @@ public class ZuliaIndexManager {
 
 		DocumentStorage documentStorage;
 		if (zuliaConfig.isCluster()) {
-			documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+			switch (zuliaConfig.getClusterStorageEngine()) {
+				case "s3":
+					documentStorage = new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false, zuliaConfig.getS3());
+					break;
+				default:
+					documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+					break;
+			};
 		}
 		else {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
