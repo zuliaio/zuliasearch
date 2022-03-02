@@ -22,6 +22,7 @@ import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldableNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.MatchNoDocsQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
@@ -91,8 +92,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 					return getGroupQueryNode(fieldNode, fields);
 				}
 			}
-
-			if (fieldNode.getField() == null) {
+			else if (fieldNode.getField() == null) {
 				CharSequence[] fields = getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
 
 				if (fields == null) {
@@ -109,9 +109,11 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 						return getGroupQueryNode(fieldNode, fields);
 					}
 				}
-			}
-		}
 
+			}
+
+			return new MatchNoDocsQueryNode();
+		}
 		return node;
 	}
 
@@ -140,6 +142,5 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 	protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
 		return children;
 	}
-
 
 }
