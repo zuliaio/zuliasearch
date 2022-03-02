@@ -10,18 +10,14 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.IndexOptions;
-import io.micronaut.http.MediaType;
-import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.message.ZuliaBase.*;
 import io.zulia.message.ZuliaQuery.*;
 import io.zulia.server.config.cluster.S3Config;
 import io.zulia.server.filestorage.io.S3OutputStream;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import java.io.*;
 import java.time.Instant;
@@ -47,8 +43,12 @@ public class S3DocumentStorage implements DocumentStorage {
 	private final String region;
 
 	public S3DocumentStorage(MongoClient mongoClient, String indexName, String dbName, boolean sharded, S3Config s3Config) {
-		if (null == s3Config || null == s3Config.getS3BucketName() || null != s3Config.getRegion())
-			throw new IllegalArgumentException("Must provide both the s3 bucket and the region in which is lives.");
+		if (null == s3Config)
+			throw new IllegalArgumentException("Must provide the s3 config section");
+		if (null == s3Config.getS3BucketName())
+			throw new IllegalArgumentException("Must provide the S3 bucket that is going to be used to store content");
+		if (null == s3Config.getRegion())
+			throw new IllegalArgumentException("Must provide the region the s3 bucket lives in.");
 		this.bucket = s3Config.getS3BucketName();
 		this.region = s3Config.getRegion();
 		this.client = mongoClient;
@@ -83,7 +83,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		Document TOC = parseAssociated(doc, (long) bytes.length);
 
-		String key = StringUtils.join("/", indexName, doc.getDocumentUniqueId());
+		String key = StringUtils.join("/", indexName, doc.getDocumentUniqueId(), doc.getFilename());
 		Document s3Location = new Document();
 		s3Location.put("bucket", bucket);
 		s3Location.put("region", region);
@@ -176,7 +176,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		metadataMap.put(DOCUMENT_UNIQUE_ID_KEY, uniqueId);
 		metadataMap.put(FILE_UNIQUE_ID_KEY, StringUtils.join("-", uniqueId, fileName));
 
-		String key = StringUtils.join("/", indexName, uniqueId);
+		String key = StringUtils.join("/", indexName, uniqueId, fileName);
 		Document s3Location = new Document();
 		s3Location.put("bucket", bucket);
 		s3Location.put("region", region);
