@@ -9,6 +9,7 @@ val luceneVersion: String by project
 val mongoDriverVersion: String by project
 val protobufVersion: String by project
 val micronautVersion: String by project
+val amazonVersion: String by project
 
 defaultTasks("build", "installDist")
 
@@ -30,6 +31,8 @@ dependencies {
     api("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
     api("org.apache.commons:commons-compress:1.20")
+    implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
+    implementation("software.amazon.awssdk:s3")
 
     annotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     annotationProcessor("io.micronaut:micronaut-inject-java")
