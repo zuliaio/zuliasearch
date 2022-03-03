@@ -31,7 +31,8 @@ dependencies {
     api("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
     api("org.apache.commons:commons-compress:1.20")
-    api("com.amazonaws:aws-java-sdk-s3:$amazonVersion")
+    implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
+    implementation("software.amazon.awssdk:s3")
 
     annotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     annotationProcessor("io.micronaut:micronaut-inject-java")

@@ -1,9 +1,5 @@
 package io.zulia.server.filestorage;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.*;
-import com.amazonaws.util.StringUtils;
 import com.google.protobuf.ByteString;
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
@@ -18,6 +14,11 @@ import io.zulia.server.config.cluster.S3Config;
 import io.zulia.server.filestorage.io.S3OutputStream;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
+import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.*;
 import java.time.Instant;
@@ -26,6 +27,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
 
 public class S3DocumentStorage implements DocumentStorage {
 	private static final String TIMESTAMP = "_tstamp_";
@@ -39,7 +41,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	private final String dbName;
 	private final boolean sharded;
 	private final String bucket;
-	private final AmazonS3 s3;
+	private final S3Client s3;
 	private final String region;
 
 	public S3DocumentStorage(MongoClient mongoClient, String indexName, String dbName, boolean sharded, S3Config s3Config) {
@@ -55,7 +57,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		this.indexName = indexName;
 		this.dbName = dbName;
 		this.sharded = sharded;
-		this.s3 = AmazonS3ClientBuilder.standard().withRegion(s3Config.getRegion()).build();
+		this.s3 = S3Client.builder().region(Region.of(this.region)).build();
 
 		ForkJoinPool.commonPool().execute(() -> {
 			MongoDatabase db = client.getDatabase(dbName);
@@ -83,19 +85,15 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		Document TOC = parseAssociated(doc, (long) bytes.length);
 
-		String key = StringUtils.join("/", indexName, doc.getDocumentUniqueId(), doc.getFilename());
+		String key = String.join("/", indexName, doc.getDocumentUniqueId(), doc.getFilename());
 		Document s3Location = new Document();
 		s3Location.put("bucket", bucket);
 		s3Location.put("region", region);
 		s3Location.put("key", key);
 		TOC.put("s3", s3Location);
 
-
-		ObjectMetadata s3m = new ObjectMetadata();
-		s3m.setContentLength(bytes.length);
-		PutObjectRequest req = new PutObjectRequest(bucket, key, new ByteArrayInputStream(bytes), s3m);
-
-		s3.putObject(req);
+		PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) bytes.length).build();
+		s3.putObject(req, RequestBody.fromBytes(bytes));
 		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
 	}
 
@@ -115,7 +113,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	@Override
 	public AssociatedDocument getAssociatedDocument(String uniqueId, String filename, FetchType fetchType) throws Exception {
 		if (!FetchType.NONE.equals(fetchType)) {
-			String uid = StringUtils.join("-", uniqueId, filename);
+			String uid = String.join("-", uniqueId, filename);
 			FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uid));
 			Document doc = found.first();
 			if (null != doc) {
@@ -174,9 +172,9 @@ public class S3DocumentStorage implements DocumentStorage {
 		TOC.put("metadata", metadataMap);
 		metadataMap.put(TIMESTAMP, timestamp);
 		metadataMap.put(DOCUMENT_UNIQUE_ID_KEY, uniqueId);
-		metadataMap.put(FILE_UNIQUE_ID_KEY, StringUtils.join("-", uniqueId, fileName));
+		metadataMap.put(FILE_UNIQUE_ID_KEY, String.join("-", uniqueId, fileName));
 
-		String key = StringUtils.join("/", indexName, uniqueId, fileName);
+		String key = String.join("/", indexName, uniqueId, fileName);
 		Document s3Location = new Document();
 		s3Location.put("bucket", bucket);
 		s3Location.put("region", region);
@@ -184,18 +182,19 @@ public class S3DocumentStorage implements DocumentStorage {
 		TOC.put("s3", s3Location);
 
 		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
+
 		return new S3OutputStream(s3, bucket, key);
 	}
 
 	@Override
 	public InputStream getAssociatedDocumentStream(String uniqueId, String filename) throws Exception {
-		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uniqueId));
+		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, String.join("-", uniqueId, filename)));
 		Document doc = found.first();
 		if (null != doc) {
 			Document s3Info = doc.get("s3", Document.class);
-			GetObjectRequest gor = new GetObjectRequest(s3Info.getString("bucket"), s3Info.getString("key"));
-			S3Object results = s3.getObject(gor);
-			return results.getObjectContent();
+			GetObjectRequest gor = GetObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
+			ResponseInputStream<GetObjectResponse> results = s3.getObject(gor);
+			return results;
 		}
 		return null;
 	}
@@ -210,12 +209,12 @@ public class S3DocumentStorage implements DocumentStorage {
 
 	@Override
 	public void deleteAssociatedDocument(String uniqueId, String fileName) throws Exception {
-		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, StringUtils.join("-", uniqueId, fileName)));
+		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, String.join("-", uniqueId, fileName)));
 		Document doc = found.first();
 		if (null != doc) {
 			client.getDatabase(dbName).getCollection(COLLECTION).deleteOne(Filters.eq("_id", doc.getObjectId("_id")));
 			Document s3Info = doc.get("s3", Document.class);
-			DeleteObjectRequest dor = new DeleteObjectRequest(s3Info.getString("bucket"), s3Info.getString("key"));
+			DeleteObjectRequest dor = DeleteObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
 			s3.deleteObject(dor);
 		}
 	}
@@ -226,7 +225,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		for (Document doc : found) {
 			client.getDatabase(dbName).getCollection(COLLECTION).deleteOne(Filters.eq("_id", doc.getObjectId("_id")));
 			Document s3Info = doc.get("s3", Document.class);
-			DeleteObjectRequest dor = new DeleteObjectRequest(s3Info.getString("bucket"), s3Info.getString("key"));
+			DeleteObjectRequest dor = DeleteObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
 			s3.deleteObject(dor);
 		}
 	}
@@ -234,51 +233,45 @@ public class S3DocumentStorage implements DocumentStorage {
 	@Override
 	public void drop() throws Exception {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find();
-
-		List<String> keyBatch = new ArrayList<>(1000);
-		for (Document doc : found) {
-			Document s3Info = doc.get("s3", Document.class);
-			keyBatch.add(s3Info.getString("key"));
-			if (keyBatch.size() % 1000 == 0) {
-				DeleteObjectsRequest dor = new DeleteObjectsRequest(bucket);
-				dor.withKeys(keyBatch.toArray(new String[0]));
-				s3.deleteObjects(dor);
-				keyBatch.clear();
-			}
-		}
-		if (keyBatch.size() > 0) {
-			DeleteObjectsRequest dor = new DeleteObjectsRequest(bucket);
-			dor.withKeys(keyBatch.toArray(new String[0]));
-			s3.deleteObjects(dor);
-			keyBatch.clear();
-		}
-
+		deleteAllKeys(found);
 		client.getDatabase(dbName).drop();
 	}
 
 	@Override
 	public void deleteAllDocuments() throws Exception {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find();
+		deleteAllKeys(found);
+		client.getDatabase(dbName).getCollection(COLLECTION).drop();
+	}
 
+	private void deleteAllKeys(FindIterable<Document> found) {
 		List<String> keyBatch = new ArrayList<>(1000);
 		for (Document doc : found) {
 			Document s3Info = doc.get("s3", Document.class);
 			keyBatch.add(s3Info.getString("key"));
 			if (keyBatch.size() % 1000 == 0) {
-				DeleteObjectsRequest dor = new DeleteObjectsRequest(bucket);
-				dor.withKeys(keyBatch.toArray(new String[0]));
-				s3.deleteObjects(dor);
+				deleteKeys(keyBatch);
 				keyBatch.clear();
 			}
 		}
 		if (keyBatch.size() > 0) {
-			DeleteObjectsRequest dor = new DeleteObjectsRequest(bucket);
-			dor.withKeys(keyBatch.toArray(new String[0]));
-			s3.deleteObjects(dor);
+			deleteKeys(keyBatch);
 			keyBatch.clear();
 		}
+	}
 
-		client.getDatabase(dbName).getCollection(COLLECTION).drop();
+	private void deleteKeys(List<String> keyBatch) {
+		DeleteObjectsRequest dor = DeleteObjectsRequest.builder()
+				.bucket(bucket)
+				.bypassGovernanceRetention(true)
+				.delete(Delete.builder()
+						.objects(
+								keyBatch.stream()
+										.map(s -> ObjectIdentifier.builder().key(s).build())
+										.collect(Collectors.toList())
+						).build())
+				.build();
+		s3.deleteObjects(dor);
 	}
 
 	private Document parseAssociated(AssociatedDocument doc, Long length) {
@@ -290,7 +283,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		}
 
 		metadata.put(TIMESTAMP, doc.getTimestamp());
-		metadata.put(FILE_UNIQUE_ID_KEY, StringUtils.join("-", doc.getDocumentUniqueId(), doc.getFilename()));
+		metadata.put(FILE_UNIQUE_ID_KEY, String.join("-", doc.getDocumentUniqueId(), doc.getFilename()));
 		metadata.put(DOCUMENT_UNIQUE_ID_KEY, doc.getDocumentUniqueId());
 
 		Document TOC = new Document();
@@ -315,9 +308,12 @@ public class S3DocumentStorage implements DocumentStorage {
 		aBuilder.setMetadata(ZuliaUtil.mongoDocumentToByteString(meta));
 
 		Document s3Info = doc.get("s3", Document.class);
-		GetObjectRequest gor = new GetObjectRequest(s3Info.getString("bucket"), s3Info.getString("key"));
-		S3Object results = s3.getObject(gor);
-		aBuilder.setDocument(ByteString.readFrom(results.getObjectContent()));
+		GetObjectRequest gor = GetObjectRequest.builder()
+				.bucket(s3Info.getString("bucket"))
+				.key(s3Info.getString("key"))
+				.build() ;
+		ResponseInputStream<GetObjectResponse> results = s3.getObject(gor);
+		aBuilder.setDocument(ByteString.readFrom(results));
 
 		return aBuilder.build();
 	}

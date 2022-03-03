@@ -2,36 +2,31 @@ package io.zulia.server.filestorage.io;
 
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.AbortMultipartUploadRequest;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.CompleteMultipartUploadRequest;
-import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
-import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PartETag;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.UploadPartRequest;
-import com.amazonaws.services.s3.model.UploadPartResult;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.*;
 
 /**
  * OutputStream which wraps S3Client, with support for streaming large files directly to S3
  *
- * Written by blagerweij
  */
 public class S3OutputStream extends OutputStream {
 
 	/** Default chunk size is 10MB */
 	protected static final int BUFFER_SIZE = 10000000;
 
-	/** The bucket-name on Amazon S3 */
+	/** S3 client.*/
+	private final S3Client s3Client;
+
+	/** The bucket-name on S3 */
 	private final String bucket;
 
-	/** The path (key) name within the bucket */
-	private final String path;
+	/** The key name within the bucket */
+	private final String key;
 
 	/** The temporary buffer used for storing the chunks */
 	private final byte[] buf;
@@ -39,14 +34,11 @@ public class S3OutputStream extends OutputStream {
 	/** The position in the buffer */
 	private int position;
 
-	/** Amazon S3 client. TODO: support KMS */
-	private final AmazonS3 s3Client;
-
 	/** The unique id for this upload */
 	private String uploadId;
 
-	/** Collection of the etags for the parts that have been uploaded */
-	private final List<PartETag> etags;
+	/** List of parts that have been completed; so I can close the stream*/
+	private final List<CompletedPart> completedParts;
 
 	/** indicates whether the stream is still open / valid */
 	private boolean open;
@@ -55,15 +47,15 @@ public class S3OutputStream extends OutputStream {
 	 * Creates a new S3 OutputStream
 	 * @param s3Client the AmazonS3 client
 	 * @param bucket name of the bucket
-	 * @param path path within the bucket
+	 * @param key path within the bucket
 	 */
-	public S3OutputStream(AmazonS3 s3Client, String bucket, String path) {
+	public S3OutputStream(S3Client s3Client, String bucket, String key) {
 		this.s3Client = s3Client;
 		this.bucket = bucket;
-		this.path = path;
+		this.key = key;
 		this.buf = new byte[BUFFER_SIZE];
 		this.position = 0;
-		this.etags = new ArrayList<>();
+		this.completedParts = new ArrayList<>();
 		this.open = true;
 	}
 
@@ -110,24 +102,24 @@ public class S3OutputStream extends OutputStream {
 
 	protected void flushBufferAndRewind() {
 		if (uploadId == null) {
-			final InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(this.bucket, this.path)
-					.withCannedACL(CannedAccessControlList.BucketOwnerFullControl);
-			InitiateMultipartUploadResult initResponse = s3Client.initiateMultipartUpload(request);
-			this.uploadId = initResponse.getUploadId();
+			final CreateMultipartUploadRequest cmur = CreateMultipartUploadRequest.builder().bucket(this.bucket).key(this.key).build();
+			CreateMultipartUploadResponse resp = s3Client.createMultipartUpload(cmur);
+			this.uploadId = resp.uploadId();
 		}
 		uploadPart();
 		this.position = 0;
 	}
 
-	protected void uploadPart() {
-		UploadPartResult uploadResult = this.s3Client.uploadPart(new UploadPartRequest()
-				.withBucketName(this.bucket)
-				.withKey(this.path)
-				.withUploadId(this.uploadId)
-				.withInputStream(new ByteArrayInputStream(buf,0,this.position))
-				.withPartNumber(this.etags.size() + 1)
-				.withPartSize(this.position));
-		this.etags.add(uploadResult.getPartETag());
+	protected synchronized void uploadPart() {
+		int partNumber = this.completedParts.size() + 1;
+		UploadPartRequest upr = UploadPartRequest.builder()
+				.bucket(this.bucket)
+				.key(this.key)
+				.uploadId(this.uploadId)
+				.partNumber(partNumber)
+				.build();
+		UploadPartResponse resp = s3Client.uploadPart(upr, RequestBody.fromInputStream(new ByteArrayInputStream(buf, 0, this.position), this.position));
+		completedParts.add(CompletedPart.builder().partNumber(partNumber).eTag(resp.eTag()).build());
 	}
 
 	@Override
@@ -138,14 +130,19 @@ public class S3OutputStream extends OutputStream {
 				if (this.position > 0) {
 					uploadPart();
 				}
-				this.s3Client.completeMultipartUpload(new CompleteMultipartUploadRequest(bucket, path, uploadId, etags));
+				CompletedMultipartUpload cmu = CompletedMultipartUpload.builder().parts(this.completedParts).build();
+				CompleteMultipartUploadRequest cmur = CompleteMultipartUploadRequest.builder()
+						.bucket(this.bucket)
+						.key(this.key)
+						.uploadId(this.uploadId)
+						.multipartUpload(cmu)
+						.build();
+
+				this.s3Client.completeMultipartUpload(cmur);
 			}
 			else {
-				final ObjectMetadata metadata = new ObjectMetadata();
-				metadata.setContentLength(this.position);
-				final PutObjectRequest request = new PutObjectRequest(this.bucket, this.path, new ByteArrayInputStream(this.buf, 0, this.position), metadata)
-						.withCannedAcl(CannedAccessControlList.BucketOwnerFullControl);
-				this.s3Client.putObject(request);
+				PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) this.buf.length).build();
+				s3Client.putObject(req, RequestBody.fromBytes(this.buf));
 			}
 		}
 	}
@@ -153,7 +150,12 @@ public class S3OutputStream extends OutputStream {
 	public void cancel() {
 		this.open = false;
 		if (this.uploadId != null) {
-			this.s3Client.abortMultipartUpload(new AbortMultipartUploadRequest(this.bucket, this.path, this.uploadId));
+			AbortMultipartUploadRequest amur = AbortMultipartUploadRequest.builder()
+					.bucket(bucket)
+					.key(key)
+					.uploadId(uploadId)
+					.build();
+			this.s3Client.abortMultipartUpload(amur);
 		}
 	}
 
