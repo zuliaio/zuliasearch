@@ -2,6 +2,7 @@ package io.zulia.server.config;
 
 import io.zulia.server.config.cluster.MongoAuth;
 import io.zulia.server.config.cluster.MongoServer;
+import io.zulia.server.config.cluster.S3Config;
 import jakarta.inject.Singleton;
 
 import java.util.Collections;
@@ -13,6 +14,8 @@ public class ZuliaConfig {
 	private String dataPath = "data";
 	private boolean cluster = false;
 	private String clusterName = "zulia";
+	private String clusterStorageEngine = "gridfs";
+	private S3Config s3;
 	private List<MongoServer> mongoServers = Collections.singletonList(new MongoServer());
 	private MongoAuth mongoAuth;
 	private String serverAddress = null; //null means autodetect
@@ -84,5 +87,21 @@ public class ZuliaConfig {
 
 	public void setMongoAuth(MongoAuth mongoAuth) {
 		this.mongoAuth = mongoAuth;
+	}
+
+	public String getClusterStorageEngine() {
+		return clusterStorageEngine;
+	}
+
+	public void setClusterStorageEngine(String clusterStorageEngine) {
+		this.clusterStorageEngine = clusterStorageEngine;
+	}
+
+	public S3Config getS3() {
+		return s3;
+	}
+
+	public void setS3(S3Config s3) {
+		this.s3 = s3;
 	}
 }
