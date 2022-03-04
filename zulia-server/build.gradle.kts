@@ -58,7 +58,7 @@ dependencies {
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
 zuliaScriptTask.applicationName = "zulia"
-zuliaScriptTask.mainClassName = "io.zulia.server.cmd.Zulia"
+zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
 
 val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
     applicationName = "zuliad"
