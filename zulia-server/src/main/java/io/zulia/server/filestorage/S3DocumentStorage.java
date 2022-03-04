@@ -194,7 +194,7 @@ public class S3DocumentStorage implements DocumentStorage {
 			Document s3Info = doc.get("s3", Document.class);
 			GetObjectRequest gor = GetObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
 			ResponseInputStream<GetObjectResponse> results = s3.getObject(gor);
-			return results;
+			return new BufferedInputStream(results);
 		}
 		return null;
 	}
