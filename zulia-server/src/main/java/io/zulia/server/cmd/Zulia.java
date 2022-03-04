@@ -31,6 +31,7 @@ import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.ZuliaVersion;
 import org.bson.Document;
 
 import java.text.DecimalFormat;
@@ -96,6 +97,10 @@ public class Zulia {
 	public static class GetIndexesCmd {
 	}
 
+	@Parameters(commandNames = "--version", commandDescription = "Gets the Zulia version")
+	public static class VersionCmd {
+	}
+
 	@Parameters(commandNames = "clear", commandDescription = "Clears the given index in --index argument.")
 	public static class ClearCmd {
 	}
@@ -130,6 +135,7 @@ public class Zulia {
 
 		ZuliaBaseArgs zuliaArgs = new ZuliaBaseArgs();
 		GetIndexesCmd getIndexesCmd = new GetIndexesCmd();
+		VersionCmd version = new VersionCmd();
 		ClearCmd clear = new ClearCmd();
 		OptimizeCmd optimize = new OptimizeCmd();
 		GetCountCmd getCount = new GetCountCmd();
@@ -139,7 +145,7 @@ public class Zulia {
 		ReindexCmd reindex = new ReindexCmd();
 		QueryCmd query = new QueryCmd();
 
-		JCommander jCommander = JCommander.newBuilder().addObject(zuliaArgs).addCommand(getIndexesCmd).addCommand(query).addCommand(clear).addCommand(getCount)
+		JCommander jCommander = JCommander.newBuilder().addObject(zuliaArgs).addCommand(version).addCommand(getIndexesCmd).addCommand(query).addCommand(clear).addCommand(getCount)
 				.addCommand(getCurrentNodes).addCommand(getFields).addCommand(delete).addCommand(reindex).addCommand(optimize).build();
 		try {
 
@@ -152,6 +158,11 @@ public class Zulia {
 
 			ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(zuliaArgs.address, zuliaArgs.port);
 			ZuliaWorkPool workPool = new ZuliaWorkPool(config);
+
+			if ("--version".equalsIgnoreCase(jCommander.getParsedCommand())) {
+				System.out.println(ZuliaVersion.getVersion());
+				System.exit(0);
+			}
 
 			if ("getIndexes".equalsIgnoreCase(jCommander.getParsedCommand())) {
 				GetIndexes getIndexes = new GetIndexes();
@@ -363,9 +374,13 @@ public class Zulia {
 			else if ("getCurrentNodes".equals(jCommander.getParsedCommand())) {
 				GetNodesResult response = workPool.execute(new GetNodes());
 
-				System.out.println("serverAddress\tservicePort\theartBeat\trestPort");
+				System.out.println("serverAddress\tservicePort\theartBeat\trestPort\tversion");
 				for (ZuliaBase.Node val : response.getNodes()) {
-					System.out.println(val.getServerAddress() + "\t" + val.getServicePort() + "\t" + val.getHeartbeat() + "\t" + val.getRestPort());
+					String nodeVersion = val.getVersion();
+					if (nodeVersion == null || nodeVersion.isEmpty()) {
+						nodeVersion = "< " + ZuliaVersion.getVersionAdded();
+					}
+					System.out.println(val.getServerAddress() + "\t" + val.getServicePort() + "\t" + val.getHeartbeat() + "\t" + val.getRestPort() + "\t" + nodeVersion);
 				}
 			}
 			else if ("getFields".equals(jCommander.getParsedCommand())) {

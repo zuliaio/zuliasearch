@@ -9,6 +9,7 @@ import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
 import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.util.ZuliaVersion;
 import org.bson.Document;
 
 import java.io.File;
@@ -44,6 +45,7 @@ public class StatsController {
 			mongoDocument.put("freeDataDirSpaceGB", freeDataDirSpaceGB);
 			mongoDocument.put("totalDataDirSpaceGB", totalDataDirSpaceGB);
 			mongoDocument.put("usedDataDirSpaceGB", usedDataDirSpaceGB);
+			mongoDocument.put("zuliaVersion", ZuliaVersion.getVersion());
 
 			String docString = mongoDocument.toJson();
 
