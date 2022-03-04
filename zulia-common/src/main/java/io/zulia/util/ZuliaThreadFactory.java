@@ -15,8 +15,7 @@ public class ZuliaThreadFactory implements ThreadFactory {
 	private final String prefix;
 
 	public ZuliaThreadFactory(String prefix) {
-		SecurityManager s = System.getSecurityManager();
-		threadGroup = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+		threadGroup = Thread.currentThread().getThreadGroup();
 		this.prefix = prefix;
 	}
 

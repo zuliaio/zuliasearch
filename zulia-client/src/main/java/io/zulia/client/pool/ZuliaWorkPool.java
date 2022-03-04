@@ -175,23 +175,8 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(optimizeIndex);
 	}
 
-	public QueryResult query(Query query) throws Exception {
-		return execute(query);
-	}
-
 	public SearchResult search(Search search) throws Exception {
 		return execute(search);
-	}
-
-	public <T> void queryAllAsMappedDocument(Query query, Mapper<T> mapper, Consumer<T> mappedDocumentHandler) throws Exception {
-		queryAllAsScoredResult(query, scoredResult -> {
-			try {
-				mappedDocumentHandler.accept(mapper.fromScoredResult(scoredResult));
-			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		});
 	}
 
 	public <T> void searchAllAsMappedDocument(Search search, Mapper<T> mapper, Consumer<T> mappedDocumentHandler) throws Exception {
@@ -205,29 +190,12 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		});
 	}
 
-	public void queryAllAsDocument(Query query, Consumer<Document> documentHandler) throws Exception {
-		queryAllAsScoredResult(query, scoredResult -> documentHandler.accept(ResultHelper.getDocumentFromScoredResult(scoredResult)));
-	}
-
 	public void searchAllAsDocument(Search search, Consumer<Document> documentHandler) throws Exception {
 		searchAllAsScoredResult(search, scoredResult -> documentHandler.accept(ResultHelper.getDocumentFromScoredResult(scoredResult)));
 	}
 
-	public void queryAllAsScoredResult(Query query, Consumer<ScoredResult> scoredResultHandler) throws Exception {
-		queryAll(query, queryResult -> queryResult.getResults().forEach(scoredResultHandler));
-	}
-
 	public void searchAllAsScoredResult(Search search, Consumer<ScoredResult> scoredResultHandler) throws Exception {
 		searchAll(search, queryResult -> queryResult.getResults().forEach(scoredResultHandler));
-	}
-
-	public void queryAll(Query query, Consumer<QueryResult> resultHandler) throws Exception {
-		QueryResult queryResult = query(query);
-		while (queryResult.hasResults()) {
-			resultHandler.accept(queryResult);
-			query.setLastResult(queryResult);
-			queryResult = query(query);
-		}
 	}
 
 	public void searchAll(Search search, Consumer<SearchResult> resultHandler) throws Exception {
@@ -242,10 +210,6 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 			search.setLastResult(searchResult);
 			searchResult = search(search);
 		}
-	}
-
-	public ListenableFuture<QueryResult> queryAsync(Query query) throws Exception {
-		return executeAsync(query);
 	}
 
 	public ListenableFuture<SearchResult> searchAsync(Search search) throws Exception {

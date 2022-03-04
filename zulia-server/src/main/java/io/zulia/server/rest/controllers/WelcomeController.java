@@ -4,6 +4,7 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.zulia.server.rest.ZuliaRESTService;
+import io.zulia.util.ZuliaVersion;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,7 +28,7 @@ public class WelcomeController {
 		}
 		catch (Exception e) {
 			e.printStackTrace();
-			return HttpResponse.ok("Welcome to Zulia's REST Service.");
+			return HttpResponse.ok("Welcome to Zulia's REST Service.\nVersion " + ZuliaVersion.getVersion());
 		}
 
 	}

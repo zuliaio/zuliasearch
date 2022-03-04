@@ -8,6 +8,7 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.connection.server.ZuliaServiceServer;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.rest.ZuliaRESTService;
+import io.zulia.util.ZuliaVersion;
 
 import java.util.Collection;
 import java.util.Map;
@@ -56,7 +57,7 @@ public class ZuliaNode {
 
 	public static Node nodeFromConfig(ZuliaConfig zuliaConfig) {
 		return Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
-				.setRestPort(zuliaConfig.getRestPort()).build();
+				.setRestPort(zuliaConfig.getRestPort()).setVersion(ZuliaVersion.getVersion()).build();
 	}
 
 	public void start() throws Exception {
