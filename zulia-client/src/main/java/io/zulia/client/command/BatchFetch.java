@@ -3,7 +3,7 @@ package io.zulia.client.command;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.BatchFetchResult;
-import io.zulia.client.result.QueryResult;
+import io.zulia.client.result.SearchResult;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import io.zulia.message.ZuliaServiceOuterClass.BatchFetchRequest;
@@ -46,7 +46,7 @@ public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResul
 		return this;
 	}
 
-	public BatchFetch addFetchDocumentsFromResults(QueryResult qr) {
+	public BatchFetch addFetchDocumentsFromResults(SearchResult qr) {
 		return addFetchDocumentsFromResults(qr.getResults());
 	}
 

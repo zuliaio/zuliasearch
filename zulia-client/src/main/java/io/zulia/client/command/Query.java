@@ -3,7 +3,7 @@ package io.zulia.client.command;
 import io.zulia.client.command.base.MultiIndexRoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
-import io.zulia.client.result.QueryResult;
+import io.zulia.client.result.SearchResult;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FieldSort.Direction;
 import io.zulia.message.ZuliaQuery.Query.QueryType;
@@ -38,7 +38,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
  * @author mdavis
  *
  */
-public class Query extends SimpleCommand<QueryRequest, QueryResult> implements MultiIndexRoutableCommand {
+public class Query extends SimpleCommand<QueryRequest, SearchResult> implements MultiIndexRoutableCommand {
 
 	private String query;
 	private int amount;
@@ -143,7 +143,7 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 		return this;
 	}
 
-	public Query setLastResult(QueryResult lastQueryResult) {
+	public Query setLastResult(SearchResult lastQueryResult) {
 		this.lastResult = lastQueryResult.getLastResult();
 		return this;
 	}
@@ -631,13 +631,13 @@ public class Query extends SimpleCommand<QueryRequest, QueryResult> implements M
 	}
 
 	@Override
-	public QueryResult execute(ZuliaConnection zuliaConnection) {
+	public SearchResult execute(ZuliaConnection zuliaConnection) {
 
 		ZuliaServiceGrpc.ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
 		QueryResponse queryResponse = service.query(getRequest());
 
-		return new QueryResult(queryResponse);
+		return new SearchResult(queryResponse);
 
 	}
 

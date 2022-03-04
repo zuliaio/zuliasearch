@@ -11,6 +11,10 @@ public class ResultDocBuilder {
 		return new ResultDocBuilder();
 	}
 
+	public static ResultDocBuilder from(Document document) {
+		return new ResultDocBuilder().setDocument(document);
+	}
+
 	public ResultDocBuilder() {
 		resultDocumentBuilder = ResultDocument.newBuilder();
 	}

@@ -13,7 +13,7 @@ defaultTasks("build", "installDist")
 dependencies {
     api(project(":zulia-common"))
 
-    api("org.apache.lucene:lucene-analyzers-common:$luceneVersion")
+    api("org.apache.lucene:lucene-analysis-common:$luceneVersion")
     api("info.debatty:java-lsh:0.12")
 
 

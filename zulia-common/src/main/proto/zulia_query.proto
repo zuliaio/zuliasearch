@@ -37,6 +37,8 @@ message Query {
 
     string scoreFunction = 11;
 
+    bool legacy = 12;
+
 }
 
 message Facet {

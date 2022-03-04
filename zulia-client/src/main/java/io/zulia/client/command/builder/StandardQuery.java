@@ -89,5 +89,13 @@ public abstract class StandardQuery implements QueryBuilder {
 
 	}
 
+	public void setLegacy() {
+		queryBuilder.setLegacy(true);
+	}
+
+	public void unsetLegacy() {
+		queryBuilder.clearLegacy();
+	}
+
 	protected abstract void completeQuery(ZuliaQuery.Query.Builder queryBuilder);
 }
