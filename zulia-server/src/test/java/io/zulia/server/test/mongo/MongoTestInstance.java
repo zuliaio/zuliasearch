@@ -7,7 +7,6 @@ import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
-import io.zulia.server.test.node.TestHelper;
 
 public class MongoTestInstance {
 
@@ -34,7 +33,7 @@ public class MongoTestInstance {
 
         try {
 
-            port = Network.getFreeServerPort();
+            port = Network.freeServerPort(Network.getLocalHost());
 
             MongodConfig mongodConfig = MongodConfig.builder()
                     .version(Version.Main.PRODUCTION)
