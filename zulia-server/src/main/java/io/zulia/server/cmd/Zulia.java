@@ -374,7 +374,7 @@ public class Zulia {
 			else if ("getCurrentNodes".equals(jCommander.getParsedCommand())) {
 				GetNodesResult response = workPool.execute(new GetNodes());
 
-				System.out.println("serverAddress\tservicePort\theartBeat\trestPort");
+				System.out.println("serverAddress\tservicePort\theartBeat\trestPort\tversion");
 				for (ZuliaBase.Node val : response.getNodes()) {
 					String nodeVersion = val.getVersion();
 					if (nodeVersion == null || nodeVersion.isEmpty()) {
