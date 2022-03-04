@@ -24,4 +24,11 @@ public class ZuliaVersion {
 		return VERSION.version;
 	}
 
+	/**
+	 * Gets the version of Zulia when versioning was added
+	 * @return the version of Zulia when versioning was added
+	 */
+	public static String getVersionAdded() {
+		return "2.1.1";
+	}
 }

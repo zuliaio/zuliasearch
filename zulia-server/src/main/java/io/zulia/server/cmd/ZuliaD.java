@@ -24,6 +24,7 @@ import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
 import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.util.ZuliaVersion;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.BooleanQuery;
 
@@ -192,7 +193,7 @@ public class ZuliaD {
 			}
 			else if ("addNode".equals(parsedCommand)) {
 				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
-						.setRestPort(zuliaConfig.getRestPort()).build();
+						.setRestPort(zuliaConfig.getRestPort()).setVersion(ZuliaVersion.getVersion()).build();
 
 				LOG.info("Adding node: " + formatNode(node));
 

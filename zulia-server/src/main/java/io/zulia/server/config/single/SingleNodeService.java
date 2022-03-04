@@ -4,6 +4,7 @@ import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.node.ZuliaNode;
+import io.zulia.util.ZuliaVersion;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +29,11 @@ public class SingleNodeService implements NodeService {
 			return node;
 		}
 		return null;
+	}
+
+	@Override
+	public void updateVersion(String version) {
+		node = node.toBuilder().setVersion(ZuliaVersion.getVersion()).build();
 	}
 
 	@Override

@@ -28,6 +28,12 @@ public interface NodeService {
 	void updateHeartbeat(String serverAddress, int servicePort);
 
 	/**
+	 * Update version for a cluster node
+	 * @param version - version of node
+	 */
+	void updateVersion(String version);
+
+	/**
 	 * Removed heartbeat for a cluster node
 	 * @param serverAddress - server address of node
 	 * @param servicePort - service port of node

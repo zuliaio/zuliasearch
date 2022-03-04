@@ -7,6 +7,7 @@ import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.Updates;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
+import io.zulia.util.ZuliaVersion;
 import jakarta.inject.Singleton;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -23,6 +24,7 @@ public class MongoNodeService implements NodeService {
 	private static final String SERVICE_PORT = "servicePort";
 	private static final String REST_PORT = "restPort";
 	private static final String HEARTBEAT = "heartbeat";
+	private static final String VERSION = "version";
 
 	private final MongoClient mongoClient;
 	private final String clusterName;
@@ -83,6 +85,11 @@ public class MongoNodeService implements NodeService {
 	}
 
 	@Override
+	public void updateVersion(String version) {
+		getCollection().updateMany(new Document(), new Document("version", ZuliaVersion.getVersion()));
+	}
+
+	@Override
 	public void removeHeartbeat(String serverAddress, int servicePort) {
 		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
 
@@ -100,13 +107,18 @@ public class MongoNodeService implements NodeService {
 
 	private Document nodeToDocument(Node node) {
 		return new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort()).append(SERVICE_PORT, node.getServicePort())
-				.append(REST_PORT, node.getRestPort());
+				.append(REST_PORT, node.getRestPort()).append(VERSION, node.getVersion());
 	}
 
 	private Node documentToNode(Document d) {
 		if (d != null) {
+			String version = d.getString(VERSION);
+			if (version == null) {
+				version = "";
+			}
 			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT))
-					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0).build();
+					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0)
+					.setVersion(version).build();
 		}
 		return null;
 	}
