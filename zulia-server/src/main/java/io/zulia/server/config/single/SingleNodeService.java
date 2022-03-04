@@ -32,7 +32,7 @@ public class SingleNodeService implements NodeService {
 	}
 
 	@Override
-	public void updateVersion(String version) {
+	public void updateVersion(String serverAddress, int servicePort, String version) {
 		node = node.toBuilder().setVersion(ZuliaVersion.getVersion()).build();
 	}
 

@@ -29,6 +29,6 @@ public class ZuliaVersion {
 	 * @return the version of Zulia when versioning was added
 	 */
 	public static String getVersionAdded() {
-		return "2.1.1";
+		return "2.1.0";
 	}
 }

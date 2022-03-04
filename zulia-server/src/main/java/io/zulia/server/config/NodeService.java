@@ -31,7 +31,7 @@ public interface NodeService {
 	 * Update version for a cluster node
 	 * @param version - version of node
 	 */
-	void updateVersion(String version);
+	void updateVersion(String serverAddress, int servicePort, String version);
 
 	/**
 	 * Removed heartbeat for a cluster node
