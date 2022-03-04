@@ -87,7 +87,7 @@ public class MongoNodeService implements NodeService {
 	@Override
 	public void updateVersion(String serverAddress, int servicePort, String version) {
 		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
-		getCollection().updateMany(query, new Document("version", ZuliaVersion.getVersion()));
+		getCollection().updateOne(query, new Document("version", ZuliaVersion.getVersion()));
 	}
 
 	@Override
