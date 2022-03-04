@@ -13,6 +13,7 @@ message Node {
     uint32 servicePort = 2;
     uint32 restPort = 3;
     int64 heartbeat = 4;
+    string version = 5;
 }
 
 message ResultDocument {
