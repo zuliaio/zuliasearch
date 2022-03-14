@@ -22,6 +22,7 @@ import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
+import io.zulia.server.filestorage.S3DocumentStorage;
 import io.zulia.server.index.federator.ClearRequestFederator;
 import io.zulia.server.index.federator.CreateIndexAliasRequestFederator;
 import io.zulia.server.index.federator.CreateIndexRequestFederator;
@@ -172,7 +173,14 @@ public class ZuliaIndexManager {
 
 		DocumentStorage documentStorage;
 		if (zuliaConfig.isCluster()) {
-			documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+			switch (zuliaConfig.getClusterStorageEngine()) {
+				case "s3":
+					documentStorage = new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false, zuliaConfig.getS3());
+					break;
+				default:
+					documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+					break;
+			};
 		}
 		else {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
@@ -185,7 +193,7 @@ public class ZuliaIndexManager {
 		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
 	}
 
-	public GetIndexesResponse getIndexes(GetIndexesRequest request) throws Exception {
+	public GetIndexesResponse getIndexes(@SuppressWarnings("unused") GetIndexesRequest request) throws Exception {
 		GetIndexesResponse.Builder getIndexesResponse = GetIndexesResponse.newBuilder();
 		for (IndexSettings indexSettings : indexService.getIndexes()) {
 			getIndexesResponse.addIndexName(indexSettings.getIndexName());
@@ -388,7 +396,7 @@ public class ZuliaIndexManager {
 				this);
 
 		try {
-			List<CreateIndexResponse> send = createIndexRequestFederator.send(InternalCreateIndexRequest.newBuilder().setIndexName(indexName).build());
+			@SuppressWarnings("unused") List<CreateIndexResponse> send = createIndexRequestFederator.send(InternalCreateIndexRequest.newBuilder().setIndexName(indexName).build());
 		}
 		catch (Exception e) {
 			if (existingIndex == null) {
@@ -424,7 +432,7 @@ public class ZuliaIndexManager {
 		DeleteIndexRequestFederator deleteIndexRequestFederator = new DeleteIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
 				this);
 
-		List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
+		@SuppressWarnings("unused") List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
 
 		String indexName = request.getIndexName();
 		indexService.removeIndex(indexName);

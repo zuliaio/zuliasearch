@@ -137,10 +137,8 @@ public class ShardWriteManager {
 		// if changes since started
 
 		if (lastCh != null) {
-			if ((currentTime - lastCh) > (indexConfig.getIndexSettings().getIdleTimeWithoutCommit() * 1000)) {
-				if ((lastCommit == null) || (lastCh > lastCommit)) {
-					return true;
-				}
+			if ((currentTime - lastCh) > (indexConfig.getIndexSettings().getIdleTimeWithoutCommit() * 1000L)) {
+				return (lastCommit == null) || (lastCh > lastCommit);
 			}
 		}
 		return false;
@@ -172,10 +170,6 @@ public class ShardWriteManager {
 
 	public void deleteAll() throws IOException {
 		indexWriter.deleteAll();
-	}
-
-	public FacetsConfig getFacetsConfig() {
-		return facetsConfig;
 	}
 
 	public void indexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {

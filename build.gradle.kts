@@ -6,7 +6,7 @@ plugins {
     signing
     `maven-publish`
     id("org.ajoberstar.reckon") version "0.13.0"
-    id("com.google.protobuf") version "0.8.17" apply false
+    id("com.google.protobuf") version "0.8.18" apply false
 }
 
 configure<ReckonExtension> {
@@ -16,6 +16,9 @@ configure<ReckonExtension> {
 
 allprojects {
     group = "io.zulia"
+}
+apply {
+    from("javacc.gradle")
 }
 
 defaultTasks("build")
@@ -27,8 +30,8 @@ subprojects {
     apply(plugin = "maven-publish")
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     val sourcesJar = tasks.register<Jar>("sourcesJar") {

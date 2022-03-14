@@ -146,6 +146,7 @@ public class TestHelper {
 		for (ZuliaNode zuliaNode : zuliaNodes) {
 			zuliaNode.shutdown();
 		}
+		zuliaNodes.clear();
 
 	}
 

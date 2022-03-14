@@ -57,5 +57,14 @@ tasks {
     }
 
 }
+tasks.register("version") {
+    doLast {
+        File("${project.buildDir}/classes/java/main/").mkdirs()
+        File("${project.buildDir}/classes/java/main/version").writeText(project.version.toString())
+    }
+}
 
+tasks.withType<JavaCompile> {
+    dependsOn("version")
+}
 

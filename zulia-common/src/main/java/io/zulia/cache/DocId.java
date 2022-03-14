@@ -1,8 +1,10 @@
 package io.zulia.cache;
 
+import java.util.Objects;
+
 public class DocId {
-	private String uniqueId;
-	private String indexName;
+	private final String uniqueId;
+	private final String indexName;
 
 	public DocId(String uniqueId, String indexName) {
 		this.uniqueId = uniqueId;
@@ -27,33 +29,12 @@ public class DocId {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object o) {
+		if (this == o)
 			return true;
-		}
-		if (obj == null) {
+		if (o == null || getClass() != o.getClass())
 			return false;
-		}
-		if (!(obj instanceof DocId)) {
-			return false;
-		}
-		DocId other = (DocId) obj;
-		if (indexName == null) {
-			if (other.indexName != null) {
-				return false;
-			}
-		}
-		else if (!indexName.equals(other.indexName)) {
-			return false;
-		}
-		if (uniqueId == null) {
-			if (other.uniqueId != null) {
-				return false;
-			}
-		}
-		else if (!uniqueId.equals(other.uniqueId)) {
-			return false;
-		}
-		return true;
+		DocId docId = (DocId) o;
+		return Objects.equals(uniqueId, docId.uniqueId) && Objects.equals(indexName, docId.indexName);
 	}
 }
