@@ -31,7 +31,7 @@ public class StringFieldIndexer extends FieldIndexer {
 			d.add((new Field(indexedFieldName, val, notStoredTextField)));
 			int length = val.length();
 			d.add(new IntPoint(ZuliaConstants.CHAR_LENGTH_PREFIX + indexedFieldName, length));
-			d.add(new SortedNumericDocValuesField(ZuliaConstants.CHAR_LENGTH_PREFIX + indexedFieldName, length));
+			d.add(new SortedNumericDocValuesField(ZuliaConstants.CHAR_LENGTH_PREFIX + indexedFieldName + ZuliaConstants.SORT_SUFFIX, length));
 		}
 	}
 

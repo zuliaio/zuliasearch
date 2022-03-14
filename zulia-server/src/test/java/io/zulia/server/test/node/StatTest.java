@@ -104,7 +104,7 @@ public class StatTest {
 		search.addStat(new NumericStat("rating"));
 		search.addQuery(new FilterQuery("title:boring").exclude());
 		search.addQuery(new MatchAllQuery());
-		System.out.println(search);
+
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		System.out.println("Hits: " + searchResult.getTotalHits());
 

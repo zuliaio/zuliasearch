@@ -24,4 +24,8 @@ public class InternalRpcConnectionFactory extends BasePooledObjectFactory<Intern
 		return new DefaultPooledObject<>(obj);
 	}
 
+	@Override
+	public void destroyObject(PooledObject<InternalRpcConnection> p) {
+		p.getObject().close();
+	}
 }

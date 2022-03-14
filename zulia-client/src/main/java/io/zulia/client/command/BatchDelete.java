@@ -3,7 +3,7 @@ package io.zulia.client.command;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.BatchDeleteResult;
-import io.zulia.client.result.QueryResult;
+import io.zulia.client.result.SearchResult;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 
@@ -28,7 +28,7 @@ public class BatchDelete extends SimpleCommand<ZuliaServiceOuterClass.BatchDelet
 		return this;
 	}
 
-	public BatchDelete deleteDocumentFromQueryResult(QueryResult queryResult) {
+	public BatchDelete deleteDocumentFromQueryResult(SearchResult queryResult) {
 
 		for (ScoredResult sr : queryResult.getResults()) {
 			Delete delete = new DeleteDocument(sr.getUniqueId(), sr.getIndexName());
