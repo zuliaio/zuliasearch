@@ -1,14 +1,21 @@
 package io.zulia.server.filestorage.io;
 
-import java.io.ByteArrayInputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+
+import java.io.ByteArrayInputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * OutputStream which wraps S3Client, with support for streaming large files directly to S3
@@ -141,8 +148,8 @@ public class S3OutputStream extends OutputStream {
 				this.s3Client.completeMultipartUpload(cmur);
 			}
 			else {
-				PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) this.buf.length).build();
-				s3Client.putObject(req, RequestBody.fromBytes(this.buf));
+				PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) this.position).build();
+				s3Client.putObject(req, RequestBody.fromInputStream(new ByteArrayInputStream(buf, 0, this.position), this.position));
 			}
 		}
 	}
