@@ -8,12 +8,15 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.IndexOptions;
+import com.mongodb.internal.HexUtils;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.server.config.cluster.S3Config;
 import io.zulia.server.filestorage.io.S3OutputStream;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
+import org.xerial.snappy.SnappyInputStream;
+import org.xerial.snappy.SnappyOutputStream;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
@@ -26,11 +29,9 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Writer;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -95,7 +96,9 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		Document TOC = parseAssociated(doc, (long) bytes.length);
 
-		String key = String.join("/", indexName, doc.getDocumentUniqueId(), doc.getFilename());
+		String hex = HexUtils.hexMD5(doc.getFilename().getBytes(StandardCharsets.UTF_8));
+		String key = String.join("/", indexName, doc.getDocumentUniqueId(), String.join(".", hex, "sz"));
+
 		Document s3Location = new Document();
 		s3Location.put("bucket", bucket);
 		s3Location.put("region", region);
@@ -103,7 +106,15 @@ public class S3DocumentStorage implements DocumentStorage {
 		TOC.put("s3", s3Location);
 
 		PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) bytes.length).build();
-		s3.putObject(req, RequestBody.fromBytes(bytes));
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
+		SnappyOutputStream os = new SnappyOutputStream(baos);
+		os.write(bytes);
+		os.flush();
+		byte[] compressed = baos.toByteArray();
+		os.close();
+
+		s3.putObject(req, RequestBody.fromBytes(compressed));
 		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
 	}
 
@@ -184,7 +195,9 @@ public class S3DocumentStorage implements DocumentStorage {
 		metadataMap.put(DOCUMENT_UNIQUE_ID_KEY, uniqueId);
 		metadataMap.put(FILE_UNIQUE_ID_KEY, String.join("-", uniqueId, fileName));
 
-		String key = String.join("/", indexName, uniqueId, fileName);
+		String hex = HexUtils.hexMD5(fileName.getBytes(StandardCharsets.UTF_8));
+		String key = String.join("/", indexName, uniqueId, String.join(".", hex, "sz"));
+
 		Document s3Location = new Document();
 		s3Location.put("bucket", bucket);
 		s3Location.put("region", region);
@@ -193,7 +206,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
 
-		return new S3OutputStream(s3, bucket, key);
+		return new SnappyOutputStream(new S3OutputStream(s3, bucket, key));
 	}
 
 	@Override
@@ -204,7 +217,7 @@ public class S3DocumentStorage implements DocumentStorage {
 			Document s3Info = doc.get("s3", Document.class);
 			GetObjectRequest gor = GetObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
 			ResponseInputStream<GetObjectResponse> results = s3.getObject(gor);
-			return new BufferedInputStream(results);
+			return new BufferedInputStream(new SnappyInputStream(results));
 		}
 		return null;
 	}
@@ -323,7 +336,10 @@ public class S3DocumentStorage implements DocumentStorage {
 				.key(s3Info.getString("key"))
 				.build() ;
 		ResponseInputStream<GetObjectResponse> results = s3.getObject(gor);
-		aBuilder.setDocument(ByteString.readFrom(results));
+		InputStream compression = new SnappyInputStream(results);
+		try (compression) {
+			aBuilder.setDocument(ByteString.readFrom(compression));
+		}
 
 		return aBuilder.build();
 	}
