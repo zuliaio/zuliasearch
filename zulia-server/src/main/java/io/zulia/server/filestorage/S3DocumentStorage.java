@@ -106,7 +106,15 @@ public class S3DocumentStorage implements DocumentStorage {
 		TOC.put("s3", s3Location);
 
 		PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) bytes.length).build();
-		s3.putObject(req, RequestBody.fromInputStream(new SnappyInputStream(new ByteArrayInputStream(bytes)), bytes.length));
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
+		SnappyOutputStream os = new SnappyOutputStream(baos);
+		os.write(bytes);
+		os.flush();
+		byte[] compressed = baos.toByteArray();
+		os.close();
+
+		s3.putObject(req, RequestBody.fromBytes(compressed));
 		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
 	}
 
