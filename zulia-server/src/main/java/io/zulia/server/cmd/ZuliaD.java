@@ -188,7 +188,7 @@ public class ZuliaD {
 					zuliaNode.start();
 				}
 				else {
-					LOG.severe("Looks like you're trying to run in cluster mode but you haven't configured cluster:true in the config.");
+					LOG.severe("Running in single node mode");
 				}
 			}
 			else if ("addNode".equals(parsedCommand)) {
