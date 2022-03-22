@@ -107,7 +107,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) bytes.length).build();
 
-		ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		SnappyOutputStream os = new SnappyOutputStream(baos);
 		os.write(bytes);
 		os.flush();
