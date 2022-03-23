@@ -159,6 +159,10 @@ public class ZuliaIndexManager {
 
 		IndexSettings indexSettings = indexService.getIndex(indexName);
 
+		if (indexSettings == null) {
+			throw new IndexDoesNotExistException(indexName);
+		}
+
 		loadIndex(indexSettings);
 	}
 

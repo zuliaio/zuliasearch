@@ -67,7 +67,13 @@ public class FSIndexService implements IndexService {
 
 	@Override
 	public ZuliaIndex.IndexSettings getIndex(String indexName) throws Exception {
-		return getIndexSettings(new File(baseDir + File.separator + indexName + INDEX_EXTENSION));
+		File indexSettingsFile = new File(baseDir + File.separator + indexName + INDEX_EXTENSION);
+		if (indexSettingsFile.exists()) {
+			return getIndexSettings(indexSettingsFile);
+		}
+		else {
+			return null;
+		}
 	}
 
 	@Override

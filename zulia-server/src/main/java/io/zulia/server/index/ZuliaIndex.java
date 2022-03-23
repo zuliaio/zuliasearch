@@ -27,6 +27,7 @@ import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.ZuliaConfig;
+import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
@@ -816,6 +817,10 @@ public class ZuliaIndex {
 	public void reloadIndexSettings() throws Exception {
 
 		IndexSettings indexSettings = indexService.getIndex(indexName);
+		if (indexSettings == null) {
+			throw new IndexDoesNotExistException(indexName);
+		}
+
 		indexConfig.configure(indexSettings);
 		configureFacets();
 		zuliaPerFieldAnalyzer.refresh();
