@@ -17,6 +17,7 @@ import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
+import software.amazon.awssdk.auth.credentials.*;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
@@ -68,7 +69,17 @@ public class S3DocumentStorage implements DocumentStorage {
 		this.indexName = indexName;
 		this.dbName = dbName;
 		this.sharded = sharded;
-		this.s3 = S3Client.builder().region(Region.of(this.region)).build();
+		AwsCredentialsProviderChain credentialsProvider = AwsCredentialsProviderChain.builder()
+				.credentialsProviders(
+						InstanceProfileCredentialsProvider.builder().build(),
+						ContainerCredentialsProvider.builder().build(),
+						EnvironmentVariableCredentialsProvider.create(),
+						SystemPropertyCredentialsProvider.create(),
+						ProfileCredentialsProvider.builder().build()
+				)
+				.build();
+
+		this.s3 = S3Client.builder().region(Region.of(this.region)).credentialsProvider(credentialsProvider).build();
 
 		ForkJoinPool.commonPool().execute(() -> {
 			MongoDatabase db = client.getDatabase(dbName);
@@ -107,7 +118,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) bytes.length).build();
 
-		ByteArrayOutputStream baos = new ByteArrayOutputStream(bytes.length);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		SnappyOutputStream os = new SnappyOutputStream(baos);
 		os.write(bytes);
 		os.flush();
@@ -154,8 +165,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		for (Document doc : found) {
 			if (first) {
 				first = false;
-			}
-			else {
+			} else {
 				outputstream.write(",\n");
 			}
 
@@ -334,7 +344,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		GetObjectRequest gor = GetObjectRequest.builder()
 				.bucket(s3Info.getString("bucket"))
 				.key(s3Info.getString("key"))
-				.build() ;
+				.build();
 		ResponseInputStream<GetObjectResponse> results = s3.getObject(gor);
 		InputStream compression = new SnappyInputStream(results);
 		try (compression) {
