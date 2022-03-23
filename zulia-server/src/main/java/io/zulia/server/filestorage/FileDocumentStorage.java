@@ -145,7 +145,10 @@ public class FileDocumentStorage implements DocumentStorage {
 
 	@Override
 	public void drop() throws Exception {
-		deletePath(Path.of(filesPath, indexName));
+		Path p = Path.of(filesPath, indexName);
+		if (Files.exists(p)) {
+			deletePath(p);
+		}
 	}
 
 	@Override
