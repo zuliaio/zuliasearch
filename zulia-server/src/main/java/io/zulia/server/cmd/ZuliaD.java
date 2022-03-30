@@ -180,16 +180,17 @@ public class ZuliaD {
 						LOG.severe("No nodes added to the cluster");
 						System.exit(3);
 					}
-					displayNodes(nodeService, "Registered nodes:");
-
-					ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
-
-					ZuliaNodeProvider.setZuliaNode(zuliaNode);
-					zuliaNode.start();
 				}
 				else {
-					LOG.severe("Looks like you're trying to run in cluster mode but you haven't configured cluster:true in the config.");
+					LOG.warning("Running in single node mode");
 				}
+
+				displayNodes(nodeService, "Registered nodes:");
+
+				ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
+
+				ZuliaNodeProvider.setZuliaNode(zuliaNode);
+				zuliaNode.start();
 			}
 			else if ("addNode".equals(parsedCommand)) {
 				Node node = Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())

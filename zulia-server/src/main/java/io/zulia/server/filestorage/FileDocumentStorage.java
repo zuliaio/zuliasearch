@@ -123,8 +123,12 @@ public class FileDocumentStorage implements DocumentStorage {
 	public List<String> getAssociatedFilenames(String uniqueId) throws Exception {
 		String pathForUniqueId = getFullPathToUniqueId(uniqueId);
 
-		Stream<Path> list = Files.list(Path.of(pathForUniqueId));
-		return list.map(Path::toFile).map(File::getName).collect(Collectors.toList());
+		Path p = Path.of(pathForUniqueId);
+		if (Files.exists(p)) {
+			Stream<Path> list = Files.list(p);
+			return list.map(Path::toFile).map(File::getName).collect(Collectors.toList());
+		}
+		return Collections.emptyList();
 	}
 
 	@Override
@@ -141,7 +145,10 @@ public class FileDocumentStorage implements DocumentStorage {
 
 	@Override
 	public void drop() throws Exception {
-		deletePath(Path.of(filesPath, indexName));
+		Path p = Path.of(filesPath, indexName);
+		if (Files.exists(p)) {
+			deletePath(p);
+		}
 	}
 
 	@Override
