@@ -4,6 +4,9 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.protobuf.ByteString;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaIndex;
+import io.zulia.message.ZuliaIndex.AnalyzerSettings;
+import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
@@ -372,7 +375,7 @@ public class ShardReader implements AutoCloseable {
 			@Override
 			public org.apache.lucene.search.similarities.Similarity get(String name) {
 
-				ZuliaIndex.AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsForIndexField(name);
+				AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsForIndexField(name);
 				ZuliaBase.Similarity similarity = ZuliaBase.Similarity.BM25;
 				if (analyzerSettings != null && analyzerSettings.getSimilarity() != null) {
 					similarity = analyzerSettings.getSimilarity();
@@ -497,7 +500,7 @@ public class ShardReader implements AutoCloseable {
 			String rewrittenField = ZuliaParser.rewriteLengthFields(fs.getSortField());
 
 			String sortField = fs.getSortField();
-			ZuliaIndex.FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
+			FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
@@ -693,10 +696,10 @@ public class ShardReader implements AutoCloseable {
 				continue;
 			}
 
-			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
+			FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (!ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
-				fieldTypeForSortField = ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT;
+				fieldTypeForSortField = FieldConfig.FieldType.NUMERIC_INT;
 			}
 
 			ZuliaQuery.SortValue.Builder sortValueBuilder = ZuliaQuery.SortValue.newBuilder().setExists(true);
