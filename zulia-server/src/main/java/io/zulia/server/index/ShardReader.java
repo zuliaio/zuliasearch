@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.google.protobuf.ByteString;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
-import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
@@ -50,10 +49,8 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,12 +66,10 @@ public class ShardReader implements AutoCloseable {
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
 	private final static Pattern sortedDocValuesMessage = Pattern.compile(
 			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Re-index with correct docvalues type.");
-	private final static Set<String> fetchSet = Collections.unmodifiableSet(
-			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD)));
-	private final static Set<String> fetchSetWithMeta = Collections.unmodifiableSet(
-			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD)));
-	private final static Set<String> fetchSetWithDocument = Collections.unmodifiableSet(new HashSet<>(
-			Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD, ZuliaConstants.STORED_DOC_FIELD)));
+	private final static Set<String> fetchSet = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD);
+	private final static Set<String> fetchSetWithMeta = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD);
+	private final static Set<String> fetchSetWithDocument = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD,
+			ZuliaConstants.STORED_DOC_FIELD);
 
 	private final FacetsConfig facetsConfig;
 	private final DirectoryReader indexReader;
