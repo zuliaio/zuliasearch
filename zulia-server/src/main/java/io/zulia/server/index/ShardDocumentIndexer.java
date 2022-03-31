@@ -49,16 +49,13 @@ public class ShardDocumentIndexer {
 	public Document getIndexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
 		Document luceneDocument = new Document();
 
-		addStoredFieldsForDocument(mongoDocument, luceneDocument);
-
 		luceneDocument.add(new StringField(ZuliaConstants.ID_FIELD, uniqueId, Field.Store.YES));
-
+		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadata))));
+		luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(mongoDocument))));
 		luceneDocument.add(new LongPoint(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
 		luceneDocument.add(new StoredField(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
 
-		luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(mongoDocument))));
-
-		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadata))));
+		addStoredFieldsForDocument(mongoDocument, luceneDocument);
 
 		return luceneDocument;
 
