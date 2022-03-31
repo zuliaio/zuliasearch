@@ -26,7 +26,7 @@ import io.zulia.server.util.ServerNameHelper;
 import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.ZuliaVersion;
 import org.apache.lucene.facet.FacetsConfig;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 
 import java.io.File;
 import java.io.FileReader;
@@ -244,7 +244,7 @@ public class ZuliaD {
 	}
 
 	public static void setLuceneStatic() {
-		BooleanQuery.setMaxClauseCount(128 * 1024);
+		IndexSearcher.setMaxClauseCount(128 * 1024);
 		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
 	}
 }
