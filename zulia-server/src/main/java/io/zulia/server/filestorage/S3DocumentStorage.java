@@ -103,30 +103,11 @@ public class S3DocumentStorage implements DocumentStorage {
 
 	@Override
 	public void storeAssociatedDocument(AssociatedDocument doc) throws Exception {
-		byte[] bytes = doc.getDocument().toByteArray();
-
-		Document TOC = parseAssociated(doc, (long) bytes.length);
-
-		String hex = HexUtils.hexMD5(doc.getFilename().getBytes(StandardCharsets.UTF_8));
-		String key = String.join("/", indexName, doc.getDocumentUniqueId(), String.join(".", hex, "sz"));
-
-		Document s3Location = new Document();
-		s3Location.put("bucket", bucket);
-		s3Location.put("region", region);
-		s3Location.put("key", key);
-		TOC.put("s3", s3Location);
-
-		PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) bytes.length).build();
-
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		SnappyOutputStream os = new SnappyOutputStream(baos);
-		os.write(bytes);
-		os.flush();
-		byte[] compressed = baos.toByteArray();
-		os.close();
-
-		s3.putObject(req, RequestBody.fromBytes(compressed));
-		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
+		OutputStream os = getAssociatedDocumentOutputStream(doc.getDocumentUniqueId(), doc.getFilename(), doc.getTimestamp(), ZuliaUtil.byteArrayToMongoDocument(doc.getMetadata().toByteArray()));
+		ByteArrayInputStream bais = new ByteArrayInputStream(doc.getDocument().toByteArray());
+		try (os; bais) {
+			bais.transferTo(os);
+		}
 	}
 
 	@Override
