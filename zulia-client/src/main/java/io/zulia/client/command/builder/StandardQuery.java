@@ -32,6 +32,16 @@ public abstract class StandardQuery implements QueryBuilder {
 		return this;
 	}
 
+	public StandardQuery addQueryFields(String... queryFields) {
+		queryBuilder.addAllQf(List.of(queryFields));
+		return this;
+	}
+
+	public StandardQuery addQueryFields(Iterable<String> queryFields) {
+		queryBuilder.addAllQf(queryFields);
+		return this;
+	}
+
 	public StandardQuery clearQueryField() {
 		queryBuilder.clearQf();
 		return this;
