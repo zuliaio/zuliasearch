@@ -99,6 +99,16 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
+	public Search addDocumentFields(String... documentFields) {
+		queryRequest.addAllDocumentFields(List.of(documentFields));
+		return this;
+	}
+
+	public Search addDocumentFields(Iterable<String> documentFields) {
+		queryRequest.addAllDocumentFields(documentFields);
+		return this;
+	}
+
 	public Search addFacetDrillDown(String label, String path) {
 		facetRequest.addDrillDown(Facet.newBuilder().setLabel(label).setValue(path).build());
 		return this;
