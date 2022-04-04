@@ -645,7 +645,7 @@ public class ZuliaIndex {
 		return query;
 	}
 
-	public IndexShardResponse internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
+	public IndexShardResponse 	internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
 
 		QueryRequest queryRequest = internalQueryRequest.getQueryRequest();
 		Set<ZuliaShard> shardsForQuery = new HashSet<>();
