@@ -140,6 +140,10 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
+	public void clearLastResult() {
+		queryRequest.clearLastResult();
+	}
+
 	public Search addFieldSimilarity(String field, Similarity similarity) {
 
 		queryRequest.addFieldSimilarity(FieldSimilarity.newBuilder().setField(field).setSimilarity(similarity).build());
