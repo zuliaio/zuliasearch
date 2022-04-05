@@ -33,6 +33,34 @@ public class FieldConfigBuilder {
 		return new FieldConfigBuilder(storedFieldName, fieldType);
 	}
 
+	public static FieldConfigBuilder createString(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.STRING);
+	}
+
+	public static FieldConfigBuilder createBool(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.BOOL);
+	}
+
+	public static FieldConfigBuilder createDate(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.DATE);
+	}
+
+	public static FieldConfigBuilder createInt(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.NUMERIC_INT);
+	}
+
+	public static FieldConfigBuilder createLong(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.NUMERIC_LONG);
+	}
+
+	public static FieldConfigBuilder createFloat(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.NUMERIC_FLOAT);
+	}
+
+	public static FieldConfigBuilder createDouble(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.NUMERIC_DOUBLE);
+	}
+
 	public FieldConfigBuilder index() {
 		return indexAs(null, storedFieldName);
 	}

@@ -107,17 +107,17 @@ public class FileStorageTest {
 		indexConfig.addAnalyzerSetting(ZuliaIndex.AnalyzerSettings.newBuilder().setName("entity").addFilter(ZuliaIndex.AnalyzerSettings.Filter.LOWERCASE)
 				.addFilter(ZuliaIndex.AnalyzerSettings.Filter.ASCII_FOLDING).build());
 
-		FieldConfigBuilder fieldConfigBuilder = FieldConfigBuilder.create("title", ZuliaIndex.FieldConfig.FieldType.STRING);
+		FieldConfigBuilder fieldConfigBuilder = FieldConfigBuilder.createString("title");
 		fieldConfigBuilder.indexAs("text", "title");
 		fieldConfigBuilder.displayName("Title");
 		indexConfig.addFieldConfig(fieldConfigBuilder);
 
-		FieldConfigBuilder fieldConfigBuilder2 = FieldConfigBuilder.create("abstract", ZuliaIndex.FieldConfig.FieldType.STRING);
+		FieldConfigBuilder fieldConfigBuilder2 = FieldConfigBuilder.createString("abstract");
 		fieldConfigBuilder2.indexAs("text", "abstract");
 		fieldConfigBuilder2.displayName("Abstract");
 		indexConfig.addFieldConfig(fieldConfigBuilder2);
 
-		FieldConfigBuilder fieldConfigBuilder3 = FieldConfigBuilder.create("id", ZuliaIndex.FieldConfig.FieldType.STRING);
+		FieldConfigBuilder fieldConfigBuilder3 = FieldConfigBuilder.createString("id");
 		fieldConfigBuilder3.indexAs(DefaultAnalyzers.STANDARD, "id");
 		fieldConfigBuilder3.displayName("ID");
 		indexConfig.addFieldConfig(fieldConfigBuilder3);
@@ -155,10 +155,8 @@ public class FileStorageTest {
 		int targetStringLength = 10;
 		Random random = new Random();
 
-		String generatedString = random.ints(leftLimit, rightLimit + 1).limit(targetStringLength)
+		return random.ints(leftLimit, rightLimit + 1).limit(targetStringLength)
 				.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
-
-		return generatedString;
 	}
 
 }
