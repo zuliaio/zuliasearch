@@ -12,7 +12,6 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
-import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import org.bson.Document;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -54,14 +53,14 @@ public class SortTest {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("stars", FieldType.NUMERIC_INT).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("starsLong", FieldType.NUMERIC_LONG).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("rating", FieldType.NUMERIC_FLOAT).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("ratingDouble", FieldType.NUMERIC_FLOAT).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("special", FieldType.BOOL).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("added", FieldType.DATE).index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("stars").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createLong("starsLong").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createFloat("rating").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createFloat("ratingDouble").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("special").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("added").index().sort());
 		indexConfig.setIndexName(INDEX_NAME);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -523,18 +522,18 @@ public class SortTest {
 	public void reindexTest() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD)
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD)
 				.sortAs("theId")); //change sort as to be theId instead of just id
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("stars", FieldType.NUMERIC_INT).index()); // no longer sortable
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("starsLong", FieldType.NUMERIC_LONG).index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("stars").index()); // no longer sortable
+		indexConfig.addFieldConfig(FieldConfigBuilder.createLong("starsLong").index().sort());
 		//indexConfig.addFieldConfig(FieldConfigBuilder.create("rating", FieldType.NUMERIC_FLOAT).index().sort()); // no longer indexed or sortable
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("ratingDouble", FieldType.NUMERIC_FLOAT).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("special", FieldType.BOOL).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("added", FieldType.DATE).index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createFloat("ratingDouble").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("special").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("added").index().sort());
 		//sort() adds standard string (case senstive sorting with a field name the same as the stored field
 		//sortAs(LOWERCASE_FOLDING, "otherTitleFolding") add another sortable field with a lowercase and ascii folding filter applied to make case insensitive sort and fancy letter insensitive (gotta be a better term here)
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("otherTitle", FieldType.STRING).index().sort().sortAs(LOWERCASE_FOLDING, "otherTitleFolding"));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("otherTitle").index().sort().sortAs(LOWERCASE_FOLDING, "otherTitleFolding"));
 		indexConfig.setIndexName(INDEX_NAME);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -574,8 +573,8 @@ public class SortTest {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("magicNumber");
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.NUMERIC_INT).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("magicNumber", FieldType.NUMERIC_INT).index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("id").sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("magicNumber").index().sort());
 		indexConfig.setIndexName("anotherIndex");
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
