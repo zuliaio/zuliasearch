@@ -101,7 +101,8 @@ public class TaxonomyStatsHandler {
 
 		// temp storage of the doc values for a document
 		// because we iterate through the values twice (and the iterator is not resetable) and we do not want to have to create a new array each time
-		int[] documentValuesBuffer = new int[0];
+		int[] ordinalDocValues = new int[0];
+		long[] numericValues = new long[0];
 
 		for (MatchingDocs hits : matchingDocs) {
 
@@ -120,22 +121,38 @@ public class TaxonomyStatsHandler {
 
 			for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
 
+				int ordinalCount = -1;
+				if (ordinalValues != null) {
+
+					ordinalCount = ordinalValues.docValueCount();
+
+					if (ordinalCount > ordinalDocValues.length) {
+						ordinalDocValues = new int[ordinalCount];
+					}
+
+					for (int i = 0; i < ordinalCount; i++) {
+						int ordIndex = (int) ordinalValues.nextValue();
+						ordinalDocValues[i] = ordIndex;
+					}
+				}
+
 				for (int f = 0; f < fieldsList.size(); f++) {
 
 					SortedNumericDocValues functionValue = functionValues[f];
 					ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(f);
 					if (functionValue.advanceExact(doc)) {
-						if (ordinalValues != null) {
+						if ( functionValue.docValueCount() > numericValues.length) {
+							numericValues = new long[functionValue.docValueCount()];
+						}
+						for (int j = 0; j < functionValue.docValueCount(); j++) {
+							long value = functionValue.nextValue();
+							numericValues[j] = value;
+						}
 
-							int ordinalCount = ordinalValues.docValueCount();
-
-							if (ordinalCount > documentValuesBuffer.length) {
-								documentValuesBuffer = new int[ordinalCount];
-							}
+						if (ordinalCount != -1) {
 
 							for (int i = 0; i < ordinalCount; i++) {
-								int ordIndex = (int) ordinalValues.nextValue();
-								documentValuesBuffer[i] = ordIndex;
+								int ordIndex = ordinalDocValues[i];
 								Stats stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
 									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
@@ -144,23 +161,26 @@ public class TaxonomyStatsHandler {
 								stats.newDoc(true);
 							}
 							for (int j = 0; j < functionValue.docValueCount(); j++) {
-								long value = functionValue.nextValue();
 								for (int i = 0; i < ordinalCount; i++) {
-									int ordIndex = documentValuesBuffer[i];
+									int ordIndex = ordinalDocValues[i];
 									Stats stats = fieldFacetStats[f][ordIndex];
-									addUpValue(fieldType, value, stats);
+									addUpValue(fieldType, numericValues[j], stats);
 								}
+
 							}
 						}
 						if (fieldStats != null) {
-							docValuesForDocument(functionValue, fieldType, fieldStats[f]);
+							Stats stats =  fieldStats[f];
+							stats.newDoc(true);
+							for (int j = 0; j < functionValue.docValueCount(); j++) {
+								addUpValue(fieldType, numericValues[j], stats);
+							}
 						}
 					}
 					else {
-						if (ordinalValues != null) {
-							int ordinalCount = ordinalValues.docValueCount();
+						if (ordinalCount != -1) {
 							for (int i = 0; i < ordinalCount; i++) {
-								int ordIndex = (int) ordinalValues.nextValue();
+								int ordIndex = ordinalDocValues[i];
 								Stats stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
 									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
@@ -197,13 +217,6 @@ public class TaxonomyStatsHandler {
 		}
 	}
 
-	private void docValuesForDocument(SortedNumericDocValues functionValue, ZuliaIndex.FieldConfig.FieldType fieldType, Stats stats) throws IOException {
-		stats.newDoc(true);
-		for (int j = 0; j < functionValue.docValueCount(); j++) {
-			long value = functionValue.nextValue();
-			addUpValue(fieldType, value, stats);
-		}
-	}
 
 	public ZuliaQuery.FacetStats getGlobalStatsForNumericField(String field) {
 		int fieldIndex = fieldsList.indexOf(field);
