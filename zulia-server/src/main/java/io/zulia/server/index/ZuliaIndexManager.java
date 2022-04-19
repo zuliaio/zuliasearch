@@ -543,7 +543,10 @@ public class ZuliaIndexManager {
 
 	public GetIndexSettingsResponse getIndexSettings(GetIndexSettingsRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
-		return GetIndexSettingsResponse.newBuilder().setIndexSettings(i.getIndexConfig().getIndexSettings()).build();
+		if (i != null) {
+			return GetIndexSettingsResponse.newBuilder().setIndexSettings(i.getIndexConfig().getIndexSettings()).build();
+		}
+		return null;
 	}
 
 	private ZuliaIndex getIndexFromName(String indexName) throws IndexDoesNotExistException {
