@@ -26,7 +26,7 @@ dependencies {
 
     api("com.google.protobuf:protobuf-java-util:$protobufVersion")
 
-    api("com.cedarsoftware:json-io:4.10.1")
+    api("com.cedarsoftware:json-io:4.13.0")
 
     api("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
@@ -51,7 +51,7 @@ dependencies {
     testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.1.3")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.4.5")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
     //implementation("org.graalvm.js:js:21.3.1")
