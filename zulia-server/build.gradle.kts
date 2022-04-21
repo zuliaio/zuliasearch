@@ -30,7 +30,7 @@ dependencies {
 
     api("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
-    api("org.apache.commons:commons-compress:1.20")
+    api("org.apache.commons:commons-compress:1.21")
     implementation("org.xerial.snappy:snappy-java:1.1.8.4")
     implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
     implementation("software.amazon.awssdk:s3")
@@ -54,7 +54,7 @@ dependencies {
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.1.3")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
-    //implementation("org.graalvm.js:js:20.2.0")
+    //implementation("org.graalvm.js:js:21.3.1")
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
