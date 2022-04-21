@@ -14,23 +14,23 @@ val amazonVersion: String by project
 defaultTasks("build", "installDist")
 
 dependencies {
-    api(project(":zulia-query-parser"))
-    api(project(":zulia-client")) //needed for admin tools
+    implementation(project(":zulia-query-parser"))
+    implementation(project(":zulia-client")) //needed for admin tools
 
-    api("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
-    api("org.apache.lucene:lucene-facet:$luceneVersion")
-    api("org.apache.lucene:lucene-expressions:$luceneVersion")
-    api("org.apache.lucene:lucene-highlighter:$luceneVersion")
+    implementation("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
+    implementation("org.apache.lucene:lucene-facet:$luceneVersion")
+    implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
+    implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
-    api("com.beust:jcommander:1.78")
+    implementation("com.beust:jcommander:1.78")
 
-    api("com.google.protobuf:protobuf-java-util:$protobufVersion")
+    implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
 
-    api("com.cedarsoftware:json-io:4.13.0")
+    implementation("com.cedarsoftware:json-io:4.13.0")
 
-    api("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
+    implementation("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
-    api("org.apache.commons:commons-compress:1.21")
+    implementation("org.apache.commons:commons-compress:1.21")
     implementation("org.xerial.snappy:snappy-java:1.1.8.4")
     implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
     implementation("software.amazon.awssdk:s3")
