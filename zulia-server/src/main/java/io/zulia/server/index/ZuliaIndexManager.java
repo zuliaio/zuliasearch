@@ -452,7 +452,7 @@ public class ZuliaIndexManager {
 		if (zuliaIndex != null) {
 			LOG.info(getLogPrefix() + "Deleting index <" + request.getIndexName() + ">");
 			//zuliaIndex.unload(true);
-			zuliaIndex.deleteIndex();
+			zuliaIndex.deleteIndex(request.getDeleteAssociated());
 			indexMap.remove(indexName);
 			LOG.info(getLogPrefix() + "Deleted index <" + request.getIndexName() + ">");
 		}

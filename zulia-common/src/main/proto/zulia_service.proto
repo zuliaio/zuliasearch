@@ -168,6 +168,7 @@ message CreateIndexAliasResponse {
 
 message DeleteIndexRequest {
     string indexName = 1;
+    bool deleteAssociated = 2;
 }
 
 message DeleteIndexAliasRequest {
