@@ -23,8 +23,8 @@ dependencies {
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
     implementation("info.picocli:picocli:4.6.3")
-    //annotationProcessor("info.picocli:picocli-codegen:4.6.3")
-    //implementation("com.beust:jcommander:1.78")
+    annotationProcessor("info.picocli:picocli-codegen:4.6.3")
+    implementation("com.beust:jcommander:1.78")
 
     implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
 
@@ -60,8 +60,8 @@ dependencies {
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
-zuliaScriptTask.applicationName = "zulia"
-zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
+zuliaScriptTask.applicationName = "zuliaadmin"
+zuliaScriptTask.mainClass.set("io.zulia.server.cmd.ZuliaAdmin")
 
 val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
     applicationName = "zuliad"

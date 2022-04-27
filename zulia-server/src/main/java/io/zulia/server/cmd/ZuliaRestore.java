@@ -1,96 +1,90 @@
 package io.zulia.server.cmd;
 
-import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
 import com.google.common.base.Charsets;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.client.config.ClientIndexConfig;
-import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.server.cmd.common.SelectiveStackTraceHandler;
+import io.zulia.server.cmd.common.ShowStackArgs;
+import io.zulia.server.cmd.common.ThreadedArgs;
+import io.zulia.server.cmd.common.ZuliaCmdUtil;
+import io.zulia.server.cmd.common.ZuliaVersionProvider;
+import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
+import picocli.CommandLine;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
-public class ZuliaRestore {
+@CommandLine.Command(name = "zuliarestore", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
+public class ZuliaRestore implements Callable<Integer> {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaDump.class.getSimpleName());
+	private static final Logger LOG = Logger.getLogger(ZuliaRestore.class.getSimpleName());
+	@CommandLine.Mixin
+	private ConnectionInfo connectionInfo;
 
-	public static class ZuliaRestoreArgs extends ZuliaBaseArgs {
+	@CommandLine.Mixin
+	private ShowStackArgs showStackArgs;
 
-		@Parameter(names = "--idField", description = "ID field name, defaults to 'id'")
-		private String idField = "id";
+	@CommandLine.Mixin
+	private ThreadedArgs threadedArgs;
 
-		@Parameter(names = "--dir", description = "Full path to the zuliadump directory.", required = true)
-		private String dir;
+	//Not sharded with MultipleIndexArgs because wildcard is not against zulia existing indexes and it is not required
+	@CommandLine.Option(names = { "-i", "--indexes",
+			"--index" }, paramLabel = "index", description = "Index name. For multiple indexes, repeat arg or use commas to separate within a single arg", split = ",")
+	private Collection<String> indexes;
 
-		@Parameter(names = "--drop", description = "Drop the index before restoring.")
-		private Boolean drop = false;
+	@CommandLine.Option(names = { "-o", "--out" }, description = "Full path to the output directory. (default: ${DEFAULT-VALUE})")
+	private String out = System.getProperty("user.dir");
 
-	}
+	@CommandLine.Option(names = "--idField", description = "Id field name (default: ${DEFAULT-VALUE})")
+	private String idField = "id";
 
-	public static void main(String[] args) {
+	@CommandLine.Option(names = "--dir", description = "Full path to the zuliadump directory", required = true)
+	private String dir;
 
-		LogUtil.init();
+	@Parameter(names = "--drop", description = "Drop the index before restoring (default: ${DEFAULT-VALUE})")
+	private Boolean drop = false;
 
-		ZuliaRestoreArgs zuliaRestoreArgs = new ZuliaRestoreArgs();
+	@Parameter(names = "--skipExistingFiles", description = "Skip storing files if they already exist  (default: ${DEFAULT-VALUE})")
+	public Boolean skipExistingFiles = false;
 
-		JCommander jCommander = JCommander.newBuilder().addObject(zuliaRestoreArgs).build();
+	@Override
+	public Integer call() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
 
-		try {
+		int threads =  threadedArgs.getThreads();
 
-			jCommander.parse(args);
-
-			ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(zuliaRestoreArgs.address, zuliaRestoreArgs.port).setNodeUpdateEnabled(false);
-			ZuliaWorkPool workPool = new ZuliaWorkPool(zuliaPoolConfig);
-
-			String dir = zuliaRestoreArgs.dir;
-			String index = zuliaRestoreArgs.index;
-			String idField = zuliaRestoreArgs.idField;
-			Boolean drop = zuliaRestoreArgs.drop;
-			Integer threads = zuliaRestoreArgs.threads;
-			Boolean skipExistingFiles = zuliaRestoreArgs.skipExistingFiles;
-
-			if (index != null) {
-				// restore only this index
-				restore(workPool, dir, index, idField, drop, threads, skipExistingFiles);
+		if (indexes != null) {
+			for (String index : indexes) {
+				restore(zuliaWorkPool, dir, index, idField, drop, threads, skipExistingFiles);
 			}
-			else {
-				// walk dir and restore everything
-				Files.list(Paths.get(dir)).forEach(indexDir -> {
+		}
+		else {
+			// walk dir and restore everything
+			try (Stream<Path> list = Files.list(Paths.get(dir))) {
+				for (Path indexDir : list.toList()) {
 					try {
 						String ind = indexDir.getFileName().toString();
-						restore(workPool, dir, ind, idField, drop, threads, skipExistingFiles);
+						restore(zuliaWorkPool, dir, ind, idField, drop, threads, skipExistingFiles);
 					}
 					catch (Exception e) {
-						LOG.log(Level.SEVERE, "There was a problem restoring index <" + indexDir.getFileName() + ">", e);
+						throw new Exception("There was a problem restoring index <" + indexDir.getFileName() + ">");
 					}
-
-				});
+				}
 			}
-
-		}
-		catch (ParameterException e) {
-			System.err.println(e.getMessage());
-			jCommander.usage();
-			System.exit(2);
-		}
-		catch (UnsupportedOperationException e) {
-			System.err.println("Error: " + e.getMessage());
-			System.exit(2);
-		}
-		catch (Exception e) {
-			System.err.println("Error: " + e.getMessage());
-			e.printStackTrace();
-			System.exit(1);
 		}
 
+		return CommandLine.ExitCode.OK;
 	}
 
 	private static void restore(ZuliaWorkPool workPool, String dir, String index, String idField, Boolean drop, Integer threads, Boolean skipExistingFiles)
@@ -99,14 +93,15 @@ public class ZuliaRestore {
 		String recordsFilename = inputDir + File.separator + index + ".json";
 		String settingsFilename = inputDir + File.separator + index + "_settings.json";
 
-		if (Files.exists(Paths.get(settingsFilename)) && Files.exists(Paths.get(recordsFilename))) {
+		Path settingsPath = Paths.get(settingsFilename);
+		if (Files.exists(settingsPath) && Files.exists(Paths.get(recordsFilename))) {
 			if (drop) {
 				workPool.deleteIndex(index);
 			}
 
 			LOG.info("Creating index <" + index + ">");
 			ZuliaIndex.IndexSettings.Builder indexSettingsBuilder = ZuliaIndex.IndexSettings.newBuilder();
-			JsonFormat.parser().merge(Files.readString(Paths.get(settingsFilename), Charsets.UTF_8), indexSettingsBuilder);
+			JsonFormat.parser().merge(Files.readString(settingsPath, Charsets.UTF_8), indexSettingsBuilder);
 			ClientIndexConfig indexConfig = new ClientIndexConfig();
 			indexConfig.configure(indexSettingsBuilder.build());
 			workPool.createIndex(indexConfig);
@@ -119,16 +114,22 @@ public class ZuliaRestore {
 		}
 		else {
 			if (index.endsWith(".json")) {
-				System.err.println("Please provide the path to the parent directory in --dir option.");
-				System.exit(9);
+				throw new Exception("Please provide the path to the parent directory in --dir option.");
 			}
 			else {
-				System.err.println("Index <" + index + "> does not exist in the given dir <" + dir
+				throw new Exception("Index <" + index + "> does not exist in the given dir <" + dir
 						+ ">, please provide the path to the parent directory in --dir option.");
-				System.exit(9);
 			}
 		}
+	}
 
+	public static void main(String[] args) {
+
+		LogUtil.init();
+		ZuliaRestore zuliaRestore = new ZuliaRestore();
+		int exitCode = new CommandLine(zuliaRestore).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
+				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).execute(args);
+		System.exit(exitCode);
 	}
 
 }

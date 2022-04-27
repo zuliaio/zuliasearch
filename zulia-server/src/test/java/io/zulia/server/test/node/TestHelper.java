@@ -5,7 +5,7 @@ import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
-import io.zulia.server.cmd.ZuliaD;
+import io.zulia.server.cmd.zuliad.ZuliaDConfig;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoNodeService;
 import io.zulia.server.config.cluster.MongoServer;
@@ -40,7 +40,7 @@ public class TestHelper {
 	static {
 
 		LogUtil.init();
-		ZuliaD.setLuceneStatic();
+		ZuliaDConfig.setLuceneStatic();
 
 		mongoTestInstance = new MongoTestInstance();
 
