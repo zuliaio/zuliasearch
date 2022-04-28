@@ -51,6 +51,10 @@ public class StartNodeCmd implements Callable<Integer> {
 				  / /| | | | | |/ _` |
 				 / /_| |_| | | | (_| |
 				/_____\\__,_|_|_|\\__,_|""";
+
+
+		zuliaArt = CommandLine.Help.Ansi.AUTO.string("@|bold,fg(166) " + zuliaArt + "|@");
+
 		System.out.println(zuliaArt);
 		System.out.println("  Zulia (" + ZuliaVersion.getVersion() + ") based on Lucene " + Version.LATEST);
 		System.out.println();
