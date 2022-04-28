@@ -1,8 +1,6 @@
 package io.zulia.server.cmd;
 
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.log.LogUtil;
-import io.zulia.server.cmd.common.SelectiveStackTraceHandler;
 import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.SingleIndexArgs;
 import io.zulia.server.cmd.common.ThreadedArgs;
@@ -65,11 +63,7 @@ public class ZuliaImport implements Callable<Integer> {
 
 	public static void main(String[] args) {
 
-		LogUtil.init();
-		ZuliaImport zuliaImport = new ZuliaImport();
-		int exitCode = new CommandLine(zuliaImport).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
-				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).execute(args);
-		System.exit(exitCode);
+		ZuliaCommonCmd.runCommandLine(new ZuliaImport(), args);
 	}
 
 }

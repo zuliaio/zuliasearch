@@ -1,7 +1,5 @@
 package io.zulia.server.cmd;
 
-import io.zulia.log.LogUtil;
-import io.zulia.server.cmd.common.SelectiveStackTraceHandler;
 import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliad.AddNodeCmd;
@@ -28,15 +26,7 @@ public class ZuliaD {
 
 	public static void main(String[] args) {
 
-		LogUtil.init();
-		ZuliaD zuliaD = new ZuliaD();
-		int exitCode = new CommandLine(zuliaD).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
-				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).execute(args);
-
-		// dont kill the start node daemon, java will exit 0 for us in other cases
-		if (exitCode != 0) {
-			System.exit(exitCode);
-		}
+		ZuliaCommonCmd.runCommandLine(new ZuliaD(), args);
 
 	}
 

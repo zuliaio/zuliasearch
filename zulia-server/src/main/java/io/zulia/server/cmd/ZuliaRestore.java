@@ -5,9 +5,7 @@ import com.google.common.base.Charsets;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaIndex;
-import io.zulia.server.cmd.common.SelectiveStackTraceHandler;
 import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ThreadedArgs;
 import io.zulia.server.cmd.common.ZuliaCmdUtil;
@@ -125,11 +123,7 @@ public class ZuliaRestore implements Callable<Integer> {
 
 	public static void main(String[] args) {
 
-		LogUtil.init();
-		ZuliaRestore zuliaRestore = new ZuliaRestore();
-		int exitCode = new CommandLine(zuliaRestore).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
-				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).execute(args);
-		System.exit(exitCode);
+		ZuliaCommonCmd.runCommandLine(new ZuliaRestore(), args);
 	}
 
 }

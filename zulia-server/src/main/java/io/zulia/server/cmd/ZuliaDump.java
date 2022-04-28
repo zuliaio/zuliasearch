@@ -6,9 +6,7 @@ import io.zulia.client.command.FetchLargeAssociated;
 import io.zulia.client.command.GetIndexConfig;
 import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.log.LogUtil;
 import io.zulia.server.cmd.common.MultipleIndexArgs;
-import io.zulia.server.cmd.common.SelectiveStackTraceHandler;
 import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ZuliaCmdUtil;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
@@ -131,11 +129,7 @@ public class ZuliaDump implements Callable<Integer> {
 
 	public static void main(String[] args) {
 
-		LogUtil.init();
-		ZuliaDump zuliaDump = new ZuliaDump();
-		int exitCode = new CommandLine(zuliaDump).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
-				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).execute(args);
-		System.exit(exitCode);
+		ZuliaCommonCmd.runCommandLine(new ZuliaDump(), args);
 	}
 
 }

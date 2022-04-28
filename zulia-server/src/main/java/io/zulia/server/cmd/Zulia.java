@@ -11,11 +11,9 @@ import io.zulia.client.command.builder.StatBuilder;
 import io.zulia.client.command.builder.StatFacet;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
-import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.cmd.common.MultipleIndexArgs;
-import io.zulia.server.cmd.common.SelectiveStackTraceHandler;
 import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
@@ -285,13 +283,9 @@ public class Zulia {
 	}
 
 	public static void main(String[] args) {
-
-		LogUtil.init();
-		Zulia zulia = new Zulia();
-
-		int exitCode = new CommandLine(zulia).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
-				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).setTrimQuotes(true).execute(args);
-		System.exit(exitCode);
+		ZuliaCommonCmd.runCommandLine(new Zulia(), args);
 	}
+
+
 
 }

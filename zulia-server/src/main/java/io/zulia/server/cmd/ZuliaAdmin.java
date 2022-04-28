@@ -1,8 +1,6 @@
 package io.zulia.server.cmd;
 
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.log.LogUtil;
-import io.zulia.server.cmd.common.SelectiveStackTraceHandler;
 import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliaadmin.ClearIndexCmd;
@@ -34,12 +32,7 @@ public class ZuliaAdmin {
 	}
 
 	public static void main(String[] args) {
-
-		LogUtil.init();
-		ZuliaAdmin zuliaAdmin = new ZuliaAdmin();
-		int exitCode = new CommandLine(zuliaAdmin).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
-				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).execute(args);
-		System.exit(exitCode);
+		ZuliaCommonCmd.runCommandLine(new ZuliaAdmin(), args);
 	}
 
 }
