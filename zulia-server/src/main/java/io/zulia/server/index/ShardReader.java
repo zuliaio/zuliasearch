@@ -5,6 +5,8 @@ import com.google.protobuf.ByteString;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.message.ZuliaIndex.AnalyzerSettings;
+import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
@@ -50,10 +52,8 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,12 +69,10 @@ public class ShardReader implements AutoCloseable {
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
 	private final static Pattern sortedDocValuesMessage = Pattern.compile(
 			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Re-index with correct docvalues type.");
-	private final static Set<String> fetchSet = Collections.unmodifiableSet(
-			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD)));
-	private final static Set<String> fetchSetWithMeta = Collections.unmodifiableSet(
-			new HashSet<>(Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD)));
-	private final static Set<String> fetchSetWithDocument = Collections.unmodifiableSet(new HashSet<>(
-			Arrays.asList(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD, ZuliaConstants.STORED_DOC_FIELD)));
+	private final static Set<String> fetchSet = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD);
+	private final static Set<String> fetchSetWithMeta = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD);
+	private final static Set<String> fetchSetWithDocument = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD,
+			ZuliaConstants.STORED_DOC_FIELD);
 
 	private final FacetsConfig facetsConfig;
 	private final DirectoryReader indexReader;
@@ -377,7 +375,7 @@ public class ShardReader implements AutoCloseable {
 			@Override
 			public org.apache.lucene.search.similarities.Similarity get(String name) {
 
-				ZuliaIndex.AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsForIndexField(name);
+				AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsForIndexField(name);
 				ZuliaBase.Similarity similarity = ZuliaBase.Similarity.BM25;
 				if (analyzerSettings != null && analyzerSettings.getSimilarity() != null) {
 					similarity = analyzerSettings.getSimilarity();
@@ -502,7 +500,7 @@ public class ShardReader implements AutoCloseable {
 			String rewrittenField = ZuliaParser.rewriteLengthFields(fs.getSortField());
 
 			String sortField = fs.getSortField();
-			ZuliaIndex.FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
+			FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
@@ -698,10 +696,10 @@ public class ShardReader implements AutoCloseable {
 				continue;
 			}
 
-			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
+			FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (!ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
-				fieldTypeForSortField = ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT;
+				fieldTypeForSortField = FieldConfig.FieldType.NUMERIC_INT;
 			}
 
 			ZuliaQuery.SortValue.Builder sortValueBuilder = ZuliaQuery.SortValue.newBuilder().setExists(true);

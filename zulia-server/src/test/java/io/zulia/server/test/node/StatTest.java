@@ -12,7 +12,6 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
-import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.message.ZuliaQuery.FacetStats;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -46,12 +45,12 @@ public class StatTest {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("pathFacet", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facetHierarchical().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("normalFacet", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("pathFacet").indexAs(DefaultAnalyzers.LC_KEYWORD).facetHierarchical().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("normalFacet").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		//indexConfig.addFieldConfig(FieldConfigBuilder.create("authorCount", FieldType.NUMERIC_INT).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("rating", FieldType.NUMERIC_DOUBLE).index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -89,9 +88,7 @@ public class StatTest {
 		mongoDocument.put("rating", rating);
 
 		Store s = new Store(uniqueId, STAT_TEST_INDEX);
-
-		ResultDocBuilder resultDocumentBuilder = ResultDocBuilder.newBuilder().setDocument(mongoDocument);
-		s.setResultDocument(resultDocumentBuilder);
+		s.setResultDocument(ResultDocBuilder.from(mongoDocument));
 		zuliaWorkPool.store(s);
 
 	}
@@ -109,7 +106,35 @@ public class StatTest {
 		System.out.println("Hits: " + searchResult.getTotalHits());
 
 		FacetStats ratingStat = searchResult.getNumericFieldStat("rating");
+		ratingTest(ratingStat);
 
+		search.clearStat();
+		search.addStat(new StatFacet("rating", "normalFacet"));
+		searchResult = zuliaWorkPool.search(search);
+		ratingNormalTest(searchResult);
+
+		search.clearStat();
+		search.addStat(new StatFacet("rating", "pathFacet"));
+		searchResult = zuliaWorkPool.search(search);
+
+		ratingPathTest(searchResult);
+
+		search.clearStat();
+		search.addStat(new StatFacet("rating", "normalFacet"));
+		search.addStat(new StatFacet("rating", "pathFacet"));
+		searchResult = zuliaWorkPool.search(search);
+		ratingNormalTest(searchResult);
+		ratingPathTest(searchResult);
+
+		search = new Search(STAT_TEST_INDEX);
+		search.addStat(new StatFacet("authorCount", "pathFacet"));
+		Search finalSearch = search;
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch),
+				"Expecting: Search: Numeric field <authorCount> must be indexed as a SORTABLE numeric field");
+
+	}
+
+	private void ratingTest(FacetStats ratingStat) {
 		Assertions.assertEquals(0.5, ratingStat.getMin().getDoubleValue(), 0.001);
 		Assertions.assertEquals(3.5, ratingStat.getMax().getDoubleValue(), 0.001);
 
@@ -117,11 +142,9 @@ public class StatTest {
 		Assertions.assertEquals(4L * repeatCount, ratingStat.getDocCount());
 		Assertions.assertEquals(6L * repeatCount, ratingStat.getAllDocCount());
 		Assertions.assertEquals(5L * repeatCount, ratingStat.getValueCount());
+	}
 
-		search.clearStat();
-		search.addStat(new StatFacet("rating", "normalFacet"));
-		searchResult = zuliaWorkPool.search(search);
-
+	private void ratingNormalTest(SearchResult searchResult) {
 		List<FacetStats> ratingByFacet = searchResult.getFacetFieldStat("rating", "normalFacet");
 
 		for (FacetStats facetStats : ratingByFacet) {
@@ -145,11 +168,9 @@ public class StatTest {
 				throw new AssertionFailedError("Unexpect facet <" + facetStats.getFacet() + ">");
 			}
 		}
+	}
 
-		search.clearStat();
-		search.addStat(new StatFacet("rating", "pathFacet"));
-		searchResult = zuliaWorkPool.search(search);
-
+	private void ratingPathTest(SearchResult searchResult) {
 		List<FacetStats> ratingByPathFacet = searchResult.getFacetFieldStat("rating", "pathFacet");
 
 		for (FacetStats facetStats : ratingByPathFacet) {
@@ -180,13 +201,6 @@ public class StatTest {
 				throw new AssertionFailedError("Unexpect facet <" + facetStats.getFacet() + ">");
 			}
 		}
-
-		search = new Search(STAT_TEST_INDEX);
-		search.addStat(new StatFacet("authorCount", "pathFacet"));
-		Search finalSearch = search;
-		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch),
-				"Expecting: Search: Numeric field <authorCount> must be indexed as a SORTABLE numeric field");
-
 	}
 
 	@Test
@@ -194,12 +208,12 @@ public class StatTest {
 	public void reindex() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("pathFacet", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facetHierarchical().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("normalFacet", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("authorCount", FieldType.NUMERIC_INT).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("rating", FieldType.NUMERIC_DOUBLE).index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("pathFacet").indexAs(DefaultAnalyzers.LC_KEYWORD).facetHierarchical().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("normalFacet").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("authorCount").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -229,51 +243,47 @@ public class StatTest {
 		search.addStat(new NumericStat("authorCount"));
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
-
-		FacetStats authorCountStats = searchResult.getNumericFieldStat("authorCount");
-
-		Assertions.assertEquals(2, authorCountStats.getMin().getLongValue());
-		Assertions.assertEquals(5, authorCountStats.getMax().getLongValue());
-
-		Assertions.assertEquals(20L * repeatCount, authorCountStats.getSum().getLongValue());
-		Assertions.assertEquals(6L * repeatCount, authorCountStats.getDocCount());
-		Assertions.assertEquals(6L * repeatCount, authorCountStats.getValueCount());
+		authorCountTest(searchResult);
 
 		search.clearStat();
 		search.addStat(new StatFacet("authorCount", "normalFacet"));
 		searchResult = zuliaWorkPool.search(search);
 
-		List<FacetStats> authorCountByNormalFacet = searchResult.getFacetFieldStat("authorCount", "normalFacet");
-
-		for (FacetStats facetStats : authorCountByNormalFacet) {
-			if (facetStats.getFacet().equals("foo")) {
-				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
-				Assertions.assertEquals(4L, facetStats.getMax().getLongValue());
-				Assertions.assertEquals(9L * repeatCount, facetStats.getSum().getLongValue());
-				Assertions.assertEquals(3L * repeatCount, facetStats.getDocCount());
-				Assertions.assertEquals(3L * repeatCount, facetStats.getAllDocCount());
-				Assertions.assertEquals(3L * repeatCount, facetStats.getValueCount());
-			}
-			else if (facetStats.getFacet().equals("bar")) {
-				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
-				Assertions.assertEquals(5L, facetStats.getMax().getLongValue());
-				Assertions.assertEquals(7L * repeatCount, facetStats.getSum().getLongValue());
-				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
-				Assertions.assertEquals(2L * repeatCount, facetStats.getAllDocCount());
-				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
-			}
-			else {
-				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
-			}
-		}
+		authorCountNormalFacetTest(searchResult);
 
 		search.clearStat();
 		search.addStat(new StatFacet("authorCount", "pathFacet"));
 		searchResult = zuliaWorkPool.search(search);
+		authorCountPathFacetTest(searchResult);
 
-		List<FacetStats> ratingByPathFacet = searchResult.getFacetFieldStat("authorCount", "pathFacet");
 
-		for (FacetStats facetStats : ratingByPathFacet) {
+		search.clearStat();
+		search.addStat(new NumericStat("authorCount"));
+		search.addStat(new StatFacet("authorCount", "normalFacet"));
+		search.addStat(new StatFacet("authorCount", "pathFacet"));
+		searchResult = zuliaWorkPool.search(search);
+		authorCountTest(searchResult);
+		authorCountNormalFacetTest(searchResult);
+		authorCountPathFacetTest(searchResult);
+
+
+		search.clearStat();
+		search.addStat(new StatFacet("authorCount", "pathFacet"));
+		search.addStat(new NumericStat("authorCount"));
+		search.addStat(new StatFacet("authorCount", "normalFacet"));
+		search.addStat(new StatFacet("rating", "normalFacet"));
+		search.addStat(new StatFacet("rating", "pathFacet"));
+		searchResult = zuliaWorkPool.search(search);
+		authorCountTest(searchResult);
+		authorCountNormalFacetTest(searchResult);
+		authorCountPathFacetTest(searchResult);
+		ratingNormalTest(searchResult);
+		ratingPathTest(searchResult);
+	}
+
+	private void authorCountPathFacetTest(SearchResult searchResult) {
+		List<FacetStats> authorCountPathFacet = searchResult.getFacetFieldStat("authorCount", "pathFacet");
+		for (FacetStats facetStats : authorCountPathFacet) {
 			if (facetStats.getFacet().equals("top1")) {
 				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
 				Assertions.assertEquals(4L, facetStats.getMax().getLongValue());
@@ -302,6 +312,41 @@ public class StatTest {
 				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
 			}
 		}
+	}
+
+	private void authorCountNormalFacetTest(SearchResult searchResult) {
+		List<FacetStats> authorCountByNormalFacet = searchResult.getFacetFieldStat("authorCount", "normalFacet");
+		for (FacetStats facetStats : authorCountByNormalFacet) {
+			if (facetStats.getFacet().equals("foo")) {
+				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
+				Assertions.assertEquals(4L, facetStats.getMax().getLongValue());
+				Assertions.assertEquals(9L * repeatCount, facetStats.getSum().getLongValue());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getAllDocCount());
+				Assertions.assertEquals(3L * repeatCount, facetStats.getValueCount());
+			}
+			else if (facetStats.getFacet().equals("bar")) {
+				Assertions.assertEquals(2L, facetStats.getMin().getLongValue());
+				Assertions.assertEquals(5L, facetStats.getMax().getLongValue());
+				Assertions.assertEquals(7L * repeatCount, facetStats.getSum().getLongValue());
+				Assertions.assertEquals(2L * repeatCount, facetStats.getDocCount());
+				Assertions.assertEquals(2L * repeatCount, facetStats.getAllDocCount());
+				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
+			}
+			else {
+				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
+			}
+		}
+	}
+
+	private void authorCountTest(SearchResult searchResult) {
+		FacetStats authorCountStats = searchResult.getNumericFieldStat("authorCount");
+		Assertions.assertEquals(2, authorCountStats.getMin().getLongValue());
+		Assertions.assertEquals(5, authorCountStats.getMax().getLongValue());
+
+		Assertions.assertEquals(20L * repeatCount, authorCountStats.getSum().getLongValue());
+		Assertions.assertEquals(6L * repeatCount, authorCountStats.getDocCount());
+		Assertions.assertEquals(6L * repeatCount, authorCountStats.getValueCount());
 	}
 
 	@Test

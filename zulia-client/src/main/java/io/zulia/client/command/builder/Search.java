@@ -99,6 +99,16 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
+	public Search addDocumentFields(String... documentFields) {
+		queryRequest.addAllDocumentFields(List.of(documentFields));
+		return this;
+	}
+
+	public Search addDocumentFields(Iterable<String> documentFields) {
+		queryRequest.addAllDocumentFields(documentFields);
+		return this;
+	}
+
 	public Search addFacetDrillDown(String label, String path) {
 		facetRequest.addDrillDown(Facet.newBuilder().setLabel(label).setValue(path).build());
 		return this;
@@ -128,6 +138,10 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 	public Search setLastResult(LastResult lastResult) {
 		queryRequest.setLastResult(lastResult);
 		return this;
+	}
+
+	public void clearLastResult() {
+		queryRequest.clearLastResult();
 	}
 
 	public Search addFieldSimilarity(String field, Similarity similarity) {

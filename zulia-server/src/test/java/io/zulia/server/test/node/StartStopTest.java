@@ -17,7 +17,6 @@ import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex.FacetAs.DateHandling;
-import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.util.ZuliaUtil;
@@ -65,16 +64,16 @@ public class StartStopTest {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("uid", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("testBool", FieldType.BOOL).index().facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("issn").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("eissn").indexAs(DefaultAnalyzers.LC_KEYWORD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("uid").indexAs(DefaultAnalyzers.LC_KEYWORD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("an").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").index());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("testBool").index().facet().sort());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -370,16 +369,16 @@ public class StartStopTest {
 	public void reindex() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("id", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("title", FieldType.STRING).indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("issn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("eissn", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("uid", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("an", FieldType.NUMERIC_INT).index().displayName("Accession Number").sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("country", FieldType.STRING).indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("issn").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("eissn").indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("uid").indexAs(DefaultAnalyzers.LC_KEYWORD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("an").index().displayName("Accession Number").sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(
-				FieldConfigBuilder.create("date", FieldType.DATE).index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data").sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.create("testList", FieldType.STRING).index());
+				FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data").sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").index());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 

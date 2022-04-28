@@ -287,13 +287,15 @@ public class ZuliaIndex {
 
 	}
 
-	public void deleteIndex() throws Exception {
+	public void deleteIndex(boolean deleteAssociated) throws Exception {
 
 		unload(true);
 
-		LOG.info("Dropping document storage.");
-		documentStorage.drop();
-		LOG.info("Dropped document storage.");
+		if (deleteAssociated) {
+			LOG.info("Dropping document storage.");
+			documentStorage.drop();
+			LOG.info("Dropped document storage.");
+		}
 
 	}
 
@@ -645,7 +647,7 @@ public class ZuliaIndex {
 		return query;
 	}
 
-	public IndexShardResponse internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
+	public IndexShardResponse 	internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
 
 		QueryRequest queryRequest = internalQueryRequest.getQueryRequest();
 		Set<ZuliaShard> shardsForQuery = new HashSet<>();

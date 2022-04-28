@@ -8,6 +8,8 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
+import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.ZuliaNodeProvider;
@@ -69,7 +71,15 @@ public class NodesController {
 
 					Document shards = new Document();
 					shards.put("name", indexMapping.getIndexName());
-					shards.put("size", indexMapping.getSerializedSize());
+
+					int indexWeight = -1;
+					GetIndexSettingsResponse indexSettings = indexManager.getIndexSettings(
+							ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(indexMapping.getIndexName()).build());
+					if (indexSettings != null) { //paranoid
+						indexWeight = indexSettings.getIndexSettings().getIndexWeight();
+					}
+
+					shards.put("indexWeight", indexWeight);
 					shards.put("primary", primaryShards);
 					shards.put("replica", replicaShards);
 
