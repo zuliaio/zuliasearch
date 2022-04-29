@@ -10,6 +10,7 @@ import picocli.CommandLine;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -30,10 +31,12 @@ public class ExportAliasesCmd implements Callable<Integer> {
 
 		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
+		List<ZuliaIndex.IndexAlias> indexAliases = zuliaWorkPool.getNodes().getIndexAliases();
+
 		Set<String> aliases = aliasArgs.resolveAliases(zuliaWorkPool);
 
 		try (FileWriter fileWriter = new FileWriter(outputFile, Charsets.UTF_8)) {
-			for (ZuliaIndex.IndexAlias indexAlias : zuliaWorkPool.getNodes().getIndexAliases()) {
+			for (ZuliaIndex.IndexAlias indexAlias : indexAliases) {
 				if (aliases.contains(indexAlias.getAliasName())) {
 					JsonFormat.Printer printer = JsonFormat.printer();
 					fileWriter.write(printer.print(indexAlias));

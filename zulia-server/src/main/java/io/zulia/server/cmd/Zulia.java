@@ -212,6 +212,9 @@ public class Zulia {
 
 		System.out.println("Results:");
 
+
+		System.out.printf("%25s | %25s", "UniqueId", "Index");
+
 		System.out.print("UniqueId");
 		System.out.print("\t");
 		System.out.print("Score");

@@ -19,7 +19,7 @@ public class FetchAssociatedFileCmd implements Callable<Integer> {
 	private SingleIndexArgs singleIndexArgs;
 
 	@CommandLine.Option(names = "--id", description = "Record id to fetch file from", required = true)
-	private String id = "id";
+	private String id;
 
 	@CommandLine.Option(names = "--fileName", description = "File name in Zulia", required = true)
 	private String fileName;

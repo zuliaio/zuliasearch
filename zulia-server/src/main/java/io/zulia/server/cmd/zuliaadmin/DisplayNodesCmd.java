@@ -27,7 +27,7 @@ public class DisplayNodesCmd implements Callable<Integer> {
 
 		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-		System.out.printf("%25s | %15s | %15s | %25s | %30s\n", "Address", "Service Port", "REST Port", "Heart Beat", "Version");
+		System.out.printf("%25s | %15s | %15s | %25s | %30s\n", "Server", "Service Port", "REST Port", "Heart Beat", "Version");
 
 		GetNodesResult nodes = activeOnly ? zuliaWorkPool.getActiveNodes() : zuliaWorkPool.getNodes();
 		for (ZuliaBase.Node node : nodes.getNodes()) {
