@@ -28,9 +28,10 @@ public class DisplayNodesCmd implements Callable<Integer> {
 
 		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-		ZuliaCommonCmd.printMagenta(String.format("%25s | %15s | %15s | %25s | %30s\n", "Server", "Service Port", "REST Port", "Heart Beat", "Version"));
-
 		GetNodesResult nodes = activeOnly ? zuliaWorkPool.getActiveNodes() : zuliaWorkPool.getNodes();
+
+		ZuliaCommonCmd.printMagenta(String.format("%25s | %15s | %15s | %25s | %30s", "Server", "Service Port", "REST Port", "Heart Beat", "Version"));
+
 		for (ZuliaBase.Node node : nodes.getNodes()) {
 			long heartbeat = node.getHeartbeat();
 
@@ -39,8 +40,9 @@ public class DisplayNodesCmd implements Callable<Integer> {
 				heartbeatStr = LocalDateTime.ofInstant(Instant.ofEpochMilli(heartbeat), ZoneId.systemDefault()).toString();
 			}
 
-			System.out.printf("%25s | %15s | %15s | %25s | %30s\n", node.getServerAddress(), node.getServicePort(), node.getRestPort(), heartbeatStr,
+			System.out.printf("%25s | %15s | %15s | %25s | %30s", node.getServerAddress(), node.getServicePort(), node.getRestPort(), heartbeatStr,
 					node.getVersion());
+			System.out.println();
 		}
 
 		return CommandLine.ExitCode.OK;
