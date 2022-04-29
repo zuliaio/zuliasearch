@@ -65,7 +65,7 @@ public class DocCountCmd implements Callable<Integer> {
 			}
 
 
-			System.out.printf("%40s | %22s", "", total);
+			System.out.printf("%40s   %22s", "", total);
 			System.out.println();
 		}
 		else {

@@ -26,6 +26,7 @@ public class DisplayAliasesCmd implements Callable<Integer> {
 
 		for (ZuliaIndex.IndexAlias indexAlias : indexAliases) {
 			System.out.printf("%40s | %40s", indexAlias.getAliasName(), indexAlias.getIndexName());
+			System.out.println();
 		}
 
 		return CommandLine.ExitCode.OK;
