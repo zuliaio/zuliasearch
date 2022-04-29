@@ -12,13 +12,16 @@ import io.zulia.server.cmd.zuliaadmin.DisplayAliasesCmd;
 import io.zulia.server.cmd.zuliaadmin.DisplayIndexesCmd;
 import io.zulia.server.cmd.zuliaadmin.DisplayNodesCmd;
 import io.zulia.server.cmd.zuliaadmin.DocCountCmd;
+import io.zulia.server.cmd.zuliaadmin.ExportAliasesCmd;
+import io.zulia.server.cmd.zuliaadmin.ImportAliasesCmd;
 import io.zulia.server.cmd.zuliaadmin.OptimizeIndexCmd;
 import io.zulia.server.cmd.zuliaadmin.ReindexCmd;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "zuliaadmin", subcommands = { ClearIndexCmd.class, DisplayIndexesCmd.class, DeleteIndexCmd.class, OptimizeIndexCmd.class,
-		ReindexCmd.class, DisplayNodesCmd.class, CreateAliasCmd.class, DeleteAliasCmd.class, DisplayAliasesCmd.class,
-		DocCountCmd.class }, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
+@CommandLine.Command(name = "zuliaadmin", subcommands = { DisplayNodesCmd.class, DocCountCmd.class, DisplayIndexesCmd.class, ClearIndexCmd.class,
+		DeleteIndexCmd.class, OptimizeIndexCmd.class, ReindexCmd.class, CreateAliasCmd.class, DeleteAliasCmd.class, DisplayAliasesCmd.class,
+		ExportAliasesCmd.class,
+		ImportAliasesCmd.class, }, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaAdmin {
 
 	@CommandLine.Mixin
