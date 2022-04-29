@@ -10,6 +10,7 @@ import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import io.zulia.message.ZuliaBase;
+import io.zulia.server.cmd.ZuliaCommonCmd;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoAuth;
@@ -104,7 +105,7 @@ public class ZuliaDConfig {
 
 	public static void displayNodes(NodeService nodeService, String header) throws InvalidProtocolBufferException {
 		System.out.println();
-		System.out.println(header);
+		ZuliaCommonCmd.printBlue(header);
 		for (ZuliaBase.Node node : nodeService.getNodes()) {
 			System.out.println(formatNode(node));
 		}

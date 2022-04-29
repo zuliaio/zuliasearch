@@ -3,6 +3,7 @@ package io.zulia.server.cmd.zuliaadmin;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.GetNumberOfDocsResult;
 import io.zulia.server.cmd.ZuliaAdmin;
+import io.zulia.server.cmd.ZuliaCommonCmd;
 import io.zulia.server.cmd.common.MultipleIndexArgs;
 import picocli.CommandLine;
 
@@ -39,7 +40,7 @@ public class DocCountCmd implements Callable<Integer> {
 
 		if (indexes.size() > 1) {
 			long total = 0;
-			System.out.printf("%40s | %22s\n", "Index", "Count");
+			ZuliaCommonCmd.printMagenta(String.format("%40s | %22s", "Index", "Count"));
 
 			Map<String, Long> indexToCount = new LinkedHashMap<>();
 
@@ -59,11 +60,13 @@ public class DocCountCmd implements Callable<Integer> {
 			}
 
 			for (var entry : entries) {
-				System.out.printf("%40s | %22s\n", entry.getKey(), entry.getValue());
+				System.out.printf("%40s | %22s", entry.getKey(), entry.getValue());
+				System.out.println();
 			}
 
 
-			System.out.printf("%40s | %22s\n", "", total);
+			System.out.printf("%40s | %22s", "", total);
+			System.out.println();
 		}
 		else {
 			GetNumberOfDocsResult numberOfDocs = zuliaWorkPool.getNumberOfDocs(indexes.iterator().next());

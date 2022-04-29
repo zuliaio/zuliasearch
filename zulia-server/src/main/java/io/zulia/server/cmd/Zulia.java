@@ -239,10 +239,10 @@ public class Zulia {
 				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s", "UniqueId", "Index", "Score", "Shard #"));
 			}
 			else if (ZuliaQuery.FetchType.META.equals(fetch)) {
-				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s | %40s", "UniqueId", "Index", "Score", "Shard #", "Meta"));
+				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s | %60s", "UniqueId", "Index", "Score", "Shard #", "Meta"));
 			}
 			else if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
-				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s | %40s", "UniqueId", "Index", "Score", "Shard #", "Document"));
+				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s | %60s", "UniqueId", "Index", "Score", "Shard #", "Document"));
 			}
 
 
@@ -255,7 +255,7 @@ public class Zulia {
 						ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
 						Document mongoDocument = new Document();
 						mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getMetadata().toByteArray()));
-						System.out.printf("%40s", mongoDocument.toJson());
+						System.out.printf(" | %60s", mongoDocument.toJson());
 					}
 				}
 				if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
@@ -263,7 +263,7 @@ public class Zulia {
 						ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
 						Document mongoDocument = new Document();
 						mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray()));
-						System.out.printf("%40s", mongoDocument.toJson());
+						System.out.printf(" | %60s", mongoDocument.toJson());
 					}
 				}
 

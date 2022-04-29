@@ -4,6 +4,7 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.message.ZuliaBase;
 import io.zulia.server.cmd.ZuliaAdmin;
+import io.zulia.server.cmd.ZuliaCommonCmd;
 import picocli.CommandLine;
 
 import java.time.Instant;
@@ -27,7 +28,7 @@ public class DisplayNodesCmd implements Callable<Integer> {
 
 		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-		System.out.printf("%25s | %15s | %15s | %25s | %30s\n", "Server", "Service Port", "REST Port", "Heart Beat", "Version");
+		ZuliaCommonCmd.printMagenta(String.format("%25s | %15s | %15s | %25s | %30s\n", "Server", "Service Port", "REST Port", "Heart Beat", "Version"));
 
 		GetNodesResult nodes = activeOnly ? zuliaWorkPool.getActiveNodes() : zuliaWorkPool.getNodes();
 		for (ZuliaBase.Node node : nodes.getNodes()) {

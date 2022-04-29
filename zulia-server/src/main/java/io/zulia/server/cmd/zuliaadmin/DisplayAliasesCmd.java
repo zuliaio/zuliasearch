@@ -3,6 +3,7 @@ package io.zulia.server.cmd.zuliaadmin;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.server.cmd.ZuliaAdmin;
+import io.zulia.server.cmd.ZuliaCommonCmd;
 import io.zulia.server.cmd.common.AliasArgs;
 import picocli.CommandLine;
 
@@ -24,7 +25,7 @@ public class DisplayAliasesCmd implements Callable<Integer> {
 
 		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-		System.out.printf("%40s | %40s", "Alias", "Index");
+		ZuliaCommonCmd.printMagenta(String.format("%40s | %40s", "Alias", "Index"));
 
 		List<ZuliaIndex.IndexAlias> indexAliases = zuliaWorkPool.getNodes().getIndexAliases();
 
