@@ -209,20 +209,19 @@ public class Zulia {
 
 		System.out.println("QueryTime: " + searchResult.getCommandTimeMs() + "ms");
 		System.out.println("TotalResults: " + searchResult.getTotalHits());
-
+		System.out.println();
 		System.out.println("Results:");
 
+		if (ZuliaQuery.FetchType.NONE.equals(fetch)) {
+			System.out.printf("%25s | %40s | %10s | %10s", "UniqueId", "Index", "Score", "Shard #");
+		}
+		else if (ZuliaQuery.FetchType.META.equals(fetch)) {
+			System.out.printf("%25s | %40s | %10s | %10s | %40s", "UniqueId", "Index", "Score", "Shard #", "Meta");
+		}
+		else if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
+			System.out.printf("%25s | %40s | %10s | %10s | %40s", "UniqueId", "Index", "Score", "Shard #", "Document");
+		}
 
-		System.out.printf("%25s | %25s", "UniqueId", "Index");
-
-		System.out.print("UniqueId");
-		System.out.print("\t");
-		System.out.print("Score");
-		System.out.print("\t");
-		System.out.print("Index");
-		System.out.print("\t");
-		System.out.print("Shard");
-		System.out.print("\t");
 		if (ZuliaQuery.FetchType.META.equals(fetch)) {
 			System.out.print("Meta");
 		}
@@ -232,31 +231,23 @@ public class Zulia {
 		System.out.println();
 
 		for (ZuliaQuery.ScoredResult sr : srList) {
-			System.out.print(sr.getUniqueId());
-			System.out.print("\t");
-			System.out.print(df.format(sr.getScore()));
-			System.out.print("\t");
-			System.out.print(sr.getIndexName());
-			System.out.print("\t");
-			System.out.print(sr.getShard());
-			System.out.print("\t");
+			System.out.printf("%25s | %40s | %10s | %10s", sr.getUniqueId(), df.format(sr.getScore()), sr.getIndexName(), sr.getShard());
 
 			if (ZuliaQuery.FetchType.META.equals(fetch)) {
-				System.out.print("\t");
+
 				if (sr.hasResultDocument()) {
 					ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
 					Document mongoDocument = new Document();
 					mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getMetadata().toByteArray()));
-					System.out.println(mongoDocument.toJson());
+					System.out.printf("%40s", mongoDocument.toJson());
 				}
 			}
 			if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
-				System.out.print("\t");
 				if (sr.hasResultDocument()) {
 					ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
 					Document mongoDocument = new Document();
 					mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray()));
-					System.out.println(mongoDocument.toJson());
+					System.out.printf("%40s", mongoDocument.toJson());
 				}
 			}
 
@@ -264,31 +255,53 @@ public class Zulia {
 		}
 
 		if (!searchResult.getFacetGroups().isEmpty()) {
-			System.out.println("Facets:");
+			System.out.println("Count Facets:");
 			for (ZuliaQuery.FacetGroup fg : searchResult.getFacetGroups()) {
-				System.out.println();
-				System.out.println("--Facet on " + fg.getCountRequest().getFacetField().getLabel() + "--");
+				System.out.printf("%25s | %25s | %12s | %12s", "Field", "Label", "Count", "Max Error");
+				StringBuilder label = new StringBuilder(fg.getCountRequest().getFacetField().getLabel());
+				for (String path : fg.getCountRequest().getFacetField().getPathList()) {
+					label.append(label).append("/").append(path);
+				}
 				for (ZuliaQuery.FacetCount fc : fg.getFacetCountList()) {
-					System.out.print(fc.getFacet());
-					System.out.print("\t");
-					System.out.print(fc.getCount());
-					System.out.print("\t");
-					System.out.print("+" + fc.getMaxError());
+					System.out.printf("%25s | %25s | %12s | %12s", label, fc.getFacet(), fc.getCount(), fc.getMaxError());
 					System.out.println();
 				}
-				if (fg.getPossibleMissing()) {
-					System.out.println("Possible facets missing from top results for <" + fg.getCountRequest().getFacetField().getLabel() + "> with max count <"
-							+ fg.getMaxValuePossibleMissing() + ">");
+			}
+		}
+
+		if (!searchResult.getFacetFieldStats().isEmpty()) {
+
+			System.out.println("Stat Facets:");
+			System.out.printf("%25s | %25s | %12s", "Field", "Label", "Sum");
+			for (ZuliaQuery.StatGroup sg : searchResult.getFacetFieldStats()) {
+				StringBuilder label = new StringBuilder(sg.getStatRequest().getFacetField().getLabel());
+				for (String path : sg.getStatRequest().getFacetField().getPathList()) {
+					label.append(label).append("/").append(path);
+				}
+
+				for (ZuliaQuery.FacetStats fs : sg.getFacetStatsList()) {
+					System.out.printf("%25s | %25s | %12s", label, fs.getFacet(), fs.getSum());
+					System.out.println();
 				}
 			}
+			System.out.println();
+		}
 
+		if (!searchResult.getNumericFieldStats().isEmpty()) {
+
+			System.out.println("Numeric Stats:");
+			System.out.printf("%25s | %12s", "Field", "Sum");
+			for (ZuliaQuery.StatGroup sg : searchResult.getNumericFieldStats()) {
+				ZuliaQuery.FacetStats globalStats = sg.getGlobalStats();
+				System.out.printf("%25s | %25s", globalStats.getFacet(), globalStats.getSum());
+				System.out.println();
+			}
+			System.out.println();
 		}
 	}
 
 	public static void main(String[] args) {
 		ZuliaCommonCmd.runCommandLine(new Zulia(), args);
 	}
-
-
 
 }
