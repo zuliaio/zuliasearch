@@ -20,9 +20,8 @@ public class DisplayAliasesCmd implements Callable<Integer> {
 
 		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-		ZuliaCommonCmd.printMagenta(String.format("%40s | %40s", "Alias", "Index"));
-
 		List<ZuliaIndex.IndexAlias> indexAliases = zuliaWorkPool.getNodes().getIndexAliases();
+		ZuliaCommonCmd.printMagenta(String.format("%40s | %40s", "Alias", "Index"));
 
 		for (ZuliaIndex.IndexAlias indexAlias : indexAliases) {
 			System.out.printf("%40s | %40s", indexAlias.getAliasName(), indexAlias.getIndexName());
