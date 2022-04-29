@@ -199,7 +199,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
 
-		return new SnappyOutputStream(new S3OutputStream(s3, bucket, key));
+		return new SnappyOutputStream(new S3OutputStream(s3, bucket, key, propWait));
 	}
 
 	@Override
