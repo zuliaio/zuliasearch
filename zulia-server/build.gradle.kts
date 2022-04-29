@@ -60,8 +60,23 @@ dependencies {
 }
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
-zuliaScriptTask.applicationName = "zuliaadmin"
-zuliaScriptTask.mainClass.set("io.zulia.server.cmd.ZuliaAdmin")
+zuliaScriptTask.applicationName = "zulia"
+zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
+
+
+val zuliaAdminScriptTask = tasks.register<CreateStartScripts>("createZuliaAdminScript") {
+    applicationName = "zuliaadmin"
+    mainClass.set("io.zulia.server.cmd.ZuliaAdmin")
+    outputDir = zuliaScriptTask.outputDir
+    classpath = zuliaScriptTask.classpath
+
+    doLast {
+        val unixScriptFile = file(unixScript)
+        val text = unixScriptFile.readText(Charsets.UTF_8)
+        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
+        unixScriptFile.writeText(newText, Charsets.UTF_8)
+    }
+}
 
 val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
     applicationName = "zuliad"
@@ -165,6 +180,9 @@ val zuliaStoreFileScriptTask = tasks.register<CreateStartScripts>("createZuliaSt
 distributions {
     main {
         contents {
+            from(zuliaAdminScriptTask) {
+                into("bin")
+            }
             from(zuliaDScriptTask) {
                 into("bin")
             }

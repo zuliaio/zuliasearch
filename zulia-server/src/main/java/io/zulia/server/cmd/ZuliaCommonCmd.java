@@ -17,6 +17,19 @@ public class ZuliaCommonCmd {
 			.applySystemProperties()
 			.build();
 
+	public static void printMagenta(String text) {
+		System.out.println(CommandLine.Help.Ansi.AUTO.string("@|bold,fg(fg_magenta) " + text + "|@"));
+	}
+
+	public static void printBlue(String text) {
+		System.out.println(CommandLine.Help.Ansi.AUTO.string("@|bold,fg(blue) " + text + "|@"));
+	}
+
+	public static void printOrange(String text) {
+		System.out.println(CommandLine.Help.Ansi.AUTO.string("@|bold,blue " + text + "|@"));
+	}
+
+
 	public static void runCommandLine(Object object, String[] args) {
 		LogUtil.init();
 

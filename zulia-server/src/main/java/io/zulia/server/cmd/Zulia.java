@@ -31,7 +31,7 @@ import java.util.Stack;
 @CommandLine.Command(name = "zulia", subcommandsRepeatable = true, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT, preprocessor = Zulia.MagicFinish.class)
 public class Zulia {
 
-	private static final DecimalFormat df = new DecimalFormat("#.00");
+	private static final DecimalFormat df = new DecimalFormat("#0.00");
 
 	public static class MagicFinish implements CommandLine.IParameterPreprocessor {
 		public boolean preprocess(Stack<String> args, CommandLine.Model.CommandSpec commandSpec, CommandLine.Model.ArgSpec argSpec, Map<String, Object> info) {
@@ -138,17 +138,25 @@ public class Zulia {
 
 	}
 
-	@CommandLine.Command(aliases = { "st" })
-	void stat(@CommandLine.Option(names = { "-n", "--numericField" }, required = true, description = "Numeric field name") String numericField,
+	@CommandLine.Command(aliases = { "sf" })
+	void statFacet(@CommandLine.Option(names = { "-n", "--numericField" }, required = true, description = "Numeric field name") String numericField,
 			@CommandLine.Option(names = { "-f", "--facetField" }, required = true, description = "Facet field name") String facetField,
-			@CommandLine.Option(names = { "-p", "--path" }, description = "Path values for a hierarchical facet") List<String> path) {
+			@CommandLine.Option(names = { "-t", "--topN" }, description = "The number of facets to return") Integer topN, @CommandLine.Option(names = { "-s",
+			"--shardTopN" }, description = "The number of facets to request from each shard.  Increasing this number can increase the accuracy of sharded facets when all of the facets are not returned in the top N")
+	Integer shardTopN, @CommandLine.Option(names = { "-p", "--path" }, description = "Path values for a hierarchical facet") List<String> path) {
 
 		StatFacet statFacet = path != null && !path.isEmpty() ? new StatFacet(numericField, facetField, path) : new StatFacet(numericField, facetField);
+		if (topN != null) {
+			statFacet.setTopN(topN);
+		}
+		if (shardTopN != null) {
+			statFacet.setTopNShard(shardTopN);
+		}
 		stats.add(statFacet);
 	}
 
-	@CommandLine.Command(aliases = { "sf" })
-	void statFacet(@CommandLine.Option(names = { "-n", "--numericField" }, required = true, description = "Numeric field name") String numericField) {
+	@CommandLine.Command(aliases = { "st" })
+	void stat(@CommandLine.Option(names = { "-n", "--numericField" }, required = true, description = "Numeric field name") String numericField) {
 		NumericStat numericStat = new NumericStat(numericField);
 		stats.add(numericStat);
 	}
@@ -198,6 +206,18 @@ public class Zulia {
 			search.setResultFetchType(fetch);
 		}
 
+		if (fl != null) {
+			for (String f : fl) {
+				search.addDocumentField(f);
+			}
+		}
+
+		if (flMask != null) {
+			for (String f : flMask) {
+				search.addDocumentMaskedField(f);
+			}
+		}
+
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		display(searchResult);
 
@@ -207,57 +227,56 @@ public class Zulia {
 	public void display(SearchResult searchResult) {
 		List<ZuliaQuery.ScoredResult> srList = searchResult.getResults();
 
-		System.out.println("QueryTime: " + searchResult.getCommandTimeMs() + "ms");
-		System.out.println("TotalResults: " + searchResult.getTotalHits());
-		System.out.println();
-		System.out.println("Results:");
-
-		if (ZuliaQuery.FetchType.NONE.equals(fetch)) {
-			System.out.printf("%25s | %40s | %10s | %10s", "UniqueId", "Index", "Score", "Shard #");
-		}
-		else if (ZuliaQuery.FetchType.META.equals(fetch)) {
-			System.out.printf("%25s | %40s | %10s | %10s | %40s", "UniqueId", "Index", "Score", "Shard #", "Meta");
-		}
-		else if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
-			System.out.printf("%25s | %40s | %10s | %10s | %40s", "UniqueId", "Index", "Score", "Shard #", "Document");
-		}
-
-		if (ZuliaQuery.FetchType.META.equals(fetch)) {
-			System.out.print("Meta");
-		}
-		if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
-			System.out.print("Document");
-		}
+		ZuliaCommonCmd.printBlue("QueryTime: " + searchResult.getCommandTimeMs() + "ms");
+		ZuliaCommonCmd.printBlue("TotalResults: " + searchResult.getTotalHits());
 		System.out.println();
 
-		for (ZuliaQuery.ScoredResult sr : srList) {
-			System.out.printf("%25s | %40s | %10s | %10s", sr.getUniqueId(), df.format(sr.getScore()), sr.getIndexName(), sr.getShard());
+		if (rows != null && rows != 0) {
 
-			if (ZuliaQuery.FetchType.META.equals(fetch)) {
+			ZuliaCommonCmd.printBlue("Results:");
 
-				if (sr.hasResultDocument()) {
-					ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
-					Document mongoDocument = new Document();
-					mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getMetadata().toByteArray()));
-					System.out.printf("%40s", mongoDocument.toJson());
-				}
+			if (ZuliaQuery.FetchType.NONE.equals(fetch)) {
+				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s", "UniqueId", "Index", "Score", "Shard #"));
 			}
-			if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
-				if (sr.hasResultDocument()) {
-					ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
-					Document mongoDocument = new Document();
-					mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray()));
-					System.out.printf("%40s", mongoDocument.toJson());
-				}
+			else if (ZuliaQuery.FetchType.META.equals(fetch)) {
+				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s | %40s", "UniqueId", "Index", "Score", "Shard #", "Meta"));
+			}
+			else if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
+				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s | %40s", "UniqueId", "Index", "Score", "Shard #", "Document"));
 			}
 
+
+			for (ZuliaQuery.ScoredResult sr : srList) {
+				System.out.printf("%25s | %40s | %10s | %10s", sr.getUniqueId(), sr.getIndexName(), df.format(sr.getScore()), sr.getShard());
+
+				if (ZuliaQuery.FetchType.META.equals(fetch)) {
+
+					if (sr.hasResultDocument()) {
+						ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
+						Document mongoDocument = new Document();
+						mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getMetadata().toByteArray()));
+						System.out.printf("%40s", mongoDocument.toJson());
+					}
+				}
+				if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
+					if (sr.hasResultDocument()) {
+						ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
+						Document mongoDocument = new Document();
+						mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray()));
+						System.out.printf("%40s", mongoDocument.toJson());
+					}
+				}
+
+				System.out.println();
+			}
 			System.out.println();
 		}
 
 		if (!searchResult.getFacetGroups().isEmpty()) {
-			System.out.println("Count Facets:");
+
+			ZuliaCommonCmd.printBlue("Count Facets:");
+			ZuliaCommonCmd.printMagenta(String.format("%25s | %25s | %12s | %12s", "Field", "Label", "Count", "Max Error"));
 			for (ZuliaQuery.FacetGroup fg : searchResult.getFacetGroups()) {
-				System.out.printf("%25s | %25s | %12s | %12s", "Field", "Label", "Count", "Max Error");
 				StringBuilder label = new StringBuilder(fg.getCountRequest().getFacetField().getLabel());
 				for (String path : fg.getCountRequest().getFacetField().getPathList()) {
 					label.append(label).append("/").append(path);
@@ -267,12 +286,14 @@ public class Zulia {
 					System.out.println();
 				}
 			}
+			System.out.println();
 		}
 
 		if (!searchResult.getFacetFieldStats().isEmpty()) {
 
-			System.out.println("Stat Facets:");
-			System.out.printf("%25s | %25s | %12s", "Field", "Label", "Sum");
+			ZuliaCommonCmd.printBlue("Stat Facets:");
+			ZuliaCommonCmd.printMagenta(String.format("%25s | %15s | %15s | %25s | %12s | %12s | %12s | %12s", "Numeric Field", "Facet Field", "Facet Label", "Value Count", "Doc Count",
+					"Min", "Max", "Sum"));
 			for (ZuliaQuery.StatGroup sg : searchResult.getFacetFieldStats()) {
 				StringBuilder label = new StringBuilder(sg.getStatRequest().getFacetField().getLabel());
 				for (String path : sg.getStatRequest().getFacetField().getPathList()) {
@@ -280,7 +301,8 @@ public class Zulia {
 				}
 
 				for (ZuliaQuery.FacetStats fs : sg.getFacetStatsList()) {
-					System.out.printf("%25s | %25s | %12s", label, fs.getFacet(), fs.getSum());
+					System.out.printf("%25s | %15s | %15s | %25s | %12s | %12s | %12s | %12s", sg.getStatRequest().getNumericField(), label, fs.getFacet(), fs.getValueCount(),
+							fs.getDocCount(), getVal(fs.getMin()), getVal(fs.getMax()), getVal(fs.getSum()));
 					System.out.println();
 				}
 			}
@@ -289,15 +311,21 @@ public class Zulia {
 
 		if (!searchResult.getNumericFieldStats().isEmpty()) {
 
-			System.out.println("Numeric Stats:");
-			System.out.printf("%25s | %12s", "Field", "Sum");
+			ZuliaCommonCmd.printBlue("Numeric Stats:");
+			ZuliaCommonCmd.printMagenta(String.format("%25s | %12s | %12s | %12s | %12s | %12s", "Field", "Value Count", "Doc Count", "Min", "Max", "Sum"));
 			for (ZuliaQuery.StatGroup sg : searchResult.getNumericFieldStats()) {
 				ZuliaQuery.FacetStats globalStats = sg.getGlobalStats();
-				System.out.printf("%25s | %25s", globalStats.getFacet(), globalStats.getSum());
+
+				System.out.printf("%25s | %12s | %12s | %12s | %12s | %12s", sg.getStatRequest().getNumericField(), globalStats.getValueCount(),
+						globalStats.getDocCount(), getVal(globalStats.getMin()), getVal(globalStats.getMax()), getVal(globalStats.getSum()));
 				System.out.println();
 			}
 			System.out.println();
 		}
+	}
+
+	private String getVal(ZuliaQuery.SortValue val) {
+		return val.getLongValue() != 0 ? val.getLongValue() + "" : df.format(val.getDoubleValue());
 	}
 
 	public static void main(String[] args) {

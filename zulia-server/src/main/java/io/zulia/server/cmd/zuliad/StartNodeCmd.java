@@ -1,6 +1,7 @@
 package io.zulia.server.cmd.zuliad;
 
 import io.zulia.message.ZuliaBase;
+import io.zulia.server.cmd.ZuliaCommonCmd;
 import io.zulia.server.cmd.ZuliaD;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
@@ -53,9 +54,7 @@ public class StartNodeCmd implements Callable<Integer> {
 				/_____\\__,_|_|_|\\__,_|""";
 
 
-		zuliaArt = CommandLine.Help.Ansi.AUTO.string("@|bold,fg(166) " + zuliaArt + "|@");
-
-		System.out.println(zuliaArt);
+		ZuliaCommonCmd.printOrange(zuliaArt);
 		System.out.println("  Zulia (" + ZuliaVersion.getVersion() + ") based on Lucene " + Version.LATEST);
 		System.out.println();
 
