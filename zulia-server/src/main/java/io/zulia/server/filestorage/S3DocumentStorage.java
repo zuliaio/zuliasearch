@@ -55,6 +55,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	private final String bucket;
 	private final S3Client s3;
 	private final String region;
+	private final boolean propWait;
 
 	public S3DocumentStorage(MongoClient mongoClient, String indexName, String dbName, boolean sharded, S3Config s3Config) {
 		if (null == s3Config)
@@ -65,6 +66,7 @@ public class S3DocumentStorage implements DocumentStorage {
 			throw new IllegalArgumentException("Must provide the region the s3 bucket lives in.");
 		this.bucket = s3Config.getS3BucketName();
 		this.region = s3Config.getRegion();
+		this.propWait = s3Config.isPropWait();
 		this.client = mongoClient;
 		this.indexName = indexName;
 		this.dbName = dbName;

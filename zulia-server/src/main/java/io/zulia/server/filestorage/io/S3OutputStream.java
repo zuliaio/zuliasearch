@@ -29,6 +29,7 @@ public class S3OutputStream extends OutputStream {
 
 	/** The temporary buffer used for storing the chunks */
 	private final byte[] buf;
+	private final boolean propWait;
 
 	/** The position in the buffer */
 	private int position;
@@ -48,9 +49,10 @@ public class S3OutputStream extends OutputStream {
 	 * @param bucket name of the bucket
 	 * @param key path within the bucket
 	 */
-	public S3OutputStream(S3Client s3Client, String bucket, String key) {
+	public S3OutputStream(S3Client s3Client, String bucket, String key, boolean propWait) {
 		this.s3Client = s3Client;
 		this.bucket = bucket;
+		this.propWait = propWait;
 		this.key = key;
 		this.buf = new byte[BUFFER_SIZE];
 		this.position = 0;
@@ -145,16 +147,20 @@ public class S3OutputStream extends OutputStream {
 			}
 
 
-			HeadObjectRequest hor = HeadObjectRequest.builder().bucket(bucket).key(key).build();
-			int count = 0;
-			while (count++ < 10) {
-				try {
-					//This should ensure the object has successfully propagated, this will throw NoSuchKeyException until so.
-					HeadObjectResponse head = s3Client.headObject(hor);
-				} catch (NoSuchKeyException e) {
+			if (propWait) {
+				HeadObjectRequest hor = HeadObjectRequest.builder().bucket(bucket).key(key).build();
+				int count = 0;
+				while (count++ < 10) {
 					try {
-						Thread.sleep(200);
-					} catch (InterruptedException ignored) {}
+						//This should ensure the object has successfully propagated, this will throw NoSuchKeyException until so.
+						HeadObjectResponse head = s3Client.headObject(hor);
+						break;
+					} catch (NoSuchKeyException e) {
+						try {
+							Thread.sleep(200);
+						} catch (InterruptedException ignored) {
+						}
+					}
 				}
 			}
 		}
