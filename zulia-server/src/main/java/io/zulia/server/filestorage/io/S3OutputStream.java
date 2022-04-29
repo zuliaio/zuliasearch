@@ -2,15 +2,7 @@ package io.zulia.server.filestorage.io;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
-import software.amazon.awssdk.services.s3.model.CompletedPart;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.UploadPartRequest;
-import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
@@ -150,6 +142,20 @@ public class S3OutputStream extends OutputStream {
 			else {
 				PutObjectRequest req = PutObjectRequest.builder().bucket(bucket).key(key).contentLength((long) this.position).build();
 				s3Client.putObject(req, RequestBody.fromInputStream(new ByteArrayInputStream(buf, 0, this.position), this.position));
+			}
+
+
+			HeadObjectRequest hor = HeadObjectRequest.builder().bucket(bucket).key(key).build();
+			int count = 0;
+			while (count++ < 10) {
+				try {
+					//This should ensure the object has successfully propagated, this will throw NoSuchKeyException until so.
+					HeadObjectResponse head = s3Client.headObject(hor);
+				} catch (NoSuchKeyException e) {
+					try {
+						Thread.sleep(200);
+					} catch (InterruptedException ignored) {}
+				}
 			}
 		}
 	}
