@@ -277,7 +277,6 @@ public class S3DocumentStorage implements DocumentStorage {
 	private void deleteKeys(List<String> keyBatch) {
 		DeleteObjectsRequest dor = DeleteObjectsRequest.builder()
 				.bucket(bucket)
-				.bypassGovernanceRetention(true)
 				.delete(Delete.builder()
 						.objects(
 								keyBatch.stream()
