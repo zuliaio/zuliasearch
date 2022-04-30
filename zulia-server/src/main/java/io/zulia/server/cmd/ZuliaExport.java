@@ -1,111 +1,66 @@
 package io.zulia.server.cmd;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
-import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.client.result.GetIndexesResult;
-import io.zulia.log.LogUtil;
+import io.zulia.server.cmd.common.MultipleIndexArgs;
+import io.zulia.server.cmd.common.ShowStackArgs;
+import io.zulia.server.cmd.common.ZuliaCmdUtil;
+import io.zulia.server.cmd.common.ZuliaVersionProvider;
+import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
+import picocli.CommandLine;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ZuliaExport {
+@CommandLine.Command(name = "zuliaexport", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
+public class ZuliaExport implements Callable<Integer> {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaDump.class.getSimpleName());
+	private static final Logger LOG = Logger.getLogger(ZuliaExport.class.getSimpleName());
+	@CommandLine.Mixin
+	private ConnectionInfo connectionInfo;
 
-	public static class ZuliaExportArgs extends ZuliaBaseArgs {
+	@CommandLine.Mixin
+	private ShowStackArgs showStackArgs;
 
-		@Parameter(names = "--indexes", description = "Comma separated or name* for wild card multiple index names.")
-		private String indexes;
+	@CommandLine.Mixin
+	private MultipleIndexArgs multipleIndexArgs;
 
-		@Parameter(names = "--out", description = "Full path to the output directory. [Defaults to current_directory/zuliadump")
-		private String out = System.getProperty("user.dir");
+	@CommandLine.Option(names = {"-o", "--out"}, description = "Full path to the output directory. (default: ${DEFAULT-VALUE})")
+	private String out = System.getProperty("user.dir");
 
-		@Parameter(names = "--q", description = "Zulia query, matches all docs by default.")
-		private String q = "*:*";
+	@CommandLine.Option(names = {"-q", "--query"}, description = "Zulia query, matches all docs by default (default: ${DEFAULT-VALUE})")
+	private String q = "*:*";
 
-		@Parameter(names = "--rows", description = "Number of records to return. [Defaults to 1000]")
-		private Integer rows = 1000;
+	@CommandLine.Option(names = { "-p", "--pageSize", "--rows" }, description = "Number of records in each page (default: ${DEFAULT-VALUE})")
+	private Integer pageSize = 1000;
+
+	@CommandLine.Option(names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
+	private boolean sortById = true;
+
+	@CommandLine.Option(names = { "-d", "--idField"}, description = "Id Field Name (default: ${DEFAULT-VALUE})")
+	private String idField = "id";
+
+	@Override
+	public Integer call() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
+
+		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
+		for (String ind : indexes) {
+			queryAndWriteOutput(zuliaWorkPool, ind, q, pageSize, out);
+		}
+
+		return CommandLine.ExitCode.OK;
 	}
 
-	public static void main(String[] args) {
-
-		LogUtil.init();
-
-		ZuliaExportArgs zuliaExportArgs = new ZuliaExportArgs();
-
-		JCommander jCommander = JCommander.newBuilder().addObject(zuliaExportArgs).build();
-
-		try {
-
-			jCommander.parse(args);
-
-			ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(zuliaExportArgs.address, zuliaExportArgs.port).setNodeUpdateEnabled(false);
-			ZuliaWorkPool workPool = new ZuliaWorkPool(zuliaPoolConfig);
-
-			String index = zuliaExportArgs.index;
-			String indexes = zuliaExportArgs.indexes;
-
-			if (index == null && indexes == null) {
-				LOG.log(Level.SEVERE, "Please pass in an index name.");
-				jCommander.usage();
-				System.exit(2);
-			}
-
-			String q = zuliaExportArgs.q;
-			Integer rows = zuliaExportArgs.rows;
-			String out = zuliaExportArgs.out;
-
-			if (indexes != null) {
-
-				if (indexes.contains(",")) {
-					for (String ind : indexes.split(",")) {
-						queryAndWriteOutput(workPool, ind, q, rows, out);
-					}
-				}
-				else if (indexes.contains("*")) {
-					GetIndexesResult indexesResult = workPool.getIndexes();
-					for (String ind : indexesResult.getIndexNames()) {
-						if (ind.startsWith(indexes.replace("*", ""))) {
-							queryAndWriteOutput(workPool, ind, q, rows, out);
-						}
-					}
-				}
-			}
-			else {
-				queryAndWriteOutput(workPool, index, q, rows, out);
-			}
-
-		}
-		catch (ParameterException e) {
-			System.err.println(e.getMessage());
-			jCommander.usage();
-			System.exit(2);
-		}
-		catch (UnsupportedOperationException e) {
-			System.err.println("Error: " + e.getMessage());
-			System.exit(2);
-		}
-		catch (Exception e) {
-			System.err.println("Error: " + e.getMessage());
-			e.printStackTrace();
-			System.exit(1);
-		}
-
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String out) throws Exception {
+		queryAndWriteOutput(workPool, index, q, pageSize, out, null, null, false);
 	}
 
-	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out) throws Exception {
-		queryAndWriteOutput(workPool, index, q, rows, out, null, null, false);
-	}
-
-	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String out, String idField, Set<String> uniqueIds,
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String out, String idField, Set<String> uniqueIds,
 			boolean sortById) throws Exception {
 
 		// create zuliaexport dir first
@@ -124,9 +79,14 @@ public class ZuliaExport {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Exporting from index <" + index + ">");
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds, sortById);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, idField, uniqueIds, sortById);
 		LOG.info("Finished exporting from index <" + index + ">, total: " + count);
 
+	}
+
+	public static void main(String[] args) {
+
+		ZuliaCommonCmd.runCommandLine(new ZuliaExport(), args);
 	}
 
 }
