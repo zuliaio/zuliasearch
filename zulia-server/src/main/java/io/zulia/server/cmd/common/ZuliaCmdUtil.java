@@ -1,11 +1,6 @@
-package io.zulia.server.cmd;
+package io.zulia.server.cmd.common;
 
 import com.google.common.base.Charsets;
-import com.mongodb.MongoClientSettings;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import io.zulia.client.command.Fetch;
 import io.zulia.client.command.FetchAllAssociated;
 import io.zulia.client.command.Store;
@@ -19,13 +14,6 @@ import io.zulia.client.result.AssociatedResult;
 import io.zulia.client.result.FetchResult;
 import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
-import io.zulia.server.config.NodeService;
-import io.zulia.server.config.ZuliaConfig;
-import io.zulia.server.config.cluster.MongoAuth;
-import io.zulia.server.config.cluster.MongoNodeService;
-import io.zulia.server.config.cluster.MongoServer;
-import io.zulia.server.config.single.SingleNodeService;
-import io.zulia.server.util.MongoProvider;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.bson.Document;
@@ -40,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -58,37 +45,6 @@ import static io.zulia.message.ZuliaQuery.FetchType.META;
 public class ZuliaCmdUtil {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaCmdUtil.class.getSimpleName());
-
-	public static NodeService getNodeService(ZuliaConfig zuliaConfig) {
-		if (zuliaConfig.isCluster()) {
-			List<MongoServer> mongoServers = zuliaConfig.getMongoServers();
-
-			List<ServerAddress> serverAddressList = new ArrayList<>();
-
-			for (MongoServer mongoServer : mongoServers) {
-				LOG.info("Added Mongo Server: " + mongoServer);
-				serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
-			}
-
-			MongoClientSettings.Builder mongoBuilder = MongoClientSettings.builder().applyToClusterSettings(builder -> builder.hosts(serverAddressList));
-
-			MongoAuth mongoAuth = zuliaConfig.getMongoAuth();
-			if (mongoAuth != null) {
-				mongoBuilder.credential(
-						MongoCredential.createCredential(mongoAuth.getUsername(), mongoAuth.getDatabase(), mongoAuth.getPassword().toCharArray()));
-			}
-
-			MongoClient mongoClient = MongoClients.create(mongoBuilder.build());
-
-			MongoProvider.setMongoClient(mongoClient);
-			LOG.info("Created Mongo Client: " + MongoProvider.getMongoClient());
-
-			return new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
-		}
-		else {
-			return new SingleNodeService(zuliaConfig);
-		}
-	}
 
 	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, String idField,
 			Set<String> uniqueIds, boolean sortById) throws Exception {
@@ -327,4 +283,7 @@ public class ZuliaCmdUtil {
 
 		return destFile;
 	}
+
+
+
 }

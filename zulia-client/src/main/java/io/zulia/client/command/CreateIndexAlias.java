@@ -19,6 +19,10 @@ public class CreateIndexAlias extends SimpleCommand<CreateIndexAliasRequest, Cre
 
 	private final IndexAlias indexAlias;
 
+	public CreateIndexAlias(IndexAlias indexAlias) {
+		this.indexAlias = indexAlias;
+	}
+
 	public CreateIndexAlias(String aliasName, String indexName) {
 		this.indexAlias = IndexAlias.newBuilder().setAliasName(aliasName).setIndexName(indexName).build();
 	}

@@ -23,8 +23,7 @@ dependencies {
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
     implementation("info.picocli:picocli:4.6.3")
-    //annotationProcessor("info.picocli:picocli-codegen:4.6.3")
-    //implementation("com.beust:jcommander:1.78")
+    annotationProcessor("info.picocli:picocli-codegen:4.6.3")
 
     implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
 
@@ -62,6 +61,21 @@ dependencies {
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
 zuliaScriptTask.applicationName = "zulia"
 zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
+
+
+val zuliaAdminScriptTask = tasks.register<CreateStartScripts>("createZuliaAdminScript") {
+    applicationName = "zuliaadmin"
+    mainClass.set("io.zulia.server.cmd.ZuliaAdmin")
+    outputDir = zuliaScriptTask.outputDir
+    classpath = zuliaScriptTask.classpath
+
+    doLast {
+        val unixScriptFile = file(unixScript)
+        val text = unixScriptFile.readText(Charsets.UTF_8)
+        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
+        unixScriptFile.writeText(newText, Charsets.UTF_8)
+    }
+}
 
 val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
     applicationName = "zuliad"
@@ -165,6 +179,9 @@ val zuliaStoreFileScriptTask = tasks.register<CreateStartScripts>("createZuliaSt
 distributions {
     main {
         contents {
+            from(zuliaAdminScriptTask) {
+                into("bin")
+            }
             from(zuliaDScriptTask) {
                 into("bin")
             }

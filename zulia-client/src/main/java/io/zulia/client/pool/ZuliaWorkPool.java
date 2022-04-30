@@ -27,9 +27,18 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(batchFetch);
 	}
 
+	public ClearIndexResult clearIndex(String index) throws Exception {
+		return clearIndex(new ClearIndex(index));
+	}
+
 	public ClearIndexResult clearIndex(ClearIndex clearIndex) throws Exception {
 		return execute(clearIndex);
 	}
+
+	public ListenableFuture<ClearIndexResult> clearIndexAsync(String index) throws Exception {
+		return clearIndexAsync(new ClearIndex(index));
+	}
+
 
 	public ListenableFuture<ClearIndexResult> clearIndexAsync(ClearIndex clearIndex) throws Exception {
 		return executeAsync(clearIndex);
@@ -77,6 +86,10 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 
 	public DeleteIndexResult deleteIndex(String indexName) throws Exception {
 		return execute(new DeleteIndex(indexName));
+	}
+
+	public DeleteIndexResult deleteIndexAndAssociatedFiles(String indexName) throws Exception {
+		return execute(new DeleteIndex(indexName).setDeleteAssociated(true));
 	}
 
 	public DeleteIndexAliasResult deleteIndexAlias(String aliasName) throws Exception {
@@ -139,6 +152,11 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new GetNodes());
 	}
 
+	public GetNodesResult getActiveNodes() throws Exception {
+		return execute(new GetNodes().setActiveOnly(true));
+	}
+
+
 	public ListenableFuture<GetNodesResult> getNodesAsync() throws Exception {
 		return executeAsync(new GetNodes());
 	}
@@ -169,6 +187,14 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 
 	public OptimizeIndexResult optimizeIndex(OptimizeIndex optimizeIndex) throws Exception {
 		return execute(optimizeIndex);
+	}
+
+	public OptimizeIndexResult optimizeIndex(String index) throws Exception {
+		return optimizeIndex(new OptimizeIndex(index));
+	}
+
+	public ListenableFuture<OptimizeIndexResult> optimizeIndexAsync(String index) throws Exception {
+		return optimizeIndexAsync(new OptimizeIndex(index));
 	}
 
 	public ListenableFuture<OptimizeIndexResult> optimizeIndexAsync(OptimizeIndex optimizeIndex) throws Exception {
@@ -249,6 +275,10 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(getIndexConfig);
 	}
 
+	public ReindexResult reindex(String index) throws Exception {
+		return execute(new Reindex(index));
+	}
+
 	public ReindexResult reindex(Reindex reindex) throws Exception {
 		return execute(reindex);
 	}
@@ -256,5 +286,10 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 	public ListenableFuture<ReindexResult> reindexAsync(Reindex reindex) throws Exception {
 		return executeAsync(reindex);
 	}
+
+	public ListenableFuture<ReindexResult> reindexAsync(String index) throws Exception {
+		return reindexAsync(new Reindex(index));
+	}
+
 
 }

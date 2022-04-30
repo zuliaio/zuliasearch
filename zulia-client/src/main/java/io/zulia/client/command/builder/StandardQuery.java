@@ -108,4 +108,5 @@ public abstract class StandardQuery implements QueryBuilder {
 	}
 
 	protected abstract void completeQuery(ZuliaQuery.Query.Builder queryBuilder);
+
 }

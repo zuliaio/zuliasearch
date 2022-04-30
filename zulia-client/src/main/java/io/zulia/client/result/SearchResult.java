@@ -17,6 +17,7 @@ import org.bson.Document;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SearchResult extends Result {
 	private final QueryResponse queryResponse;
@@ -138,6 +139,10 @@ public class SearchResult extends Result {
 		return queryResponse.getStatGroupList();
 	}
 
+	public List<StatGroup> getNumericFieldStats() {
+		return queryResponse.getStatGroupList().stream().filter(sg ->  sg.getStatRequest().getFacetField().getLabel().isEmpty()).collect(Collectors.toList());
+	}
+
 	public FacetStats getNumericFieldStat(String numericFieldName) {
 		for (StatGroup sg : queryResponse.getStatGroupList()) {
 			if (numericFieldName.equals(sg.getStatRequest().getNumericField()) && sg.getStatRequest().getFacetField().getLabel().isEmpty()) {
@@ -145,6 +150,10 @@ public class SearchResult extends Result {
 			}
 		}
 		return null;
+	}
+
+	public List<StatGroup> getFacetFieldStats() {
+		return queryResponse.getStatGroupList().stream().filter(sg ->  !sg.getStatRequest().getFacetField().getLabel().isEmpty()).collect(Collectors.toList());
 	}
 
 	public List<FacetStats> getFacetFieldStat(String numericFieldName, String facetField) {
