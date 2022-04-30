@@ -24,7 +24,6 @@ dependencies {
 
     implementation("info.picocli:picocli:4.6.3")
     annotationProcessor("info.picocli:picocli-codegen:4.6.3")
-    implementation("com.beust:jcommander:1.78")
 
     implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
 

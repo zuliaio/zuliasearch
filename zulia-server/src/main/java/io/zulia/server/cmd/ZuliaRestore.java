@@ -1,6 +1,5 @@
 package io.zulia.server.cmd;
 
-import com.beust.jcommander.Parameter;
 import com.google.common.base.Charsets;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.client.config.ClientIndexConfig;
@@ -50,17 +49,17 @@ public class ZuliaRestore implements Callable<Integer> {
 	@CommandLine.Option(names = "--dir", description = "Full path to the zuliadump directory", required = true)
 	private String dir;
 
-	@Parameter(names = "--drop", description = "Drop the index before restoring (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(names = "--drop", description = "Drop the index before restoring (default: ${DEFAULT-VALUE})")
 	private Boolean drop = false;
 
-	@Parameter(names = "--skipExistingFiles", description = "Skip storing files if they already exist  (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(names = "--skipExistingFiles", description = "Skip storing files if they already exist  (default: ${DEFAULT-VALUE})")
 	public Boolean skipExistingFiles = false;
 
 	@Override
 	public Integer call() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
 
-		int threads =  threadedArgs.getThreads();
+		int threads = threadedArgs.getThreads();
 
 		if (indexes != null) {
 			for (String index : indexes) {
