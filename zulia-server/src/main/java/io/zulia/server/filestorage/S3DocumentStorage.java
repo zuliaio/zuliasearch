@@ -17,9 +17,13 @@ import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
-import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain;
+import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.SystemPropertyCredentialsProvider;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Delete;
@@ -28,11 +32,14 @@ import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,6 +62,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	private final String bucket;
 	private final S3Client s3;
 	private final String region;
+	private final boolean propWait;
 
 	public S3DocumentStorage(MongoClient mongoClient, String indexName, String dbName, boolean sharded, S3Config s3Config) {
 		if (null == s3Config)
@@ -65,6 +73,7 @@ public class S3DocumentStorage implements DocumentStorage {
 			throw new IllegalArgumentException("Must provide the region the s3 bucket lives in.");
 		this.bucket = s3Config.getS3BucketName();
 		this.region = s3Config.getRegion();
+		this.propWait = s3Config.isPropWait();
 		this.client = mongoClient;
 		this.indexName = indexName;
 		this.dbName = dbName;
@@ -197,7 +206,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
 
-		return new SnappyOutputStream(new S3OutputStream(s3, bucket, key));
+		return new SnappyOutputStream(new S3OutputStream(s3, bucket, key, propWait));
 	}
 
 	@Override
