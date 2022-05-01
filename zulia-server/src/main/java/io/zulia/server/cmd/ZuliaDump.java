@@ -48,7 +48,7 @@ public class ZuliaDump implements Callable<Integer> {
 	@CommandLine.Option(names = { "-a", "--includeAssociatedDocs"}, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
 	private boolean includeAssociatedDocs = false;
 
-	@CommandLine.Option(names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(negatable = true, names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
 	private boolean sortById = true;
 
 	@CommandLine.Option(names = { "-d", "--idField"}, description = "Id Field Name (default: ${DEFAULT-VALUE})")
