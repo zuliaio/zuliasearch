@@ -112,8 +112,8 @@ public class ZuliaDConfig {
 	}
 
 	public static String formatNode(ZuliaBase.Node node) throws InvalidProtocolBufferException {
-		JsonFormat.Printer printer = JsonFormat.printer();
-		return printer.print(node).replace("\n", " ").replaceAll("\\s+", " ");
+		JsonFormat.Printer printer = JsonFormat.printer().omittingInsignificantWhitespace();
+		return printer.print(node);
 	}
 
 	public static void setLuceneStatic() {

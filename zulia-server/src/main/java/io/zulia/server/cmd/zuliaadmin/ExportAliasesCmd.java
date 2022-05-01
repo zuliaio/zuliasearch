@@ -38,8 +38,8 @@ public class ExportAliasesCmd implements Callable<Integer> {
 		try (FileWriter fileWriter = new FileWriter(outputFile, Charsets.UTF_8)) {
 			for (ZuliaIndex.IndexAlias indexAlias : indexAliases) {
 				if (aliases.contains(indexAlias.getAliasName())) {
-					JsonFormat.Printer printer = JsonFormat.printer();
-					fileWriter.write(printer.print(indexAlias));
+					JsonFormat.Printer printer = JsonFormat.printer().omittingInsignificantWhitespace();
+					fileWriter.write(printer.print(indexAlias) + "\n");
 				}
 			}
 		}
