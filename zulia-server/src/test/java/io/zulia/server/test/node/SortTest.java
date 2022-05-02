@@ -194,6 +194,8 @@ public class SortTest {
 		search.addSort(new Sort("title").descending().missingLast());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertNull(searchResult.getFirstDocument().get("title"));
+
+
 	}
 
 	@Test
@@ -460,7 +462,7 @@ public class SortTest {
 
 	@Test
 	@Order(9)
-	public void scoreSort() throws Exception {
+	public void zuliaSort() throws Exception {
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10).addQuery(new ScoredQuery("title:special OR title:secret"));
@@ -479,6 +481,24 @@ public class SortTest {
 		searchResult = zuliaWorkPool.search(search);
 
 		Assertions.assertEquals("40", searchResult.getFirstDocument().get("id"));
+
+
+		search = new Search(INDEX_NAME).setAmount(10);
+
+		search.clearSort();
+		search.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD).ascending());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals("0", searchResult.getFirstDocument().get("id"));
+		Assertions.assertEquals("0", searchResult.getFirstResult().getUniqueId());
+
+
+		search.clearSort();
+		search.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD).descending());
+		searchResult = zuliaWorkPool.search(search);
+		//99 here instead of 199 because sorting as a string not a number
+		Assertions.assertEquals("99", searchResult.getFirstDocument().get("id"));
+		Assertions.assertEquals("99", searchResult.getFirstResult().getUniqueId());
+
 	}
 
 	@Test
