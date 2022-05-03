@@ -38,7 +38,7 @@ public class ZuliaExport implements Callable<Integer> {
 	@CommandLine.Option(names = { "-p", "--pageSize", "--rows" }, description = "Number of records in each page (default: ${DEFAULT-VALUE})")
 	private Integer pageSize = 1000;
 
-	@CommandLine.Option(names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(arity = "1", names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
 	private boolean sortById = true;
 
 	@CommandLine.Option(names = { "-d", "--idField"}, description = "Id Field Name (default: ${DEFAULT-VALUE})")
@@ -46,6 +46,14 @@ public class ZuliaExport implements Callable<Integer> {
 
 	@Override
 	public Integer call() throws Exception {
+
+		if (!sortById) {
+			LOG.warning("Sort By ID is disabled.  Do not use this on an actively changing index");
+		}
+		else {
+			LOG.info("Sorting by results on field <" + idField + ">");
+		}
+
 		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
 
 		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
