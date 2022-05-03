@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class TestHelper {
 
@@ -61,7 +62,9 @@ public class TestHelper {
 			Path dataPath = Paths.get("/tmp/zuliaTest");
 
 			if (Files.exists(dataPath)) {
-				Files.walk(dataPath).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+				try (Stream<Path> walk = Files.walk(dataPath)) {
+					walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+				}
 			}
 			Files.createDirectory(dataPath);
 		}
