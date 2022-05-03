@@ -48,7 +48,7 @@ public class ZuliaDump implements Callable<Integer> {
 	@CommandLine.Option(names = { "-a", "--includeAssociatedDocs"}, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
 	private boolean includeAssociatedDocs = false;
 
-	@CommandLine.Option(negatable = true, names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(arity = "1", names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
 	private boolean sortById = true;
 
 	@CommandLine.Option(names = { "-d", "--idField"}, description = "Id Field Name (default: ${DEFAULT-VALUE})")
@@ -57,6 +57,13 @@ public class ZuliaDump implements Callable<Integer> {
 	@Override
 	public Integer call() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
+
+		if (!sortById) {
+			LOG.warning("Sort By ID is disabled.  Do not use this on an actively changing index");
+		}
+		else {
+			LOG.info("Sorting by results on field <" + idField + ">");
+		}
 
 		Set<String> uniqueIds = new HashSet<>();
 		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
