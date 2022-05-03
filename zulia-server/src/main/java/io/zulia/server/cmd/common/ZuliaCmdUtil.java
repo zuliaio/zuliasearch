@@ -37,7 +37,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 import static io.zulia.message.ZuliaQuery.FetchType.META;
@@ -139,12 +139,20 @@ public class ZuliaCmdUtil {
 
 							// ensure the file was extractable
 							if (Files.exists(destDir.toPath())) {
-								List<Path> tempFiles = Files.list(destDir.toPath()).collect(Collectors.toList());
+
+								List<Path> tempFiles;
+								try (Stream<Path> sp = Files.list(destDir.toPath())) {
+									tempFiles = sp.toList();
+								}
 								for (Path path : tempFiles) {
 									if (path.toFile().isDirectory()) {
 										try {
 
-											List<Path> filesPaths = Files.list(path).collect(Collectors.toList());
+											List<Path> filesPaths;
+											try (Stream<Path> sp = Files.list(path)) {
+												filesPaths = sp.toList();
+											}
+
 											Document meta = null;
 											byte[] associatedBytes = new byte[0];
 											String filename = null;
@@ -182,7 +190,9 @@ public class ZuliaCmdUtil {
 								}
 
 								// clean up temp work
-								Files.walk(destDir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+								try (Stream<Path> walk = Files.walk(destDir.toPath())) {
+									walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+								}
 
 							}
 							else {
@@ -283,7 +293,5 @@ public class ZuliaCmdUtil {
 
 		return destFile;
 	}
-
-
 
 }
