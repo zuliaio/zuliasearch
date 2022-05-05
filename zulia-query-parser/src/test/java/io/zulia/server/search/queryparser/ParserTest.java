@@ -41,7 +41,6 @@ public class ParserTest {
 
 		newParser = new ZuliaFlexibleQueryParser(zuliaPerFieldAnalyzer, serverIndexConfig);
 		oldParser = new ZuliaLegacyMultiFieldQueryParser(zuliaPerFieldAnalyzer, serverIndexConfig);
-		oldParser.setSplitOnWhitespace(true);
 	}
 
 	public static Query parse(String query, Collection<String> defaultFields, Operator defaultOperator, int minMatch, ZuliaParser parser1) throws Exception {
@@ -67,8 +66,10 @@ public class ParserTest {
 
 		Assertions.assertEquals(q, q2);
 
+		oldParser.setSplitOnWhitespace(true);
 		q = parse("Lung Cancer", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		q2 = parse("Lung Cancer", List.of("field1", "field2"), Operator.OR, 0, newParser);
+		oldParser.setSplitOnWhitespace(false);
 
 		Assertions.assertEquals(q, q2);
 
