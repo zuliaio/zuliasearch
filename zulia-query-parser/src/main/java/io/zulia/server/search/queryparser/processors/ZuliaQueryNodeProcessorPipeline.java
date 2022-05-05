@@ -21,9 +21,9 @@ public class ZuliaQueryNodeProcessorPipeline extends QueryNodeProcessorPipeline 
 
 		//zulia - add global min match handler
 		add(new ZuliaGlobalMinMatchProcessor());
-		add(new WildcardQueryNodeProcessor());
 		//zulia - change MultiFieldQueryNodeProcessor to ZuliaMultiFieldQueryNodeProcessor
 		add(new ZuliaMultiFieldQueryNodeProcessor());
+		add(new WildcardQueryNodeProcessor());
 		add(new ZuliaPureWildcardNodeProcessor());
 		add(new FuzzyQueryNodeProcessor());
 		add(new RegexpQueryNodeProcessor());
