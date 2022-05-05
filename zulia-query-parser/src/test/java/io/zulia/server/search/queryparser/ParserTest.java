@@ -66,6 +66,11 @@ public class ParserTest {
 
 		Assertions.assertEquals(q, q2);
 
+		q = parse("Lung* Cancer*", List.of("title", "abstract"), Operator.OR, 0, oldParser);
+		q2 = parse("Lung* Cancer*", List.of("title", "abstract"), Operator.OR, 0, newParser);
+
+		Assertions.assertEquals(q, q2);
+
 		oldParser.setSplitOnWhitespace(true);
 		q = parse("Lung Cancer", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		q2 = parse("Lung Cancer", List.of("field1", "field2"), Operator.OR, 0, newParser);
