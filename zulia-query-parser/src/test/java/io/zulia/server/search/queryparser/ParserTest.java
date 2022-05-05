@@ -20,8 +20,8 @@ import java.util.List;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ParserTest {
 
-	private static ZuliaParser oldParser;
-	private static ZuliaParser newParser;
+	private static ZuliaLegacyMultiFieldQueryParser oldParser;
+	private static ZuliaFlexibleQueryParser newParser;
 
 	@BeforeAll
 	public static void initAll() {
@@ -41,6 +41,7 @@ public class ParserTest {
 
 		newParser = new ZuliaFlexibleQueryParser(zuliaPerFieldAnalyzer, serverIndexConfig);
 		oldParser = new ZuliaLegacyMultiFieldQueryParser(zuliaPerFieldAnalyzer, serverIndexConfig);
+		oldParser.setSplitOnWhitespace(true);
 	}
 
 	public static Query parse(String query, Collection<String> defaultFields, Operator defaultOperator, int minMatch, ZuliaParser parser1) throws Exception {
@@ -58,6 +59,16 @@ public class ParserTest {
 
 		Query q = parse("title:\"lung cancer\"", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		Query q2 = parse("title:\"lung cancer\"", List.of("field1", "field2"), Operator.OR, 0, newParser);
+
+		Assertions.assertEquals(q, q2);
+
+		q = parse("title:\"Lung Cancer\"", List.of("field1", "field2"), Operator.OR, 0, oldParser);
+		q2 = parse("title:\"Lung Cancer\"", List.of("field1", "field2"), Operator.OR, 0, newParser);
+
+		Assertions.assertEquals(q, q2);
+
+		q = parse("Lung Cancer", List.of("field1", "field2"), Operator.OR, 0, oldParser);
+		q2 = parse("Lung Cancer", List.of("field1", "field2"), Operator.OR, 0, newParser);
 
 		Assertions.assertEquals(q, q2);
 
