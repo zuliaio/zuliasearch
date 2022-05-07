@@ -167,9 +167,40 @@ public class SimpleTest {
 		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("title,description:(red* BLUE* small)").setDefaultOperator(Operator.OR).setMinShouldMatch(2));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("title,description:(red* BLUE* small)~2").setDefaultOperator(Operator.OR));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("(red* BLUE* small)~2").addQueryFields("title","description").setDefaultOperator(Operator.OR));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("\"something really special\"").addQueryFields("title","description"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("\"something really special\" AND rating:[4.0 TO *]").addQueryFields("title","description"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:\"something really special\"").addQueryFields("title","description"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("boring AND (reddish OR red)").addQueryFields("title","description"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("\"something really special\"~1").addQueryFields("title","description"));

@@ -58,34 +58,46 @@ public class ParserTest {
 
 		Query q = parse("title:\"lung cancer\"", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		Query q2 = parse("title:\"lung cancer\"", List.of("field1", "field2"), Operator.OR, 0, newParser);
-
 		Assertions.assertEquals(q, q2);
 
 		q = parse("title:\"Lung Cancer\"", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		q2 = parse("title:\"Lung Cancer\"", List.of("field1", "field2"), Operator.OR, 0, newParser);
-
 		Assertions.assertEquals(q, q2);
 
 		q = parse("Lung* Cancer*", List.of("title", "abstract"), Operator.OR, 0, oldParser);
 		q2 = parse("Lung* Cancer*", List.of("title", "abstract"), Operator.OR, 0, newParser);
-
 		Assertions.assertEquals(q, q2);
 
 		oldParser.setSplitOnWhitespace(true);
 		q = parse("Lung Cancer", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		q2 = parse("Lung Cancer", List.of("field1", "field2"), Operator.OR, 0, newParser);
 		oldParser.setSplitOnWhitespace(false);
+		Assertions.assertEquals(q, q2);
 
+		oldParser.setSplitOnWhitespace(true);
+		q = parse("Cancer Diabetes \"Drug Treatment\"", List.of("field1", "field2"), Operator.OR, 2, oldParser);
+		q2 = parse("Cancer Diabetes \"Drug Treatment\"", List.of("field1", "field2"), Operator.OR, 2, newParser);
+		oldParser.setSplitOnWhitespace(false);
+		Assertions.assertEquals(q, q2);
+
+		oldParser.setSplitOnWhitespace(true);
+		q = parse("Cancer Diabetes \"Drug Treatment\"", List.of("title", "abstract"), Operator.OR, 2, oldParser);
+		q2 = parse("Cancer Diabetes \"Drug Treatment\"", List.of("title", "abstract"), Operator.OR, 2, newParser);
+		oldParser.setSplitOnWhitespace(false);
+		Assertions.assertEquals(q, q2);
+
+		oldParser.setSplitOnWhitespace(true);
+		q = parse("Cancer Diabetes \"Drug Treatment\"", List.of("title", "abstract"), Operator.OR, 2, oldParser);
+		q2 = parse("(Cancer Diabetes \"Drug Treatment\")~2", List.of("title", "abstract"), Operator.OR, 0, newParser);
+		oldParser.setSplitOnWhitespace(false);
 		Assertions.assertEquals(q, q2);
 
 		q = parse("*:*", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		q2 = parse("*:*", List.of("field1", "field2"), Operator.OR, 0, newParser);
-
 		Assertions.assertEquals(q, q2);
 
 		q = parse("*", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		q2 = parse("*", List.of("field1", "field2"), Operator.OR, 0, newParser);
-
 		Assertions.assertEquals(q, q2);
 
 	}
