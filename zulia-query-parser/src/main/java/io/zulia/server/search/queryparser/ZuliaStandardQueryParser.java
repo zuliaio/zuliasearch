@@ -581,4 +581,9 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 	public void setDateResolutionMap(Map<CharSequence, DateTools.Resolution> dateRes) {
 		getQueryConfigHandler().set(ConfigurationKeys.FIELD_DATE_RESOLUTION_MAP, dateRes);
 	}
+
+	// zulia
+	public void setMinMatch(Integer minMatch) {
+		getQueryConfigHandler().set(ZuliaQueryNodeProcessorPipeline.GLOBAL_MM, minMatch);
+	}
 }
