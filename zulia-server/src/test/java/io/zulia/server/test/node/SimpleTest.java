@@ -189,7 +189,7 @@ public class SimpleTest {
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("\"something really special\" AND rating:[4.0 TO *]").addQueryFields("title","description"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("description:\"something really special\"").addQueryFields("title","description"));
@@ -200,7 +200,7 @@ public class SimpleTest {
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("boring AND (reddish OR red)").addQueryFields("title","description"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(1, searchResult.getTotalHits());
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("\"something really special\"~1").addQueryFields("title","description"));
