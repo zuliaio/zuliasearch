@@ -1,6 +1,8 @@
 package io.zulia.util;
 
 import com.google.protobuf.ByteString;
+import com.j256.simplemagic.ContentInfo;
+import com.j256.simplemagic.ContentInfoUtil;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.Document;
@@ -166,6 +168,12 @@ public class ZuliaUtil {
 
 	public static CodecRegistry getPojoCodecRegistry() {
 		return pojoCodecRegistry;
+	}
+
+	public static String guessExtension(byte[] bytes) {
+		ContentInfoUtil util = new ContentInfoUtil();
+		ContentInfo info = util.findMatch(bytes);
+		return info.getMimeType();
 	}
 
 }
