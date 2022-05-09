@@ -42,23 +42,30 @@ public class ZuliaRESTClient {
 	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, byte[] bytes) throws Exception {
 
 		try {
-
-			RequestBody body;
-			if (metadata != null) {
-				body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
-						.addFormDataPart("indexName", indexName).addFormDataPart("metaJson", metadata.toJson())
-						.addFormDataPart("file", fileName, RequestBody.create(bytes, MediaType.parse(ZuliaUtil.guessExtension(bytes)))).build();
-			}
-			else {
-				body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
-						.addFormDataPart("indexName", indexName)
-						.addFormDataPart("file", fileName, RequestBody.create(bytes, MediaType.parse(ZuliaUtil.guessExtension(bytes)))).build();
-			}
-
+			RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, null, bytes);
 			Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
 			Response response = client.newCall(request).execute();
 			response.close();
+		}
+		catch (Exception e) {
+			if (e.getMessage().startsWith("Out of size:")) {
+				LOG.log(Level.WARNING, "Failed to store file <" + fileName + "> due to mismatch size.");
+			}
+			else {
+				LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
+				throw e;
+			}
+		}
 
+	}
+
+	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, File file) throws Exception {
+
+		try {
+			RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, file, null);
+			Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
+			Response response = client.newCall(request).execute();
+			response.close();
 		}
 		catch (Exception e) {
 			if (e.getMessage().startsWith("Out of size:")) {
@@ -160,6 +167,32 @@ public class ZuliaRESTClient {
 		parameters.put(ZuliaConstants.FILE_NAME, fileName);
 		parameters.put(ZuliaConstants.INDEX, indexName);
 		return parameters;
+	}
+
+	private RequestBody getRequestBody(String uniqueId, String indexName, String fileName, Document metadata, File file, byte[] bytes) {
+
+		RequestBody body;
+		RequestBody uploadFileRequest;
+
+		if (file != null) {
+			uploadFileRequest = RequestBody.create(file, MediaType.parse(ZuliaUtil.guessExtension(file)));
+		}
+		else {
+			uploadFileRequest = RequestBody.create(bytes, MediaType.parse(ZuliaUtil.guessExtension(bytes)));
+		}
+
+		if (metadata != null) {
+			body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
+					.addFormDataPart("indexName", indexName).addFormDataPart("metaJson", metadata.toJson()).addFormDataPart("file", fileName, uploadFileRequest)
+					.build();
+		}
+		else {
+			body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
+					.addFormDataPart("indexName", indexName).addFormDataPart("file", fileName, uploadFileRequest).build();
+		}
+
+		return body;
+
 	}
 
 }
