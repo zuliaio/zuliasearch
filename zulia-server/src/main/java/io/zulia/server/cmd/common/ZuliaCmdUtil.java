@@ -69,7 +69,7 @@ public class ZuliaCmdUtil {
 
 							int c = count.incrementAndGet();
 							if (c % 1000 == 0) {
-								LOG.info("So far written <" + c + "> of <" + totalHits + ">");
+								LOG.info("So far written <" + c + "> of <" + totalHits + "> for index <" + index + ">");
 							}
 
 						}
