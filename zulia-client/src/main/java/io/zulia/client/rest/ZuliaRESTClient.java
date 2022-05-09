@@ -18,7 +18,6 @@ import org.bson.Document;
 
 import java.io.File;
 import java.io.OutputStream;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Objects;
@@ -48,14 +47,12 @@ public class ZuliaRESTClient {
 			if (metadata != null) {
 				body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
 						.addFormDataPart("indexName", indexName).addFormDataPart("metaJson", metadata.toJson())
-						.addFormDataPart("file", fileName, RequestBody.create(bytes, MediaType.parse(URLConnection.guessContentTypeFromName(fileName))))
-						.build();
+						.addFormDataPart("file", fileName, RequestBody.create(bytes, MediaType.parse(ZuliaUtil.guessExtension(bytes)))).build();
 			}
 			else {
 				body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
 						.addFormDataPart("indexName", indexName)
-						.addFormDataPart("file", fileName, RequestBody.create(bytes, MediaType.parse(URLConnection.guessContentTypeFromName(fileName))))
-						.build();
+						.addFormDataPart("file", fileName, RequestBody.create(bytes, MediaType.parse(ZuliaUtil.guessExtension(bytes)))).build();
 			}
 
 			Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
