@@ -36,7 +36,7 @@ public class ZuliaRESTClient {
 	public ZuliaRESTClient(String server, int restPort) {
 		url = "http://" + server + ":" + restPort;
 
-		client = new OkHttpClient().newBuilder().readTimeout(30, TimeUnit.SECONDS).connectTimeout(30, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS)
+		client = new OkHttpClient().newBuilder().readTimeout(120, TimeUnit.SECONDS).connectTimeout(120, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS)
 				.build();
 		LOG.info("Created OkHttp client for url: " + url);
 	}

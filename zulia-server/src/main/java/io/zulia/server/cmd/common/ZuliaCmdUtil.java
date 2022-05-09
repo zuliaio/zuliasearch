@@ -192,6 +192,7 @@ public class ZuliaCmdUtil {
 								// clean up temp work
 								try (Stream<Path> walk = Files.walk(destDir.toPath())) {
 									walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+									destDir.delete();
 								}
 
 							}
