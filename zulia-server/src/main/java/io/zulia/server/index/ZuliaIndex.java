@@ -520,9 +520,9 @@ public class ZuliaIndex {
 		SimpleBindings bindings = new SimpleBindings();
 
 		Expression expr = JavascriptCompiler.compile(scoreFunction);
-		bindings.add("score", DoubleValuesSource.SCORES);
+		bindings.add(ZuliaConstants.SCORE_FIELD, DoubleValuesSource.SCORES);
 		for (String var : expr.variables) {
-			if (!"score".equals(var)) {
+			if (!ZuliaConstants.SCORE_FIELD.equals(var)) {
 				FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForSortField(var);
 				if (fieldType == null) {
 					throw new IllegalArgumentException("Score Function references unknown sort field <" + var + ">");
