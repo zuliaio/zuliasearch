@@ -12,7 +12,6 @@ import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.AssociatedResult;
 import io.zulia.client.result.FetchResult;
-import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
@@ -154,15 +153,16 @@ public class ZuliaCmdUtil {
 											}
 
 											Document meta = null;
-											byte[] associatedBytes = new byte[0];
+
 											String filename = null;
+											File file = null;
 											for (Path filePath : filesPaths) {
 												try {
 													if (filePath.toFile().getName().endsWith("_metadata.json")) {
 														meta = Document.parse(Files.readString(filePath));
 													}
 													else {
-														associatedBytes = Files.readAllBytes(filePath);
+														file = filePath.toFile();
 														filename = filePath.toFile().getName();
 													}
 												}
@@ -173,15 +173,15 @@ public class ZuliaCmdUtil {
 
 											if (skipExistingFiles) {
 												if (!fileExists(workPool, id, filename, index)) {
-													storeAssociatedDoc(index, workPool, id, filename, meta, associatedBytes);
+													storeAssociatedDoc(index, workPool, id, filename, meta, file);
 												}
 											}
 											else {
-												storeAssociatedDoc(index, workPool, id, filename, meta, associatedBytes);
+												storeAssociatedDoc(index, workPool, id, filename, meta, file);
 											}
 										}
 										catch (Throwable t) {
-											LOG.log(Level.SEVERE, "Could not list the individual files for dir <" + path.getFileName() + ">");
+											LOG.log(Level.SEVERE, "Could not list the individual files for dir <" + path.getFileName() + ">", t);
 										}
 									}
 									else {
@@ -192,6 +192,7 @@ public class ZuliaCmdUtil {
 								// clean up temp work
 								try (Stream<Path> walk = Files.walk(destDir.toPath())) {
 									walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+									destDir.delete();
 								}
 
 							}
@@ -252,16 +253,8 @@ public class ZuliaCmdUtil {
 		}
 	}
 
-	private static void storeAssociatedDoc(String index, ZuliaWorkPool workPool, String id, String filename, Document meta, byte[] associatedBytes)
-			throws Exception {
-		if (associatedBytes.length > 32 * 1024 * 1024) {
-			workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, filename, associatedBytes).setMeta(meta));
-		}
-		else {
-			Store associatedDocStore = new Store(id, index);
-			associatedDocStore.addAssociatedDocument(AssociatedBuilder.newBuilder().setDocument(associatedBytes).setMetadata(meta).setFilename(filename));
-			workPool.store(associatedDocStore);
-		}
+	private static void storeAssociatedDoc(String index, ZuliaWorkPool workPool, String id, String filename, Document meta, File file) throws Exception {
+		workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, filename, file).setMeta(meta));
 	}
 
 	private static boolean fileExists(ZuliaWorkPool zuliaWorkPool, String id, String fileName, String indexName) throws Exception {
