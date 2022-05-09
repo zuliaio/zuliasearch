@@ -12,21 +12,14 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
-import io.micronaut.http.multipart.MultipartException;
-import io.micronaut.http.multipart.PartData;
 import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
-import io.micronaut.scheduling.TaskExecutors;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -37,7 +30,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,68 +42,6 @@ public class AssociatedController {
 
 	private final static Logger LOG = Logger.getLogger(AssociatedController.class.getSimpleName());
 
-	@Inject
-	@Named(TaskExecutors.IO)
-	ExecutorService ioExecutor;
-
-	//work around for
-	//https://github.com/micronaut-projects/micronaut-core/issues/6084
-	public static Publisher<Boolean> transferToStream(ExecutorService ioExecutor, StreamingFileUpload fileUpload, OutputStream outputStream) {
-
-		return Mono.<Boolean>create(emitter ->
-
-				Flux.from(fileUpload).subscribeOn(Schedulers.fromExecutorService(ioExecutor)).subscribe(new Subscriber<>() {
-					Subscription subscription;
-
-					@Override
-					public void onSubscribe(Subscription s) {
-						subscription = s;
-						subscription.request(1);
-					}
-
-					@Override
-					public void onNext(PartData o) {
-						try {
-							outputStream.write(o.getBytes());
-							subscription.request(1);
-						}
-						catch (IOException e) {
-							handleError(e);
-						}
-					}
-
-					@Override
-					public void onError(Throwable t) {
-						emitter.error(t);
-						try {
-							if (outputStream != null) {
-								outputStream.close();
-							}
-						}
-						catch (IOException e) {
-							System.err.println("Failed to close file stream : " + fileUpload.getName());
-						}
-					}
-
-					@Override
-					public void onComplete() {
-						try {
-							outputStream.close();
-							emitter.success(true);
-						}
-						catch (IOException e) {
-							System.err.println("Failed to close file stream : " + fileUpload.getName());
-							emitter.success(false);
-						}
-					}
-
-					private void handleError(Throwable t) {
-						subscription.cancel();
-						onError(new MultipartException("Error transferring file: " + fileUpload.getName(), t));
-					}
-				})).flux();
-
-	}
 
 	@Get("/metadata")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
@@ -212,8 +142,9 @@ public class AssociatedController {
 			OutputStream associatedDocumentOutputStream;
 			try {
 				associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, id, fileName, metaDoc);
-				Publisher<Boolean> uploadPublisher = transferToStream(ioExecutor, file, associatedDocumentOutputStream);
-				return Flux.from(uploadPublisher).map(success -> {
+
+				Publisher<Boolean> uploadPublisher = file.transferTo(associatedDocumentOutputStream);
+				return Flux.from(uploadPublisher).publishOn(Schedulers.boundedElastic()).map(success -> {
 					if (success) {
 						try {
 							associatedDocumentOutputStream.close();
