@@ -58,7 +58,6 @@ public class ZuliaCmdUtil {
 				workPool.searchAll(zuliaQuery, queryResult -> {
 
 					long totalHits = queryResult.getTotalHits();
-					LOG.info("Found <" + totalHits + "> for index <" + index + ">");
 
 					queryResult.getDocuments().forEach(doc -> {
 						try {
@@ -68,8 +67,9 @@ public class ZuliaCmdUtil {
 							fileWriter.write(doc.toJson());
 							fileWriter.write(System.lineSeparator());
 
-							if (count.incrementAndGet() % 1000 == 0) {
-								LOG.info("So far written <" + count + "> of <" + totalHits + ">");
+							int c = count.incrementAndGet();
+							if (c % 1000 == 0) {
+								LOG.info("So far written <" + c + "> of <" + totalHits + ">");
 							}
 
 						}
