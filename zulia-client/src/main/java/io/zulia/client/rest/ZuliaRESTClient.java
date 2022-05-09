@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -35,7 +36,8 @@ public class ZuliaRESTClient {
 	public ZuliaRESTClient(String server, int restPort) {
 		url = "http://" + server + ":" + restPort;
 
-		client = new OkHttpClient().newBuilder().build();
+		client = new OkHttpClient().newBuilder().readTimeout(30, TimeUnit.SECONDS).connectTimeout(30, TimeUnit.SECONDS).callTimeout(30, TimeUnit.SECONDS)
+				.build();
 		LOG.info("Created OkHttp client for url: " + url);
 	}
 
