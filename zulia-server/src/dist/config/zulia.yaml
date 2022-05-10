@@ -1,0 +1,5 @@
+cluster: true
+serverAddress: localhost
+servicePort: 32191
+restPort: 32192
+dataPath: /path/to/data/
