@@ -123,26 +123,35 @@ public class S3DocumentStorage implements DocumentStorage {
 	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType fetchType) throws Exception {
 		if (FetchType.NONE.equals(fetchType))
 			return Collections.emptyList();
-		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + DOCUMENT_UNIQUE_ID_KEY, uniqueId));
 
+		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + DOCUMENT_UNIQUE_ID_KEY, uniqueId));
 		List<AssociatedDocument> docs = new ArrayList<>();
-		for (Document doc : found) {
-			docs.add(parseTOC(doc));
+
+		//Have to do it this way because the FindIterable does not implement the streams API.
+		if (FetchType.META.equals(fetchType)) {
+			for (Document doc : found) {
+				docs.add(buildMetadataDocument(doc));
+			}
+		} else if (FetchType.FULL.equals(fetchType)) {
+			for (Document doc : found) {
+				docs.add(buildFullDocument(doc));
+			}
+		} else {
+			return Collections.emptyList();
 		}
+
 		return docs;
 	}
 
 	@Override
 	public AssociatedDocument getAssociatedDocument(String uniqueId, String filename, FetchType fetchType) throws Exception {
-		if (!FetchType.NONE.equals(fetchType)) {
-			String uid = String.join("-", uniqueId, filename);
-			FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uid));
-			Document doc = found.first();
-			if (null != doc) {
-				return parseTOC(doc);
-			}
-		}
-		return null;
+		String uid = String.join("-", uniqueId, filename);
+
+		return switch (fetchType) {
+			case NONE, UNRECOGNIZED -> null;
+			case META -> buildMetadataDocument(client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uid)).first());
+			case FULL -> buildFullDocument(client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uid)).first());
+		};
 	}
 
 	@Override
@@ -316,7 +325,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		return TOC;
 	}
 
-	private AssociatedDocument parseTOC(Document doc) throws IOException {
+	private AssociatedDocument.Builder parseMongo(Document doc) {
 		AssociatedDocument.Builder aBuilder = AssociatedDocument.newBuilder();
 		aBuilder.setFilename(doc.getString(FILENAME));
 
@@ -329,6 +338,10 @@ public class S3DocumentStorage implements DocumentStorage {
 		meta.remove(FILE_UNIQUE_ID_KEY);
 		aBuilder.setMetadata(ZuliaUtil.mongoDocumentToByteString(meta));
 
+		return aBuilder;
+	}
+
+	private void addFileContents(AssociatedDocument.Builder aBuilder, Document doc) throws IOException {
 		Document s3Info = doc.get("s3", Document.class);
 		GetObjectRequest gor = GetObjectRequest.builder()
 				.bucket(s3Info.getString("bucket"))
@@ -339,7 +352,16 @@ public class S3DocumentStorage implements DocumentStorage {
 		try (compression) {
 			aBuilder.setDocument(ByteString.readFrom(compression));
 		}
+	}
 
-		return aBuilder.build();
+	private AssociatedDocument buildMetadataDocument(Document doc) {
+		AssociatedDocument.Builder builder = parseMongo(doc);
+		return builder.build();
+	}
+
+	private AssociatedDocument buildFullDocument(Document doc) throws IOException {
+		AssociatedDocument.Builder builder = parseMongo(doc);
+		addFileContents(builder, doc);
+		return builder.build();
 	}
 }
