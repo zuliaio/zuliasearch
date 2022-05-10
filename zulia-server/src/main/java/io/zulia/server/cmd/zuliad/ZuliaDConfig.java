@@ -59,6 +59,9 @@ public class ZuliaDConfig {
 			Yaml yaml = new Yaml(new Constructor(ZuliaConfig.class));
 			zuliaConfig = yaml.load(new FileReader(config));
 		}
+		else {
+			throw new RuntimeException("Incompatible config file provided: " + config);
+		}
 
 		String dataDir = zuliaConfig.getDataPath();
 		if (prefix != null && !dataDir.startsWith(File.separator)) {
