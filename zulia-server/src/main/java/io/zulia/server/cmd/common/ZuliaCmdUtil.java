@@ -1,11 +1,6 @@
-package io.zulia.server.cmd;
+package io.zulia.server.cmd.common;
 
 import com.google.common.base.Charsets;
-import com.mongodb.MongoClientSettings;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
 import io.zulia.client.command.Fetch;
 import io.zulia.client.command.FetchAllAssociated;
 import io.zulia.client.command.Store;
@@ -17,15 +12,7 @@ import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.AssociatedResult;
 import io.zulia.client.result.FetchResult;
-import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
-import io.zulia.server.config.NodeService;
-import io.zulia.server.config.ZuliaConfig;
-import io.zulia.server.config.cluster.MongoAuth;
-import io.zulia.server.config.cluster.MongoNodeService;
-import io.zulia.server.config.cluster.MongoServer;
-import io.zulia.server.config.single.SingleNodeService;
-import io.zulia.server.util.MongoProvider;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.bson.Document;
@@ -40,7 +27,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -50,7 +36,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 import static io.zulia.message.ZuliaQuery.FetchType.META;
@@ -58,37 +44,6 @@ import static io.zulia.message.ZuliaQuery.FetchType.META;
 public class ZuliaCmdUtil {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaCmdUtil.class.getSimpleName());
-
-	public static NodeService getNodeService(ZuliaConfig zuliaConfig) {
-		if (zuliaConfig.isCluster()) {
-			List<MongoServer> mongoServers = zuliaConfig.getMongoServers();
-
-			List<ServerAddress> serverAddressList = new ArrayList<>();
-
-			for (MongoServer mongoServer : mongoServers) {
-				LOG.info("Added Mongo Server: " + mongoServer);
-				serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
-			}
-
-			MongoClientSettings.Builder mongoBuilder = MongoClientSettings.builder().applyToClusterSettings(builder -> builder.hosts(serverAddressList));
-
-			MongoAuth mongoAuth = zuliaConfig.getMongoAuth();
-			if (mongoAuth != null) {
-				mongoBuilder.credential(
-						MongoCredential.createCredential(mongoAuth.getUsername(), mongoAuth.getDatabase(), mongoAuth.getPassword().toCharArray()));
-			}
-
-			MongoClient mongoClient = MongoClients.create(mongoBuilder.build());
-
-			MongoProvider.setMongoClient(mongoClient);
-			LOG.info("Created Mongo Client: " + MongoProvider.getMongoClient());
-
-			return new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
-		}
-		else {
-			return new SingleNodeService(zuliaConfig);
-		}
-	}
 
 	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, String idField,
 			Set<String> uniqueIds, boolean sortById) throws Exception {
@@ -103,7 +58,6 @@ public class ZuliaCmdUtil {
 				workPool.searchAll(zuliaQuery, queryResult -> {
 
 					long totalHits = queryResult.getTotalHits();
-					LOG.info("Found <" + totalHits + "> for index <" + index + ">");
 
 					queryResult.getDocuments().forEach(doc -> {
 						try {
@@ -113,8 +67,9 @@ public class ZuliaCmdUtil {
 							fileWriter.write(doc.toJson());
 							fileWriter.write(System.lineSeparator());
 
-							if (count.incrementAndGet() % 1000 == 0) {
-								LOG.info("So far written <" + count + "> of <" + totalHits + ">");
+							int c = count.incrementAndGet();
+							if (c % 1000 == 0) {
+								LOG.info("So far written <" + c + "> of <" + totalHits + "> for index <" + index + ">");
 							}
 
 						}
@@ -183,22 +138,31 @@ public class ZuliaCmdUtil {
 
 							// ensure the file was extractable
 							if (Files.exists(destDir.toPath())) {
-								List<Path> tempFiles = Files.list(destDir.toPath()).collect(Collectors.toList());
+
+								List<Path> tempFiles;
+								try (Stream<Path> sp = Files.list(destDir.toPath())) {
+									tempFiles = sp.toList();
+								}
 								for (Path path : tempFiles) {
 									if (path.toFile().isDirectory()) {
 										try {
 
-											List<Path> filesPaths = Files.list(path).collect(Collectors.toList());
+											List<Path> filesPaths;
+											try (Stream<Path> sp = Files.list(path)) {
+												filesPaths = sp.toList();
+											}
+
 											Document meta = null;
-											byte[] associatedBytes = new byte[0];
+
 											String filename = null;
+											File file = null;
 											for (Path filePath : filesPaths) {
 												try {
 													if (filePath.toFile().getName().endsWith("_metadata.json")) {
 														meta = Document.parse(Files.readString(filePath));
 													}
 													else {
-														associatedBytes = Files.readAllBytes(filePath);
+														file = filePath.toFile();
 														filename = filePath.toFile().getName();
 													}
 												}
@@ -209,15 +173,15 @@ public class ZuliaCmdUtil {
 
 											if (skipExistingFiles) {
 												if (!fileExists(workPool, id, filename, index)) {
-													storeAssociatedDoc(index, workPool, id, filename, meta, associatedBytes);
+													storeAssociatedDoc(index, workPool, id, filename, meta, file);
 												}
 											}
 											else {
-												storeAssociatedDoc(index, workPool, id, filename, meta, associatedBytes);
+												storeAssociatedDoc(index, workPool, id, filename, meta, file);
 											}
 										}
 										catch (Throwable t) {
-											LOG.log(Level.SEVERE, "Could not list the individual files for dir <" + path.getFileName() + ">");
+											LOG.log(Level.SEVERE, "Could not list the individual files for dir <" + path.getFileName() + ">", t);
 										}
 									}
 									else {
@@ -226,7 +190,10 @@ public class ZuliaCmdUtil {
 								}
 
 								// clean up temp work
-								Files.walk(destDir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+								try (Stream<Path> walk = Files.walk(destDir.toPath())) {
+									walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+									destDir.delete();
+								}
 
 							}
 							else {
@@ -286,16 +253,8 @@ public class ZuliaCmdUtil {
 		}
 	}
 
-	private static void storeAssociatedDoc(String index, ZuliaWorkPool workPool, String id, String filename, Document meta, byte[] associatedBytes)
-			throws Exception {
-		if (associatedBytes.length > 32 * 1024 * 1024) {
-			workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, filename, associatedBytes).setMeta(meta));
-		}
-		else {
-			Store associatedDocStore = new Store(id, index);
-			associatedDocStore.addAssociatedDocument(AssociatedBuilder.newBuilder().setDocument(associatedBytes).setMetadata(meta).setFilename(filename));
-			workPool.store(associatedDocStore);
-		}
+	private static void storeAssociatedDoc(String index, ZuliaWorkPool workPool, String id, String filename, Document meta, File file) throws Exception {
+		workPool.storeLargeAssociated(new StoreLargeAssociated(id, index, filename, file).setMeta(meta));
 	}
 
 	private static boolean fileExists(ZuliaWorkPool zuliaWorkPool, String id, String fileName, String indexName) throws Exception {
@@ -327,4 +286,5 @@ public class ZuliaCmdUtil {
 
 		return destFile;
 	}
+
 }

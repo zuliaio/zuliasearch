@@ -90,6 +90,9 @@ public interface ZuliaConstants {
 	String CURSOR = "cursor";
 
 	String SCORE_FIELD = "zuliaScore";
+
+
+	String ID_SORT_FIELD = "zuliaId";
 	String TRUNCATE = "truncate";
 
 	String FACET_PATH_DELIMITER = "/";

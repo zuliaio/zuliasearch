@@ -25,6 +25,7 @@ dependencies {
     api("org.apache.commons:commons-pool2:2.11.1")
     api("javax.annotation:javax.annotation-api:1.3.2")
     api("com.google.guava:guava:31.1-jre")
+    api("com.j256.simplemagic:simplemagic:1.17")
 }
 
 

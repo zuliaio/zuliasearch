@@ -5,7 +5,7 @@ import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
-import io.zulia.server.cmd.ZuliaD;
+import io.zulia.server.cmd.zuliad.ZuliaDConfig;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoNodeService;
 import io.zulia.server.config.cluster.MongoServer;
@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class TestHelper {
 
@@ -40,7 +41,7 @@ public class TestHelper {
 	static {
 
 		LogUtil.init();
-		ZuliaD.setLuceneStatic();
+		ZuliaDConfig.setLuceneStatic();
 
 		mongoTestInstance = new MongoTestInstance();
 
@@ -61,7 +62,9 @@ public class TestHelper {
 			Path dataPath = Paths.get("/tmp/zuliaTest");
 
 			if (Files.exists(dataPath)) {
-				Files.walk(dataPath).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+				try (Stream<Path> walk = Files.walk(dataPath)) {
+					walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+				}
 			}
 			Files.createDirectory(dataPath);
 		}

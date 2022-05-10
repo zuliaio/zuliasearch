@@ -1,6 +1,8 @@
 package io.zulia.util;
 
 import com.google.protobuf.ByteString;
+import com.j256.simplemagic.ContentInfo;
+import com.j256.simplemagic.ContentInfoUtil;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.Document;
@@ -10,6 +12,7 @@ import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.io.BasicOutputBuffer;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -166,6 +169,28 @@ public class ZuliaUtil {
 
 	public static CodecRegistry getPojoCodecRegistry() {
 		return pojoCodecRegistry;
+	}
+
+	public static String guessExtension(File file) {
+		ContentInfoUtil util = new ContentInfoUtil();
+		try {
+			ContentInfo info = util.findMatch(file);
+			return info.getContentType().getMimeType();
+		}
+		catch (Exception e) {
+			return "";
+		}
+	}
+
+	public static String guessExtension(byte[] bytes) {
+		ContentInfoUtil util = new ContentInfoUtil();
+		try {
+			ContentInfo info = util.findMatch(bytes);
+			return info.getContentType().getMimeType();
+		}
+		catch (Exception e) {
+			return "";
+		}
 	}
 
 }

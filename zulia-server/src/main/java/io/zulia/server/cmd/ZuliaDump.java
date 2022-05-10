@@ -1,17 +1,17 @@
 package io.zulia.server.cmd;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
 import com.google.common.base.Charsets;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.client.command.FetchLargeAssociated;
 import io.zulia.client.command.GetIndexConfig;
-import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.client.result.GetIndexesResult;
-import io.zulia.log.LogUtil;
+import io.zulia.server.cmd.common.MultipleIndexArgs;
+import io.zulia.server.cmd.common.ShowStackArgs;
+import io.zulia.server.cmd.common.ZuliaCmdUtil;
+import io.zulia.server.cmd.common.ZuliaVersionProvider;
+import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
+import picocli.CommandLine;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -19,119 +19,66 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ZuliaDump {
+@CommandLine.Command(name = "zuliadump", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
+public class ZuliaDump implements Callable<Integer> {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaDump.class.getSimpleName());
+	@CommandLine.Mixin
+	private ConnectionInfo connectionInfo;
 
-	public static class ZuliaDumpArgs extends ZuliaBaseArgs {
+	@CommandLine.Mixin
+	private ShowStackArgs showStackArgs;
 
-		@Parameter(names = "--indexes", description = "Comma separated or name* for wild card multiple index names.")
-		private String indexes;
+	@CommandLine.Mixin
+	private MultipleIndexArgs multipleIndexArgs;
 
-		@Parameter(names = "--out", description = "Full path to the output directory. [Defaults to current_directory/zuliadump")
-		private String out = System.getProperty("user.dir");
+	@CommandLine.Option(names = {"-o", "--out"}, description = "Full path to the output directory. (default: ${DEFAULT-VALUE})")
+	private String out = System.getProperty("user.dir");
 
-		@Parameter(names = "--q", description = "Zulia query, matches all docs by default.")
-		private String q = "*:*";
+	@CommandLine.Option(names = {"-q", "--query"}, description = "Zulia query, matches all docs by default (default: ${DEFAULT-VALUE})")
+	private String q = "*:*";
 
-		@Parameter(names = "--rows", description = "Number of records to return. [Defaults to 1000]")
-		private Integer rows = 1000;
+	@CommandLine.Option(names = { "-p", "--pageSize", "--rows" }, description = "Number of records in each page (default: ${DEFAULT-VALUE})")
+	private Integer pageSize = 1000;
 
-		@Parameter(names = "--includeAssociatedDocs", description = "Include Associated Documents in the dump.")
-		private boolean includeAssociatedDocs = false;
+	@CommandLine.Option(names = { "-a", "--includeAssociatedDocs"}, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
+	private boolean includeAssociatedDocs = false;
 
-		@Parameter(names = "--sortById", description = "Sort results by Id.")
-		private boolean sortById = false;
+	@CommandLine.Option(arity = "1", names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
+	private boolean sortById = true;
 
-		@Parameter(names = "--idField", description = "ID Field Name. [Defaults to id]")
-		private String idField = "id";
+	@CommandLine.Option(names = { "-d", "--idField"}, description = "Id Field Name (default: ${DEFAULT-VALUE})")
+	private String idField = "id";
+
+	@Override
+	public Integer call() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
+
+		if (!sortById) {
+			LOG.warning("Sort By ID is disabled.  Do not use this on an actively changing index");
+		}
+		else {
+			LOG.info("Sorting by results on field <" + idField + ">");
+		}
+
+		Set<String> uniqueIds = new HashSet<>();
+		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
+		for (String ind : indexes) {
+			queryAndWriteOutput(zuliaWorkPool, ind, q, pageSize, out, idField, uniqueIds, sortById);
+			if (includeAssociatedDocs) {
+				fetchAssociatedDocs(zuliaWorkPool, ind, out, uniqueIds);
+			}
+		}
+
+		return CommandLine.ExitCode.OK;
 	}
 
-	public static void main(String[] args) {
 
-		LogUtil.init();
-
-		ZuliaDumpArgs zuliaDumpArgs = new ZuliaDumpArgs();
-
-		JCommander jCommander = JCommander.newBuilder().addObject(zuliaDumpArgs).build();
-
-		try {
-
-			jCommander.parse(args);
-
-			ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(zuliaDumpArgs.address, zuliaDumpArgs.port).setNodeUpdateEnabled(false);
-			ZuliaWorkPool workPool = new ZuliaWorkPool(zuliaPoolConfig);
-
-			String index = zuliaDumpArgs.index;
-			String indexes = zuliaDumpArgs.indexes;
-			boolean includeAssociatedDocs = zuliaDumpArgs.includeAssociatedDocs;
-
-			if (index == null && indexes == null) {
-				LOG.log(Level.SEVERE, "Please pass in an index name.");
-				jCommander.usage();
-				System.exit(2);
-			}
-
-			String q = zuliaDumpArgs.q;
-			Integer rows = zuliaDumpArgs.rows;
-			String out = zuliaDumpArgs.out;
-			String idField = zuliaDumpArgs.idField;
-			boolean sortById = zuliaDumpArgs.sortById;
-
-			Set<String> uniqueIds = new HashSet<>();
-
-			if (indexes != null) {
-
-				if (indexes.contains(",")) {
-					for (String ind : indexes.split(",")) {
-						queryAndWriteOutput(workPool, ind, q, rows, out, idField, uniqueIds, sortById);
-						if (includeAssociatedDocs) {
-							fetchAssociatedDocs(workPool, ind, out, uniqueIds);
-						}
-					}
-				}
-				else if (indexes.contains("*")) {
-					GetIndexesResult indexesResult = workPool.getIndexes();
-					for (String ind : indexesResult.getIndexNames()) {
-						if (ind.startsWith(indexes.replace("*", ""))) {
-							queryAndWriteOutput(workPool, ind, q, rows, out, idField, uniqueIds, sortById);
-							if (includeAssociatedDocs) {
-								fetchAssociatedDocs(workPool, ind, out, uniqueIds);
-							}
-						}
-					}
-				}
-			}
-			else {
-				queryAndWriteOutput(workPool, index, q, rows, out, idField, uniqueIds, sortById);
-				if (includeAssociatedDocs) {
-					fetchAssociatedDocs(workPool, index, out, uniqueIds);
-				}
-			}
-
-		}
-		catch (ParameterException e) {
-			System.err.println(e.getMessage());
-			jCommander.usage();
-			System.exit(2);
-		}
-		catch (UnsupportedOperationException e) {
-			System.err.println("Error: " + e.getMessage());
-			System.exit(2);
-		}
-		catch (Exception e) {
-			System.err.println("Error: " + e.getMessage());
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-	}
-
-	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer rows, String outputDir, String idField,
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String outputDir, String idField,
 			Set<String> uniqueIds, boolean sortById) throws Exception {
 
 		// create zuliadump dir first
@@ -151,7 +98,7 @@ public class ZuliaDump {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Dumping index <" + index + ">");
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, rows, workPool, count, idField, uniqueIds, sortById);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, idField, uniqueIds, sortById);
 		LOG.info("Finished dumping index <" + index + ">, total: " + count);
 
 		try (FileWriter fileWriter = new FileWriter(settingsFilename, Charsets.UTF_8)) {
@@ -168,7 +115,7 @@ public class ZuliaDump {
 		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
 		String indOutputDir = zuliaDumpDir + File.separator + index;
 
-		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + "> documents.");
+		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + "> documents");
 		AtomicInteger count = new AtomicInteger(0);
 		WorkPool threadPool = new WorkPool(4);
 		for (String uniqueId : uniqueIds) {
@@ -183,15 +130,13 @@ public class ZuliaDump {
 				return null;
 			});
 		}
-		LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents.");
+		LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents");
+		threadPool.shutdown();
+	}
 
-		try {
-			threadPool.shutdown();
-		}
-		catch (Throwable t) {
-			LOG.log(Level.SEVERE, "Could not shut down the thread pool.", t);
-			System.exit(9);
-		}
+	public static void main(String[] args) {
+
+		ZuliaCommonCmd.runCommandLine(new ZuliaDump(), args);
 	}
 
 }
