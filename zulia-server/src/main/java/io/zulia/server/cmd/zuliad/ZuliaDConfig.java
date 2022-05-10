@@ -52,15 +52,18 @@ public class ZuliaDConfig {
 
 		LOG.info("Loading config <" + config + ">");
 
-		if (config.endsWith("json") || config.endsWith("properties")) {
-			zuliaConfig = GSON.fromJson(new FileReader(config), ZuliaConfig.class);
-		}
-		else if (config.endsWith("yml") || config.endsWith("yaml")) {
-			Yaml yaml = new Yaml(new Constructor(ZuliaConfig.class));
-			zuliaConfig = yaml.load(new FileReader(config));
-		}
-		else {
-			throw new RuntimeException("Incompatible config file provided: " + config);
+		try (FileReader fr = new FileReader(config)) {
+
+			if (config.endsWith("json") || config.endsWith("properties")) {
+				zuliaConfig = GSON.fromJson(fr, ZuliaConfig.class);
+			}
+			else if (config.endsWith("yml") || config.endsWith("yaml")) {
+				Yaml yaml = new Yaml(new Constructor(ZuliaConfig.class));
+				zuliaConfig = yaml.load(fr);
+			}
+			else {
+				throw new RuntimeException("Incompatible config file provided: " + config);
+			}
 		}
 
 		String dataDir = zuliaConfig.getDataPath();
