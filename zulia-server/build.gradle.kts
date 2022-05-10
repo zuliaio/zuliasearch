@@ -10,6 +10,7 @@ val mongoDriverVersion: String by project
 val protobufVersion: String by project
 val micronautVersion: String by project
 val amazonVersion: String by project
+val snakeYamlVersion: String by project
 
 defaultTasks("build", "installDist")
 
@@ -54,6 +55,8 @@ dependencies {
     testImplementation("io.micronaut.test:micronaut-test-junit5")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.4.5")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+
+    api("org.yaml:snakeyaml:$snakeYamlVersion")
 
     //implementation("org.graalvm.js:js:21.3.1")
 }
