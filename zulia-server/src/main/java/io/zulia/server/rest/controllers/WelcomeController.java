@@ -9,6 +9,7 @@ import io.zulia.util.ZuliaVersion;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.logging.Logger;
 
 /**
  * @author Graeme Rocher
@@ -17,6 +18,7 @@ import java.nio.file.Paths;
 @Controller
 public class WelcomeController {
 
+	private final static Logger LOG = Logger.getLogger(WelcomeController.class.getSimpleName());
 	@Get
 	public HttpResponse<String> welcome() {
 
@@ -27,7 +29,7 @@ public class WelcomeController {
 			return HttpResponse.ok(html.toString()).header("Content-Type", "text/html");
 		}
 		catch (Exception e) {
-			e.printStackTrace();
+			LOG.warning("rest_index.html not found: " + e.getMessage());
 			return HttpResponse.ok("Welcome to Zulia's REST Service.\nVersion " + ZuliaVersion.getVersion());
 		}
 
