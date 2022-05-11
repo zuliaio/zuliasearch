@@ -177,6 +177,11 @@ public class SimpleTest {
 		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("title,description:(red* BLUE* small)@2").setDefaultOperator(Operator.OR));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("(red* BLUE* small)~2").addQueryFields("title","description").setDefaultOperator(Operator.OR));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());

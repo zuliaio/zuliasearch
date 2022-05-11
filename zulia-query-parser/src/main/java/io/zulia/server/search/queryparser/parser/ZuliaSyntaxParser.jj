@@ -81,7 +81,7 @@ import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
-import static org.apache.lucene.queryparser.flexible.standard.parser.EscapeQuerySyntaxImpl.discardEscapeChar;
+import static io.zulia.server.search.queryparser.parser.EscapeQuerySyntaxImpl.discardEscapeChar;
 
 /**
  * Parser for the standard Lucene syntax
@@ -356,7 +356,7 @@ private QueryNode GroupingExpr(CharSequence field) : {
   Token boost, minShouldMatch = null;
 }
 {
-  <LPAREN> q = Query(field) <RPAREN> (q = Boost(q))? ("~" minShouldMatch = <NUMBER>)?
+  <LPAREN> q = Query(field) <RPAREN> (q = Boost(q))? (("~"|"@") minShouldMatch = <NUMBER>)?
   {
     if (minShouldMatch != null) {
       q = new MinShouldMatchNode(parseInt(minShouldMatch), new GroupQueryNode(q));
