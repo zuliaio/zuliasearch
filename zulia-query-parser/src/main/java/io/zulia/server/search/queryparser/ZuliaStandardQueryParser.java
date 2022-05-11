@@ -16,7 +16,6 @@
  */
 package io.zulia.server.search.queryparser;
 
-import io.zulia.server.search.queryparser.builders.ZuliaStandardQueryTreeBuilder;
 import io.zulia.server.search.queryparser.parser.ZuliaSyntaxParser;
 import io.zulia.server.search.queryparser.processors.ZuliaQueryNodeProcessorPipeline;
 import org.apache.lucene.analysis.Analyzer;
@@ -242,7 +241,7 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 	public ZuliaStandardQueryParser() {
 		super(new StandardQueryConfigHandler(),
 				// zulia - set zulia syntax parser, query node pipeline and tree builder
-				new ZuliaSyntaxParser(), new ZuliaQueryNodeProcessorPipeline(null), new ZuliaStandardQueryTreeBuilder());
+				new ZuliaSyntaxParser(), new ZuliaQueryNodeProcessorPipeline(null), new StandardQueryTreeBuilder());
 		setEnablePositionIncrements(true);
 	}
 
