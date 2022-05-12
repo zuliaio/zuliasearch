@@ -92,6 +92,14 @@ public class ParserTest {
 		oldParser.setSplitOnWhitespace(false);
 		Assertions.assertEquals(q, q2);
 
+
+		oldParser.setSplitOnWhitespace(true);
+		q = parse("(Cancer Diabetes \"Drug Treatment\") AND rating:[4.0 TO *]", List.of("title", "abstract"), Operator.OR, 0, oldParser);
+		q2 = parse("(Cancer Diabetes \"Drug Treatment\") AND rating:[4.0 TO *]", List.of("title", "abstract"), Operator.OR, 0, newParser);
+		oldParser.setSplitOnWhitespace(false);
+		Assertions.assertEquals(q, q2);
+
+
 		q = parse("*:*", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		q2 = parse("*:*", List.of("field1", "field2"), Operator.OR, 0, newParser);
 		Assertions.assertEquals(q, q2);

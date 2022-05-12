@@ -26,7 +26,7 @@ public class ZuliaFlexibleQueryParser implements ZuliaParser {
 	private final ZuliaStandardQueryParser zuliaStandardQueryParser;
 
 	public ZuliaFlexibleQueryParser(Analyzer analyzer, ServerIndexConfig indexConfig) {
-		zuliaStandardQueryParser = new ZuliaStandardQueryParser();
+		zuliaStandardQueryParser = new ZuliaStandardQueryParser(analyzer);
 		zuliaStandardQueryParser.setAnalyzer(analyzer);
 		this.indexConfig = indexConfig;
 		zuliaStandardQueryParser.setAllowLeadingWildcard(true);

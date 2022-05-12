@@ -44,7 +44,7 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 
 						NumberFormat numberFormat = numericConfig.getNumberFormat();
 						String text = fieldNode.getTextAsString();
-						Number number = null;
+						Number number;
 
 						if (text.length() > 0) {
 

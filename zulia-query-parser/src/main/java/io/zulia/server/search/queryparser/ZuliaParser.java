@@ -20,7 +20,7 @@ public interface ZuliaParser {
 			field = ZuliaConstants.LIST_LENGTH_PREFIX + field.substring(3, field.length() - 3);
 		}
 		else if (field.startsWith("||") && field.endsWith("||")) {
-
+			// no-op
 		}
 		else if (field.startsWith("|") && field.endsWith("|")) {
 			field = ZuliaConstants.CHAR_LENGTH_PREFIX + field.substring(1, field.length() - 1);

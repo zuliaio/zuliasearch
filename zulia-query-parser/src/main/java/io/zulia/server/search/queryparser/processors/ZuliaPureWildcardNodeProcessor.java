@@ -18,8 +18,7 @@ public class ZuliaPureWildcardNodeProcessor extends QueryNodeProcessorImpl {
 	@Override
 	protected QueryNode postProcessNode(QueryNode node) {
 
-		if (node instanceof WildcardQueryNode) {
-			WildcardQueryNode wildcardQueryNode = (WildcardQueryNode) node;
+		if (node instanceof WildcardQueryNode wildcardQueryNode) {
 			String field = wildcardQueryNode.getFieldAsString();
 
 			String text = wildcardQueryNode.getText().toString();

@@ -46,5 +46,8 @@ public class ZuliaQueryNodeProcessorPipeline extends QueryNodeProcessorPipeline 
 		add(new DefaultPhraseSlopQueryNodeProcessor());
 		add(new BoostQueryNodeProcessor());
 		add(new MultiTermRewriteMethodProcessor());
+		add(new IntervalQueryNodeProcessor());
+
+
 	}
 }
