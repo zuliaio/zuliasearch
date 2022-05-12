@@ -10,12 +10,12 @@ import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
-import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex;
 import org.bson.Document;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Random;
@@ -35,7 +35,7 @@ public class FileStorageTest {
 		fileStorageTest.createIndex();
 
 		// This needs to be changed to a local dir with PDF files.
-		String pdfsDir = "/data/chemrxiv";
+		String pdfsDir = "/path/to/dir/of/pdfs";
 
 		System.out.println("Indexing documents.");
 		AtomicInteger idCounter = new AtomicInteger(1);
@@ -50,7 +50,7 @@ public class FileStorageTest {
 					Document meta = new Document();
 					meta.put("extension", "pdf");
 					meta.put("contentType", "application/pdf");
-					fileStorageTest.storeFile(doc.getString("id"), file.toFile().getName(), meta, Files.readAllBytes(file));
+					fileStorageTest.storeFile(doc.getString("id"), file.toFile().getName(), meta, file.toFile());
 				}
 				catch (Exception e) {
 					e.printStackTrace();
@@ -126,20 +126,13 @@ public class FileStorageTest {
 		zuliaWorkPool.createIndex(createOrUpdateIndex);
 	}
 
-	private void storeFile(String documentId, String filename, Document meta, byte[] content) throws Exception {
+	private void storeFile(String documentId, String filename, Document meta, File content) throws Exception {
 
 		zuliaWorkPool.delete(new DeleteAssociated(documentId, TEST_INDEX, filename));
 
-		if (content.length > 32 * 1024 * 1024) {
-			StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(documentId, TEST_INDEX, filename, content);
-			storeLargeAssociated.setMeta(meta);
-			zuliaWorkPool.storeLargeAssociated(storeLargeAssociated);
-		}
-		else {
-			Store associatedDocStore = new Store(documentId, TEST_INDEX);
-			associatedDocStore.addAssociatedDocument(AssociatedBuilder.newBuilder().setDocument(content).setFilename(filename).setMetadata(meta));
-			zuliaWorkPool.store(associatedDocStore);
-		}
+		StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(documentId, TEST_INDEX, filename, content);
+		storeLargeAssociated.setMeta(meta);
+		zuliaWorkPool.storeLargeAssociated(storeLargeAssociated);
 
 	}
 

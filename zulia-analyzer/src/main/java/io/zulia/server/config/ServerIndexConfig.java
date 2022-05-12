@@ -2,6 +2,7 @@ package io.zulia.server.config;
 
 import info.debatty.java.lsh.SuperBit;
 import io.zulia.DefaultAnalyzers;
+import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
@@ -114,6 +115,9 @@ public class ServerIndexConfig {
 				sortFieldType.put(sortAs.getSortFieldName(), fc.getFieldType());
 			}
 		}
+
+		sortFieldType.put(ZuliaConstants.SCORE_FIELD, FieldConfig.FieldType.NUMERIC_FLOAT);
+		sortFieldType.put(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING);
 
 		this.superbitConfigMap = new ConcurrentHashMap<>();
 		this.superbitMap = new ConcurrentHashMap<>();

@@ -12,6 +12,7 @@ import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.io.BasicOutputBuffer;
 
+import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -170,10 +171,26 @@ public class ZuliaUtil {
 		return pojoCodecRegistry;
 	}
 
+	public static String guessExtension(File file) {
+		ContentInfoUtil util = new ContentInfoUtil();
+		try {
+			ContentInfo info = util.findMatch(file);
+			return info.getContentType().getMimeType();
+		}
+		catch (Exception e) {
+			return "";
+		}
+	}
+
 	public static String guessExtension(byte[] bytes) {
 		ContentInfoUtil util = new ContentInfoUtil();
-		ContentInfo info = util.findMatch(bytes);
-		return info.getMimeType();
+		try {
+			ContentInfo info = util.findMatch(bytes);
+			return info.getContentType().getMimeType();
+		}
+		catch (Exception e) {
+			return "";
+		}
 	}
 
 }

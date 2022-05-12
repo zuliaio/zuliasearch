@@ -21,6 +21,8 @@ import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.IndexSearcher;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -50,7 +52,19 @@ public class ZuliaDConfig {
 
 		LOG.info("Loading config <" + config + ">");
 
-		zuliaConfig = GSON.fromJson(new FileReader(config), ZuliaConfig.class);
+		try (FileReader fr = new FileReader(config)) {
+
+			if (config.endsWith("json") || config.endsWith("properties")) {
+				zuliaConfig = GSON.fromJson(fr, ZuliaConfig.class);
+			}
+			else if (config.endsWith("yml") || config.endsWith("yaml")) {
+				Yaml yaml = new Yaml(new Constructor(ZuliaConfig.class));
+				zuliaConfig = yaml.load(fr);
+			}
+			else {
+				throw new RuntimeException("Incompatible config file provided: " + config);
+			}
+		}
 
 		String dataDir = zuliaConfig.getDataPath();
 		if (prefix != null && !dataDir.startsWith(File.separator)) {

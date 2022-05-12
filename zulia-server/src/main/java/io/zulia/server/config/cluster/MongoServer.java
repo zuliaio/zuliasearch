@@ -17,8 +17,16 @@ public class MongoServer {
 		return hostname;
 	}
 
+	public void setHostname(String hostname) {
+		this.hostname = hostname;
+	}
+
 	public int getPort() {
 		return port;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
 	}
 
 	@Override
