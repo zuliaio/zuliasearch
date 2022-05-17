@@ -59,7 +59,7 @@ public class SimpleTest {
 
 			indexRecord(i * uniqueDocs, "something special", "red and blue", 1.0);
 			indexRecord(i * uniqueDocs + 1, "something really special", "reddish and blueish", 2.4);
-			indexRecord(i * uniqueDocs + 2, "something even more special", "pink with big stripes", 5.0);
+			indexRecord(i * uniqueDocs + 2, "something even more special", "pink with big big big stripes", 5.0);
 			indexRecord(i * uniqueDocs + 3, "something special", "real big", 4.3);
 			indexRecord(i * uniqueDocs + 4, "something really special", "small", 1.6);
 			indexRecord(i * uniqueDocs + 5, "something really special", "light-blue with flowers", 4.1);
@@ -248,6 +248,37 @@ public class SimpleTest {
 		search.addQuery(new ScoredQuery("description:fn:ordered(pink big) AND rating:[3.0 TO 5.0]").addQueryFields("id","rating"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:big").addQueryFields("id","rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2*repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:ordered(big big)").addQueryFields("id","rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:ordered(big big big)").addQueryFields("id","rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:unordered(big big big)").addQueryFields("id","rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:ordered(big big big big)").addQueryFields("id","rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:unordered(big big big big)").addQueryFields("id","rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
 
 	}
 
