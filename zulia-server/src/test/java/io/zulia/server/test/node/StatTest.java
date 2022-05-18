@@ -132,6 +132,14 @@ public class StatTest {
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch),
 				"Expecting: Search: Numeric field <authorCount> must be indexed as a SORTABLE numeric field");
 
+		search = new Search(STAT_TEST_INDEX);
+		search.addStat(new StatFacet("rating", "normalFacet"));
+		search.addQuery(new FilterQuery("title:boring"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+		System.out.println(searchResult.getFacetFieldStats());
+		List<FacetStats> ratingByFacet = searchResult.getFacetFieldStat("rating", "normalFacet");
+		Assertions.assertEquals(1, ratingByFacet.size());
 	}
 
 	private void ratingTest(FacetStats ratingStat) {
