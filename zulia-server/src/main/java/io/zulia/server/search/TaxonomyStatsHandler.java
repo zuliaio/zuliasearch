@@ -259,7 +259,7 @@ public class TaxonomyStatsHandler {
 
 		int ord = children[dimOrd];
 
-		double doubleBottomValue = Double.MIN_VALUE;
+		double doubleBottomValue = Double.NEGATIVE_INFINITY;
 		long longBottomValue = Long.MIN_VALUE;
 
 		while (ord != TaxonomyReader.INVALID_ORDINAL) {
