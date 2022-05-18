@@ -70,7 +70,7 @@ public class StatTest {
 			indexRecord(i * uniqueDocs + 3, "something special", "top2/middle/bottom3", "bar", 2, List.of(0.5));
 			indexRecord(i * uniqueDocs + 4, "something really special", "top3/middle/bottom4", "bar", 5, List.of(3.0));
 			indexRecord(i * uniqueDocs + 5, "something really special", "top3/middle/bottom4", null, 4, List.of());
-			indexRecord(i * uniqueDocs + 6, "boring", "top4/middle/bottom5", "other", 1, List.of());
+			indexRecord(i * uniqueDocs + 6, "boring", "top4/middle/bottom5", "other", 1, List.of(0.0));
 		}
 
 	}
@@ -131,6 +131,18 @@ public class StatTest {
 		Search finalSearch = search;
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch),
 				"Expecting: Search: Numeric field <authorCount> must be indexed as a SORTABLE numeric field");
+
+		search = new Search(STAT_TEST_INDEX);
+		search.addStat(new StatFacet("rating", "normalFacet"));
+		search.addQuery(new FilterQuery("title:boring"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+		List<FacetStats> ratingByFacet = searchResult.getFacetFieldStat("rating", "normalFacet");
+		Assertions.assertEquals(1, ratingByFacet.size());
+		Assertions.assertEquals(repeatCount, ratingByFacet.get(0).getDocCount());
+		Assertions.assertEquals(0, ratingByFacet.get(0).getMin().getDoubleValue());
+		Assertions.assertEquals(0, ratingByFacet.get(0).getMax().getDoubleValue());
+		Assertions.assertEquals(0, ratingByFacet.get(0).getSum().getDoubleValue());
 
 	}
 
@@ -279,6 +291,24 @@ public class StatTest {
 		authorCountPathFacetTest(searchResult);
 		ratingNormalTest(searchResult);
 		ratingPathTest(searchResult);
+
+
+		search = new Search(STAT_TEST_INDEX);
+		search.addStat(new StatFacet("rating", "pathFacet"));
+		search.addQuery(new FilterQuery("\"something really special\"").addQueryField("title"));
+		search.addQuery(new FilterQuery("authorCount:[4 TO 4.1]"));
+		search.addQuery(new FilterQuery("rating:[2 TO 3]").exclude());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+		List<FacetStats> ratingByFacet = searchResult.getFacetFieldStat("rating", "pathFacet");
+		Assertions.assertEquals(1, ratingByFacet.size());
+		Assertions.assertEquals(0, ratingByFacet.get(0).getDocCount()); //No docs have values for rating that match even though there are facets for pathFacet
+		System.err.println(ratingByFacet.get(0).getMin().getDoubleValue());
+		System.err.println(ratingByFacet.get(0).getMax().getDoubleValue());
+		System.err.println(ratingByFacet.get(0).getSum().getDoubleValue());
+		Assertions.assertEquals(Double.POSITIVE_INFINITY, ratingByFacet.get(0).getMin().getDoubleValue(), 0.001); // Positive Infinity for Min when no values found
+		Assertions.assertEquals(Double.NEGATIVE_INFINITY, ratingByFacet.get(0).getMax().getDoubleValue(), 0.001); // Negative Infinity for Max when no values found
+		Assertions.assertEquals(0, ratingByFacet.get(0).getSum().getDoubleValue(), 0.001);
 	}
 
 	private void authorCountPathFacetTest(SearchResult searchResult) {
