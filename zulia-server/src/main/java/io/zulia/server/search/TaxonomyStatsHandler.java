@@ -259,18 +259,14 @@ public class TaxonomyStatsHandler {
 
 		int ord = children[dimOrd];
 
-		double doubleSumValues = 0;
-		double doubleBottomValue = 0;
-
-		long longSumValues = 0;
-		long longBottomValue = 0;
+		double doubleBottomValue = Double.NEGATIVE_INFINITY;
+		long longBottomValue = Long.MIN_VALUE;
 
 		while (ord != TaxonomyReader.INVALID_ORDINAL) {
 			Stats stat = stats[ord];
 			if (stat != null) {
 				stat.ordinal = ord;
-				if (stat.doubleSum > 0) {
-					doubleSumValues += stat.doubleSum;
+				if (stat.isFloatingPoint()) {
 					if (stat.doubleSum > doubleBottomValue) {
 						q.insertWithOverflow(stat);
 						if (q.size() == topN) {
@@ -278,8 +274,7 @@ public class TaxonomyStatsHandler {
 						}
 					}
 				}
-				else if (stat.longSum > 0) {
-					longSumValues += stat.longSum;
+				else {
 					if (stat.longSum > longBottomValue) {
 						q.insertWithOverflow(stat);
 						if (q.size() == topN) {
@@ -292,9 +287,6 @@ public class TaxonomyStatsHandler {
 			ord = siblings[ord];
 		}
 
-		if (doubleSumValues == 0 && longSumValues == 0) {
-			return null;
-		}
 
 		ZuliaQuery.FacetStats[] facetStats = new ZuliaQuery.FacetStats[q.size()];
 		for (int i = facetStats.length - 1; i >= 0; i--) {
@@ -339,6 +331,7 @@ public class TaxonomyStatsHandler {
 
 	public static class Stats {
 
+		private final boolean floatingPoint;
 		private int ordinal;
 		private long docCount;
 		private long allDocCount;
@@ -361,6 +354,7 @@ public class TaxonomyStatsHandler {
 				doubleMinValue = 0;
 				doubleMaxValue = 0;
 			}
+			this.floatingPoint = floatingPoint;
 		}
 
 		public void newDoc(boolean countNonNull) {
@@ -390,6 +384,10 @@ public class TaxonomyStatsHandler {
 				longMaxValue = newValue;
 			}
 			this.valueCount++;
+		}
+
+		public boolean isFloatingPoint() {
+			return floatingPoint;
 		}
 	}
 
