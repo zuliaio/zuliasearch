@@ -259,15 +259,15 @@ public class TaxonomyStatsHandler {
 
 		int ord = children[dimOrd];
 
-		double doubleBottomValue = 0;
-		long longBottomValue = 0;
+		double doubleBottomValue = Double.MIN_VALUE;
+		long longBottomValue = Long.MIN_VALUE;
 
 		while (ord != TaxonomyReader.INVALID_ORDINAL) {
 			Stats stat = stats[ord];
 			if (stat != null) {
 				stat.ordinal = ord;
 				if (stat.isFloatingPoint()) {
-					if (stat.doubleSum >= doubleBottomValue) {
+					if (stat.doubleSum > doubleBottomValue) {
 						q.insertWithOverflow(stat);
 						if (q.size() == topN) {
 							doubleBottomValue = q.top().doubleSum;
@@ -275,7 +275,7 @@ public class TaxonomyStatsHandler {
 					}
 				}
 				else {
-					if (stat.longSum >= longBottomValue) {
+					if (stat.longSum > longBottomValue) {
 						q.insertWithOverflow(stat);
 						if (q.size() == topN) {
 							longBottomValue = q.top().longSum;
