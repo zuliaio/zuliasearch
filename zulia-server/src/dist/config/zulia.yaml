@@ -17,20 +17,20 @@ dataPath: /path/to/data/
 # if using multiple zulia clusters on the same MongoDB change this to be unique
 # a database will be created in MongoDB with this name
 # only is used in cluster mode
-# clusterName: "zulia"
+clusterName: "zulia"
 
 # In cluster mode mongo db servers need to be listed below
 #
-# mongoServers:
-#  - hostname: 127.0.0.1
-#    port: 27017
+mongoServers:
+  - hostname: 127.0.0.1
+    port: 27017
 
 # uncomment this if using mongo authentication
 #
-# mongoAuth:
-#  - username: "someUser"
-#    password: "somePassword"
-#    database: "admin"
+#mongoAuth:
+#  username: "someUser"
+#  password: "somePassword"
+#  database: "admin"
 
 # In cluster mode the default file storage of associated files is in MongoDB GridFS.
 # Associated files are binary files associated with a document in zulia (images, pdfs, ...)
@@ -40,7 +40,7 @@ dataPath: /path/to/data/
 #   InstanceProfileCredentialsProvider, ContainerCredentialsProvider, EnvironmentVariableCredentialsProvider
 #   SystemPropertyCredentialsProvider, ProfileCredentialsProvider
 #
-# clusterStorageEngine: s3
-# s3:
-#  s3BucketName: someBucket
-#  region: us-gov-east-1
+#clusterStorageEngine: s3
+#s3:
+# s3BucketName: someBucket
+# region: us-gov-east-1
