@@ -58,20 +58,6 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 
 		List<ZuliaIndex.FieldConfig.Builder> fieldConfigBuilderList = indexSettings.getFieldConfigBuilderList();
 		for (ZuliaIndex.FieldConfig.Builder builder : fieldConfigBuilderList) {
-
-			for (ZuliaIndex.ProjectAs.Builder projectAsBuilder : builder.getProjectAsBuilderList()) {
-				ZuliaIndex.Superbit.Builder superbitBuilder = projectAsBuilder.getSuperbitBuilder();
-				if (superbitBuilder.getBatches() == 0) {
-					superbitBuilder.setBatches(1);
-				}
-				if (superbitBuilder.getSeed() == 0) {
-					superbitBuilder.setSeed(1357);
-				}
-				if (superbitBuilder.getInputDim() == 0) {
-					throw new IllegalArgumentException("Superbit input dimension is required for field with projection: " + builder.getStoredFieldName());
-				}
-			}
-
 			for (ZuliaIndex.IndexAs indexAs : builder.getIndexAsList()) {
 				if (indexAs.getIndexFieldName().contains(",")) {
 					throw new IllegalArgumentException("Index as field name can not contain a comma");

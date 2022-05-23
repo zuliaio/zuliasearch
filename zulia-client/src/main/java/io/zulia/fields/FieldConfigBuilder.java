@@ -6,9 +6,7 @@ import java.util.List;
 import static io.zulia.message.ZuliaIndex.FacetAs;
 import static io.zulia.message.ZuliaIndex.FieldConfig;
 import static io.zulia.message.ZuliaIndex.IndexAs;
-import static io.zulia.message.ZuliaIndex.ProjectAs;
 import static io.zulia.message.ZuliaIndex.SortAs;
-import static io.zulia.message.ZuliaIndex.Superbit;
 
 public class FieldConfigBuilder {
 	private final FieldConfig.FieldType fieldType;
@@ -16,7 +14,6 @@ public class FieldConfigBuilder {
 	private final List<IndexAs> indexAsList;
 	private final List<FacetAs> facetAsList;
 	private final List<SortAs> sortAsList;
-	private final List<ProjectAs> projectAsList;
 	private String description;
 	private String displayName;
 
@@ -26,7 +23,6 @@ public class FieldConfigBuilder {
 		this.indexAsList = new ArrayList<>();
 		this.facetAsList = new ArrayList<>();
 		this.sortAsList = new ArrayList<>();
-		this.projectAsList = new ArrayList<>();
 	}
 
 	public static FieldConfigBuilder create(String storedFieldName, FieldConfig.FieldType fieldType) {
@@ -59,6 +55,14 @@ public class FieldConfigBuilder {
 
 	public static FieldConfigBuilder createDouble(String storedFieldName) {
 		return create(storedFieldName, FieldConfig.FieldType.NUMERIC_DOUBLE);
+	}
+
+	public static FieldConfigBuilder createVector(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.VECTOR);
+	}
+
+	public static FieldConfigBuilder createUnitVector(String storedFieldName) {
+		return create(storedFieldName, FieldConfig.FieldType.UNIT_VECTOR);
 	}
 
 	public FieldConfigBuilder index() {
@@ -163,34 +167,6 @@ public class FieldConfigBuilder {
 		return this;
 	}
 
-	public FieldConfigBuilder projectAsSuperBit(String field, int inputDim) {
-		Superbit superbit = Superbit.newBuilder().setInputDim(inputDim).build();
-		ProjectAs projectAs = ProjectAs.newBuilder().setField(field).setSuperbit(superbit).build();
-		return projectAs(projectAs);
-	}
-
-	public FieldConfigBuilder projectAsSuperBit(String field, int inputDim, int batches) {
-		Superbit superbit = Superbit.newBuilder().setInputDim(inputDim).setBatches(batches).build();
-		ProjectAs projectAs = ProjectAs.newBuilder().setField(field).setSuperbit(superbit).build();
-		return projectAs(projectAs);
-	}
-
-	public FieldConfigBuilder projectAsSuperBit(String field, int inputDim, int batches, int seed) {
-		Superbit superbit = Superbit.newBuilder().setInputDim(inputDim).setBatches(batches).setSeed(seed).build();
-		ProjectAs projectAs = ProjectAs.newBuilder().setField(field).setSuperbit(superbit).build();
-		return projectAs(projectAs);
-	}
-
-	public FieldConfigBuilder projectAsSuperBit(String field, Superbit superbit) {
-		ProjectAs projectAs = ProjectAs.newBuilder().setField(field).setSuperbit(superbit).build();
-		return projectAs(projectAs);
-	}
-
-	public FieldConfigBuilder projectAs(ProjectAs projectAs) {
-		this.projectAsList.add(projectAs);
-		return this;
-	}
-
 	public FieldConfigBuilder description(String description) {
 		this.description = description;
 		return this;
@@ -208,7 +184,6 @@ public class FieldConfigBuilder {
 		fcBuilder.addAllIndexAs(indexAsList);
 		fcBuilder.addAllFacetAs(facetAsList);
 		fcBuilder.addAllSortAs(sortAsList);
-		fcBuilder.addAllProjectAs(projectAsList);
 		if (description != null) {
 			fcBuilder.setDescription(description);
 		}

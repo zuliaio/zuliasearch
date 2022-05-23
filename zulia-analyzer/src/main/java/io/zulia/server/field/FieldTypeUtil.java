@@ -45,4 +45,8 @@ public class FieldTypeUtil {
 	public static boolean isStringFieldType(FieldConfig.FieldType fieldType) {
 		return ZuliaIndex.FieldConfig.FieldType.STRING.equals(fieldType);
 	}
+
+	public static boolean isVectorFieldType(FieldConfig.FieldType fieldType) {
+		return FieldConfig.FieldType.VECTOR.equals(fieldType) || FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType);
+	}
 }

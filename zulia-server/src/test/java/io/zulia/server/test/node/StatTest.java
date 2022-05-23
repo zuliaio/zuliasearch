@@ -103,7 +103,6 @@ public class StatTest {
 		search.addQuery(new MatchAllQuery());
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
-		System.out.println("Hits: " + searchResult.getTotalHits());
 
 		FacetStats ratingStat = searchResult.getNumericFieldStat("rating");
 		ratingTest(ratingStat);

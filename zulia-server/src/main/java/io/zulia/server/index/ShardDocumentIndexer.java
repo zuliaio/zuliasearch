@@ -1,7 +1,7 @@
 package io.zulia.server.index;
 
 import com.google.common.base.Splitter;
-import info.debatty.java.lsh.SuperBit;
+import com.google.common.primitives.Floats;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
@@ -19,17 +19,20 @@ import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -37,7 +40,7 @@ import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
 
 public class ShardDocumentIndexer {
 
-	private static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
+	private final static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
 
 	private final ServerIndexConfig indexConfig;
 
@@ -80,40 +83,9 @@ public class ShardDocumentIndexer {
 
 					handleIndexingForStoredField(luceneDocument, storedFieldName, fc, fieldType, o);
 
-					handleProjectForStoredField(luceneDocument, fc, o);
 				}
 			}
 
-		}
-	}
-
-	private void handleProjectForStoredField(Document luceneDocument, ZuliaIndex.FieldConfig fc, Object o) throws Exception {
-		for (ZuliaIndex.ProjectAs projectAs : fc.getProjectAsList()) {
-			if (projectAs.hasSuperbit()) {
-				if (o instanceof List) {
-					List<Number> values = (List<Number>) o;
-
-					double[] vec = new double[values.size()];
-					int i = 0;
-					for (Number value : values) {
-						vec[i++] = value.doubleValue();
-					}
-
-					SuperBit superBitForField = indexConfig.getSuperBitForField(projectAs.getField());
-					boolean[] signature = superBitForField.signature(vec);
-
-					int j = 0;
-					for (boolean s : signature) {
-						StringFieldIndexer.INSTANCE.index(luceneDocument, projectAs.getField(), s ? "1" : "0",
-								ZuliaConstants.SUPERBIT_PREFIX + "." + projectAs.getField() + "." + j);
-						j++;
-					}
-
-				}
-				else {
-					throw new Exception("Expecting a list for superbit field <" + projectAs.getField() + ">");
-				}
-			}
 		}
 	}
 
@@ -145,6 +117,12 @@ public class ShardDocumentIndexer {
 			else if (FieldTypeUtil.isStringFieldType(fieldType)) {
 				StringFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
+			else if (FieldTypeUtil.isVectorFieldType(fieldType)) {
+				if (o instanceof Collection collection) {
+					luceneDocument.add(new KnnVectorField(indexedFieldName, Floats.toArray(collection),
+							ZuliaIndex.FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ? VectorSimilarityFunction.DOT_PRODUCT : VectorSimilarityFunction.COSINE));
+				}
+			}
 			else {
 				throw new RuntimeException("Unsupported field type <" + fieldType + ">");
 			}
@@ -161,9 +139,7 @@ public class ShardDocumentIndexer {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 
 					if (FieldTypeUtil.isDateFieldType(fieldType)) {
-						if (obj instanceof Date) {
-
-							Date date = (Date) obj;
+						if (obj instanceof Date date) {
 							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, date.getTime());
 							d.add(docValue);
 						}
@@ -174,10 +150,9 @@ public class ShardDocumentIndexer {
 						}
 					}
 					else {
-						if (obj instanceof Number) {
+						if (obj instanceof Number number) {
 
-							Number number = (Number) obj;
-							SortedNumericDocValuesField docValue = null;
+							SortedNumericDocValuesField docValue;
 							if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 								docValue = new SortedNumericDocValuesField(sortFieldName, number.intValue());
 							}
@@ -243,22 +218,22 @@ public class ShardDocumentIndexer {
 					String text = o.toString();
 
 					ZuliaIndex.SortAs.StringHandling stringHandling = sortAs.getStringHandling();
-					if (ZuliaIndex.SortAs.StringHandling.STANDARD.equals(stringHandling)) {
-						//no op
-					}
-					else if (ZuliaIndex.SortAs.StringHandling.LOWERCASE.equals(stringHandling)) {
-						text = text.toLowerCase();
-					}
-					else if (ZuliaIndex.SortAs.StringHandling.FOLDING.equals(stringHandling)) {
-						text = getFoldedString(text);
-					}
-					else if (ZuliaIndex.SortAs.StringHandling.LOWERCASE_FOLDING.equals(stringHandling)) {
-						text = getFoldedString(text).toLowerCase();
-					}
-					else {
-						throw new RuntimeException(
-								"Not handled string handling <" + stringHandling + "> for document field <" + storedFieldName + "> / sort field <"
-										+ sortFieldName + ">");
+					switch (stringHandling) {
+						case STANDARD:
+							break;
+						case LOWERCASE:
+							text = text.toLowerCase();
+							break;
+						case FOLDING:
+							text = getFoldedString(text);
+							break;
+						case LOWERCASE_FOLDING:
+							text = getFoldedString(text).toLowerCase();
+							break;
+						default:
+							throw new RuntimeException(
+									"Not handled string handling <" + stringHandling + "> for document field <" + storedFieldName + "> / sort field <"
+											+ sortFieldName + ">");
 					}
 
 					SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));
