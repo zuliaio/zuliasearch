@@ -1,9 +1,7 @@
 package io.zulia.server.config;
 
-import info.debatty.java.lsh.SuperBit;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.ZuliaConstants;
-import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Tokenizer;
@@ -19,9 +17,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-import static io.zulia.message.ZuliaIndex.ProjectAs;
-import static io.zulia.message.ZuliaIndex.Superbit;
-
 public class ServerIndexConfig {
 
 	private IndexSettings indexSettings;
@@ -33,8 +28,6 @@ public class ServerIndexConfig {
 	private ConcurrentHashMap<String, AnalyzerSettings> analyzerMap;
 	private ConcurrentHashMap<String, String> indexToStoredMap;
 	private ConcurrentHashMap<String, FacetAs> facetAsMap;
-	private ConcurrentHashMap<String, ZuliaIndex.Superbit> superbitConfigMap;
-	private ConcurrentHashMap<String, SuperBit> superbitMap;
 
 	public ServerIndexConfig(IndexSettings indexSettings) {
 		configure(indexSettings);
@@ -119,23 +112,7 @@ public class ServerIndexConfig {
 		sortFieldType.put(ZuliaConstants.SCORE_FIELD, FieldConfig.FieldType.NUMERIC_FLOAT);
 		sortFieldType.put(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING);
 
-		this.superbitConfigMap = new ConcurrentHashMap<>();
-		this.superbitMap = new ConcurrentHashMap<>();
-		for (String storedFieldName : fieldConfigMap.keySet()) {
-			FieldConfig fc = fieldConfigMap.get(storedFieldName);
-			for (ProjectAs projectAs : fc.getProjectAsList()) {
-				String field = projectAs.getField();
-				if (projectAs.hasSuperbit()) {
-					Superbit superbit = projectAs.getSuperbit();
-					superbitConfigMap.put(field, superbit);
-
-					SuperBit superBit = new SuperBit(superbit.getInputDim(), superbit.getInputDim(), superbit.getBatches(), superbit.getSeed());
-					superbitMap.put(field, superBit);
-				}
-			}
-		}
 	}
-
 
 	public IndexSettings getIndexSettings() {
 		return indexSettings;
@@ -161,14 +138,6 @@ public class ServerIndexConfig {
 
 	public boolean isHierarchicalFacet(String facet) {
 		return facetAsMap.get(facet).getHierarchical();
-	}
-
-	public SuperBit getSuperBitForField(String field) {
-		return superbitMap.get(field);
-	}
-
-	public Superbit getSuperBitConfigForField(String field) {
-		return superbitConfigMap.get(field);
 	}
 
 	public AnalyzerSettings getAnalyzerSettingsByName(String textAnalyzerName) {
