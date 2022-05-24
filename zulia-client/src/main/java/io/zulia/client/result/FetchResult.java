@@ -76,6 +76,14 @@ public class FetchResult extends Result {
 		return null;
 	}
 
+
+	public AssociatedResult getFirstAssociatedDocument() {
+		if (!associatedResults.isEmpty()) {
+			return associatedResults.get(0);
+		}
+		return null;
+	}
+
 	public AssociatedResult getAssociatedDocument(int index) {
 		return associatedResults.get(index);
 	}
