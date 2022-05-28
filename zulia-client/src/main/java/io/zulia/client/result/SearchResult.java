@@ -59,6 +59,22 @@ public class SearchResult extends Result {
 		return documents;
 	}
 
+	public List<String> getDocumentsAsJson() {
+		List<String> jsons = new ArrayList<>();
+		for (Document document : getDocuments()) {
+			jsons.add(ZuliaUtil.mongoDocumentToJson(document));
+		}
+		return jsons;
+	}
+
+	public List<String> getDocumentsAsPrettyJson() {
+		List<String> jsons = new ArrayList<>();
+		for (Document document : getDocuments()) {
+			jsons.add(ZuliaUtil.mongoDocumentToJson(document, true));
+		}
+		return jsons;
+	}
+
 	public List<Document> getMetaDocuments() {
 		List<Document> documents = new ArrayList<>();
 		for (ScoredResult scoredResult : queryResponse.getResultsList()) {
@@ -96,6 +112,22 @@ public class SearchResult extends Result {
 			else {
 				throw new IllegalStateException("Cannot get results without fetch type of full");
 			}
+		}
+		return null;
+	}
+
+	public String getFirstDocumentAsJson() {
+		Document firstDocument = getFirstDocument();
+		if (firstDocument != null) {
+			return ZuliaUtil.mongoDocumentToJson(firstDocument);
+		}
+		return null;
+	}
+
+	public String getFirstDocumentAsPrettyJson() {
+		Document firstDocument = getFirstDocument();
+		if (firstDocument != null) {
+			return ZuliaUtil.mongoDocumentToJson(firstDocument, true);
 		}
 		return null;
 	}
@@ -140,7 +172,7 @@ public class SearchResult extends Result {
 	}
 
 	public List<StatGroup> getNumericFieldStats() {
-		return queryResponse.getStatGroupList().stream().filter(sg ->  sg.getStatRequest().getFacetField().getLabel().isEmpty()).collect(Collectors.toList());
+		return queryResponse.getStatGroupList().stream().filter(sg -> sg.getStatRequest().getFacetField().getLabel().isEmpty()).collect(Collectors.toList());
 	}
 
 	public FacetStats getNumericFieldStat(String numericFieldName) {
@@ -153,7 +185,7 @@ public class SearchResult extends Result {
 	}
 
 	public List<StatGroup> getFacetFieldStats() {
-		return queryResponse.getStatGroupList().stream().filter(sg ->  !sg.getStatRequest().getFacetField().getLabel().isEmpty()).collect(Collectors.toList());
+		return queryResponse.getStatGroupList().stream().filter(sg -> !sg.getStatRequest().getFacetField().getLabel().isEmpty()).collect(Collectors.toList());
 	}
 
 	public List<FacetStats> getFacetFieldStat(String numericFieldName, String facetField) {

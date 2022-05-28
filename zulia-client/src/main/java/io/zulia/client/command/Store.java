@@ -56,6 +56,11 @@ public class Store extends SimpleCommand<StoreRequest, StoreResult> implements S
 		return resultDocument;
 	}
 
+
+	public Store setResultDocument(String json) {
+		return setResultDocument(ResultDocBuilder.newBuilder().setDocument(json));
+	}
+
 	public Store setResultDocument(Document document) {
 		return setResultDocument(ResultDocBuilder.newBuilder().setDocument(document));
 	}

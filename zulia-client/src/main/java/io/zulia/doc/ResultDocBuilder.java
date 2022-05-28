@@ -34,6 +34,13 @@ public class ResultDocBuilder {
 		return this;
 	}
 
+	public ResultDocBuilder setDocument(String json) {
+		Document document = ZuliaUtil.jsonToMongoDocument(json);
+		resultDocumentBuilder.setDocument(ZuliaUtil.mongoDocumentToByteString(document));
+		return this;
+	}
+
+
 	public String getUniqueId() {
 		return resultDocumentBuilder.getUniqueId();
 	}
