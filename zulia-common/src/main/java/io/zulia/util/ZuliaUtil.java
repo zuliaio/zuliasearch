@@ -11,6 +11,8 @@ import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.io.BasicOutputBuffer;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -193,4 +195,18 @@ public class ZuliaUtil {
 		}
 	}
 
+	public static Document jsonToMongoDocument(String json) {
+		return Document.parse(json);
+	}
+
+
+	public static String mongoDocumentToJson(Document document) {
+		return mongoDocumentToJson(document, false);
+	}
+	public static String mongoDocumentToJson(Document document, boolean pretty) {
+		if (pretty) {
+			return document.toJson(JsonWriterSettings.builder().indent(true).outputMode(JsonMode.RELAXED).build());
+		}
+		return document.toJson();
+	}
 }

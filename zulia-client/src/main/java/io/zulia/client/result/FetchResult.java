@@ -61,9 +61,25 @@ public class FetchResult extends Result {
 	public Document getDocument() {
 		if (fetchResponse.hasResultDocument()) {
 			ResultDocument rd = fetchResponse.getResultDocument();
-			if (rd.getDocument() != null) {
-				return ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
-			}
+			return ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
+		}
+		return null;
+	}
+
+	public String getDocumentAsJson() {
+		if (fetchResponse.hasResultDocument()) {
+			ResultDocument rd = fetchResponse.getResultDocument();
+			Document document = ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
+			return ZuliaUtil.mongoDocumentToJson(document);
+		}
+		return null;
+	}
+
+	public String getDocumentAsPrettyJson() {
+		if (fetchResponse.hasResultDocument()) {
+			ResultDocument rd = fetchResponse.getResultDocument();
+			Document document = ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
+			return ZuliaUtil.mongoDocumentToJson(document, true);
 		}
 		return null;
 	}
@@ -75,7 +91,6 @@ public class FetchResult extends Result {
 		}
 		return null;
 	}
-
 
 	public AssociatedResult getFirstAssociatedDocument() {
 		if (!associatedResults.isEmpty()) {
