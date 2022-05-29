@@ -16,7 +16,7 @@ public class ConnectionInfo {
 	public boolean routingEnabled;
 
 	public ZuliaWorkPool getConnection() throws Exception {
-		ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(address, port).setRoutingEnabled(routingEnabled);
+		ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(address, port).setRoutingEnabled(routingEnabled).setNodeUpdateEnabled(routingEnabled);
 		return new ZuliaWorkPool(config);
 	}
 
