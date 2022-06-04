@@ -13,6 +13,7 @@ import io.zulia.client.command.builder.Sort;
 import io.zulia.client.command.builder.TermQuery;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.GetIndexConfigResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
@@ -78,7 +79,19 @@ public class StartStopTest {
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
 
+		//optional meta
+		indexConfig.setMeta(new Document().append("createTime", new Date()).append("myLabel","greatLabel"));
 		zuliaWorkPool.createIndex(indexConfig);
+
+
+		GetIndexConfigResult indexConfigResult = zuliaWorkPool.getIndexConfig(FACET_TEST_INDEX);
+		ClientIndexConfig storedClientIndexConfig = indexConfigResult.getIndexConfig();
+		Assertions.assertEquals(indexConfig.getIndexName(), storedClientIndexConfig.getIndexName());
+		Assertions.assertEquals(indexConfig.getDefaultSearchFields(), storedClientIndexConfig.getDefaultSearchFields());
+		Assertions.assertEquals(indexConfig.getNumberOfShards(), storedClientIndexConfig.getNumberOfShards());
+		Assertions.assertEquals(indexConfig.getFieldConfigMap(), storedClientIndexConfig.getFieldConfigMap());
+		Assertions.assertEquals(indexConfig.getMeta(), storedClientIndexConfig.getMeta());
+
 	}
 
 	@Test

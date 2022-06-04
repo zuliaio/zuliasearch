@@ -48,6 +48,8 @@ message IndexSettings {
 
     uint32 ramBufferMB = 17; //default 128
 
+    bytes meta = 18;
+
 }
 
 message FieldConfig {

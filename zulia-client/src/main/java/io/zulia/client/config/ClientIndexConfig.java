@@ -1,6 +1,8 @@
 package io.zulia.client.config;
 
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.util.ZuliaUtil;
+import org.bson.Document;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +32,8 @@ public class ClientIndexConfig {
 
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
+
+	private Document meta;
 
 	public ClientIndexConfig() {
 		this.fieldMap = new TreeMap<>();
@@ -193,6 +197,14 @@ public class ClientIndexConfig {
 		return fieldMap;
 	}
 
+	public void setMeta(Document meta) {
+		this.meta = meta;
+	}
+
+	public Document getMeta() {
+		return meta;
+	}
+
 	public IndexSettings getIndexSettings() {
 		IndexSettings.Builder isb = IndexSettings.newBuilder();
 
@@ -245,6 +257,10 @@ public class ClientIndexConfig {
 			isb.addAnalyzerSettings(analyzerSettingsMap.get(analyzerName));
 		}
 
+		if (meta != null) {
+			isb.setMeta(ZuliaUtil.mongoDocumentToByteString(meta));
+		}
+
 		return isb.build();
 	}
 
@@ -274,6 +290,8 @@ public class ClientIndexConfig {
 
 		this.indexWeight = indexSettings.getIndexWeight();
 		this.ramBufferMB = indexSettings.getRamBufferMB();
+
+		this.meta = ZuliaUtil.byteStringToMongoDocument(indexSettings.getMeta());
 
 	}
 
