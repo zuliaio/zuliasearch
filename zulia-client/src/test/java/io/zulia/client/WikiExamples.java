@@ -19,9 +19,11 @@ import io.zulia.client.command.Store;
 import io.zulia.client.command.StoreLargeAssociated;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
+import io.zulia.client.command.builder.StatFacet;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -302,6 +304,19 @@ public class WikiExamples {
 	public void countFacetDrillDown(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Search search = new Search("myIndexName").setAmount(100);
 		search.addFacetDrillDown("issn", "1111-1111");
+		SearchResult searchResult = zuliaWorkPool.search(search);
+	}
+
+
+	public void numericStat(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+		search.addStat(new NumericStat("pubYear"));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+	}
+
+	public void statFacet(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+		search.addStat(new StatFacet("authorCount", "journalName"));
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
 
