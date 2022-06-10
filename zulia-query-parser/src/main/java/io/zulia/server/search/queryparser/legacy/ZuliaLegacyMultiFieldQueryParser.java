@@ -27,6 +27,7 @@ import java.util.TreeSet;
  * @author mdavis
  * Copied mostly from org.apache.lucene.queryparser.classic.MultiFieldQueryParser
  */
+@Deprecated
 public class ZuliaLegacyMultiFieldQueryParser extends ZuliaLegacyQueryParser implements ZuliaParser {
 
 	protected List<String> fields;
