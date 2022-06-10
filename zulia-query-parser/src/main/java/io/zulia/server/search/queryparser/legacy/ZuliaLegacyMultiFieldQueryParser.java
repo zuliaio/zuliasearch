@@ -65,23 +65,15 @@ public class ZuliaLegacyMultiFieldQueryParser extends ZuliaLegacyQueryParser imp
 				}
 			}
 
-			if (field.contains("*")) {
-				String regex = field.replace("*", ".*");
-				Set<String> fieldNames = indexConfig.getMatchingFields(regex);
-				allFields.addAll(fieldNames);
+			Set<String> fieldNames = indexConfig.getMatchingFields(field);
+			allFields.addAll(fieldNames);
 
-				if (boost != null) {
-					for (String f : fieldNames) {
-						boostMap.put(f, boost);
-					}
+			if (boost != null) {
+				for (String f : fieldNames) {
+					boostMap.put(f, boost);
 				}
 			}
-			else {
-				allFields.add(field);
-				if (boost != null) {
-					boostMap.put(field, boost);
-				}
-			}
+
 		}
 
 		super.setDefaultField(null);

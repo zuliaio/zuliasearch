@@ -180,16 +180,22 @@ public class ServerIndexConfig {
 		return indexSettings.getRamBufferMB();
 	}
 
-	public Set<String> getMatchingFields(String regex) {
-		Set<String> matchingFieldNames = new TreeSet<>();
+	public Set<String> getMatchingFields(String fieldWildcard) {
 
-		Pattern pattern = Pattern.compile(regex);
-		for (String indexFieldName : indexAsMap.keySet()) {
-			if (pattern.matcher(indexFieldName).matches()) {
-				matchingFieldNames.add(indexFieldName);
+		if (fieldWildcard.contains("*")) {
+			String regex = fieldWildcard.replace("*", ".*");
+
+			Set<String> matchingFieldNames = new TreeSet<>();
+
+			Pattern pattern = Pattern.compile(regex);
+			for (String indexFieldName : indexAsMap.keySet()) {
+				if (pattern.matcher(indexFieldName).matches()) {
+					matchingFieldNames.add(indexFieldName);
+				}
 			}
+			return matchingFieldNames;
 		}
-		return matchingFieldNames;
+		return Set.of(fieldWildcard);
 
 	}
 

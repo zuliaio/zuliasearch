@@ -16,10 +16,12 @@
  */
 package io.zulia.server.search.queryparser.processors;
 
+import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.search.queryparser.ZuliaParser;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
+import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldableNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.MatchNoDocsQueryNode;
@@ -73,19 +75,26 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 	@Override
 	protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
-		if (node instanceof FieldableNode) {
+		if (node instanceof FieldableNode fieldNode) {
+
+			ServerIndexConfig serverIndexConfig = getQueryConfigHandler().get(ZuliaQueryNodeProcessorPipeline.ZULIA_INDEX_CONFIG);
+
 			this.processChildren = false;
-			FieldableNode fieldNode = (FieldableNode) node;
 
 			if (fieldNode.getField() != null) {
 
 				String fieldsStr = fieldNode.getField().toString();
 
-				String[] fields = fieldsStr.split(",");
+				boolean matchAll = false;
+				if (node instanceof FieldQueryNode fqn) {
+					matchAll = "*".equals(fqn.getField().toString()) && "*".equals(fqn.getTextAsString());
+				}
 
-				fieldNode.setField(ZuliaParser.rewriteLengthFields(fields[0]));
+				List<String> fields = matchAll ? List.of(fieldsStr) : ZuliaParser.expandFields(serverIndexConfig, fieldsStr);
 
-				if (fields.length == 1) {
+				fieldNode.setField(ZuliaParser.rewriteLengthFields(fields.get(0)));
+
+				if (fields.size() == 1) {
 					return fieldNode;
 				}
 				else {
@@ -93,16 +102,17 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 				}
 			}
 			else if (fieldNode.getField() == null) {
-				CharSequence[] fields = getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
+
+				List<String> fields = ZuliaParser.expandFields(serverIndexConfig, getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS));
 
 				if (fields == null) {
 					throw new IllegalArgumentException("StandardQueryConfigHandler.ConfigurationKeys.MULTI_FIELDS should be set on the QueryConfigHandler");
 				}
 
-				if (fields.length > 0) {
-					fieldNode.setField(ZuliaParser.rewriteLengthFields(fields[0].toString()));
+				if (fields.size() > 0) {
+					fieldNode.setField(ZuliaParser.rewriteLengthFields(fields.get(0)));
 
-					if (fields.length == 1) {
+					if (fields.size() == 1) {
 						return fieldNode;
 					}
 					else {
@@ -117,17 +127,14 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 		return node;
 	}
 
-	private QueryNode getGroupQueryNode(FieldableNode fieldNode, CharSequence[] fields) {
-		List<QueryNode> children = new ArrayList<>(fields.length);
+	private QueryNode getGroupQueryNode(FieldableNode fieldNode, List<String> fields) {
+		List<QueryNode> children = new ArrayList<>(fields.size());
 
 		children.add(fieldNode);
-		for (int i = 1; i < fields.length; i++) {
+		for (int i = 1; i < fields.size(); i++) {
 			try {
 				fieldNode = (FieldableNode) fieldNode.cloneTree();
-				String field = fields[i].toString();
-				field = ZuliaParser.rewriteLengthFields(field);
-				fieldNode.setField(field);
-
+				fieldNode.setField(ZuliaParser.rewriteLengthFields(fields.get(i)));
 				children.add(fieldNode);
 			}
 			catch (CloneNotSupportedException e) {
@@ -139,7 +146,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 	}
 
 	@Override
-	protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
+	protected List<QueryNode> setChildrenOrder(List<QueryNode> children) {
 		return children;
 	}
 
