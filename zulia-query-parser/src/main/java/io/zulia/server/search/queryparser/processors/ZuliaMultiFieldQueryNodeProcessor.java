@@ -92,6 +92,10 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
 				List<String> fields = matchAll ? List.of(fieldsStr) : ZuliaParser.expandFields(serverIndexConfig, fieldsStr);
 
+				if (fields.isEmpty()) {
+					return new MatchNoDocsQueryNode();
+				}
+
 				fieldNode.setField(ZuliaParser.rewriteLengthFields(fields.get(0)));
 
 				if (fields.size() == 1) {
