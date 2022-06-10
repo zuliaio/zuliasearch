@@ -183,11 +183,12 @@ public class ServerIndexConfig {
 	public Set<String> getMatchingFields(String fieldWildcard) {
 
 		if (fieldWildcard.contains("*")) {
-			String regex = fieldWildcard.replace("*", ".*");
+
+			fieldWildcard = ("\\Q" + fieldWildcard + "\\E").replace("*", "\\E.*\\Q");
 
 			Set<String> matchingFieldNames = new TreeSet<>();
 
-			Pattern pattern = Pattern.compile(regex);
+			Pattern pattern = Pattern.compile(fieldWildcard);
 			for (String indexFieldName : indexAsMap.keySet()) {
 				if (pattern.matcher(indexFieldName).matches()) {
 					matchingFieldNames.add(indexFieldName);
