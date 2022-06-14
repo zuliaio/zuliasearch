@@ -1,5 +1,5 @@
 # Zulia
-=============
+
 ## Distributed Realtime Search With Lucene
 
 Zulia is a real-time distributed search and storage system based on Lucene. Zulia is designed from the ground up to scale both vertically and horizontally across servers. Zulia uses MongoDB GridFS to store documents' associated files. Zulia's JSON based document structure allows for deep searchable objects.
