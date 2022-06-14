@@ -31,6 +31,8 @@ public class ZuliaFlexibleQueryParser implements ZuliaParser {
 		this.indexConfig = indexConfig;
 		zuliaStandardQueryParser.setAllowLeadingWildcard(true);
 
+		zuliaStandardQueryParser.getQueryConfigHandler().set(ZuliaQueryNodeProcessorPipeline.ZULIA_INDEX_CONFIG, indexConfig);
+
 		zuliaStandardQueryParser.getQueryConfigHandler().addFieldConfigListener(fieldConfig -> {
 
 			String field = fieldConfig.getField();
@@ -87,23 +89,15 @@ public class ZuliaFlexibleQueryParser implements ZuliaParser {
 				}
 			}
 
-			if (field.contains("*")) {
-				String regex = field.replace("*", ".*");
-				Set<String> fieldNames = indexConfig.getMatchingFields(regex);
-				allFields.addAll(fieldNames);
+			Set<String> fieldNames = indexConfig.getMatchingFields(field);
+			allFields.addAll(fieldNames);
 
-				if (boost != null) {
-					for (String f : fieldNames) {
-						boostMap.put(f, boost);
-					}
+			if (boost != null) {
+				for (String f : fieldNames) {
+					boostMap.put(f, boost);
 				}
 			}
-			else {
-				allFields.add(field);
-				if (boost != null) {
-					boostMap.put(field, boost);
-				}
-			}
+
 		}
 
 		zuliaStandardQueryParser.setMultiFields(allFields.toArray(new String[0]));

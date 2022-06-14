@@ -1,12 +1,18 @@
 package io.zulia.server.search.queryparser;
 
+import com.google.common.base.Splitter;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaQuery;
+import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.search.Query;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 public interface ZuliaParser {
+	Splitter COMMA_SPLIT = Splitter.on(",").omitEmptyStrings();
+
 	void setDefaultFields(Collection<String> fields);
 
 	void setMinimumNumberShouldMatch(int minimumNumberShouldMatch);
@@ -26,5 +32,9 @@ public interface ZuliaParser {
 			field = ZuliaConstants.CHAR_LENGTH_PREFIX + field.substring(1, field.length() - 1);
 		}
 		return field;
+	}
+
+	static List<String> expandFields(ServerIndexConfig serverIndexConfig, CharSequence... fields) {
+		return Arrays.stream(fields).flatMap(COMMA_SPLIT::splitToStream).flatMap(field -> serverIndexConfig.getMatchingFields(field).stream()).toList();
 	}
 }

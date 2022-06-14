@@ -1,6 +1,7 @@
 package io.zulia.server.search.queryparser.processors;
 
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.queryparser.flexible.core.config.ConfigurationKey;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.processors.NoChildOptimizationQueryNodeProcessor;
@@ -16,18 +17,23 @@ public class ZuliaQueryNodeProcessorPipeline extends QueryNodeProcessorPipeline 
 
 	public static final ConfigurationKey<FieldType> ZULIA_FIELD_TYPE = ConfigurationKey.newInstance();
 
+	public static final ConfigurationKey<ServerIndexConfig> ZULIA_INDEX_CONFIG = ConfigurationKey.newInstance();
+
 	public ZuliaQueryNodeProcessorPipeline(QueryConfigHandler queryConfig) {
 		super(queryConfig);
 
 		//zulia - add global min match handler
 		add(new ZuliaGlobalMinMatchProcessor());
+
 		//zulia - change MultiFieldQueryNodeProcessor to ZuliaMultiFieldQueryNodeProcessor
 		add(new ZuliaMultiFieldQueryNodeProcessor());
 		add(new WildcardQueryNodeProcessor());
 		add(new ZuliaPureWildcardNodeProcessor());
 		add(new FuzzyQueryNodeProcessor());
 		add(new RegexpQueryNodeProcessor());
-		add(new MatchAllDocsQueryNodeProcessor());
+
+		//handled by ZuliaPureWildcardNodeProcessor
+		//add(new MatchAllDocsQueryNodeProcessor());
 		add(new OpenRangeQueryNodeProcessor());
 		//zulia - add ZuliaDateQueryNodeProcessor and ZuliaPointQueryNodeProcessor
 		add(new ZuliaDateQueryNodeProcessor());
@@ -47,7 +53,6 @@ public class ZuliaQueryNodeProcessorPipeline extends QueryNodeProcessorPipeline 
 		add(new BoostQueryNodeProcessor());
 		add(new MultiTermRewriteMethodProcessor());
 		add(new IntervalQueryNodeProcessor());
-
 
 	}
 }
