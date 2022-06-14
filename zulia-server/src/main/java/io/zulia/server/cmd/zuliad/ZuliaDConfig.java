@@ -4,9 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.mongodb.MongoClientSettings;
-import com.mongodb.MongoCredential;
-import com.mongodb.ServerAddress;
+import com.mongodb.*;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import io.zulia.message.ZuliaBase;
@@ -87,26 +85,41 @@ public class ZuliaDConfig {
 		}
 
 		if (zuliaConfig.isCluster()) {
-			List<MongoServer> mongoServers = zuliaConfig.getMongoServers();
+			if (null != zuliaConfig.getConnectionString()) {
+				StringBuilder cs = new StringBuilder().append("mongodb+srv://");
+				if (null != zuliaConfig.getMongoAuth()) {
+					cs.append(zuliaConfig.getMongoAuth().getUsername()).append(":").append(zuliaConfig.getMongoAuth().getPassword()).append("@");
+				}
+				cs.append(zuliaConfig.getConnectionString().getConnectionURL());
+				if (!zuliaConfig.getConnectionString().getConnectionURL().endsWith("/"))
+					cs.append("/");
+				cs.append("?retryWrites=").append(zuliaConfig.getConnectionString().isRetryWrites());
+				cs.append("&w=").append(zuliaConfig.getConnectionString().getWriteConcern());
 
-			List<ServerAddress> serverAddressList = new ArrayList<>();
+				MongoClientSettings.Builder mongoClientOptions = MongoClientSettings.builder();
+				mongoClientOptions.applyConnectionString(new ConnectionString(cs.toString()));
+				mongoClientOptions.serverApi(ServerApi.builder().version(ServerApiVersion.V1).build());
 
-			for (MongoServer mongoServer : mongoServers) {
-				LOG.info("Using Mongo Server: " + mongoServer);
-				serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
+				MongoClient mongoClient = MongoClients.create(mongoClientOptions.build());
+				MongoProvider.setMongoClient(mongoClient);
+			} else {
+				List<MongoServer> mongoServers = zuliaConfig.getMongoServers();
+				List<ServerAddress> serverAddressList = new ArrayList<>();
+				for (MongoServer mongoServer : mongoServers) {
+					LOG.info("Using Mongo Server: " + mongoServer);
+					serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
+				}
+
+				MongoClientSettings.Builder mongoBuilder = MongoClientSettings.builder().applyToClusterSettings(builder -> builder.hosts(serverAddressList));
+				MongoAuth mongoAuth = zuliaConfig.getMongoAuth();
+				if (mongoAuth != null) {
+					mongoBuilder.credential(
+							MongoCredential.createCredential(mongoAuth.getUsername(), mongoAuth.getDatabase(), mongoAuth.getPassword().toCharArray()));
+				}
+
+				MongoClient mongoClient = MongoClients.create(mongoBuilder.build());
+				MongoProvider.setMongoClient(mongoClient);
 			}
-
-			MongoClientSettings.Builder mongoBuilder = MongoClientSettings.builder().applyToClusterSettings(builder -> builder.hosts(serverAddressList));
-
-			MongoAuth mongoAuth = zuliaConfig.getMongoAuth();
-			if (mongoAuth != null) {
-				mongoBuilder.credential(
-						MongoCredential.createCredential(mongoAuth.getUsername(), mongoAuth.getDatabase(), mongoAuth.getPassword().toCharArray()));
-			}
-
-			MongoClient mongoClient = MongoClients.create(mongoBuilder.build());
-
-			MongoProvider.setMongoClient(mongoClient);
 
 			nodeService = new MongoNodeService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
 			LOG.info("Created Mongo Node Service");
