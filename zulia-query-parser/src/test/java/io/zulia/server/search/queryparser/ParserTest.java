@@ -47,9 +47,7 @@ public class ParserTest {
 		parser1.setDefaultFields(defaultFields);
 		parser1.setDefaultOperator(defaultOperator);
 		parser1.setMinimumNumberShouldMatch(minMatch);
-		Query parse = parser1.parse(query);
-		//System.out.println(parse);
-		return parse;
+		return parser1.parse(query);
 	}
 
 	@Test
