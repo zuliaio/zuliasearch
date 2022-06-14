@@ -1,5 +1,46 @@
+# if cluster is true multiple nodes can be added to the cluster and
+# index settings / node / cluster configuration is stored in MongoDB
 cluster: true
+
+# set to the address other nodes will access this cluster by in cluster mode
 serverAddress: localhost
+
+# java service port number used by gRPC java client
 servicePort: 32191
+
+# rest port used by rest clients
 restPort: 32192
+
+# Path to where zulia stores its indexes (and configs in single node mode)
 dataPath: /path/to/data/
+
+# if using multiple zulia clusters on the same MongoDB change this to be unique
+# a database will be created in MongoDB with this name
+# only is used in cluster mode
+clusterName: "zulia"
+
+# In cluster mode mongo db servers need to be listed below
+#
+mongoServers:
+  - hostname: 127.0.0.1
+    port: 27017
+
+# uncomment this if using mongo authentication
+#
+#mongoAuth:
+#  username: "someUser"
+#  password: "somePassword"
+#  database: "admin"
+
+# In cluster mode the default file storage of associated files is in MongoDB GridFS.
+# Associated files are binary files associated with a document in zulia (images, pdfs, ...)
+# To change associated file storage to use S3 use the following config block allowing with
+# appropriate files in $HOME/.aws (config, credentials) if needed of the user zulia is run as
+# Zulia uses the follow chain of credentials providers:
+#   InstanceProfileCredentialsProvider, ContainerCredentialsProvider, EnvironmentVariableCredentialsProvider
+#   SystemPropertyCredentialsProvider, ProfileCredentialsProvider
+#
+#clusterStorageEngine: s3
+#s3:
+# s3BucketName: someBucket
+# region: us-gov-east-1

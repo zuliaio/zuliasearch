@@ -47,8 +47,7 @@ public class ZuliaDateQueryNodeProcessor extends QueryNodeProcessorImpl {
 
 		if (config != null) {
 
-			if (node instanceof FieldQueryNode && !(node.getParent() instanceof RangeQueryNode)) {
-				FieldQueryNode fieldQueryNode = (FieldQueryNode) node;
+			if (node instanceof FieldQueryNode fieldQueryNode && !(node.getParent() instanceof RangeQueryNode)) {
 				CharSequence field = fieldQueryNode.getField();
 				FieldConfig fieldConfig = config.getFieldConfig(StringUtils.toString(field));
 				if (fieldConfig != null) {
@@ -66,8 +65,7 @@ public class ZuliaDateQueryNodeProcessor extends QueryNodeProcessorImpl {
 					}
 				}
 			}
-			else if (node instanceof TermRangeQueryNode) {
-				TermRangeQueryNode termRangeNode = (TermRangeQueryNode) node;
+			else if (node instanceof TermRangeQueryNode termRangeNode) {
 				CharSequence field = termRangeNode.getField();
 
 				FieldConfig fieldConfig = config.getFieldConfig(StringUtils.toString(field));

@@ -18,7 +18,7 @@ import io.zulia.server.cmd.zuliaadmin.OptimizeIndexCmd;
 import io.zulia.server.cmd.zuliaadmin.ReindexCmd;
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "zuliaadmin", subcommands = { DisplayNodesCmd.class, DocCountCmd.class, DisplayIndexesCmd.class, ClearIndexCmd.class,
+@CommandLine.Command(name = "zuliaadmin", subcommands = { DisplayNodesCmd.class, DisplayIndexesCmd.class, DocCountCmd.class, ClearIndexCmd.class,
 		DeleteIndexCmd.class, OptimizeIndexCmd.class, ReindexCmd.class, CreateAliasCmd.class, DeleteAliasCmd.class, DisplayAliasesCmd.class,
 		ExportAliasesCmd.class,
 		ImportAliasesCmd.class, }, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)

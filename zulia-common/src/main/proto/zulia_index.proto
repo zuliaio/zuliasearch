@@ -48,9 +48,13 @@ message IndexSettings {
 
     uint32 ramBufferMB = 17; //default 128
 
+    bytes meta = 18;
+
 }
 
 message FieldConfig {
+
+    reserved 6; //old projectAs
 
     enum FieldType {
         STRING = 0;
@@ -60,6 +64,8 @@ message FieldConfig {
         NUMERIC_DOUBLE = 4;
         DATE = 5;
         BOOL = 6;
+        UNIT_VECTOR = 7;
+        VECTOR = 8;
     }
 
     FieldType fieldType = 1;
@@ -67,7 +73,6 @@ message FieldConfig {
     repeated IndexAs indexAs = 3;
     repeated FacetAs facetAs = 4;
     repeated SortAs sortAs = 5;
-    repeated ProjectAs projectAs = 6;
     string displayName = 7;
     string description = 8;
 }
@@ -112,11 +117,6 @@ message AnalyzerSettings {
 message IndexAs {
     string indexFieldName = 1;
     string analyzerName = 2;
-}
-
-message ProjectAs {
-    string field = 1;
-    Superbit superbit = 2;
 }
 
 message Superbit {

@@ -48,7 +48,7 @@ public class ParserTest {
 		parser1.setDefaultOperator(defaultOperator);
 		parser1.setMinimumNumberShouldMatch(minMatch);
 		Query parse = parser1.parse(query);
-		System.out.println(parse);
+		//System.out.println(parse);
 		return parse;
 	}
 
@@ -91,6 +91,14 @@ public class ParserTest {
 		q2 = parse("(Cancer Diabetes \"Drug Treatment\")~2", List.of("title", "abstract"), Operator.OR, 0, newParser);
 		oldParser.setSplitOnWhitespace(false);
 		Assertions.assertEquals(q, q2);
+
+
+		oldParser.setSplitOnWhitespace(true);
+		q = parse("(Cancer Diabetes \"Drug Treatment\") AND rating:[4.0 TO *]", List.of("title", "abstract"), Operator.OR, 0, oldParser);
+		q2 = parse("(Cancer Diabetes \"Drug Treatment\") AND rating:[4.0 TO *]", List.of("title", "abstract"), Operator.OR, 0, newParser);
+		oldParser.setSplitOnWhitespace(false);
+		Assertions.assertEquals(q, q2);
+
 
 		q = parse("*:*", List.of("field1", "field2"), Operator.OR, 0, oldParser);
 		q2 = parse("*:*", List.of("field1", "field2"), Operator.OR, 0, newParser);

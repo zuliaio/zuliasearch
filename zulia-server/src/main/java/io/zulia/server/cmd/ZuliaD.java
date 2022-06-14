@@ -21,6 +21,13 @@ public class ZuliaD {
 	private ShowStackArgs showStackArgs;
 
 	public String getConfigPath() {
+		if (!configPath.startsWith(File.separator)) {
+			String prefix = System.getenv("APP_HOME");
+			if (prefix != null) {
+				return prefix + File.separator + configPath;
+			}
+		}
+
 		return configPath;
 	}
 

@@ -57,6 +57,7 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
     api("org.yaml:snakeyaml:$snakeYamlVersion")
+    annotationProcessor("io.micronaut.openapi:micronaut-openapi")
 
     //implementation("org.graalvm.js:js:21.3.1")
 }

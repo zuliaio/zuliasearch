@@ -74,4 +74,31 @@ public class ResultHelperTest {
 			Assertions.assertEquals(40, (int) testMongoDocumentReborn.getInteger("myfield"));
 		}
 	}
+
+	@Test
+	public void testFromJson() {
+		String json = """
+				{
+				  "id": 1,
+				  "title": "iPhone 11",
+				  "category": [
+				    "Mobile Phone",
+				    "Electronics"
+				  ],
+				  "rating": 4.3,
+				  "description": "iPhone 11, 64 GB"
+				}""";
+
+		Document document = ZuliaUtil.jsonToMongoDocument(json);
+
+		Assertions.assertEquals(1, document.getInteger("id"));
+		Assertions.assertEquals("iPhone 11", document.getString("title"));
+		Assertions.assertEquals(List.of("Mobile Phone", "Electronics"), document.getList("category", String.class));
+		Assertions.assertEquals(4.3, document.getDouble("rating"), 0.0001);
+		Assertions.assertEquals("iPhone 11, 64 GB", document.getString("description"));
+
+		String jsonOut = ZuliaUtil.mongoDocumentToJson(document, true);
+		Assertions.assertEquals(json, jsonOut);
+	}
+
 }
