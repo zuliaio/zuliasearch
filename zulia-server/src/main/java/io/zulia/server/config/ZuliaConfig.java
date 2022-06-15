@@ -19,7 +19,7 @@ public class ZuliaConfig {
 	private S3Config s3;
 	private List<MongoServer> mongoServers = Collections.singletonList(new MongoServer());
 
-	private MongoConnectionString connectionString;
+	private MongoConnectionString mongoConnection;
 	private MongoAuth mongoAuth;
 	private String serverAddress = null; //null means autodetect
 	private int servicePort = 32191;
@@ -76,12 +76,12 @@ public class ZuliaConfig {
 		this.mongoServers = mongoServers;
 	}
 
-	public MongoConnectionString getConnectionString() {
-		return connectionString;
+	public MongoConnectionString getMongoConnection() {
+		return mongoConnection;
 	}
 
-	public void setConnectionString(MongoConnectionString connectionString) {
-		this.connectionString = connectionString;
+	public void setMongoConnection(MongoConnectionString mongoConnection) {
+		this.mongoConnection = mongoConnection;
 	}
 
 	public MongoAuth getMongoAuth() {
