@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
+@Deprecated
 public class ZuliaLegacyQueryParser extends QueryParser {
 
 	protected ServerIndexConfig indexConfig;

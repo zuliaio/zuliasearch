@@ -3,10 +3,15 @@ package io.zulia.server.index;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
+import io.zulia.message.ZuliaIndex.AnalyzerSettings;
+import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.ShardMapping;
+import io.zulia.message.ZuliaIndex.UpdateIndexSettings;
+import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation;
+import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation.OperationType;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.config.IndexService;
@@ -25,7 +30,7 @@ import io.zulia.server.filestorage.MongoDocumentStorage;
 import io.zulia.server.filestorage.S3DocumentStorage;
 import io.zulia.server.index.federator.ClearRequestFederator;
 import io.zulia.server.index.federator.CreateIndexAliasRequestFederator;
-import io.zulia.server.index.federator.CreateIndexRequestFederator;
+import io.zulia.server.index.federator.CreateOrUpdateIndexRequestFederator;
 import io.zulia.server.index.federator.DeleteIndexAliasRequestFederator;
 import io.zulia.server.index.federator.DeleteIndexRequestFederator;
 import io.zulia.server.index.federator.GetFieldNamesRequestFederator;
@@ -40,6 +45,7 @@ import io.zulia.server.index.router.StoreRequestRouter;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.util.ZuliaThreadFactory;
+import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.search.Query;
 import org.bson.Document;
 
@@ -57,8 +63,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class ZuliaIndexManager {
 
@@ -74,6 +84,8 @@ public class ZuliaIndexManager {
 
 	private final Node thisNode;
 	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
+
+	private ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
 
 	private final ConcurrentHashMap<String, String> indexAliasMap;
 
@@ -179,12 +191,14 @@ public class ZuliaIndexManager {
 		if (zuliaConfig.isCluster()) {
 			switch (zuliaConfig.getClusterStorageEngine()) {
 				case "s3":
-					documentStorage = new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false, zuliaConfig.getS3());
+					documentStorage = new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false,
+							zuliaConfig.getS3());
 					break;
 				default:
 					documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
 					break;
-			};
+			}
+			;
 		}
 		else {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
@@ -322,20 +336,9 @@ public class ZuliaIndexManager {
 		LOG.info(getLogPrefix() + " creating index: " + request);
 		request = new CreateIndexRequestValidator().validateAndSetDefault(request);
 
-		if (!request.hasIndexSettings()) {
-			throw new IllegalArgumentException("Index settings field is required for create index");
-		}
-
 		NodeWeightComputation nodeWeightComputation = new DefaultNodeWeightComputation(indexService, thisNode, currentOtherNodesActive);
 
 		IndexSettings indexSettings = request.getIndexSettings();
-
-		if (indexSettings.getNumberOfShards() == 0) {
-			indexSettings = indexSettings.toBuilder().setNumberOfShards(1).build();
-		}
-		else if (indexSettings.getNumberOfShards() < 0) {
-			throw new IllegalArgumentException("Number of shards cannot be negative");
-		}
 
 		String indexName = indexSettings.getIndexName();
 		IndexSettings existingIndex = indexService.getIndex(indexName);
@@ -396,14 +399,15 @@ public class ZuliaIndexManager {
 		indexSettings = indexSettings.toBuilder().setUpdateTime(currentTimeMillis).build();
 		indexService.storeIndex(indexSettings);
 
-		CreateIndexRequestFederator createIndexRequestFederator = new CreateIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
-				this);
+		CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
+				pool, internalClient, this);
 
 		try {
-			@SuppressWarnings("unused") List<CreateIndexResponse> send = createIndexRequestFederator.send(InternalCreateIndexRequest.newBuilder().setIndexName(indexName).build());
+			@SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
+					InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(indexName).build());
 		}
 		catch (Exception e) {
-			if (existingIndex == null) {
+			if (existingIndex != null) {
 				LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexSettings().getIndexName() + ">: ", e);
 				throw new Exception("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
 			}
@@ -416,7 +420,170 @@ public class ZuliaIndexManager {
 		return CreateIndexResponse.newBuilder().build();
 	}
 
-	public CreateIndexResponse internalCreateIndex(String indexName) throws Exception {
+	public UpdateIndexResponse updateIndex(UpdateIndexRequest request) throws Exception {
+
+		if (request.getIndexName().isEmpty()) {
+			throw new IllegalArgumentException("Index name must be given");
+		}
+
+		Lock lock = indexUpdateMap.computeIfAbsent(request.getIndexName(), s -> new ReentrantLock());
+		try {
+			lock.lock();
+
+			IndexSettings indexSettings = indexService.getIndex(request.getIndexName());
+			if (indexSettings == null) {
+				LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexName() + "> that does not exist");
+
+				throw new Exception("Failed to update index <" + request.getIndexName() + "> that does not exist");
+			}
+
+			LOG.info("Updating Index <" + request.getIndexName() + "> with <" + request.getUpdateIndexSettings() + ">");
+
+			UpdateIndexSettings updateIndexSettings = request.getUpdateIndexSettings();
+
+			IndexSettings.Builder existingSettings = indexSettings.toBuilder();
+
+			if (updateIndexSettings.getAnalyzerSettingsOperation().getEnable()) {
+				List<AnalyzerSettings> analyzerSettings = updateWithAction(updateIndexSettings.getAnalyzerSettingsOperation(),
+						existingSettings.getAnalyzerSettingsList(), updateIndexSettings.getAnalyzerSettingsList(), AnalyzerSettings::getName);
+				existingSettings.clearAnalyzerSettings();
+				existingSettings.addAllAnalyzerSettings(analyzerSettings);
+			}
+
+			if (updateIndexSettings.getFieldConfigOperation().getEnable()) {
+				List<FieldConfig> fieldConfigs = updateWithAction(updateIndexSettings.getFieldConfigOperation(), existingSettings.getFieldConfigList(),
+						updateIndexSettings.getFieldConfigList(), FieldConfig::getStoredFieldName);
+				existingSettings.clearFieldConfig();
+				existingSettings.addAllFieldConfig(fieldConfigs);
+			}
+
+			if (updateIndexSettings.getSetDefaultSearchField()) {
+				existingSettings.clearDefaultSearchField();
+				existingSettings.addAllDefaultSearchField(updateIndexSettings.getDefaultSearchFieldList());
+			}
+
+			if (updateIndexSettings.getSetRequestFactor()) {
+				existingSettings.setRequestFactor(updateIndexSettings.getRequestFactor());
+			}
+
+			if (updateIndexSettings.getSetMinShardRequest()) {
+				existingSettings.setMinShardRequest(updateIndexSettings.getMinShardRequest());
+			}
+
+			if (updateIndexSettings.getSetShardTolerance()) {
+				existingSettings.setShardTolerance(updateIndexSettings.getShardTolerance());
+			}
+
+			if (updateIndexSettings.getSetShardQueryCacheSize()) {
+				existingSettings.setShardQueryCacheSize(updateIndexSettings.getShardQueryCacheSize());
+			}
+
+			if (updateIndexSettings.getSetShardQueryCacheMaxAmount()) {
+				existingSettings.setShardQueryCacheMaxAmount(updateIndexSettings.getShardQueryCacheMaxAmount());
+			}
+
+			if (updateIndexSettings.getSetIdleTimeWithoutCommit()) {
+				existingSettings.setIdleTimeWithoutCommit(updateIndexSettings.getIdleTimeWithoutCommit());
+			}
+
+			if (updateIndexSettings.getSetShardCommitInterval()) {
+				existingSettings.setShardCommitInterval(updateIndexSettings.getShardCommitInterval());
+			}
+
+			if (updateIndexSettings.getSetRamBufferMB()) {
+				existingSettings.setRamBufferMB(updateIndexSettings.getRamBufferMB());
+			}
+
+			if (updateIndexSettings.getSetIndexWeight()) {
+				existingSettings.setIndexWeight(updateIndexSettings.getIndexWeight());
+			}
+
+			Operation metaUpdateOperation = updateIndexSettings.getMetaUpdateOperation();
+			if (metaUpdateOperation.getEnable()) {
+				Document existingMeta = ZuliaUtil.byteStringToMongoDocument(existingSettings.getMeta());
+
+				Document newMetadata = ZuliaUtil.byteStringToMongoDocument(updateIndexSettings.getMetadata());
+
+				if (OperationType.MERGE.equals(metaUpdateOperation.getOperationType())) {
+					existingMeta.putAll(newMetadata);
+				}
+				else if (OperationType.REPLACE.equals(metaUpdateOperation.getOperationType())) {
+					existingMeta = newMetadata;
+				}
+				else {
+					throw new IllegalArgumentException("Unknown operation type <" + metaUpdateOperation.getOperationType() + ">");
+				}
+
+				if (!metaUpdateOperation.getRemovedKeysList().isEmpty()) {
+					for (String key : metaUpdateOperation.getRemovedKeysList()) {
+						existingMeta.remove(key);
+					}
+				}
+
+				existingSettings.setMeta(ZuliaUtil.mongoDocumentToByteString(existingMeta));
+			}
+
+			CreateIndexRequestValidator.validateIndexSettingsAndSetDefaults(existingSettings);
+			indexSettings = existingSettings.build();
+
+			indexService.storeIndex(indexSettings);
+
+			CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
+					pool, internalClient, this);
+
+			try {
+				@SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
+						InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(request.getIndexName()).build());
+
+				return UpdateIndexResponse.newBuilder().setFullIndexSettings(indexSettings).build();
+			}
+			catch (Exception e) {
+				throw new Exception("Failed to update index <" + request.getIndexName() + ">: " + e.getMessage());
+			}
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	private <T> List<T> updateWithAction(Operation operation, List<T> existingValues, List<T> updates, Function<T, String> keyFunction) {
+
+		List<T> newValues;
+		if (OperationType.MERGE.equals(operation.getOperationType())) {
+			if (!updates.isEmpty()) {
+				Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity()));
+
+				List<T> existingWithReplacements = existingValues.stream().map(value -> {
+					T replacement = toUpdate.get(keyFunction.apply(value));
+					if (replacement != null) {
+						toUpdate.remove(keyFunction.apply(value));
+						return replacement;
+					}
+					return value;
+				}).collect(Collectors.toList());
+				existingWithReplacements.addAll(toUpdate.values());
+				newValues = existingWithReplacements;
+			}
+			else {
+				newValues = existingValues;
+			}
+		}
+		else if (OperationType.REPLACE.equals(operation.getOperationType())) {
+			newValues = updates;
+		}
+		else {
+			throw new IllegalArgumentException("Unknown operation type <" + operation.getOperationType() + ">");
+		}
+
+		if (!operation.getRemovedKeysList().isEmpty()) {
+			Set<String> toDelete = new HashSet<>(operation.getRemovedKeysList());
+			return newValues.stream().filter(value -> !toDelete.contains(keyFunction.apply(value))).collect(Collectors.toList());
+		}
+		return newValues;
+
+	}
+
+	public InternalCreateOrUpdateIndexResponse internalCreateOrUpdateIndex(String indexName) throws Exception {
 
 		ZuliaIndex zuliaIndex = indexMap.get(indexName);
 		if (zuliaIndex == null) {
@@ -426,7 +593,7 @@ public class ZuliaIndexManager {
 			zuliaIndex.reloadIndexSettings();
 		}
 
-		return CreateIndexResponse.newBuilder().build();
+		return InternalCreateOrUpdateIndexResponse.newBuilder().setLoaded(zuliaIndex == null).build();
 
 	}
 
@@ -640,4 +807,5 @@ public class ZuliaIndexManager {
 		indexAliasMap.remove(request.getAliasName());
 		return DeleteIndexAliasResponse.newBuilder().build();
 	}
+
 }
