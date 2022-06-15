@@ -86,7 +86,9 @@ public class ZuliaDConfig {
 
 		if (zuliaConfig.isCluster()) {
 			if (null != zuliaConfig.getConnectionString()) {
-				StringBuilder cs = new StringBuilder().append("mongodb+srv://");
+				StringBuilder cs = new StringBuilder().append(zuliaConfig.getConnectionString().getProtocol());
+				if (!zuliaConfig.getConnectionString().getProtocol().endsWith("://"))
+					cs.append("://");
 				if (null != zuliaConfig.getMongoAuth()) {
 					cs.append(zuliaConfig.getMongoAuth().getUsername()).append(":").append(zuliaConfig.getMongoAuth().getPassword()).append("@");
 				}
