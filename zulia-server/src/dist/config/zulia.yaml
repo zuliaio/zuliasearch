@@ -25,6 +25,12 @@ mongoServers:
   - hostname: 127.0.0.1
     port: 27017
 
+#mongoConnection:
+# protocol: "mongodb+srv"
+# connectionURL: example.com
+# retryWrites: false
+# writeConcern: majority
+
 # uncomment this if using mongo authentication
 #
 #mongoAuth:
