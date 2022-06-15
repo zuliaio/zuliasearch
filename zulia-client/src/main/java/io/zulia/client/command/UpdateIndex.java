@@ -148,15 +148,6 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
-	public Integer getNumberOfShards() {
-		return numberOfShards;
-	}
-
-	public UpdateIndex setNumberOfShards(Integer numberOfShards) {
-		this.numberOfShards = numberOfShards;
-		return this;
-	}
-
 	public String getIndexName() {
 		return indexName;
 	}

@@ -5,9 +5,11 @@ import io.zulia.client.command.UpdateIndex;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.GetIndexConfigResult;
+import io.zulia.client.result.UpdateIndexResult;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
+import io.zulia.message.ZuliaIndex.IndexSettings;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -327,7 +329,12 @@ public class IndexTest {
 			updateIndex.removeAnalyzerSettingsByName(Collections.singleton("custom"));
 			FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs(DefaultAnalyzers.STANDARD).sort();
 			updateIndex.mergeFieldConfig(myField);
-			zuliaWorkPool.updateIndex(updateIndex);
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(3, indexSettings.getFieldConfigList().size());
+			Assertions.assertEquals(0, indexSettings.getAnalyzerSettingsCount());
+			Assertions.assertEquals(4, indexSettings.getIndexWeight());
 		}
 
 	}

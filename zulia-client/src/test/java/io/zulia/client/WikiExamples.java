@@ -17,6 +17,7 @@ import io.zulia.client.command.GetFields;
 import io.zulia.client.command.GetTerms;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.StoreLargeAssociated;
+import io.zulia.client.command.UpdateIndex;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.NumericStat;
@@ -34,6 +35,7 @@ import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.GetNumberOfDocsResult;
 import io.zulia.client.result.GetTermsResult;
 import io.zulia.client.result.SearchResult;
+import io.zulia.client.result.UpdateIndexResult;
 import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
@@ -47,6 +49,7 @@ import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Tokenizer;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.util.ResultHelper;
 import org.bson.Document;
@@ -93,13 +96,51 @@ public class WikiExamples {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("an").index().sort());
 		// createLong, createFloat, createDouble, createBool, createDate, createVector, createUnitVector is also available
 		// or create(storedFieldName, fieldType)
+
 		CreateIndex createIndex = new CreateIndex(indexConfig);
 		zuliaWorkPool.createIndex(createIndex);
 	}
 
-	public void customAnalyzer(ClientIndexConfig clientIndexConfig) throws Exception {
+	public void createIndexCustomAnalyzer(ClientIndexConfig clientIndexConfig) throws Exception {
 		clientIndexConfig.addAnalyzerSetting("myAnalyzer", Tokenizer.WHITESPACE, Arrays.asList(Filter.ASCII_FOLDING, Filter.LOWERCASE), Similarity.BM25);
 		clientIndexConfig.addFieldConfig(FieldConfigBuilder.create("abstract", FieldType.STRING).indexAs("myAnalyzer"));
+	}
+
+	public void createIndexCustomMetadata(ClientIndexConfig clientIndexConfig) throws Exception {
+		clientIndexConfig.setMeta(new Document("category", "special").append("otherKey", 10));
+	}
+
+	public void updateIndexBasicUsage(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// ... make changes
+		UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+		// full index settings are returned after the change that can be accessed if needed
+		IndexSettings fullIndexSettings = updateIndexResult.getFullIndexSettings();
+	}
+
+	public void updateIndexAddFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// if a field myField or otherField exists, it will be updated with these settings
+		FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs(DefaultAnalyzers.STANDARD).sort();
+		FieldConfigBuilder otherField = FieldConfigBuilder.createString("otherField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
+		updateIndex.mergeFieldConfig(myField, otherField);
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexReplaceFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// if a field myField or otherField exists, it will be updated with these settings
+		FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs(DefaultAnalyzers.STANDARD).sort();
+		FieldConfigBuilder otherField = FieldConfigBuilder.createString("otherField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
+		updateIndex.replaceFieldConfig(myField, otherField);
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexRemoveFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// removes the stored field with name myField if it exists
+		updateIndex.removeFieldConfigByStoredName(List.of("myField"));
+		zuliaWorkPool.updateIndex(updateIndex);
 	}
 
 	public void deleteIndex(ZuliaWorkPool zuliaWorkPool) throws Exception {
