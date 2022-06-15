@@ -385,10 +385,21 @@ public class WikiExamples {
 
 		// search for lung in title,abstract AND cancer in title,abstract AND treatment in title
 		search.addQuery(new ScoredQuery("lung cancer title:treatment").addQueryFields("title", "abstract").setDefaultOperator(ZuliaQuery.Query.Operator.AND));
+	}
 
+	public void queryFieldsDefault(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		// search for lung in default index fields OR cancer in default index fields
 		// OR is the default operator unless set
+		Search search = new Search("myIndexName").setAmount(100);
 		search.addQuery(new ScoredQuery("lung cancer"));
+	}
+
+	public void queryFieldsWildcard(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+
+		// search for lung in any field starting with title and abstract AND cancer in any field starting with title and abstract
+		// can also use title*:someTerm in a query, see Query Syntax Documentation
+		search.addQuery(new ScoredQuery("lung cancer").addQueryFields("title*", "abstract").setDefaultOperator(ZuliaQuery.Query.Operator.AND));
 	}
 
 	public void filterQueries(ZuliaWorkPool zuliaWorkPool) throws Exception {
