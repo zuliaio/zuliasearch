@@ -73,7 +73,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("an").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").index());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD));
 		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("testBool").index().facet().sort());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
@@ -391,7 +391,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(
 				FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data").sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").index());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD));
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 

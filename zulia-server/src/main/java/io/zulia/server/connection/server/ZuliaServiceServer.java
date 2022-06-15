@@ -6,6 +6,8 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created by Matt Davis on 6/28/17.
@@ -29,5 +31,11 @@ public class ZuliaServiceServer {
 
 	public void shutdown() {
 		server.shutdown();
+		try {
+			server.awaitTermination(2, TimeUnit.SECONDS);
+		}
+		catch (InterruptedException ignored) {
+
+		}
 	}
 }
