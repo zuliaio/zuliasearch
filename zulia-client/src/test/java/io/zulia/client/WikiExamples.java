@@ -190,7 +190,38 @@ public class WikiExamples {
 		zuliaWorkPool.deleteIndex(deleteIndex);
 	}
 
-	public void storingBson(ZuliaWorkPool zuliaWorkPool) throws Exception {
+
+	public void simpleStore(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Document document = new Document();
+		document.put("id", "myid222");
+		document.put("title", "Magic Java Beans");
+		document.put("issn", "4321-4321");
+
+		Store store = new Store("myid222", "myIndexName").setResultDocument(document);
+		zuliaWorkPool.store(store);
+	}
+
+	public void simpleStoreJson(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		String json = """
+				{
+				  "documentId": "4",
+				  "docType": "pdf",
+				  "docAuthor": "Java Developer Zone",
+				  "docTitle": "Elastic Search Blog",
+				  "isParent": false,
+				  "parentDocId": 1,
+				  "docLanguage": [
+				    "en",
+				    "czech"
+				  ]
+				}""";
+
+		Store store = new Store("myid222", "myIndexName").setResultDocument(json);
+		zuliaWorkPool.store(store);
+	}
+
+
+	public void storeWithMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Document document = new Document();
 		document.put("id", "myid222");
 		document.put("title", "Magic Java Beans");
