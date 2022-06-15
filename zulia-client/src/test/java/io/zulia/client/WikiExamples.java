@@ -1,5 +1,6 @@
 package io.zulia.client;
 
+import com.google.common.primitives.Floats;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -11,7 +12,10 @@ import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
+import io.zulia.client.command.builder.StandardQuery;
 import io.zulia.client.command.builder.StatFacet;
+import io.zulia.client.command.builder.TermQuery;
+import io.zulia.client.command.builder.VectorTopNQuery;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -139,7 +143,6 @@ public class WikiExamples {
 				.build();
 		updateIndex.mergeAnalyzerSettings(custom, mine);
 	}
-
 
 	public void updateIndexReplaceAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
@@ -370,6 +373,56 @@ public class WikiExamples {
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
 
+	public void termQueries(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+
+		// search for the terms 1,2,3,4 in the field id
+		search.addQuery(new TermQuery("id").addTerms("1", "2", "3", "4"));
+
+		SearchResult searchResult = zuliaWorkPool.search(search);
+	}
+
+	public void vectorQueriesAndIndexing(ZuliaWorkPool zuliaWorkPool) throws Exception {
+
+		// create an index with add field config
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+
+		// call createVector or createUnitVector depending on if the vector is unit normalized
+		indexConfig.addFieldConfig(FieldConfigBuilder.createUnitVector("v").index());
+		// ...
+		indexConfig.setIndexName("vectorTestIndex");
+		// also can could updateIndex with mergeFieldConfig to add vector field to existing index
+		zuliaWorkPool.createIndex(indexConfig);
+
+		// store some documents with a vector field
+		Document mongoDocument = new Document();
+		float[] vector = new float[] { 0, 0, 0.70710678f, 0.70710678f };
+		mongoDocument.put("v", Floats.asList(vector));
+		Store s = new Store("someId", "vectorTestIndex").setResultDocument(mongoDocument);
+		zuliaWorkPool.store(s);
+
+		Search search = new Search("vectorTestIndex").setAmount(100);
+		// returns the top 3 documents closest to [1.0,0,0,0] in the field 3
+		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v"));
+
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+	}
+
+	public void vectorQueriesPreFilter(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("vectorTestIndex").setAmount(100);
+		// filters for blue in the description then returns the top 3 documents closest to [1.0,0,0,0] in the field v
+		StandardQuery descriptionQuery = new FilterQuery("blue").addQueryField("description");
+		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v").addPreFilterQuery(descriptionQuery));
+	}
+
+	public void vectorQueriesPostFilter(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("vectorTestIndex").setAmount(100);
+		// returns the top 3 documents closest to [1.0,0,0,0] in the field v, then filters for red in the description (possible less than 3 now)
+		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v"));
+		search.addQuery(new FilterQuery("red").addQueryField("description"));
+	}
+
 	public void countFacets(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		// Can set number of documents to return to 0 or omit setAmount unless you want the documents at the same time
 		Search search = new Search("myIndexName").setAmount(0);
@@ -387,7 +440,6 @@ public class WikiExamples {
 		search.addFacetDrillDown("issn", "1111-1111");
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
-
 
 	public void numericStat(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Search search = new Search("myIndexName").setAmount(100);
