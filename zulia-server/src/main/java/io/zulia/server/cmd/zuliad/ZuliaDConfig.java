@@ -85,18 +85,18 @@ public class ZuliaDConfig {
 		}
 
 		if (zuliaConfig.isCluster()) {
-			if (null != zuliaConfig.getConnectionString()) {
-				StringBuilder cs = new StringBuilder().append(zuliaConfig.getConnectionString().getProtocol());
-				if (!zuliaConfig.getConnectionString().getProtocol().endsWith("://"))
+			if (null != zuliaConfig.getMongoConnection()) {
+				StringBuilder cs = new StringBuilder().append(zuliaConfig.getMongoConnection().getProtocol());
+				if (!zuliaConfig.getMongoConnection().getProtocol().endsWith("://"))
 					cs.append("://");
 				if (null != zuliaConfig.getMongoAuth()) {
 					cs.append(zuliaConfig.getMongoAuth().getUsername()).append(":").append(zuliaConfig.getMongoAuth().getPassword()).append("@");
 				}
-				cs.append(zuliaConfig.getConnectionString().getConnectionURL());
-				if (!zuliaConfig.getConnectionString().getConnectionURL().endsWith("/"))
+				cs.append(zuliaConfig.getMongoConnection().getConnectionURL());
+				if (!zuliaConfig.getMongoConnection().getConnectionURL().endsWith("/"))
 					cs.append("/");
-				cs.append("?retryWrites=").append(zuliaConfig.getConnectionString().isRetryWrites());
-				cs.append("&w=").append(zuliaConfig.getConnectionString().getWriteConcern());
+				cs.append("?retryWrites=").append(zuliaConfig.getMongoConnection().isRetryWrites());
+				cs.append("&w=").append(zuliaConfig.getMongoConnection().getWriteConcern());
 
 				MongoClientSettings.Builder mongoClientOptions = MongoClientSettings.builder();
 				mongoClientOptions.applyConnectionString(new ConnectionString(cs.toString()));
