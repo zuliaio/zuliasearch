@@ -553,7 +553,7 @@ public class SortTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("added").index().sort());
 		//sort() adds standard string (case senstive sorting with a field name the same as the stored field
 		//sortAs(LOWERCASE_FOLDING, "otherTitleFolding") add another sortable field with a lowercase and ascii folding filter applied to make case insensitive sort and fancy letter insensitive (gotta be a better term here)
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("otherTitle").index().sort().sortAs(LOWERCASE_FOLDING, "otherTitleFolding"));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("otherTitle").indexAs(DefaultAnalyzers.STANDARD).sort().sortAs(LOWERCASE_FOLDING, "otherTitleFolding"));
 		indexConfig.setIndexName(INDEX_NAME);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits

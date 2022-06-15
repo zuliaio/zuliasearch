@@ -338,4 +338,11 @@ public class IndexTest {
 		}
 
 	}
+
+	@Test
+	@Order(3)
+	public void shutdown() throws Exception {
+		TestHelper.stopNodes();
+		zuliaWorkPool.shutdown();
+	}
 }
