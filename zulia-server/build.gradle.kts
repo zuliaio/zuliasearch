@@ -14,6 +14,10 @@ val snakeYamlVersion: String by project
 
 defaultTasks("build", "installDist")
 
+tasks.withType<Test> {
+    maxParallelForks = 1
+}
+
 dependencies {
     implementation(project(":zulia-query-parser"))
     implementation(project(":zulia-client")) //needed for admin tools
