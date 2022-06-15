@@ -19,6 +19,8 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	private final InternalFetchServerRequest internalFetchServerServerRequest;
 	private final BatchFetchServerRequest batchFetchServerRequest;
 	private final CreateIndexServerRequest createIndexServerRequest;
+
+	private final UpdateIndexServerRequest updateIndexServerRequest;
 	private final InternalCreateIndexServerRequest internalCreateIndexServerRequest;
 	private final DeleteIndexServerRequest deleteIndexServerRequest;
 	private final InternalDeleteIndexServerRequest internalDeleteIndexServerRequest;
@@ -54,6 +56,7 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 		internalFetchServerServerRequest = new InternalFetchServerRequest(indexManager);
 		batchFetchServerRequest = new BatchFetchServerRequest(indexManager);
 		createIndexServerRequest = new CreateIndexServerRequest(indexManager);
+		updateIndexServerRequest = new UpdateIndexServerRequest(indexManager);
 		internalCreateIndexServerRequest = new InternalCreateIndexServerRequest(indexManager);
 		deleteIndexServerRequest = new DeleteIndexServerRequest(indexManager);
 		internalDeleteIndexServerRequest = new InternalDeleteIndexServerRequest(indexManager);
@@ -134,7 +137,12 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	}
 
 	@Override
-	public void internalCreateIndex(InternalCreateIndexRequest request, StreamObserver<CreateIndexResponse> responseObserver) {
+	public void updateIndex(UpdateIndexRequest request, StreamObserver<UpdateIndexResponse> responseObserver) {
+		updateIndexServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalCreateOrUpdateIndex(InternalCreateOrUpdateIndexRequest request, StreamObserver<InternalCreateOrUpdateIndexResponse> responseObserver) {
 		internalCreateIndexServerRequest.handleRequest(request, responseObserver);
 	}
 

@@ -68,6 +68,14 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(new CreateIndex(indexConfig));
 	}
 
+	public UpdateIndexResult updateIndex(UpdateIndex updateIndex) throws Exception {
+		return execute(updateIndex);
+	}
+
+	public ListenableFuture<UpdateIndexResult> updateIndexAsync(UpdateIndex updateIndex) throws Exception {
+		return executeAsync(updateIndex);
+	}
+
 	public DeleteResult delete(Delete delete) throws Exception {
 		return execute(delete);
 	}
