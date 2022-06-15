@@ -121,7 +121,7 @@ public class WikiExamples {
 
 	public void updateIndexReplaceFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
-		// if a field myField or otherField exists, it will be updated with these settings, otherwise they are are added
+		// if a field myField or otherField exists, it will be updated with these settings, otherwise they are added
 		FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs(DefaultAnalyzers.STANDARD).sort();
 		FieldConfigBuilder otherField = FieldConfigBuilder.createString("otherField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
 		updateIndex.replaceFieldConfig(myField, otherField);
