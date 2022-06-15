@@ -4,20 +4,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.zulia.DefaultAnalyzers;
-import io.zulia.client.command.CreateIndex;
-import io.zulia.client.command.DeleteAllAssociated;
-import io.zulia.client.command.DeleteAssociated;
-import io.zulia.client.command.DeleteFromIndex;
-import io.zulia.client.command.DeleteFull;
-import io.zulia.client.command.FetchAllAssociated;
-import io.zulia.client.command.FetchAssociated;
-import io.zulia.client.command.FetchDocument;
-import io.zulia.client.command.FetchLargeAssociated;
-import io.zulia.client.command.GetFields;
-import io.zulia.client.command.GetTerms;
-import io.zulia.client.command.Store;
-import io.zulia.client.command.StoreLargeAssociated;
-import io.zulia.client.command.UpdateIndex;
+import io.zulia.client.command.*;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.NumericStat;
@@ -46,6 +33,7 @@ import io.zulia.fields.annotations.Settings;
 import io.zulia.fields.annotations.UniqueId;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.Similarity;
+import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Tokenizer;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
@@ -129,7 +117,7 @@ public class WikiExamples {
 
 	public void updateIndexReplaceFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
-		// if a field myField or otherField exists, it will be updated with these settings
+		// if a field myField or otherField exists, it will be updated with these settings, otherwise they are are added
 		FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs(DefaultAnalyzers.STANDARD).sort();
 		FieldConfigBuilder otherField = FieldConfigBuilder.createString("otherField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
 		updateIndex.replaceFieldConfig(myField, otherField);
@@ -143,8 +131,60 @@ public class WikiExamples {
 		zuliaWorkPool.updateIndex(updateIndex);
 	}
 
+	public void updateIndexMergeAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// if an analyzer custom or mine exists, it will be updated with these settings, otherwise they are added
+		ZuliaIndex.AnalyzerSettings custom = ZuliaIndex.AnalyzerSettings.newBuilder().setName("custom").addFilter(Filter.LOWERCASE).build();
+		ZuliaIndex.AnalyzerSettings mine = ZuliaIndex.AnalyzerSettings.newBuilder().setName("mine").addFilter(Filter.LOWERCASE).addFilter(Filter.BRITISH_US)
+				.build();
+		updateIndex.mergeAnalyzerSettings(custom, mine);
+	}
+
+
+	public void updateIndexReplaceAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces all analyzers with the two custom analyzers given
+		ZuliaIndex.AnalyzerSettings custom = ZuliaIndex.AnalyzerSettings.newBuilder().setName("custom").addFilter(Filter.LOWERCASE).build();
+		ZuliaIndex.AnalyzerSettings mine = ZuliaIndex.AnalyzerSettings.newBuilder().setName("mine").addFilter(Filter.LOWERCASE).addFilter(Filter.BRITISH_US)
+				.build();
+		updateIndex.replaceAnalyzerSettings(custom, mine);
+	}
+
+	public void updateIndexRemoveAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// removes the analyzer field with name myCustomOne if it exists
+		updateIndex.removeAnalyzerSettingsByName(List.of("myCustomOne"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexMergeMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces key someKey with value 5 and otherKey with value "a string" if they exist, otherwise add they to the metadata (putAll with new metadata)
+		updateIndex.mergeMetadata(new Document().append("someKey", 5).append("otherKey", "a string"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexReplaceMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces metadata document with the document below
+		updateIndex.replaceMetadata(new Document().append("stuff", "for free"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexRemoveMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces metadata document with the document below
+		updateIndex.removeMetadataByKey(List.of("oneKey", "twoKey", "redKey", "blueKey"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
 	public void deleteIndex(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		zuliaWorkPool.deleteIndex("myIndex");
+	}
+
+	public void deleteIndexAndAssociatedFiles(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		DeleteIndex deleteIndex = new DeleteIndex("myIndex").setDeleteAssociated(true);
+		zuliaWorkPool.deleteIndex(deleteIndex);
 	}
 
 	public void storingBson(ZuliaWorkPool zuliaWorkPool) throws Exception {
