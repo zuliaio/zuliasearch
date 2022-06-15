@@ -1,6 +1,7 @@
 package io.zulia.server.config.cluster;
 
 public class MongoConnectionString {
+    private String protocol = "mongodb+srv://";
     private String connectionURL;
     private boolean retryWrites = true;
     private String writeConcern = "primary";
@@ -27,5 +28,13 @@ public class MongoConnectionString {
 
     public void setWriteConcern(String writeConcern) {
         this.writeConcern = writeConcern;
+    }
+
+    public String getProtocol() {
+        return protocol;
+    }
+
+    public void setProtocol(String protocol) {
+        this.protocol = protocol;
     }
 }
