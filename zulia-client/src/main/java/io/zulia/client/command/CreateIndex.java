@@ -10,9 +10,7 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import static io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
 
 /**
- * Creates a new index with the name, number of segments, unique id field, and IndexSettings given.  Whether the index supports faceting
- * or not is also configurable.  However, only the IndexConfig cannot be changed after the index is created.  If index already exists an exception will be thrown.
- * See @CreateOrUpdateIndex
+ * Creates or updates (replaces) an index.  To do partial config/schema updates of an existing index use {@link UpdateIndex}
  *
  * @author mdavis
  *

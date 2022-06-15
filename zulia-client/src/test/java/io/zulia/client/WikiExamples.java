@@ -1,29 +1,21 @@
 package io.zulia.client;
 
+import com.google.common.primitives.Floats;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.zulia.DefaultAnalyzers;
-import io.zulia.client.command.CreateIndex;
-import io.zulia.client.command.DeleteAllAssociated;
-import io.zulia.client.command.DeleteAssociated;
-import io.zulia.client.command.DeleteFromIndex;
-import io.zulia.client.command.DeleteFull;
-import io.zulia.client.command.FetchAllAssociated;
-import io.zulia.client.command.FetchAssociated;
-import io.zulia.client.command.FetchDocument;
-import io.zulia.client.command.FetchLargeAssociated;
-import io.zulia.client.command.GetFields;
-import io.zulia.client.command.GetTerms;
-import io.zulia.client.command.Store;
-import io.zulia.client.command.StoreLargeAssociated;
+import io.zulia.client.command.*;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
+import io.zulia.client.command.builder.StandardQuery;
 import io.zulia.client.command.builder.StatFacet;
+import io.zulia.client.command.builder.TermQuery;
+import io.zulia.client.command.builder.VectorTopNQuery;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -34,6 +26,7 @@ import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.GetNumberOfDocsResult;
 import io.zulia.client.result.GetTermsResult;
 import io.zulia.client.result.SearchResult;
+import io.zulia.client.result.UpdateIndexResult;
 import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
@@ -44,9 +37,11 @@ import io.zulia.fields.annotations.Settings;
 import io.zulia.fields.annotations.UniqueId;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.Similarity;
+import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Tokenizer;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.util.ResultHelper;
 import org.bson.Document;
@@ -93,17 +88,106 @@ public class WikiExamples {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("an").index().sort());
 		// createLong, createFloat, createDouble, createBool, createDate, createVector, createUnitVector is also available
 		// or create(storedFieldName, fieldType)
+
 		CreateIndex createIndex = new CreateIndex(indexConfig);
 		zuliaWorkPool.createIndex(createIndex);
 	}
 
-	public void customAnalyzer(ClientIndexConfig clientIndexConfig) throws Exception {
+	public void createIndexCustomAnalyzer(ClientIndexConfig clientIndexConfig) throws Exception {
 		clientIndexConfig.addAnalyzerSetting("myAnalyzer", Tokenizer.WHITESPACE, Arrays.asList(Filter.ASCII_FOLDING, Filter.LOWERCASE), Similarity.BM25);
 		clientIndexConfig.addFieldConfig(FieldConfigBuilder.create("abstract", FieldType.STRING).indexAs("myAnalyzer"));
 	}
 
+	public void createIndexCustomMetadata(ClientIndexConfig clientIndexConfig) throws Exception {
+		clientIndexConfig.setMeta(new Document("category", "special").append("otherKey", 10));
+	}
+
+	public void updateIndexBasicUsage(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// ... make changes
+		UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+		// full index settings are returned after the change that can be accessed if needed
+		IndexSettings fullIndexSettings = updateIndexResult.getFullIndexSettings();
+	}
+
+	public void updateIndexAddFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// if a field myField or otherField exists, it will be updated with these settings
+		FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs(DefaultAnalyzers.STANDARD).sort();
+		FieldConfigBuilder otherField = FieldConfigBuilder.createString("otherField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
+		updateIndex.mergeFieldConfig(myField, otherField);
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexReplaceFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// if a field myField or otherField exists, it will be updated with these settings, otherwise they are added
+		FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs(DefaultAnalyzers.STANDARD).sort();
+		FieldConfigBuilder otherField = FieldConfigBuilder.createString("otherField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
+		updateIndex.replaceFieldConfig(myField, otherField);
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexRemoveFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// removes the stored field with name myField if it exists
+		updateIndex.removeFieldConfigByStoredName(List.of("myField"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexMergeAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// if an analyzer custom or mine exists, it will be updated with these settings, otherwise they are added
+		ZuliaIndex.AnalyzerSettings custom = ZuliaIndex.AnalyzerSettings.newBuilder().setName("custom").addFilter(Filter.LOWERCASE).build();
+		ZuliaIndex.AnalyzerSettings mine = ZuliaIndex.AnalyzerSettings.newBuilder().setName("mine").addFilter(Filter.LOWERCASE).addFilter(Filter.BRITISH_US)
+				.build();
+		updateIndex.mergeAnalyzerSettings(custom, mine);
+	}
+
+	public void updateIndexReplaceAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces all analyzers with the two custom analyzers given
+		ZuliaIndex.AnalyzerSettings custom = ZuliaIndex.AnalyzerSettings.newBuilder().setName("custom").addFilter(Filter.LOWERCASE).build();
+		ZuliaIndex.AnalyzerSettings mine = ZuliaIndex.AnalyzerSettings.newBuilder().setName("mine").addFilter(Filter.LOWERCASE).addFilter(Filter.BRITISH_US)
+				.build();
+		updateIndex.replaceAnalyzerSettings(custom, mine);
+	}
+
+	public void updateIndexRemoveAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// removes the analyzer field with name myCustomOne if it exists
+		updateIndex.removeAnalyzerSettingsByName(List.of("myCustomOne"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexMergeMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces key someKey with value 5 and otherKey with value "a string" if they exist, otherwise add they to the metadata (putAll with new metadata)
+		updateIndex.mergeMetadata(new Document().append("someKey", 5).append("otherKey", "a string"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexReplaceMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces metadata document with the document below
+		updateIndex.replaceMetadata(new Document().append("stuff", "for free"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexRemoveMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces metadata document with the document below
+		updateIndex.removeMetadataByKey(List.of("oneKey", "twoKey", "redKey", "blueKey"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
 	public void deleteIndex(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		zuliaWorkPool.deleteIndex("myIndex");
+	}
+
+	public void deleteIndexAndAssociatedFiles(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		DeleteIndex deleteIndex = new DeleteIndex("myIndex").setDeleteAssociated(true);
+		zuliaWorkPool.deleteIndex(deleteIndex);
 	}
 
 	public void storingBson(ZuliaWorkPool zuliaWorkPool) throws Exception {
@@ -289,6 +373,56 @@ public class WikiExamples {
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
 
+	public void termQueries(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+
+		// search for the terms 1,2,3,4 in the field id
+		search.addQuery(new TermQuery("id").addTerms("1", "2", "3", "4"));
+
+		SearchResult searchResult = zuliaWorkPool.search(search);
+	}
+
+	public void vectorQueriesAndIndexing(ZuliaWorkPool zuliaWorkPool) throws Exception {
+
+		// create an index with add field config
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+
+		// call createVector or createUnitVector depending on if the vector is unit normalized
+		indexConfig.addFieldConfig(FieldConfigBuilder.createUnitVector("v").index());
+		// ...
+		indexConfig.setIndexName("vectorTestIndex");
+		// also can could updateIndex with mergeFieldConfig to add vector field to existing index
+		zuliaWorkPool.createIndex(indexConfig);
+
+		// store some documents with a vector field
+		Document mongoDocument = new Document();
+		float[] vector = new float[] { 0, 0, 0.70710678f, 0.70710678f };
+		mongoDocument.put("v", Floats.asList(vector));
+		Store s = new Store("someId", "vectorTestIndex").setResultDocument(mongoDocument);
+		zuliaWorkPool.store(s);
+
+		Search search = new Search("vectorTestIndex").setAmount(100);
+		// returns the top 3 documents closest to [1.0,0,0,0] in the field 3
+		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v"));
+
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+	}
+
+	public void vectorQueriesPreFilter(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("vectorTestIndex").setAmount(100);
+		// filters for blue in the description then returns the top 3 documents closest to [1.0,0,0,0] in the field v
+		StandardQuery descriptionQuery = new FilterQuery("blue").addQueryField("description");
+		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v").addPreFilterQuery(descriptionQuery));
+	}
+
+	public void vectorQueriesPostFilter(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("vectorTestIndex").setAmount(100);
+		// returns the top 3 documents closest to [1.0,0,0,0] in the field v, then filters for red in the description (possible less than 3 now)
+		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v"));
+		search.addQuery(new FilterQuery("red").addQueryField("description"));
+	}
+
 	public void countFacets(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		// Can set number of documents to return to 0 or omit setAmount unless you want the documents at the same time
 		Search search = new Search("myIndexName").setAmount(0);
@@ -306,7 +440,6 @@ public class WikiExamples {
 		search.addFacetDrillDown("issn", "1111-1111");
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
-
 
 	public void numericStat(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Search search = new Search("myIndexName").setAmount(100);

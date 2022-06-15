@@ -4,7 +4,7 @@ import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.connection.client.handler.InternalClearHandler;
 import io.zulia.server.connection.client.handler.InternalCreateIndexAliasHandler;
-import io.zulia.server.connection.client.handler.InternalCreateIndexHandler;
+import io.zulia.server.connection.client.handler.InternalCreateOrUpdateIndexHandler;
 import io.zulia.server.connection.client.handler.InternalDeleteHandler;
 import io.zulia.server.connection.client.handler.InternalDeleteIndexAliasHandler;
 import io.zulia.server.connection.client.handler.InternalDeleteIndexHandler;
@@ -37,7 +37,7 @@ public class InternalClient {
 	private final InternalGetFieldNamesHandler internalGetFieldNamesHandler;
 	private final InternalClearHandler internalClearHandler;
 	private final InternalGetTermsHandler internalGetTermsHandler;
-	private final InternalCreateIndexHandler internalCreateIndexHandler;
+	private final InternalCreateOrUpdateIndexHandler internalCreateIndexHandler;
 	private final InternalDeleteIndexHandler internalDeleteIndexHandler;
 	private final InternalReindexHandler internalReindexHandler;
 	private final InternalCreateIndexAliasHandler internalCreateIndexAliasHandler;
@@ -56,7 +56,7 @@ public class InternalClient {
 		internalGetFieldNamesHandler = new InternalGetFieldNamesHandler(this);
 		internalClearHandler = new InternalClearHandler(this);
 		internalGetTermsHandler = new InternalGetTermsHandler(this);
-		internalCreateIndexHandler = new InternalCreateIndexHandler(this);
+		internalCreateIndexHandler = new InternalCreateOrUpdateIndexHandler(this);
 		internalDeleteIndexHandler = new InternalDeleteIndexHandler(this);
 		internalReindexHandler = new InternalReindexHandler(this);
 		internalCreateIndexAliasHandler = new InternalCreateIndexAliasHandler(this);
@@ -180,7 +180,7 @@ public class InternalClient {
 		return internalGetTermsHandler.handleRequest(node, request);
 	}
 
-	public CreateIndexResponse createIndex(Node node, InternalCreateIndexRequest request) throws Exception {
+	public InternalCreateOrUpdateIndexResponse createOrUpdateIndex(Node node, InternalCreateOrUpdateIndexRequest request) throws Exception {
 		return internalCreateIndexHandler.handleRequest(node, request);
 	}
 

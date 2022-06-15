@@ -52,6 +52,61 @@ message IndexSettings {
 
 }
 
+
+message UpdateIndexSettings {
+    message Operation {
+        enum OperationType {
+            MERGE = 0;
+            REPLACE = 1;
+        }
+        bool enable = 1;
+        OperationType operationType = 2;
+        repeated string removedKeys = 3;
+    }
+
+    bool setDefaultSearchField = 1;
+    repeated string defaultSearchField = 2;
+
+    repeated AnalyzerSettings analyzerSettings = 3;
+    Operation analyzerSettingsOperation = 4; // keyed by name
+
+    repeated FieldConfig fieldConfig = 5;
+    Operation fieldConfigOperation = 6; // keyed by storedFieldName
+
+    bool setRequestFactor = 7;
+    double requestFactor = 8;
+
+    bool setMinShardRequest = 9;
+    uint32 minShardRequest = 10;
+
+    bool setShardTolerance = 11;
+    double shardTolerance = 12;
+
+    bool setShardQueryCacheSize = 13;
+    uint32 shardQueryCacheSize = 14;
+
+    bool setShardQueryCacheMaxAmount = 15;
+    uint32 shardQueryCacheMaxAmount = 16;
+
+    bool setIdleTimeWithoutCommit = 17;
+    uint32 idleTimeWithoutCommit = 18;
+
+    bool setShardCommitInterval = 19;
+    uint32 shardCommitInterval = 20;
+
+    bool setIndexWeight = 21;
+    uint32 indexWeight = 22;
+
+    bool setRamBufferMB = 23;
+    uint32 ramBufferMB = 24;
+
+    Operation metaUpdateOperation = 25;
+    bytes metadata = 26;
+
+}
+
+
+
 message FieldConfig {
 
     reserved 6; //old projectAs
@@ -76,6 +131,7 @@ message FieldConfig {
     string displayName = 7;
     string description = 8;
 }
+
 
 message AnalyzerSettings {
 

@@ -5,6 +5,7 @@ import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
@@ -45,6 +46,14 @@ public class ClientIndexConfig {
 			defaultSearchFields = new ArrayList<>();
 		}
 		defaultSearchFields.add(defaultSearchField);
+		return this;
+	}
+
+	public ClientIndexConfig addDefaultSearchFields(String... defaultSearchField) {
+		if (defaultSearchFields.isEmpty()) {
+			defaultSearchFields = new ArrayList<>();
+		}
+		defaultSearchFields.addAll(Arrays.asList(defaultSearchField));
 		return this;
 	}
 
@@ -193,6 +202,14 @@ public class ClientIndexConfig {
 		analyzerSettingsMap.put(analyzerSettings.getName(), analyzerSettings);
 	}
 
+	public AnalyzerSettings getAnalyzerSettings(String analyzerName) {
+		return analyzerSettingsMap.get(analyzerName);
+	}
+
+	public TreeMap<String, AnalyzerSettings> getAnalyzerSettingsMap() {
+		return analyzerSettingsMap;
+	}
+
 	public TreeMap<String, FieldConfig> getFieldConfigMap() {
 		return fieldMap;
 	}
@@ -208,16 +225,29 @@ public class ClientIndexConfig {
 	public IndexSettings getIndexSettings() {
 		IndexSettings.Builder isb = IndexSettings.newBuilder();
 
-		if (numberOfShards != null) {
-			isb.setNumberOfShards(numberOfShards);
-		}
-
 		if (indexName != null) {
 			isb.setIndexName(indexName);
 		}
 
+		if (numberOfShards != null) {
+			isb.setNumberOfShards(numberOfShards);
+		}
+
+		if (numberOfReplicas != null) {
+			isb.setNumberOfReplicas(numberOfReplicas);
+		}
+
 		if (defaultSearchFields != null) {
 			isb.addAllDefaultSearchField(defaultSearchFields);
+		}
+
+		for (String analyzerName : analyzerSettingsMap.keySet()) {
+			isb.addAnalyzerSettings(analyzerSettingsMap.get(analyzerName));
+		}
+
+		for (String fieldName : fieldMap.keySet()) {
+			FieldConfig fieldConfig = fieldMap.get(fieldName);
+			isb.addFieldConfig(fieldConfig);
 		}
 
 		if (requestFactor != null) {
@@ -228,16 +258,24 @@ public class ClientIndexConfig {
 			isb.setMinShardRequest(minShardRequest);
 		}
 
-		if (shardCommitInterval != null) {
-			isb.setShardCommitInterval(shardCommitInterval);
+		if (shardTolerance != null) {
+			isb.setShardTolerance(shardTolerance);
+		}
+
+		if (shardQueryCacheSize != null) {
+			isb.setShardQueryCacheSize(shardQueryCacheSize);
+		}
+
+		if (shardQueryCacheMaxAmount != null) {
+			isb.setShardQueryCacheMaxAmount(shardQueryCacheMaxAmount);
 		}
 
 		if (idleTimeWithoutCommit != null) {
 			isb.setIdleTimeWithoutCommit(idleTimeWithoutCommit);
 		}
 
-		if (shardTolerance != null) {
-			isb.setShardTolerance(shardTolerance);
+		if (shardCommitInterval != null) {
+			isb.setShardCommitInterval(shardCommitInterval);
 		}
 
 		if (indexWeight != null) {
@@ -246,15 +284,6 @@ public class ClientIndexConfig {
 
 		if (ramBufferMB != null) {
 			isb.setRamBufferMB(ramBufferMB);
-		}
-
-		for (String fieldName : fieldMap.keySet()) {
-			FieldConfig fieldConfig = fieldMap.get(fieldName);
-			isb.addFieldConfig(fieldConfig);
-		}
-
-		for (String analyzerName : analyzerSettingsMap.keySet()) {
-			isb.addAnalyzerSettings(analyzerSettingsMap.get(analyzerName));
 		}
 
 		if (meta != null) {

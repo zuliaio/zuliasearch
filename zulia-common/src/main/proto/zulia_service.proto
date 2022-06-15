@@ -19,8 +19,9 @@ service ZuliaService {
     rpc InternalFetch (FetchRequest) returns (FetchResponse);
     rpc BatchFetch (BatchFetchRequest) returns (stream FetchResponse);
     rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
+    rpc UpdateIndex (UpdateIndexRequest) returns (UpdateIndexResponse);
     rpc CreateIndexAlias (CreateIndexAliasRequest) returns (CreateIndexAliasResponse);
-    rpc InternalCreateIndex (InternalCreateIndexRequest) returns (CreateIndexResponse);
+    rpc InternalCreateOrUpdateIndex (InternalCreateOrUpdateIndexRequest) returns (InternalCreateOrUpdateIndexResponse);
     rpc InternalCreateIndexAlias (InternalCreateIndexAliasRequest) returns (CreateIndexAliasResponse);
     rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
     rpc DeleteIndexAlias (DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
@@ -146,12 +147,20 @@ message CreateIndexRequest {
     IndexSettings indexSettings = 1;
 }
 
+message UpdateIndexRequest {
+    string indexName = 1;
+    UpdateIndexSettings updateIndexSettings = 2;
+}
 
 message CreateIndexAliasRequest {
     IndexAlias indexAlias = 1;
 }
 
-message InternalCreateIndexRequest {
+message InternalUpdateIndexRequest {
+    string indexName = 1;
+}
+
+message InternalCreateOrUpdateIndexRequest {
     string indexName = 1;
 }
 
@@ -161,6 +170,14 @@ message InternalCreateIndexAliasRequest {
 
 
 message CreateIndexResponse {
+}
+
+message UpdateIndexResponse {
+    IndexSettings fullIndexSettings = 1;
+}
+
+message InternalCreateOrUpdateIndexResponse {
+    bool loaded = 1; //true if index is loaded (Created) or false if reloaded (Updated)
 }
 
 message CreateIndexAliasResponse {
