@@ -33,9 +33,8 @@ public class S3Config {
 
 	}
 
-	public S3Config(String s3BucketName, String region, boolean propWait) {
-		this.s3BucketName = s3BucketName;
-		this.region = region;
-		this.propWait = propWait;
+	@Override
+	public String toString() {
+		return "S3Config{" + "s3BucketName='" + s3BucketName + '\'' + ", region='" + region + '\'' + ", propWait=" + propWait + '}';
 	}
 }
