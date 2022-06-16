@@ -29,6 +29,10 @@ public class S3Config {
 		this.propWait = propWait;
 	}
 
+	public S3Config() {
+
+	}
+
 	public S3Config(String s3BucketName, String region, boolean propWait) {
 		this.s3BucketName = s3BucketName;
 		this.region = region;
