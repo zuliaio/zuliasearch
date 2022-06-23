@@ -112,7 +112,14 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 					throw new IllegalArgumentException("Index as field name can not contain a comma.  Found in stored field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
 				}
 				if (FieldTypeUtil.isStringFieldType(builder.getFieldType()) && !analyzerNames.contains(indexAs.getAnalyzerName())) {
-					throw new IllegalArgumentException("Analyzer <" + indexAs.getAnalyzerName() + "> is not a default analyzer and is not given as a custom analyzer for field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+					if (indexAs.getAnalyzerName().isEmpty()) {
+						throw new IllegalArgumentException(
+								"Analyzer is not defined for string field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+					}
+					else {
+						throw new IllegalArgumentException(
+								"Analyzer <" + indexAs.getAnalyzerName() + "> is not a default analyzer and is not given as a custom analyzer for field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+					}
 				}
 			}
 
