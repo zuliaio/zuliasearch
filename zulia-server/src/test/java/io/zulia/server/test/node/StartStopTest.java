@@ -22,6 +22,7 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -650,8 +651,7 @@ public class StartStopTest {
 
 	}
 
-	@Test
-	@Order(7)
+	@AfterAll
 	public void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();

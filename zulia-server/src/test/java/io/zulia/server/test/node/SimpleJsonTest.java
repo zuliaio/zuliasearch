@@ -9,6 +9,7 @@ import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.fields.FieldConfigBuilder;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -169,8 +170,7 @@ public class SimpleJsonTest {
 		Assertions.assertEquals(prettyJson, searchResult.getDocumentsAsPrettyJson().get(0));
 	}
 
-	@Test
-	@Order(7)
+	@AfterAll
 	public void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();

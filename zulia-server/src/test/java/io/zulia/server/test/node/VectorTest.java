@@ -15,6 +15,7 @@ import io.zulia.fields.FieldConfigBuilder;
 import org.bson.Document;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.codecs.pojo.PojoCodecProvider;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -151,8 +152,7 @@ public class VectorTest {
 		searchTest();
 	}
 
-	@Test
-	@Order(7)
+	@AfterAll
 	public void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();

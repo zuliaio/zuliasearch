@@ -11,6 +11,7 @@ import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaQuery.Query.Operator;
 import org.bson.Document;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -297,8 +298,7 @@ public class SimpleTest {
 		searchTest();
 	}
 
-	@Test
-	@Order(7)
+	@AfterAll
 	public void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
