@@ -494,18 +494,35 @@ public class ShardReader implements AutoCloseable {
 		for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
 			boolean reverse = ZuliaQuery.FieldSort.Direction.DESCENDING.equals(fs.getDirection());
 
-			//TODO check sort before the exception like done with facets
-			//if (!indexConfig.existingFacet(label)) {
-
 			String rewrittenField = ZuliaParser.rewriteLengthFields(fs.getSortField());
 
 			String sortField = fs.getSortField();
+
+			boolean lengthField  = !rewrittenField.equals(sortField);
+
 			FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
+
+			if (!lengthField) {
+				if (sortFieldType == null) {
+					throw new IllegalArgumentException("Field <" + sortField + "> is not defined as sortable");
+				}
+			}
+			else {
+				String fieldName = ZuliaParser.removeLengthBars(sortField);
+				FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(fieldName);
+				if (fieldType == null) {
+					throw new IllegalArgumentException("Cannot sort on length of indexed field <" + fieldName + "> because no field is indexed with that name");
+				}
+				if (rewrittenField.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) && !FieldTypeUtil.isStringFieldType(fieldType)) {
+					throw new IllegalArgumentException("Cannot sort on character length of indexed field <" + fieldName + "> because it is not a string field");
+				}
+			}
+
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
 			}
-			else if (!rewrittenField.equals(sortField)) {
+			else if (lengthField) {
 				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
 				if (reverse) {
 					sortedNumericSelector = SortedNumericSelector.Type.MAX;
