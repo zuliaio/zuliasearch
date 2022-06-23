@@ -23,13 +23,26 @@ public interface ZuliaParser {
 
 	static String rewriteLengthFields(String field) {
 		if (field.startsWith("|||") && field.endsWith("|||")) {
-			field = ZuliaConstants.LIST_LENGTH_PREFIX + field.substring(3, field.length() - 3);
+			field = ZuliaConstants.LIST_LENGTH_PREFIX + removeLengthBars(field);
 		}
 		else if (field.startsWith("||") && field.endsWith("||")) {
 			// no-op
 		}
 		else if (field.startsWith("|") && field.endsWith("|")) {
-			field = ZuliaConstants.CHAR_LENGTH_PREFIX + field.substring(1, field.length() - 1);
+			field = ZuliaConstants.CHAR_LENGTH_PREFIX + removeLengthBars(field);
+		}
+		return field;
+	}
+
+	static String removeLengthBars(String field) {
+		if (field.startsWith("|||") && field.endsWith("|||")) {
+			return field.substring(3, field.length() - 3);
+		}
+		else if (field.startsWith("||") && field.endsWith("||")) {
+			// no-op
+		}
+		else if (field.startsWith("|") && field.endsWith("|")) {
+			return field.substring(1, field.length() - 1);
 		}
 		return field;
 	}
