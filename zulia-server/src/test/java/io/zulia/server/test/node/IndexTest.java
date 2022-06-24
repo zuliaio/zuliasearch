@@ -341,7 +341,7 @@ public class IndexTest {
 	}
 
 	@AfterAll
-	public void shutdown() throws Exception {
+	public static void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
 	}

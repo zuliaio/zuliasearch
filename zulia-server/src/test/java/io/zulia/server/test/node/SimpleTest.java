@@ -299,7 +299,7 @@ public class SimpleTest {
 	}
 
 	@AfterAll
-	public void shutdown() throws Exception {
+	public static void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
 	}
