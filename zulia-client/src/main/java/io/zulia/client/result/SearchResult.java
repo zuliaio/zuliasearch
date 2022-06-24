@@ -34,13 +34,34 @@ public class SearchResult extends Result {
 		return !queryResponse.getResultsList().isEmpty();
 	}
 
+	/**
+	 * use getCompleteResults instead
+	 * @return
+	 */
+	@Deprecated
 	public List<ScoredResult> getResults() {
 		return queryResponse.getResultsList();
 	}
 
+	public List<CompleteResult> getCompleteResults() {
+		return queryResponse.getResultsList().stream().map(CompleteResult::new).toList();
+	}
+
+	/**
+	 * use getFirstCompleteResult instead
+	 * @return
+	 */
+	@Deprecated()
 	public ScoredResult getFirstResult() {
 		if (hasResults()) {
 			return getResults().get(0);
+		}
+		return null;
+	}
+
+	public CompleteResult getFirstCompleteResult() {
+		if (hasResults()) {
+			return new CompleteResult(queryResponse.getResultsList().get(0));
 		}
 		return null;
 	}
@@ -105,7 +126,7 @@ public class SearchResult extends Result {
 
 	public Document getFirstDocument() {
 		if (hasResults()) {
-			Document doc = ResultHelper.getDocumentFromScoredResult(getResults().get(0));
+			Document doc = getFirstCompleteResult().getDocument();
 			if (doc != null) {
 				return doc;
 			}

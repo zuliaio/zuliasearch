@@ -111,9 +111,9 @@ public class VectorTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(3, searchResult.getTotalHits());
 
-		Assertions.assertEquals("1",searchResult.getResults().get(0).getUniqueId());
-		Assertions.assertEquals("4",searchResult.getResults().get(1).getUniqueId());
-		Assertions.assertEquals("2",searchResult.getResults().get(2).getUniqueId());
+		Assertions.assertEquals("1",searchResult.getCompleteResults().get(0).getUniqueId());
+		Assertions.assertEquals("4",searchResult.getCompleteResults().get(1).getUniqueId());
+		Assertions.assertEquals("2",searchResult.getCompleteResults().get(2).getUniqueId());
 
 
 		search = new Search(VECTOR_TEST);
@@ -123,7 +123,7 @@ public class VectorTest {
 		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(1, searchResult.getTotalHits());
-		Assertions.assertEquals("1",searchResult.getResults().get(0).getUniqueId());
+		Assertions.assertEquals("1",searchResult.getCompleteResults().get(0).getUniqueId());
 
 		search = new Search(VECTOR_TEST);
 		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v").addPreFilterQuery(new FilterQuery("blue").addQueryField("description")));
@@ -131,8 +131,8 @@ public class VectorTest {
 		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(2, searchResult.getTotalHits());
-		Assertions.assertEquals("1",searchResult.getResults().get(0).getUniqueId());
-		Assertions.assertEquals("6",searchResult.getResults().get(1).getUniqueId());
+		Assertions.assertEquals("1",searchResult.getCompleteResults().get(0).getUniqueId());
+		Assertions.assertEquals("6",searchResult.getCompleteResults().get(1).getUniqueId());
 
 
 	}
@@ -153,7 +153,7 @@ public class VectorTest {
 	}
 
 	@AfterAll
-	public void shutdown() throws Exception {
+	public static void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
 	}
