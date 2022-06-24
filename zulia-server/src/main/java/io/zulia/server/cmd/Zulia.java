@@ -10,14 +10,13 @@ import io.zulia.client.command.builder.Sort;
 import io.zulia.client.command.builder.StatBuilder;
 import io.zulia.client.command.builder.StatFacet;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.SearchResult;
-import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.cmd.common.MultipleIndexArgs;
 import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
-import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import picocli.CommandLine;
 
@@ -225,7 +224,7 @@ public class Zulia {
 	}
 
 	public void display(SearchResult searchResult) {
-		List<ZuliaQuery.ScoredResult> srList = searchResult.getResults();
+		List<CompleteResult> completeResults = searchResult.getCompleteResults();
 
 		ZuliaCommonCmd.printBlue("QueryTime: " + searchResult.getCommandTimeMs() + "ms");
 		ZuliaCommonCmd.printBlue("TotalResults: " + searchResult.getTotalHits());
@@ -245,26 +244,18 @@ public class Zulia {
 				ZuliaCommonCmd.printMagenta(String.format("%25s | %40s | %10s | %10s | %60s", "UniqueId", "Index", "Score", "Shard #", "Document"));
 			}
 
-
-			for (ZuliaQuery.ScoredResult sr : srList) {
-				System.out.printf("%25s | %40s | %10s | %10s", sr.getUniqueId(), sr.getIndexName(), df.format(sr.getScore()), sr.getShard());
+			for (CompleteResult completeResult : completeResults) {
+				System.out.printf("%25s | %40s | %10s | %10s", completeResult.getUniqueId(), completeResult.getIndexName(),
+						df.format(completeResult.getScore()), completeResult.getShard());
 
 				if (ZuliaQuery.FetchType.META.equals(fetch)) {
+					Document mongoDocument = completeResult.getMetadata();
+					System.out.printf(" | %60s", mongoDocument == null ? "" : mongoDocument.toJson());
 
-					if (sr.hasResultDocument()) {
-						ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
-						Document mongoDocument = new Document();
-						mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getMetadata().toByteArray()));
-						System.out.printf(" | %60s", mongoDocument.toJson());
-					}
 				}
 				if (ZuliaQuery.FetchType.FULL.equals(fetch)) {
-					if (sr.hasResultDocument()) {
-						ZuliaBase.ResultDocument resultDocument = sr.getResultDocument();
-						Document mongoDocument = new Document();
-						mongoDocument.putAll(ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray()));
-						System.out.printf(" | %60s", mongoDocument.toJson());
-					}
+					Document mongoDocument = completeResult.getDocument();
+					System.out.printf(" | %60s", mongoDocument == null ? "" : mongoDocument.toJson());
 				}
 
 				System.out.println();
@@ -292,8 +283,9 @@ public class Zulia {
 		if (!searchResult.getFacetFieldStats().isEmpty()) {
 
 			ZuliaCommonCmd.printBlue("Stat Facets:");
-			ZuliaCommonCmd.printMagenta(String.format("%25s | %15s | %15s | %25s | %12s | %12s | %12s | %12s", "Numeric Field", "Facet Field", "Facet Label", "Value Count", "Doc Count",
-					"Min", "Max", "Sum"));
+			ZuliaCommonCmd.printMagenta(
+					String.format("%25s | %15s | %15s | %25s | %12s | %12s | %12s | %12s", "Numeric Field", "Facet Field", "Facet Label", "Value Count",
+							"Doc Count", "Min", "Max", "Sum"));
 			for (ZuliaQuery.StatGroup sg : searchResult.getFacetFieldStats()) {
 				StringBuilder label = new StringBuilder(sg.getStatRequest().getFacetField().getLabel());
 				for (String path : sg.getStatRequest().getFacetField().getPathList()) {
@@ -301,8 +293,8 @@ public class Zulia {
 				}
 
 				for (ZuliaQuery.FacetStats fs : sg.getFacetStatsList()) {
-					System.out.printf("%25s | %15s | %15s | %25s | %12s | %12s | %12s | %12s", sg.getStatRequest().getNumericField(), label, fs.getFacet(), fs.getValueCount(),
-							fs.getDocCount(), getVal(fs.getMin()), getVal(fs.getMax()), getVal(fs.getSum()));
+					System.out.printf("%25s | %15s | %15s | %25s | %12s | %12s | %12s | %12s", sg.getStatRequest().getNumericField(), label, fs.getFacet(),
+							fs.getValueCount(), fs.getDocCount(), getVal(fs.getMin()), getVal(fs.getMax()), getVal(fs.getSum()));
 					System.out.println();
 				}
 			}

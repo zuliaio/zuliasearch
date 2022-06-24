@@ -20,6 +20,7 @@ import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.AssociatedResult;
+import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.FetchResult;
 import io.zulia.client.result.GetFieldsResult;
 import io.zulia.client.result.GetNodesResult;
@@ -331,8 +332,8 @@ public class WikiExamples {
 		long totalHits = searchResult.getTotalHits();
 
 		System.out.println("Found <" + totalHits + "> hits");
-		for (ZuliaQuery.ScoredResult sr : searchResult.getResults()) {
-			System.out.println("Matching document <" + sr.getUniqueId() + "> with score <" + sr.getScore() + ">");
+		for (CompleteResult completeResult : searchResult.getCompleteResults()) {
+			System.out.println("Matching document <" + completeResult.getUniqueId() + "> with score <" + completeResult.getScore() + ">");
 		}
 	}
 
@@ -361,9 +362,9 @@ public class WikiExamples {
 		long totalHits = searchResult.getTotalHits();
 
 		System.out.println("Found <" + totalHits + "> hits");
-		for (ZuliaQuery.ScoredResult sr : searchResult.getResults()) {
-			Document doc = ResultHelper.getDocumentFromScoredResult(sr);
-			System.out.println("Matching document <" + sr.getUniqueId() + "> with score <" + sr.getScore() + "> from index <" + sr.getIndexName() + ">");
+		for (CompleteResult completeResult : searchResult.getCompleteResults()) {
+			Document doc = completeResult.getDocument();
+			System.out.println("Matching document <" + completeResult.getUniqueId() + "> with score <" + completeResult.getScore() + "> from index <" + completeResult.getIndexName() + ">");
 			System.out.println(" full document <" + doc + ">");
 		}
 	}
@@ -542,8 +543,10 @@ public class WikiExamples {
 			}
 
 			// variation 3b - when score is needed, searching multiple indexes and index name is needed, or fetch type is NONE/META
-			for (ZuliaQuery.ScoredResult result : searchResult.getResults()) {
-
+			for (CompleteResult result : searchResult.getCompleteResults()) {
+				System.out.println("Result for <" + result.getIndexName() + "> with score <" + result.getScore() + ">");
+				//if fetch type is FULL
+				Document document = result.getDocument();
 			}
 		});
 	}
