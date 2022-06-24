@@ -236,6 +236,11 @@ public class ShardDocumentIndexer {
 											+ sortFieldName + ">");
 					}
 
+
+					if (text.length() > 32766) {
+						throw new IllegalArgumentException("Field <" + sortAs.getSortFieldName() + "> is too large to sort.  Must be less <= 32766 characters and is " + text.length());
+					}
+
 					SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));
 					d.add(docValue);
 				});
