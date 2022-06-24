@@ -232,6 +232,10 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		searchAll(search, queryResult -> queryResult.getResults().forEach(scoredResultHandler));
 	}
 
+	public void searchAllAsCompleteResult(Search search, Consumer<CompleteResult> completeResultHandler) throws Exception {
+		searchAll(search, queryResult -> queryResult.getCompleteResults().forEach(completeResultHandler));
+	}
+
 	public void searchAll(Search search, Consumer<SearchResult> resultHandler) throws Exception {
 
 		if (search.getAmount() <= 0) {
