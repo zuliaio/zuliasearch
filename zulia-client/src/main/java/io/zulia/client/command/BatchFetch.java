@@ -3,8 +3,8 @@ package io.zulia.client.command;
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.BatchFetchResult;
+import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.SearchResult;
-import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import io.zulia.message.ZuliaServiceOuterClass.BatchFetchRequest;
 import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import static io.zulia.message.ZuliaQuery.FetchType;
-import static io.zulia.message.ZuliaQuery.ScoredResult;
 
 /**
  * Fetches multiple documents in a single call
@@ -47,13 +46,13 @@ public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResul
 	}
 
 	public BatchFetch addFetchDocumentsFromResults(SearchResult qr) {
-		return addFetchDocumentsFromResults(qr.getResults());
+		return addFetchDocumentsFromResults(qr.getCompleteResults());
 	}
 
-	public BatchFetch addFetchDocumentsFromResults(Collection<ZuliaQuery.ScoredResult> scoredResults) {
+	public BatchFetch addFetchDocumentsFromResults(Collection<CompleteResult> completeResults) {
 
-		for (ScoredResult scoredResult : scoredResults) {
-			Fetch f = new Fetch(scoredResult.getUniqueId(), scoredResult.getIndexName());
+		for (CompleteResult completeResult : completeResults) {
+			Fetch f = new Fetch(completeResult.getUniqueId(), completeResult.getIndexName());
 			f.setResultFetchType(FetchType.FULL);
 			f.setAssociatedFetchType(FetchType.NONE);
 			fetchList.add(f);
