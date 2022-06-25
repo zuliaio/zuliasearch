@@ -8,6 +8,7 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.*;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.Highlight;
 import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
@@ -401,6 +402,21 @@ public class WikiExamples {
 		// search for lung in any field starting with title and abstract AND cancer in any field starting with title and abstract
 		// can also use title*:someTerm in a query, see Query Syntax Documentation
 		search.addQuery(new ScoredQuery("lung cancer").addQueryFields("title*", "abstract").setDefaultOperator(ZuliaQuery.Query.Operator.AND));
+	}
+
+	public void highlighting(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+		search.addQuery(new ScoredQuery("lung cancer").addQueryFields("title").setDefaultOperator(ZuliaQuery.Query.Operator.AND));
+
+		//can optionally set pre and post tag for the the highlight and set the number of fragments on the Highlight object
+		search.addHighlight(new Highlight("title"));
+
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		for (CompleteResult completeResult : searchResult.getCompleteResults()) {
+			Document document = completeResult.getDocument();
+			List<String> titleHighlightsForDoc = completeResult.getHighlightsForField("title");
+		}
 	}
 
 	public void filterQueries(ZuliaWorkPool zuliaWorkPool) throws Exception {
