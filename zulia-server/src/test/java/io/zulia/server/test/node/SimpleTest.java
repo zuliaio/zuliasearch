@@ -2,10 +2,12 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.Highlight;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
@@ -18,6 +20,8 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+
+import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SimpleTest {
@@ -280,6 +284,28 @@ public class SimpleTest {
 		search.addQuery(new ScoredQuery("description:fn:unordered(big big big big)").addQueryFields("id","rating"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery("white").addQueryFields("description"));
+		search.addHighlight(new Highlight("description"));
+		searchResult = zuliaWorkPool.search(search);
+		CompleteResult firstCompleteResult = searchResult.getFirstCompleteResult();
+		List<String> titleHighlightsForFirstDoc = firstCompleteResult.getHighlightsForField("description");
+		Assertions.assertEquals(1, titleHighlightsForFirstDoc.size());
+		String expected = titleHighlightsForFirstDoc.get(0);
+		Assertions.assertEquals(expected,"plain <em>white</em> and red");
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery("white").addQueryFields("description"));
+		search.addHighlight(new Highlight("description").setPreTag("<b>").setPostTag("</b>"));
+		searchResult = zuliaWorkPool.search(search);
+		firstCompleteResult = searchResult.getFirstCompleteResult();
+		titleHighlightsForFirstDoc = firstCompleteResult.getHighlightsForField("description");
+		Assertions.assertEquals(1, titleHighlightsForFirstDoc.size());
+		 expected = titleHighlightsForFirstDoc.get(0);
+		Assertions.assertEquals(expected,"plain <b>white</b> and red");
+
 
 	}
 
