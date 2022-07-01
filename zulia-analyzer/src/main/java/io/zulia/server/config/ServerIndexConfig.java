@@ -115,14 +115,7 @@ public class ServerIndexConfig {
 	}
 
 	public String getSortField(String sortFieldName, FieldConfig.FieldType fieldType) {
-		boolean flexibleFormat = true;
-		if (flexibleFormat) {
-			return sortFieldName + ZuliaConstants.SORT_SUFFIX + fieldType;
-		}
-		else {
-			return sortFieldName + ZuliaConstants.SORT_SUFFIX;
-		}
-
+		return sortFieldName + ZuliaConstants.SORT_SUFFIX + fieldType;
 	}
 
 	public IndexSettings getIndexSettings() {
