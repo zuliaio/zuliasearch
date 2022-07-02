@@ -2,6 +2,7 @@ package io.zulia;
 
 /**
  * Created by Payam Meyer on 8/7/17.
+ *
  * @author pmeyer
  */
 public interface ZuliaConstants {
@@ -65,7 +66,6 @@ public interface ZuliaConstants {
 
 	String FORMAT = "format";
 
-
 	String TIMESTAMP_FIELD = "_lmtsf_";
 	String STORED_META_FIELD = "_lmsmf_";
 	String STORED_DOC_FIELD = "_lmsdf_";
@@ -82,7 +82,6 @@ public interface ZuliaConstants {
 
 	String ANALYZE_JSON = "alJson";
 	String FUZZY_TERM_JSON = "fuzzyTermJson";
-	String COS_SIM_JSON = "cosSimJson";
 
 	String DONT_CACHE = "dontCache";
 	String BATCH = "batch";
@@ -90,7 +89,6 @@ public interface ZuliaConstants {
 	String CURSOR = "cursor";
 
 	String SCORE_FIELD = "zuliaScore";
-
 
 	String ID_SORT_FIELD = "zuliaId";
 	String TRUNCATE = "truncate";

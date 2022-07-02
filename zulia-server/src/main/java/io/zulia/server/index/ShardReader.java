@@ -6,7 +6,7 @@ import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
-import io.zulia.message.ZuliaIndex.FieldConfig;
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
@@ -498,9 +498,9 @@ public class ShardReader implements AutoCloseable {
 
 			String sortField = fs.getSortField();
 
-			boolean lengthField  = !rewrittenField.equals(sortField);
+			boolean lengthField = !rewrittenField.equals(sortField);
 
-			FieldConfig.FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
+			FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (!lengthField) {
 				if (sortFieldType == null) {
@@ -509,7 +509,7 @@ public class ShardReader implements AutoCloseable {
 			}
 			else {
 				String fieldName = ZuliaParser.removeLengthBars(sortField);
-				FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(fieldName);
+				FieldType fieldType = indexConfig.getFieldTypeForIndexField(fieldName);
 				if (fieldType == null) {
 					throw new IllegalArgumentException("Cannot sort on length of indexed field <" + fieldName + "> because no field is indexed with that name");
 				}
@@ -517,7 +517,6 @@ public class ShardReader implements AutoCloseable {
 					throw new IllegalArgumentException("Cannot sort on character length of indexed field <" + fieldName + "> because it is not a string field");
 				}
 			}
-
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
@@ -556,7 +555,7 @@ public class ShardReader implements AutoCloseable {
 					throw new Exception("Invalid numeric sort type <" + sortFieldType + "> for sort field <" + sortField + ">");
 				}
 
-				SortedNumericSortField e = new SortedNumericSortField(sortField + SORT_SUFFIX, type, reverse, sortedNumericSelector);
+				SortedNumericSortField e = new SortedNumericSortField(indexConfig.getSortField(sortField, sortFieldType), type, reverse, sortedNumericSelector);
 				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
 					e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
 				}
@@ -577,7 +576,8 @@ public class ShardReader implements AutoCloseable {
 				if (reverse) {
 					sortedNumericSelector = SortedNumericSelector.Type.MAX;
 				}
-				SortedNumericSortField e = new SortedNumericSortField(rewrittenField + SORT_SUFFIX, SortField.Type.INT, reverse, sortedNumericSelector);
+				SortedNumericSortField e = new SortedNumericSortField(indexConfig.getSortField(sortField, sortFieldType), SortField.Type.INT, reverse,
+						sortedNumericSelector);
 				e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
 				sortFields.add(e);
 			}
@@ -588,7 +588,7 @@ public class ShardReader implements AutoCloseable {
 					sortedSetSelector = SortedSetSelector.Type.MAX;
 				}
 
-				SortedSetSortField setSortField = new SortedSetSortField(sortField + SORT_SUFFIX, reverse, sortedSetSelector);
+				SortedSetSortField setSortField = new SortedSetSortField(indexConfig.getSortField(sortField, sortFieldType), reverse, sortedSetSelector);
 				setSortField.setMissingValue(!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
 				sortFields.add(setSortField);
 			}
@@ -713,10 +713,10 @@ public class ShardReader implements AutoCloseable {
 				continue;
 			}
 
-			FieldConfig.FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
+			FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
 
 			if (!ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
-				fieldTypeForSortField = FieldConfig.FieldType.NUMERIC_INT;
+				fieldTypeForSortField = FieldType.NUMERIC_INT;
 			}
 
 			ZuliaQuery.SortValue.Builder sortValueBuilder = ZuliaQuery.SortValue.newBuilder().setExists(true);

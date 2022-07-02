@@ -984,7 +984,7 @@ public class ZuliaIndex {
 			else if (field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
 				toRemove.add(field);
 			}
-			else if (field.endsWith(ZuliaConstants.SORT_SUFFIX)) {
+			else if (field.contains(ZuliaConstants.SORT_SUFFIX)) {
 				toRemove.add(field);
 			}
 		}
