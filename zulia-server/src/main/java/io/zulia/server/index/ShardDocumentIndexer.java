@@ -53,7 +53,7 @@ public class ShardDocumentIndexer {
 		Document luceneDocument = new Document();
 
 		luceneDocument.add(new StringField(ZuliaConstants.ID_FIELD, uniqueId, Field.Store.YES));
-		luceneDocument.add(new SortedSetDocValuesField(ZuliaConstants.ID_SORT_FIELD + ZuliaConstants.SORT_SUFFIX, new BytesRef(uniqueId)));
+		luceneDocument.add(new SortedSetDocValuesField(indexConfig.getSortField(ZuliaConstants.ID_SORT_FIELD, ZuliaIndex.FieldConfig.FieldType.STRING), new BytesRef(uniqueId)));
 		luceneDocument.add(new LongPoint(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
 		luceneDocument.add(new StoredField(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
 		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadata))));
@@ -120,7 +120,9 @@ public class ShardDocumentIndexer {
 			else if (FieldTypeUtil.isVectorFieldType(fieldType)) {
 				if (o instanceof Collection collection) {
 					luceneDocument.add(new KnnVectorField(indexedFieldName, Floats.toArray(collection),
-							ZuliaIndex.FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ? VectorSimilarityFunction.DOT_PRODUCT : VectorSimilarityFunction.COSINE));
+							ZuliaIndex.FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ?
+									VectorSimilarityFunction.DOT_PRODUCT :
+									VectorSimilarityFunction.COSINE));
 				}
 			}
 			else {
@@ -133,7 +135,8 @@ public class ShardDocumentIndexer {
 
 		ZuliaIndex.FieldConfig.FieldType fieldType = fc.getFieldType();
 		for (ZuliaIndex.SortAs sortAs : fc.getSortAsList()) {
-			String sortFieldName = sortAs.getSortFieldName() + ZuliaConstants.SORT_SUFFIX;
+
+			String sortFieldName = indexConfig.getSortField(sortAs.getSortFieldName(), fieldType);
 
 			if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
@@ -236,9 +239,9 @@ public class ShardDocumentIndexer {
 											+ sortFieldName + ">");
 					}
 
-
 					if (text.length() > 32766) {
-						throw new IllegalArgumentException("Field <" + sortAs.getSortFieldName() + "> is too large to sort.  Must be less <= 32766 characters and is " + text.length());
+						throw new IllegalArgumentException(
+								"Field <" + sortAs.getSortFieldName() + "> is too large to sort.  Must be less <= 32766 characters and is " + text.length());
 					}
 
 					SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));

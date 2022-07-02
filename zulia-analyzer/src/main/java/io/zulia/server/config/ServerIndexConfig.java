@@ -114,6 +114,10 @@ public class ServerIndexConfig {
 
 	}
 
+	public String getSortField(String sortFieldName, FieldConfig.FieldType fieldType) {
+		return sortFieldName + ZuliaConstants.SORT_SUFFIX + fieldType;
+	}
+
 	public IndexSettings getIndexSettings() {
 		return indexSettings;
 	}
