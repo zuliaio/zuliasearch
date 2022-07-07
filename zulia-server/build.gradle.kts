@@ -155,36 +155,6 @@ val zuliaImportScriptTask = tasks.register<CreateStartScripts>("createZuliaImpor
     }
 }
 
-
-val zuliaFetchFileScriptTask = tasks.register<CreateStartScripts>("createZuliaFetchFileScript") {
-    applicationName = "zuliafetchfile"
-    mainClass.set("io.zulia.server.cmd.ZuliaFetchFile")
-    outputDir = zuliaScriptTask.outputDir
-    classpath = zuliaScriptTask.classpath
-
-    doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
-    }
-}
-
-val zuliaStoreFileScriptTask = tasks.register<CreateStartScripts>("createZuliaStoreFileScript") {
-    applicationName = "zuliastorefile"
-    mainClass.set("io.zulia.server.cmd.ZuliaStoreFile")
-    outputDir = zuliaScriptTask.outputDir
-    classpath = zuliaScriptTask.classpath
-
-    doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
-    }
-}
-
-
 tasks.register("autocompleteDir") {
     doLast {
         mkdir("$buildDir/autocomplete")
@@ -273,12 +243,6 @@ distributions {
                 into("bin")
             }
             from(zuliaImportScriptTask) {
-                into("bin")
-            }
-            from(zuliaFetchFileScriptTask) {
-                into("bin")
-            }
-            from(zuliaStoreFileScriptTask) {
                 into("bin")
             }
             from("$buildDir/autocomplete/") {
