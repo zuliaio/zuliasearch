@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 
 import static io.zulia.message.ZuliaIndex.SortAs.StringHandling.LOWERCASE_FOLDING;
 
@@ -61,6 +62,10 @@ public class SortTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createFloat("ratingDouble").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("special").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("added").index().sort());
+
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("intList").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("stringList").indexAs(DefaultAnalyzers.STANDARD).sort());
+
 		indexConfig.setIndexName(INDEX_NAME);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -75,6 +80,8 @@ public class SortTest {
 			Float rating = 5.0f;
 			Double ratingDouble = 5.0d;
 			Boolean special = false;
+			List<String> stringList = List.of("a", "b", "c");
+			List<Integer> intList = List.of(1, 2, 3);
 
 			Date added = null;
 
@@ -86,6 +93,8 @@ public class SortTest {
 				rating = 1.2f;
 				ratingDouble = 1.1d;
 				added = Date.from(LocalDate.of(2014, Month.OCTOBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
+				stringList = List.of("c", "d");
+				intList = List.of(1);
 			}
 			if (id == 6) {
 				title = null;
@@ -95,6 +104,8 @@ public class SortTest {
 				rating = 1.2f;
 				ratingDouble = 1.1d;
 				added = Date.from(LocalDate.of(2014, Month.OCTOBER, 6).atStartOfDay(ZoneId.of("UTC")).toInstant());
+				stringList = List.of("", "z");
+				intList = List.of();
 			}
 			if (id == 10) {
 				title = null;
@@ -104,6 +115,8 @@ public class SortTest {
 				rating = 1.1f;
 				ratingDouble = 1.1d;
 				added = Date.from(LocalDate.of(2014, Month.OCTOBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
+				stringList = List.of("1", "2", "3", "4", "5");
+				intList = List.of(13);
 			}
 			if (id == 20) {
 				title = "other title";
@@ -114,6 +127,8 @@ public class SortTest {
 				ratingDouble = null;
 				special = null;
 				added = Date.from(LocalDate.of(2015, Month.APRIL, 1).atStartOfDay(ZoneId.of("UTC")).toInstant());
+				stringList = List.of("alpha", "beta", "longest value");
+				intList = List.of(999, 1000);
 			}
 			if (id == 30) {
 				title = "a special title";
@@ -124,6 +139,8 @@ public class SortTest {
 				ratingDouble = 4.7d;
 				special = true;
 				added = Date.from(LocalDate.of(2020, Month.JANUARY, 31).atStartOfDay(ZoneId.of("UTC")).toInstant());
+				stringList = List.of();
+				intList = List.of(-1, -2, -3);
 			}
 			if (id == 40) {
 				title = "oh so special secret title";
@@ -133,6 +150,8 @@ public class SortTest {
 				ratingDouble = Float.MAX_VALUE + 1000000d;
 				special = true;
 				added = Date.from(LocalDate.of(1951, Month.DECEMBER, 20).atStartOfDay(ZoneId.of("UTC")).toInstant());
+				stringList = List.of("category1", "category2");
+				intList = List.of(10, 20, 30, 40, 50);
 			}
 
 			String uniqueId = "" + id;
@@ -147,6 +166,8 @@ public class SortTest {
 			mongoDocument.put("ratingDouble", ratingDouble);
 			mongoDocument.put("special", special);
 			mongoDocument.put("added", added);
+			mongoDocument.put("stringList", stringList);
+			mongoDocument.put("intList", intList);
 
 			zuliaWorkPool.store(new Store(uniqueId, INDEX_NAME, ResultDocBuilder.from(mongoDocument)));
 
@@ -194,7 +215,6 @@ public class SortTest {
 		search.addSort(new Sort("title").descending().missingLast());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertNull(searchResult.getFirstDocument().get("title"));
-
 
 	}
 
@@ -482,7 +502,6 @@ public class SortTest {
 
 		Assertions.assertEquals("40", searchResult.getFirstDocument().get("id"));
 
-
 		search = new Search(INDEX_NAME).setAmount(10);
 
 		search.clearSort();
@@ -490,7 +509,6 @@ public class SortTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals("0", searchResult.getFirstDocument().get("id"));
 		Assertions.assertEquals("0", searchResult.getFirstResult().getUniqueId());
-
 
 		search.clearSort();
 		search.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD).descending());
@@ -517,6 +535,53 @@ public class SortTest {
 
 	@Test
 	@Order(11)
+	public void lengthSort() throws Exception {
+		Search search = new Search(INDEX_NAME).setAmount(10);
+
+		search.addSort(new Sort("|||stringList|||").descending());
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals("10", searchResult.getFirstResult().getUniqueId());
+
+		search.clearSort();
+		search.addSort(new Sort("|||stringList|||").ascending());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals("30", searchResult.getFirstResult().getUniqueId());
+
+		search.clearSort();
+		search.addSort(new Sort("|||madeUp|||").descending());
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search));
+
+		search.clearSort();
+		search.addSort(new Sort("|||intList|||").descending());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals("40", searchResult.getFirstResult().getUniqueId());
+
+		search.clearSort();
+		search.addSort(new Sort("|||intList|||").ascending());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals("6", searchResult.getFirstResult().getUniqueId());
+
+		search.clearSort();
+		search.addSort(new Sort("|intList|").ascending());
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search));
+
+		search.clearSort();
+		search.addSort(new Sort("|madeUp|").ascending());
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search));
+
+		search.clearSort();
+		search.addSort(new Sort("|stringList|").descending());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals("20", searchResult.getFirstResult().getUniqueId());
+
+		search.clearSort();
+		search.addSort(new Sort("|stringList|").ascending().missingLast());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals("6", searchResult.getFirstResult().getUniqueId());
+	}
+
+	@Test
+	@Order(12)
 	public void restart() throws Exception {
 		TestHelper.stopNodes();
 		Thread.sleep(2000);
@@ -525,7 +590,7 @@ public class SortTest {
 	}
 
 	@Test
-	@Order(12)
+	@Order(13)
 	public void afterRestartRetry() throws Exception {
 		boolSort();
 		dateSort();
@@ -535,15 +600,16 @@ public class SortTest {
 		starsSort();
 		starsLongSort();
 		titleSort();
+		lengthSort();
 	}
 
 	@Test
-	@Order(13)
+	@Order(14)
 	public void reindexTest() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD)
-				.sortAs("theId")); //change sort as to be theId instead of just id
+		indexConfig.addFieldConfig(
+				FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sortAs("theId")); //change sort as to be theId instead of just id
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("stars").index()); // no longer sortable
 		indexConfig.addFieldConfig(FieldConfigBuilder.createLong("starsLong").index().sort());
@@ -553,7 +619,8 @@ public class SortTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("added").index().sort());
 		//sort() adds standard string (case senstive sorting with a field name the same as the stored field
 		//sortAs(LOWERCASE_FOLDING, "otherTitleFolding") add another sortable field with a lowercase and ascii folding filter applied to make case insensitive sort and fancy letter insensitive (gotta be a better term here)
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("otherTitle").index().sort().sortAs(LOWERCASE_FOLDING, "otherTitleFolding"));
+		indexConfig.addFieldConfig(
+				FieldConfigBuilder.createString("otherTitle").indexAs(DefaultAnalyzers.STANDARD).sort().sortAs(LOWERCASE_FOLDING, "otherTitleFolding"));
 		indexConfig.setIndexName(INDEX_NAME);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -571,7 +638,6 @@ public class SortTest {
 
 		search.clearSort();
 		search.addSort(new Sort("otherTitleFolding").ascending().missingLast());
-		search.addSort(new Sort("starts").ascending().missingLast());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals("blah", searchResult.getFirstDocument().get("otherTitle"));
 
@@ -585,10 +651,14 @@ public class SortTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals("99", searchResult.getFirstDocument().get("id")); // sorting as string so this is 99 instead of 199
 
+		search.clearSort();
+		search.addSort(new Sort("stars").descending());
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search), "Expected: Field <stars> is not defined as sortable");
+
 	}
 
 	@Test
-	@Order(14)
+	@Order(15)
 	public void multiIndexTest() throws Exception {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
@@ -634,6 +704,11 @@ public class SortTest {
 		search.addSort(new Sort("magicNumber").descending());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(14, searchResult.getFirstDocument().get("magicNumber"));
+
+		search.clearSort();
+		search.addSort(new Sort("madeUp").descending());
+
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search), "Expected: Field <madeUp> is not defined as sortable");
 
 	}
 

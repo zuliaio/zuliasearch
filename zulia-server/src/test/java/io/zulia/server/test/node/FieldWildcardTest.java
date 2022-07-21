@@ -8,6 +8,7 @@ import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.fields.FieldConfigBuilder;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -146,9 +147,8 @@ public class FieldWildcardTest {
 		Assertions.assertEquals(1, searchResult.getTotalHits());
 	}
 
-	@Test
-	@Order(7)
-	public void shutdown() throws Exception {
+	@AfterAll
+	public static void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
 	}

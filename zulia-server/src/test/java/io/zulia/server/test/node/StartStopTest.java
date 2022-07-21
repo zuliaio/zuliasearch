@@ -13,6 +13,7 @@ import io.zulia.client.command.builder.Sort;
 import io.zulia.client.command.builder.TermQuery;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.GetIndexConfigResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
@@ -20,8 +21,8 @@ import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex.FacetAs.DateHandling;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
-import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -73,7 +74,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("an").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").index());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD));
 		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("testBool").index().facet().sort());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
@@ -223,7 +224,7 @@ public class StartStopTest {
 
 		double lowScore = -1;
 		double highScore = -1;
-		for (ZuliaQuery.ScoredResult result : searchResult.getResults()) {
+		for (CompleteResult result : searchResult.getCompleteResults()) {
 			Assertions.assertTrue(result.getScore() > 0);
 			if (lowScore < 0 || result.getScore() < lowScore) {
 				lowScore = result.getScore();
@@ -234,7 +235,7 @@ public class StartStopTest {
 		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD).descending());
 		searchResult = zuliaWorkPool.search(search);
 
-		for (ZuliaQuery.ScoredResult result : searchResult.getResults()) {
+		for (CompleteResult result : searchResult.getCompleteResults()) {
 			Assertions.assertTrue(result.getScore() > 0);
 			if (highScore < 0 || result.getScore() > highScore) {
 				highScore = result.getScore();
@@ -391,7 +392,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(
 				FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data").sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").index());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD));
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 
@@ -583,9 +584,9 @@ public class StartStopTest {
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
-			for (ZuliaQuery.ScoredResult result : sr.getResults()) {
+			for (CompleteResult result : sr.getCompleteResults()) {
 
-				Document metadata = ZuliaUtil.byteStringToMongoDocument(result.getResultDocument().getMetadata());
+				Document metadata = result.getMetadata();
 				Assertions.assertEquals("someValue", metadata.getString("test"));
 			}
 
@@ -595,9 +596,9 @@ public class StartStopTest {
 
 			sr = zuliaWorkPool.search(s);
 
-			for (ZuliaQuery.ScoredResult result : sr.getResults()) {
+			for (CompleteResult result : sr.getCompleteResults()) {
 
-				Document metadata = ZuliaUtil.byteStringToMongoDocument(result.getResultDocument().getMetadata());
+				Document metadata =  result.getMetadata();
 				Assertions.assertEquals("someValue", metadata.getString("test"));
 			}
 
@@ -650,9 +651,8 @@ public class StartStopTest {
 
 	}
 
-	@Test
-	@Order(7)
-	public void shutdown() throws Exception {
+	@AfterAll
+	public static void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
 	}

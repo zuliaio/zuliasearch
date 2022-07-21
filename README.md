@@ -1,25 +1,27 @@
-# Zulia
+# Zulia 
+## Distributed Lucene with deep object searching
 
-## Distributed Realtime Search With Lucene
-
-Zulia is a real-time distributed search and storage system based on Lucene. Zulia is designed from the ground up to scale both vertically and horizontally across servers. Zulia uses MongoDB GridFS to store documents' associated files. Zulia's JSON based document structure allows for deep searchable objects.
+Zulia is a real-time distributed search and storage system. Zulia is designed to scale both vertically and horizontally across servers. 
 
 ## Zulia is:
 * Realtime
 * Distributed
 * Pure Java
 * Open Source
+* Based on Lucene 9.x
 
 ## Zulia supports:
+* Searching multiple indexes with a single query
+* Storing associated files with the documents (images, pdfs, ...)
 * Sorting
 * Faceting
-* Searching multiple indexes with a single query
-* Storing associated files with the documents
+* Vector Search
+* [Rich Query Syntax](https://github.com/zuliaio/zuliasearch/wiki/Query-Syntax)
 
 To learn more see the [wiki](https://github.com/zuliaio/zuliasearch/wiki):
 * [Overview](https://github.com/zuliaio/zuliasearch/wiki/Overview)
 * [Cluster](https://github.com/zuliaio/zuliasearch/wiki/Cluster)
 * [Command Line Tools](https://github.com/zuliaio/zuliasearch/wiki/Command-Line-Tools)
-* [Distributed Directory](https://github.com/zuliaio/zuliasearch/wiki/Distributed-Directory)
 * [Java Client](https://github.com/zuliaio/zuliasearch/wiki/Java-Client)
-* [Maven/Gradle](https://github.com/zuliaio/zuliasearch/wiki/Maven) 
+* [Rest Client](https://github.com/zuliaio/zuliasearch/wiki/Rest-Client)
+* [Rich Query Syntax](https://github.com/zuliaio/zuliasearch/wiki/Query-Syntax)

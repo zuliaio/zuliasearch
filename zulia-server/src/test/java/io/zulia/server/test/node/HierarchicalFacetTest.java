@@ -11,6 +11,7 @@ import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import org.bson.Document;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -334,9 +335,8 @@ public class HierarchicalFacetTest {
 		}
 	}
 
-	@Test
-	@Order(7)
-	public void shutdown() throws Exception {
+	@AfterAll
+	public static void shutdown() throws Exception {
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
 	}

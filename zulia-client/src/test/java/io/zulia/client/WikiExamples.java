@@ -8,6 +8,7 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.*;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.Highlight;
 import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
@@ -20,6 +21,7 @@ import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.AssociatedResult;
+import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.FetchResult;
 import io.zulia.client.result.GetFieldsResult;
 import io.zulia.client.result.GetNodesResult;
@@ -190,7 +192,38 @@ public class WikiExamples {
 		zuliaWorkPool.deleteIndex(deleteIndex);
 	}
 
-	public void storingBson(ZuliaWorkPool zuliaWorkPool) throws Exception {
+
+	public void simpleStore(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Document document = new Document();
+		document.put("id", "myid222");
+		document.put("title", "Magic Java Beans");
+		document.put("issn", "4321-4321");
+
+		Store store = new Store("myid222", "myIndexName").setResultDocument(document);
+		zuliaWorkPool.store(store);
+	}
+
+	public void simpleStoreJson(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		String json = """
+				{
+				  "documentId": "4",
+				  "docType": "pdf",
+				  "docAuthor": "Java Developer Zone",
+				  "docTitle": "Elastic Search Blog",
+				  "isParent": false,
+				  "parentDocId": 1,
+				  "docLanguage": [
+				    "en",
+				    "czech"
+				  ]
+				}""";
+
+		Store store = new Store("myid222", "myIndexName").setResultDocument(json);
+		zuliaWorkPool.store(store);
+	}
+
+
+	public void storeWithMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Document document = new Document();
 		document.put("id", "myid222");
 		document.put("title", "Magic Java Beans");
@@ -300,8 +333,8 @@ public class WikiExamples {
 		long totalHits = searchResult.getTotalHits();
 
 		System.out.println("Found <" + totalHits + "> hits");
-		for (ZuliaQuery.ScoredResult sr : searchResult.getResults()) {
-			System.out.println("Matching document <" + sr.getUniqueId() + "> with score <" + sr.getScore() + ">");
+		for (CompleteResult completeResult : searchResult.getCompleteResults()) {
+			System.out.println("Matching document <" + completeResult.getUniqueId() + "> with score <" + completeResult.getScore() + ">");
 		}
 	}
 
@@ -330,9 +363,9 @@ public class WikiExamples {
 		long totalHits = searchResult.getTotalHits();
 
 		System.out.println("Found <" + totalHits + "> hits");
-		for (ZuliaQuery.ScoredResult sr : searchResult.getResults()) {
-			Document doc = ResultHelper.getDocumentFromScoredResult(sr);
-			System.out.println("Matching document <" + sr.getUniqueId() + "> with score <" + sr.getScore() + "> from index <" + sr.getIndexName() + ">");
+		for (CompleteResult completeResult : searchResult.getCompleteResults()) {
+			Document doc = completeResult.getDocument();
+			System.out.println("Matching document <" + completeResult.getUniqueId() + "> with score <" + completeResult.getScore() + "> from index <" + completeResult.getIndexName() + ">");
 			System.out.println(" full document <" + doc + ">");
 		}
 	}
@@ -354,10 +387,36 @@ public class WikiExamples {
 
 		// search for lung in title,abstract AND cancer in title,abstract AND treatment in title
 		search.addQuery(new ScoredQuery("lung cancer title:treatment").addQueryFields("title", "abstract").setDefaultOperator(ZuliaQuery.Query.Operator.AND));
+	}
 
+	public void queryFieldsDefault(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		// search for lung in default index fields OR cancer in default index fields
 		// OR is the default operator unless set
+		Search search = new Search("myIndexName").setAmount(100);
 		search.addQuery(new ScoredQuery("lung cancer"));
+	}
+
+	public void queryFieldsWildcard(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+
+		// search for lung in any field starting with title and abstract AND cancer in any field starting with title and abstract
+		// can also use title*:someTerm in a query, see Query Syntax Documentation
+		search.addQuery(new ScoredQuery("lung cancer").addQueryFields("title*", "abstract").setDefaultOperator(ZuliaQuery.Query.Operator.AND));
+	}
+
+	public void highlighting(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+		search.addQuery(new ScoredQuery("lung cancer").addQueryFields("title").setDefaultOperator(ZuliaQuery.Query.Operator.AND));
+
+		//can optionally set pre and post tag for the the highlight and set the number of fragments on the Highlight object
+		search.addHighlight(new Highlight("title"));
+
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		for (CompleteResult completeResult : searchResult.getCompleteResults()) {
+			Document document = completeResult.getDocument();
+			List<String> titleHighlightsForDoc = completeResult.getHighlightsForField("title");
+		}
 	}
 
 	public void filterQueries(ZuliaWorkPool zuliaWorkPool) throws Exception {
@@ -500,8 +559,10 @@ public class WikiExamples {
 			}
 
 			// variation 3b - when score is needed, searching multiple indexes and index name is needed, or fetch type is NONE/META
-			for (ZuliaQuery.ScoredResult result : searchResult.getResults()) {
-
+			for (CompleteResult result : searchResult.getCompleteResults()) {
+				System.out.println("Result for <" + result.getIndexName() + "> with score <" + result.getScore() + ">");
+				//if fetch type is FULL
+				Document document = result.getDocument();
 			}
 		});
 	}

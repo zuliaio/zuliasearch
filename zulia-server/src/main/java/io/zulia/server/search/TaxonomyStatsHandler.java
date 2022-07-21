@@ -16,7 +16,6 @@
  */
 package io.zulia.server.search;
 
-import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
@@ -49,11 +48,13 @@ public class TaxonomyStatsHandler {
 	private final List<String> fieldsList;
 	private final TaxonomyReader taxoReader;
 	private final List<ZuliaIndex.FieldConfig.FieldType> fieldTypes;
+	private final ServerIndexConfig serverIndexConfig;
 	private int[] children;
 	private int[] siblings;
 
 	public TaxonomyStatsHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests, ServerIndexConfig serverIndexConfig)
 			throws IOException {
+		this.serverIndexConfig = serverIndexConfig;
 
 		Set<String> numericFields = statRequests.stream().map(ZuliaQuery.StatRequest::getNumericField).collect(Collectors.toSet());
 		boolean facetLevel = statRequests.stream().map(ZuliaQuery.StatRequest::getFacetField).anyMatch(s -> !s.getLabel().isEmpty());
@@ -68,6 +69,7 @@ public class TaxonomyStatsHandler {
 			if (!FieldTypeUtil.isNumericFieldType(fieldTypeForSortField)) {
 				throw new IllegalArgumentException("Numeric field <" + numericField + "> must be indexed as a sortable NUMERIC field");
 			}
+
 			fieldTypes.add(fieldTypeForSortField);
 		}
 
@@ -93,6 +95,7 @@ public class TaxonomyStatsHandler {
 		}
 
 		sumValues(fc.getMatchingDocs(), fieldsList);
+
 	}
 
 	private void sumValues(List<MatchingDocs> matchingDocs, List<String> fieldsList) throws IOException {
@@ -107,7 +110,8 @@ public class TaxonomyStatsHandler {
 		for (MatchingDocs hits : matchingDocs) {
 
 			for (int f = 0; f < fieldsList.size(); f++) {
-				String field = fieldsList.get(f) + ZuliaConstants.SORT_SUFFIX;
+				ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(f);
+				String field = serverIndexConfig.getSortField(fieldsList.get(f), fieldType);
 				functionValues[f] = DocValues.getSortedNumeric(hits.context.reader(), field);
 			}
 
@@ -141,7 +145,7 @@ public class TaxonomyStatsHandler {
 					SortedNumericDocValues functionValue = functionValues[f];
 					ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(f);
 					if (functionValue.advanceExact(doc)) {
-						if ( functionValue.docValueCount() > numericValues.length) {
+						if (functionValue.docValueCount() > numericValues.length) {
 							numericValues = new long[functionValue.docValueCount()];
 						}
 						for (int j = 0; j < functionValue.docValueCount(); j++) {
@@ -170,7 +174,7 @@ public class TaxonomyStatsHandler {
 							}
 						}
 						if (fieldStats != null) {
-							Stats stats =  fieldStats[f];
+							Stats stats = fieldStats[f];
 							stats.newDoc(true);
 							for (int j = 0; j < functionValue.docValueCount(); j++) {
 								addUpValue(fieldType, numericValues[j], stats);
@@ -216,7 +220,6 @@ public class TaxonomyStatsHandler {
 			stats.newValue((int) value);
 		}
 	}
-
 
 	public ZuliaQuery.FacetStats getGlobalStatsForNumericField(String field) {
 		int fieldIndex = fieldsList.indexOf(field);
@@ -286,7 +289,6 @@ public class TaxonomyStatsHandler {
 
 			ord = siblings[ord];
 		}
-
 
 		ZuliaQuery.FacetStats[] facetStats = new ZuliaQuery.FacetStats[q.size()];
 		for (int i = facetStats.length - 1; i >= 0; i--) {

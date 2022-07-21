@@ -11,6 +11,7 @@ import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import org.bson.Document;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
@@ -337,5 +338,11 @@ public class IndexTest {
 			Assertions.assertEquals(4, indexSettings.getIndexWeight());
 		}
 
+	}
+
+	@AfterAll
+	public static void shutdown() throws Exception {
+		TestHelper.stopNodes();
+		zuliaWorkPool.shutdown();
 	}
 }
