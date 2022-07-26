@@ -333,7 +333,13 @@ public class ZuliaIndexManager {
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
 		//if existing index make sure not to allow changing number of shards
 
-		LOG.info(getLogPrefix() + " creating index: " + request);
+		String requestString = request.toString();
+
+		if (requestString.length() > (1024*1024)) {
+			requestString = requestString.substring(0, 1024 * 1024) + "...";
+		}
+
+		LOG.info(getLogPrefix() + " creating index: " + requestString);
 		request = new CreateIndexRequestValidator().validateAndSetDefault(request);
 
 		NodeWeightComputation nodeWeightComputation = new DefaultNodeWeightComputation(indexService, thisNode, currentOtherNodesActive);
