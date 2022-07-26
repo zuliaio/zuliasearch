@@ -340,6 +340,33 @@ public class IndexTest {
 
 	}
 
+	@Test
+	@Order(3)
+	public void giantIndex() throws Exception {
+		{
+			ClientIndexConfig indexConfig = new ClientIndexConfig();
+			indexConfig.addDefaultSearchField("title");
+			indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+			indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD, "myTitle").sortAs("mySortTitle"));
+
+			for (int i = 0; i < 100000; i++) {
+				indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating" + i).index().sort().description("Some optional description")
+						.displayName("Product Rating " + i));
+			}
+
+			indexConfig.setIndexName("large test");
+			indexConfig.setNumberOfShards(1);
+
+			zuliaWorkPool.createIndex(indexConfig);
+		}
+
+		{
+			GetIndexConfigResult largeTest = zuliaWorkPool.getIndexConfig("large test");
+			Assertions.assertEquals( 100002,largeTest.getIndexConfig().getFieldConfigMap().size());
+		}
+
+	}
+
 	@AfterAll
 	public static void shutdown() throws Exception {
 		TestHelper.stopNodes();
