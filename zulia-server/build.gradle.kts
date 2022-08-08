@@ -16,6 +16,7 @@ defaultTasks("build", "installDist")
 
 tasks.withType<Test> {
     maxParallelForks = 1
+    maxHeapSize = "8g"
 }
 
 dependencies {
