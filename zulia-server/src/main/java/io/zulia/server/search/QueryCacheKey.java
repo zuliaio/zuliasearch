@@ -5,9 +5,15 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 public class QueryCacheKey {
 
 	private QueryRequest queryRequest;
+	private boolean pinned;
 
 	public QueryCacheKey(QueryRequest queryRequest) {
-		this.queryRequest = queryRequest;
+		this.pinned = queryRequest.getPinToCache();
+		this.queryRequest = queryRequest.toBuilder().setPinToCache(false).build(); // make sure it has the same signature as an unpinned search
+	}
+
+	public boolean isPinned() {
+		return pinned;
 	}
 
 	@Override

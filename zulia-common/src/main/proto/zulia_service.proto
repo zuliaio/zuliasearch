@@ -73,6 +73,7 @@ message QueryRequest {
     bool debug = 15;
     bool dontCache = 16;
     MasterSlaveSettings masterSlaveSettings = 17;
+    bool pinToCache = 18;
 }
 
 message QueryResponse {

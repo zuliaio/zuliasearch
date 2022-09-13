@@ -63,6 +63,15 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
+	public boolean getPinToCache() {
+		return queryRequest.getPinToCache();
+	}
+
+	public Search setPinToCache(boolean pinToCache) {
+		queryRequest.setPinToCache(pinToCache);
+		return this;
+	}
+
 	public boolean getDebug() {
 		return queryRequest.getDebug();
 	}
