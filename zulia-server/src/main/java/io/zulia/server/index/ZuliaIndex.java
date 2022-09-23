@@ -41,6 +41,10 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -398,6 +402,65 @@ public class ZuliaIndex {
 		return new TermInSetQuery(field, termBytesRef);
 	}
 
+	public Query handleNumericSetQuery(ZuliaQuery.Query query) {
+
+		if (query.getQfList().isEmpty()) {
+			throw new IllegalArgumentException("Numeric set query must give at least one query field (qf)");
+		}
+		else if (query.getQfList().size() == 1) {
+			return getNumericSetQuery(query, query.getQfList().get(0));
+		}
+		else {
+			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
+			booleanQueryBuilder.setMinimumNumberShouldMatch(query.getMm());
+			for (String field : query.getQfList()) {
+				Query inSetQuery = getNumericSetQuery(query, field);
+				booleanQueryBuilder.add(inSetQuery, BooleanClause.Occur.SHOULD);
+			}
+			return booleanQueryBuilder.build();
+		}
+
+	}
+
+	private Query getNumericSetQuery(ZuliaQuery.Query query, String field) {
+		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(field);
+		ZuliaQuery.NumericSet numericSet = query.getNumericSet();
+
+		if (fieldType == null) {
+			throw new IllegalArgumentException("Field <" + field + "> is not indexed");
+		}
+		else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+			List<Integer> integerValueList = numericSet.getIntegerValueList();
+			if (integerValueList.isEmpty()) {
+				throw new IllegalArgumentException("No integer values for integer field <" + field + "> for numeric set query");
+			}
+			return IntPoint.newSetQuery(field, integerValueList);
+		}
+		else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+			List<Long> longValueList = numericSet.getLongValueList();
+			if (longValueList.isEmpty()) {
+				throw new IllegalArgumentException("No long values for long field <" + field + "> for numeric set query");
+			}
+			return LongPoint.newSetQuery(field, longValueList);
+		}
+		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+			List<Float> floatValueList = numericSet.getFloatValueList();
+			if (floatValueList.isEmpty()) {
+				throw new IllegalArgumentException("No float values for float field <" + field + "> for numeric set query");
+			}
+			return FloatPoint.newSetQuery(field, floatValueList);
+		}
+		else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+			List<Double> doubleValueList = numericSet.getDoubleValueList();
+			if (doubleValueList.isEmpty()) {
+				throw new IllegalArgumentException("No double values for double field <" + field + "> for numeric set query");
+			}
+			return DoublePoint.newSetQuery(field, doubleValueList);
+		}
+		throw new IllegalArgumentException("No field type of <" + fieldType + "> is not supported for numeric set queries");
+
+	}
+
 	public Query handleVectorQuery(ZuliaQuery.Query query) throws Exception {
 
 		if (query.getVectorList().isEmpty()) {
@@ -408,9 +471,6 @@ public class ZuliaIndex {
 		for (int i = 0; i < query.getVectorCount(); i++) {
 			vector[i] = query.getVector(i);
 		}
-
-
-
 
 		if (query.getQfList().isEmpty()) {
 			throw new IllegalArgumentException("Cosine sim query must give at least one query field (qf)");
@@ -428,7 +488,6 @@ public class ZuliaIndex {
 			return booleanQueryBuilder.build();
 		}
 	}
-
 
 	private BooleanQuery getPreFilter(List<ZuliaQuery.Query> vectorPreQueryList) throws Exception {
 		if (vectorPreQueryList.isEmpty()) {
@@ -490,6 +549,14 @@ public class ZuliaIndex {
 		}
 		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS_NOT) {
 			luceneQuery = handleTermQuery(query);
+			occur = BooleanClause.Occur.MUST_NOT;
+		}
+		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.NUMERIC_SET) {
+			luceneQuery = handleNumericSetQuery(query);
+			occur = BooleanClause.Occur.MUST;
+		}
+		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.NUMERIC_SET_NOT) {
+			luceneQuery = handleNumericSetQuery(query);
 			occur = BooleanClause.Occur.MUST_NOT;
 		}
 		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR) {
@@ -651,7 +718,7 @@ public class ZuliaIndex {
 		return query;
 	}
 
-	public IndexShardResponse 	internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
+	public IndexShardResponse internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
 
 		QueryRequest queryRequest = internalQueryRequest.getQueryRequest();
 		Set<ZuliaShard> shardsForQuery = new HashSet<>();

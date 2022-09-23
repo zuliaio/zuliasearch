@@ -17,6 +17,8 @@ message Query {
         VECTOR = 4;
         TERMS_NOT = 5;
         FILTER_NOT = 6;
+        NUMERIC_SET = 7;
+        NUMERIC_SET_NOT = 8;
     }
 
     enum Operator {
@@ -45,6 +47,15 @@ message Query {
 
     repeated Query vectorPreQuery = 14;
 
+    NumericSet numericSet = 15;
+
+}
+
+message NumericSet {
+    repeated int32 integerValue = 1;
+    repeated int64 longValue = 2;
+    repeated float floatValue = 3;
+    repeated double doubleValue = 4;
 }
 
 message Facet {
