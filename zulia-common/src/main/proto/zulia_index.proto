@@ -50,6 +50,11 @@ message IndexSettings {
 
     bytes meta = 18;
 
+    // index has list of query request objects stored a byte array instead of a message
+    // this ensures a query message format change can be handled on serialization and just fail to load the query vs. the whole index
+    // is also removes proto file dependencies between index and query
+    repeated bytes warmingSearches = 19;
+
 }
 
 
@@ -103,6 +108,8 @@ message UpdateIndexSettings {
     Operation metaUpdateOperation = 25;
     bytes metadata = 26;
 
+    Operation warmingSearchesOperation = 27;
+    repeated bytes warmingSearches = 28;
 }
 
 

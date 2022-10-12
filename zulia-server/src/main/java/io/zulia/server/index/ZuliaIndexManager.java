@@ -1,5 +1,6 @@
 package io.zulia.server.index;
 
+import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
@@ -53,6 +54,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -335,7 +337,7 @@ public class ZuliaIndexManager {
 
 		String requestString = request.toString();
 
-		if (requestString.length() > (1024*1024)) {
+		if (requestString.length() > (1024 * 1024)) {
 			requestString = requestString.substring(0, 1024 * 1024) + "...";
 		}
 
@@ -463,6 +465,39 @@ public class ZuliaIndexManager {
 				existingSettings.addAllFieldConfig(fieldConfigs);
 			}
 
+			if (updateIndexSettings.getWarmingSearchesOperation().getEnable()) {
+				List<ByteString> existingWarmingBytes = existingSettings.getWarmingSearchesList();
+				List<QueryRequest> existingWarmingSearch = new ArrayList<>();
+				for (ByteString existingWarmingByte : existingWarmingBytes) {
+					try {
+						QueryRequest queryRequest = QueryRequest.parseFrom(existingWarmingByte);
+						existingWarmingSearch.add(queryRequest);
+					}
+					catch (Exception e) {
+						LOG.severe("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
+					}
+				}
+
+				List<QueryRequest> warmingSearch = new ArrayList<>();
+				for (ByteString updates : updateIndexSettings.getWarmingSearchesList()) {
+					try {
+						QueryRequest queryRequest = QueryRequest.parseFrom(updates);
+						if (queryRequest.getSearchLabel().isEmpty()) {
+							throw new RuntimeException("A search label is required for a warming search");
+						}
+						warmingSearch.add(queryRequest);
+					}
+					catch (Exception e) {
+						throw new RuntimeException("Failed to parse existing warming search update", e);
+					}
+				}
+
+				List<QueryRequest> warmingSearches = updateWithAction(updateIndexSettings.getWarmingSearchesOperation(), existingWarmingSearch, warmingSearch,
+						QueryRequest::getSearchLabel);
+				existingSettings.clearWarmingSearches();
+				existingSettings.addAllWarmingSearches(warmingSearches.stream().map(QueryRequest::toByteString).toList());
+			}
+
 			if (updateIndexSettings.getSetDefaultSearchField()) {
 				existingSettings.clearDefaultSearchField();
 				existingSettings.addAllDefaultSearchField(updateIndexSettings.getDefaultSearchFieldList());
@@ -575,7 +610,7 @@ public class ZuliaIndexManager {
 			}
 		}
 		else if (OperationType.REPLACE.equals(operation.getOperationType())) {
-			newValues = updates;
+			newValues = new ArrayList<>(updates.stream().collect(Collectors.toMap(keyFunction, Function.identity())).values());
 		}
 		else {
 			throw new IllegalArgumentException("Unknown operation type <" + operation.getOperationType() + ">");
