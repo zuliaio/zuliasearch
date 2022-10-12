@@ -1,13 +1,12 @@
 package io.zulia.server.connection.server.validation;
 
+import com.google.protobuf.ByteString;
 import io.zulia.DefaultAnalyzers;
-import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
-import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
+import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.server.field.FieldTypeUtil;
-import io.zulia.util.ZuliaUtil;
 
 import java.util.HashSet;
 import java.util.List;
@@ -123,6 +122,24 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 				}
 			}
 
+		}
+
+		HashSet<String> searchLabels = new HashSet<>();
+		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
+			try {
+				QueryRequest queryRequest = QueryRequest.parseFrom(bytes);
+				String searchLabel = queryRequest.getSearchLabel();
+				if (searchLabel.isEmpty()) {
+					throw new RuntimeException("A search label is required for a warming search");
+				}
+				if (searchLabels.contains(searchLabel)) {
+					throw new IllegalArgumentException("Warmed search list has duplicate search label <" + searchLabel + ">");
+				}
+				searchLabels.add(searchLabel);
+			}
+			catch (Exception e) {
+				throw new IllegalArgumentException("Failed to parse QueryRequest from warmed search bytes", e);
+			}
 		}
 	}
 }

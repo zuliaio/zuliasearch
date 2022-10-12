@@ -74,6 +74,7 @@ message QueryRequest {
     bool dontCache = 16;
     MasterSlaveSettings masterSlaveSettings = 17;
     bool pinToCache = 18;
+    string searchLabel = 19;
 }
 
 message QueryResponse {
