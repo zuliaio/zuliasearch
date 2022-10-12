@@ -74,37 +74,11 @@ public abstract class StandardQuery implements QueryBuilder {
 		return this;
 	}
 
-	public boolean getDismax() {
-		return queryBuilder.getDismax();
-	}
-
-	public StandardQuery setDismax(boolean dismax) {
-		queryBuilder.setDismax(dismax);
-		return this;
-	}
-
-	public float getDismaxTie() {
-		return queryBuilder.getDismaxTie();
-	}
-
-	public StandardQuery setDismaxTie(float dismaxTie) {
-		queryBuilder.setDismaxTie(dismaxTie);
-		return this;
-	}
-
 	@Override
 	public ZuliaQuery.Query getQuery() {
 		completeQuery(queryBuilder);
 		return queryBuilder.build();
 
-	}
-
-	public void setLegacy() {
-		queryBuilder.setLegacy(true);
-	}
-
-	public void unsetLegacy() {
-		queryBuilder.clearLegacy();
 	}
 
 	protected abstract void completeQuery(ZuliaQuery.Query.Builder queryBuilder);

@@ -36,6 +36,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 
 /**
  * Created by Payam Meyer on 8/7/17.
+ *
  * @author pmeyer
  */
 @Controller(ZuliaConstants.QUERY_URL)
@@ -102,12 +103,6 @@ public class QueryController {
 			}
 			if (mm != null) {
 				mainQueryBuilder.setMm(mm);
-			}
-			if (dismax != null) {
-				mainQueryBuilder.setDismax(dismax);
-				if (dismaxTie != null) {
-					mainQueryBuilder.setDismaxTie(dismaxTie);
-				}
 			}
 			if (queryFields != null) {
 				mainQueryBuilder.addAllQf(queryFields);
@@ -378,8 +373,8 @@ public class QueryController {
 					return HttpResponse.ok(response.toString()).status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 				}
 				else {
-					return HttpResponse
-							.ok("Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0")
+					return HttpResponse.ok(
+									"Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0")
 							.status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 				}
 			}

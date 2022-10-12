@@ -7,7 +7,7 @@ option java_package = "io.zulia.message";
 
 message Query {
 
-    reserved 9; //old vectorSimilarity
+    reserved 6,7,9, 12; //old dismax,dismaxTie,vectorSimilarity,legacy
 
     enum QueryType {
         FILTER = 0;
@@ -32,16 +32,11 @@ message Query {
     repeated string qf = 4;
     uint32 mm = 5; // default 0
 
-    bool dismax = 6;
-    float dismaxTie = 7; // default 0
-
     repeated string term = 8;
 
     repeated float vector = 10;
 
     string scoreFunction = 11;
-
-    bool legacy = 12;
 
     uint32 vectorTopN = 13;
 

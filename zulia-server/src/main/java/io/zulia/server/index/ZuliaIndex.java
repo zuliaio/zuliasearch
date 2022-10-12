@@ -33,7 +33,6 @@ import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.search.queryparser.ZuliaParser;
-import io.zulia.server.search.queryparser.legacy.ZuliaLegacyMultiFieldQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
@@ -93,8 +92,6 @@ public class ZuliaIndex {
 	private final static Logger LOG = Logger.getLogger(ZuliaIndex.class.getSimpleName());
 
 	private final ServerIndexConfig indexConfig;
-
-	private final GenericObjectPool<ZuliaLegacyMultiFieldQueryParser> legacyParsers;
 	private final GenericObjectPool<ZuliaFlexibleQueryParser> parsers;
 	private final ConcurrentHashMap<Integer, ZuliaShard> primaryShardMap;
 	private final ConcurrentHashMap<Integer, ZuliaShard> replicaShardMap;
@@ -131,20 +128,6 @@ public class ZuliaIndex {
 		this.shardPool = Executors.newCachedThreadPool(new ZuliaThreadFactory(indexName + "-shards"));
 
 		this.zuliaPerFieldAnalyzer = new ZuliaPerFieldAnalyzer(indexConfig);
-
-		this.legacyParsers = new GenericObjectPool<>(new BasePooledObjectFactory<>() {
-
-			@Override
-			public ZuliaLegacyMultiFieldQueryParser create() {
-				return new ZuliaLegacyMultiFieldQueryParser(zuliaPerFieldAnalyzer, ZuliaIndex.this.indexConfig);
-			}
-
-			@Override
-			public PooledObject<ZuliaLegacyMultiFieldQueryParser> wrap(ZuliaLegacyMultiFieldQueryParser obj) {
-				return new DefaultPooledObject<>(obj);
-			}
-
-		});
 
 		this.parsers = new GenericObjectPool<>(new BasePooledObjectFactory<>() {
 
@@ -651,15 +634,8 @@ public class ZuliaIndex {
 			}
 
 			Query query;
-			boolean dismax = zuliaQuery.getDismax();
-			float dismaxTie = zuliaQuery.getDismaxTie();
 
-			if (zuliaQuery.getLegacy()) {
-				query = parseWithLegacyQueryParser(queryText, minimumShouldMatchNumber, defaultOperator, defaultSearchFieldList, dismax, dismaxTie);
-			}
-			else {
-				query = parseWithQueryParser(queryText, minimumShouldMatchNumber, defaultOperator, defaultSearchFieldList, dismax);
-			}
+			query = parseWithQueryParser(queryText, minimumShouldMatchNumber, defaultOperator, defaultSearchFieldList);
 
 			boolean negative = QueryUtil.isNegative(query);
 			if (negative) {
@@ -674,7 +650,7 @@ public class ZuliaIndex {
 	}
 
 	private Query parseWithQueryParser(String queryText, int minimumShouldMatchNumber, ZuliaQuery.Query.Operator defaultOperator,
-			Collection<String> defaultSearchFieldList, boolean dismax) throws Exception {
+			Collection<String> defaultSearchFieldList) throws Exception {
 		Query query;
 		ZuliaFlexibleQueryParser qp = null;
 		try {
@@ -682,38 +658,11 @@ public class ZuliaIndex {
 			qp.setMinimumNumberShouldMatch(minimumShouldMatchNumber);
 			qp.setDefaultOperator(defaultOperator);
 			qp.setDefaultFields(defaultSearchFieldList);
-			if (dismax) {
-				throw new IllegalArgumentException("Dismax is only supported in legacy query parser");
-			}
 
 			query = qp.parse(queryText);
 		}
 		finally {
 			parsers.returnObject(qp);
-		}
-		return query;
-	}
-
-	private Query parseWithLegacyQueryParser(String queryText, int minimumShouldMatchNumber, ZuliaQuery.Query.Operator defaultOperator,
-			Collection<String> defaultSearchFieldList, boolean dismax, float dismaxTie) throws Exception {
-
-		Query query;
-		ZuliaLegacyMultiFieldQueryParser qp = null;
-		try {
-			qp = legacyParsers.borrowObject();
-			qp.setMinimumNumberShouldMatch(minimumShouldMatchNumber);
-			qp.setDefaultOperator(defaultOperator);
-			qp.setDefaultFields(defaultSearchFieldList);
-			if (dismax) {
-				qp.enableDismax(dismaxTie);
-			}
-			else {
-				qp.disableDismax();
-			}
-			query = qp.parse(queryText);
-		}
-		finally {
-			legacyParsers.returnObject(qp);
 		}
 		return query;
 	}
