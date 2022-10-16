@@ -23,6 +23,10 @@ micronaut:
       swagger-ui:
         paths: classpath:META-INF/swagger/views/swagger-ui
         mapping: /swagger-ui/**
+      default:
+        enabled: true
+        mapping: "/**"
+        paths: classpath:static
 endpoints:
   routes:
     enabled: true
