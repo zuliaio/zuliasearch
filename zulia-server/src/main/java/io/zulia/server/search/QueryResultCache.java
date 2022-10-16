@@ -23,7 +23,8 @@ public class QueryResultCache {
 		return pinnedCacheHit;
 	}
 
-	public void storeInCache(QueryCacheKey queryCacheKey, ShardQueryResponse shardQueryResponse) {
+	public void storeInCache(QueryCacheKey queryCacheKey, ShardQueryResponse.Builder shardQueryResponseBuilder) {
+		ShardQueryResponse shardQueryResponse = shardQueryResponseBuilder.setCached(true).build();
 		if (queryCacheKey.isPinned()) {
 			pinnedQueryResultCache.put(queryCacheKey, shardQueryResponse);
 		}

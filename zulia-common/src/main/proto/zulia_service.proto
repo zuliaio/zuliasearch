@@ -84,6 +84,8 @@ message QueryResponse {
     repeated FacetGroup facetGroup = 4;
     repeated AnalysisResult analysisResult = 5;
     repeated StatGroup statGroup = 6;
+    bool fullyCached = 7;
+    int32 shardsCached = 8;
 }
 
 message InternalQueryResponse {

@@ -147,7 +147,6 @@ public class ShardReader implements AutoCloseable {
 			ZuliaQuery.ShardQueryResponse cacheShardResponse = qrc.getCachedShardQueryResponse(queryCacheKey);
 			if (cacheShardResponse != null) {
 				LOG.info("Returning results from cache for query <" + query + "> from index <" + indexName + "> with shard number <" + shardNumber + ">");
-				return cacheShardResponse;
 			}
 		}
 
@@ -252,11 +251,11 @@ public class ShardReader implements AutoCloseable {
 			}
 		}
 
-		ZuliaQuery.ShardQueryResponse segmentResponse = shardQueryReponseBuilder.build();
+		ZuliaQuery.ShardQueryResponse shardQueryResponse = shardQueryReponseBuilder.build();
 		if (useCache) {
-			qrc.storeInCache(queryCacheKey, segmentResponse);
+			qrc.storeInCache(queryCacheKey, shardQueryReponseBuilder);
 		}
-		return segmentResponse;
+		return shardQueryResponse;
 
 	}
 
