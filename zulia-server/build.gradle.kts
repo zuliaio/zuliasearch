@@ -58,7 +58,7 @@ dependencies {
     testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.4.5")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.4.11")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
     api("org.yaml:snakeyaml:$snakeYamlVersion")
@@ -67,10 +67,15 @@ dependencies {
     //implementation("org.graalvm.js:js:21.3.1")
 }
 
+tasks.withType<JavaCompile> {
+    options.isFork = true
+    options.forkOptions.jvmArgs?.addAll(listOf("-Dmicronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.theme=flattop"))
+}
+
+
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
 zuliaScriptTask.applicationName = "zulia"
 zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
-
 
 val zuliaAdminScriptTask = tasks.register<CreateStartScripts>("createZuliaAdminScript") {
     applicationName = "zuliaadmin"
