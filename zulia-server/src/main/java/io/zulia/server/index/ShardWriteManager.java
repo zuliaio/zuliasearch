@@ -36,6 +36,8 @@ public class ShardWriteManager {
 	private Long lastCommit;
 	private Long lastChange;
 
+	private Long lastWarm;
+
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 
@@ -53,6 +55,7 @@ public class ShardWriteManager {
 		this.counter = new AtomicLong();
 		this.lastCommit = null;
 		this.lastChange = null;
+		this.lastWarm = null;
 
 		openIndexWriter(pathToIndex);
 		openTaxoWriter(pathToTaxoIndex);
@@ -133,15 +136,46 @@ public class ShardWriteManager {
 	public boolean needsIdleCommit() {
 		long currentTime = System.currentTimeMillis();
 
-		Long lastCh = lastChange;
-		// if changes since started
+		long msIdleWithoutCommit = indexConfig.getIndexSettings().getIdleTimeWithoutCommit() * 1000L;
 
-		if (lastCh != null) {
-			if ((currentTime - lastCh) > (indexConfig.getIndexSettings().getIdleTimeWithoutCommit() * 1000L)) {
-				return (lastCommit == null) || (lastCh > lastCommit);
+		//reassign so it can't change in the middle of the logic
+		Long lastChange = this.lastChange;
+
+		if (lastChange != null) { // if there has been a commit
+			long timeSinceLastChange = currentTime - lastChange;
+			if (timeSinceLastChange > msIdleWithoutCommit) {
+				//if there has never been a commit or the last change is after the last commit
+				return (lastCommit == null) || (lastChange > lastCommit);
 			}
 		}
 		return false;
+	}
+
+	public boolean needsSearchWarming() {
+		long currentTime = System.currentTimeMillis();
+
+		long msAfterCommitToWarm = indexConfig.getIndexSettings().getIdleTimeWithoutCommit() * 1000L;
+
+		//reassign so it can't change in the middle of the logic
+		Long lastChange = this.lastChange;
+		Long lastCommit = this.lastCommit;
+		Long lastWarm = this.lastWarm;
+
+		if (lastCommit != null) { // if there has been a commit
+			if (lastChange < lastCommit) { // no changes since last commit
+				long timeSinceLastCommit = currentTime - lastCommit;
+				if (timeSinceLastCommit > msAfterCommitToWarm) {
+					//if there has never been a warming or the last commit is after the last warming
+					return (lastWarm == null) || (lastCommit > lastWarm);
+				}
+			}
+		}
+
+		return false;
+	}
+
+	public void searchesWarmed() {
+		lastWarm = System.currentTimeMillis();
 	}
 
 	public boolean markedChangedCheckIfCommitNeeded() {
