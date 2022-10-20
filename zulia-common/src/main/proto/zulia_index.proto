@@ -55,6 +55,8 @@ message IndexSettings {
     // is also removes proto file dependencies between index and query
     repeated bytes warmingSearches = 19;
 
+    uint32 commitToWarmTime = 20; // default 5
+
 }
 
 

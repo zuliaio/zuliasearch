@@ -66,6 +66,8 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 			indexSettings.setIdleTimeWithoutCommit(5);
 		}
 
+
+
 		if (indexSettings.getShardTolerance() < 0) {
 			throw new IllegalArgumentException("Shard Tolerance must be positive");
 		}
@@ -93,6 +95,14 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 		else if (indexSettings.getShardCommitInterval() == 0) {
 			indexSettings.setShardCommitInterval(3200);
 		}
+
+		if (indexSettings.getCommitToWarmTime() < 0) {
+			throw new IllegalArgumentException("Idle Time Without Commit must be positive");
+		}
+		else if (indexSettings.getCommitToWarmTime() == 0) {
+			indexSettings.setCommitToWarmTime(5);
+		}
+
 
 		HashSet<String> storedFields = new HashSet<>();
 

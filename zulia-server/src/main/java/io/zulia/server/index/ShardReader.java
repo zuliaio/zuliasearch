@@ -15,8 +15,8 @@ import io.zulia.server.analysis.similarity.ConstantSimilarity;
 import io.zulia.server.analysis.similarity.TFSimilarity;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
-import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.QueryResultCache;
+import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.TaxonomyStatsHandler;
 import io.zulia.server.search.queryparser.ZuliaParser;
 import io.zulia.server.util.FieldAndSubFields;
@@ -135,67 +135,64 @@ public class ShardReader implements AutoCloseable {
 		return indexReader.numDocs();
 	}
 
-	public ZuliaQuery.ShardQueryResponse queryShard(Query query, Map<String, ZuliaBase.Similarity> similarityOverrideMap, int amount, FieldDoc after,
-			ZuliaQuery.FacetRequest facetRequest, ZuliaQuery.SortRequest sortRequest, QueryCacheKey queryCacheKey, ZuliaQuery.FetchType resultFetchType,
-			List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaQuery.HighlightRequest> highlightList,
-			List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug) throws Exception {
+	public ZuliaQuery.ShardQueryResponse queryShard(ShardQuery shardQuery) throws Exception {
 
 		QueryResultCache qrc = queryResultCache;
 
-		boolean useCache = (qrc != null) && ((segmentQueryCacheMaxAmount <= 0) || (segmentQueryCacheMaxAmount >= amount)) && queryCacheKey != null;
+		boolean useCache = (qrc != null) && ((segmentQueryCacheMaxAmount <= 0) || (segmentQueryCacheMaxAmount >= shardQuery.getAmount())) && shardQuery.getQueryCacheKey() != null;
 		if (useCache) {
-			ZuliaQuery.ShardQueryResponse cacheShardResponse = qrc.getCachedShardQueryResponse(queryCacheKey);
+			ZuliaQuery.ShardQueryResponse cacheShardResponse = qrc.getCachedShardQueryResponse(shardQuery.getQueryCacheKey());
 			if (cacheShardResponse != null) {
-				LOG.info("Returning results from cache for query <" + query + "> from index <" + indexName + "> with shard number <" + shardNumber + ">");
+				LOG.info("Returning results from cache for query <" + shardQuery.getQuery() + "> from index <" + indexName + "> with shard number <" + shardNumber + ">");
 			}
 		}
 
-		PerFieldSimilarityWrapper similarity = getSimilarity(similarityOverrideMap);
+		PerFieldSimilarityWrapper similarity = getSimilarity(shardQuery.getSimilarityOverrideMap());
 
 		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
 
 		//similarity is only set query time, indexing time all these similarities are the same
 		indexSearcher.setSimilarity(similarity);
 
-		if (debug) {
-			LOG.info("Lucene Query for index <" + indexName + "> segment <" + shardNumber + ">: " + query);
-			LOG.info("Rewritten Query for index <" + indexName + "> segment <" + shardNumber + ">: " + indexSearcher.rewrite(query));
+		if (shardQuery.isDebug()) {
+			LOG.info("Lucene Query for index <" + indexName + "> segment <" + shardNumber + ">: " + shardQuery.getQuery());
+			LOG.info("Rewritten Query for index <" + indexName + "> segment <" + shardNumber + ">: " + indexSearcher.rewrite(shardQuery.getQuery()));
 		}
 
-		int hasMoreAmount = amount + 1;
+		int hasMoreAmount = shardQuery.getAmount() + 1;
 
 		TopDocsCollector<?> collector;
 
-		boolean sorting = (sortRequest != null) && !sortRequest.getFieldSortList().isEmpty();
+		boolean sorting = (shardQuery.getSortRequest() != null) && !shardQuery.getSortRequest().getFieldSortList().isEmpty();
 
 		if (sorting) {
-			collector = getSortingCollector(sortRequest, hasMoreAmount, after);
+			collector = getSortingCollector(shardQuery.getSortRequest(), hasMoreAmount, shardQuery.getAfter(shardNumber));
 		}
 		else {
-			collector = TopScoreDocCollector.create(hasMoreAmount, after, Integer.MAX_VALUE);
+			collector = TopScoreDocCollector.create(hasMoreAmount,  shardQuery.getAfter(shardNumber), Integer.MAX_VALUE);
 		}
 
 		ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder = ZuliaQuery.ShardQueryResponse.newBuilder();
 
 		try {
-			boolean hasFacetRequests = (facetRequest != null) && !facetRequest.getCountRequestList().isEmpty();
-			boolean hasStatRequests = (facetRequest != null) && !facetRequest.getStatRequestList().isEmpty();
+			boolean hasFacetRequests = (shardQuery.getFacetRequest() != null) && !shardQuery.getFacetRequest().getCountRequestList().isEmpty();
+			boolean hasStatRequests = (shardQuery.getFacetRequest() != null) && !shardQuery.getFacetRequest().getStatRequestList().isEmpty();
 
 			if (hasFacetRequests || hasStatRequests) {
 				FacetsCollector facetsCollector = new FacetsCollector();
-				indexSearcher.search(query, MultiCollector.wrap(collector, facetsCollector));
+				indexSearcher.search(shardQuery.getQuery(), MultiCollector.wrap(collector, facetsCollector));
 
 				if (hasFacetRequests) {
-					List<ZuliaQuery.FacetGroup> facetGroups = handleFacets(facetRequest.getCountRequestList(), facetsCollector);
+					List<ZuliaQuery.FacetGroup> facetGroups = handleFacets(shardQuery.getFacetRequest().getCountRequestList(), facetsCollector);
 					shardQueryReponseBuilder.addAllFacetGroup(facetGroups);
 				}
 				if (hasStatRequests) {
-					List<ZuliaQuery.StatGroup> statGroups = handleStats(facetRequest.getStatRequestList(), facetsCollector);
+					List<ZuliaQuery.StatGroup> statGroups = handleStats(shardQuery.getFacetRequest().getStatRequestList(), facetsCollector);
 					shardQueryReponseBuilder.addAllStatGroup(statGroups);
 				}
 			}
 			else {
-				indexSearcher.search(query, collector);
+				indexSearcher.search(shardQuery.getQuery(), collector);
 			}
 		}
 		catch (IllegalStateException e) {
@@ -211,7 +208,7 @@ public class ShardReader implements AutoCloseable {
 		TopDocs topDocs = collector.topDocs();
 		ScoreDoc[] results = topDocs.scoreDocs;
 		if (sorting && (collector.scoreMode() != ScoreMode.COMPLETE_NO_SCORES)) {
-			TopFieldCollector.populateScores(topDocs.scoreDocs, indexSearcher, query);
+			TopFieldCollector.populateScores(topDocs.scoreDocs, indexSearcher, shardQuery.getQuery());
 		}
 
 		int totalHits = collector.getTotalHits();
@@ -220,21 +217,21 @@ public class ShardReader implements AutoCloseable {
 
 		boolean moreAvailable = (results.length == hasMoreAmount);
 
-		int numResults = Math.min(results.length, amount);
+		int numResults = Math.min(results.length, shardQuery.getAmount());
 
-		List<ZuliaHighlighter> highlighterList = getHighlighterList(highlightList, query);
+		List<ZuliaHighlighter> highlighterList = getHighlighterList(shardQuery.getHighlightList(), shardQuery.getQuery());
 
-		List<AnalysisHandler> analysisHandlerList = getAnalysisHandlerList(analysisRequestList);
+		List<AnalysisHandler> analysisHandlerList = getAnalysisHandlerList(shardQuery.getAnalysisRequestList());
 
 		for (int i = 0; i < numResults; i++) {
-			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, sortRequest, sorting, results, i, resultFetchType, fieldsToReturn,
-					fieldsToMask, highlighterList, analysisHandlerList);
+			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, shardQuery.getSortRequest(), sorting, results, i, shardQuery.getResultFetchType(), shardQuery.getFieldsToReturn(),
+					shardQuery.getFieldsToMask(), highlighterList, analysisHandlerList);
 
 			shardQueryReponseBuilder.addScoredResult(srBuilder.build());
 		}
 
 		if (moreAvailable) {
-			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, sortRequest, sorting, results, numResults, ZuliaQuery.FetchType.NONE,
+			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, shardQuery.getSortRequest(), sorting, results, numResults, ZuliaQuery.FetchType.NONE,
 					Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 			shardQueryReponseBuilder.setNext(srBuilder);
 		}
@@ -253,7 +250,7 @@ public class ShardReader implements AutoCloseable {
 
 		ZuliaQuery.ShardQueryResponse shardQueryResponse = shardQueryReponseBuilder.build();
 		if (useCache) {
-			qrc.storeInCache(queryCacheKey, shardQueryReponseBuilder);
+			qrc.storeInCache(shardQuery.getQueryCacheKey(), shardQueryReponseBuilder);
 		}
 		return shardQueryResponse;
 
@@ -794,10 +791,9 @@ public class ShardReader implements AutoCloseable {
 
 		ZuliaBase.ResultDocument rd = null;
 
-		Query query = new TermQuery(new org.apache.lucene.index.Term(ZuliaConstants.ID_FIELD, uniqueId));
+		ShardQuery shardQuery = ShardQuery.queryById(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
 
-		ZuliaQuery.ShardQueryResponse segmentResponse = this.queryShard(query, null, 1, null, null, null, null, resultFetchType, fieldsToReturn, fieldsToMask,
-				Collections.emptyList(), Collections.emptyList(), false);
+		ZuliaQuery.ShardQueryResponse segmentResponse = this.queryShard(shardQuery);
 
 		List<ZuliaQuery.ScoredResult> scoredResultList = segmentResponse.getScoredResultList();
 		if (!scoredResultList.isEmpty()) {
@@ -823,6 +819,8 @@ public class ShardReader implements AutoCloseable {
 		return rdBuilder.build();
 
 	}
+
+
 
 	private ZuliaBase.ResultDocument filterDocument(ZuliaBase.ResultDocument rd, Collection<String> fieldsToReturn, Collection<String> fieldsToMask,
 			org.bson.Document mongoDocument) {
@@ -981,5 +979,6 @@ public class ShardReader implements AutoCloseable {
 
 		}
 	}
+
 
 }
