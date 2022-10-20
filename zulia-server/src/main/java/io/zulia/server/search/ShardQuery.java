@@ -9,7 +9,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,9 +27,10 @@ public class ShardQuery {
 	List<ZuliaQuery.AnalysisRequest> analysisRequestList;
 	boolean debug;
 
-	public ShardQuery(Query query, Map<String, ZuliaBase.Similarity> similarityOverrideMap, int amount, HashMap<Integer, FieldDoc> shardToAfter, ZuliaQuery.FacetRequest facetRequest,
-			ZuliaQuery.SortRequest sortRequest, QueryCacheKey queryCacheKey, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,
-			List<String> fieldsToMask, List<ZuliaQuery.HighlightRequest> highlightList, List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug) {
+	public ShardQuery(Query query, Map<String, ZuliaBase.Similarity> similarityOverrideMap, int amount, Map<Integer, FieldDoc> shardToAfter,
+			ZuliaQuery.FacetRequest facetRequest, ZuliaQuery.SortRequest sortRequest, QueryCacheKey queryCacheKey, ZuliaQuery.FetchType resultFetchType,
+			List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaQuery.HighlightRequest> highlightList,
+			List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug) {
 		this.query = query;
 		this.similarityOverrideMap = similarityOverrideMap;
 		this.amount = amount;
@@ -48,8 +48,8 @@ public class ShardQuery {
 
 	public static ShardQuery queryById(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask) {
 		Query query = new TermQuery(new Term(ZuliaConstants.ID_FIELD, uniqueId));
-		return new ShardQuery(query, null, 1, null, null, null, null, resultFetchType, fieldsToReturn, fieldsToMask, Collections.emptyList(),
-				Collections.emptyList(), false);
+		return new ShardQuery(query, null, 1, Collections.<Integer, FieldDoc>emptyMap(), null, null, null, resultFetchType, fieldsToReturn, fieldsToMask,
+				Collections.emptyList(), Collections.emptyList(), false);
 	}
 
 	public Query getQuery() {
