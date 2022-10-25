@@ -16,6 +16,9 @@
  */
 package io.zulia.server.search;
 
+import com.datadoghq.sketch.ddsketch.DDSketch;
+import com.datadoghq.sketch.ddsketch.DDSketches;
+import com.google.gson.Gson;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
@@ -44,16 +47,20 @@ public class TaxonomyStatsHandler {
 
 	protected final Stats[][] fieldFacetStats;
 	protected final Stats[] fieldStats;
+	protected final DDSketch[][] fieldFacetSketches;
+	protected final DDSketch[] fieldSketches;
 
 	private final List<String> fieldsList;
 	private final TaxonomyReader taxoReader;
 	private final List<ZuliaIndex.FieldConfig.FieldType> fieldTypes;
 	private final ServerIndexConfig serverIndexConfig;
+	private final double errorThreshold;
 	private int[] children;
 	private int[] siblings;
 
 	public TaxonomyStatsHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests, ServerIndexConfig serverIndexConfig)
 			throws IOException {
+		this.errorThreshold = 0.001;
 		this.serverIndexConfig = serverIndexConfig;
 
 		Set<String> numericFields = statRequests.stream().map(ZuliaQuery.StatRequest::getNumericField).collect(Collectors.toSet());
@@ -76,26 +83,31 @@ public class TaxonomyStatsHandler {
 		this.fieldsList = new ArrayList<>(numericFields);
 
 		if (facetLevel) {
+			this.fieldFacetSketches = new DDSketch[fieldsList.size()][taxoReader.getSize()];
 			this.fieldFacetStats = new Stats[fieldsList.size()][taxoReader.getSize()];
 			this.taxoReader = taxoReader;
 		}
 		else {
+			this.fieldFacetSketches = null;
 			this.fieldFacetStats = null;
 			this.taxoReader = null;
 		}
-
+		// TODO(Ian): This needs to be handled right
 		if (global) {
+			this.fieldSketches = new DDSketch[fieldsList.size()];
 			this.fieldStats = new Stats[fieldsList.size()];
 			for (int i = 0; i < fieldStats.length; i++) {
+				this.fieldSketches[i] = DDSketches.unboundedDense(errorThreshold);
 				this.fieldStats[i] = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldTypes.get(i)));
 			}
 		}
 		else {
 			this.fieldStats = null;
+			this.fieldSketches = null;
 		}
 
 		sumValues(fc.getMatchingDocs(), fieldsList);
-
+		System.out.println("Stats");
 	}
 
 	private void sumValues(List<MatchingDocs> matchingDocs, List<String> fieldsList) throws IOException {
@@ -118,7 +130,7 @@ public class TaxonomyStatsHandler {
 			DocIdSetIterator docs = hits.bits.iterator();
 
 			SortedNumericDocValues ordinalValues = null;
-			if (fieldFacetStats != null) {
+			if (fieldFacetStats != null || fieldFacetSketches != null) {
 				ordinalValues = FacetUtils.loadOrdinalValues(hits.context.reader(), FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
 				docs = ConjunctionUtils.intersectIterators(List.of(hits.bits.iterator(), ordinalValues));
 			}
@@ -155,6 +167,7 @@ public class TaxonomyStatsHandler {
 
 						if (ordinalCount != -1) {
 
+							// TODO(Ian): Remove Duplicate
 							for (int i = 0; i < ordinalCount; i++) {
 								int ordIndex = ordinalDocValues[i];
 								Stats stats = fieldFacetStats[f][ordIndex];
@@ -164,6 +177,16 @@ public class TaxonomyStatsHandler {
 								}
 								stats.newDoc(true);
 							}
+							// Uses sketches instead of stats
+							for (int i = 0; i < ordinalCount; i++) {
+								int ordIndex = ordinalDocValues[i];
+								DDSketch stats = fieldFacetSketches[f][ordIndex];
+								if (stats == null) {
+									stats = DDSketches.unboundedDense(this.errorThreshold);
+									fieldFacetSketches[f][ordIndex] = stats;
+								}
+							}
+							// TODO(Ian): Duplicated work
 							for (int j = 0; j < functionValue.docValueCount(); j++) {
 								for (int i = 0; i < ordinalCount; i++) {
 									int ordIndex = ordinalDocValues[i];
@@ -172,7 +195,17 @@ public class TaxonomyStatsHandler {
 								}
 
 							}
+							// Uses sketches instead of stats
+							for (int j = 0; j < functionValue.docValueCount(); j++) {
+								for (int i = 0; i < ordinalCount; i++) {
+									int ordIndex = ordinalDocValues[i];
+									DDSketch sketch = fieldFacetSketches[f][ordIndex];
+									convertAndAddToSketch(fieldType, numericValues[j], sketch);
+								}
+
+							}
 						}
+						//TODO(Ian): duplicate
 						if (fieldStats != null) {
 							Stats stats = fieldStats[f];
 							stats.newDoc(true);
@@ -180,9 +213,17 @@ public class TaxonomyStatsHandler {
 								addUpValue(fieldType, numericValues[j], stats);
 							}
 						}
+						// Add all values to sketch
+						if (fieldSketches != null) {
+							DDSketch sketch = fieldSketches[f];
+							for (int j = 0; j < functionValue.docValueCount(); j++) {
+								convertAndAddToSketch(fieldType, numericValues[j], sketch);
+							}
+						}
 					}
 					else {
 						if (ordinalCount != -1) {
+							//TODO(Ian): Duplicate code
 							for (int i = 0; i < ordinalCount; i++) {
 								int ordIndex = ordinalDocValues[i];
 								Stats stats = fieldFacetStats[f][ordIndex];
@@ -192,7 +233,16 @@ public class TaxonomyStatsHandler {
 								}
 								stats.newDoc(false);
 							}
+							for (int i = 0; i < ordinalCount; i++) {
+								int ordIndex = ordinalDocValues[i];
+								DDSketch stats = fieldFacetSketches[f][ordIndex];
+								if (stats == null) {
+									stats = DDSketches.unboundedDense(this.errorThreshold);
+									fieldFacetSketches[f][ordIndex] = stats;
+								}
+							}
 						}
+						// TODO(Ian): May still need to count null documents
 						if (fieldStats != null) {
 							Stats stats = fieldStats[f];
 							stats.newDoc(false);
@@ -221,12 +271,40 @@ public class TaxonomyStatsHandler {
 		}
 	}
 
+	/**
+	 * Convert the carrier type into the appropriate type for statistical analysis and store in the provided DDSketch
+	 *
+	 * @param fieldType Field type to convert to
+	 * @param value     Value stored as a long to be converted to appropriate type
+	 * @param sketch    Sketch to store this value in
+	 */
+	private void convertAndAddToSketch(ZuliaIndex.FieldConfig.FieldType fieldType, long value, DDSketch sketch) {
+		if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+			sketch.accept(NumericUtils.sortableLongToDouble(value));
+		}
+		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+			sketch.accept(NumericUtils.sortableIntToFloat((int) value));
+		}
+		else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+			sketch.accept(value);
+		}
+		else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+			sketch.accept((int) value);
+		}
+		else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
+			sketch.accept((int) value);
+		}
+	}
+
 	public ZuliaQuery.FacetStats getGlobalStatsForNumericField(String field) {
 		int fieldIndex = fieldsList.indexOf(field);
 
 		if (fieldIndex == -1) {
 			throw new IllegalArgumentException("Field <" + field + "> was not given in constructor");
 		}
+
+		Gson gson = new Gson();
+		String jsonStatObject = gson.toJson(fieldSketches[0]);
 
 		return createFacetStat(fieldStats[fieldIndex], "");
 	}

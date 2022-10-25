@@ -32,6 +32,7 @@ dependencies {
     annotationProcessor("info.picocli:picocli-codegen:4.6.3")
 
     implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
+    implementation("com.datadoghq:sketches-java:0.8.2")
 
     implementation("com.cedarsoftware:json-io:4.13.0")
 
@@ -63,6 +64,7 @@ dependencies {
 
     api("org.yaml:snakeyaml:$snakeYamlVersion")
     annotationProcessor("io.micronaut.openapi:micronaut-openapi")
+
 
     //implementation("org.graalvm.js:js:21.3.1")
 }
