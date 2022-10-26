@@ -6,8 +6,8 @@ import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexAlias;
-import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.message.ZuliaIndex.ShardMapping;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation;
@@ -181,7 +181,7 @@ public class ZuliaIndexManager {
 	private void loadIndex(IndexSettings indexSettings) throws Exception {
 		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " loading index <" + indexSettings.getIndexName() + ">");
 
-		IndexMapping indexMapping = indexService.getIndexMapping(indexSettings.getIndexName());
+		IndexShardMapping indexMapping = indexService.getIndexMapping(indexSettings.getIndexName());
 
 		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
 
@@ -260,7 +260,7 @@ public class ZuliaIndexManager {
 
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
 
-		List<IndexMapping> indexMappingList = indexService.getIndexMappings();
+		List<IndexShardMapping> indexMappingList = indexService.getIndexMappings();
 		List<IndexAlias> indexAliasesList = indexService.getIndexAliases();
 		if ((request.getActiveOnly())) {
 			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexMapping(indexMappingList)
@@ -335,7 +335,7 @@ public class ZuliaIndexManager {
 
 		String requestString = request.toString();
 
-		if (requestString.length() > (1024*1024)) {
+		if (requestString.length() > (1024 * 1024)) {
 			requestString = requestString.substring(0, 1024 * 1024) + "...";
 		}
 
@@ -354,7 +354,7 @@ public class ZuliaIndexManager {
 
 			indexSettings = indexSettings.toBuilder().setCreateTime(currentTimeMillis).build();
 
-			IndexMapping.Builder indexMapping = IndexMapping.newBuilder();
+			IndexShardMapping.Builder indexMapping = IndexShardMapping.newBuilder();
 			indexMapping.setIndexName(indexName);
 			indexMapping.setNumberOfShards(indexSettings.getNumberOfShards());
 

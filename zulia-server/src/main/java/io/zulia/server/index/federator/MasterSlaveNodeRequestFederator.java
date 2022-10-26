@@ -33,7 +33,7 @@ public abstract class MasterSlaveNodeRequestFederator<I, O> extends NodeRequestF
 		nodesAvailable.addAll(otherNodesActive);
 
 		for (ZuliaIndex index : indexes) {
-			io.zulia.message.ZuliaIndex.IndexMapping indexMapping = index.getIndexMapping();
+			io.zulia.message.ZuliaIndex.IndexShardMapping indexMapping = index.getIndexMapping();
 			MasterSlaveSelector masterSlaveSelector = new MasterSlaveSelector(masterSlaveSettings, nodesAvailable, indexMapping);
 
 			Map<Node, IndexRouting.Builder> nodesForIndex = masterSlaveSelector.getNodesForIndex();

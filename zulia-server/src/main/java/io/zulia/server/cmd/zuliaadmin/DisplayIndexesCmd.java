@@ -29,8 +29,8 @@ public class DisplayIndexesCmd implements Callable<Integer> {
 
 		if (detailed) {
 			HashMap<String, String> indexLocation = new HashMap<>();
-			List<ZuliaIndex.IndexMapping> indexMappings = zuliaWorkPool.getNodes().getIndexMappings();
-			for (ZuliaIndex.IndexMapping indexMapping : indexMappings) {
+			List<ZuliaIndex.IndexShardMapping> indexMappings = zuliaWorkPool.getNodes().getIndexMappings();
+			for (ZuliaIndex.IndexShardMapping indexMapping : indexMappings) {
 
 				StringBuilder sb = new StringBuilder();
 				for (ZuliaIndex.ShardMapping shardMapping : indexMapping.getShardMappingList()) {

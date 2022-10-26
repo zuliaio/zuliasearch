@@ -18,7 +18,7 @@ package io.zulia.server.search;
 
 import com.datadoghq.sketch.ddsketch.DDSketch;
 import com.datadoghq.sketch.ddsketch.DDSketches;
-import com.google.gson.Gson;
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
@@ -107,7 +107,6 @@ public class TaxonomyStatsHandler {
 		}
 
 		sumValues(fc.getMatchingDocs(), fieldsList);
-		System.out.println("Stats");
 	}
 
 	private void sumValues(List<MatchingDocs> matchingDocs, List<String> fieldsList) throws IOException {
@@ -303,10 +302,7 @@ public class TaxonomyStatsHandler {
 			throw new IllegalArgumentException("Field <" + field + "> was not given in constructor");
 		}
 
-		Gson gson = new Gson();
-		String jsonStatObject = gson.toJson(fieldSketches[0]);
-
-		return createFacetStat(fieldStats[fieldIndex], "");
+		return createFacetStat(fieldStats[fieldIndex], fieldSketches[fieldIndex], "");
 	}
 
 	public List<ZuliaQuery.FacetStats> getTopChildren(String field, int topN, String dim, String... path) throws IOException {
@@ -373,19 +369,28 @@ public class TaxonomyStatsHandler {
 			Stats stat = q.pop();
 			FacetLabel child = taxoReader.getPath(stat.ordinal);
 			String label = child.components[cp.length];
-			facetStats[i] = createFacetStat(stat, label);
+			facetStats[i] = createFacetStat(stat, null, label);
 		}
 
 		return Arrays.asList(facetStats);
 	}
 
-	private ZuliaQuery.FacetStats createFacetStat(Stats stat, String label) {
+	private ZuliaQuery.FacetStats createFacetStat(Stats stat, DDSketch sketch, String label) {
 		ZuliaQuery.SortValue sum = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longSum).setDoubleValue(stat.doubleSum).build();
 		ZuliaQuery.SortValue min = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMinValue).setDoubleValue(stat.doubleMinValue).build();
 		ZuliaQuery.SortValue max = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMaxValue).setDoubleValue(stat.doubleMaxValue).build();
 
+		com.datadoghq.sketch.ddsketch.proto.DDSketch protoSketch;
+		try {
+			protoSketch = com.datadoghq.sketch.ddsketch.proto.DDSketch.parseFrom(sketch.serialize());
+		}
+		catch (InvalidProtocolBufferException ex) {
+			// TODO(Ian): Do we use logging of errors?
+			protoSketch = null;
+		}
+
 		return ZuliaQuery.FacetStats.newBuilder().setFacet(label).setDocCount(stat.docCount).setAllDocCount(stat.allDocCount).setValueCount(stat.valueCount)
-				.setSum(sum).setMin(min).setMax(max).build();
+				.setSum(sum).setMin(min).setMax(max).setStatSketch(protoSketch).build();
 
 	}
 

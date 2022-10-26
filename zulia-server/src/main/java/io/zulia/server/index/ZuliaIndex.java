@@ -9,8 +9,8 @@ import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaIndex.FieldConfig;
-import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.message.ZuliaIndex.ShardMapping;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.Facet;
@@ -108,11 +108,11 @@ public class ZuliaIndex {
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 
-	private final IndexMapping indexMapping;
+	private final IndexShardMapping indexMapping;
 	private final FacetsConfig facetsConfig;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService,
-			IndexMapping indexMapping) {
+			IndexShardMapping indexMapping) {
 
 		this.zuliaConfig = zuliaConfig;
 		this.indexConfig = indexConfig;
@@ -1123,7 +1123,7 @@ public class ZuliaIndex {
 
 	}
 
-	public IndexMapping getIndexMapping() {
+	public IndexShardMapping getIndexMapping() {
 		return indexMapping;
 	}
 

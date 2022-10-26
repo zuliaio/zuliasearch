@@ -15,7 +15,7 @@ public class QuantileTests {
 		//		List<Double> vals = getValueArray(5000.0, 1E+9);
 		System.out.println("Building: ");
 		long startTime = System.nanoTime();
-		populateData(5000.0, 1E+7, sketch);
+		populateData(50000.0, 1E+7, sketch);
 		//
 		//		// Adding values to the sketch
 		//		sketch.accept(3.2); // adds a single value
@@ -42,7 +42,7 @@ public class QuantileTests {
 		// Merging another sketch into the sketch, in-place
 		System.out.println("Building another...");
 		DDSketch anotherSketch = DDSketches.unboundedDense(relativeAccuracy);
-		populateData(25000.0, 1E+8, anotherSketch);
+		populateData(25000.0, 1E+6, anotherSketch);
 		System.out.println("Merging...");
 		sketch.mergeWith(anotherSketch);
 		System.out.println("Sketch 2: ");
@@ -57,6 +57,7 @@ public class QuantileTests {
 		System.out.println(sketch.getValueAtQuantile(0.9)); // returns the median value
 		System.out.println(sketch.getMinValue());
 		System.out.println(sketch.getMaxValue());
+		System.out.println(sketch.serializedSize());
 	}
 
 	public static List<Double> getValueArray(Double max, double numValues) {

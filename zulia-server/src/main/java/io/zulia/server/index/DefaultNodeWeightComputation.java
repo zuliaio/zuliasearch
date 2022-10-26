@@ -3,8 +3,8 @@ package io.zulia.server.index;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex;
-import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.server.config.IndexService;
 
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class DefaultNodeWeightComputation implements NodeWeightComputation {
 
 		nodeWeightMap = new HashMap<>();
 
-		for (IndexMapping indexMapping : indexService.getIndexMappings()) {
+		for (IndexShardMapping indexMapping : indexService.getIndexMappings()) {
 			Integer weightForIndex = weightMap.get(indexMapping.getIndexName());
 			if (weightForIndex == null) {
 				//index has an index mapping but not an index settings

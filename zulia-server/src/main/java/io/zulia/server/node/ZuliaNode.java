@@ -65,7 +65,7 @@ public class ZuliaNode {
 	}
 
 	public void start(boolean startREST) throws Exception {
-		LOG.info(getLogPrefix() + "starting");
+		LOG.info(getLogPrefix() + "starting release candidate");
 		MembershipTask membershipTask = new MembershipTask(zuliaConfig, nodeService) {
 
 			@Override
@@ -95,7 +95,7 @@ public class ZuliaNode {
 		started = true;
 	}
 
-	public void shutdown()  {
+	public void shutdown() {
 		LOG.info(getLogPrefix() + "stopping");
 		membershipTimer.cancel();
 		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
