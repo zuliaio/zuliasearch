@@ -24,20 +24,20 @@ public class IndexRouting {
 	private Map<String, Map<Integer, Node>> indexMapping = new HashMap<>();
 	private Map<String, Integer> shardCountMapping = new HashMap<>();
 
-	public IndexRouting(List<IndexShardMapping> indexMappings, List<IndexAlias> indexAliases) {
+	public IndexRouting(List<IndexShardMapping> indexShardMappings, List<IndexAlias> indexAliases) {
 
 		for (IndexAlias indexAlias : indexAliases) {
 			aliasToIndex.put(indexAlias.getAliasName(), indexAlias.getIndexName());
 		}
 
-		for (IndexShardMapping im : indexMappings) {
+		for (IndexShardMapping ism : indexShardMappings) {
 			Map<Integer, Node> segmentMapping = new HashMap<>();
-			for (ShardMapping sg : im.getShardMappingList()) {
+			for (ShardMapping sg : ism.getShardMappingList()) {
 				// TODO: Does this need to know primary or replica?
 				segmentMapping.put(sg.getShardNumber(), sg.getPrimaryNode());
 			}
-			shardCountMapping.put(im.getIndexName(), im.getNumberOfShards());
-			indexMapping.put(im.getIndexName(), segmentMapping);
+			shardCountMapping.put(ism.getIndexName(), ism.getNumberOfShards());
+			indexMapping.put(ism.getIndexName(), segmentMapping);
 		}
 	}
 

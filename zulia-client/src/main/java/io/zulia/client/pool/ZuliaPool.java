@@ -140,14 +140,14 @@ public class ZuliaPool {
 		return node.getServerAddress() + ":" + node.getServicePort();
 	}
 
-	public void updateIndexMappings(List<IndexShardMapping> indexMappings, List<ZuliaIndex.IndexAlias> indexAliases) {
-		indexRouting = new IndexRouting(indexMappings, indexAliases);
+	public void updateIndexMappings(List<IndexShardMapping> indexShardMappings, List<ZuliaIndex.IndexAlias> indexAliases) {
+		indexRouting = new IndexRouting(indexShardMappings, indexAliases);
 	}
 
 	public void updateNodesAndRouting() throws Exception {
 		GetNodesResult getNodesResult = execute(new GetNodes().setActiveOnly(true));
 		updateNodes(getNodesResult.getNodes());
-		updateIndexMappings(getNodesResult.getIndexMappings(), getNodesResult.getIndexAliases());
+		updateIndexMappings(getNodesResult.getIndexShardMappings(), getNodesResult.getIndexAliases());
 	}
 
 	public <R extends Result> R execute(BaseCommand<R> command) throws Exception {

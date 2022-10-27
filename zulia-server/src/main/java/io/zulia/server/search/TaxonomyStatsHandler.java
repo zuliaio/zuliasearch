@@ -380,17 +380,22 @@ public class TaxonomyStatsHandler {
 		ZuliaQuery.SortValue min = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMinValue).setDoubleValue(stat.doubleMinValue).build();
 		ZuliaQuery.SortValue max = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMaxValue).setDoubleValue(stat.doubleMaxValue).build();
 
-		com.datadoghq.sketch.ddsketch.proto.DDSketch protoSketch;
+		// Add the "always-specified" values first
+		ZuliaQuery.FacetStats.Builder builder = ZuliaQuery.FacetStats.newBuilder().setFacet(label).setDocCount(stat.docCount).setAllDocCount(stat.allDocCount)
+				.setValueCount(stat.valueCount).setSum(sum).setMin(min).setMax(max);
+
+		// Add stat sketch if specified
 		try {
-			protoSketch = com.datadoghq.sketch.ddsketch.proto.DDSketch.parseFrom(sketch.serialize());
+			if (sketch != null) {
+				builder.setStatSketch(com.datadoghq.sketch.ddsketch.proto.DDSketch.parseFrom(sketch.serialize()));
+			}
 		}
 		catch (InvalidProtocolBufferException ex) {
 			// TODO(Ian): Do we use logging of errors?
-			protoSketch = null;
 		}
 
-		return ZuliaQuery.FacetStats.newBuilder().setFacet(label).setDocCount(stat.docCount).setAllDocCount(stat.allDocCount).setValueCount(stat.valueCount)
-				.setSum(sum).setMin(min).setMax(max).setStatSketch(protoSketch).build();
+		// Build and return
+		return builder.build();
 
 	}
 

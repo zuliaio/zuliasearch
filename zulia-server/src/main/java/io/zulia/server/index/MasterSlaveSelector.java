@@ -17,36 +17,36 @@ public class MasterSlaveSelector {
 
 	private final MasterSlaveSettings masterSlaveSettings;
 	private final List<Node> nodes;
-	private IndexShardMapping indexMapping;
+	private IndexShardMapping indexShardMapping;
 
 	/**
 	 * @param masterSlaveSettings - the master slave preference
 	 * @param nodes               - list of nodes to select from, order of the list determines secondary that is selected
-	 * @param indexMapping        -
+	 * @param indexShardMapping   -
 	 */
-	public MasterSlaveSelector(MasterSlaveSettings masterSlaveSettings, List<Node> nodes, IndexShardMapping indexMapping) {
+	public MasterSlaveSelector(MasterSlaveSettings masterSlaveSettings, List<Node> nodes, IndexShardMapping indexShardMapping) {
 		this.masterSlaveSettings = masterSlaveSettings;
 		this.nodes = nodes;
-		this.indexMapping = indexMapping;
+		this.indexShardMapping = indexShardMapping;
 	}
 
 	public Node getNodeForUniqueId(String uniqueId) throws ShardDoesNotExistException, ShardOfflineException {
-		int shardForUniqueId = getShardForUniqueId(uniqueId, indexMapping.getNumberOfShards());
+		int shardForUniqueId = getShardForUniqueId(uniqueId, indexShardMapping.getNumberOfShards());
 
-		for (ShardMapping shardMapping : indexMapping.getShardMappingList()) {
+		for (ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
 			if (shardMapping.getShardNumber() == shardForUniqueId) {
 				return getNodeFromShardMapping(shardMapping);
 			}
 		}
 
-		throw new ShardDoesNotExistException(indexMapping.getIndexName(), shardForUniqueId);
+		throw new ShardDoesNotExistException(indexShardMapping.getIndexName(), shardForUniqueId);
 
 	}
 
 	public Map<Node, IndexRouting.Builder> getNodesForIndex() throws ShardOfflineException {
 
 		Map<Node, IndexRouting.Builder> map = new HashMap<>();
-		for (io.zulia.message.ZuliaIndex.ShardMapping shardMapping : indexMapping.getShardMappingList()) {
+		for (io.zulia.message.ZuliaIndex.ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
 			Node selectedNode = getNodeFromShardMapping(shardMapping);
 			map.computeIfAbsent(selectedNode, (k) -> IndexRouting.newBuilder()).addShard(shardMapping.getShardNumber());
 		}
@@ -59,14 +59,14 @@ public class MasterSlaveSelector {
 		if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings)) {
 			selectedNode = getSelectMasterNode(shardMapping);
 			if (selectedNode == null) {
-				throw new ShardOfflineException(indexMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+				throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
 			}
 
 		}
 		else if (MasterSlaveSettings.SLAVE_ONLY.equals(masterSlaveSettings)) {
 			selectedNode = getSelectSlaveNode(shardMapping);
 			if (selectedNode == null) {
-				throw new ShardOfflineException(indexMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+				throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
 			}
 		}
 		else if (MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(masterSlaveSettings)) {
@@ -74,7 +74,7 @@ public class MasterSlaveSelector {
 			if (selectedNode == null) {
 				selectedNode = getSelectSlaveNode(shardMapping);
 				if (selectedNode == null) {
-					throw new ShardOfflineException(indexMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+					throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
 				}
 			}
 		}

@@ -20,8 +20,8 @@ public class GetNodesResult extends Result {
 		return getNodesResponse.getNodeList();
 	}
 
-	public List<IndexShardMapping> getIndexMappings() {
-		return getNodesResponse.getIndexMappingList();
+	public List<IndexShardMapping> getIndexShardMappings() {
+		return getNodesResponse.getIndexShardMappingList();
 	}
 
 	public List<IndexAlias> getIndexAliases() {

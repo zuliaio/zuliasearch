@@ -38,27 +38,27 @@ public interface IndexService {
 	/**
 	 * @return - returns all index mapping for a cluster
 	 */
-	List<IndexShardMapping> getIndexMappings() throws Exception;
+	List<IndexShardMapping> getIndexShardMappings() throws Exception;
 
 	/**
 	 * @param indexName - index name to fetch server mapping from
 	 * @return - index mapping for an index
 	 */
-	IndexShardMapping getIndexMapping(String indexName) throws Exception;
+	IndexShardMapping getIndexShardMapping(String indexName) throws Exception;
 
 	/**
 	 * Creates or updates index mapping
 	 *
-	 * @param indexMapping - index mapping to create or update
+	 * @param indexShardMapping - index mapping to create or update
 	 */
-	void storeIndexMapping(IndexShardMapping indexMapping) throws Exception;
+	void storeIndexShardMapping(IndexShardMapping indexShardMapping) throws Exception;
 
 	/**
 	 * remove an index mapping from the config storage
 	 *
 	 * @param indexName - index name of mapping to remove
 	 */
-	void removeIndexMapping(String indexName) throws Exception;
+	void removeIndexShardMapping(String indexName) throws Exception;
 
 	/**
 	 * @return - returns all index aliases for a cluster

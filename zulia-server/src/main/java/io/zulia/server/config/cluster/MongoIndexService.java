@@ -97,19 +97,19 @@ public class MongoIndexService implements IndexService {
 	}
 
 	@Override
-	public List<IndexShardMapping> getIndexMappings() throws Exception {
+	public List<IndexShardMapping> getIndexShardMappings() throws Exception {
 
-		List<IndexShardMapping> indexMappings = new ArrayList<>();
+		List<IndexShardMapping> indexShardMappings = new ArrayList<>();
 		for (Document doc : mappingCollection.find()) {
-			indexMappings.add(getIndexMappingFromDoc(doc));
+			indexShardMappings.add(getIndexMappingFromDoc(doc));
 		}
 
-		return indexMappings;
+		return indexShardMappings;
 
 	}
 
 	@Override
-	public IndexShardMapping getIndexMapping(String indexName) throws Exception {
+	public IndexShardMapping getIndexShardMapping(String indexName) throws Exception {
 		Document doc = mappingCollection.find(new Document(ID, indexName)).first();
 		if (doc == null) {
 			throw new IndexConfigDoesNotExistException(indexName);
@@ -119,14 +119,14 @@ public class MongoIndexService implements IndexService {
 	}
 
 	@Override
-	public void storeIndexMapping(IndexShardMapping indexMapping) throws Exception {
-		Document indexMappingDoc = new Document(ID, indexMapping.getIndexName()).append(INDEX_MAPPING,
-				Document.parse(JsonFormat.printer().print(indexMapping)));
-		mappingCollection.replaceOne(new Document(ID, indexMapping.getIndexName()), indexMappingDoc, new ReplaceOptions().upsert(true));
+	public void storeIndexShardMapping(IndexShardMapping indexShardMapping) throws Exception {
+		Document indexMappingDoc = new Document(ID, indexShardMapping.getIndexName()).append(INDEX_MAPPING,
+				Document.parse(JsonFormat.printer().print(indexShardMapping)));
+		mappingCollection.replaceOne(new Document(ID, indexShardMapping.getIndexName()), indexMappingDoc, new ReplaceOptions().upsert(true));
 	}
 
 	@Override
-	public void removeIndexMapping(String indexName) {
+	public void removeIndexShardMapping(String indexName) {
 		mappingCollection.deleteOne(new Document(ID, indexName));
 	}
 

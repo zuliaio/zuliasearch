@@ -291,7 +291,7 @@ message GetNodesRequest {
 
 message GetNodesResponse {
   repeated Node node = 1;
-  repeated IndexShardMapping indexMapping = 2;
+  repeated IndexShardMapping indexShardMapping = 2;
   repeated IndexAlias indexAlias = 3;
 }
 

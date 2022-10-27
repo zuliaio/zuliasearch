@@ -108,18 +108,18 @@ public class ZuliaIndex {
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 
-	private final IndexShardMapping indexMapping;
+	private final IndexShardMapping indexShardMapping;
 	private final FacetsConfig facetsConfig;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService,
-			IndexShardMapping indexMapping) {
+			IndexShardMapping indexShardMapping) {
 
 		this.zuliaConfig = zuliaConfig;
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
 		this.numberOfShards = indexConfig.getNumberOfShards();
 		this.indexService = indexService;
-		this.indexMapping = indexMapping;
+		this.indexShardMapping = indexShardMapping;
 		this.facetsConfig = new FacetsConfig();
 		configureFacets();
 
@@ -1123,8 +1123,8 @@ public class ZuliaIndex {
 
 	}
 
-	public IndexShardMapping getIndexMapping() {
-		return indexMapping;
+	public IndexShardMapping getIndexShardMapping() {
+		return indexShardMapping;
 	}
 
 	public String getIndexName() {
@@ -1132,7 +1132,7 @@ public class ZuliaIndex {
 	}
 
 	public void loadShards(Predicate<Node> thisNodeTest) throws Exception {
-		List<ShardMapping> shardMappingList = indexMapping.getShardMappingList();
+		List<ShardMapping> shardMappingList = indexShardMapping.getShardMappingList();
 		for (ShardMapping shardMapping : shardMappingList) {
 			if (thisNodeTest.test(shardMapping.getPrimaryNode())) {
 				loadShard(shardMapping.getShardNumber(), true);

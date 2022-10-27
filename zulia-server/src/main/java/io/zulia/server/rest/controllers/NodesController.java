@@ -54,11 +54,11 @@ public class NodesController {
 				memberObj.put("heartbeat", node.getHeartbeat());
 
 				List<Document> indexMappingList = new ArrayList<>();
-				for (IndexShardMapping indexMapping : getNodesResponse.getIndexMappingList()) {
+				for (IndexShardMapping indexShardMapping : getNodesResponse.getIndexShardMappingList()) {
 
 					TreeSet<Integer> primaryShards = new TreeSet<>();
 					TreeSet<Integer> replicaShards = new TreeSet<>();
-					for (ShardMapping shardMapping : indexMapping.getShardMappingList()) {
+					for (ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
 						if (ZuliaNode.isEqual(shardMapping.getPrimaryNode(), node)) {
 							primaryShards.add(shardMapping.getShardNumber());
 						}
@@ -71,11 +71,11 @@ public class NodesController {
 					}
 
 					Document shards = new Document();
-					shards.put("name", indexMapping.getIndexName());
+					shards.put("name", indexShardMapping.getIndexName());
 
 					int indexWeight = -1;
 					GetIndexSettingsResponse indexSettings = indexManager.getIndexSettings(
-							ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(indexMapping.getIndexName()).build());
+							ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(indexShardMapping.getIndexName()).build());
 					if (indexSettings != null) { //paranoid
 						indexWeight = indexSettings.getIndexSettings().getIndexWeight();
 					}

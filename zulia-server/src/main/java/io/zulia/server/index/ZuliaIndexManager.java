@@ -181,7 +181,7 @@ public class ZuliaIndexManager {
 	private void loadIndex(IndexSettings indexSettings) throws Exception {
 		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " loading index <" + indexSettings.getIndexName() + ">");
 
-		IndexShardMapping indexMapping = indexService.getIndexMapping(indexSettings.getIndexName());
+		IndexShardMapping indexShardMapping = indexService.getIndexShardMapping(indexSettings.getIndexName());
 
 		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
 
@@ -204,7 +204,7 @@ public class ZuliaIndexManager {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
 		}
 
-		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexMapping);
+		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
 
 		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
 
@@ -260,15 +260,15 @@ public class ZuliaIndexManager {
 
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
 
-		List<IndexShardMapping> indexMappingList = indexService.getIndexMappings();
+		List<IndexShardMapping> indexShardMappingList = indexService.getIndexShardMappings();
 		List<IndexAlias> indexAliasesList = indexService.getIndexAliases();
 		if ((request.getActiveOnly())) {
-			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexMapping(indexMappingList)
+			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexShardMapping(indexShardMappingList)
 					.addAllIndexAlias(indexAliasesList).build();
 		}
 		else {
-			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexMapping(indexMappingList).addAllIndexAlias(indexAliasesList)
-					.build();
+			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexShardMapping(indexShardMappingList)
+					.addAllIndexAlias(indexAliasesList).build();
 		}
 	}
 
@@ -354,9 +354,9 @@ public class ZuliaIndexManager {
 
 			indexSettings = indexSettings.toBuilder().setCreateTime(currentTimeMillis).build();
 
-			IndexShardMapping.Builder indexMapping = IndexShardMapping.newBuilder();
-			indexMapping.setIndexName(indexName);
-			indexMapping.setNumberOfShards(indexSettings.getNumberOfShards());
+			IndexShardMapping.Builder indexShardMapping = IndexShardMapping.newBuilder();
+			indexShardMapping.setIndexName(indexName);
+			indexShardMapping.setNumberOfShards(indexSettings.getNumberOfShards());
 
 			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
 
@@ -380,10 +380,10 @@ public class ZuliaIndexManager {
 					}
 				}
 
-				indexMapping.addShardMapping(shardMapping);
+				indexShardMapping.addShardMapping(shardMapping);
 			}
 
-			indexService.storeIndexMapping(indexMapping.build());
+			indexService.storeIndexShardMapping(indexShardMapping.build());
 		}
 		else {
 
@@ -613,7 +613,7 @@ public class ZuliaIndexManager {
 
 		String indexName = request.getIndexName();
 		indexService.removeIndex(indexName);
-		indexService.removeIndexMapping(indexName);
+		indexService.removeIndexShardMapping(indexName);
 
 		return DeleteIndexResponse.newBuilder().build();
 
