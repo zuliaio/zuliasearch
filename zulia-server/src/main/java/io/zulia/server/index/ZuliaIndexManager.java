@@ -849,4 +849,9 @@ public class ZuliaIndexManager {
 		return DeleteIndexAliasResponse.newBuilder().build();
 	}
 
+	public void getStats() {
+		for (ZuliaIndex value : indexMap.values()) {
+
+		}
+	}
 }

@@ -845,11 +845,9 @@ public class ZuliaIndex {
 		}
 
 		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
-		ShardQuery shardQuery = new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap,
-				queryRequest.getFacetRequest(), queryRequest.getSortRequest(), queryCacheKey, queryRequest.getResultFetchType(),
-				queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(), queryRequest.getHighlightRequestList(),
-				queryRequest.getAnalysisRequestList(), queryRequest.getDebug());
-		return shardQuery;
+		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
+				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug());
 	}
 
 	public Integer getNumberOfShards() {
