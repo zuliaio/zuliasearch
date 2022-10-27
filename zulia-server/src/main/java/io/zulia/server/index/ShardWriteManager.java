@@ -140,8 +140,9 @@ public class ShardWriteManager {
 
 		//reassign so it can't change in the middle of the logic
 		Long lastChange = this.lastChange;
+		Long lastCommit = this.lastCommit;
 
-		if (lastChange != null) { // if there has been a commit
+		if (lastChange != null) { // if there has been a change
 			long timeSinceLastChange = currentTime - lastChange;
 			if (timeSinceLastChange > msIdleWithoutCommit) {
 				//if there has never been a commit or the last change is after the last commit
@@ -161,12 +162,16 @@ public class ShardWriteManager {
 		Long lastCommit = this.lastCommit;
 		Long lastWarm = this.lastWarm;
 
-		if (lastCommit != null) { // if there has been a commit
+		if (lastWarm == null) {
+			return true;
+		}
+
+		if (lastCommit != null && lastChange != null) { // if there has been a change to the index and a commit
 			if (lastChange < lastCommit) { // no changes since last commit
 				long timeSinceLastCommit = currentTime - lastCommit;
 				if (timeSinceLastCommit > msAfterCommitToWarm) {
-					//if there has never been a warming or the last commit is after the last warming
-					return (lastWarm == null) || (lastCommit > lastWarm);
+					//if the last commit is after the last warming
+					return lastCommit > lastWarm;
 				}
 			}
 		}
@@ -189,6 +194,7 @@ public class ShardWriteManager {
 	public void updateIndexSettings() {
 		int ramBufferMB = indexConfig.getRAMBufferMB() != 0 ? indexConfig.getRAMBufferMB() : 128;
 		indexWriter.getConfig().setRAMBufferSizeMB(ramBufferMB);
+		lastWarm = null;
 	}
 
 	public void deleteDocuments(String uniqueId) throws IOException {
