@@ -59,6 +59,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +68,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -589,10 +591,13 @@ public class ZuliaIndexManager {
 
 	private <T> List<T> updateWithAction(Operation operation, List<T> existingValues, List<T> updates, Function<T, String> keyFunction) {
 
+		BinaryOperator<T> firstOne = (t, t2) -> t; // take the first one if duplicate labels
+
 		List<T> newValues;
 		if (OperationType.MERGE.equals(operation.getOperationType())) {
 			if (!updates.isEmpty()) {
-				Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity()));
+
+				Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new));
 
 				List<T> existingWithReplacements = existingValues.stream().map(value -> {
 					T replacement = toUpdate.get(keyFunction.apply(value));
@@ -610,7 +615,7 @@ public class ZuliaIndexManager {
 			}
 		}
 		else if (OperationType.REPLACE.equals(operation.getOperationType())) {
-			newValues = new ArrayList<>(updates.stream().collect(Collectors.toMap(keyFunction, Function.identity())).values());
+			newValues = new ArrayList<>(updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new)).values());
 		}
 		else {
 			throw new IllegalArgumentException("Unknown operation type <" + operation.getOperationType() + ">");

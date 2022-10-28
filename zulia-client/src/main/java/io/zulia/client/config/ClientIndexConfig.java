@@ -354,8 +354,8 @@ public class ClientIndexConfig {
 
 		this.meta = ZuliaUtil.byteStringToMongoDocument(indexSettings.getMeta());
 
+		this.warmingSearches = new ArrayList<>();
 		for (ByteString byteString : indexSettings.getWarmingSearchesList()) {
-			this.warmingSearches = new ArrayList<>();
 			try {
 				QueryRequest queryRequest = QueryRequest.parseFrom(byteString);
 				this.warmingSearches.add(queryRequest);

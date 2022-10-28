@@ -145,6 +145,9 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 				if (searchLabels.contains(searchLabel)) {
 					throw new IllegalArgumentException("Warmed search list has duplicate search label <" + searchLabel + ">");
 				}
+				if (queryRequest.getIndexCount() != 1 || !queryRequest.getIndex(0).equals(indexSettings.getIndexName())) {
+					throw new IllegalArgumentException("Warmed search index must match the search index being warmed and not contain other indexes");
+				}
 				searchLabels.add(searchLabel);
 			}
 			catch (Exception e) {

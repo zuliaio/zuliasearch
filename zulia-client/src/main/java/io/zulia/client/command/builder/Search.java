@@ -229,6 +229,15 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return queryRequest.getIndexList();
 	}
 
+	public Search setSearchLabel(String searchLabel) {
+		queryRequest.setSearchLabel(searchLabel);
+		return this;
+	}
+
+	public String getSearchLabel() {
+		return queryRequest.getSearchLabel();
+	}
+
 	@Override
 	public QueryRequest getRequest() {
 		queryRequest.setFacetRequest(facetRequest);
