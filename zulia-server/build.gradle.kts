@@ -59,7 +59,7 @@ dependencies {
     testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.4.11")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.5.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
     api("org.yaml:snakeyaml:$snakeYamlVersion")

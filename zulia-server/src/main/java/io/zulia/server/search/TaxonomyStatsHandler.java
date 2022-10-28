@@ -39,35 +39,36 @@ import org.apache.lucene.util.PriorityQueue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class TaxonomyStatsHandler {
 
 	protected final Stats[][] fieldFacetStats;
 	protected final Stats[] fieldStats;
-	protected final DDSketch[][] fieldFacetSketches;
-	protected final DDSketch[] fieldSketches;
-
+	private final HashMap<String, ZuliaQuery.StatRequest> statRequestMap;
 	private final List<String> fieldsList;
 	private final TaxonomyReader taxoReader;
 	private final List<ZuliaIndex.FieldConfig.FieldType> fieldTypes;
+	private final List<Double> requestPrecisions;
 	private final ServerIndexConfig serverIndexConfig;
-	private final double errorThreshold;
 	private int[] children;
 	private int[] siblings;
 
 	public TaxonomyStatsHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests, ServerIndexConfig serverIndexConfig)
 			throws IOException {
-		this.errorThreshold = 0.001;
 		this.serverIndexConfig = serverIndexConfig;
 
-		Set<String> numericFields = statRequests.stream().map(ZuliaQuery.StatRequest::getNumericField).collect(Collectors.toSet());
 		boolean facetLevel = statRequests.stream().map(ZuliaQuery.StatRequest::getFacetField).anyMatch(s -> !s.getLabel().isEmpty());
 		boolean global = statRequests.stream().map(ZuliaQuery.StatRequest::getFacetField).anyMatch(s -> s.getLabel().isEmpty());
 
+		this.statRequestMap = new HashMap<>();
+		statRequests.forEach(statRequest -> this.statRequestMap.put(statRequest.getNumericField(), statRequest));
+		Set<String> numericFields = this.statRequestMap.keySet();
+
 		fieldTypes = new ArrayList<>();
+		requestPrecisions = new ArrayList<>();
 		for (String numericField : numericFields) {
 			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = serverIndexConfig.getFieldTypeForSortField(numericField);
 			if (fieldTypeForSortField == null) {
@@ -78,32 +79,29 @@ public class TaxonomyStatsHandler {
 			}
 
 			fieldTypes.add(fieldTypeForSortField);
+			requestPrecisions.add(statRequestMap.get(numericField).getPrecision());
 		}
 
 		this.fieldsList = new ArrayList<>(numericFields);
 
 		if (facetLevel) {
-			this.fieldFacetSketches = new DDSketch[fieldsList.size()][taxoReader.getSize()];
 			this.fieldFacetStats = new Stats[fieldsList.size()][taxoReader.getSize()];
 			this.taxoReader = taxoReader;
 		}
 		else {
-			this.fieldFacetSketches = null;
 			this.fieldFacetStats = null;
 			this.taxoReader = null;
 		}
-		// TODO(Ian): This needs to be handled right
+
 		if (global) {
-			this.fieldSketches = new DDSketch[fieldsList.size()];
 			this.fieldStats = new Stats[fieldsList.size()];
 			for (int i = 0; i < fieldStats.length; i++) {
-				this.fieldSketches[i] = DDSketches.unboundedDense(errorThreshold);
-				this.fieldStats[i] = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldTypes.get(i)));
+				this.fieldStats[i] = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldTypes.get(i)), requestPrecisions.get(i));
 			}
+
 		}
 		else {
 			this.fieldStats = null;
-			this.fieldSketches = null;
 		}
 
 		sumValues(fc.getMatchingDocs(), fieldsList);
@@ -129,7 +127,7 @@ public class TaxonomyStatsHandler {
 			DocIdSetIterator docs = hits.bits.iterator();
 
 			SortedNumericDocValues ordinalValues = null;
-			if (fieldFacetStats != null || fieldFacetSketches != null) {
+			if (fieldFacetStats != null) {
 				ordinalValues = FacetUtils.loadOrdinalValues(hits.context.reader(), FacetsConfig.DEFAULT_INDEX_FIELD_NAME);
 				docs = ConjunctionUtils.intersectIterators(List.of(hits.bits.iterator(), ordinalValues));
 			}
@@ -166,26 +164,15 @@ public class TaxonomyStatsHandler {
 
 						if (ordinalCount != -1) {
 
-							// TODO(Ian): Remove Duplicate
 							for (int i = 0; i < ordinalCount; i++) {
 								int ordIndex = ordinalDocValues[i];
 								Stats stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
-									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
+									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType), requestPrecisions.get(f));
 									fieldFacetStats[f][ordIndex] = stats;
 								}
 								stats.newDoc(true);
 							}
-							// Uses sketches instead of stats
-							for (int i = 0; i < ordinalCount; i++) {
-								int ordIndex = ordinalDocValues[i];
-								DDSketch stats = fieldFacetSketches[f][ordIndex];
-								if (stats == null) {
-									stats = DDSketches.unboundedDense(this.errorThreshold);
-									fieldFacetSketches[f][ordIndex] = stats;
-								}
-							}
-							// TODO(Ian): Duplicated work
 							for (int j = 0; j < functionValue.docValueCount(); j++) {
 								for (int i = 0; i < ordinalCount; i++) {
 									int ordIndex = ordinalDocValues[i];
@@ -194,17 +181,7 @@ public class TaxonomyStatsHandler {
 								}
 
 							}
-							// Uses sketches instead of stats
-							for (int j = 0; j < functionValue.docValueCount(); j++) {
-								for (int i = 0; i < ordinalCount; i++) {
-									int ordIndex = ordinalDocValues[i];
-									DDSketch sketch = fieldFacetSketches[f][ordIndex];
-									convertAndAddToSketch(fieldType, numericValues[j], sketch);
-								}
-
-							}
 						}
-						//TODO(Ian): duplicate
 						if (fieldStats != null) {
 							Stats stats = fieldStats[f];
 							stats.newDoc(true);
@@ -212,36 +189,19 @@ public class TaxonomyStatsHandler {
 								addUpValue(fieldType, numericValues[j], stats);
 							}
 						}
-						// Add all values to sketch
-						if (fieldSketches != null) {
-							DDSketch sketch = fieldSketches[f];
-							for (int j = 0; j < functionValue.docValueCount(); j++) {
-								convertAndAddToSketch(fieldType, numericValues[j], sketch);
-							}
-						}
 					}
 					else {
 						if (ordinalCount != -1) {
-							//TODO(Ian): Duplicate code
 							for (int i = 0; i < ordinalCount; i++) {
 								int ordIndex = ordinalDocValues[i];
 								Stats stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
-									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType));
+									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType), requestPrecisions.get(f));
 									fieldFacetStats[f][ordIndex] = stats;
 								}
 								stats.newDoc(false);
 							}
-							for (int i = 0; i < ordinalCount; i++) {
-								int ordIndex = ordinalDocValues[i];
-								DDSketch stats = fieldFacetSketches[f][ordIndex];
-								if (stats == null) {
-									stats = DDSketches.unboundedDense(this.errorThreshold);
-									fieldFacetSketches[f][ordIndex] = stats;
-								}
-							}
 						}
-						// TODO(Ian): May still need to count null documents
 						if (fieldStats != null) {
 							Stats stats = fieldStats[f];
 							stats.newDoc(false);
@@ -269,32 +229,7 @@ public class TaxonomyStatsHandler {
 			stats.newValue((int) value);
 		}
 	}
-
-	/**
-	 * Convert the carrier type into the appropriate type for statistical analysis and store in the provided DDSketch
-	 *
-	 * @param fieldType Field type to convert to
-	 * @param value     Value stored as a long to be converted to appropriate type
-	 * @param sketch    Sketch to store this value in
-	 */
-	private void convertAndAddToSketch(ZuliaIndex.FieldConfig.FieldType fieldType, long value, DDSketch sketch) {
-		if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-			sketch.accept(NumericUtils.sortableLongToDouble(value));
-		}
-		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-			sketch.accept(NumericUtils.sortableIntToFloat((int) value));
-		}
-		else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-			sketch.accept(value);
-		}
-		else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-			sketch.accept((int) value);
-		}
-		else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
-			sketch.accept((int) value);
-		}
-	}
-
+	
 	public ZuliaQuery.FacetStats getGlobalStatsForNumericField(String field) {
 		int fieldIndex = fieldsList.indexOf(field);
 
@@ -302,7 +237,7 @@ public class TaxonomyStatsHandler {
 			throw new IllegalArgumentException("Field <" + field + "> was not given in constructor");
 		}
 
-		return createFacetStat(fieldStats[fieldIndex], fieldSketches[fieldIndex], "");
+		return createFacetStat(fieldStats[fieldIndex], "");
 	}
 
 	public List<ZuliaQuery.FacetStats> getTopChildren(String field, int topN, String dim, String... path) throws IOException {
@@ -369,13 +304,13 @@ public class TaxonomyStatsHandler {
 			Stats stat = q.pop();
 			FacetLabel child = taxoReader.getPath(stat.ordinal);
 			String label = child.components[cp.length];
-			facetStats[i] = createFacetStat(stat, null, label);
+			facetStats[i] = createFacetStat(stat, label);
 		}
 
 		return Arrays.asList(facetStats);
 	}
 
-	private ZuliaQuery.FacetStats createFacetStat(Stats stat, DDSketch sketch, String label) {
+	private ZuliaQuery.FacetStats createFacetStat(Stats stat, String label) {
 		ZuliaQuery.SortValue sum = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longSum).setDoubleValue(stat.doubleSum).build();
 		ZuliaQuery.SortValue min = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMinValue).setDoubleValue(stat.doubleMinValue).build();
 		ZuliaQuery.SortValue max = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMaxValue).setDoubleValue(stat.doubleMaxValue).build();
@@ -386,8 +321,8 @@ public class TaxonomyStatsHandler {
 
 		// Add stat sketch if specified
 		try {
-			if (sketch != null) {
-				builder.setStatSketch(com.datadoghq.sketch.ddsketch.proto.DDSketch.parseFrom(sketch.serialize()));
+			if (stat.sketch != null) {
+				builder.setStatSketch(com.datadoghq.sketch.ddsketch.proto.DDSketch.parseFrom(stat.sketch.serialize()));
 			}
 		}
 		catch (InvalidProtocolBufferException ex) {
@@ -435,6 +370,8 @@ public class TaxonomyStatsHandler {
 		private long longMinValue = Long.MAX_VALUE;
 		private long longMaxValue = Long.MIN_VALUE;
 
+		private DDSketch sketch = null;
+
 		public Stats(boolean floatingPoint) {
 			if (floatingPoint) {
 				longMinValue = 0;
@@ -445,6 +382,16 @@ public class TaxonomyStatsHandler {
 				doubleMaxValue = 0;
 			}
 			this.floatingPoint = floatingPoint;
+		}
+
+		// overload constructor for building w/ precision
+		public Stats(boolean floatingPoint, double precision) {
+			this(floatingPoint);
+			// Cannot perform DDSketch with perfect precision.
+			// May indicate that precision was not requested. This prevents quantile from running.
+			if (precision > 0.0) {
+				this.sketch = DDSketches.unboundedDense(precision);
+			}
 		}
 
 		public void newDoc(boolean countNonNull) {
@@ -463,6 +410,9 @@ public class TaxonomyStatsHandler {
 				doubleMaxValue = newValue;
 			}
 			this.valueCount++;
+			if (this.sketch != null) {
+				this.sketch.accept(newValue);
+			}
 		}
 
 		public void newValue(long newValue) {
@@ -474,6 +424,9 @@ public class TaxonomyStatsHandler {
 				longMaxValue = newValue;
 			}
 			this.valueCount++;
+			if (this.sketch != null) {
+				this.sketch.accept(newValue);
+			}
 		}
 
 		public boolean isFloatingPoint() {

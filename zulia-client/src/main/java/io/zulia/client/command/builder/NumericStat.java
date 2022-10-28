@@ -7,7 +7,7 @@ public class NumericStat implements StatBuilder {
 	private final StatRequest.Builder statRequestBuilder;
 
 	public NumericStat(String numericField) {
-		statRequestBuilder = StatRequest.newBuilder().setNumericField(numericField);
+		statRequestBuilder = StatRequest.newBuilder().setNumericField(numericField).setPrecision(0.001);
 	}
 
 	@Override

@@ -71,8 +71,14 @@ message StatRequest {
   Facet facetField = 2;
   uint32 maxFacets = 3; // default 10, set to -1 to get all
   uint32 shardFacets = 4; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
+  double precision = 5; // Specify the precision to be used in this request. Default is 0.001
+  repeated double percentiles = 6;
 }
 
+message Percentile {
+  double point = 1; // Percentile point represented
+  double value = 2; // Value of the percentile at this point
+}
 message CountRequest {
   Facet facetField = 1;
   uint32 maxFacets = 2; // default 10, set to -1 to get all
@@ -100,9 +106,20 @@ message FacetStats {
   uint64 docCount = 5;
   uint64 allDocCount = 6;
   uint64 valueCount = 7;
-  DDSketch statSketch = 8;
+  repeated Percentile percentiles = 8;
+  DDSketch statSketch = 9; // TODO(Ian): remove
 }
 
+message FacetStatsInternal {
+  string facet = 1;
+  SortValue min = 2;
+  SortValue max = 3;
+  SortValue sum = 4;
+  uint64 docCount = 5;
+  uint64 allDocCount = 6;
+  uint64 valueCount = 7;
+  DDSketch statSketch = 8;
+}
 
 message StatGroup {
   StatRequest statRequest = 1;
