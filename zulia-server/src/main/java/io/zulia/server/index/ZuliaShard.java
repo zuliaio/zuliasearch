@@ -285,4 +285,16 @@ public class ZuliaShard {
 		}
 	}
 
+	public ZuliaBase.ShardCacheStats getShardCacheStats() throws IOException {
+		shardReaderManager.maybeRefreshBlocking();
+		ShardReader shardReader = shardReaderManager.acquire();
+
+		try {
+			return shardReader.getShardCacheStats();
+		}
+		finally {
+			shardReaderManager.decRef(shardReader);
+		}
+	}
+
 }

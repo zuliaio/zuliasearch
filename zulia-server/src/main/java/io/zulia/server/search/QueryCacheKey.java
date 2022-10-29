@@ -16,6 +16,10 @@ public class QueryCacheKey {
 		return pinned;
 	}
 
+	public int getSize() {
+		return queryRequest.getSerializedSize();
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;

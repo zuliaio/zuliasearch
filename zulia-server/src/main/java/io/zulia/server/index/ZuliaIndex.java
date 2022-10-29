@@ -609,8 +609,7 @@ public class ZuliaIndex {
 			luceneQuery = handleScoreFunction(query.getScoreFunction(), luceneQuery);
 		}
 
-		BooleanClause clause = new BooleanClause(luceneQuery, occur);
-		return clause;
+		return new BooleanClause(luceneQuery, occur);
 	}
 
 	private FunctionScoreQuery handleScoreFunction(String scoreFunction, Query query) throws java.text.ParseException {

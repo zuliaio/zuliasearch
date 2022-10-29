@@ -36,6 +36,7 @@ public class SearchResult extends Result {
 
 	/**
 	 * use getCompleteResults instead
+	 *
 	 * @return
 	 */
 	@Deprecated
@@ -49,6 +50,7 @@ public class SearchResult extends Result {
 
 	/**
 	 * use getFirstCompleteResult instead
+	 *
 	 * @return
 	 */
 	@Deprecated()
@@ -236,6 +238,14 @@ public class SearchResult extends Result {
 
 	public List<AnalysisResult> getSummaryAnalysisResults() {
 		return queryResponse.getAnalysisResultList();
+	}
+
+	public boolean getFullyCached() {
+		return queryResponse.getFullyCached();
+	}
+
+	public int getShardsCached() {
+		return queryResponse.getShardsCached();
 	}
 
 	@Override
