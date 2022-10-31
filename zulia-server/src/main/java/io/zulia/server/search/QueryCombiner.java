@@ -198,7 +198,7 @@ public class QueryCombiner {
 		}
 
 		for (StatCombiner statCombiner : statCombinerMap.values()) {
-			builder.addStatGroup(statCombiner.getCombinedStatGroup());
+			builder.addStatGroup(statCombiner.getCombinedStatGroupAndConvertToExternalType());
 		}
 
 		Map<String, ScoredResult[]> lastIndexResultMap = createLastIndexResultMapWithPreviousLastResults();

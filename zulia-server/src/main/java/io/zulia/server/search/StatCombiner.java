@@ -9,6 +9,7 @@ import io.zulia.message.ZuliaQuery.StatGroupInternal;
 import io.zulia.message.ZuliaQuery.StatRequest;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class StatCombiner {
@@ -47,30 +48,53 @@ public class StatCombiner {
 		statGroups.add(new StatGroupWithShardIndex(statGroup, shardIndex));
 	}
 
-	public StatGroupInternal getCombinedStatGroupAndConvertToExternalType() {
+	public ZuliaQuery.StatGroup getCombinedStatGroupAndConvertToExternalType() {
+		//TODO(Ian): Multiple indexes means what?
+		List<StatGroupInternal> internalGroups = statGroups.stream().map(StatGroupWithShardIndex::getStatGroup).toList();
+		List<ZuliaQuery.FacetStatsInternal> globalStatsInternal = internalGroups.stream().map(ZuliaQuery.StatGroupInternal::getGlobalStats).toList();
 
-		if (statGroups.size() == 1) {
-			statGroups.get(0).getStatGroup();
-		}
-		else {
-			//TODO support this IAN
-			throw new UnsupportedOperationException("Multiple indexes or shards are not supported");
-		}
+		// TODO(Ian): Error checking! What if different global stats have different facet names?
+
+		// Create a map grouping of lists of facets to be merged
+		HashMap<String, List<ZuliaQuery.FacetStatsInternal>> facetStatsGroups = new HashMap<>();
+		internalGroups.forEach(statGroupInternal ->
+				// Group all sets of facet stats
+				statGroupInternal.getFacetStatsList().forEach(facetStatsInternal -> {
+					String localName = facetStatsInternal.getFacet();
+					List<ZuliaQuery.FacetStatsInternal> temp2 = facetStatsGroups.getOrDefault(localName, new ArrayList<>());
+					temp2.add(facetStatsInternal);
+					facetStatsGroups.put(localName, temp2);
+				}));
+
+		// Send each group through the converter to generate a list
+		ZuliaQuery.FacetStats globalStats = convertAndCombineFacetStats(globalStatsInternal);
+		List<ZuliaQuery.FacetStats> facetStats = facetStatsGroups.values().stream().map(this::convertAndCombineFacetStats).toList();
+
+		// Generate return type
+		return ZuliaQuery.StatGroup.newBuilder().setStatRequest(this.statRequest).setGlobalStats(globalStats).addAllFacetStats(facetStats).build();
+
+		//		if (statGroups.size() == 1) {
+		//			statGroups.get(0).getStatGroup();
+		//		}
+		//		else {
+		//			//TODO support this IAN
+		//			throw new UnsupportedOperationException("Multiple indexes or shards are not supported");
+		//		}
 	}
 
-	/**
-	 * Convert between internal and external datatype for stat groups
-	 *
-	 * @param internal Internal (larger) datatype object
-	 * @return Slimmed down user-facing object
-	 */
-	private ZuliaQuery.StatGroup convertStatGroupType(ZuliaQuery.StatGroupInternal internal) {
-		List<ZuliaQuery.FacetStats> facetStats = new ArrayList<>();
-		internal.getFacetStatsList().forEach(sgi -> facetStats.add(convertFacetStatsType(sgi, internal.getStatRequest())));
-
-		return ZuliaQuery.StatGroup.newBuilder().setStatRequest(internal.getStatRequest())
-				.setGlobalStats(convertFacetStatsType(internal.getGlobalStats(), internal.getStatRequest())).addAllFacetStats(facetStats).build();
-	}
+	//	/**
+	//	 * Convert between internal and external datatype for stat groups
+	//	 *
+	//	 * @param internal Internal (larger) datatype object
+	//	 * @return Slimmed down user-facing object
+	//	 */
+	//	private ZuliaQuery.StatGroup convertStatGroupType(ZuliaQuery.StatGroupInternal internal) {
+	//		List<ZuliaQuery.FacetStats> facetStats = new ArrayList<>();
+	//		internal.getFacetStatsList().forEach(sgi -> facetStats.add(convertFacetStatsType(sgi, internal.getStatRequest())));
+	//
+	//		return ZuliaQuery.StatGroup.newBuilder().setStatRequest(internal.getStatRequest())
+	//				.setGlobalStats(convertFacetStatsType(internal.getGlobalStats(), internal.getStatRequest())).addAllFacetStats(facetStats).build();
+	//	}
 
 	//	/**
 	//	 * Convert between internal and external datatype for facet stats Handles type conversion between DDSketch and Percentiles return type
