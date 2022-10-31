@@ -107,9 +107,9 @@ message FacetStats {
   uint64 allDocCount = 6;
   uint64 valueCount = 7;
   repeated Percentile percentiles = 8;
-  DDSketch statSketch = 9; // TODO(Ian): remove
 }
 
+// Internal message intended to carry around the large sketch until reaching the top level of a request
 message FacetStatsInternal {
   string facet = 1;
   SortValue min = 2;
@@ -125,6 +125,13 @@ message StatGroup {
   StatRequest statRequest = 1;
   FacetStats globalStats = 2;
   repeated FacetStats facetStats = 3;
+}
+
+// Internal message to handle larger DDSketch facet stats
+message StatGroupInternal {
+  StatRequest statRequest = 1;
+  FacetStatsInternal globalStats = 2;
+  repeated FacetStatsInternal facetStats = 3;
 }
 
 message SortRequest {
@@ -240,7 +247,6 @@ message FieldSimilarity {
   Similarity similarity = 2;
 }
 
-
 message IndexShardResponse {
   string indexName = 1;
   repeated ShardQueryResponse shardQueryResponse = 2;
@@ -254,5 +260,5 @@ message ShardQueryResponse {
   ScoredResult next = 5;
   repeated FacetGroup facetGroup = 6;
   repeated AnalysisResult analysisResult = 7;
-  repeated StatGroup statGroup = 8;
+  repeated StatGroupInternal statGroup = 8;
 }

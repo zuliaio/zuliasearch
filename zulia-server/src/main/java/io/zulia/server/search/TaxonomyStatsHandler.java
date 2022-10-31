@@ -17,8 +17,8 @@
 package io.zulia.server.search;
 
 import com.datadoghq.sketch.ddsketch.DDSketch;
+import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
 import com.datadoghq.sketch.ddsketch.DDSketches;
-import com.google.protobuf.InvalidProtocolBufferException;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
@@ -229,8 +229,8 @@ public class TaxonomyStatsHandler {
 			stats.newValue((int) value);
 		}
 	}
-	
-	public ZuliaQuery.FacetStats getGlobalStatsForNumericField(String field) {
+
+	public ZuliaQuery.FacetStatsInternal getGlobalStatsForNumericField(String field) {
 		int fieldIndex = fieldsList.indexOf(field);
 
 		if (fieldIndex == -1) {
@@ -240,7 +240,7 @@ public class TaxonomyStatsHandler {
 		return createFacetStat(fieldStats[fieldIndex], "");
 	}
 
-	public List<ZuliaQuery.FacetStats> getTopChildren(String field, int topN, String dim, String... path) throws IOException {
+	public List<ZuliaQuery.FacetStatsInternal> getTopChildren(String field, int topN, String dim, String... path) throws IOException {
 		int fieldIndex = fieldsList.indexOf(field);
 
 		if (fieldIndex == -1) {
@@ -299,7 +299,7 @@ public class TaxonomyStatsHandler {
 			ord = siblings[ord];
 		}
 
-		ZuliaQuery.FacetStats[] facetStats = new ZuliaQuery.FacetStats[q.size()];
+		ZuliaQuery.FacetStatsInternal[] facetStats = new ZuliaQuery.FacetStatsInternal[q.size()];
 		for (int i = facetStats.length - 1; i >= 0; i--) {
 			Stats stat = q.pop();
 			FacetLabel child = taxoReader.getPath(stat.ordinal);
@@ -310,23 +310,18 @@ public class TaxonomyStatsHandler {
 		return Arrays.asList(facetStats);
 	}
 
-	private ZuliaQuery.FacetStats createFacetStat(Stats stat, String label) {
+	private ZuliaQuery.FacetStatsInternal createFacetStat(Stats stat, String label) {
 		ZuliaQuery.SortValue sum = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longSum).setDoubleValue(stat.doubleSum).build();
 		ZuliaQuery.SortValue min = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMinValue).setDoubleValue(stat.doubleMinValue).build();
 		ZuliaQuery.SortValue max = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMaxValue).setDoubleValue(stat.doubleMaxValue).build();
 
 		// Add the "always-specified" values first
-		ZuliaQuery.FacetStats.Builder builder = ZuliaQuery.FacetStats.newBuilder().setFacet(label).setDocCount(stat.docCount).setAllDocCount(stat.allDocCount)
-				.setValueCount(stat.valueCount).setSum(sum).setMin(min).setMax(max);
+		ZuliaQuery.FacetStatsInternal.Builder builder = ZuliaQuery.FacetStatsInternal.newBuilder().setFacet(label).setDocCount(stat.docCount)
+				.setAllDocCount(stat.allDocCount).setValueCount(stat.valueCount).setSum(sum).setMin(min).setMax(max);
 
 		// Add stat sketch if specified
-		try {
-			if (stat.sketch != null) {
-				builder.setStatSketch(com.datadoghq.sketch.ddsketch.proto.DDSketch.parseFrom(stat.sketch.serialize()));
-			}
-		}
-		catch (InvalidProtocolBufferException ex) {
-			// TODO(Ian): Do we use logging of errors?
+		if (stat.sketch != null) {
+			builder.setStatSketch(DDSketchProtoBinding.toProto(stat.sketch));
 		}
 
 		// Build and return

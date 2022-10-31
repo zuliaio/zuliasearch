@@ -191,7 +191,7 @@ public class ShardReader implements AutoCloseable {
 					shardQueryReponseBuilder.addAllFacetGroup(facetGroups);
 				}
 				if (hasStatRequests) {
-					List<ZuliaQuery.StatGroup> statGroups = handleStats(facetRequest.getStatRequestList(), facetsCollector);
+					List<ZuliaQuery.StatGroupInternal> statGroups = handleStats(facetRequest.getStatRequestList(), facetsCollector);
 					shardQueryReponseBuilder.addAllStatGroup(statGroups);
 				}
 			}
@@ -260,14 +260,14 @@ public class ShardReader implements AutoCloseable {
 
 	}
 
-	private List<ZuliaQuery.StatGroup> handleStats(List<ZuliaQuery.StatRequest> statRequestList, FacetsCollector facetsCollector) throws IOException {
-		List<ZuliaQuery.StatGroup> statGroups = new ArrayList<>();
+	private List<ZuliaQuery.StatGroupInternal> handleStats(List<ZuliaQuery.StatRequest> statRequestList, FacetsCollector facetsCollector) throws IOException {
+		List<ZuliaQuery.StatGroupInternal> statGroups = new ArrayList<>();
 
 		TaxonomyStatsHandler facets = new TaxonomyStatsHandler(taxoReader, facetsCollector, statRequestList, indexConfig);
 
 		for (ZuliaQuery.StatRequest statRequest : statRequestList) {
 
-			ZuliaQuery.StatGroup.Builder statGroupBuilder = ZuliaQuery.StatGroup.newBuilder();
+			ZuliaQuery.StatGroupInternal.Builder statGroupBuilder = ZuliaQuery.StatGroupInternal.newBuilder();
 			statGroupBuilder.setStatRequest(statRequest);
 			String label = statRequest.getFacetField().getLabel();
 			if (!label.isEmpty()) {
@@ -294,14 +294,14 @@ public class ShardReader implements AutoCloseable {
 				}
 
 				if (indexConfig.isHierarchicalFacet(label)) {
-					List<ZuliaQuery.FacetStats> topChildren = facets.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
+					List<ZuliaQuery.FacetStatsInternal> topChildren = facets.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
 							statRequest.getFacetField().getPathList().toArray(new String[0]));
 					if (topChildren != null) {
 						statGroupBuilder.addAllFacetStats(topChildren);
 					}
 				}
 				else {
-					List<ZuliaQuery.FacetStats> topChildren = facets.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
+					List<ZuliaQuery.FacetStatsInternal> topChildren = facets.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
 							statRequest.getFacetField().getPathList().toArray(new String[0]));
 					if (topChildren != null) {
 						statGroupBuilder.addAllFacetStats(topChildren);
@@ -310,7 +310,7 @@ public class ShardReader implements AutoCloseable {
 
 			}
 			else {
-				ZuliaQuery.FacetStats globalStats = facets.getGlobalStatsForNumericField(statRequest.getNumericField());
+				ZuliaQuery.FacetStatsInternal globalStats = facets.getGlobalStatsForNumericField(statRequest.getNumericField());
 				statGroupBuilder.setGlobalStats(globalStats);
 			}
 
