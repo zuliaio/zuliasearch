@@ -125,29 +125,32 @@ public class StatCombiner {
 	 */
 	private ZuliaQuery.FacetStats convertAndCombineFacetStats(List<ZuliaQuery.FacetStatsInternal> internalStats) {
 		String facetName = internalStats.get(0).getFacet();
-		StatCarrier carrier = new StatCarrier();
 
-		// Build initial sketch and merge other sketches into this one
-		DDSketch combinedSketch = DDSketches.unboundedDense(statRequest.getPrecision());
-		//TODO(Ian): Can we guaratee that one of these will be right?
-		for (ZuliaQuery.FacetStatsInternal fsi : internalStats) {
-			// Handle DDSketches
-			DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.getStatSketch());
-			combinedSketch.mergeWith(sketch);
-
-			// Intelligent stat combination
-			carrier.addStat(fsi);
-		}
-
-		// Get all percentiles
+		// Populate percentiles if they were requested correctly
 		List<ZuliaQuery.Percentile> percentiles = new ArrayList<>();
-		if (!combinedSketch.isEmpty()) {
-			for (Double point : statRequest.getPercentilesList()) {
-				if (point >= 0.0 && point <= 100.0) {
-					percentiles.add(ZuliaQuery.Percentile.newBuilder().setPoint(point).setValue(combinedSketch.getValueAtQuantile(point)).build());
+		if (statRequest.getPrecision() > 0.0 && !statRequest.getPercentilesList().isEmpty()) {
+			// Build initial sketch and merge other sketches into this one
+			DDSketch combinedSketch = DDSketches.unboundedDense(statRequest.getPrecision());
+			//TODO(Ian): Can we guaratee that one of these will be right?
+			for (ZuliaQuery.FacetStatsInternal fsi : internalStats) {
+				// Handle DDSketches
+				DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.getStatSketch());
+				combinedSketch.mergeWith(sketch);
+			}
+
+			// Get all percentiles
+			if (!combinedSketch.isEmpty()) {
+				for (Double point : statRequest.getPercentilesList()) {
+					if (point >= 0.0 && point <= 100.0) {
+						percentiles.add(ZuliaQuery.Percentile.newBuilder().setPoint(point).setValue(combinedSketch.getValueAtQuantile(point)).build());
+					}
 				}
 			}
 		}
+
+		// Accumulate the local stats
+		StatCarrier carrier = new StatCarrier();
+		internalStats.forEach(carrier::addStat);
 		//TODO(Ian): Error logging?
 		//		else {
 		//		}

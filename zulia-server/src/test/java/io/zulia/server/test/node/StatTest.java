@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.opentest4j.AssertionFailedError;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -98,8 +99,14 @@ public class StatTest {
 	@Order(3)
 	public void statTest() throws Exception {
 
+		List<Double> percentiles = new ArrayList<>() {{
+			add(0.25);
+			add(0.50);
+			add(0.75);
+		}};
+
 		Search search = new Search(STAT_TEST_INDEX);
-		search.addStat(new NumericStat("rating"));
+		search.addStat(new NumericStat("rating").setPercentiles(percentiles, 0.001));
 		search.addQuery(new FilterQuery("title:boring").exclude());
 		search.addQuery(new MatchAllQuery());
 
@@ -268,7 +275,6 @@ public class StatTest {
 		searchResult = zuliaWorkPool.search(search);
 		authorCountPathFacetTest(searchResult);
 
-
 		search.clearStat();
 		search.addStat(new NumericStat("authorCount"));
 		search.addStat(new StatFacet("authorCount", "normalFacet"));
@@ -277,7 +283,6 @@ public class StatTest {
 		authorCountTest(searchResult);
 		authorCountNormalFacetTest(searchResult);
 		authorCountPathFacetTest(searchResult);
-
 
 		search.clearStat();
 		search.addStat(new StatFacet("authorCount", "pathFacet"));
@@ -292,7 +297,6 @@ public class StatTest {
 		ratingNormalTest(searchResult);
 		ratingPathTest(searchResult);
 
-
 		search = new Search(STAT_TEST_INDEX);
 		search.addStat(new StatFacet("rating", "pathFacet"));
 		search.addQuery(new FilterQuery("\"something really special\"").addQueryField("title"));
@@ -306,8 +310,10 @@ public class StatTest {
 		System.err.println(ratingByFacet.get(0).getMin().getDoubleValue());
 		System.err.println(ratingByFacet.get(0).getMax().getDoubleValue());
 		System.err.println(ratingByFacet.get(0).getSum().getDoubleValue());
-		Assertions.assertEquals(Double.POSITIVE_INFINITY, ratingByFacet.get(0).getMin().getDoubleValue(), 0.001); // Positive Infinity for Min when no values found
-		Assertions.assertEquals(Double.NEGATIVE_INFINITY, ratingByFacet.get(0).getMax().getDoubleValue(), 0.001); // Negative Infinity for Max when no values found
+		Assertions.assertEquals(Double.POSITIVE_INFINITY, ratingByFacet.get(0).getMin().getDoubleValue(),
+				0.001); // Positive Infinity for Min when no values found
+		Assertions.assertEquals(Double.NEGATIVE_INFINITY, ratingByFacet.get(0).getMax().getDoubleValue(),
+				0.001); // Negative Infinity for Max when no values found
 		Assertions.assertEquals(0, ratingByFacet.get(0).getSum().getDoubleValue(), 0.001);
 	}
 
