@@ -98,15 +98,16 @@ public class ZuliaShard {
 			for (ZuliaServiceOuterClass.QueryRequest warmedSearch : warmedSearches) {
 
 				try {
+					LOG.info("Warming search with label <" + warmedSearch.getSearchLabel() + ">");
 					Query query = zuliaIndex.getQuery(warmedSearch);
 					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmedSearch);
 					queryShard(shardQuery);
 				}
 				catch (Exception e) {
-					LOG.severe("Failed to warm search: " + e.getMessage());
+					LOG.severe("Failed to warm search with label <" + warmedSearch.getSearchLabel() + ">: " + e.getMessage());
 				}
 
-				if (shardWriteManager.needsSearchWarming()) {
+				if (!shardWriteManager.needsSearchWarming()) {
 					break;
 				}
 			}

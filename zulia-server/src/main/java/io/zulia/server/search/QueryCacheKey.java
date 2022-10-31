@@ -9,7 +9,8 @@ public class QueryCacheKey {
 
 	public QueryCacheKey(QueryRequest queryRequest) {
 		this.pinned = queryRequest.getPinToCache();
-		this.queryRequest = queryRequest.toBuilder().setPinToCache(false).build(); // make sure it has the same signature as an unpinned search
+		this.queryRequest = queryRequest.toBuilder().setPinToCache(false).setSearchLabel("")
+				.build(); // make sure it has the same signature as an unpinned search
 	}
 
 	public boolean isPinned() {

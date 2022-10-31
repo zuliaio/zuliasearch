@@ -76,7 +76,7 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 		}
 
 		if (indexSettings.getShardQueryCacheSize() < 0) {
-			throw new IllegalArgumentException("Shard Query Cache Size must be positive");
+			throw new IllegalArgumentException("Shard Query Cache Size must be positive or zero to use for default values");
 		}
 		else if (indexSettings.getShardQueryCacheSize() == 0) {
 			indexSettings.setShardQueryCacheSize(512);
@@ -97,10 +97,10 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 		}
 
 		if (indexSettings.getCommitToWarmTime() < 0) {
-			throw new IllegalArgumentException("Idle Time Without Commit must be positive");
+			throw new IllegalArgumentException("Idle Time Without Commit must be positive or zero to use for default values");
 		}
 		else if (indexSettings.getCommitToWarmTime() == 0) {
-			indexSettings.setCommitToWarmTime(5);
+			indexSettings.setCommitToWarmTime(1);
 		}
 
 

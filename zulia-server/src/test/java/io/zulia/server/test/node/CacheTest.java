@@ -2,6 +2,7 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
@@ -47,6 +48,8 @@ public class CacheTest {
 		indexConfig.setIndexName(CACHE_TEST);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardQueryCacheSize(3);
+		indexConfig.addWarmingSearch(
+				new Search(CACHE_TEST).setPinToCache(true).setSearchLabel("important search").addQuery(new FilterQuery("rating:[1.0 TO 3.5]")));
 
 		zuliaWorkPool.createIndex(indexConfig);
 	}
@@ -90,8 +93,15 @@ public class CacheTest {
 	@Order(3)
 	public void searchTest() throws Exception {
 
+		Thread.sleep(2000);
+
 		Search search;
 		SearchResult searchResult;
+
+		search = new Search(CACHE_TEST);
+		search.addQuery(new FilterQuery("rating:[1.0 TO 3.5]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertTrue(searchResult.getFullyCached());
 
 		search = new Search(CACHE_TEST);
 		search.addQuery(new ScoredQuery("rating:[1.0 TO 2.0]"));
