@@ -93,18 +93,18 @@ public class ZuliaShard {
 	public void tryWarmSearches(ZuliaIndex zuliaIndex) {
 		if (shardWriteManager.needsSearchWarming()) {
 
-			List<ZuliaServiceOuterClass.QueryRequest> warmedSearches = shardWriteManager.getIndexConfig().getWarmedSearches();
+			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
 
-			for (ZuliaServiceOuterClass.QueryRequest warmedSearch : warmedSearches) {
+			for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
 
 				try {
-					LOG.info("Warming search with label <" + warmedSearch.getSearchLabel() + ">");
-					Query query = zuliaIndex.getQuery(warmedSearch);
-					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmedSearch);
+					LOG.info("Warming search with label <" + warmingSearch.getSearchLabel() + ">");
+					Query query = zuliaIndex.getQuery(warmingSearch);
+					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
 					queryShard(shardQuery);
 				}
 				catch (Exception e) {
-					LOG.severe("Failed to warm search with label <" + warmedSearch.getSearchLabel() + ">: " + e.getMessage());
+					LOG.severe("Failed to warm search with label <" + warmingSearch.getSearchLabel() + ">: " + e.getMessage());
 				}
 
 				if (!shardWriteManager.needsSearchWarming()) {

@@ -174,9 +174,10 @@ public class ZuliaIndex {
 			@Override
 			public void run() {
 				if (ZuliaIndex.this.indexConfig.getIndexSettings().getCommitToWarmTime() != 0) {
-					for (QueryRequest warmedSearch : ZuliaIndex.this.indexConfig.getWarmedSearches()) {
-						MasterSlaveSettings masterSlaveSettings = warmedSearch.getMasterSlaveSettings();
-						if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings) || MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(masterSlaveSettings)) {
+					for (QueryRequest warmingSearch : ZuliaIndex.this.indexConfig.getWarmingSearches()) {
+						MasterSlaveSettings masterSlaveSettings = warmingSearch.getMasterSlaveSettings();
+						if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings) || MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(
+								masterSlaveSettings)) {
 							for (ZuliaShard shard : primaryShardMap.values()) {
 								shard.tryWarmSearches(ZuliaIndex.this);
 							}

@@ -143,15 +143,15 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 					throw new RuntimeException("A search label is required for a warming search");
 				}
 				if (searchLabels.contains(searchLabel)) {
-					throw new IllegalArgumentException("Warmed search list has duplicate search label <" + searchLabel + ">");
+					throw new IllegalArgumentException("Warming search list has duplicate search label <" + searchLabel + ">");
 				}
 				if (queryRequest.getIndexCount() != 1 || !queryRequest.getIndex(0).equals(indexSettings.getIndexName())) {
-					throw new IllegalArgumentException("Warmed search index must match the search index being warmed and not contain other indexes");
+					throw new IllegalArgumentException("Warming search index must match the search index being warmed and not contain other indexes");
 				}
 				searchLabels.add(searchLabel);
 			}
 			catch (Exception e) {
-				throw new IllegalArgumentException("Failed to parse QueryRequest from warmed search bytes", e);
+				throw new IllegalArgumentException("Failed to parse QueryRequest from warming search bytes", e);
 			}
 		}
 	}

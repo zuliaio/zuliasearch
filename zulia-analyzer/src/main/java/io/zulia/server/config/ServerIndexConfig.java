@@ -34,7 +34,7 @@ public class ServerIndexConfig {
 	private ConcurrentHashMap<String, String> indexToStoredMap;
 	private ConcurrentHashMap<String, FacetAs> facetAsMap;
 
-	private List<ZuliaServiceOuterClass.QueryRequest> warmedSearches;
+	private List<ZuliaServiceOuterClass.QueryRequest> warmingSearches;
 
 	public ServerIndexConfig(IndexSettings indexSettings) {
 		configure(indexSettings);
@@ -119,15 +119,15 @@ public class ServerIndexConfig {
 		sortFieldType.put(ZuliaConstants.SCORE_FIELD, FieldConfig.FieldType.NUMERIC_FLOAT);
 		sortFieldType.put(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING);
 
-		this.warmedSearches = new ArrayList<>();
+		this.warmingSearches = new ArrayList<>();
 		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
 			try {
 				ZuliaServiceOuterClass.QueryRequest queryRequest = ZuliaServiceOuterClass.QueryRequest.parseFrom(bytes);
-				warmedSearches.add(queryRequest);
+				warmingSearches.add(queryRequest);
 			}
 			catch (Exception e) {
 				//Allow index to load vs throwing an exception and making this harder to fix with the index not loaded
-				LOG.severe("Failed to load warmed search: " + e.getMessage() + ".  Please store warmed searches again in proper format.");
+				LOG.severe("Failed to load warming search: " + e.getMessage() + ".  Please store warming searches again in proper format.");
 			}
 		}
 
@@ -223,8 +223,8 @@ public class ServerIndexConfig {
 
 	}
 
-	public List<ZuliaServiceOuterClass.QueryRequest> getWarmedSearches() {
-		return warmedSearches;
+	public List<ZuliaServiceOuterClass.QueryRequest> getWarmingSearches() {
+		return warmingSearches;
 	}
 
 	@Override
