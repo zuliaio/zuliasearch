@@ -22,7 +22,8 @@ tasks.withType<Test> {
 dependencies {
     implementation(project(":zulia-query-parser"))
     implementation(project(":zulia-client")) //needed for admin tools
-
+    implementation(project(":zulia-analyzer"))
+    
     implementation("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
     implementation("org.apache.lucene:lucene-facet:$luceneVersion")
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
