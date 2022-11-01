@@ -37,6 +37,9 @@ public class StatTest {
 	@BeforeAll
 	public static void initAll() throws Exception {
 
+		//TODO(Ian): remove this before merge
+		System.setProperty("de.flapdoodle.os.override", "Linux|X86_64|Ubuntu|Ubuntu_22_04");
+
 		TestHelper.createNodes(3);
 
 		TestHelper.startNodes();
@@ -54,7 +57,7 @@ public class StatTest {
 		//indexConfig.addFieldConfig(FieldConfigBuilder.create("authorCount", FieldType.NUMERIC_INT).index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
-		indexConfig.setNumberOfShards(1);
+		indexConfig.setNumberOfShards(2); // TODO(Ian): Keep sharding??
 		indexConfig.setShardCommitInterval(20); //force some commits
 
 		zuliaWorkPool.createIndex(indexConfig);
