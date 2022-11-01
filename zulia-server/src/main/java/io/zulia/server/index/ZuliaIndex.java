@@ -31,6 +31,7 @@ import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.search.QueryCacheKey;
+import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.search.queryparser.ZuliaParser;
 import io.zulia.server.util.DeletingFileVisitor;
@@ -105,6 +106,10 @@ public class ZuliaIndex {
 
 	private final Timer commitTimer;
 	private final TimerTask commitTask;
+
+	private final Timer warmTimer;
+
+	private final TimerTask warmTask;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 
@@ -162,6 +167,36 @@ public class ZuliaIndex {
 
 		commitTimer.scheduleAtFixedRate(commitTask, 1000, 1000);
 
+		warmTimer = new Timer(indexName + "-WarmTimer", true);
+
+		warmTask = new TimerTask() {
+
+			@Override
+			public void run() {
+				if (ZuliaIndex.this.indexConfig.getIndexSettings().getCommitToWarmTime() != 0) {
+					for (QueryRequest warmingSearch : ZuliaIndex.this.indexConfig.getWarmingSearches()) {
+						MasterSlaveSettings masterSlaveSettings = warmingSearch.getMasterSlaveSettings();
+						if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings) || MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(
+								masterSlaveSettings)) {
+							for (ZuliaShard shard : primaryShardMap.values()) {
+								shard.tryWarmSearches(ZuliaIndex.this);
+							}
+						}
+						if (MasterSlaveSettings.SLAVE_ONLY.equals(masterSlaveSettings) || MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(masterSlaveSettings)) {
+							for (ZuliaShard shard : replicaShardMap.values()) {
+								shard.tryWarmSearches(ZuliaIndex.this);
+							}
+						}
+					}
+
+				}
+
+			}
+
+		};
+
+		warmTimer.scheduleAtFixedRate(warmTask, 1000, 1000);
+
 	}
 
 	public FieldConfig.FieldType getSortFieldType(String fieldName) {
@@ -187,11 +222,21 @@ public class ZuliaIndex {
 
 	}
 
+	private void warmSearches(ZuliaIndex zuliaIndex) {
+		Collection<ZuliaShard> shards = primaryShardMap.values();
+		for (ZuliaShard shard : shards) {
+			shard.tryWarmSearches(zuliaIndex);
+		}
+	}
+
 	public void unload(boolean terminate) throws IOException {
 
 		LOG.info("Canceling timers for <" + indexName + ">");
 		commitTask.cancel();
 		commitTimer.cancel();
+
+		warmTask.cancel();
+		warmTimer.cancel();
 
 		if (!terminate) {
 			LOG.info("Committing <" + indexName + ">");
@@ -565,8 +610,7 @@ public class ZuliaIndex {
 			luceneQuery = handleScoreFunction(query.getScoreFunction(), luceneQuery);
 		}
 
-		BooleanClause clause = new BooleanClause(luceneQuery, occur);
-		return clause;
+		return new BooleanClause(luceneQuery, occur);
 	}
 
 	private FunctionScoreQuery handleScoreFunction(String scoreFunction, Query query) throws java.text.ParseException {
@@ -678,6 +722,39 @@ public class ZuliaIndex {
 			}
 		}
 
+		ShardQuery shardQuery = getShardQuery(query, queryRequest);
+
+		IndexShardResponse.Builder builder = IndexShardResponse.newBuilder();
+
+		List<Future<ShardQueryResponse>> responses = new ArrayList<>();
+
+		for (final ZuliaShard shard : shardsForQuery) {
+			Future<ShardQueryResponse> response = shardPool.submit(() -> shard.queryShard(shardQuery));
+			responses.add(response);
+		}
+
+		for (Future<ShardQueryResponse> response : responses) {
+			try {
+				ShardQueryResponse rs = response.get();
+				builder.addShardQueryResponse(rs);
+			}
+			catch (ExecutionException e) {
+				Throwable t = e.getCause();
+
+				if (t instanceof OutOfMemoryError) {
+					throw (OutOfMemoryError) t;
+				}
+
+				throw ((Exception) e.getCause());
+			}
+		}
+
+		builder.setIndexName(indexName);
+		return builder.build();
+
+	}
+
+	public ShardQuery getShardQuery(Query query, QueryRequest queryRequest) throws Exception {
 		int amount = queryRequest.getAmount() + queryRequest.getStart();
 
 		if (indexConfig.getNumberOfShards() != 1) {
@@ -767,49 +844,10 @@ public class ZuliaIndex {
 			fieldSimilarityMap.put(fieldSimilarity.getField(), fieldSimilarity.getSimilarity());
 		}
 
-		IndexShardResponse.Builder builder = IndexShardResponse.newBuilder();
-
-		List<Future<ShardQueryResponse>> responses = new ArrayList<>();
-
-		for (final ZuliaShard shard : shardsForQuery) {
-
-			Future<ShardQueryResponse> response = shardPool.submit(() -> {
-
-				QueryCacheKey queryCacheKey = null;
-
-				if (!queryRequest.getDontCache()) {
-					queryCacheKey = new QueryCacheKey(queryRequest);
-				}
-
-				return shard.queryShard(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap.get(shard.getShardNumber()), queryRequest.getFacetRequest(),
-						queryRequest.getSortRequest(), queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(),
-						queryRequest.getDocumentMaskedFieldsList(), queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(),
-						queryRequest.getDebug());
-			});
-
-			responses.add(response);
-
-		}
-
-		for (Future<ShardQueryResponse> response : responses) {
-			try {
-				ShardQueryResponse rs = response.get();
-				builder.addShardQueryResponse(rs);
-			}
-			catch (ExecutionException e) {
-				Throwable t = e.getCause();
-
-				if (t instanceof OutOfMemoryError) {
-					throw (OutOfMemoryError) t;
-				}
-
-				throw ((Exception) e.getCause());
-			}
-		}
-
-		builder.setIndexName(indexName);
-		return builder.build();
-
+		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
+		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
+				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug());
 	}
 
 	public Integer getNumberOfShards() {

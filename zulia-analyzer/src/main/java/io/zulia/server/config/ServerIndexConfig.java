@@ -1,5 +1,6 @@
 package io.zulia.server.config;
 
+import com.google.protobuf.ByteString;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
@@ -10,15 +11,19 @@ import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexAs;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.SortAs;
+import io.zulia.message.ZuliaServiceOuterClass;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class ServerIndexConfig {
-
+	private final static Logger LOG = Logger.getLogger(ServerIndexConfig.class.getSimpleName());
 	private IndexSettings indexSettings;
 
 	private ConcurrentHashMap<String, FieldConfig> fieldConfigMap;
@@ -28,6 +33,8 @@ public class ServerIndexConfig {
 	private ConcurrentHashMap<String, AnalyzerSettings> analyzerMap;
 	private ConcurrentHashMap<String, String> indexToStoredMap;
 	private ConcurrentHashMap<String, FacetAs> facetAsMap;
+
+	private List<ZuliaServiceOuterClass.QueryRequest> warmingSearches;
 
 	public ServerIndexConfig(IndexSettings indexSettings) {
 		configure(indexSettings);
@@ -111,6 +118,18 @@ public class ServerIndexConfig {
 
 		sortFieldType.put(ZuliaConstants.SCORE_FIELD, FieldConfig.FieldType.NUMERIC_FLOAT);
 		sortFieldType.put(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING);
+
+		this.warmingSearches = new ArrayList<>();
+		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
+			try {
+				ZuliaServiceOuterClass.QueryRequest queryRequest = ZuliaServiceOuterClass.QueryRequest.parseFrom(bytes);
+				warmingSearches.add(queryRequest);
+			}
+			catch (Exception e) {
+				//Allow index to load vs throwing an exception and making this harder to fix with the index not loaded
+				LOG.severe("Failed to load warming search: " + e.getMessage() + ".  Please store warming searches again in proper format.");
+			}
+		}
 
 	}
 
@@ -202,6 +221,10 @@ public class ServerIndexConfig {
 		}
 		return Set.of(fieldWildcard);
 
+	}
+
+	public List<ZuliaServiceOuterClass.QueryRequest> getWarmingSearches() {
+		return warmingSearches;
 	}
 
 	@Override

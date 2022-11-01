@@ -236,4 +236,5 @@ message ShardQueryResponse {
     repeated FacetGroup facetGroup = 6;
     repeated AnalysisResult analysisResult = 7;
     repeated StatGroup statGroup = 8;
+    bool cached = 9;
 }

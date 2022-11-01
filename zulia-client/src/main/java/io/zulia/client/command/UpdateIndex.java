@@ -2,12 +2,14 @@ package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.command.base.SingleIndexRoutableCommand;
+import io.zulia.client.command.builder.Search;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.UpdateIndexResult;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation.OperationType;
+import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.UpdateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.UpdateIndexResponse;
 import io.zulia.util.ZuliaUtil;
@@ -23,8 +25,8 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 /**
  * Allows partial index changes.  To replace the entire index config use {@link CreateIndex}
- * @author mdavis
  *
+ * @author mdavis
  */
 public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexResult> implements SingleIndexRoutableCommand {
 
@@ -44,11 +46,14 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private final UpdateIndexSettings.Operation.Builder analyzerSettingsOperation = UpdateIndexSettings.Operation.newBuilder();
 	private List<ZuliaIndex.AnalyzerSettings> analyzerSettingsList = Collections.emptyList();
 
-
 	private final UpdateIndexSettings.Operation.Builder fieldConfigOperation = UpdateIndexSettings.Operation.newBuilder();
 	private List<ZuliaIndex.FieldConfig> fieldConfigList = Collections.emptyList();
 	private UpdateIndexSettings.Operation.Builder metaDataOperation = UpdateIndexSettings.Operation.newBuilder();
 	private Document metadata = new Document();
+
+	private UpdateIndexSettings.Operation.Builder warmingSearchOperation = UpdateIndexSettings.Operation.newBuilder();
+
+	private List<QueryRequest> warmingSearches = Collections.emptyList();
 
 	public UpdateIndex(String indexName) {
 		this.indexName = indexName;
@@ -56,7 +61,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 
 	public UpdateIndex clearAnalyzerSettingsChanges() {
 		analyzerSettingsOperation.setEnable(false);
-		fieldConfigOperation.setOperationType(OperationType.MERGE);
+		analyzerSettingsOperation.setOperationType(OperationType.MERGE);
 		analyzerSettingsOperation.clearRemovedKeys();
 		if (!analyzerSettingsList.isEmpty()) {
 			analyzerSettingsList.clear();
@@ -84,7 +89,6 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
-
 	public UpdateIndex clearFieldConfigChanges() {
 		fieldConfigOperation.setEnable(false);
 		fieldConfigOperation.setOperationType(OperationType.MERGE);
@@ -104,7 +108,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	public UpdateIndex replaceFieldConfig(FieldConfigBuilder... fieldConfigs) {
 		fieldConfigOperation.setEnable(true);
 		fieldConfigOperation.setOperationType(OperationType.REPLACE);
-		this.fieldConfigList =  Objects.requireNonNullElse(Arrays.stream(fieldConfigs).map(FieldConfigBuilder::build).toList(), Collections.emptyList());
+		this.fieldConfigList = Objects.requireNonNullElse(Arrays.stream(fieldConfigs).map(FieldConfigBuilder::build).toList(), Collections.emptyList());
 		return this;
 	}
 
@@ -115,11 +119,10 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
-
 	public UpdateIndex mergeFieldConfig(FieldConfigBuilder... fieldConfigs) {
 		fieldConfigOperation.setEnable(true);
 		fieldConfigOperation.setOperationType(OperationType.MERGE);
-		this.fieldConfigList =  Objects.requireNonNullElse(Arrays.stream(fieldConfigs).map(FieldConfigBuilder::build).toList(), Collections.emptyList());
+		this.fieldConfigList = Objects.requireNonNullElse(Arrays.stream(fieldConfigs).map(FieldConfigBuilder::build).toList(), Collections.emptyList());
 		return this;
 	}
 
@@ -229,7 +232,6 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
-
 	public UpdateIndex clearMetadataChanges() {
 		metaDataOperation.setEnable(false);
 		metaDataOperation.setOperationType(OperationType.MERGE);
@@ -258,6 +260,44 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
+	public UpdateIndex clearWarmingSearchChanges() {
+		warmingSearchOperation.setEnable(false);
+		warmingSearchOperation.setOperationType(OperationType.MERGE);
+		warmingSearchOperation.clearRemovedKeys();
+		if (!warmingSearches.isEmpty()) {
+			warmingSearches.clear();
+		}
+		return this;
+	}
+
+	public UpdateIndex removeWarmingSearchesByLabel(Collection<String> namesToRemove) {
+		warmingSearchOperation.setEnable(true);
+		warmingSearchOperation.addAllRemovedKeys(namesToRemove);
+		return this;
+	}
+
+	public UpdateIndex mergeWarmingSearches(Search... searches) {
+		return mergeWarmingSearches(Arrays.stream(searches).map(Search::getRequest).toArray(QueryRequest[]::new));
+	}
+
+	public UpdateIndex mergeWarmingSearches(QueryRequest... queryRequests) {
+		warmingSearchOperation.setEnable(true);
+		warmingSearchOperation.setOperationType(OperationType.MERGE);
+		this.warmingSearches = Objects.requireNonNullElse(Arrays.asList(queryRequests), Collections.emptyList());
+		return this;
+	}
+
+	public UpdateIndex replaceWarmingSearches(Search... searches) {
+		return replaceWarmingSearches(Arrays.stream(searches).map(Search::getRequest).toArray(QueryRequest[]::new));
+	}
+
+	public UpdateIndex replaceWarmingSearches(QueryRequest... queryRequests) {
+		warmingSearchOperation.setEnable(true);
+		warmingSearchOperation.setOperationType(OperationType.REPLACE);
+		this.warmingSearches = Objects.requireNonNullElse(Arrays.asList(queryRequests), Collections.emptyList());
+		return this;
+	}
+
 	@Override
 	public UpdateIndexRequest getRequest() {
 		UpdateIndexRequest.Builder updateIndexRequestBuilder = UpdateIndexRequest.newBuilder();
@@ -276,6 +316,8 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		updateIndexSettings.addAllFieldConfig(fieldConfigList);
 		updateIndexSettings.setFieldConfigOperation(fieldConfigOperation);
 
+		updateIndexSettings.addAllWarmingSearches(warmingSearches.stream().map(QueryRequest::toByteString).toList());
+		updateIndexSettings.setWarmingSearchesOperation(warmingSearchOperation);
 
 		if (requestFactor != null) {
 			updateIndexSettings.setSetRequestFactor(true);
