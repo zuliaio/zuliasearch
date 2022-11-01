@@ -14,22 +14,23 @@ public class NumericStat implements StatBuilder {
 		statRequestBuilder = StatRequest.newBuilder().setNumericField(numericField);
 	}
 
-	public NumericStat setPercentiles(List<Double> percentilePoints, Double precision) {
+	public NumericStat setPercentilePrecision(Double precision) {
 		if (precision > 0.0) {
 			statRequestBuilder.setPrecision(precision);
-
-			// Percentiles are a fraction
-			if (percentilePoints.stream().allMatch(d -> (0.0 <= d && d <= 1.0))) {
-				statRequestBuilder.addAllPercentiles(percentilePoints);
-			}
-			else {
-				LOG.severe("Percentiles must be between 0.0 and 1.0. Request not added");
-				statRequestBuilder.clearPrecision();
-			}
 		}
 		else {
-			//TODO(Ian): How to handle this?
-			LOG.severe("Precision value must be greater than 0.0 to request data percentiles. Request not added");
+			throw new IllegalArgumentException("Percentile precision must be > 0.0");
+		}
+		return this;
+	}
+
+	public NumericStat setPercentiles(List<Double> percentilePoints) {
+		// Percentiles are a fraction
+		if (percentilePoints.stream().allMatch(d -> (0.0 <= d && d <= 1.0))) {
+			statRequestBuilder.addAllPercentiles(percentilePoints);
+		}
+		else {
+			throw new IllegalArgumentException("Percentiles must be in the range [0.0, 1.0]");
 		}
 		return this;
 	}

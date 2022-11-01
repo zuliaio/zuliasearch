@@ -1,5 +1,6 @@
 package io.zulia.server.connection.server.validation;
 
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.HighlightRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
@@ -9,6 +10,7 @@ import static io.zulia.message.ZuliaQuery.FacetRequest;
 
 /**
  * Created by Payam Meyer on 9/19/17.
+ *
  * @author pmeyer
  */
 public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
@@ -19,8 +21,26 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 
 		FacetRequest.Builder facetRequestBuilder = queryRequestBuilder.getFacetRequestBuilder();
 
-		for (CountRequest.Builder countRequestBuilder : facetRequestBuilder.getCountRequestBuilderList()) {
+		for (ZuliaQuery.StatRequest.Builder statRequestBuilder : facetRequestBuilder.getStatRequestBuilderList()) {
+			if (statRequestBuilder.getMaxFacets() == 0) {
+				statRequestBuilder.setMaxFacets(10);
+			}
+			if (statRequestBuilder.getShardFacets() == 0) {
+				statRequestBuilder.setShardFacets(statRequestBuilder.getMaxFacets() * 10);
+			}
+			// Cannot compute percentiles if precision is 0
+			if (statRequestBuilder.getPercentilesCount() > 0 && statRequestBuilder.getPrecision() == 0.0) {
+				statRequestBuilder.setPrecision(0.001);
+			}
+			if (statRequestBuilder.getPrecision() < 0.0) {
+				throw new IllegalArgumentException("Percentile precision must be a number > 0.0");
+			}
+			if (statRequestBuilder.getPercentilesList().stream().anyMatch(value -> (0.0 > value || value > 1.0))) {
+				throw new IllegalArgumentException("Percentiles must be in the range [0.0, 1.0]");
+			}
+		}
 
+		for (CountRequest.Builder countRequestBuilder : facetRequestBuilder.getCountRequestBuilderList()) {
 
 			if (countRequestBuilder.getMaxFacets() == 0) {
 				countRequestBuilder.setMaxFacets(10);
@@ -62,7 +82,6 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 				if (analysisRequestBuilder.getTopN() == 0) {
 					analysisRequestBuilder.setTopN(10);
 				}
-
 
 			}
 

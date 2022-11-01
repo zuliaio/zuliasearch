@@ -17,6 +17,7 @@ import org.bson.Document;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ public class StatTest {
 
 	private static ZuliaWorkPool zuliaWorkPool;
 	private static int repeatCount = 100;
+	private static int shardCount = 3;
 
 	@BeforeAll
 	public static void initAll() throws Exception {
@@ -57,10 +59,15 @@ public class StatTest {
 		//indexConfig.addFieldConfig(FieldConfigBuilder.create("authorCount", FieldType.NUMERIC_INT).index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
-		indexConfig.setNumberOfShards(2); // TODO(Ian): Keep sharding??
+		indexConfig.setNumberOfShards(shardCount); // TODO(Ian): Keep sharding??
 		indexConfig.setShardCommitInterval(20); //force some commits
 
 		zuliaWorkPool.createIndex(indexConfig);
+	}
+
+	@BeforeEach
+	public void optimize() throws Exception {
+		zuliaWorkPool.optimizeIndex(STAT_TEST_INDEX);
 	}
 
 	@Test
@@ -109,7 +116,7 @@ public class StatTest {
 		}};
 
 		Search search = new Search(STAT_TEST_INDEX);
-		search.addStat(new NumericStat("rating").setPercentiles(percentiles, 0.001));
+		search.addStat(new NumericStat("rating").setPercentiles(percentiles));
 		search.addQuery(new FilterQuery("title:boring").exclude());
 		search.addQuery(new MatchAllQuery());
 
@@ -237,7 +244,7 @@ public class StatTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("authorCount").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
-		indexConfig.setNumberOfShards(1);
+		indexConfig.setNumberOfShards(shardCount);
 		indexConfig.setShardCommitInterval(20); //force some commits
 
 		zuliaWorkPool.createIndex(indexConfig);
