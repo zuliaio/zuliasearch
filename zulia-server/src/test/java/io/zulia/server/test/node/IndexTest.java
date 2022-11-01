@@ -2,6 +2,9 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.UpdateIndex;
+import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.ScoredQuery;
+import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.GetIndexConfigResult;
@@ -10,6 +13,7 @@ import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaServiceOuterClass;
 import org.bson.Document;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -56,6 +60,12 @@ public class IndexTest {
 							.sortAs(ZuliaIndex.SortAs.StringHandling.FOLDING, "categoryFolded").sort());
 			indexConfig.addFieldConfig(
 					FieldConfigBuilder.createDouble("rating").index().sort().description("Some optional description").displayName("Product Rating"));
+
+			indexConfig.addWarmingSearch(new Search(INDEX_TEST).setSearchLabel("searching for stuff").addQuery(new ScoredQuery("title:stuff")));
+			indexConfig.addWarmingSearch(
+					new Search(INDEX_TEST).setSearchLabel("searching for other stuff").addQuery(new ScoredQuery("title:other AND title:stuff"))
+							.setPinToCache(true));
+
 			indexConfig.setIndexName(INDEX_TEST);
 			indexConfig.setNumberOfShards(1);
 
@@ -114,6 +124,17 @@ public class IndexTest {
 			List<String> defaultSearchFields = indexConfigFromServer.getDefaultSearchFields();
 			Assertions.assertEquals(1, defaultSearchFields.size());
 			Assertions.assertEquals("title", defaultSearchFields.get(0));
+
+			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = indexConfigFromServer.getWarmingSearches();
+			Assertions.assertEquals(2, warmingSearches.size());
+			Assertions.assertEquals("searching for stuff", warmingSearches.get(0).getSearchLabel());
+			Assertions.assertEquals(false, warmingSearches.get(0).getPinToCache());
+			Assertions.assertEquals(1, warmingSearches.get(0).getQueryList().size());
+			Assertions.assertEquals("title:stuff", warmingSearches.get(0).getQuery(0).getQ());
+			Assertions.assertEquals("searching for other stuff", warmingSearches.get(1).getSearchLabel());
+			Assertions.assertEquals(true, warmingSearches.get(1).getPinToCache());
+			Assertions.assertEquals(1, warmingSearches.get(1).getQueryList().size());
+			Assertions.assertEquals("title:other AND title:stuff", warmingSearches.get(1).getQuery(0).getQ());
 		}
 
 		{
@@ -125,6 +146,9 @@ public class IndexTest {
 					FieldConfigBuilder.createDouble("rating").index().sort().description("Some optional description").displayName("Product Rating"));
 			indexConfig.setIndexName(INDEX_TEST);
 			indexConfig.setNumberOfShards(1);
+			indexConfig.addWarmingSearch(new Search(INDEX_TEST).setSearchLabel("searching the stars").addQuery(new ScoredQuery("title:stars")));
+			indexConfig.addWarmingSearch(
+					new Search(INDEX_TEST).setSearchLabel("searching for cash").addQuery(new ScoredQuery("title:cash")).setPinToCache(true));
 
 			zuliaWorkPool.createIndex(indexConfig);
 
@@ -336,6 +360,54 @@ public class IndexTest {
 			Assertions.assertEquals(3, indexSettings.getFieldConfigList().size());
 			Assertions.assertEquals(0, indexSettings.getAnalyzerSettingsCount());
 			Assertions.assertEquals(4, indexSettings.getIndexWeight());
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.mergeWarmingSearches(new Search(INDEX_TEST).addQuery(new FilterQuery("different query")).setSearchLabel("searching the stars"));
+
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			ClientIndexConfig clientIndexConfig = updateIndexResult.getClientIndexConfig();
+			Assertions.assertEquals(2, clientIndexConfig.getWarmingSearches().size());
+			Assertions.assertEquals("different query", clientIndexConfig.getWarmingSearches().get(0).getQuery(0).getQ());
+
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.removeWarmingSearchesByLabel(Collections.singleton("not exist"));
+
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(2, indexSettings.getWarmingSearchesCount());
+
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.removeWarmingSearchesByLabel(Collections.singleton("searching the stars"));
+
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(1, indexSettings.getWarmingSearchesCount());
+
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.replaceWarmingSearches(new Search(INDEX_TEST).addQuery(new FilterQuery("some stuff")).setSearchLabel("the best label"),
+					new Search(INDEX_TEST).addQuery(new FilterQuery("more stuff")).setSearchLabel("the better label"));
+
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			ClientIndexConfig clientIndexConfig = updateIndexResult.getClientIndexConfig();
+			Assertions.assertEquals(2, clientIndexConfig.getWarmingSearches().size());
+			Assertions.assertEquals("some stuff", clientIndexConfig.getWarmingSearches().get(0).getQuery(0).getQ());
+			Assertions.assertEquals("more stuff", clientIndexConfig.getWarmingSearches().get(1).getQuery(0).getQ());
+
 		}
 
 	}

@@ -127,13 +127,22 @@ public class QueryCombiner {
 
 		long totalHits = 0;
 		long returnedHits = 0;
+		int shardsCached = 0;
+
 		for (ShardQueryResponse sr : shardResponses) {
 			totalHits += sr.getTotalHits();
 			returnedHits += sr.getScoredResultList().size();
+			if (sr.getCached()) {
+				shardsCached++;
+			}
 		}
+
+		boolean fullyCached = shardsCached == shardResponses.size();
 
 		QueryResponse.Builder builder = QueryResponse.newBuilder();
 		builder.setTotalHits(totalHits);
+		builder.setFullyCached(fullyCached);
+		builder.setShardsCached(shardsCached);
 
 		int resultsSize = Math.min(amount, (int) returnedHits);
 

@@ -8,6 +8,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaConstants;
+import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.ZuliaVersion;
 import org.bson.Document;
@@ -26,6 +27,8 @@ public class StatsController {
 	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
 	public HttpResponse<String> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
+
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		try {
 
@@ -46,6 +49,8 @@ public class StatsController {
 			mongoDocument.put("totalDataDirSpaceGB", totalDataDirSpaceGB);
 			mongoDocument.put("usedDataDirSpaceGB", usedDataDirSpaceGB);
 			mongoDocument.put("zuliaVersion", ZuliaVersion.getVersion());
+
+			indexManager.getStats();
 
 			String docString = mongoDocument.toJson();
 

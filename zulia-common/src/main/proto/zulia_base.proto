@@ -63,3 +63,19 @@ enum Similarity {
     TF = 3;
 }
 
+message ShardCacheStats {
+    CacheStats pinnedCache = 1;
+    CacheStats generalCache = 2;
+}
+
+message CacheStats {
+    uint64 estimatedSize = 1;
+    uint64 hitCount = 2;
+    uint64 missCount = 3;
+    uint64 loadSuccessCount = 4;
+    uint64 loadFailureCount = 5;
+    uint64 totalLoadTime = 6;
+    uint64 evictionCount = 7;
+    uint64 evictionWeight = 8;
+}
+
