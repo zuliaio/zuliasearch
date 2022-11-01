@@ -73,6 +73,8 @@ message QueryRequest {
   bool debug = 15;
   bool dontCache = 16;
   MasterSlaveSettings masterSlaveSettings = 17;
+  bool pinToCache = 18;
+  string searchLabel = 19;
 }
 
 message QueryResponse {
@@ -82,6 +84,8 @@ message QueryResponse {
   repeated FacetGroup facetGroup = 4;
   repeated AnalysisResult analysisResult = 5;
   repeated StatGroup statGroup = 6;
+  bool fullyCached = 7;
+  int32 shardsCached = 8;
 }
 
 message InternalQueryResponse {

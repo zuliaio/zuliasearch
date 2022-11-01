@@ -1,5 +1,6 @@
 package io.zulia.server.index;
 
+import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
@@ -53,10 +54,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +68,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -463,6 +467,39 @@ public class ZuliaIndexManager {
 				existingSettings.addAllFieldConfig(fieldConfigs);
 			}
 
+			if (updateIndexSettings.getWarmingSearchesOperation().getEnable()) {
+				List<ByteString> existingWarmingBytes = existingSettings.getWarmingSearchesList();
+				List<QueryRequest> existingWarmingSearch = new ArrayList<>();
+				for (ByteString existingWarmingByte : existingWarmingBytes) {
+					try {
+						QueryRequest queryRequest = QueryRequest.parseFrom(existingWarmingByte);
+						existingWarmingSearch.add(queryRequest);
+					}
+					catch (Exception e) {
+						LOG.severe("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
+					}
+				}
+
+				List<QueryRequest> warmingSearch = new ArrayList<>();
+				for (ByteString updates : updateIndexSettings.getWarmingSearchesList()) {
+					try {
+						QueryRequest queryRequest = QueryRequest.parseFrom(updates);
+						if (queryRequest.getSearchLabel().isEmpty()) {
+							throw new RuntimeException("A search label is required for a warming search");
+						}
+						warmingSearch.add(queryRequest);
+					}
+					catch (Exception e) {
+						throw new RuntimeException("Failed to parse existing warming search update", e);
+					}
+				}
+
+				List<QueryRequest> warmingSearches = updateWithAction(updateIndexSettings.getWarmingSearchesOperation(), existingWarmingSearch, warmingSearch,
+						QueryRequest::getSearchLabel);
+				existingSettings.clearWarmingSearches();
+				existingSettings.addAllWarmingSearches(warmingSearches.stream().map(QueryRequest::toByteString).toList());
+			}
+
 			if (updateIndexSettings.getSetDefaultSearchField()) {
 				existingSettings.clearDefaultSearchField();
 				existingSettings.addAllDefaultSearchField(updateIndexSettings.getDefaultSearchFieldList());
@@ -554,10 +591,13 @@ public class ZuliaIndexManager {
 
 	private <T> List<T> updateWithAction(Operation operation, List<T> existingValues, List<T> updates, Function<T, String> keyFunction) {
 
+		BinaryOperator<T> firstOne = (t, t2) -> t; // take the first one if duplicate labels
+
 		List<T> newValues;
 		if (OperationType.MERGE.equals(operation.getOperationType())) {
 			if (!updates.isEmpty()) {
-				Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity()));
+
+				Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new));
 
 				List<T> existingWithReplacements = existingValues.stream().map(value -> {
 					T replacement = toUpdate.get(keyFunction.apply(value));
@@ -575,7 +615,7 @@ public class ZuliaIndexManager {
 			}
 		}
 		else if (OperationType.REPLACE.equals(operation.getOperationType())) {
-			newValues = updates;
+			newValues = new ArrayList<>(updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new)).values());
 		}
 		else {
 			throw new IllegalArgumentException("Unknown operation type <" + operation.getOperationType() + ">");
@@ -814,4 +854,9 @@ public class ZuliaIndexManager {
 		return DeleteIndexAliasResponse.newBuilder().build();
 	}
 
+	public void getStats() {
+		for (ZuliaIndex value : indexMap.values()) {
+
+		}
+	}
 }

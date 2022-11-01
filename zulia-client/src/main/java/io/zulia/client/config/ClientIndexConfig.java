@@ -1,6 +1,10 @@
 package io.zulia.client.config;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+import io.zulia.client.command.builder.Search;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
@@ -36,9 +40,12 @@ public class ClientIndexConfig {
 
 	private Document meta;
 
+	private List<QueryRequest> warmingSearches;
+
 	public ClientIndexConfig() {
 		this.fieldMap = new TreeMap<>();
 		this.analyzerSettingsMap = new TreeMap<>();
+		this.warmingSearches = new ArrayList<>();
 	}
 
 	public ClientIndexConfig addDefaultSearchField(String defaultSearchField) {
@@ -181,6 +188,14 @@ public class ClientIndexConfig {
 		this.numberOfReplicas = numberOfReplicas;
 	}
 
+	public List<QueryRequest> getWarmingSearches() {
+		return warmingSearches;
+	}
+
+	public void setWarmingSearches(List<QueryRequest> warmingSearches) {
+		this.warmingSearches = warmingSearches;
+	}
+
 	public void addAnalyzerSetting(String name, AnalyzerSettings.Tokenizer tokenizer, Iterable<AnalyzerSettings.Filter> filterList, Similarity similarity) {
 
 		AnalyzerSettings.Builder analyzerSettings = AnalyzerSettings.newBuilder();
@@ -290,8 +305,25 @@ public class ClientIndexConfig {
 			isb.setMeta(ZuliaUtil.mongoDocumentToByteString(meta));
 		}
 
+		if (warmingSearches != null) {
+			for (QueryRequest queryRequest : warmingSearches) {
+				isb.addWarmingSearches(queryRequest.toByteString());
+			}
+
+		}
+
 		return isb.build();
 	}
+
+	public ClientIndexConfig addWarmingSearch(Search search) {
+		this.warmingSearches.add(search.getRequest());
+		return this;
+	}
+	public ClientIndexConfig addWarmingSearch(QueryRequest queryRequest) {
+		this.warmingSearches.add(queryRequest);
+		return this;
+	}
+
 
 	public void configure(IndexSettings indexSettings) {
 		this.indexName = indexSettings.getIndexName();
@@ -321,6 +353,17 @@ public class ClientIndexConfig {
 		this.ramBufferMB = indexSettings.getRamBufferMB();
 
 		this.meta = ZuliaUtil.byteStringToMongoDocument(indexSettings.getMeta());
+
+		this.warmingSearches = new ArrayList<>();
+		for (ByteString byteString : indexSettings.getWarmingSearchesList()) {
+			try {
+				QueryRequest queryRequest = QueryRequest.parseFrom(byteString);
+				this.warmingSearches.add(queryRequest);
+			}
+			catch (InvalidProtocolBufferException e) {
+				throw new RuntimeException(e);
+			}
+		}
 
 	}
 

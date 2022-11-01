@@ -27,6 +27,7 @@ dependencies {
     implementation("org.apache.lucene:lucene-facet:$luceneVersion")
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.1")
 
     implementation("info.picocli:picocli:4.6.3")
     annotationProcessor("info.picocli:picocli-codegen:4.6.3")
