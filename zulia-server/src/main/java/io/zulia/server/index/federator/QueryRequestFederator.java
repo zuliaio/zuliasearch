@@ -80,14 +80,16 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 		if (!queryCombiner.isShort()) {
 			long end = System.currentTimeMillis();
-			LOG.info("Finished query id <" + queryId + "> in " + (end - start) + "ms");
+			LOG.info("Finished query id <" + queryId + "> with result size " + String.format("%.2f", (qr.getSerializedSize() / 1024.0)) + "KB in " + (end
+					- start) + "ms");
 			return qr;
 		}
 		else {
 			if (!request.getFetchFull()) {
 				QueryRequest newRequest = request.toBuilder().setFetchFull(true).build();
 				long end = System.currentTimeMillis();
-				LOG.info("Finished query id <" + queryId + "> in " + (end - start) + "ms");
+				LOG.info("Finished query id <" + queryId + "> with result size " + String.format("%.2f", (qr.getSerializedSize() / 1024.0)) + "KB in " + (end
+						- start) + "ms");
 				return getResponse(newRequest);
 			}
 
