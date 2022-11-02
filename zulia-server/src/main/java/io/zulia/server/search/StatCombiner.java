@@ -72,49 +72,7 @@ public class StatCombiner {
 
 		// Generate return type
 		return ZuliaQuery.StatGroup.newBuilder().setStatRequest(this.statRequest).setGlobalStats(globalStats).addAllFacetStats(facetStats).build();
-
-		//		if (statGroups.size() == 1) {
-		//			statGroups.get(0).getStatGroup();
-		//		}
-		//		else {
-		//			//TODO support this IAN
-		//			throw new UnsupportedOperationException("Multiple indexes or shards are not supported");
-		//		}
 	}
-
-	//	/**
-	//	 * Convert between internal and external datatype for stat groups
-	//	 *
-	//	 * @param internal Internal (larger) datatype object
-	//	 * @return Slimmed down user-facing object
-	//	 */
-	//	private ZuliaQuery.StatGroup convertStatGroupType(ZuliaQuery.StatGroupInternal internal) {
-	//		List<ZuliaQuery.FacetStats> facetStats = new ArrayList<>();
-	//		internal.getFacetStatsList().forEach(sgi -> facetStats.add(convertFacetStatsType(sgi, internal.getStatRequest())));
-	//
-	//		return ZuliaQuery.StatGroup.newBuilder().setStatRequest(internal.getStatRequest())
-	//				.setGlobalStats(convertFacetStatsType(internal.getGlobalStats(), internal.getStatRequest())).addAllFacetStats(facetStats).build();
-	//	}
-
-	//	/**
-	//	 * Convert between internal and external datatype for facet stats Handles type conversion between DDSketch and Percentiles return type
-	//	 *
-	//	 * @param internal Internal (larger) datatype object
-	//	 * @return Slimmed down user-facing object
-	//	 */
-	//	private ZuliaQuery.FacetStats convertFacetStatsType(ZuliaQuery.FacetStatsInternal internal, ZuliaQuery.StatRequest statRequest) {
-	//		// Retrieves the list of requested percentiles from the FacetStats object, if it exists
-	//		DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, internal.getStatSketch());
-	//		List<ZuliaQuery.Percentile> percentiles = new ArrayList<>();
-	//		for (Double point : statRequest.getPercentilesList()) {
-	//			if (point >= 0.0 && point <= 100.0) {
-	//				percentiles.add(ZuliaQuery.Percentile.newBuilder().setPoint(point).setValue(sketch.getValueAtQuantile(point)).build());
-	//			}
-	//		}
-	//
-	//		return ZuliaQuery.FacetStats.newBuilder().setFacet(internal.getFacet()).setMin(internal.getMin()).setMax(internal.getMax()).setSum(internal.getSum())
-	//				.setDocCount(internal.getDocCount()).setAllDocCount(internal.getAllDocCount()).setValueCount(internal.getValueCount()).build();
-	//	}
 
 	/**
 	 * Combines a list of FacetStats Internal type into a single "merged" FacetStats type which can be returned to the calling user. The will combine DDSketches
@@ -131,7 +89,6 @@ public class StatCombiner {
 		if (statRequest.getPrecision() > 0.0 && !statRequest.getPercentilesList().isEmpty()) {
 			// Build initial sketch and merge other sketches into this one
 			DDSketch combinedSketch = DDSketches.unboundedDense(statRequest.getPrecision());
-			//TODO(Ian): Can we guaratee that one of these will be right?
 			for (ZuliaQuery.FacetStatsInternal fsi : internalStats) {
 				// Handle DDSketches
 				DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.getStatSketch());
@@ -151,9 +108,6 @@ public class StatCombiner {
 		// Accumulate the local stats
 		StatCarrier carrier = new StatCarrier();
 		internalStats.forEach(carrier::addStat);
-		//TODO(Ian): Error logging?
-		//		else {
-		//		}
 
 		// Build combined final FacetStats that can be returned to the user
 		return ZuliaQuery.FacetStats.newBuilder().setFacet(facetName).setMin(carrier.getMin()).setMax(carrier.getMax()).setSum(carrier.getSum())

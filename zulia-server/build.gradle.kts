@@ -22,8 +22,7 @@ tasks.withType<Test> {
 dependencies {
     implementation(project(":zulia-query-parser"))
     implementation(project(":zulia-client")) //needed for admin tools
-    implementation(project(":zulia-analyzer"))
-    
+
     implementation("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
     implementation("org.apache.lucene:lucene-facet:$luceneVersion")
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
@@ -61,7 +60,7 @@ dependencies {
     testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.5.1")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.5.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
     api("org.yaml:snakeyaml:$snakeYamlVersion")

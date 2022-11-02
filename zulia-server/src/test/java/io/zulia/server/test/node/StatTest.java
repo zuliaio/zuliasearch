@@ -34,13 +34,10 @@ public class StatTest {
 
 	private static ZuliaWorkPool zuliaWorkPool;
 	private static int repeatCount = 100;
-	private static int shardCount = 3;
+	private static int shardCount = 1;
 
 	@BeforeAll
 	public static void initAll() throws Exception {
-
-		//TODO(Ian): remove this before merge
-		System.setProperty("de.flapdoodle.os.override", "Linux|X86_64|Ubuntu|Ubuntu_22_04");
 
 		TestHelper.createNodes(3);
 
@@ -59,7 +56,7 @@ public class StatTest {
 		//indexConfig.addFieldConfig(FieldConfigBuilder.create("authorCount", FieldType.NUMERIC_INT).index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
-		indexConfig.setNumberOfShards(shardCount); // TODO(Ian): Keep sharding??
+		indexConfig.setNumberOfShards(shardCount);
 		indexConfig.setShardCommitInterval(20); //force some commits
 
 		zuliaWorkPool.createIndex(indexConfig);
@@ -67,7 +64,9 @@ public class StatTest {
 
 	@BeforeEach
 	public void optimize() throws Exception {
-		zuliaWorkPool.optimizeIndex(STAT_TEST_INDEX);
+		if (shardCount > 1) {
+			zuliaWorkPool.optimizeIndex(STAT_TEST_INDEX);
+		}
 	}
 
 	@Test
@@ -110,9 +109,11 @@ public class StatTest {
 	public void statTest() throws Exception {
 
 		List<Double> percentiles = new ArrayList<>() {{
+			add(0.0);
 			add(0.25);
 			add(0.50);
 			add(0.75);
+			add(1.0);
 		}};
 
 		Search search = new Search(STAT_TEST_INDEX);
@@ -171,6 +172,15 @@ public class StatTest {
 		Assertions.assertEquals(4L * repeatCount, ratingStat.getDocCount());
 		Assertions.assertEquals(6L * repeatCount, ratingStat.getAllDocCount());
 		Assertions.assertEquals(5L * repeatCount, ratingStat.getValueCount());
+
+		Assertions.assertEquals(5, ratingStat.getPercentilesCount());
+
+		double precision = 0.001;
+		Assertions.assertEquals(0.5, ratingStat.getPercentiles(0).getValue(), precision);
+		Assertions.assertEquals(1.0, ratingStat.getPercentiles(1).getValue(), precision);
+		Assertions.assertEquals(2.5, ratingStat.getPercentiles(2).getValue(), precision);
+		Assertions.assertEquals(3.0, ratingStat.getPercentiles(3).getValue(), precision);
+		Assertions.assertEquals(3.5, ratingStat.getPercentiles(4).getValue(), precision);
 	}
 
 	private void ratingNormalTest(SearchResult searchResult) {
