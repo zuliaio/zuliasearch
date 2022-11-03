@@ -28,6 +28,7 @@ dependencies {
 
     implementation("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
     implementation("org.apache.lucene:lucene-facet:$luceneVersion")
+    implementation("org.apache.lucene:lucene-replicator:$luceneVersion")
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
