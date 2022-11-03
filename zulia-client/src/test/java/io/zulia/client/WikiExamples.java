@@ -56,7 +56,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class WikiExamples {
-
+	//TODO(Ian): Add stat percentiles and number filters examples
 	public void simpleClient() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = new ZuliaWorkPool(new ZuliaPoolConfig().addNode("someIp"));
 	}
@@ -192,7 +192,6 @@ public class WikiExamples {
 		zuliaWorkPool.deleteIndex(deleteIndex);
 	}
 
-
 	public void simpleStore(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Document document = new Document();
 		document.put("id", "myid222");
@@ -221,7 +220,6 @@ public class WikiExamples {
 		Store store = new Store("myid222", "myIndexName").setResultDocument(json);
 		zuliaWorkPool.store(store);
 	}
-
 
 	public void storeWithMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Document document = new Document();
@@ -365,7 +363,8 @@ public class WikiExamples {
 		System.out.println("Found <" + totalHits + "> hits");
 		for (CompleteResult completeResult : searchResult.getCompleteResults()) {
 			Document doc = completeResult.getDocument();
-			System.out.println("Matching document <" + completeResult.getUniqueId() + "> with score <" + completeResult.getScore() + "> from index <" + completeResult.getIndexName() + ">");
+			System.out.println("Matching document <" + completeResult.getUniqueId() + "> with score <" + completeResult.getScore() + "> from index <"
+					+ completeResult.getIndexName() + ">");
 			System.out.println(" full document <" + doc + ">");
 		}
 	}

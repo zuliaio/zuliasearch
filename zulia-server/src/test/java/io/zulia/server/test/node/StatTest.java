@@ -7,6 +7,7 @@ import io.zulia.client.command.builder.MatchAllQuery;
 import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.StatFacet;
+import io.zulia.client.command.factory.FilterFactory;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
@@ -17,7 +18,6 @@ import org.bson.Document;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -62,13 +62,6 @@ public class StatTest {
 		zuliaWorkPool.createIndex(indexConfig);
 	}
 
-	@BeforeEach
-	public void optimize() throws Exception {
-		if (shardCount > 1) {
-			zuliaWorkPool.optimizeIndex(STAT_TEST_INDEX);
-		}
-	}
-
 	@Test
 	@Order(2)
 	public void index() throws Exception {
@@ -83,7 +76,6 @@ public class StatTest {
 			indexRecord(i * uniqueDocs + 5, "something really special", "top3/middle/bottom4", null, 4, List.of());
 			indexRecord(i * uniqueDocs + 6, "boring", "top4/middle/bottom5", "other", 1, List.of(0.0));
 		}
-
 	}
 
 	private void indexRecord(int id, String title, String pathFacet, String normalFacet, int authorCount, List<Double> rating) throws Exception {
@@ -176,11 +168,11 @@ public class StatTest {
 		Assertions.assertEquals(5, ratingStat.getPercentilesCount());
 
 		double precision = 0.001;
-		Assertions.assertEquals(0.5, ratingStat.getPercentiles(0).getValue(), precision);
-		Assertions.assertEquals(1.0, ratingStat.getPercentiles(1).getValue(), precision);
-		Assertions.assertEquals(2.5, ratingStat.getPercentiles(2).getValue(), precision);
-		Assertions.assertEquals(3.0, ratingStat.getPercentiles(3).getValue(), precision);
-		Assertions.assertEquals(3.5, ratingStat.getPercentiles(4).getValue(), precision);
+		Assertions.assertEquals(0.5, ratingStat.getPercentiles(0).getValue(), precision * 0.5);
+		Assertions.assertEquals(1.0, ratingStat.getPercentiles(1).getValue(), precision * 1.0);
+		Assertions.assertEquals(2.5, ratingStat.getPercentiles(2).getValue(), precision * 2.5);
+		Assertions.assertEquals(3.0, ratingStat.getPercentiles(3).getValue(), precision * 3.0);
+		Assertions.assertEquals(3.5, ratingStat.getPercentiles(4).getValue(), precision * 3.5);
 	}
 
 	private void ratingNormalTest(SearchResult searchResult) {
@@ -403,6 +395,21 @@ public class StatTest {
 		Assertions.assertEquals(20L * repeatCount, authorCountStats.getSum().getLongValue());
 		Assertions.assertEquals(6L * repeatCount, authorCountStats.getDocCount());
 		Assertions.assertEquals(6L * repeatCount, authorCountStats.getValueCount());
+	}
+
+	@Test
+	@Order(7)
+	/**
+	 * Test designed to evaluate performance of range filters
+	 */ public void testFilters() throws Exception {
+		Search search = new Search(STAT_TEST_INDEX);
+		//		search.addStat(new NumericStat("rating"));
+		//		search.addQuery(new FilterQuery("title:boring").exclude());
+		search.addQuery(FilterFactory.rangeDouble("rating").setMinValue(3.6).setMaxValue(3.9).toQuery());
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		FacetStats ratingStat = searchResult.getNumericFieldStat("rating");
+		System.out.println(ratingStat);
 	}
 
 	@AfterAll
