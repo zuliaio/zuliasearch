@@ -118,31 +118,31 @@ public class StatTest {
 		ratingTest(ratingStat);
 
 		search.clearStat();
-		search.addStat(new StatFacet("rating", "normalFacet"));
+		search.addStat(new StatFacet("rating", "normalFacet").setPercentiles(percentiles));
 		searchResult = zuliaWorkPool.search(search);
 		ratingNormalTest(searchResult);
 
 		search.clearStat();
-		search.addStat(new StatFacet("rating", "pathFacet"));
+		search.addStat(new StatFacet("rating", "pathFacet").setPercentiles(percentiles));
 		searchResult = zuliaWorkPool.search(search);
 
 		ratingPathTest(searchResult);
 
 		search.clearStat();
-		search.addStat(new StatFacet("rating", "normalFacet"));
-		search.addStat(new StatFacet("rating", "pathFacet"));
+		search.addStat(new StatFacet("rating", "normalFacet").setPercentiles(percentiles));
+		search.addStat(new StatFacet("rating", "pathFacet").setPercentiles(percentiles));
 		searchResult = zuliaWorkPool.search(search);
 		ratingNormalTest(searchResult);
 		ratingPathTest(searchResult);
 
 		search = new Search(STAT_TEST_INDEX);
-		search.addStat(new StatFacet("authorCount", "pathFacet"));
+		search.addStat(new StatFacet("authorCount", "pathFacet").setPercentiles(percentiles));
 		Search finalSearch = search;
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch),
 				"Expecting: Search: Numeric field <authorCount> must be indexed as a SORTABLE numeric field");
 
 		search = new Search(STAT_TEST_INDEX);
-		search.addStat(new StatFacet("rating", "normalFacet"));
+		search.addStat(new StatFacet("rating", "normalFacet").setPercentiles(percentiles));
 		search.addQuery(new FilterQuery("title:boring"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());

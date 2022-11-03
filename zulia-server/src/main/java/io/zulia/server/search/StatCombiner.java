@@ -84,6 +84,11 @@ public class StatCombiner {
 	private ZuliaQuery.FacetStats convertAndCombineFacetStats(List<ZuliaQuery.FacetStatsInternal> internalStats) {
 		String facetName = internalStats.get(0).getFacet();
 
+		// No results to convert here. Return a blank value
+		if (internalStats.get(0).getSerializedSize() == 0) {
+			return ZuliaQuery.FacetStats.newBuilder().build();
+		}
+
 		// Populate percentiles if they were requested correctly
 		List<ZuliaQuery.Percentile> percentiles = new ArrayList<>();
 		if (statRequest.getPrecision() > 0.0 && !statRequest.getPercentilesList().isEmpty()) {
