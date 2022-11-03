@@ -8,6 +8,7 @@ import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.StatFacet;
 import io.zulia.client.command.factory.FilterFactory;
+import io.zulia.client.command.factory.RangeBehavior;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
@@ -33,8 +34,8 @@ public class StatTest {
 	public static final String STAT_TEST_INDEX = "stat";
 
 	private static ZuliaWorkPool zuliaWorkPool;
-	private static int repeatCount = 100;
-	private static int shardCount = 1;
+	private static final int repeatCount = 100;
+	private static final int shardCount = 5;
 
 	@BeforeAll
 	public static void initAll() throws Exception {
@@ -99,7 +100,6 @@ public class StatTest {
 	@Test
 	@Order(3)
 	public void statTest() throws Exception {
-
 		List<Double> percentiles = new ArrayList<>() {{
 			add(0.0);
 			add(0.25);
@@ -111,7 +111,6 @@ public class StatTest {
 		Search search = new Search(STAT_TEST_INDEX);
 		search.addStat(new NumericStat("rating").setPercentiles(percentiles));
 		search.addQuery(new FilterQuery("title:boring").exclude());
-		search.addQuery(new MatchAllQuery());
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
 
@@ -236,6 +235,61 @@ public class StatTest {
 
 	@Test
 	@Order(4)
+	public void testRangeFilters() throws Exception {
+		SearchResult searchResult;
+		Search search = new Search(STAT_TEST_INDEX);
+
+		// Get how many are in the dataset
+		search.addQuery(new MatchAllQuery());
+		searchResult = zuliaWorkPool.search(search);
+		search.clearQueries();
+		Assertions.assertEquals(700, searchResult.getTotalHits());
+
+		// Find all documents with any value in rating stat
+		search.addQuery(FilterFactory.rangeDouble("rating").toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		search.clearQueries();
+		Assertions.assertEquals(500, searchResult.getTotalHits());
+
+		// Find documents without any value in rating stat
+		search.addQuery(FilterFactory.rangeDouble("rating").setExclude().toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		search.clearQueries();
+		Assertions.assertEquals(200, searchResult.getTotalHits());
+
+		// Test max only
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMaxValue(0.50).toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(200, searchResult.getTotalHits());
+
+		// Inverted max only
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMaxValue(0.50).setExclude().toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(500, searchResult.getTotalHits());
+
+		// Test inclusivity
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMaxValue(0.50).setEndpointBehavior(RangeBehavior.EXCLUSIVE).toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(100, searchResult.getTotalHits());
+
+		// Test endpoints
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMinValue(0.0).setMaxValue(3.5).setEndpointBehavior(RangeBehavior.INCLUSIVE).toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(500, searchResult.getTotalHits());
+
+		// Test exclude endpoints
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMinValue(0.0).setMaxValue(3.5).setEndpointBehavior(RangeBehavior.EXCLUSIVE).toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(400, searchResult.getTotalHits());
+	}
+
+	@Test
+	@Order(5)
 	public void reindex() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
@@ -257,7 +311,7 @@ public class StatTest {
 	}
 
 	@Test
-	@Order(5)
+	@Order(6)
 	public void restart() throws Exception {
 		TestHelper.stopNodes();
 		Thread.sleep(2000);
@@ -266,11 +320,10 @@ public class StatTest {
 	}
 
 	@Test
-	@Order(6)
+	@Order(7)
 	public void confirm() throws Exception {
 		Search search = new Search(STAT_TEST_INDEX);
 		search.addQuery(new FilterQuery("title:boring").exclude());
-		search.addQuery(new MatchAllQuery());
 		search.addStat(new NumericStat("authorCount"));
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
@@ -395,21 +448,6 @@ public class StatTest {
 		Assertions.assertEquals(20L * repeatCount, authorCountStats.getSum().getLongValue());
 		Assertions.assertEquals(6L * repeatCount, authorCountStats.getDocCount());
 		Assertions.assertEquals(6L * repeatCount, authorCountStats.getValueCount());
-	}
-
-	@Test
-	@Order(7)
-	/**
-	 * Test designed to evaluate performance of range filters
-	 */ public void testFilters() throws Exception {
-		Search search = new Search(STAT_TEST_INDEX);
-		//		search.addStat(new NumericStat("rating"));
-		//		search.addQuery(new FilterQuery("title:boring").exclude());
-		search.addQuery(FilterFactory.rangeDouble("rating").setMinValue(3.6).setMaxValue(3.9).toQuery());
-		SearchResult searchResult = zuliaWorkPool.search(search);
-
-		FacetStats ratingStat = searchResult.getNumericFieldStat("rating");
-		System.out.println(ratingStat);
 	}
 
 	@AfterAll

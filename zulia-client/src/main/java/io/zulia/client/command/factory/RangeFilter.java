@@ -64,7 +64,7 @@ public class RangeFilter<T> {
 		}
 		// Build endpoints if applicable
 		if (maxValue != null && (behavior == RangeBehavior.EXCLUSIVE || behavior == RangeBehavior.INCLUDE_MIN)) {
-			open = '{';
+			close = '}';
 		}
 		FilterQuery query = new FilterQuery(field + ":" + open + minString + " TO " + maxString + close);
 

@@ -18,6 +18,7 @@ import io.zulia.message.ZuliaQuery.FacetRequest;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaQuery.FieldSimilarity;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
+import io.zulia.message.ZuliaQuery.Query.QueryType;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
@@ -522,10 +523,19 @@ public class ZuliaIndex {
 			return null;
 		}
 
+		boolean allNegative = true;
 		BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
 		for (ZuliaQuery.Query q : vectorPreQueryList) {
+			if (!isNegativeQuery(q.getQueryType())) {
+				allNegative = false;
+			}
 			booleanQueryBuilder.add(generateClause(q));
 		}
+
+		if (allNegative) {
+			booleanQueryBuilder.add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER));
+		}
+
 		return booleanQueryBuilder.build();
 	}
 
@@ -534,7 +544,17 @@ public class ZuliaIndex {
 		List<BooleanClause> clauses = new ArrayList<>();
 
 		List<ZuliaQuery.Query> queryList = qr.getQueryList();
-		if (queryList.isEmpty()) {
+
+		boolean allNegativeOrEmpty = true;
+
+		for (ZuliaQuery.Query query : queryList) {
+			if (!isNegativeQuery(query.getQueryType())) {
+				allNegativeOrEmpty = false;
+				break;
+			}
+		}
+
+		if (allNegativeOrEmpty) {
 			clauses.add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER));
 		}
 
@@ -569,37 +589,41 @@ public class ZuliaIndex {
 
 	}
 
+	private static boolean isNegativeQuery(QueryType queryType) {
+		return queryType.equals(QueryType.FILTER_NOT) || queryType.equals(QueryType.TERMS_NOT) || queryType.equals(QueryType.NUMERIC_SET_NOT);
+	}
+
 	private BooleanClause generateClause(ZuliaQuery.Query query) throws Exception {
 		BooleanClause.Occur occur = BooleanClause.Occur.FILTER;
 		Query luceneQuery;
-		if ((query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS)) {
+		if ((query.getQueryType() == QueryType.TERMS)) {
 			luceneQuery = handleTermQuery(query);
 		}
-		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS_NOT) {
+		else if (query.getQueryType() == QueryType.TERMS_NOT) {
 			luceneQuery = handleTermQuery(query);
 			occur = BooleanClause.Occur.MUST_NOT;
 		}
-		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.NUMERIC_SET) {
+		else if (query.getQueryType() == QueryType.NUMERIC_SET) {
 			luceneQuery = handleNumericSetQuery(query);
 			occur = BooleanClause.Occur.MUST;
 		}
-		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.NUMERIC_SET_NOT) {
+		else if (query.getQueryType() == QueryType.NUMERIC_SET_NOT) {
 			luceneQuery = handleNumericSetQuery(query);
 			occur = BooleanClause.Occur.MUST_NOT;
 		}
-		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR) {
+		else if (query.getQueryType() == QueryType.VECTOR) {
 			luceneQuery = handleVectorQuery(query);
 			occur = BooleanClause.Occur.MUST;
 		}
 		else {
 			luceneQuery = parseQueryToLucene(query);
-			if (query.getQueryType() == ZuliaQuery.Query.QueryType.SCORE_MUST) {
+			if (query.getQueryType() == QueryType.SCORE_MUST) {
 				occur = BooleanClause.Occur.MUST;
 			}
-			else if (query.getQueryType() == ZuliaQuery.Query.QueryType.SCORE_SHOULD) {
+			else if (query.getQueryType() == QueryType.SCORE_SHOULD) {
 				occur = BooleanClause.Occur.SHOULD;
 			}
-			else if (query.getQueryType() == ZuliaQuery.Query.QueryType.FILTER_NOT) {
+			else if (query.getQueryType() == QueryType.FILTER_NOT) {
 				occur = BooleanClause.Occur.MUST_NOT;
 			}
 			//defaults to filter
