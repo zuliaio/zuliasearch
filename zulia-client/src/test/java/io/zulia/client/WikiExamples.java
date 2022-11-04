@@ -101,6 +101,13 @@ public class WikiExamples {
 		clientIndexConfig.addFieldConfig(FieldConfigBuilder.create("abstract", FieldType.STRING).indexAs("myAnalyzer"));
 	}
 
+	public void createIndexWarmedSearches(ClientIndexConfig clientIndexConfig) throws Exception {
+		Search search1 = new Search("someIndex").addQuery(new FilterQuery("the best query")).setSearchLabel("custom");
+		Search search2 = new Search("someIndex").addQuery(new FilterQuery("the worst query")).setSearchLabel("mine");
+		clientIndexConfig.addWarmingSearch(search1);
+		clientIndexConfig.addWarmingSearch(search2);
+	}
+
 	public void createIndexCustomMetadata(ClientIndexConfig clientIndexConfig) throws Exception {
 		clientIndexConfig.setMeta(new Document("category", "special").append("otherKey", 10));
 	}
@@ -184,6 +191,29 @@ public class WikiExamples {
 		zuliaWorkPool.updateIndex(updateIndex);
 	}
 
+	public void updateIndexMergeWarmedSearches(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// if a warmed search with search label custom or mine exists, it will be updated with these settings, otherwise they are added
+		Search search1 = new Search("someIndex").addQuery(new FilterQuery("the best query")).setSearchLabel("custom");
+		Search search2 = new Search("someIndex").addQuery(new FilterQuery("the worst query")).setSearchLabel("mine");
+		updateIndex.mergeWarmingSearches(search1, search2);
+	}
+
+	public void updateIndexReplaceWarmedSearches(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces all warmed searches with the given warmed searches
+		Search search1 = new Search("someIndex").addQuery(new FilterQuery("some stuff")).setSearchLabel("the best label");
+		Search search2 = new Search("someIndex").addQuery(new FilterQuery("more stuff")).setSearchLabel("the good label");
+		updateIndex.replaceWarmingSearches(search1, search2);
+	}
+
+	public void updateIndexRemoveWarmedSearches(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// removes the warmed search with search label myCustomOne if it exists
+		updateIndex.removeWarmingSearchesByLabel(List.of("myCustomOne"));
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
 	public void deleteIndex(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		zuliaWorkPool.deleteIndex("myIndex");
 	}
@@ -192,7 +222,6 @@ public class WikiExamples {
 		DeleteIndex deleteIndex = new DeleteIndex("myIndex").setDeleteAssociated(true);
 		zuliaWorkPool.deleteIndex(deleteIndex);
 	}
-
 
 	public void simpleStore(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Document document = new Document();
@@ -222,7 +251,6 @@ public class WikiExamples {
 		Store store = new Store("myid222", "myIndexName").setResultDocument(json);
 		zuliaWorkPool.store(store);
 	}
-
 
 	public void storeWithMeta(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Document document = new Document();
@@ -355,6 +383,17 @@ public class WikiExamples {
 		}
 	}
 
+	public void cache(ZuliaWorkPool zuliaWorkPool) throws Exception {
+
+		// make sure this search stays in the query cache until the index is changed or zulia is restarted
+		Search search = new Search("myIndexName").setAmount(10);
+		search.addQuery(new ScoredQuery("issn:1234-1234 AND title:special"));
+		search.setPinToCache(true);
+
+		// Alternatively can force search to not be cached.  Searches that return more results than shardQueryCacheMaxAmount are not cached regardless
+		search.setDontCache(true);
+	}
+
 	public void multipleIndexes(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Search search = new Search("myIndexName", "myOtherIndex").setAmount(10);
 		search.addQuery(new ScoredQuery("issn:1234-1234 AND title:special"));
@@ -366,7 +405,8 @@ public class WikiExamples {
 		System.out.println("Found <" + totalHits + "> hits");
 		for (CompleteResult completeResult : searchResult.getCompleteResults()) {
 			Document doc = completeResult.getDocument();
-			System.out.println("Matching document <" + completeResult.getUniqueId() + "> with score <" + completeResult.getScore() + "> from index <" + completeResult.getIndexName() + ">");
+			System.out.println("Matching document <" + completeResult.getUniqueId() + "> with score <" + completeResult.getScore() + "> from index <"
+					+ completeResult.getIndexName() + ">");
 			System.out.println(" full document <" + doc + ">");
 		}
 	}
