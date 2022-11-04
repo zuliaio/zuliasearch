@@ -9,6 +9,7 @@ import io.zulia.client.command.*;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.Highlight;
+import io.zulia.client.command.builder.NumericSetQuery;
 import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
@@ -439,6 +440,12 @@ public class WikiExamples {
 		search.addQuery(new TermQuery("id").addTerms("1", "2", "3", "4"));
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
+	}
+
+	public void numericSetQueries(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName").setAmount(100);
+		//search for values 1, 5, 7, 9 in the field intField
+		search.addQuery(new NumericSetQuery("intField").addValues(1, 5, 7, 9));
 	}
 
 	public void vectorQueriesAndIndexing(ZuliaWorkPool zuliaWorkPool) throws Exception {
