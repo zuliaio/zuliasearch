@@ -432,22 +432,30 @@ public class ZuliaIndexManager {
 
 	public UpdateIndexResponse updateIndex(UpdateIndexRequest request) throws Exception {
 
-		if (request.getIndexName().isEmpty()) {
+		String orgIndexName = request.getIndexName();
+
+		if (orgIndexName.isEmpty()) {
 			throw new IllegalArgumentException("Index name must be given");
 		}
 
-		Lock lock = indexUpdateMap.computeIfAbsent(request.getIndexName(), s -> new ReentrantLock());
+		String indexName = handleAlias(orgIndexName);
+
+		if (!indexName.equals(orgIndexName)) {
+			LOG.info("Update Index Following Alias <" + orgIndexName + "> to index <" + indexName + ">");
+		}
+
+		Lock lock = indexUpdateMap.computeIfAbsent(indexName, s -> new ReentrantLock());
 		try {
 			lock.lock();
 
-			IndexSettings indexSettings = indexService.getIndex(request.getIndexName());
+			IndexSettings indexSettings = indexService.getIndex(indexName);
 			if (indexSettings == null) {
-				LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexName() + "> that does not exist");
+				LOG.log(Level.SEVERE, "Failed to update index <" + indexName + "> that does not exist");
 
-				throw new Exception("Failed to update index <" + request.getIndexName() + "> that does not exist");
+				throw new Exception("Failed to update index <" + indexName + "> that does not exist");
 			}
 
-			LOG.info("Updating Index <" + request.getIndexName() + "> with <" + request.getUpdateIndexSettings() + ">");
+			LOG.info("Updating Index <" + indexName + "> with <" + request.getUpdateIndexSettings() + ">");
 
 			UpdateIndexSettings updateIndexSettings = request.getUpdateIndexSettings();
 
@@ -576,12 +584,12 @@ public class ZuliaIndexManager {
 
 			try {
 				@SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
-						InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(request.getIndexName()).build());
+						InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(indexName).build());
 
 				return UpdateIndexResponse.newBuilder().setFullIndexSettings(indexSettings).build();
 			}
 			catch (Exception e) {
-				throw new Exception("Failed to update index <" + request.getIndexName() + ">: " + e.getMessage());
+				throw new Exception("Failed to update index <" + indexName + ">: " + e.getMessage());
 			}
 		}
 		finally {
