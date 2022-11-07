@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import java.util.Collections;
 import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -335,14 +334,14 @@ public class IndexTest {
 		{
 
 			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
-			updateIndex.removeAnalyzerSettingsByName(Collections.singleton("mine"));
+			updateIndex.removeAnalyzerSettingsByName("mine");
 			zuliaWorkPool.updateIndex(updateIndex);
 		}
 
 		{
 
 			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
-			updateIndex.removeAnalyzerSettingsByName(Collections.singleton("custom"));
+			updateIndex.removeAnalyzerSettingsByName("custom");
 
 			Assertions.assertThrows(Exception.class, () -> {
 				zuliaWorkPool.updateIndex(updateIndex);
@@ -351,7 +350,7 @@ public class IndexTest {
 
 		{
 			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
-			updateIndex.removeAnalyzerSettingsByName(Collections.singleton("custom"));
+			updateIndex.removeAnalyzerSettingsByName("custom");
 			FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs(DefaultAnalyzers.STANDARD).sort();
 			updateIndex.mergeFieldConfig(myField);
 			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
@@ -376,7 +375,7 @@ public class IndexTest {
 
 		{
 			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
-			updateIndex.removeWarmingSearchesByLabel(Collections.singleton("not exist"));
+			updateIndex.removeWarmingSearchesByLabel("not exist");
 
 			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
 
@@ -387,7 +386,7 @@ public class IndexTest {
 
 		{
 			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
-			updateIndex.removeWarmingSearchesByLabel(Collections.singleton("searching the stars"));
+			updateIndex.removeWarmingSearchesByLabel("searching the stars");
 
 			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
 

@@ -166,7 +166,7 @@ public class WikiExamples {
 	public void updateIndexRemoveAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
 		// removes the analyzer field with name myCustomOne if it exists
-		updateIndex.removeAnalyzerSettingsByName(List.of("myCustomOne"));
+		updateIndex.removeAnalyzerSettingsByName("myCustomOne");
 		zuliaWorkPool.updateIndex(updateIndex);
 	}
 
@@ -210,7 +210,7 @@ public class WikiExamples {
 	public void updateIndexRemoveWarmedSearches(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
 		// removes the warmed search with search label myCustomOne if it exists
-		updateIndex.removeWarmingSearchesByLabel(List.of("myCustomOne"));
+		updateIndex.removeWarmingSearchesByLabel("myCustomOne");
 		zuliaWorkPool.updateIndex(updateIndex);
 	}
 
