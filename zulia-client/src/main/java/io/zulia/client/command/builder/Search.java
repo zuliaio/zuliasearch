@@ -30,10 +30,31 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 	}
 
 	public Search(Iterable<String> indexes) {
+		setIndexes(indexes);
+	}
+
+	public Search setIndexes(Iterable<String> indexes) {
+
+		for (String index : indexes) {
+			if (index == null) {
+				throw new IllegalArgumentException("Index cannot be null");
+			}
+		}
+
+		queryRequest.clearIndex();
 		queryRequest.addAllIndex(indexes);
 		if (queryRequest.getIndexCount() == 0) {
 			throw new IllegalArgumentException("Indexes must be given for a query");
 		}
+		return this;
+	}
+
+	public Search setIndexes(String... indexes) {
+		return setIndexes(Arrays.asList(indexes));
+	}
+
+	public Search setIndex(String index) {
+		return setIndexes(List.of(index));
 	}
 
 	public Search addQuery(QueryBuilder queryBuilder) {

@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
@@ -32,7 +33,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 
 	private Double requestFactor;
 	private Integer minShardRequest;
-	private Integer numberOfShards;
+
 	private String indexName;
 	private Integer idleTimeWithoutCommit;
 	private Integer shardCommitInterval;
@@ -60,76 +61,110 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	}
 
 	public UpdateIndex clearAnalyzerSettingsChanges() {
-		analyzerSettingsOperation.setEnable(false);
-		analyzerSettingsOperation.setOperationType(OperationType.MERGE);
-		analyzerSettingsOperation.clearRemovedKeys();
-		if (!analyzerSettingsList.isEmpty()) {
-			analyzerSettingsList.clear();
+		this.analyzerSettingsOperation.setEnable(false);
+		this.analyzerSettingsOperation.setOperationType(OperationType.MERGE);
+		this.analyzerSettingsOperation.clearRemovedKeys();
+		if (!this.analyzerSettingsList.isEmpty()) {
+			this.analyzerSettingsList.clear();
 		}
 		return this;
 	}
 
+	public UpdateIndex removeAnalyzerSettingsByName(String... namesToRemove) {
+		return removeAnalyzerSettingsByName(Arrays.asList(namesToRemove));
+	}
+
 	public UpdateIndex removeAnalyzerSettingsByName(Collection<String> namesToRemove) {
-		analyzerSettingsOperation.setEnable(true);
-		analyzerSettingsOperation.addAllRemovedKeys(namesToRemove);
+		this.analyzerSettingsOperation.setEnable(true);
+		this.analyzerSettingsOperation.addAllRemovedKeys(namesToRemove);
 		return this;
 	}
 
 	public UpdateIndex mergeAnalyzerSettings(ZuliaIndex.AnalyzerSettings... analyzerSettings) {
-		analyzerSettingsOperation.setEnable(true);
-		analyzerSettingsOperation.setOperationType(OperationType.MERGE);
-		this.analyzerSettingsList = Objects.requireNonNullElse(Arrays.asList(analyzerSettings), Collections.emptyList());
+		return mergeAnalyzerSettings(List.of(analyzerSettings));
+	}
+
+	public UpdateIndex mergeAnalyzerSettings(List<ZuliaIndex.AnalyzerSettings> analyzerSettings) {
+		if (analyzerSettings == null || analyzerSettings.isEmpty()) {
+			throw new IllegalArgumentException("Cannot merge null or empty analyzer settings");
+		}
+		this.analyzerSettingsOperation.setEnable(true);
+		this.analyzerSettingsOperation.setOperationType(OperationType.MERGE);
+		this.analyzerSettingsList = analyzerSettings;
 		return this;
 	}
 
 	public UpdateIndex replaceAnalyzerSettings(ZuliaIndex.AnalyzerSettings... analyzerSettings) {
-		analyzerSettingsOperation.setEnable(true);
-		analyzerSettingsOperation.setOperationType(OperationType.REPLACE);
-		this.analyzerSettingsList = Objects.requireNonNullElse(Arrays.asList(analyzerSettings), Collections.emptyList());
+		return replaceAnalyzerSettings(Arrays.asList(analyzerSettings));
+	}
+
+	public UpdateIndex replaceAnalyzerSettings(List<ZuliaIndex.AnalyzerSettings> analyzerSettings) {
+
+		if (analyzerSettings == null) {
+			analyzerSettings = Collections.emptyList();
+		}
+
+		this.analyzerSettingsOperation.setEnable(true);
+		this.analyzerSettingsOperation.setOperationType(OperationType.REPLACE);
+		this.analyzerSettingsList = analyzerSettings;
 		return this;
 	}
 
 	public UpdateIndex clearFieldConfigChanges() {
-		fieldConfigOperation.setEnable(false);
-		fieldConfigOperation.setOperationType(OperationType.MERGE);
-		fieldConfigOperation.clearRemovedKeys();
-		if (!fieldConfigList.isEmpty()) {
-			fieldConfigList.clear();
+		this.fieldConfigOperation.setEnable(false);
+		this.fieldConfigOperation.setOperationType(OperationType.MERGE);
+		this.fieldConfigOperation.clearRemovedKeys();
+		if (!this.fieldConfigList.isEmpty()) {
+			this.fieldConfigList.clear();
 		}
 		return this;
 	}
 
-	public UpdateIndex removeFieldConfigByStoredName(Collection<String> namesToRemove) {
-		fieldConfigOperation.setEnable(true);
-		fieldConfigOperation.addAllRemovedKeys(namesToRemove);
-		return this;
+	public UpdateIndex removeFieldConfigByStoredName(String... namesToRemove) {
+		return removeFieldConfigByStoredName(Arrays.asList(namesToRemove));
 	}
 
-	public UpdateIndex replaceFieldConfig(FieldConfigBuilder... fieldConfigs) {
-		fieldConfigOperation.setEnable(true);
-		fieldConfigOperation.setOperationType(OperationType.REPLACE);
-		this.fieldConfigList = Objects.requireNonNullElse(Arrays.stream(fieldConfigs).map(FieldConfigBuilder::build).toList(), Collections.emptyList());
+	public UpdateIndex removeFieldConfigByStoredName(Collection<String> namesToRemove) {
+		this.fieldConfigOperation.setEnable(true);
+		this.fieldConfigOperation.addAllRemovedKeys(namesToRemove);
 		return this;
 	}
 
 	public UpdateIndex replaceFieldConfig(ZuliaIndex.FieldConfig... fieldConfigs) {
-		fieldConfigOperation.setEnable(true);
-		fieldConfigOperation.setOperationType(OperationType.REPLACE);
-		this.fieldConfigList = Objects.requireNonNullElse(Arrays.asList(fieldConfigs), Collections.emptyList());
-		return this;
+		return replaceFieldConfig(Arrays.asList(fieldConfigs));
 	}
 
-	public UpdateIndex mergeFieldConfig(FieldConfigBuilder... fieldConfigs) {
-		fieldConfigOperation.setEnable(true);
-		fieldConfigOperation.setOperationType(OperationType.MERGE);
-		this.fieldConfigList = Objects.requireNonNullElse(Arrays.stream(fieldConfigs).map(FieldConfigBuilder::build).toList(), Collections.emptyList());
+	public UpdateIndex replaceFieldConfig(FieldConfigBuilder... fieldConfigs) {
+		return replaceFieldConfig(Arrays.stream(fieldConfigs).map(FieldConfigBuilder::build).collect(Collectors.toList()));
+	}
+
+	public UpdateIndex replaceFieldConfig(List<ZuliaIndex.FieldConfig> fieldConfigs) {
+		if (fieldConfigs == null) {
+			fieldConfigs = Collections.emptyList();
+		}
+
+		this.fieldConfigOperation.setEnable(true);
+		this.fieldConfigOperation.setOperationType(OperationType.REPLACE);
+		this.fieldConfigList = fieldConfigs;
 		return this;
 	}
 
 	public UpdateIndex mergeFieldConfig(ZuliaIndex.FieldConfig... fieldConfigs) {
-		fieldConfigOperation.setEnable(true);
-		fieldConfigOperation.setOperationType(OperationType.MERGE);
-		this.fieldConfigList = Objects.requireNonNullElse(Arrays.asList(fieldConfigs), Collections.emptyList());
+		return mergeFieldConfig(Arrays.asList(fieldConfigs));
+	}
+
+	public UpdateIndex mergeFieldConfig(FieldConfigBuilder... fieldConfigs) {
+		return mergeFieldConfig(Arrays.stream(fieldConfigs).map(FieldConfigBuilder::build).toList());
+	}
+
+	public UpdateIndex mergeFieldConfig(List<ZuliaIndex.FieldConfig> fieldConfigs) {
+		if (fieldConfigs == null || fieldConfigs.isEmpty()) {
+			throw new IllegalArgumentException("Cannot merge null or empty warming searches");
+		}
+
+		this.fieldConfigOperation.setEnable(true);
+		this.fieldConfigOperation.setOperationType(OperationType.MERGE);
+		this.fieldConfigList = fieldConfigs;
 		return this;
 	}
 
@@ -233,29 +268,37 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	}
 
 	public UpdateIndex clearMetadataChanges() {
-		metaDataOperation.setEnable(false);
-		metaDataOperation.setOperationType(OperationType.MERGE);
-		metaDataOperation.clearRemovedKeys();
+		this.metaDataOperation.setEnable(false);
+		this.metaDataOperation.setOperationType(OperationType.MERGE);
+		this.metaDataOperation.clearRemovedKeys();
 		metadata = new Document();
 		return this;
 	}
 
-	public UpdateIndex removeMetadataByKey(Collection<String> namesToRemove) {
-		metaDataOperation.setEnable(true);
-		metaDataOperation.addAllRemovedKeys(namesToRemove);
+	public UpdateIndex removeMetadataByKey(String... keysToRemove) {
+		return removeMetadataByKey(Arrays.asList(keysToRemove));
+	}
+
+	public UpdateIndex removeMetadataByKey(Collection<String> keysToRemove) {
+		this.metaDataOperation.setEnable(true);
+		this.metaDataOperation.addAllRemovedKeys(keysToRemove);
 		return this;
 	}
 
 	public UpdateIndex replaceMetadata(Document metadata) {
-		metaDataOperation.setEnable(true);
-		metaDataOperation.setOperationType(OperationType.REPLACE);
+		this.metaDataOperation.setEnable(true);
+		this.metaDataOperation.setOperationType(OperationType.REPLACE);
 		this.metadata = Objects.requireNonNullElse(metadata, new Document());
 		return this;
 	}
 
 	public UpdateIndex mergeMetadata(Document metadata) {
-		metaDataOperation.setEnable(true);
-		metaDataOperation.setOperationType(OperationType.MERGE);
+		if (metadata == null || metadata.isEmpty()) {
+			throw new IllegalArgumentException("Cannot merge null or empty metadata");
+		}
+
+		this.metaDataOperation.setEnable(true);
+		this.metaDataOperation.setOperationType(OperationType.MERGE);
 		this.metadata = Objects.requireNonNullElse(metadata, new Document());
 		return this;
 	}
@@ -270,6 +313,10 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
+	public UpdateIndex removeWarmingSearchesByLabel(String... namesToRemove) {
+		return removeWarmingSearchesByLabel(Arrays.asList(namesToRemove));
+	}
+
 	public UpdateIndex removeWarmingSearchesByLabel(Collection<String> namesToRemove) {
 		warmingSearchOperation.setEnable(true);
 		warmingSearchOperation.addAllRemovedKeys(namesToRemove);
@@ -277,24 +324,39 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	}
 
 	public UpdateIndex mergeWarmingSearches(Search... searches) {
-		return mergeWarmingSearches(Arrays.stream(searches).map(Search::getRequest).toArray(QueryRequest[]::new));
+		return mergeWarmingSearches(Arrays.asList(searches));
 	}
 
-	public UpdateIndex mergeWarmingSearches(QueryRequest... queryRequests) {
-		warmingSearchOperation.setEnable(true);
-		warmingSearchOperation.setOperationType(OperationType.MERGE);
-		this.warmingSearches = Objects.requireNonNullElse(Arrays.asList(queryRequests), Collections.emptyList());
+	public UpdateIndex mergeWarmingSearches(Collection<Search> searches) {
+		List<QueryRequest> queryRequests = searches.stream().map(Search::getRequest).toList();
+		return mergeWarmingSearches(queryRequests);
+	}
+
+	private UpdateIndex mergeWarmingSearches(List<QueryRequest> queryRequests) {
+		if (queryRequests == null || queryRequests.isEmpty()) {
+			throw new IllegalArgumentException("Cannot merge null or empty warming searches");
+		}
+		this.warmingSearchOperation.setEnable(true);
+		this.warmingSearchOperation.setOperationType(OperationType.MERGE);
+		this.warmingSearches = queryRequests;
 		return this;
 	}
 
 	public UpdateIndex replaceWarmingSearches(Search... searches) {
-		return replaceWarmingSearches(Arrays.stream(searches).map(Search::getRequest).toArray(QueryRequest[]::new));
+		return replaceWarmingSearches(Arrays.asList(searches));
 	}
 
-	public UpdateIndex replaceWarmingSearches(QueryRequest... queryRequests) {
-		warmingSearchOperation.setEnable(true);
-		warmingSearchOperation.setOperationType(OperationType.REPLACE);
-		this.warmingSearches = Objects.requireNonNullElse(Arrays.asList(queryRequests), Collections.emptyList());
+	public UpdateIndex replaceWarmingSearches(Collection<Search> searches) {
+		return replaceWarmingSearches(searches.stream().map(Search::getRequest).toList());
+	}
+
+	public UpdateIndex replaceWarmingSearches(List<QueryRequest> queryRequests) {
+		if (queryRequests == null) {
+			queryRequests = Collections.emptyList();
+		}
+		this.warmingSearchOperation.setEnable(true);
+		this.warmingSearchOperation.setOperationType(OperationType.REPLACE);
+		this.warmingSearches = queryRequests;
 		return this;
 	}
 
