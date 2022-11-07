@@ -743,6 +743,7 @@ public class ZuliaIndex {
 		QueryRequest.Builder modifiedIndexQueryRequest = QueryRequest.newBuilder(queryRequest);
 		modifiedIndexQueryRequest.clearIndex();
 		modifiedIndexQueryRequest.addIndex(indexName);
+		queryRequest = modifiedIndexQueryRequest.build();
 
 		int amount = queryRequest.getAmount() + queryRequest.getStart();
 

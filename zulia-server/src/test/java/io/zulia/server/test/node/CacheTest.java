@@ -24,6 +24,12 @@ public class CacheTest {
 
 	public static final String CACHE_TEST = "cacheTest";
 
+	public static final String CACHE_TEST_2 = "cacheTest2";
+	public static final String ALIAS_1 = "alias1";
+	public static final String ALIAS_2 = "alias2";
+
+	public static final String ALIAS_3 = "alias3";
+
 	private static ZuliaWorkPool zuliaWorkPool;
 	private static final int repeatCount = 50;
 	private static final int uniqueDocs = 7;
@@ -52,6 +58,20 @@ public class CacheTest {
 				new Search(CACHE_TEST).setPinToCache(true).setSearchLabel("important search").addQuery(new FilterQuery("rating:[1.0 TO 3.5]")));
 
 		zuliaWorkPool.createIndex(indexConfig);
+
+		zuliaWorkPool.createIndexAlias(ALIAS_1, CACHE_TEST);
+		zuliaWorkPool.createIndexAlias(ALIAS_2, CACHE_TEST);
+
+		indexConfig = new ClientIndexConfig();
+		indexConfig.addDefaultSearchField("title");
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.setIndexName(CACHE_TEST_2);
+		indexConfig.setNumberOfShards(1);
+		indexConfig.setShardQueryCacheSize(3);
+		zuliaWorkPool.createIndex(indexConfig);
+
+		zuliaWorkPool.createIndexAlias(ALIAS_3, CACHE_TEST_2);
 	}
 
 	@Test
@@ -60,18 +80,21 @@ public class CacheTest {
 
 		for (int i = 0; i < repeatCount; i++) {
 
-			indexRecord(i * uniqueDocs, "something special", "red and blue", 1.0);
-			indexRecord(i * uniqueDocs + 1, "something really special", "reddish and blueish", 2.4);
-			indexRecord(i * uniqueDocs + 2, "something even more special", "pink with big big big stripes", 5.0);
-			indexRecord(i * uniqueDocs + 3, "something special", "real big", 4.3);
-			indexRecord(i * uniqueDocs + 4, "something really special", "small", 1.6);
-			indexRecord(i * uniqueDocs + 5, "something really special", "light-blue with flowers", 4.1);
-			indexRecord(i * uniqueDocs + 6, "boring and small", "plain white and red", null);
+			indexRecord(CACHE_TEST, i * uniqueDocs, "something special", "red and blue", 1.0);
+			indexRecord(CACHE_TEST, i * uniqueDocs + 1, "something really special", "reddish and blueish", 2.4);
+			indexRecord(CACHE_TEST, i * uniqueDocs + 2, "something even more special", "pink with big big big stripes", 5.0);
+			indexRecord(CACHE_TEST, i * uniqueDocs + 3, "something special", "real big", 4.3);
+			indexRecord(CACHE_TEST, i * uniqueDocs + 4, "something really special", "small", 1.6);
+			indexRecord(CACHE_TEST, i * uniqueDocs + 5, "something really special", "light-blue with flowers", 4.1);
+			indexRecord(CACHE_TEST, i * uniqueDocs + 6, "boring and small", "plain white and red", null);
 		}
+
+		indexRecord(CACHE_TEST_2, 12345, "pink and blue", "so many colors", 3.1);
+		indexRecord(CACHE_TEST_2, 54321, "purple, red, and blue", "even more colors", 5.4);
 
 	}
 
-	private void indexRecord(int id, String title, String description, Double rating) throws Exception {
+	private void indexRecord(String index, int id, String title, String description, Double rating) throws Exception {
 
 		String uniqueId = "" + id;
 
@@ -81,7 +104,7 @@ public class CacheTest {
 		mongoDocument.put("description", description);
 		mongoDocument.put("rating", rating);
 
-		Store s = new Store(uniqueId, CACHE_TEST);
+		Store s = new Store(uniqueId, index);
 
 		ResultDocBuilder resultDocumentBuilder = ResultDocBuilder.newBuilder().setDocument(mongoDocument);
 		s.setResultDocument(resultDocumentBuilder);
@@ -159,7 +182,7 @@ public class CacheTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertTrue(searchResult.getFullyCached());
 
-		indexRecord(1000, "an amazing title", "pink and purple", 1000.0);
+		indexRecord(CACHE_TEST, 1000, "an amazing title", "pink and purple", 1000.0);
 
 		search = new Search(CACHE_TEST);
 		search.addQuery(new ScoredQuery("rating:[4.0 TO *] AND title:blue"));
@@ -170,6 +193,33 @@ public class CacheTest {
 		search.addQuery(new ScoredQuery("rating:[1.0 TO 2.0]"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertFalse(searchResult.getFullyCached());
+
+		search = new Search(ALIAS_1);
+		search.addQuery(new ScoredQuery("rating:[1.0 TO 2.0]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertTrue(searchResult.getFullyCached());
+
+		search = new Search(ALIAS_1);
+		search.addQuery(new ScoredQuery("title:pink"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertFalse(searchResult.getFullyCached());
+
+		search = new Search(ALIAS_2);
+		search.addQuery(new ScoredQuery("title:pink"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertTrue(searchResult.getFullyCached());
+
+		search = new Search(ALIAS_2, ALIAS_3);
+		search.addQuery(new ScoredQuery("title:pink"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertFalse(searchResult.getFullyCached());
+		Assertions.assertEquals(1, searchResult.getShardsCached());
+
+		search = new Search(CACHE_TEST_2);
+		search.addQuery(new ScoredQuery("title:pink"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertTrue(searchResult.getFullyCached());
+		Assertions.assertEquals(1, searchResult.getShardsCached());
 
 	}
 
@@ -194,3 +244,4 @@ public class CacheTest {
 		zuliaWorkPool.shutdown();
 	}
 }
+
