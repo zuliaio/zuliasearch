@@ -57,7 +57,8 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 			throws Exception {
 		InternalQueryResponse.Builder internalQueryResponseBuilder = InternalQueryResponse.newBuilder();
 		for (ZuliaIndex index : indexes) {
-			IndexShardResponse isr = index.internalQuery(queryMap.get(index.getIndexName()), request);
+			Query query = queryMap.get(index.getIndexName());
+			IndexShardResponse isr = index.internalQuery(query, request);
 			internalQueryResponseBuilder.addIndexShardResponse(isr);
 		}
 		return internalQueryResponseBuilder.build();

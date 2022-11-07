@@ -173,24 +173,12 @@ public class ZuliaIndex {
 
 			@Override
 			public void run() {
-				if (ZuliaIndex.this.indexConfig.getIndexSettings().getCommitToWarmTime() != 0) {
-					for (QueryRequest warmingSearch : ZuliaIndex.this.indexConfig.getWarmingSearches()) {
-						MasterSlaveSettings masterSlaveSettings = warmingSearch.getMasterSlaveSettings();
-						if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings) || MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(
-								masterSlaveSettings)) {
-							for (ZuliaShard shard : primaryShardMap.values()) {
-								shard.tryWarmSearches(ZuliaIndex.this);
-							}
-						}
-						if (MasterSlaveSettings.SLAVE_ONLY.equals(masterSlaveSettings) || MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(masterSlaveSettings)) {
-							for (ZuliaShard shard : replicaShardMap.values()) {
-								shard.tryWarmSearches(ZuliaIndex.this);
-							}
-						}
-					}
-
+				for (ZuliaShard shard : primaryShardMap.values()) {
+					shard.tryWarmSearches(ZuliaIndex.this, true);
 				}
-
+				for (ZuliaShard shard : replicaShardMap.values()) {
+					shard.tryWarmSearches(ZuliaIndex.this, false);
+				}
 			}
 
 		};
@@ -220,13 +208,6 @@ public class ZuliaIndex {
 			}
 		}
 
-	}
-
-	private void warmSearches(ZuliaIndex zuliaIndex) {
-		Collection<ZuliaShard> shards = primaryShardMap.values();
-		for (ZuliaShard shard : shards) {
-			shard.tryWarmSearches(zuliaIndex);
-		}
 	}
 
 	public void unload(boolean terminate) throws IOException {
@@ -755,6 +736,14 @@ public class ZuliaIndex {
 	}
 
 	public ShardQuery getShardQuery(Query query, QueryRequest queryRequest) throws Exception {
+		// clear out all indexes from the request except for this index
+		// this allows caching to happen at the index level, i.e. ->
+		//  * the caching for identical queries searched again two indexes could be use for a combined query against two indexes
+		//  * the two identical queries against different aliases pointed at the same index would be cache hits for each other
+		QueryRequest.Builder modifiedIndexQueryRequest = QueryRequest.newBuilder(queryRequest);
+		modifiedIndexQueryRequest.clearIndex();
+		modifiedIndexQueryRequest.addIndex(indexName);
+
 		int amount = queryRequest.getAmount() + queryRequest.getStart();
 
 		if (indexConfig.getNumberOfShards() != 1) {

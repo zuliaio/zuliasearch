@@ -2,6 +2,7 @@ package io.zulia.server.index;
 
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
@@ -17,6 +18,7 @@ import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
@@ -90,21 +92,29 @@ public class ZuliaShard {
 		}
 	}
 
-	public void tryWarmSearches(ZuliaIndex zuliaIndex) {
+	public void tryWarmSearches(ZuliaIndex zuliaIndex, boolean primary) {
+
+		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
+		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
+
 		if (shardWriteManager.needsSearchWarming()) {
 
 			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
 
 			for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
+				MasterSlaveSettings primaryReplicaSettings = warmingSearch.getMasterSlaveSettings();
+				boolean shardNeedsWarmForSearch = (primary ? usesPrimary : usesReplica).contains(primaryReplicaSettings);
 
-				try {
-					LOG.info("Warming search with label <" + warmingSearch.getSearchLabel() + ">");
-					Query query = zuliaIndex.getQuery(warmingSearch);
-					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
-					queryShard(shardQuery);
-				}
-				catch (Exception e) {
-					LOG.severe("Failed to warm search with label <" + warmingSearch.getSearchLabel() + ">: " + e.getMessage());
+				if (shardNeedsWarmForSearch) {
+					try {
+						LOG.info("Warming search with label <" + warmingSearch.getSearchLabel() + ">");
+						Query query = zuliaIndex.getQuery(warmingSearch);
+						ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
+						queryShard(shardQuery);
+					}
+					catch (Exception e) {
+						LOG.severe("Failed to warm search with label <" + warmingSearch.getSearchLabel() + ">: " + e.getMessage());
+					}
 				}
 
 				if (!shardWriteManager.needsSearchWarming()) {
