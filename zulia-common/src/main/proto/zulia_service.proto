@@ -8,96 +8,96 @@ option java_package = "io.zulia.message";
 
 
 service ZuliaService {
-  rpc Query (QueryRequest) returns (QueryResponse);
-  rpc InternalQuery (InternalQueryRequest) returns (InternalQueryResponse);
-  rpc Store (StoreRequest) returns (StoreResponse);
-  rpc InternalStore (StoreRequest) returns (StoreResponse);
-  rpc Delete (DeleteRequest) returns (DeleteResponse);
-  rpc InternalDelete (DeleteRequest) returns (DeleteResponse);
-  rpc BatchDelete (BatchDeleteRequest) returns (stream DeleteResponse);
-  rpc Fetch (FetchRequest) returns (FetchResponse);
-  rpc InternalFetch (FetchRequest) returns (FetchResponse);
-  rpc BatchFetch (BatchFetchRequest) returns (stream FetchResponse);
-  rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
-  rpc UpdateIndex (UpdateIndexRequest) returns (UpdateIndexResponse);
-  rpc CreateIndexAlias (CreateIndexAliasRequest) returns (CreateIndexAliasResponse);
-  rpc InternalCreateOrUpdateIndex (InternalCreateOrUpdateIndexRequest) returns (InternalCreateOrUpdateIndexResponse);
-  rpc InternalCreateIndexAlias (InternalCreateIndexAliasRequest) returns (CreateIndexAliasResponse);
-  rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
-  rpc DeleteIndexAlias (DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
-  rpc InternalDeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
-  rpc InternalDeleteIndexAlias (DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
-  rpc GetIndexes (GetIndexesRequest) returns (GetIndexesResponse);
-  rpc GetNumberOfDocs (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
-  rpc InternalGetNumberOfDocs (InternalGetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
-  rpc Clear (ClearRequest) returns (ClearResponse);
-  rpc InternalClear (ClearRequest) returns (ClearResponse);
-  rpc Optimize (OptimizeRequest) returns (OptimizeResponse);
-  rpc InternalOptimize (OptimizeRequest) returns (OptimizeResponse);
-  rpc GetFieldNames (GetFieldNamesRequest) returns (GetFieldNamesResponse);
-  rpc InternalGetFieldNames (InternalGetFieldNamesRequest) returns (GetFieldNamesResponse);
-  rpc GetTerms (GetTermsRequest) returns (GetTermsResponse);
-  rpc InternalGetTerms (InternalGetTermsRequest) returns (InternalGetTermsResponse);
-  rpc GetNodes (GetNodesRequest) returns (GetNodesResponse);
-  rpc GetIndexSettings (GetIndexSettingsRequest) returns (GetIndexSettingsResponse);
-  rpc Reindex (ReindexRequest) returns (ReindexResponse);
-  rpc InternalReindex (ReindexRequest) returns (ReindexResponse);
+    rpc Query (QueryRequest) returns (QueryResponse);
+    rpc InternalQuery (InternalQueryRequest) returns (InternalQueryResponse);
+    rpc Store (StoreRequest) returns (StoreResponse);
+    rpc InternalStore (StoreRequest) returns (StoreResponse);
+    rpc Delete (DeleteRequest) returns (DeleteResponse);
+    rpc InternalDelete (DeleteRequest) returns (DeleteResponse);
+    rpc BatchDelete (BatchDeleteRequest) returns (stream DeleteResponse);
+    rpc Fetch (FetchRequest) returns (FetchResponse);
+    rpc InternalFetch (FetchRequest) returns (FetchResponse);
+    rpc BatchFetch (BatchFetchRequest) returns (stream FetchResponse);
+    rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
+    rpc UpdateIndex (UpdateIndexRequest) returns (UpdateIndexResponse);
+    rpc CreateIndexAlias (CreateIndexAliasRequest) returns (CreateIndexAliasResponse);
+    rpc InternalCreateOrUpdateIndex (InternalCreateOrUpdateIndexRequest) returns (InternalCreateOrUpdateIndexResponse);
+    rpc InternalCreateIndexAlias (InternalCreateIndexAliasRequest) returns (CreateIndexAliasResponse);
+    rpc DeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
+    rpc DeleteIndexAlias (DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
+    rpc InternalDeleteIndex (DeleteIndexRequest) returns (DeleteIndexResponse);
+    rpc InternalDeleteIndexAlias (DeleteIndexAliasRequest) returns (DeleteIndexAliasResponse);
+    rpc GetIndexes (GetIndexesRequest) returns (GetIndexesResponse);
+    rpc GetNumberOfDocs (GetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
+    rpc InternalGetNumberOfDocs (InternalGetNumberOfDocsRequest) returns (GetNumberOfDocsResponse);
+    rpc Clear (ClearRequest) returns (ClearResponse);
+    rpc InternalClear (ClearRequest) returns (ClearResponse);
+    rpc Optimize (OptimizeRequest) returns (OptimizeResponse);
+    rpc InternalOptimize (OptimizeRequest) returns (OptimizeResponse);
+    rpc GetFieldNames (GetFieldNamesRequest) returns (GetFieldNamesResponse);
+    rpc InternalGetFieldNames (InternalGetFieldNamesRequest) returns (GetFieldNamesResponse);
+    rpc GetTerms (GetTermsRequest) returns (GetTermsResponse);
+    rpc InternalGetTerms (InternalGetTermsRequest) returns (InternalGetTermsResponse);
+    rpc GetNodes (GetNodesRequest) returns (GetNodesResponse);
+    rpc GetIndexSettings (GetIndexSettingsRequest) returns (GetIndexSettingsResponse);
+    rpc Reindex (ReindexRequest) returns (ReindexResponse);
+    rpc InternalReindex (ReindexRequest) returns (ReindexResponse);
 }
 
 message IndexRouting {
-  string index = 1;
-  repeated uint32 shard = 2;
+    string index = 1;
+    repeated uint32 shard = 2;
 }
 
 message InternalQueryRequest {
-  QueryRequest queryRequest = 1;
-  repeated IndexRouting indexRouting = 2;
+    QueryRequest queryRequest = 1;
+    repeated IndexRouting indexRouting = 2;
 }
 
 
 message QueryRequest {
-  repeated string index = 1;
-  repeated Query query = 2;
-  uint32 amount = 3;
-  FacetRequest facetRequest = 4;
-  SortRequest sortRequest = 5;
-  uint32 start = 6;
-  LastResult lastResult = 7;
-  FetchType resultFetchType = 8;
-  repeated string documentFields = 9;
-  repeated string documentMaskedFields = 10;
-  bool fetchFull = 11;
-  repeated FieldSimilarity fieldSimilarity = 12;
-  repeated HighlightRequest highlightRequest = 13;
-  repeated AnalysisRequest analysisRequest = 14;
-  bool debug = 15;
-  bool dontCache = 16;
-  MasterSlaveSettings masterSlaveSettings = 17;
-  bool pinToCache = 18;
-  string searchLabel = 19;
+    repeated string index = 1;
+    repeated Query query = 2;
+    uint32 amount = 3;
+    FacetRequest facetRequest = 4;
+    SortRequest sortRequest = 5;
+    uint32 start = 6;
+    LastResult lastResult = 7;
+    FetchType resultFetchType = 8;
+    repeated string documentFields = 9;
+    repeated string documentMaskedFields = 10;
+    bool fetchFull = 11;
+    repeated FieldSimilarity fieldSimilarity = 12;
+    repeated HighlightRequest highlightRequest = 13;
+    repeated AnalysisRequest analysisRequest = 14;
+    bool debug = 15;
+    bool dontCache = 16;
+    MasterSlaveSettings masterSlaveSettings = 17;
+    bool pinToCache = 18;
+    string searchLabel = 19;
 }
 
 message QueryResponse {
-  uint64 totalHits = 1;
-  repeated ScoredResult results = 2;
-  LastResult lastResult = 3;
-  repeated FacetGroup facetGroup = 4;
-  repeated AnalysisResult analysisResult = 5;
-  repeated StatGroup statGroup = 6;
-  bool fullyCached = 7;
-  int32 shardsCached = 8;
+    uint64 totalHits = 1;
+    repeated ScoredResult results = 2;
+    LastResult lastResult = 3;
+    repeated FacetGroup facetGroup = 4;
+    repeated AnalysisResult analysisResult = 5;
+    repeated StatGroup statGroup = 6;
+    bool fullyCached = 7;
+    int32 shardsCached = 8;
 }
 
 message InternalQueryResponse {
-  repeated IndexShardResponse indexShardResponse = 1;
+    repeated IndexShardResponse indexShardResponse = 1;
 }
 
 message StoreRequest {
-  string uniqueId = 1;
-  string indexName = 2;
-  ResultDocument resultDocument = 3;
-  repeated AssociatedDocument associatedDocument = 4;
-  bool clearExistingAssociated = 5;
+    string uniqueId = 1;
+    string indexName = 2;
+    ResultDocument resultDocument = 3;
+    repeated AssociatedDocument associatedDocument = 4;
+    bool clearExistingAssociated = 5;
 }
 
 message StoreResponse {
@@ -105,71 +105,71 @@ message StoreResponse {
 
 
 message DeleteRequest {
-  string indexName = 1;
-  string uniqueId = 2;
-  string filename = 3;
-  bool deleteDocument = 4;
-  bool deleteAllAssociated = 5;
+    string indexName = 1;
+    string uniqueId = 2;
+    string filename = 3;
+    bool deleteDocument = 4;
+    bool deleteAllAssociated = 5;
 }
 
 message DeleteResponse {
 }
 
 message BatchDeleteRequest {
-  repeated DeleteRequest request = 1;
+    repeated DeleteRequest request = 1;
 }
 
 message BatchDeleteResponse {
 }
 
 message FetchRequest {
-  string uniqueId = 1;
-  string indexName = 2;
-  string filename = 3;
-  FetchType resultFetchType = 4;
-  FetchType associatedFetchType = 5;
-  repeated string documentFields = 6;
-  repeated string documentMaskedFields = 7;
-  MasterSlaveSettings masterSlaveSettings = 8;
+    string uniqueId = 1;
+    string indexName = 2;
+    string filename = 3;
+    FetchType resultFetchType = 4;
+    FetchType associatedFetchType = 5;
+    repeated string documentFields = 6;
+    repeated string documentMaskedFields = 7;
+    MasterSlaveSettings masterSlaveSettings = 8;
 }
 
 message FetchResponse {
-  ResultDocument resultDocument = 1;
-  repeated AssociatedDocument associatedDocument = 2;
+    ResultDocument resultDocument = 1;
+    repeated AssociatedDocument associatedDocument = 2;
 }
 
 message BatchFetchRequest {
-  repeated FetchRequest fetchRequest = 1;
+    repeated FetchRequest fetchRequest = 1;
 }
 
 message BatchFetchResponse {
-  repeated FetchResponse fetchResponse = 1;
+    repeated FetchResponse fetchResponse = 1;
 }
 
 
 message CreateIndexRequest {
-  IndexSettings indexSettings = 1;
+    IndexSettings indexSettings = 1;
 }
 
 message UpdateIndexRequest {
-  string indexName = 1;
-  UpdateIndexSettings updateIndexSettings = 2;
+    string indexName = 1;
+    UpdateIndexSettings updateIndexSettings = 2;
 }
 
 message CreateIndexAliasRequest {
-  IndexAlias indexAlias = 1;
+    IndexAlias indexAlias = 1;
 }
 
 message InternalUpdateIndexRequest {
-  string indexName = 1;
+    string indexName = 1;
 }
 
 message InternalCreateOrUpdateIndexRequest {
-  string indexName = 1;
+    string indexName = 1;
 }
 
 message InternalCreateIndexAliasRequest {
-  string aliasName = 1;
+    string aliasName = 1;
 }
 
 
@@ -177,23 +177,23 @@ message CreateIndexResponse {
 }
 
 message UpdateIndexResponse {
-  IndexSettings fullIndexSettings = 1;
+    IndexSettings fullIndexSettings = 1;
 }
 
 message InternalCreateOrUpdateIndexResponse {
-  bool loaded = 1; //true if index is loaded (Created) or false if reloaded (Updated)
+    bool loaded = 1; //true if index is loaded (Created) or false if reloaded (Updated)
 }
 
 message CreateIndexAliasResponse {
 }
 
 message DeleteIndexRequest {
-  string indexName = 1;
-  bool deleteAssociated = 2;
+    string indexName = 1;
+    bool deleteAssociated = 2;
 }
 
 message DeleteIndexAliasRequest {
-  string aliasName = 1;
+    string aliasName = 1;
 }
 
 message DeleteIndexResponse {
@@ -207,27 +207,27 @@ message GetIndexesRequest {
 }
 
 message GetIndexesResponse {
-  repeated string indexName = 1;
+    repeated string indexName = 1;
 }
 
 
 message GetNumberOfDocsRequest {
-  string indexName = 1;
-  MasterSlaveSettings masterSlaveSettings = 2;
+    string indexName = 1;
+    MasterSlaveSettings masterSlaveSettings = 2;
 }
 
 message InternalGetNumberOfDocsRequest {
-  GetNumberOfDocsRequest getNumberOfDocsRequest = 1;
-  IndexRouting indexRouting = 2;
+    GetNumberOfDocsRequest getNumberOfDocsRequest = 1;
+    IndexRouting indexRouting = 2;
 }
 
 message GetNumberOfDocsResponse {
-  uint64 numberOfDocs = 1;
-  repeated ShardCountResponse shardCountResponse = 2;
+    uint64 numberOfDocs = 1;
+    repeated ShardCountResponse shardCountResponse = 2;
 }
 
 message ClearRequest {
-  string indexName = 1;
+    string indexName = 1;
 }
 
 message ClearResponse {
@@ -235,80 +235,80 @@ message ClearResponse {
 
 
 message OptimizeRequest {
-  string indexName = 1;
-  int32 maxNumberOfSegments = 2;
+    string indexName = 1;
+    int32 maxNumberOfSegments = 2;
 }
 
 message OptimizeResponse {
 }
 
 message GetFieldNamesRequest {
-  string indexName = 1;
-  MasterSlaveSettings masterSlaveSettings = 2;
+    string indexName = 1;
+    MasterSlaveSettings masterSlaveSettings = 2;
 }
 
 message InternalGetFieldNamesRequest {
-  GetFieldNamesRequest getFieldNamesRequest = 1;
-  IndexRouting indexRouting = 2;
+    GetFieldNamesRequest getFieldNamesRequest = 1;
+    IndexRouting indexRouting = 2;
 }
 
 message GetFieldNamesResponse {
-  repeated string fieldName = 1;
+    repeated string fieldName = 1;
 }
 
 
 message GetTermsRequest {
-  string indexName = 1;
-  string fieldName = 2;
-  uint32 amount = 3;
+    string indexName = 1;
+    string fieldName = 2;
+    uint32 amount = 3;
 
-  string startTerm = 4;
-  string endTerm = 5;
-  uint32 minDocFreq = 6;
-  uint32 minTermFreq = 7;
-  string termFilter = 8;
-  string termMatch = 9;
+    string startTerm = 4;
+    string endTerm = 5;
+    uint32 minDocFreq = 6;
+    uint32 minTermFreq = 7;
+    string termFilter = 8;
+    string termMatch = 9;
 
-  repeated string includeTerm = 10;
+    repeated string includeTerm = 10;
 
-  FuzzyTerm fuzzyTerm = 11;
-  MasterSlaveSettings masterSlaveSettings = 12;
+    FuzzyTerm fuzzyTerm = 11;
+    MasterSlaveSettings masterSlaveSettings = 12;
 }
 
 message InternalGetTermsRequest {
-  GetTermsRequest getTermsRequest = 1;
-  IndexRouting indexRouting = 2;
+    GetTermsRequest getTermsRequest = 1;
+    IndexRouting indexRouting = 2;
 }
 
 message GetTermsResponse {
-  repeated Term term = 1;
-  Term lastTerm = 2;
+    repeated Term term = 1;
+    Term lastTerm = 2;
 }
 
 message InternalGetTermsResponse {
-  repeated GetTermsResponse getTermsResponse = 1;
+    repeated GetTermsResponse getTermsResponse = 1;
 }
 
 message GetNodesRequest {
-  bool activeOnly = 1;
+    bool activeOnly = 1;
 }
 
 message GetNodesResponse {
-  repeated Node node = 1;
-  repeated IndexShardMapping indexShardMapping = 2;
-  repeated IndexAlias indexAlias = 3;
+    repeated Node node = 1;
+    repeated IndexShardMapping indexShardMapping = 2;
+    repeated IndexAlias indexAlias = 3;
 }
 
 message GetIndexSettingsRequest {
-  string indexName = 1;
+    string indexName = 1;
 }
 
 message GetIndexSettingsResponse {
-  IndexSettings indexSettings = 1;
+    IndexSettings indexSettings = 1;
 }
 
 message ReindexRequest {
-  string indexName = 1;
+    string indexName = 1;
 }
 
 message ReindexResponse {

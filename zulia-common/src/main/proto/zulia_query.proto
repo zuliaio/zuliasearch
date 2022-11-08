@@ -8,260 +8,260 @@ option java_package = "io.zulia.message";
 
 message Query {
 
-  reserved 6, 7, 9, 12; //old dismax,dismaxTie,vectorSimilarity,legacy
+    reserved 6, 7, 9, 12; //old dismax,dismaxTie,vectorSimilarity,legacy
 
-  enum QueryType {
-    FILTER = 0;
-    SCORE_MUST = 1;
-    SCORE_SHOULD = 2;
-    TERMS = 3;
-    VECTOR = 4;
-    TERMS_NOT = 5;
-    FILTER_NOT = 6;
-    NUMERIC_SET = 7;
-    NUMERIC_SET_NOT = 8;
-  }
+    enum QueryType {
+        FILTER = 0;
+        SCORE_MUST = 1;
+        SCORE_SHOULD = 2;
+        TERMS = 3;
+        VECTOR = 4;
+        TERMS_NOT = 5;
+        FILTER_NOT = 6;
+        NUMERIC_SET = 7;
+        NUMERIC_SET_NOT = 8;
+    }
 
-  enum Operator {
-    OR = 0;
-    AND = 1;
-  }
+    enum Operator {
+        OR = 0;
+        AND = 1;
+    }
 
-  QueryType queryType = 1;
-  string q = 2;
-  Operator defaultOp = 3; // default OR
-  repeated string qf = 4;
-  uint32 mm = 5; // default 0
+    QueryType queryType = 1;
+    string q = 2;
+    Operator defaultOp = 3; // default OR
+    repeated string qf = 4;
+    uint32 mm = 5; // default 0
 
-  repeated string term = 8;
+    repeated string term = 8;
 
-  repeated float vector = 10;
+    repeated float vector = 10;
 
-  string scoreFunction = 11;
+    string scoreFunction = 11;
 
-  uint32 vectorTopN = 13;
+    uint32 vectorTopN = 13;
 
-  repeated Query vectorPreQuery = 14;
+    repeated Query vectorPreQuery = 14;
 
-  NumericSet numericSet = 15;
+    NumericSet numericSet = 15;
 
 }
 
 message NumericSet {
-  repeated int32 integerValue = 1;
-  repeated int64 longValue = 2;
-  repeated float floatValue = 3;
-  repeated double doubleValue = 4;
+    repeated int32 integerValue = 1;
+    repeated int64 longValue = 2;
+    repeated float floatValue = 3;
+    repeated double doubleValue = 4;
 }
 
 message Facet {
-  string label = 1;
-  string value = 2;
-  repeated  string path = 3;
+    string label = 1;
+    string value = 2;
+    repeated  string path = 3;
 }
 
 message FacetRequest {
-  repeated CountRequest countRequest = 1;
-  repeated Facet drillDown = 2;
-  repeated StatRequest statRequest = 3;
+    repeated CountRequest countRequest = 1;
+    repeated Facet drillDown = 2;
+    repeated StatRequest statRequest = 3;
 }
 
 message StatRequest {
-  string numericField = 1;
-  Facet facetField = 2;
-  uint32 maxFacets = 3; // default 10, set to -1 to get all
-  uint32 shardFacets = 4; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
-  double precision = 5; // Specify the precision to be used in this request. Default is 0.001
-  repeated double percentiles = 6;
+    string numericField = 1;
+    Facet facetField = 2;
+    uint32 maxFacets = 3; // default 10, set to -1 to get all
+    uint32 shardFacets = 4; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
+    double precision = 5; // Specify the precision to be used in this request. Default is 0.001
+    repeated double percentiles = 6;
 }
 
 message Percentile {
-  double point = 1; // Percentile point represented
-  double value = 2; // Value of the percentile at this point
+    double point = 1; // Percentile point represented
+    double value = 2; // Value of the percentile at this point
 }
 message CountRequest {
-  Facet facetField = 1;
-  uint32 maxFacets = 2; // default 10, set to -1 to get all
-  uint32 shardFacets = 3; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
+    Facet facetField = 1;
+    uint32 maxFacets = 2; // default 10, set to -1 to get all
+    uint32 shardFacets = 3; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
 }
 
 message FacetCount {
-  string facet = 1;
-  uint64 count = 2;
-  uint64 maxError = 3;
+    string facet = 1;
+    uint64 count = 2;
+    uint64 maxError = 3;
 }
 
 message FacetGroup {
-  CountRequest countRequest = 1;
-  repeated FacetCount facetCount = 2;
-  bool possibleMissing = 3;
-  uint64 maxValuePossibleMissing = 4; // default 0
+    CountRequest countRequest = 1;
+    repeated FacetCount facetCount = 2;
+    bool possibleMissing = 3;
+    uint64 maxValuePossibleMissing = 4; // default 0
 }
 
 message FacetStats {
-  string facet = 1;
-  SortValue min = 2;
-  SortValue max = 3;
-  SortValue sum = 4;
-  uint64 docCount = 5;
-  uint64 allDocCount = 6;
-  uint64 valueCount = 7;
-  repeated Percentile percentiles = 8;
-  bool hasError = 9; // Indicates that error was discovered during shard merging
-  SortValue maxSumError = 10; // Indicates the max error bound of the summation
+    string facet = 1;
+    SortValue min = 2;
+    SortValue max = 3;
+    SortValue sum = 4;
+    uint64 docCount = 5;
+    uint64 allDocCount = 6;
+    uint64 valueCount = 7;
+    repeated Percentile percentiles = 8;
+    bool hasError = 9; // Indicates that error was discovered during shard merging
+    SortValue maxSumError = 10; // Indicates the max error bound of the summation
 }
 
 // Internal message intended to carry around the large sketch until reaching the top level of a request
 message FacetStatsInternal {
-  string facet = 1;
-  SortValue min = 2;
-  SortValue max = 3;
-  SortValue sum = 4;
-  uint64 docCount = 5;
-  uint64 allDocCount = 6;
-  uint64 valueCount = 7;
-  DDSketch statSketch = 8;
+    string facet = 1;
+    SortValue min = 2;
+    SortValue max = 3;
+    SortValue sum = 4;
+    uint64 docCount = 5;
+    uint64 allDocCount = 6;
+    uint64 valueCount = 7;
+    DDSketch statSketch = 8;
 }
 
 message StatGroup {
-  StatRequest statRequest = 1;
-  FacetStats globalStats = 2;
-  repeated FacetStats facetStats = 3;
+    StatRequest statRequest = 1;
+    FacetStats globalStats = 2;
+    repeated FacetStats facetStats = 3;
 }
 
 // Internal message to handle larger DDSketch facet stats
 message StatGroupInternal {
-  StatRequest statRequest = 1;
-  FacetStatsInternal globalStats = 2;
-  repeated FacetStatsInternal facetStats = 3;
+    StatRequest statRequest = 1;
+    FacetStatsInternal globalStats = 2;
+    repeated FacetStatsInternal facetStats = 3;
 }
 
 message SortRequest {
-  repeated FieldSort fieldSort = 1;
+    repeated FieldSort fieldSort = 1;
 }
 
 message FieldSort {
-  enum Direction {
-    ASCENDING = 0;
-    DESCENDING = 1;
-  };
+    enum Direction {
+        ASCENDING = 0;
+        DESCENDING = 1;
+    };
 
-  string sortField = 1;
-  Direction direction = 2; // default ASC
-  bool missingLast = 3;
+    string sortField = 1;
+    Direction direction = 2; // default ASC
+    bool missingLast = 3;
 }
 
 enum FetchType {
-  FULL = 0;
-  META = 1;
-  NONE = 2;
+    FULL = 0;
+    META = 1;
+    NONE = 2;
 }
 
 message LastIndexResult {
-  string indexName = 1;
-  repeated ScoredResult lastForShard = 2;
+    string indexName = 1;
+    repeated ScoredResult lastForShard = 2;
 }
 
 message LastResult {
-  repeated LastIndexResult lastIndexResult = 1;
+    repeated LastIndexResult lastIndexResult = 1;
 }
 
 
 message ScoredResult {
-  string uniqueId = 1;
-  float score = 2;
-  uint32 luceneShardId = 3;
-  string indexName = 4;
-  uint32 shard = 5;
-  uint32 resultIndex = 6;
-  SortValues sortValues = 7;
-  int64 timestamp = 8;
-  ResultDocument resultDocument = 9;
-  repeated HighlightResult highlightResult = 10;
-  repeated AnalysisResult analysisResult = 11;
+    string uniqueId = 1;
+    float score = 2;
+    uint32 luceneShardId = 3;
+    string indexName = 4;
+    uint32 shard = 5;
+    uint32 resultIndex = 6;
+    SortValues sortValues = 7;
+    int64 timestamp = 8;
+    ResultDocument resultDocument = 9;
+    repeated HighlightResult highlightResult = 10;
+    repeated AnalysisResult analysisResult = 11;
 }
 
 message SortValues {
-  repeated SortValue sortValue = 1;
+    repeated SortValue sortValue = 1;
 }
 
 message SortValue {
-  bool exists = 1;
-  string stringValue = 2;
-  int32 integerValue = 3;
-  int64 longValue = 4;
-  float floatValue = 5;
-  double doubleValue = 6;
-  int64 dateValue = 7;
+    bool exists = 1;
+    string stringValue = 2;
+    int32 integerValue = 3;
+    int64 longValue = 4;
+    float floatValue = 5;
+    double doubleValue = 6;
+    int64 dateValue = 7;
 }
 
 
 message HighlightRequest {
-  string field = 1;
-  string preTag = 2; // default <em>
-  string postTag = 3; // default </em>
-  uint32 numberOfFragments = 4; // default 1
-  uint32 fragmentLength = 5; // default 100
+    string field = 1;
+    string preTag = 2; // default <em>
+    string postTag = 3; // default </em>
+    uint32 numberOfFragments = 4; // default 1
+    uint32 fragmentLength = 5; // default 100
 }
 
 message HighlightResult {
-  string field = 1;
-  repeated string fragments = 2;
+    string field = 1;
+    repeated string fragments = 2;
 }
 
 message AnalysisRequest {
-  enum TermSort {
-    TFIDF = 0;
-    TF = 1;
-    ABC = 2;
-  }
+    enum TermSort {
+        TFIDF = 0;
+        TF = 1;
+        ABC = 2;
+    }
 
-  enum SummaryType {
-    ALL_TERMS_TOP_N = 0;
-    TOP_TERMS_TOP_N = 1;
-  }
+    enum SummaryType {
+        ALL_TERMS_TOP_N = 0;
+        TOP_TERMS_TOP_N = 1;
+    }
 
-  string field = 1;
-  bool tokens = 2;
-  bool docTerms = 3;
-  bool summaryTerms = 4;
-  uint32 topN = 5; // default 10
-  TermSort termSort = 6; // default TFIDF
-  uint32 minWordLen = 7; // default 0
-  uint32 maxWordLen = 8; // default 0
-  float minShardFreqPerc = 9;
-  float maxShardFreqPerc = 10;
-  uint32 minShardFreq = 11;
-  uint32 maxShardFreq = 12;
-  string analyzerOverride = 13;
-  SummaryType summaryType = 14; // default ALL_TERMS_TOP_N
+    string field = 1;
+    bool tokens = 2;
+    bool docTerms = 3;
+    bool summaryTerms = 4;
+    uint32 topN = 5; // default 10
+    TermSort termSort = 6; // default TFIDF
+    uint32 minWordLen = 7; // default 0
+    uint32 maxWordLen = 8; // default 0
+    float minShardFreqPerc = 9;
+    float maxShardFreqPerc = 10;
+    uint32 minShardFreq = 11;
+    uint32 maxShardFreq = 12;
+    string analyzerOverride = 13;
+    SummaryType summaryType = 14; // default ALL_TERMS_TOP_N
 }
 
 
 message AnalysisResult {
-  AnalysisRequest analysisRequest = 1;
-  repeated string token = 2;
-  repeated Term terms = 3;
+    AnalysisRequest analysisRequest = 1;
+    repeated string token = 2;
+    repeated Term terms = 3;
 }
 
 message FieldSimilarity {
-  string field = 1;
-  Similarity similarity = 2;
+    string field = 1;
+    Similarity similarity = 2;
 }
 
 message IndexShardResponse {
-  string indexName = 1;
-  repeated ShardQueryResponse shardQueryResponse = 2;
+    string indexName = 1;
+    repeated ShardQueryResponse shardQueryResponse = 2;
 }
 
 message ShardQueryResponse {
-  uint32 shardNumber = 1;
-  string indexName = 2;
-  uint32 totalHits = 3;
-  repeated ScoredResult scoredResult = 4;
-  ScoredResult next = 5;
-  repeated FacetGroup facetGroup = 6;
-  repeated AnalysisResult analysisResult = 7;
-  repeated StatGroupInternal statGroup = 8;
-  bool cached = 9;
+    uint32 shardNumber = 1;
+    string indexName = 2;
+    uint32 totalHits = 3;
+    repeated ScoredResult scoredResult = 4;
+    ScoredResult next = 5;
+    repeated FacetGroup facetGroup = 6;
+    repeated AnalysisResult analysisResult = 7;
+    repeated StatGroupInternal statGroup = 8;
+    bool cached = 9;
 }
