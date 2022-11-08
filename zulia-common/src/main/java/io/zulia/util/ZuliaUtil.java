@@ -3,6 +3,7 @@ package io.zulia.util;
 import com.google.protobuf.ByteString;
 import com.j256.simplemagic.ContentInfo;
 import com.j256.simplemagic.ContentInfoUtil;
+import com.mongodb.MongoClientSettings;
 import org.bson.BsonBinaryReader;
 import org.bson.BsonBinaryWriter;
 import org.bson.Document;
@@ -10,6 +11,7 @@ import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.bson.io.BasicOutputBuffer;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
@@ -23,9 +25,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+
 public class ZuliaUtil {
 
-	private static CodecRegistry pojoCodecRegistry;
+	private static CodecRegistry pojoCodecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
+			fromProviders(PojoCodecProvider.builder().automatic(true).build()));
 
 	public static void handleListsUniqueValues(Object o, Consumer<? super Object> action) {
 		handleListsUniqueValues(o, action, new AtomicInteger(), new AtomicInteger());
@@ -199,10 +205,10 @@ public class ZuliaUtil {
 		return Document.parse(json);
 	}
 
-
 	public static String mongoDocumentToJson(Document document) {
 		return mongoDocumentToJson(document, false);
 	}
+
 	public static String mongoDocumentToJson(Document document, boolean pretty) {
 		if (pretty) {
 			return document.toJson(JsonWriterSettings.builder().indent(true).outputMode(JsonMode.RELAXED).build());

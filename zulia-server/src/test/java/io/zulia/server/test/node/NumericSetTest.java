@@ -1,6 +1,5 @@
 package io.zulia.server.test.node;
 
-import com.mongodb.MongoClientSettings;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.NumericSetQuery;
@@ -12,8 +11,6 @@ import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import org.bson.Document;
-import org.bson.codecs.configuration.CodecRegistry;
-import org.bson.codecs.pojo.PojoCodecProvider;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -23,9 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import java.util.Arrays;
-
-import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
-import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NumericSetTest {
@@ -45,10 +39,6 @@ public class NumericSetTest {
 		Thread.sleep(2000);
 
 		zuliaWorkPool = TestHelper.createClient();
-
-		CodecRegistry pojoCodecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
-				fromProviders(PojoCodecProvider.builder().automatic(true).build()));
-		io.zulia.util.ZuliaUtil.setPojoCodecRegistry(pojoCodecRegistry);
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
