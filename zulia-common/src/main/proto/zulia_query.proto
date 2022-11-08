@@ -107,6 +107,8 @@ message FacetStats {
   uint64 allDocCount = 6;
   uint64 valueCount = 7;
   repeated Percentile percentiles = 8;
+  bool hasError = 9; // Indicates that error was discovered during shard merging
+  SortValue maxSumError = 10; // Indicates the max error bound of the summation
 }
 
 // Internal message intended to carry around the large sketch until reaching the top level of a request

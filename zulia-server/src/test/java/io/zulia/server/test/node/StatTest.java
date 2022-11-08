@@ -123,7 +123,7 @@ public class StatTest {
 		ratingNormalTest(searchResult);
 
 		search.clearStat();
-		search.addStat(new StatFacet("rating", "pathFacet").setPercentiles(percentiles));
+		search.addStat(new StatFacet("rating", "pathFacet").setPercentiles(percentiles).setTopN(2).setTopNShard(2));
 		searchResult = zuliaWorkPool.search(search);
 
 		ratingPathTest(searchResult);
