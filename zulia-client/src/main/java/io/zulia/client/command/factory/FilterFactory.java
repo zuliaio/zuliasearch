@@ -11,4 +11,8 @@ public class FilterFactory {
 	public static RangeFilter<Long> rangeLong(String fieldName) {
 		return new RangeFilter<>(fieldName);
 	}
+
+	public static RangeFilter<Integer> rangeInt(String fieldName) {
+		return new RangeFilter<>(fieldName);
+	}
 }
