@@ -52,7 +52,6 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -475,6 +474,17 @@ public class WikiExamples {
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
 
+	public void numericFilters(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName");
+		// Search for pub years in range [2015, 2020]
+		search.addQuery(FilterFactory.rangeInt("pubYear").setRange(2015, 2020));
+
+		search = new Search("myIndexName");
+		// Search for pubs for any year before 2020
+		search.addQuery(FilterFactory.rangeInt("pubYear").setMaxValue(2020).setEndpointBehavior(RangeBehavior.EXCLUSIVE));
+
+	}
+
 	public void termQueries(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Search search = new Search("myIndexName").setAmount(100);
 
@@ -550,15 +560,74 @@ public class WikiExamples {
 	}
 
 	public void numericStat(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		// show number of values, number of documents, min, max, and sum for field pubYear
+		// normally is combined with a FilterQuery or ScoredQuery to count a set of results
 		Search search = new Search("myIndexName").setAmount(100);
 		search.addStat(new NumericStat("pubYear"));
 		SearchResult searchResult = zuliaWorkPool.search(search);
+		ZuliaQuery.FacetStats pyFieldStat = searchResult.getNumericFieldStat("pubYear");
+		System.out.println(pyFieldStat.getMin()); // minimum value for the field
+		System.out.println(pyFieldStat.getMax()); // maximum value for the field
+		System.out.println(pyFieldStat.getSum()); // sum of the values for the field, use one of the counts below for the average/mean
+		System.out.println(pyFieldStat.getDocCount()); // count of documents with the field not null
+		System.out.println(pyFieldStat.getAllDocCount()); // count of documents matched by the query
+		System.out.println(pyFieldStat.getValueCount()); // count of total number of values in the field (equal to document count except for multivalued fields)
+	}
+
+	public void getNumericPercentiles(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		List<Double> percentiles = List.of(0.0,  // 0th percentile (min) - can be retrieved without percentiles
+				0.25, // 25th percentile
+				0.50, // median
+				0.75, // 75th percentile
+				1.0   // 100th percentile (max) - can be retrieved without percentiles
+		);
+
+		Search search = new Search("myIndexName");
+		// Get the requested percentiles within 1% of their true value
+		search.addStat(new NumericStat("pubYear").setPercentiles(percentiles).setPercentilePrecision(0.01));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		ZuliaQuery.FacetStats pyFieldStat = searchResult.getNumericFieldStat("pubYear");
+		for (ZuliaQuery.Percentile percentile : pyFieldStat.getPercentilesList()) {
+			System.out.println(percentile.getPoint() + " -> " + percentile.getValue());
+		}
 	}
 
 	public void statFacet(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		// return the highest sum on author count for each journal name
 		Search search = new Search("myIndexName").setAmount(100);
 		search.addStat(new StatFacet("authorCount", "journalName"));
 		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		// journals ordered by the sum of author count
+		List<ZuliaQuery.FacetStats> authorCountForJournalName = searchResult.getFacetFieldStat("authorCount", "journalName");
+		for (ZuliaQuery.FacetStats journalStats : authorCountForJournalName) {
+			System.out.println(journalStats.getFacet()); // the journal
+			System.out.println(journalStats.getMin()); // minimum value of author count for journal
+			System.out.println(journalStats.getMax()); // maximum value of author count for journal
+			System.out.println(journalStats.getSum()); // sum of the values of author count for journal, use counts below for average/mean
+			System.out.println(journalStats.getDocCount()); // count of documents for the journal where the author count not null
+			System.out.println(journalStats.getAllDocCount()); // count of documents for the journal
+			System.out.println(
+					journalStats.getValueCount()); // count of total number of values of author count for the journal (equal to document count except for multivalued fields)
+		}
+
+	}
+
+	public void statFacetPercentiles(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		// percentiles can be used for stat facets as well
+		//get the 25th percentile, median, and 75th percentile of author count for the journal names
+		Search search = new Search("myIndexName").setAmount(100);
+		search.addStat(new StatFacet("authorCount", "journalName").setPercentiles(List.of(0.25, 0.5, 0.75)).setPercentilePrecision(0.01));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		// journals ordered by the sum of author count
+		List<ZuliaQuery.FacetStats> authorCountForJournalName = searchResult.getFacetFieldStat("authorCount", "journalName");
+		for (ZuliaQuery.FacetStats journalStats : authorCountForJournalName) {
+			for (ZuliaQuery.Percentile percentile : journalStats.getPercentilesList()) {
+				System.out.println(percentile.getPoint() + " -> " + percentile.getValue());
+			}
+			// journalStats also will have facet, min, max, sum, and counts as other example
+		}
 	}
 
 	public void secondPageCursor(ZuliaWorkPool zuliaWorkPool) throws Exception {
@@ -738,32 +807,7 @@ public class WikiExamples {
 		List<Article> articles = searchResult.getMappedDocuments(mapper);
 	}
 
-	public void getNumericPercentiles(ZuliaWorkPool zuliaWorkPool) throws Exception {
-		List<Double> percentiles = new ArrayList<>() {{
-			add(0.0); // 0th percentile (min) - can be retrieved without percentiles
-			add(0.25); // 25th percentile
-			add(0.50); // median
-			add(0.75); // 75th percentile
-			add(1.0); // 100th percentile (max) - can be retrieved without percentiles
-		}};
 
-		Search search = new Search("myIndexName");
-		// Get the requested percentiles within 1% of their true value
-		search.addStat(new NumericStat("pubYear").setPercentiles(percentiles).setPercentilePrecision(0.01));
-		SearchResult searchResult = zuliaWorkPool.search(search);
-	}
-
-	public void numericFilters(ZuliaWorkPool zuliaWorkPool) throws Exception {
-		Search search = new Search("myIndexName");
-		search.addStat(new NumericStat("pubYear"));
-		// Search for pub years in range [2015, 2020]
-		search.addQuery(FilterFactory.rangeInt("pubYear").setMinValue(2015).setMaxValue(2020).setEndpointBehavior(RangeBehavior.INCLUSIVE).toQuery());
-		SearchResult searchResult_1 = zuliaWorkPool.search(search);
-
-		search.clearQueries();
-		// Search for pubs for any year before 2020
-		search.addQuery(FilterFactory.rangeInt("pubYear").setMaxValue(2020).setEndpointBehavior(RangeBehavior.EXCLUSIVE).toQuery());
-		SearchResult searchResult_2 = zuliaWorkPool.search(search);
-	}
 
 }
+
