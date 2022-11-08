@@ -2,6 +2,7 @@ package io.zulia.client.command.builder;
 
 import io.zulia.client.command.base.MultiIndexRoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.command.factory.RangeFilter;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.SearchResult;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
@@ -55,6 +56,14 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 
 	public Search setIndex(String index) {
 		return setIndexes(List.of(index));
+	}
+
+	/**
+	 * @param rangeFilter - See {@link io.zulia.client.command.factory.FilterFactory}
+	 * @return
+	 */
+	public Search addQuery(RangeFilter<?> rangeFilter) {
+		return addQuery(rangeFilter.toQuery());
 	}
 
 	public Search addQuery(QueryBuilder queryBuilder) {
