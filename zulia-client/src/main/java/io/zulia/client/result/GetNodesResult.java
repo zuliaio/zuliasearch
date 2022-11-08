@@ -1,7 +1,7 @@
 package io.zulia.client.result;
 
 import io.zulia.message.ZuliaIndex.IndexAlias;
-import io.zulia.message.ZuliaIndex.IndexMapping;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 
 import java.util.List;
 
@@ -20,8 +20,8 @@ public class GetNodesResult extends Result {
 		return getNodesResponse.getNodeList();
 	}
 
-	public List<IndexMapping> getIndexMappings() {
-		return getNodesResponse.getIndexMappingList();
+	public List<IndexShardMapping> getIndexShardMappings() {
+		return getNodesResponse.getIndexShardMappingList();
 	}
 
 	public List<IndexAlias> getIndexAliases() {

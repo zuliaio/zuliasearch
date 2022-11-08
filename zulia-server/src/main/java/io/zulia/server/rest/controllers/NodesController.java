@@ -20,13 +20,14 @@ import java.util.List;
 import java.util.TreeSet;
 
 import static io.zulia.message.ZuliaBase.Node;
-import static io.zulia.message.ZuliaIndex.IndexMapping;
+import static io.zulia.message.ZuliaIndex.IndexShardMapping;
 import static io.zulia.message.ZuliaIndex.ShardMapping;
 import static io.zulia.message.ZuliaServiceOuterClass.GetNodesRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
 
 /**
  * Created by Payam Meyer on 8/7/17.
+ *
  * @author pmeyer
  */
 @Controller(ZuliaConstants.NODES_URL)
@@ -53,11 +54,11 @@ public class NodesController {
 				memberObj.put("heartbeat", node.getHeartbeat());
 
 				List<Document> indexMappingList = new ArrayList<>();
-				for (IndexMapping indexMapping : getNodesResponse.getIndexMappingList()) {
+				for (IndexShardMapping indexShardMapping : getNodesResponse.getIndexShardMappingList()) {
 
 					TreeSet<Integer> primaryShards = new TreeSet<>();
 					TreeSet<Integer> replicaShards = new TreeSet<>();
-					for (ShardMapping shardMapping : indexMapping.getShardMappingList()) {
+					for (ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
 						if (ZuliaNode.isEqual(shardMapping.getPrimaryNode(), node)) {
 							primaryShards.add(shardMapping.getShardNumber());
 						}
@@ -70,11 +71,11 @@ public class NodesController {
 					}
 
 					Document shards = new Document();
-					shards.put("name", indexMapping.getIndexName());
+					shards.put("name", indexShardMapping.getIndexName());
 
 					int indexWeight = -1;
 					GetIndexSettingsResponse indexSettings = indexManager.getIndexSettings(
-							ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(indexMapping.getIndexName()).build());
+							ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(indexShardMapping.getIndexName()).build());
 					if (indexSettings != null) { //paranoid
 						indexWeight = indexSettings.getIndexSettings().getIndexWeight();
 					}

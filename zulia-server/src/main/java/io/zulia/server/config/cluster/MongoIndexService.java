@@ -6,8 +6,8 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.ReplaceOptions;
 import io.zulia.message.ZuliaIndex.IndexAlias;
-import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.exceptions.IndexConfigDoesNotExistException;
 import org.bson.Document;
@@ -97,19 +97,19 @@ public class MongoIndexService implements IndexService {
 	}
 
 	@Override
-	public List<IndexMapping> getIndexMappings() throws Exception {
+	public List<IndexShardMapping> getIndexShardMappings() throws Exception {
 
-		List<IndexMapping> indexMappings = new ArrayList<>();
+		List<IndexShardMapping> indexShardMappings = new ArrayList<>();
 		for (Document doc : mappingCollection.find()) {
-			indexMappings.add(getIndexMappingFromDoc(doc));
+			indexShardMappings.add(getIndexMappingFromDoc(doc));
 		}
 
-		return indexMappings;
+		return indexShardMappings;
 
 	}
 
 	@Override
-	public IndexMapping getIndexMapping(String indexName) throws Exception {
+	public IndexShardMapping getIndexShardMapping(String indexName) throws Exception {
 		Document doc = mappingCollection.find(new Document(ID, indexName)).first();
 		if (doc == null) {
 			throw new IndexConfigDoesNotExistException(indexName);
@@ -119,14 +119,14 @@ public class MongoIndexService implements IndexService {
 	}
 
 	@Override
-	public void storeIndexMapping(IndexMapping indexMapping) throws Exception {
-		Document indexMappingDoc = new Document(ID, indexMapping.getIndexName()).append(INDEX_MAPPING,
-				Document.parse(JsonFormat.printer().print(indexMapping)));
-		mappingCollection.replaceOne(new Document(ID, indexMapping.getIndexName()), indexMappingDoc, new ReplaceOptions().upsert(true));
+	public void storeIndexShardMapping(IndexShardMapping indexShardMapping) throws Exception {
+		Document indexMappingDoc = new Document(ID, indexShardMapping.getIndexName()).append(INDEX_MAPPING,
+				Document.parse(JsonFormat.printer().print(indexShardMapping)));
+		mappingCollection.replaceOne(new Document(ID, indexShardMapping.getIndexName()), indexMappingDoc, new ReplaceOptions().upsert(true));
 	}
 
 	@Override
-	public void removeIndexMapping(String indexName) {
+	public void removeIndexShardMapping(String indexName) {
 		mappingCollection.deleteOne(new Document(ID, indexName));
 	}
 
@@ -176,9 +176,9 @@ public class MongoIndexService implements IndexService {
 		return builder.build();
 	}
 
-	private IndexMapping getIndexMappingFromDoc(Document doc) throws InvalidProtocolBufferException {
+	private IndexShardMapping getIndexMappingFromDoc(Document doc) throws InvalidProtocolBufferException {
 		Document mappingDoc = (Document) doc.get(INDEX_MAPPING);
-		IndexMapping.Builder builder = IndexMapping.newBuilder();
+		IndexShardMapping.Builder builder = IndexShardMapping.newBuilder();
 		JsonFormat.parser().merge(mappingDoc.toJson(), builder);
 		return builder.build();
 	}

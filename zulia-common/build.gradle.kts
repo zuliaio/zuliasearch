@@ -1,4 +1,5 @@
-import com.google.protobuf.gradle.*
+import com.google.protobuf.gradle.id
+import com.google.protobuf.gradle.protobuf
 
 plugins {
     id("com.google.protobuf")
@@ -26,6 +27,7 @@ dependencies {
     api("javax.annotation:javax.annotation-api:1.3.2")
     api("com.google.guava:guava:31.1-jre")
     api("com.j256.simplemagic:simplemagic:1.17")
+    protobuf("com.datadoghq:sketches-java:0.8.2")
 }
 
 

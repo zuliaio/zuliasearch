@@ -3,8 +3,8 @@ package io.zulia.server.index;
 import com.google.common.util.concurrent.AtomicDouble;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex;
-import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.server.config.IndexService;
 
 import java.util.ArrayList;
@@ -40,14 +40,14 @@ public class DefaultNodeWeightComputation implements NodeWeightComputation {
 
 		nodeWeightMap = new HashMap<>();
 
-		for (IndexMapping indexMapping : indexService.getIndexMappings()) {
-			Integer weightForIndex = weightMap.get(indexMapping.getIndexName());
+		for (IndexShardMapping indexShardMapping : indexService.getIndexShardMappings()) {
+			Integer weightForIndex = weightMap.get(indexShardMapping.getIndexName());
 			if (weightForIndex == null) {
 				//index has an index mapping but not an index settings
 				continue;
 			}
-			double indexShardWeight = weightForIndex / (double) indexMapping.getNumberOfShards();
-			for (ZuliaIndex.ShardMapping shardMapping : indexMapping.getShardMappingList()) {
+			double indexShardWeight = weightForIndex / (double) indexShardMapping.getNumberOfShards();
+			for (ZuliaIndex.ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
 				nodeWeightMap.computeIfAbsent(getNodeKey(shardMapping.getPrimaryNode()), k -> new AtomicDouble()).addAndGet(indexShardWeight);
 
 				for (Node node : shardMapping.getReplicaNodeList()) {

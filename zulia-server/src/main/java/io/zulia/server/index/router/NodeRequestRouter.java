@@ -24,7 +24,7 @@ public abstract class NodeRequestRouter<I, O> extends NodeRequestBase<I, O> {
 		nodeList.add(thisNode);
 		nodeList.addAll(otherNodesActive);
 
-		this.node = new MasterSlaveSelector(masterSlaveSettings, nodeList, index.getIndexMapping()).getNodeForUniqueId(uniqueId);
+		this.node = new MasterSlaveSelector(masterSlaveSettings, nodeList, index.getIndexShardMapping()).getNodeForUniqueId(uniqueId);
 
 	}
 

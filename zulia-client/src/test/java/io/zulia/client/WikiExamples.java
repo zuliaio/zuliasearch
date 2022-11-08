@@ -18,6 +18,8 @@ import io.zulia.client.command.builder.StandardQuery;
 import io.zulia.client.command.builder.StatFacet;
 import io.zulia.client.command.builder.TermQuery;
 import io.zulia.client.command.builder.VectorTopNQuery;
+import io.zulia.client.command.factory.FilterFactory;
+import io.zulia.client.command.factory.RangeBehavior;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -50,6 +52,7 @@ import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -57,7 +60,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class WikiExamples {
-
 	public void simpleClient() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = new ZuliaWorkPool(new ZuliaPoolConfig().addNode("someIp"));
 	}
@@ -734,6 +736,34 @@ public class WikiExamples {
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		List<Article> articles = searchResult.getMappedDocuments(mapper);
+	}
+
+	public void getNumericPercentiles(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		List<Double> percentiles = new ArrayList<>() {{
+			add(0.0); // 0th percentile (min) - can be retrieved without percentiles
+			add(0.25); // 25th percentile
+			add(0.50); // median
+			add(0.75); // 75th percentile
+			add(1.0); // 100th percentile (max) - can be retrieved without percentiles
+		}};
+
+		Search search = new Search("myIndexName");
+		// Get the requested percentiles within 1% of their true value
+		search.addStat(new NumericStat("pubYear").setPercentiles(percentiles).setPercentilePrecision(0.01));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+	}
+
+	public void numericFilters(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		Search search = new Search("myIndexName");
+		search.addStat(new NumericStat("pubYear"));
+		// Search for pub years in range [2015, 2020]
+		search.addQuery(FilterFactory.rangeInt("pubYear").setMinValue(2015).setMaxValue(2020).setEndpointBehavior(RangeBehavior.INCLUSIVE).toQuery());
+		SearchResult searchResult_1 = zuliaWorkPool.search(search);
+
+		search.clearQueries();
+		// Search for pubs for any year before 2020
+		search.addQuery(FilterFactory.rangeInt("pubYear").setMaxValue(2020).setEndpointBehavior(RangeBehavior.EXCLUSIVE).toQuery());
+		SearchResult searchResult_2 = zuliaWorkPool.search(search);
 	}
 
 }

@@ -33,6 +33,7 @@ dependencies {
     annotationProcessor("info.picocli:picocli-codegen:4.6.3")
 
     implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
+    implementation("com.datadoghq:sketches-java:0.8.2")
 
     implementation("com.cedarsoftware:json-io:4.13.0")
 
@@ -59,11 +60,12 @@ dependencies {
     testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.4.11")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.5.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
     api("org.yaml:snakeyaml:$snakeYamlVersion")
     annotationProcessor("io.micronaut.openapi:micronaut-openapi")
+
 
     //implementation("org.graalvm.js:js:21.3.1")
 }
