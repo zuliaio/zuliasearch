@@ -59,7 +59,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class WikiExamples {
-	//TODO(Ian): Add stat percentiles and number filters examples
 	public void simpleClient() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = new ZuliaWorkPool(new ZuliaPoolConfig().addNode("someIp"));
 	}
@@ -710,12 +709,12 @@ public class WikiExamples {
 		Search search = new Search("myIndexName");
 		search.addStat(new NumericStat("pubYear"));
 		// Search for pub years in range [2015, 2020]
-		search.addQuery(FilterFactory.rangeInt("pubYear").setMinValue(2015).setMinValue(2020).setEndpointBehavior(RangeBehavior.INCLUSIVE).toQuery());
+		search.addQuery(FilterFactory.rangeInt("pubYear").setMinValue(2015).setMaxValue(2020).setEndpointBehavior(RangeBehavior.INCLUSIVE).toQuery());
 		SearchResult searchResult_1 = zuliaWorkPool.search(search);
 
 		search.clearQueries();
 		// Search for pubs for any year before 2020
-		search.addQuery(FilterFactory.rangeInt("pubYear").setMinValue(2020).setEndpointBehavior(RangeBehavior.EXCLUSIVE).toQuery());
+		search.addQuery(FilterFactory.rangeInt("pubYear").setMaxValue(2020).setEndpointBehavior(RangeBehavior.EXCLUSIVE).toQuery());
 		SearchResult searchResult_2 = zuliaWorkPool.search(search);
 	}
 

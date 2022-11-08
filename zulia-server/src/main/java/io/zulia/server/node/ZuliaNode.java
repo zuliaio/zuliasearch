@@ -65,7 +65,7 @@ public class ZuliaNode {
 	}
 
 	public void start(boolean startREST) throws Exception {
-		LOG.info(getLogPrefix() + "starting release candidate");
+		LOG.info(getLogPrefix() + "starting");
 		MembershipTask membershipTask = new MembershipTask(zuliaConfig, nodeService) {
 
 			@Override
