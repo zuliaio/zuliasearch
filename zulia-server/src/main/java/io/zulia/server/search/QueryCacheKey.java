@@ -9,8 +9,17 @@ public class QueryCacheKey {
 
 	public QueryCacheKey(QueryRequest queryRequest) {
 		this.pinned = queryRequest.getPinToCache();
-		this.queryRequest = queryRequest.toBuilder().setPinToCache(false).setSearchLabel("")
-				.build(); // make sure it has the same signature as an unpinned search
+
+		// make sure it has the same signature as an unpinned search
+
+		// remove the search label from caching consideration as well
+
+		// clear out all indexes from the request except for this index
+		// this allows caching to happen at the index level, i.e. ->
+		//  * the caching for identical queries searched again two indexes could be use for a combined query against two indexes
+		//  * the two identical queries against different aliases pointed at the same index would be cache hits for each other
+
+		this.queryRequest = queryRequest.toBuilder().clearIndex().setPinToCache(false).setSearchLabel("").build();
 	}
 
 	public boolean isPinned() {
