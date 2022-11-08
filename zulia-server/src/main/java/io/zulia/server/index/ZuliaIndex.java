@@ -736,14 +736,6 @@ public class ZuliaIndex {
 	}
 
 	public ShardQuery getShardQuery(Query query, QueryRequest queryRequest) throws Exception {
-		// clear out all indexes from the request except for this index
-		// this allows caching to happen at the index level, i.e. ->
-		//  * the caching for identical queries searched again two indexes could be use for a combined query against two indexes
-		//  * the two identical queries against different aliases pointed at the same index would be cache hits for each other
-		QueryRequest.Builder modifiedIndexQueryRequest = QueryRequest.newBuilder(queryRequest);
-		modifiedIndexQueryRequest.clearIndex();
-		modifiedIndexQueryRequest.addIndex(indexName);
-		queryRequest = modifiedIndexQueryRequest.build();
 
 		int amount = queryRequest.getAmount() + queryRequest.getStart();
 
