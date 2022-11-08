@@ -11,6 +11,7 @@ import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
 import io.zulia.client.command.builder.TermQuery;
+import io.zulia.client.command.factory.FilterFactory;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.CompleteResult;
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import java.time.LocalDate;
 import java.time.Month;
-import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -48,8 +48,8 @@ public class StartStopTest {
 	private final String[] issns = new String[] { "1234-1234", "3333-1234", "1234-5555", "1234-4444", "2222-2222", "3331-3333" };
 	private final String[] eissns = new String[] { "3234-1234", "4333-1234", "5234-5555", "6234-4444", "9222-2222", "3431-3638" };
 
-	private int totalRecords = COUNT_PER_ISSN * issns.length;
-	private int totalRecordsWithTitle = COUNT_PER_ISSN * (issns.length - 1);
+	private final int totalRecords = COUNT_PER_ISSN * issns.length;
+	private final int totalRecordsWithTitle = COUNT_PER_ISSN * (issns.length - 1);
 
 	private static ZuliaWorkPool zuliaWorkPool;
 
@@ -81,9 +81,8 @@ public class StartStopTest {
 		indexConfig.setShardCommitInterval(20); //force some commits
 
 		//optional meta
-		indexConfig.setMeta(new Document().append("createTime", new Date()).append("myLabel","greatLabel"));
+		indexConfig.setMeta(new Document().append("createTime", new Date()).append("myLabel", "greatLabel"));
 		zuliaWorkPool.createIndex(indexConfig);
-
 
 		GetIndexConfigResult indexConfigResult = zuliaWorkPool.getIndexConfig(FACET_TEST_INDEX);
 		ClientIndexConfig storedClientIndexConfig = indexConfigResult.getIndexConfig();
@@ -185,17 +184,13 @@ public class StartStopTest {
 		}
 
 		if (tenth) { // 1/10 of input
-
-			Date d = Date.from(LocalDate.of(2014, Month.OCTOBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
-			mongoDocument.put("date", d);
+			mongoDocument.put("date", LocalDate.of(2014, Month.OCTOBER, 4));
 		}
 		else if (half) { // 2/5 of input
-			Date d = Date.from(LocalDate.of(2013, Month.SEPTEMBER, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
-			mongoDocument.put("date", d);
+			mongoDocument.put("date", LocalDate.of(2013, Month.SEPTEMBER, 4));
 		}
 		else { // 1/2 of input
-			Date d = Date.from(LocalDate.of(2012, 8, 4).atStartOfDay(ZoneId.of("UTC")).toInstant());
-			mongoDocument.put("date", d);
+			mongoDocument.put("date", LocalDate.of(2012, 8, 4));
 		}
 
 		Store s = new Store(uniqueId, FACET_TEST_INDEX);
@@ -210,7 +205,6 @@ public class StartStopTest {
 		zuliaWorkPool.store(s);
 
 	}
-
 
 	@Test
 	@Order(3)
@@ -245,8 +239,6 @@ public class StartStopTest {
 		Assertions.assertTrue(highScore > lowScore);
 
 	}
-
-
 
 	@Test
 	@Order(3)
@@ -343,7 +335,6 @@ public class StartStopTest {
 		Assertions.assertEquals("False", facetCounts.get(1).getFacet());
 	}
 
-
 	@Test
 	@Order(3)
 	public void termTestBuilder() throws Exception {
@@ -421,7 +412,6 @@ public class StartStopTest {
 		TestHelper.startNodes();
 		Thread.sleep(2000);
 	}
-
 
 	@Test
 	@Order(6)
@@ -598,7 +588,7 @@ public class StartStopTest {
 
 			for (CompleteResult result : sr.getCompleteResults()) {
 
-				Document metadata =  result.getMetadata();
+				Document metadata = result.getMetadata();
 				Assertions.assertEquals("someValue", metadata.getString("test"));
 			}
 
@@ -646,6 +636,44 @@ public class StartStopTest {
 
 			List<FacetCount> facetCounts = sr.getFacetCounts("issn");
 			Assertions.assertEquals(0, facetCounts.size());
+
+		}
+
+		{
+			Search s = new Search(FACET_TEST_INDEX).addQuery(
+					FilterFactory.rangeLocalDate("date").setRange(LocalDate.of(2014, 1, 1), LocalDate.of(2014, 12, 31)).toQuery());
+
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			Assertions.assertEquals(totalRecords / 10, sr.getTotalHits());
+
+		}
+
+		{
+			Search s = new Search(FACET_TEST_INDEX).addQuery(
+					FilterFactory.rangeLocalDate("date").setRange(LocalDate.of(2014, 10, 5), LocalDate.of(2014, 12, 31)).toQuery());
+
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			Assertions.assertEquals(0, sr.getTotalHits());
+
+		}
+
+		{
+			Search s = new Search(FACET_TEST_INDEX).addQuery(FilterFactory.rangeLocalDate("date").setMinValue(LocalDate.of(2014, 10, 5)).toQuery());
+
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			Assertions.assertEquals(0, sr.getTotalHits());
+
+		}
+
+		{
+			Search s = new Search(FACET_TEST_INDEX).addQuery(FilterFactory.rangeLocalDate("date").setMaxValue(LocalDate.of(2014, 10, 5)).toQuery());
+
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			Assertions.assertEquals(totalRecords, sr.getTotalHits());
 
 		}
 

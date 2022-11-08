@@ -42,6 +42,12 @@ public class RangeFilter<T> {
 		return this;
 	}
 
+	public RangeFilter<T> setRange(T minValue, T maxValue) {
+		this.minValue = minValue;
+		this.maxValue = maxValue;
+		return this;
+	}
+
 	public RangeFilter<T> setEndpointBehavior(RangeBehavior behavior) {
 		this.behavior = behavior;
 		return this;
@@ -53,8 +59,8 @@ public class RangeFilter<T> {
 	 * @return Filter Query matching these requirements
 	 */
 	public FilterQuery toQuery() {
-		String minString = minValue == null ? "*" : minValue.toString();
-		String maxString = maxValue == null ? "*" : maxValue.toString();
+		String minString = minValue == null ? "*" : getAsString(minValue);
+		String maxString = maxValue == null ? "*" : getAsString(maxValue);
 		char open = '[';
 		char close = ']';
 
@@ -73,5 +79,9 @@ public class RangeFilter<T> {
 		}
 
 		return query;
+	}
+
+	public String getAsString(T val) {
+		return val.toString();
 	}
 }
