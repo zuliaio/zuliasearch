@@ -4,7 +4,7 @@ import "zulia_base.proto";
 
 option java_package = "io.zulia.message";
 
-message IndexMapping {
+message IndexShardMapping {
     string indexName = 1;
     uint32 numberOfShards = 2;
     repeated ShardMapping shardMapping = 3;

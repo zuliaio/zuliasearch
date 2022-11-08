@@ -7,6 +7,8 @@ import io.zulia.client.command.builder.MatchAllQuery;
 import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.StatFacet;
+import io.zulia.client.command.factory.FilterFactory;
+import io.zulia.client.command.factory.RangeBehavior;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.opentest4j.AssertionFailedError;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -31,7 +34,8 @@ public class StatTest {
 	public static final String STAT_TEST_INDEX = "stat";
 
 	private static ZuliaWorkPool zuliaWorkPool;
-	private static int repeatCount = 100;
+	private static final int repeatCount = 100;
+	private static final int shardCount = 5;
 
 	@BeforeAll
 	public static void initAll() throws Exception {
@@ -53,7 +57,7 @@ public class StatTest {
 		//indexConfig.addFieldConfig(FieldConfigBuilder.create("authorCount", FieldType.NUMERIC_INT).index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
-		indexConfig.setNumberOfShards(1);
+		indexConfig.setNumberOfShards(shardCount);
 		indexConfig.setShardCommitInterval(20); //force some commits
 
 		zuliaWorkPool.createIndex(indexConfig);
@@ -73,7 +77,6 @@ public class StatTest {
 			indexRecord(i * uniqueDocs + 5, "something really special", "top3/middle/bottom4", null, 4, List.of());
 			indexRecord(i * uniqueDocs + 6, "boring", "top4/middle/bottom5", "other", 1, List.of(0.0));
 		}
-
 	}
 
 	private void indexRecord(int id, String title, String pathFacet, String normalFacet, int authorCount, List<Double> rating) throws Exception {
@@ -97,11 +100,17 @@ public class StatTest {
 	@Test
 	@Order(3)
 	public void statTest() throws Exception {
+		List<Double> percentiles = new ArrayList<>() {{
+			add(0.0);
+			add(0.25);
+			add(0.50);
+			add(0.75);
+			add(1.0);
+		}};
 
 		Search search = new Search(STAT_TEST_INDEX);
-		search.addStat(new NumericStat("rating"));
+		search.addStat(new NumericStat("rating").setPercentiles(percentiles));
 		search.addQuery(new FilterQuery("title:boring").exclude());
-		search.addQuery(new MatchAllQuery());
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
 
@@ -109,31 +118,31 @@ public class StatTest {
 		ratingTest(ratingStat);
 
 		search.clearStat();
-		search.addStat(new StatFacet("rating", "normalFacet"));
+		search.addStat(new StatFacet("rating", "normalFacet").setPercentiles(percentiles));
 		searchResult = zuliaWorkPool.search(search);
 		ratingNormalTest(searchResult);
 
 		search.clearStat();
-		search.addStat(new StatFacet("rating", "pathFacet"));
+		search.addStat(new StatFacet("rating", "pathFacet").setPercentiles(percentiles).setTopN(2).setTopNShard(2));
 		searchResult = zuliaWorkPool.search(search);
 
 		ratingPathTest(searchResult);
 
 		search.clearStat();
-		search.addStat(new StatFacet("rating", "normalFacet"));
-		search.addStat(new StatFacet("rating", "pathFacet"));
+		search.addStat(new StatFacet("rating", "normalFacet").setPercentiles(percentiles));
+		search.addStat(new StatFacet("rating", "pathFacet").setPercentiles(percentiles));
 		searchResult = zuliaWorkPool.search(search);
 		ratingNormalTest(searchResult);
 		ratingPathTest(searchResult);
 
 		search = new Search(STAT_TEST_INDEX);
-		search.addStat(new StatFacet("authorCount", "pathFacet"));
+		search.addStat(new StatFacet("authorCount", "pathFacet").setPercentiles(percentiles));
 		Search finalSearch = search;
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch),
 				"Expecting: Search: Numeric field <authorCount> must be indexed as a SORTABLE numeric field");
 
 		search = new Search(STAT_TEST_INDEX);
-		search.addStat(new StatFacet("rating", "normalFacet"));
+		search.addStat(new StatFacet("rating", "normalFacet").setPercentiles(percentiles));
 		search.addQuery(new FilterQuery("title:boring"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
@@ -154,6 +163,15 @@ public class StatTest {
 		Assertions.assertEquals(4L * repeatCount, ratingStat.getDocCount());
 		Assertions.assertEquals(6L * repeatCount, ratingStat.getAllDocCount());
 		Assertions.assertEquals(5L * repeatCount, ratingStat.getValueCount());
+
+		Assertions.assertEquals(5, ratingStat.getPercentilesCount());
+
+		double precision = 0.001;
+		Assertions.assertEquals(0.5, ratingStat.getPercentiles(0).getValue(), precision * 0.5);
+		Assertions.assertEquals(1.0, ratingStat.getPercentiles(1).getValue(), precision * 1.0);
+		Assertions.assertEquals(2.5, ratingStat.getPercentiles(2).getValue(), precision * 2.5);
+		Assertions.assertEquals(3.0, ratingStat.getPercentiles(3).getValue(), precision * 3.0);
+		Assertions.assertEquals(3.5, ratingStat.getPercentiles(4).getValue(), precision * 3.5);
 	}
 
 	private void ratingNormalTest(SearchResult searchResult) {
@@ -217,6 +235,61 @@ public class StatTest {
 
 	@Test
 	@Order(4)
+	public void testRangeFilters() throws Exception {
+		SearchResult searchResult;
+		Search search = new Search(STAT_TEST_INDEX);
+
+		// Get how many are in the dataset
+		search.addQuery(new MatchAllQuery());
+		searchResult = zuliaWorkPool.search(search);
+		search.clearQueries();
+		Assertions.assertEquals(700, searchResult.getTotalHits());
+
+		// Find all documents with any value in rating stat
+		search.addQuery(FilterFactory.rangeDouble("rating").toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		search.clearQueries();
+		Assertions.assertEquals(500, searchResult.getTotalHits());
+
+		// Find documents without any value in rating stat
+		search.addQuery(FilterFactory.rangeDouble("rating").setExclude().toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		search.clearQueries();
+		Assertions.assertEquals(200, searchResult.getTotalHits());
+
+		// Test max only
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMaxValue(0.50).toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(200, searchResult.getTotalHits());
+
+		// Inverted max only
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMaxValue(0.50).setExclude().toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(500, searchResult.getTotalHits());
+
+		// Test inclusivity
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMaxValue(0.50).setEndpointBehavior(RangeBehavior.EXCLUSIVE).toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(100, searchResult.getTotalHits());
+
+		// Test endpoints
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMinValue(0.0).setMaxValue(3.5).setEndpointBehavior(RangeBehavior.INCLUSIVE).toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(500, searchResult.getTotalHits());
+
+		// Test exclude endpoints
+		search.clearQueries();
+		search.addQuery(FilterFactory.rangeDouble("rating").setMinValue(0.0).setMaxValue(3.5).setEndpointBehavior(RangeBehavior.EXCLUSIVE).toQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(400, searchResult.getTotalHits());
+	}
+
+	@Test
+	@Order(5)
 	public void reindex() throws Exception {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
@@ -227,7 +300,7 @@ public class StatTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("authorCount").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
-		indexConfig.setNumberOfShards(1);
+		indexConfig.setNumberOfShards(shardCount);
 		indexConfig.setShardCommitInterval(20); //force some commits
 
 		zuliaWorkPool.createIndex(indexConfig);
@@ -238,7 +311,7 @@ public class StatTest {
 	}
 
 	@Test
-	@Order(5)
+	@Order(6)
 	public void restart() throws Exception {
 		TestHelper.stopNodes();
 		Thread.sleep(2000);
@@ -247,11 +320,10 @@ public class StatTest {
 	}
 
 	@Test
-	@Order(6)
+	@Order(7)
 	public void confirm() throws Exception {
 		Search search = new Search(STAT_TEST_INDEX);
 		search.addQuery(new FilterQuery("title:boring").exclude());
-		search.addQuery(new MatchAllQuery());
 		search.addStat(new NumericStat("authorCount"));
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
@@ -268,7 +340,6 @@ public class StatTest {
 		searchResult = zuliaWorkPool.search(search);
 		authorCountPathFacetTest(searchResult);
 
-
 		search.clearStat();
 		search.addStat(new NumericStat("authorCount"));
 		search.addStat(new StatFacet("authorCount", "normalFacet"));
@@ -277,7 +348,6 @@ public class StatTest {
 		authorCountTest(searchResult);
 		authorCountNormalFacetTest(searchResult);
 		authorCountPathFacetTest(searchResult);
-
 
 		search.clearStat();
 		search.addStat(new StatFacet("authorCount", "pathFacet"));
@@ -292,7 +362,6 @@ public class StatTest {
 		ratingNormalTest(searchResult);
 		ratingPathTest(searchResult);
 
-
 		search = new Search(STAT_TEST_INDEX);
 		search.addStat(new StatFacet("rating", "pathFacet"));
 		search.addQuery(new FilterQuery("\"something really special\"").addQueryField("title"));
@@ -306,8 +375,10 @@ public class StatTest {
 		System.err.println(ratingByFacet.get(0).getMin().getDoubleValue());
 		System.err.println(ratingByFacet.get(0).getMax().getDoubleValue());
 		System.err.println(ratingByFacet.get(0).getSum().getDoubleValue());
-		Assertions.assertEquals(Double.POSITIVE_INFINITY, ratingByFacet.get(0).getMin().getDoubleValue(), 0.001); // Positive Infinity for Min when no values found
-		Assertions.assertEquals(Double.NEGATIVE_INFINITY, ratingByFacet.get(0).getMax().getDoubleValue(), 0.001); // Negative Infinity for Max when no values found
+		Assertions.assertEquals(Double.POSITIVE_INFINITY, ratingByFacet.get(0).getMin().getDoubleValue(),
+				0.001); // Positive Infinity for Min when no values found
+		Assertions.assertEquals(Double.NEGATIVE_INFINITY, ratingByFacet.get(0).getMax().getDoubleValue(),
+				0.001); // Negative Infinity for Max when no values found
 		Assertions.assertEquals(0, ratingByFacet.get(0).getSum().getDoubleValue(), 0.001);
 	}
 

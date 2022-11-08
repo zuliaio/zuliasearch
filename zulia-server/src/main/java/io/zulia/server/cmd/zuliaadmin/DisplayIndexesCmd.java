@@ -29,11 +29,11 @@ public class DisplayIndexesCmd implements Callable<Integer> {
 
 		if (detailed) {
 			HashMap<String, String> indexLocation = new HashMap<>();
-			List<ZuliaIndex.IndexMapping> indexMappings = zuliaWorkPool.getNodes().getIndexMappings();
-			for (ZuliaIndex.IndexMapping indexMapping : indexMappings) {
+			List<ZuliaIndex.IndexShardMapping> indexShardMappings = zuliaWorkPool.getNodes().getIndexShardMappings();
+			for (ZuliaIndex.IndexShardMapping indexShardMapping : indexShardMappings) {
 
 				StringBuilder sb = new StringBuilder();
-				for (ZuliaIndex.ShardMapping shardMapping : indexMapping.getShardMappingList()) {
+				for (ZuliaIndex.ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
 					if (sb.length() != 0) {
 						sb.append(",");
 					}
@@ -43,7 +43,7 @@ public class DisplayIndexesCmd implements Callable<Integer> {
 						appendNode(sb, shardNumber, false, rn);
 					}
 				}
-				indexLocation.put(indexMapping.getIndexName(), sb.toString());
+				indexLocation.put(indexShardMapping.getIndexName(), sb.toString());
 			}
 
 			List<String> indexNames = indexes.getIndexNames();

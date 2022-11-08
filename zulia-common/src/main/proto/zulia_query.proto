@@ -2,12 +2,13 @@ syntax = "proto3";
 
 
 import "zulia_base.proto";
+import "DDSketch.proto";
 
 option java_package = "io.zulia.message";
 
 message Query {
 
-    reserved 6,7,9, 12; //old dismax,dismaxTie,vectorSimilarity,legacy
+    reserved 6, 7, 9, 12; //old dismax,dismaxTie,vectorSimilarity,legacy
 
     enum QueryType {
         FILTER = 0;
@@ -70,8 +71,14 @@ message StatRequest {
     Facet facetField = 2;
     uint32 maxFacets = 3; // default 10, set to -1 to get all
     uint32 shardFacets = 4; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
+    double precision = 5; // Specify the precision to be used in this request. Default is 0.001
+    repeated double percentiles = 6;
 }
 
+message Percentile {
+    double point = 1; // Percentile point represented
+    double value = 2; // Value of the percentile at this point
+}
 message CountRequest {
     Facet facetField = 1;
     uint32 maxFacets = 2; // default 10, set to -1 to get all
@@ -99,13 +106,34 @@ message FacetStats {
     uint64 docCount = 5;
     uint64 allDocCount = 6;
     uint64 valueCount = 7;
+    repeated Percentile percentiles = 8;
+    bool hasError = 9; // Indicates that error was discovered during shard merging
+    SortValue maxSumError = 10; // Indicates the max error bound of the summation
 }
 
+// Internal message intended to carry around the large sketch until reaching the top level of a request
+message FacetStatsInternal {
+    string facet = 1;
+    SortValue min = 2;
+    SortValue max = 3;
+    SortValue sum = 4;
+    uint64 docCount = 5;
+    uint64 allDocCount = 6;
+    uint64 valueCount = 7;
+    DDSketch statSketch = 8;
+}
 
 message StatGroup {
     StatRequest statRequest = 1;
     FacetStats globalStats = 2;
     repeated FacetStats facetStats = 3;
+}
+
+// Internal message to handle larger DDSketch facet stats
+message StatGroupInternal {
+    StatRequest statRequest = 1;
+    FacetStatsInternal globalStats = 2;
+    repeated FacetStatsInternal facetStats = 3;
 }
 
 message SortRequest {
@@ -221,7 +249,6 @@ message FieldSimilarity {
     Similarity similarity = 2;
 }
 
-
 message IndexShardResponse {
     string indexName = 1;
     repeated ShardQueryResponse shardQueryResponse = 2;
@@ -235,6 +262,6 @@ message ShardQueryResponse {
     ScoredResult next = 5;
     repeated FacetGroup facetGroup = 6;
     repeated AnalysisResult analysisResult = 7;
-    repeated StatGroup statGroup = 8;
+    repeated StatGroupInternal statGroup = 8;
     bool cached = 9;
 }

@@ -95,7 +95,7 @@ public class ZuliaNode {
 		started = true;
 	}
 
-	public void shutdown()  {
+	public void shutdown() {
 		LOG.info(getLogPrefix() + "stopping");
 		membershipTimer.cancel();
 		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());

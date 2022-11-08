@@ -161,7 +161,7 @@ public class QueryCombiner {
 				facetCombiner.handleFacetGroupForShard(fg, shardIndex);
 			}
 
-			for (ZuliaQuery.StatGroup sg : sr.getStatGroupList()) {
+			for (ZuliaQuery.StatGroupInternal sg : sr.getStatGroupList()) {
 				StatRequest statRequest = sg.getStatRequest();
 				StatCombiner statCombiner = statCombinerMap.computeIfAbsent(statRequest, statRequest1 -> new StatCombiner(statRequest, shardResponses.size()));
 				statCombiner.handleStatGroupForShard(sg, shardIndex);
@@ -207,7 +207,7 @@ public class QueryCombiner {
 		}
 
 		for (StatCombiner statCombiner : statCombinerMap.values()) {
-			builder.addStatGroup(statCombiner.getCombinedStatGroup());
+			builder.addStatGroup(statCombiner.getCombinedStatGroupAndConvertToExternalType());
 		}
 
 		Map<String, ScoredResult[]> lastIndexResultMap = createLastIndexResultMapWithPreviousLastResults();
@@ -303,7 +303,8 @@ public class QueryCombiner {
 
 							if (sorting) {
 								String msg = "Result set did not return the most relevant sorted documents for index <" + indexName + ">\n";
-								msg += "    Last for index from shard <" + lastForIndex.getShard() + "> has sort values <" + lastForIndex.getSortValues() + ">\n";
+								msg += "    Last for index from shard <" + lastForIndex.getShard() + "> has sort values <" + lastForIndex.getSortValues()
+										+ ">\n";
 								msg += "    Next for shard <" + next.getShard() + ">  has sort values <" + next.getSortValues() + ">\n";
 								msg += "    Last for shards: \n";
 								msg += "      " + Arrays.toString(lastForShardArr) + "\n";
@@ -319,7 +320,8 @@ public class QueryCombiner {
 
 							double diff = (Math.abs(lastForIndex.getScore() - next.getScore()));
 							if (diff > shardTolerance) {
-								String msg = "Result set did not return the most relevant documents for index <" + indexName + "> with shard tolerance <" + shardTolerance + ">\n";
+								String msg = "Result set did not return the most relevant documents for index <" + indexName + "> with shard tolerance <"
+										+ shardTolerance + ">\n";
 								msg += "    Last for index from shard <" + lastForIndex.getShard() + "> has score <" + lastForIndex.getScore() + ">\n";
 								msg += "    Next for shard <" + next.getShard() + "> has score <" + next.getScore() + ">\n";
 								msg += "    Last for shards: \n";

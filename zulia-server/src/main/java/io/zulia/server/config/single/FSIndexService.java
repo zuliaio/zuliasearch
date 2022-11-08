@@ -3,7 +3,7 @@ package io.zulia.server.config.single;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.IndexAlias;
-import io.zulia.message.ZuliaIndex.IndexMapping;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.exceptions.IndexConfigDoesNotExistException;
@@ -89,16 +89,16 @@ public class FSIndexService implements IndexService {
 	}
 
 	@Override
-	public List<IndexMapping> getIndexMappings() throws Exception {
+	public List<IndexShardMapping> getIndexShardMappings() throws Exception {
 
 		if (Paths.get(baseDir).toFile().exists()) {
-			List<IndexMapping> indexMappings = new ArrayList<>();
+			List<IndexShardMapping> indexShardMappings = new ArrayList<>();
 			for (File file : Objects.requireNonNull(Paths.get(baseDir).toFile().listFiles())) {
 				if (file.getName().endsWith(MAPPING_EXTENSION)) {
-					indexMappings.add(getIndexMapping(file));
+					indexShardMappings.add(getIndexShardMapping(file));
 				}
 			}
-			return indexMappings;
+			return indexShardMappings;
 		}
 
 		return Collections.emptyList();
@@ -106,19 +106,19 @@ public class FSIndexService implements IndexService {
 	}
 
 	@Override
-	public IndexMapping getIndexMapping(String indexName) throws Exception {
-		return getIndexMapping(new File(baseDir + File.separator + indexName + MAPPING_EXTENSION));
+	public IndexShardMapping getIndexShardMapping(String indexName) throws Exception {
+		return getIndexShardMapping(new File(baseDir + File.separator + indexName + MAPPING_EXTENSION));
 	}
 
 	@Override
-	public void storeIndexMapping(IndexMapping indexMapping) throws IOException {
+	public void storeIndexShardMapping(IndexShardMapping indexShardMapping) throws IOException {
 		JsonFormat.Printer printer = JsonFormat.printer();
-		String indexMappingJson = printer.print(indexMapping);
-		writeFile(indexMappingJson, indexMapping.getIndexName() + MAPPING_EXTENSION);
+		String indexMappingJson = printer.print(indexShardMapping);
+		writeFile(indexMappingJson, indexShardMapping.getIndexName() + MAPPING_EXTENSION);
 	}
 
 	@Override
-	public void removeIndexMapping(String indexName) throws Exception {
+	public void removeIndexShardMapping(String indexName) throws Exception {
 		Files.deleteIfExists(Paths.get(baseDir + File.separator + indexName + MAPPING_EXTENSION));
 	}
 
@@ -171,12 +171,12 @@ public class FSIndexService implements IndexService {
 		return indexSettingsBuilder.build();
 	}
 
-	private IndexMapping getIndexMapping(File indexMappingFile) throws IOException {
+	private IndexShardMapping getIndexShardMapping(File indexMappingFile) throws IOException {
 		if (!indexMappingFile.exists()) {
 			throw new IndexConfigDoesNotExistException(indexMappingFile.getName());
 		}
 
-		IndexMapping.Builder indexMappingBuilder = IndexMapping.newBuilder();
+		IndexShardMapping.Builder indexMappingBuilder = IndexShardMapping.newBuilder();
 		JsonFormat.parser().merge(new FileReader(indexMappingFile), indexMappingBuilder);
 		return indexMappingBuilder.build();
 	}
