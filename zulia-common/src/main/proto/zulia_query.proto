@@ -264,4 +264,5 @@ message ShardQueryResponse {
     repeated AnalysisResult analysisResult = 7;
     repeated StatGroupInternal statGroup = 8;
     bool cached = 9;
+    bool pinned = 10;
 }

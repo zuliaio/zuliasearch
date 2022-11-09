@@ -79,23 +79,30 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 		QueryResponse qr = queryCombiner.getQueryResponse();
 
+		long end = System.currentTimeMillis();
+		handleLog(queryId, qr, end - start);
 		if (!queryCombiner.isShort()) {
-			long end = System.currentTimeMillis();
-			LOG.info("Finished query id <" + queryId + "> with result size " + String.format("%.2f", (qr.getSerializedSize() / 1024.0)) + "KB in " + (end
-					- start) + "ms");
 			return qr;
 		}
 		else {
 			if (!request.getFetchFull()) {
 				QueryRequest newRequest = request.toBuilder().setFetchFull(true).build();
-				long end = System.currentTimeMillis();
-				LOG.info("Finished query id <" + queryId + "> with result size " + String.format("%.2f", (qr.getSerializedSize() / 1024.0)) + "KB in " + (end
-						- start) + "ms");
 				return getResponse(newRequest);
 			}
-
 			throw new Exception("Full fetch request is short");
 		}
 
+	}
+
+	private static void handleLog(long queryId, QueryResponse qr, long time) {
+		String prefix = "Finished query";
+		if (qr.getShardsQueried() == qr.getShardsPinned()) {
+			prefix = "Finished query from pinned cache";
+		}
+		else if (qr.getShardsQueried() == qr.getShardsCached()) {
+			prefix = "Finished query from cache";
+		}
+
+		LOG.info(prefix + " id <" + queryId + "> with result size " + String.format("%.2f", (qr.getSerializedSize() / 1024.0)) + "KB in " + time + "ms");
 	}
 }
