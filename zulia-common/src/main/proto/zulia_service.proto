@@ -86,6 +86,8 @@ message QueryResponse {
     repeated StatGroup statGroup = 6;
     bool fullyCached = 7;
     int32 shardsCached = 8;
+    int32 shardsPinned = 9;
+    int32 shardsQueried = 10;
 }
 
 message InternalQueryResponse {
@@ -313,4 +315,9 @@ message ReindexRequest {
 
 message ReindexResponse {
 
+}
+
+message RestIndexSettingsResponse {
+    IndexSettings indexSettings = 1;
+    repeated QueryRequest warmingSearch = 2;
 }

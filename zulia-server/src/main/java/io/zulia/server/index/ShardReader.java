@@ -140,7 +140,7 @@ public class ShardReader implements AutoCloseable {
 			// Check if the search is existing in the pinned cache, so we can indicate it is cached. Otherwise, compute it in the cache so multiple identical requests are deduplicated
 			pinnedCacheHit = pinnedQueryResultCache.getIfPresent(queryCacheKey);
 			if (pinnedCacheHit != null) {
-				return pinnedCacheHit.setCached(true).build();
+				return pinnedCacheHit.setCached(true).setPinned(true).build();
 			}
 
 			if (queryCacheKey.isPinned()) {

@@ -128,6 +128,7 @@ public class QueryCombiner {
 		long totalHits = 0;
 		long returnedHits = 0;
 		int shardsCached = 0;
+		int shardsPinned = 0;
 
 		for (ShardQueryResponse sr : shardResponses) {
 			totalHits += sr.getTotalHits();
@@ -135,6 +136,10 @@ public class QueryCombiner {
 			if (sr.getCached()) {
 				shardsCached++;
 			}
+			if (sr.getPinned()) {
+				shardsPinned++;
+			}
+
 		}
 
 		boolean fullyCached = shardsCached == shardResponses.size();
@@ -143,6 +148,8 @@ public class QueryCombiner {
 		builder.setTotalHits(totalHits);
 		builder.setFullyCached(fullyCached);
 		builder.setShardsCached(shardsCached);
+		builder.setShardsPinned(shardsPinned);
+		builder.setShardsQueried(shardResponses.size());
 
 		int resultsSize = Math.min(amount, (int) returnedHits);
 
