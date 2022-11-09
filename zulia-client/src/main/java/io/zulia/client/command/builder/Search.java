@@ -284,6 +284,6 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 
 	@Override
 	public String toString() {
-		return queryRequest.toString();
+		return getRequest().toString();
 	}
 }
