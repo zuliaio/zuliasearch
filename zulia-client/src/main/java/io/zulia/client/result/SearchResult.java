@@ -248,6 +248,14 @@ public class SearchResult extends Result {
 		return queryResponse.getShardsCached();
 	}
 
+	public int getShardsQueried() {
+		return queryResponse.getShardsQueried();
+	}
+
+	public int getShardsPinned() {
+		return queryResponse.getShardsPinned();
+	}
+
 	@Override
 	public String toString() {
 		return queryResponse.toString();

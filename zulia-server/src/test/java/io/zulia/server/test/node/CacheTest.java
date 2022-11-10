@@ -125,6 +125,9 @@ public class CacheTest {
 		search.addQuery(new FilterQuery("rating:[1.0 TO 3.5]"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertTrue(searchResult.getFullyCached());
+		Assertions.assertEquals(1, searchResult.getShardsCached());
+		Assertions.assertEquals(1, searchResult.getShardsPinned());
+		Assertions.assertEquals(1, searchResult.getShardsQueried());
 
 		search = new Search(CACHE_TEST);
 		search.addQuery(new ScoredQuery("rating:[1.0 TO 2.0]"));
