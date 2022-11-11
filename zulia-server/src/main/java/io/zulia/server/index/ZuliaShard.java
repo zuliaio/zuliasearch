@@ -101,6 +101,7 @@ public class ZuliaShard {
 
 			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
 
+			//TODO detect if searches change while warming and make sure we A) stop warming the old searches, B) make sure not to mark the searches warmed so the new searches get warmed
 			for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
 				MasterSlaveSettings primaryReplicaSettings = warmingSearch.getMasterSlaveSettings();
 				boolean shardNeedsWarmForSearch = (primary ? usesPrimary : usesReplica).contains(primaryReplicaSettings);
