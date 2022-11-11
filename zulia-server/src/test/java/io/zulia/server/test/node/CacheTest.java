@@ -2,6 +2,8 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.UpdateIndex;
+import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
@@ -50,12 +52,13 @@ public class CacheTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("description").indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").facet().index().sort());
 		indexConfig.setIndexName(CACHE_TEST);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardQueryCacheSize(3);
 		indexConfig.addWarmingSearch(
-				new Search(CACHE_TEST).setPinToCache(true).setSearchLabel("important search").addQuery(new FilterQuery("rating:[1.0 TO 3.5]")));
+				new Search(CACHE_TEST).setPinToCache(true).setSearchLabel("important search").addQuery(new FilterQuery("rating:[1.0 TO 3.5]"))
+						.addCountFacet(new CountFacet("rating")));
 
 		zuliaWorkPool.createIndex(indexConfig);
 
@@ -72,6 +75,7 @@ public class CacheTest {
 		zuliaWorkPool.createIndex(indexConfig);
 
 		zuliaWorkPool.createIndexAlias(ALIAS_3, CACHE_TEST_2);
+
 	}
 
 	@Test
@@ -123,6 +127,7 @@ public class CacheTest {
 
 		search = new Search(CACHE_TEST);
 		search.addQuery(new FilterQuery("rating:[1.0 TO 3.5]"));
+		search.addCountFacet(new CountFacet("rating"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertTrue(searchResult.getFullyCached());
 		Assertions.assertEquals(1, searchResult.getShardsCached());
@@ -224,6 +229,22 @@ public class CacheTest {
 		Assertions.assertTrue(searchResult.getFullyCached());
 		Assertions.assertEquals(1, searchResult.getShardsCached());
 
+		UpdateIndex updateIndex = new UpdateIndex(ALIAS_1);
+		updateIndex.mergeWarmingSearches(new Search(CACHE_TEST).setSearchLabel("most important search").addQuery(new FilterQuery("rating:[2.0 TO 3.5]"))
+				.addCountFacet(new CountFacet("rating").setTopN(3)));
+		zuliaWorkPool.updateIndex(updateIndex);
+
+		Thread.sleep(2000);
+
+		search = new Search(CACHE_TEST);
+		search.addQuery(new FilterQuery("rating:[2.0 TO 3.5]"));
+		search.addCountFacet(new CountFacet("rating").setTopN(3));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertTrue(searchResult.getFullyCached());
+		Assertions.assertEquals(1, searchResult.getShardsCached());
+		Assertions.assertEquals(0, searchResult.getShardsPinned());
+		Assertions.assertEquals(1, searchResult.getShardsQueried());
+
 	}
 
 	@Test
@@ -243,10 +264,20 @@ public class CacheTest {
 
 		search = new Search(CACHE_TEST);
 		search.addQuery(new FilterQuery("rating:[1.0 TO 3.5]"));
+		search.addCountFacet(new CountFacet("rating"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertTrue(searchResult.getFullyCached());
 		Assertions.assertEquals(1, searchResult.getShardsCached());
 		Assertions.assertEquals(1, searchResult.getShardsPinned());
+		Assertions.assertEquals(1, searchResult.getShardsQueried());
+
+		search = new Search(CACHE_TEST);
+		search.addQuery(new FilterQuery("rating:[2.0 TO 3.5]"));
+		search.addCountFacet(new CountFacet("rating").setTopN(3));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertTrue(searchResult.getFullyCached());
+		Assertions.assertEquals(1, searchResult.getShardsCached());
+		Assertions.assertEquals(0, searchResult.getShardsPinned());
 		Assertions.assertEquals(1, searchResult.getShardsQueried());
 	}
 

@@ -8,6 +8,7 @@ import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.server.field.FieldTypeUtil;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,8 +67,6 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 			indexSettings.setIdleTimeWithoutCommit(5);
 		}
 
-
-
 		if (indexSettings.getShardTolerance() < 0) {
 			throw new IllegalArgumentException("Shard Tolerance must be positive");
 		}
@@ -103,7 +102,6 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 			indexSettings.setCommitToWarmTime(1);
 		}
 
-
 		HashSet<String> storedFields = new HashSet<>();
 
 		Set<String> analyzerNames = new HashSet<>(indexSettings.getAnalyzerSettingsList().stream().map(ZuliaIndex.AnalyzerSettings::getName).toList());
@@ -118,16 +116,20 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 
 			for (ZuliaIndex.IndexAs indexAs : builder.getIndexAsList()) {
 				if (indexAs.getIndexFieldName().contains(",")) {
-					throw new IllegalArgumentException("Index as field name can not contain a comma.  Found in stored field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+					throw new IllegalArgumentException(
+							"Index as field name can not contain a comma.  Found in stored field <" + builder.getStoredFieldName() + "> indexed as <"
+									+ indexAs.getIndexFieldName() + ">");
 				}
 				if (FieldTypeUtil.isStringFieldType(builder.getFieldType()) && !analyzerNames.contains(indexAs.getAnalyzerName())) {
 					if (indexAs.getAnalyzerName().isEmpty()) {
 						throw new IllegalArgumentException(
-								"Analyzer is not defined for string field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+								"Analyzer is not defined for string field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName()
+										+ ">");
 					}
 					else {
 						throw new IllegalArgumentException(
-								"Analyzer <" + indexAs.getAnalyzerName() + "> is not a default analyzer and is not given as a custom analyzer for field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+								"Analyzer <" + indexAs.getAnalyzerName() + "> is not a default analyzer and is not given as a custom analyzer for field <"
+										+ builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
 					}
 				}
 			}
@@ -135,9 +137,12 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 		}
 
 		HashSet<String> searchLabels = new HashSet<>();
+		List<ByteString> warmingSearchesList = new ArrayList<>();
 		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
 			try {
 				QueryRequest queryRequest = QueryRequest.parseFrom(bytes);
+				queryRequest = new QueryRequestValidator().validateAndSetDefault(queryRequest);
+				warmingSearchesList.add(queryRequest.toByteString());
 				String searchLabel = queryRequest.getSearchLabel();
 				if (searchLabel.isEmpty()) {
 					throw new RuntimeException("A search label is required for a warming search");
@@ -152,5 +157,7 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 				throw new IllegalArgumentException("Failed to parse QueryRequest from warming search bytes", e);
 			}
 		}
+		indexSettings.clearWarmingSearches();
+		indexSettings.addAllWarmingSearches(warmingSearchesList);
 	}
 }
