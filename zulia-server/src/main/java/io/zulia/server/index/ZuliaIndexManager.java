@@ -481,6 +481,7 @@ public class ZuliaIndexManager {
 				for (ByteString existingWarmingByte : existingWarmingBytes) {
 					try {
 						QueryRequest queryRequest = QueryRequest.parseFrom(existingWarmingByte);
+						queryRequest = new QueryRequestValidator().validateAndSetDefault(queryRequest);
 						existingWarmingSearch.add(queryRequest);
 					}
 					catch (Exception e) {
