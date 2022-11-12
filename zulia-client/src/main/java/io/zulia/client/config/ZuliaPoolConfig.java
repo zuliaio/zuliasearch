@@ -25,7 +25,7 @@ public class ZuliaPoolConfig {
 
 	public ZuliaPoolConfig() {
 		this.nodes = new ArrayList<>();
-		this.maxConnections = 10;
+		this.maxConnections = 32;
 		this.maxIdle = 10;
 		this.defaultRetries = DEFAULT_DEFAULT_RETRIES;
 		this.poolName = null;
