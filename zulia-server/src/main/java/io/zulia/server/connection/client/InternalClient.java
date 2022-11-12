@@ -18,6 +18,7 @@ import io.zulia.server.connection.client.handler.InternalReindexHandler;
 import io.zulia.server.connection.client.handler.InternalStoreHandler;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -79,9 +80,9 @@ public class InternalClient {
 
 			GenericObjectPool<InternalRpcConnection> pool = new GenericObjectPool<>(
 					new InternalRpcConnectionFactory(node.getServerAddress(), node.getServicePort()));
-			pool.setMinIdle(1);
-			pool.setMaxTotal(8);
-			pool.setMinEvictableIdleTimeMillis(1000L * 60L * 5L);
+			pool.setMinIdle(4);
+			pool.setMaxTotal(64);
+			pool.setMinEvictableIdle(Duration.ofMinutes(5));
 
 			internalConnectionPoolMap.putIfAbsent(nodeKey, pool);
 		}
