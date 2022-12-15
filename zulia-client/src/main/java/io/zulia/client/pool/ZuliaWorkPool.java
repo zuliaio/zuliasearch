@@ -7,10 +7,12 @@ import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.result.*;
 import io.zulia.fields.Mapper;
+import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 public class ZuliaWorkPool extends ZuliaBaseWorkPool {
@@ -301,6 +303,10 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 
 	public ListenableFuture<ReindexResult> reindexAsync(String index) throws Exception {
 		return reindexAsync(new Reindex(index));
+	}
+
+	public List<IndexAlias> getIndexAliases() throws Exception {
+		return getNodes().getIndexAliases();
 	}
 
 
