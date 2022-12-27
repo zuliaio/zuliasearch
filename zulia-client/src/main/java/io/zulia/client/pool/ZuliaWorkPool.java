@@ -6,7 +6,7 @@ import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.result.*;
-import io.zulia.fields.Mapper;
+import io.zulia.fields.GsonDocumentMapper;
 import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.util.ResultHelper;
@@ -215,12 +215,11 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(search);
 	}
 
-	public <T> void searchAllAsMappedDocument(Search search, Mapper<T> mapper, Consumer<T> mappedDocumentHandler) throws Exception {
+	public <T> void searchAllAsMappedDocument(Search search, GsonDocumentMapper<T> mapper, Consumer<T> mappedDocumentHandler) throws Exception {
 		searchAllAsScoredResult(search, scoredResult -> {
 			try {
 				mappedDocumentHandler.accept(mapper.fromScoredResult(scoredResult));
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		});
