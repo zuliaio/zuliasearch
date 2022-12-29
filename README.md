@@ -23,5 +23,5 @@ To learn more see the [wiki](https://github.com/zuliaio/zuliasearch/wiki):
 * [Cluster](https://github.com/zuliaio/zuliasearch/wiki/Cluster)
 * [Command Line Tools](https://github.com/zuliaio/zuliasearch/wiki/Command-Line-Tools)
 * [Java Client](https://github.com/zuliaio/zuliasearch/wiki/Java-Client)
-* [Rest Client](https://github.com/zuliaio/zuliasearch/wiki/Rest-Client)
+* [Rest Service](https://github.com/zuliaio/zuliasearch/wiki/Rest-Service)
 * [Rich Query Syntax](https://github.com/zuliaio/zuliasearch/wiki/Query-Syntax)
