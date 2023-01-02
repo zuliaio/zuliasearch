@@ -3,7 +3,7 @@ package io.zulia.client.command.builder;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.Query.QueryType;
 
-public class ScoredQuery extends StandardQuery {
+public class ScoredQuery extends StandardQuery<ScoredQuery> {
 	private boolean must;
 	private String scoreFunction;
 
@@ -11,10 +11,14 @@ public class ScoredQuery extends StandardQuery {
 		this(query, true);
 	}
 
+	@Override
+	protected ScoredQuery getSelf() {
+		return this;
+	}
+
 	/**
-	 *
 	 * @param query
-	 * @param must  - if must is true than query will be required, otherwise it will be used to as an optional (should clause) to help scoring
+	 * @param must  - if must is true then query will be required, otherwise it will be used to as an optional (should clause) to help scoring
 	 */
 	public ScoredQuery(String query, boolean must) {
 		super(query);
