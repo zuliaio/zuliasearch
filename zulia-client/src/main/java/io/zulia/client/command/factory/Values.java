@@ -60,7 +60,7 @@ public class Values {
 
     private Values(Type type, Integer minimumShouldMatch) {
         this.type = type;
-        this.minimumShouldMatch = null;
+        this.minimumShouldMatch = minimumShouldMatch;
     }
 
     public Values of(String... values) {
@@ -108,8 +108,11 @@ public class Values {
             sb.append("-");
         }
 
-        COMMA_JOINER.appendTo(sb, fields);
-        sb.append(":(");
+        if (fields != null && !fields.isEmpty()) {
+            COMMA_JOINER.appendTo(sb, fields);
+            sb.append(":");
+        }
+        sb.append("(");
 
         List<String> valuesHandled = values.stream().map(valueHandler).toList();
         if (type.equals(Type.ALL)) {
@@ -122,7 +125,7 @@ public class Values {
             sb.append("~");
             sb.append(minimumShouldMatch);
         }
-        return null;
+        return sb.toString();
     }
 
 
@@ -135,12 +138,20 @@ public class Values {
     }
 
 
-    public <T extends StandardQuery> T asQuery(Function<String, T> constructor) {
+    public <T extends StandardQuery<T>> T asQuery(Function<String, T> constructor) {
         List<String> valuesHandled = values.stream().map(valueHandler).toList();
         String query = SPACE_JOINER.join(valuesHandled);
         T tQuery = constructor.apply(query);
         tQuery.setDefaultOperator(type.equals(Type.ALL) ? Operator.AND : Operator.OR);
         fields.forEach(tQuery::addQueryField);
+
+        if (exclude) {
+            if (tQuery instanceof FilterQuery fq) {
+                fq.exclude();
+            } else if (tQuery instanceof ScoredQuery sq) {
+                throw new IllegalStateException("Exclude cannot be used with ScoredQuery");
+            }
+        }
         if (minimumShouldMatch != null) {
             tQuery.setMinShouldMatch(minimumShouldMatch);
         }
@@ -148,15 +159,6 @@ public class Values {
     }
 
 
-    public static void main(String[] args) {
-        String query = Values.any().of("a", "b", "c").withFields("title", "abstract").exclude().asString();
 
-        String query2 = Values.atLeast(2).of("a", "b", "c").withFields("title", "abstract").exclude().asString();
-
-
-        FilterQuery filterQuery = Values.atLeast(2).of("a", "b", "c").withFields("title", "abstract").exclude().asFilterQuery();
-
-        ScoredQuery scoredQuery = Values.atLeast(2).of("a", "b", "c").withFields("title", "abstract").exclude().asScoredQuery();
-    }
 
 }
