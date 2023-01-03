@@ -96,8 +96,9 @@ public class Values {
     }
 
 
-    public void setValueHandler(Function<String, String> valueHandler) {
+    public Values valueHandler(Function<String, String> valueHandler) {
         this.valueHandler = valueHandler;
+        return this;
     }
 
     public String asString() {
