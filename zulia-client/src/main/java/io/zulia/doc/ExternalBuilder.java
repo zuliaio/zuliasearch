@@ -30,12 +30,16 @@ public class ExternalBuilder {
 	}
 
 	public ExternalBuilder setMetadata(Document metadata) {
-		this.metadata = metadata;
+		if (null != metadata) {
+			this.metadata = metadata;
+		}
 		return this;
 	}
 
 	public ExternalBuilder setLocationData(Document location) {
-		this.locationData = location;
+		if (null != location) {
+			this.locationData = location;
+		}
 		return this;
 	}
 
@@ -47,7 +51,7 @@ public class ExternalBuilder {
 	public ZuliaBase.ExternalDocument build() {
 		Document registration = new Document();
 
-		registration.put("metdata", metadata);
+		registration.put("metadata", metadata);
 		registration.put("location", locationData);
 
 		builder.setRegistration(ZuliaUtil.mongoDocumentToByteString(registration));
