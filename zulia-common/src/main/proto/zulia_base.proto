@@ -34,6 +34,14 @@ message AssociatedDocument {
     int64 timestamp = 6;
 }
 
+message ExternalDocument {
+    string filename = 1;
+    string documentUniqueId = 2;
+    string indexName = 3;
+    bytes registration = 4;
+    int64 timestamp = 5;
+}
+
 
 message ShardCountResponse {
     uint32 shardNumber = 1;

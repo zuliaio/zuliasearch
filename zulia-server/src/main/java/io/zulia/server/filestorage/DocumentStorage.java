@@ -1,6 +1,7 @@
 package io.zulia.server.filestorage;
 
 import io.zulia.message.ZuliaBase.AssociatedDocument;
+import io.zulia.message.ZuliaBase.ExternalDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
 import org.bson.Document;
 
@@ -28,6 +29,14 @@ public interface DocumentStorage {
 	void deleteAssociatedDocument(String uniqueId, String fileName) throws Exception;
 
 	void deleteAssociatedDocuments(String uniqueId) throws Exception;
+
+	/**
+	 * The method accepts the registration of an associated document that was created externally.  Primary use cae being something like S3.
+	 * Unsupported by local files storage
+	 * @param registration
+	 * @throws Exception
+	 */
+	void registerExternalDocument(ExternalDocument registration) throws Exception;
 
 	void drop() throws Exception;
 

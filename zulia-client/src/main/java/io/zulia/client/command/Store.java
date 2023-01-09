@@ -5,6 +5,7 @@ import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.StoreResult;
 import io.zulia.doc.AssociatedBuilder;
+import io.zulia.doc.ExternalBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.ResultDocument;
@@ -22,14 +23,15 @@ public class Store extends SimpleCommand<StoreRequest, StoreResult> implements S
 	private String uniqueId;
 	private String indexName;
 	private ResultDocument resultDocument;
-
 	private List<ZuliaBase.AssociatedDocument> associatedDocuments;
+	private List<ZuliaBase.ExternalDocument> externalDocuments;
 	private Boolean clearExistingAssociated;
 
 	public Store(String uniqueId, String indexName) {
 		this.uniqueId = uniqueId;
 		this.indexName = indexName;
 		this.associatedDocuments = new ArrayList<>();
+		this.externalDocuments = new ArrayList<>();
 	}
 
 	public Store(String uniqueId, String indexName, ResultDocBuilder resultDocumentBuilder) {
@@ -85,6 +87,20 @@ public class Store extends SimpleCommand<StoreRequest, StoreResult> implements S
 
 	public Store setAssociatedDocuments(List<AssociatedDocument> associatedDocuments) {
 		this.associatedDocuments = associatedDocuments;
+		return this;
+	}
+
+	public Store addExternalDocument(ExternalBuilder externalBuilder) {
+			externalBuilder.setDocumentUniqueId(uniqueId);
+			externalBuilder.setIndexName(indexName);
+			externalDocuments.add(externalBuilder.build());
+			return this;
+	}
+
+	public List<ZuliaBase.ExternalDocument> getExternalDocument() {return externalDocuments;}
+
+	public Store setExternalDocuments(List<ZuliaBase.ExternalDocument> externalDocuments) {
+		this.externalDocuments = externalDocuments;
 		return this;
 	}
 
