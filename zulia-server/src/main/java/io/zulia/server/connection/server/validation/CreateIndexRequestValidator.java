@@ -1,14 +1,14 @@
 package io.zulia.server.connection.server.validation;
 
+import com.google.protobuf.ByteString;
 import io.zulia.DefaultAnalyzers;
-import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
-import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
+import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.server.field.FieldTypeUtil;
-import io.zulia.util.ZuliaUtil;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -75,7 +75,7 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 		}
 
 		if (indexSettings.getShardQueryCacheSize() < 0) {
-			throw new IllegalArgumentException("Shard Query Cache Size must be positive");
+			throw new IllegalArgumentException("Shard Query Cache Size must be positive or zero to use for default values");
 		}
 		else if (indexSettings.getShardQueryCacheSize() == 0) {
 			indexSettings.setShardQueryCacheSize(512);
@@ -95,6 +95,13 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 			indexSettings.setShardCommitInterval(3200);
 		}
 
+		if (indexSettings.getCommitToWarmTime() < 0) {
+			throw new IllegalArgumentException("Idle Time Without Commit must be positive or zero to use for default values");
+		}
+		else if (indexSettings.getCommitToWarmTime() == 0) {
+			indexSettings.setCommitToWarmTime(1);
+		}
+
 		HashSet<String> storedFields = new HashSet<>();
 
 		Set<String> analyzerNames = new HashSet<>(indexSettings.getAnalyzerSettingsList().stream().map(ZuliaIndex.AnalyzerSettings::getName).toList());
@@ -109,20 +116,48 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 
 			for (ZuliaIndex.IndexAs indexAs : builder.getIndexAsList()) {
 				if (indexAs.getIndexFieldName().contains(",")) {
-					throw new IllegalArgumentException("Index as field name can not contain a comma.  Found in stored field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+					throw new IllegalArgumentException(
+							"Index as field name can not contain a comma.  Found in stored field <" + builder.getStoredFieldName() + "> indexed as <"
+									+ indexAs.getIndexFieldName() + ">");
 				}
 				if (FieldTypeUtil.isStringFieldType(builder.getFieldType()) && !analyzerNames.contains(indexAs.getAnalyzerName())) {
 					if (indexAs.getAnalyzerName().isEmpty()) {
 						throw new IllegalArgumentException(
-								"Analyzer is not defined for string field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+								"Analyzer is not defined for string field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName()
+										+ ">");
 					}
 					else {
 						throw new IllegalArgumentException(
-								"Analyzer <" + indexAs.getAnalyzerName() + "> is not a default analyzer and is not given as a custom analyzer for field <" + builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
+								"Analyzer <" + indexAs.getAnalyzerName() + "> is not a default analyzer and is not given as a custom analyzer for field <"
+										+ builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
 					}
 				}
 			}
 
 		}
+
+		HashSet<String> searchLabels = new HashSet<>();
+		List<ByteString> warmingSearchesList = new ArrayList<>();
+		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
+			try {
+				QueryRequest queryRequest = QueryRequest.parseFrom(bytes);
+				queryRequest = new QueryRequestValidator().validateAndSetDefault(queryRequest);
+				warmingSearchesList.add(queryRequest.toByteString());
+				String searchLabel = queryRequest.getSearchLabel();
+				if (searchLabel.isEmpty()) {
+					throw new RuntimeException("A search label is required for a warming search");
+				}
+				if (searchLabels.contains(searchLabel)) {
+					throw new IllegalArgumentException("Warming search list has duplicate search label <" + searchLabel + ">");
+				}
+
+				searchLabels.add(searchLabel);
+			}
+			catch (Exception e) {
+				throw new IllegalArgumentException("Failed to parse QueryRequest from warming search bytes", e);
+			}
+		}
+		indexSettings.clearWarmingSearches();
+		indexSettings.addAllWarmingSearches(warmingSearchesList);
 	}
 }

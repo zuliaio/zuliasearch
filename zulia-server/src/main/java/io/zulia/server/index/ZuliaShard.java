@@ -2,29 +2,25 @@ package io.zulia.server.index;
 
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
-import io.zulia.message.ZuliaBase.Similarity;
-import io.zulia.message.ZuliaQuery;
-import io.zulia.message.ZuliaQuery.FacetRequest;
 import io.zulia.message.ZuliaQuery.FetchType;
-import io.zulia.message.ZuliaQuery.HighlightRequest;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
-import io.zulia.message.ZuliaQuery.SortRequest;
+import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
-import io.zulia.server.search.QueryCacheKey;
+import io.zulia.server.search.ShardQuery;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
 
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
@@ -66,17 +62,13 @@ public class ZuliaShard {
 		return shardWriteManager.getShardNumber();
 	}
 
-	public ShardQueryResponse queryShard(Query query, Map<String, Similarity> similarityOverrideMap, int amount, FieldDoc after, FacetRequest facetRequest,
-			SortRequest sortRequest, QueryCacheKey queryCacheKey, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
-			List<HighlightRequest> highlightList, List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug) throws Exception {
+	public ShardQueryResponse queryShard(ShardQuery shardQuery) throws Exception {
 
 		shardReaderManager.maybeRefreshBlocking();
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
-			return shardReader
-					.queryShard(query, similarityOverrideMap, amount, after, facetRequest, sortRequest, queryCacheKey, resultFetchType, fieldsToReturn,
-							fieldsToMask, highlightList, analysisRequestList, debug);
+			return shardReader.queryShard(shardQuery);
 		}
 		finally {
 			shardReaderManager.decRef(shardReader);
@@ -97,6 +89,41 @@ public class ZuliaShard {
 
 		if (shardWriteManager.needsIdleCommit()) {
 			forceCommit();
+		}
+	}
+
+	public void tryWarmSearches(ZuliaIndex zuliaIndex, boolean primary) {
+
+		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
+		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
+
+		if (shardWriteManager.needsSearchWarming()) {
+
+			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
+
+			//TODO detect if searches change while warming and make sure we A) stop warming the old searches, B) make sure not to mark the searches warmed so the new searches get warmed
+			for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
+				MasterSlaveSettings primaryReplicaSettings = warmingSearch.getMasterSlaveSettings();
+				boolean shardNeedsWarmForSearch = (primary ? usesPrimary : usesReplica).contains(primaryReplicaSettings);
+
+				if (shardNeedsWarmForSearch) {
+					try {
+						LOG.info("Warming search with label <" + warmingSearch.getSearchLabel() + ">");
+						Query query = zuliaIndex.getQuery(warmingSearch);
+						ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
+						queryShard(shardQuery);
+					}
+					catch (Exception e) {
+						LOG.severe("Failed to warm search with label <" + warmingSearch.getSearchLabel() + ">: " + e.getMessage());
+					}
+				}
+
+				if (!shardWriteManager.needsSearchWarming()) {
+					break;
+				}
+			}
+
+			shardWriteManager.searchesWarmed();
 		}
 	}
 
@@ -269,4 +296,17 @@ public class ZuliaShard {
 			shardReaderManager.decRef(shardReader);
 		}
 	}
+
+	public ZuliaBase.ShardCacheStats getShardCacheStats() throws IOException {
+		shardReaderManager.maybeRefreshBlocking();
+		ShardReader shardReader = shardReaderManager.acquire();
+
+		try {
+			return shardReader.getShardCacheStats();
+		}
+		finally {
+			shardReaderManager.decRef(shardReader);
+		}
+	}
+
 }

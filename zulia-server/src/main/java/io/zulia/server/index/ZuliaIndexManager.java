@@ -1,13 +1,14 @@
 package io.zulia.server.index;
 
+import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexAlias;
-import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.message.ZuliaIndex.ShardMapping;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation;
@@ -53,10 +54,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +68,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -181,7 +185,7 @@ public class ZuliaIndexManager {
 	private void loadIndex(IndexSettings indexSettings) throws Exception {
 		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " loading index <" + indexSettings.getIndexName() + ">");
 
-		IndexMapping indexMapping = indexService.getIndexMapping(indexSettings.getIndexName());
+		IndexShardMapping indexShardMapping = indexService.getIndexShardMapping(indexSettings.getIndexName());
 
 		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
 
@@ -204,7 +208,7 @@ public class ZuliaIndexManager {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
 		}
 
-		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexMapping);
+		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
 
 		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
 
@@ -260,15 +264,15 @@ public class ZuliaIndexManager {
 
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
 
-		List<IndexMapping> indexMappingList = indexService.getIndexMappings();
+		List<IndexShardMapping> indexShardMappingList = indexService.getIndexShardMappings();
 		List<IndexAlias> indexAliasesList = indexService.getIndexAliases();
 		if ((request.getActiveOnly())) {
-			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexMapping(indexMappingList)
+			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexShardMapping(indexShardMappingList)
 					.addAllIndexAlias(indexAliasesList).build();
 		}
 		else {
-			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexMapping(indexMappingList).addAllIndexAlias(indexAliasesList)
-					.build();
+			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexShardMapping(indexShardMappingList)
+					.addAllIndexAlias(indexAliasesList).build();
 		}
 	}
 
@@ -333,7 +337,13 @@ public class ZuliaIndexManager {
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
 		//if existing index make sure not to allow changing number of shards
 
-		LOG.info(getLogPrefix() + " creating index: " + request);
+		String requestString = request.toString();
+
+		if (requestString.length() > (1024 * 1024)) {
+			requestString = requestString.substring(0, 1024 * 1024) + "...";
+		}
+
+		LOG.info(getLogPrefix() + " creating index: " + requestString);
 		request = new CreateIndexRequestValidator().validateAndSetDefault(request);
 
 		NodeWeightComputation nodeWeightComputation = new DefaultNodeWeightComputation(indexService, thisNode, currentOtherNodesActive);
@@ -348,9 +358,9 @@ public class ZuliaIndexManager {
 
 			indexSettings = indexSettings.toBuilder().setCreateTime(currentTimeMillis).build();
 
-			IndexMapping.Builder indexMapping = IndexMapping.newBuilder();
-			indexMapping.setIndexName(indexName);
-			indexMapping.setNumberOfShards(indexSettings.getNumberOfShards());
+			IndexShardMapping.Builder indexShardMapping = IndexShardMapping.newBuilder();
+			indexShardMapping.setIndexName(indexName);
+			indexShardMapping.setNumberOfShards(indexSettings.getNumberOfShards());
 
 			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
 
@@ -374,10 +384,10 @@ public class ZuliaIndexManager {
 					}
 				}
 
-				indexMapping.addShardMapping(shardMapping);
+				indexShardMapping.addShardMapping(shardMapping);
 			}
 
-			indexService.storeIndexMapping(indexMapping.build());
+			indexService.storeIndexShardMapping(indexShardMapping.build());
 		}
 		else {
 
@@ -422,22 +432,30 @@ public class ZuliaIndexManager {
 
 	public UpdateIndexResponse updateIndex(UpdateIndexRequest request) throws Exception {
 
-		if (request.getIndexName().isEmpty()) {
+		String orgIndexName = request.getIndexName();
+
+		if (orgIndexName.isEmpty()) {
 			throw new IllegalArgumentException("Index name must be given");
 		}
 
-		Lock lock = indexUpdateMap.computeIfAbsent(request.getIndexName(), s -> new ReentrantLock());
+		String indexName = handleAlias(orgIndexName);
+
+		if (!indexName.equals(orgIndexName)) {
+			LOG.info("Update Index Following Alias <" + orgIndexName + "> to index <" + indexName + ">");
+		}
+
+		Lock lock = indexUpdateMap.computeIfAbsent(indexName, s -> new ReentrantLock());
 		try {
 			lock.lock();
 
-			IndexSettings indexSettings = indexService.getIndex(request.getIndexName());
+			IndexSettings indexSettings = indexService.getIndex(indexName);
 			if (indexSettings == null) {
-				LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexName() + "> that does not exist");
+				LOG.log(Level.SEVERE, "Failed to update index <" + indexName + "> that does not exist");
 
-				throw new Exception("Failed to update index <" + request.getIndexName() + "> that does not exist");
+				throw new Exception("Failed to update index <" + indexName + "> that does not exist");
 			}
 
-			LOG.info("Updating Index <" + request.getIndexName() + "> with <" + request.getUpdateIndexSettings() + ">");
+			LOG.info("Updating Index <" + indexName + "> with <" + request.getUpdateIndexSettings() + ">");
 
 			UpdateIndexSettings updateIndexSettings = request.getUpdateIndexSettings();
 
@@ -455,6 +473,40 @@ public class ZuliaIndexManager {
 						updateIndexSettings.getFieldConfigList(), FieldConfig::getStoredFieldName);
 				existingSettings.clearFieldConfig();
 				existingSettings.addAllFieldConfig(fieldConfigs);
+			}
+
+			if (updateIndexSettings.getWarmingSearchesOperation().getEnable()) {
+				List<ByteString> existingWarmingBytes = existingSettings.getWarmingSearchesList();
+				List<QueryRequest> existingWarmingSearch = new ArrayList<>();
+				for (ByteString existingWarmingByte : existingWarmingBytes) {
+					try {
+						QueryRequest queryRequest = QueryRequest.parseFrom(existingWarmingByte);
+						queryRequest = new QueryRequestValidator().validateAndSetDefault(queryRequest);
+						existingWarmingSearch.add(queryRequest);
+					}
+					catch (Exception e) {
+						LOG.severe("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
+					}
+				}
+
+				List<QueryRequest> warmingSearch = new ArrayList<>();
+				for (ByteString updates : updateIndexSettings.getWarmingSearchesList()) {
+					try {
+						QueryRequest queryRequest = QueryRequest.parseFrom(updates);
+						if (queryRequest.getSearchLabel().isEmpty()) {
+							throw new RuntimeException("A search label is required for a warming search");
+						}
+						warmingSearch.add(queryRequest);
+					}
+					catch (Exception e) {
+						throw new RuntimeException("Failed to parse existing warming search update", e);
+					}
+				}
+
+				List<QueryRequest> warmingSearches = updateWithAction(updateIndexSettings.getWarmingSearchesOperation(), existingWarmingSearch, warmingSearch,
+						QueryRequest::getSearchLabel);
+				existingSettings.clearWarmingSearches();
+				existingSettings.addAllWarmingSearches(warmingSearches.stream().map(QueryRequest::toByteString).toList());
 			}
 
 			if (updateIndexSettings.getSetDefaultSearchField()) {
@@ -533,12 +585,12 @@ public class ZuliaIndexManager {
 
 			try {
 				@SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
-						InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(request.getIndexName()).build());
+						InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(indexName).build());
 
 				return UpdateIndexResponse.newBuilder().setFullIndexSettings(indexSettings).build();
 			}
 			catch (Exception e) {
-				throw new Exception("Failed to update index <" + request.getIndexName() + ">: " + e.getMessage());
+				throw new Exception("Failed to update index <" + indexName + ">: " + e.getMessage());
 			}
 		}
 		finally {
@@ -548,10 +600,13 @@ public class ZuliaIndexManager {
 
 	private <T> List<T> updateWithAction(Operation operation, List<T> existingValues, List<T> updates, Function<T, String> keyFunction) {
 
+		BinaryOperator<T> firstOne = (t, t2) -> t; // take the first one if duplicate labels
+
 		List<T> newValues;
 		if (OperationType.MERGE.equals(operation.getOperationType())) {
 			if (!updates.isEmpty()) {
-				Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity()));
+
+				Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new));
 
 				List<T> existingWithReplacements = existingValues.stream().map(value -> {
 					T replacement = toUpdate.get(keyFunction.apply(value));
@@ -569,7 +624,7 @@ public class ZuliaIndexManager {
 			}
 		}
 		else if (OperationType.REPLACE.equals(operation.getOperationType())) {
-			newValues = updates;
+			newValues = new ArrayList<>(updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new)).values());
 		}
 		else {
 			throw new IllegalArgumentException("Unknown operation type <" + operation.getOperationType() + ">");
@@ -607,7 +662,7 @@ public class ZuliaIndexManager {
 
 		String indexName = request.getIndexName();
 		indexService.removeIndex(indexName);
-		indexService.removeIndexMapping(indexName);
+		indexService.removeIndexShardMapping(indexName);
 
 		return DeleteIndexResponse.newBuilder().build();
 
@@ -808,4 +863,9 @@ public class ZuliaIndexManager {
 		return DeleteIndexAliasResponse.newBuilder().build();
 	}
 
+	public void getStats() {
+		for (ZuliaIndex value : indexMap.values()) {
+
+		}
+	}
 }

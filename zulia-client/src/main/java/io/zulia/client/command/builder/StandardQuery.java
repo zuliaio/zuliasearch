@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public abstract class StandardQuery implements QueryBuilder {
+public abstract class StandardQuery<T extends StandardQuery> implements QueryBuilder {
 
 	private final ZuliaQuery.Query.Builder queryBuilder;
 
@@ -18,78 +18,62 @@ public abstract class StandardQuery implements QueryBuilder {
 		}
 	}
 
-	public StandardQuery setQuery(String query) {
+	public T setQuery(String query) {
 		queryBuilder.setQ(query);
-		return this;
+		return getSelf();
 	}
+
+	protected abstract T getSelf();
 
 	public List<String> getQueryFields() {
 		return queryBuilder.getQfList();
 	}
 
-	public StandardQuery addQueryField(String queryField) {
+	public T addQueryField(String queryField) {
 		queryBuilder.addQf(queryField);
-		return this;
+		return getSelf();
 	}
 
-	public StandardQuery addQueryFields(String... queryFields) {
+	public T addQueryFields(String... queryFields) {
 		queryBuilder.addAllQf(List.of(queryFields));
-		return this;
+		return getSelf();
 	}
 
-	public StandardQuery addQueryFields(Iterable<String> queryFields) {
+	public T addQueryFields(Iterable<String> queryFields) {
 		queryBuilder.addAllQf(queryFields);
-		return this;
+		return getSelf();
 	}
 
-	public StandardQuery clearQueryField() {
+	public T clearQueryField() {
 		queryBuilder.clearQf();
-		return this;
+		return getSelf();
 	}
 
-	public StandardQuery setQueryFields(@NotNull List<String> queryFields) {
+	public T setQueryFields(@NotNull List<String> queryFields) {
 		if (queryFields == null) {
 			throw new IllegalArgumentException("Query Fields cannot be null");
 		}
 		queryBuilder.clearQf();
 		queryBuilder.addAllQf(queryFields);
-		return this;
+		return getSelf();
 	}
 
 	public ZuliaQuery.Query.Operator getDefaultOperator() {
 		return queryBuilder.getDefaultOp();
 	}
 
-	public StandardQuery setDefaultOperator(ZuliaQuery.Query.Operator defaultOperator) {
+	public T setDefaultOperator(ZuliaQuery.Query.Operator defaultOperator) {
 		queryBuilder.setDefaultOp(defaultOperator);
-		return this;
+		return getSelf();
 	}
 
 	public int getMinShouldMatch() {
 		return queryBuilder.getMm();
 	}
 
-	public StandardQuery setMinShouldMatch(int minShouldMatch) {
+	public T setMinShouldMatch(int minShouldMatch) {
 		queryBuilder.setMm(minShouldMatch);
-		return this;
-	}
-
-	public boolean getDismax() {
-		return queryBuilder.getDismax();
-	}
-
-	public StandardQuery setDismax(boolean dismax) {
-		queryBuilder.setDismax(dismax);
-		return this;
-	}
-
-	public float getDismaxTie() {
-		return queryBuilder.getDismaxTie();
-	}
-
-	public StandardQuery setDismaxTie(float dismaxTie) {
-		queryBuilder.setDismaxTie(dismaxTie);
-		return this;
+		return getSelf();
 	}
 
 	@Override
@@ -97,14 +81,6 @@ public abstract class StandardQuery implements QueryBuilder {
 		completeQuery(queryBuilder);
 		return queryBuilder.build();
 
-	}
-
-	public void setLegacy() {
-		queryBuilder.setLegacy(true);
-	}
-
-	public void unsetLegacy() {
-		queryBuilder.clearLegacy();
 	}
 
 	protected abstract void completeQuery(ZuliaQuery.Query.Builder queryBuilder);

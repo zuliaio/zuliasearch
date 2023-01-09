@@ -73,6 +73,8 @@ message QueryRequest {
     bool debug = 15;
     bool dontCache = 16;
     MasterSlaveSettings masterSlaveSettings = 17;
+    bool pinToCache = 18;
+    string searchLabel = 19;
 }
 
 message QueryResponse {
@@ -82,6 +84,10 @@ message QueryResponse {
     repeated FacetGroup facetGroup = 4;
     repeated AnalysisResult analysisResult = 5;
     repeated StatGroup statGroup = 6;
+    bool fullyCached = 7;
+    int32 shardsCached = 8;
+    int32 shardsPinned = 9;
+    int32 shardsQueried = 10;
 }
 
 message InternalQueryResponse {
@@ -291,7 +297,7 @@ message GetNodesRequest {
 
 message GetNodesResponse {
     repeated Node node = 1;
-    repeated IndexMapping indexMapping = 2;
+    repeated IndexShardMapping indexShardMapping = 2;
     repeated IndexAlias indexAlias = 3;
 }
 
@@ -309,4 +315,9 @@ message ReindexRequest {
 
 message ReindexResponse {
 
+}
+
+message RestIndexSettingsResponse {
+    IndexSettings indexSettings = 1;
+    repeated QueryRequest warmingSearch = 2;
 }

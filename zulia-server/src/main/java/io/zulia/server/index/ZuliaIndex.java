@@ -9,8 +9,8 @@ import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaIndex.FieldConfig;
-import io.zulia.message.ZuliaIndex.IndexMapping;
 import io.zulia.message.ZuliaIndex.IndexSettings;
+import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.message.ZuliaIndex.ShardMapping;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.Facet;
@@ -18,6 +18,7 @@ import io.zulia.message.ZuliaQuery.FacetRequest;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaQuery.FieldSimilarity;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
+import io.zulia.message.ZuliaQuery.Query.QueryType;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
@@ -31,9 +32,9 @@ import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.search.QueryCacheKey;
+import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.search.queryparser.ZuliaParser;
-import io.zulia.server.search.queryparser.legacy.ZuliaLegacyMultiFieldQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
@@ -41,6 +42,10 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -89,8 +94,6 @@ public class ZuliaIndex {
 	private final static Logger LOG = Logger.getLogger(ZuliaIndex.class.getSimpleName());
 
 	private final ServerIndexConfig indexConfig;
-
-	private final GenericObjectPool<ZuliaLegacyMultiFieldQueryParser> legacyParsers;
 	private final GenericObjectPool<ZuliaFlexibleQueryParser> parsers;
 	private final ConcurrentHashMap<Integer, ZuliaShard> primaryShardMap;
 	private final ConcurrentHashMap<Integer, ZuliaShard> replicaShardMap;
@@ -104,21 +107,25 @@ public class ZuliaIndex {
 
 	private final Timer commitTimer;
 	private final TimerTask commitTask;
+
+	private final Timer warmTimer;
+
+	private final TimerTask warmTask;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 
-	private final IndexMapping indexMapping;
+	private final IndexShardMapping indexShardMapping;
 	private final FacetsConfig facetsConfig;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService,
-			IndexMapping indexMapping) {
+			IndexShardMapping indexShardMapping) {
 
 		this.zuliaConfig = zuliaConfig;
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
 		this.numberOfShards = indexConfig.getNumberOfShards();
 		this.indexService = indexService;
-		this.indexMapping = indexMapping;
+		this.indexShardMapping = indexShardMapping;
 		this.facetsConfig = new FacetsConfig();
 		configureFacets();
 
@@ -127,20 +134,6 @@ public class ZuliaIndex {
 		this.shardPool = Executors.newCachedThreadPool(new ZuliaThreadFactory(indexName + "-shards"));
 
 		this.zuliaPerFieldAnalyzer = new ZuliaPerFieldAnalyzer(indexConfig);
-
-		this.legacyParsers = new GenericObjectPool<>(new BasePooledObjectFactory<>() {
-
-			@Override
-			public ZuliaLegacyMultiFieldQueryParser create() {
-				return new ZuliaLegacyMultiFieldQueryParser(zuliaPerFieldAnalyzer, ZuliaIndex.this.indexConfig);
-			}
-
-			@Override
-			public PooledObject<ZuliaLegacyMultiFieldQueryParser> wrap(ZuliaLegacyMultiFieldQueryParser obj) {
-				return new DefaultPooledObject<>(obj);
-			}
-
-		});
 
 		this.parsers = new GenericObjectPool<>(new BasePooledObjectFactory<>() {
 
@@ -175,6 +168,24 @@ public class ZuliaIndex {
 
 		commitTimer.scheduleAtFixedRate(commitTask, 1000, 1000);
 
+		warmTimer = new Timer(indexName + "-WarmTimer", true);
+
+		warmTask = new TimerTask() {
+
+			@Override
+			public void run() {
+				for (ZuliaShard shard : primaryShardMap.values()) {
+					shard.tryWarmSearches(ZuliaIndex.this, true);
+				}
+				for (ZuliaShard shard : replicaShardMap.values()) {
+					shard.tryWarmSearches(ZuliaIndex.this, false);
+				}
+			}
+
+		};
+
+		warmTimer.scheduleAtFixedRate(warmTask, 1000, 1000);
+
 	}
 
 	public FieldConfig.FieldType getSortFieldType(String fieldName) {
@@ -205,6 +216,9 @@ public class ZuliaIndex {
 		LOG.info("Canceling timers for <" + indexName + ">");
 		commitTask.cancel();
 		commitTimer.cancel();
+
+		warmTask.cancel();
+		warmTimer.cancel();
 
 		if (!terminate) {
 			LOG.info("Committing <" + indexName + ">");
@@ -398,6 +412,65 @@ public class ZuliaIndex {
 		return new TermInSetQuery(field, termBytesRef);
 	}
 
+	public Query handleNumericSetQuery(ZuliaQuery.Query query) {
+
+		if (query.getQfList().isEmpty()) {
+			throw new IllegalArgumentException("Numeric set query must give at least one query field (qf)");
+		}
+		else if (query.getQfList().size() == 1) {
+			return getNumericSetQuery(query, query.getQfList().get(0));
+		}
+		else {
+			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
+			booleanQueryBuilder.setMinimumNumberShouldMatch(query.getMm());
+			for (String field : query.getQfList()) {
+				Query inSetQuery = getNumericSetQuery(query, field);
+				booleanQueryBuilder.add(inSetQuery, BooleanClause.Occur.SHOULD);
+			}
+			return booleanQueryBuilder.build();
+		}
+
+	}
+
+	private Query getNumericSetQuery(ZuliaQuery.Query query, String field) {
+		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(field);
+		ZuliaQuery.NumericSet numericSet = query.getNumericSet();
+
+		if (fieldType == null) {
+			throw new IllegalArgumentException("Field <" + field + "> is not indexed");
+		}
+		else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+			List<Integer> integerValueList = numericSet.getIntegerValueList();
+			if (integerValueList.isEmpty()) {
+				throw new IllegalArgumentException("No integer values for integer field <" + field + "> for numeric set query");
+			}
+			return IntPoint.newSetQuery(field, integerValueList);
+		}
+		else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+			List<Long> longValueList = numericSet.getLongValueList();
+			if (longValueList.isEmpty()) {
+				throw new IllegalArgumentException("No long values for long field <" + field + "> for numeric set query");
+			}
+			return LongPoint.newSetQuery(field, longValueList);
+		}
+		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+			List<Float> floatValueList = numericSet.getFloatValueList();
+			if (floatValueList.isEmpty()) {
+				throw new IllegalArgumentException("No float values for float field <" + field + "> for numeric set query");
+			}
+			return FloatPoint.newSetQuery(field, floatValueList);
+		}
+		else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+			List<Double> doubleValueList = numericSet.getDoubleValueList();
+			if (doubleValueList.isEmpty()) {
+				throw new IllegalArgumentException("No double values for double field <" + field + "> for numeric set query");
+			}
+			return DoublePoint.newSetQuery(field, doubleValueList);
+		}
+		throw new IllegalArgumentException("No field type of <" + fieldType + "> is not supported for numeric set queries");
+
+	}
+
 	public Query handleVectorQuery(ZuliaQuery.Query query) throws Exception {
 
 		if (query.getVectorList().isEmpty()) {
@@ -408,9 +481,6 @@ public class ZuliaIndex {
 		for (int i = 0; i < query.getVectorCount(); i++) {
 			vector[i] = query.getVector(i);
 		}
-
-
-
 
 		if (query.getQfList().isEmpty()) {
 			throw new IllegalArgumentException("Cosine sim query must give at least one query field (qf)");
@@ -429,16 +499,24 @@ public class ZuliaIndex {
 		}
 	}
 
-
 	private BooleanQuery getPreFilter(List<ZuliaQuery.Query> vectorPreQueryList) throws Exception {
 		if (vectorPreQueryList.isEmpty()) {
 			return null;
 		}
 
+		boolean allNegative = true;
 		BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
 		for (ZuliaQuery.Query q : vectorPreQueryList) {
+			if (!isNegativeQuery(q.getQueryType())) {
+				allNegative = false;
+			}
 			booleanQueryBuilder.add(generateClause(q));
 		}
+
+		if (allNegative) {
+			booleanQueryBuilder.add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER));
+		}
+
 		return booleanQueryBuilder.build();
 	}
 
@@ -447,7 +525,17 @@ public class ZuliaIndex {
 		List<BooleanClause> clauses = new ArrayList<>();
 
 		List<ZuliaQuery.Query> queryList = qr.getQueryList();
-		if (queryList.isEmpty()) {
+
+		boolean allNegativeOrEmpty = true;
+
+		for (ZuliaQuery.Query query : queryList) {
+			if (!isNegativeQuery(query.getQueryType())) {
+				allNegativeOrEmpty = false;
+				break;
+			}
+		}
+
+		if (allNegativeOrEmpty) {
 			clauses.add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER));
 		}
 
@@ -482,29 +570,41 @@ public class ZuliaIndex {
 
 	}
 
+	private static boolean isNegativeQuery(QueryType queryType) {
+		return queryType.equals(QueryType.FILTER_NOT) || queryType.equals(QueryType.TERMS_NOT) || queryType.equals(QueryType.NUMERIC_SET_NOT);
+	}
+
 	private BooleanClause generateClause(ZuliaQuery.Query query) throws Exception {
 		BooleanClause.Occur occur = BooleanClause.Occur.FILTER;
 		Query luceneQuery;
-		if ((query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS)) {
+		if ((query.getQueryType() == QueryType.TERMS)) {
 			luceneQuery = handleTermQuery(query);
 		}
-		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.TERMS_NOT) {
+		else if (query.getQueryType() == QueryType.TERMS_NOT) {
 			luceneQuery = handleTermQuery(query);
 			occur = BooleanClause.Occur.MUST_NOT;
 		}
-		else if (query.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR) {
+		else if (query.getQueryType() == QueryType.NUMERIC_SET) {
+			luceneQuery = handleNumericSetQuery(query);
+			occur = BooleanClause.Occur.MUST;
+		}
+		else if (query.getQueryType() == QueryType.NUMERIC_SET_NOT) {
+			luceneQuery = handleNumericSetQuery(query);
+			occur = BooleanClause.Occur.MUST_NOT;
+		}
+		else if (query.getQueryType() == QueryType.VECTOR) {
 			luceneQuery = handleVectorQuery(query);
 			occur = BooleanClause.Occur.MUST;
 		}
 		else {
 			luceneQuery = parseQueryToLucene(query);
-			if (query.getQueryType() == ZuliaQuery.Query.QueryType.SCORE_MUST) {
+			if (query.getQueryType() == QueryType.SCORE_MUST) {
 				occur = BooleanClause.Occur.MUST;
 			}
-			else if (query.getQueryType() == ZuliaQuery.Query.QueryType.SCORE_SHOULD) {
+			else if (query.getQueryType() == QueryType.SCORE_SHOULD) {
 				occur = BooleanClause.Occur.SHOULD;
 			}
-			else if (query.getQueryType() == ZuliaQuery.Query.QueryType.FILTER_NOT) {
+			else if (query.getQueryType() == QueryType.FILTER_NOT) {
 				occur = BooleanClause.Occur.MUST_NOT;
 			}
 			//defaults to filter
@@ -515,8 +615,7 @@ public class ZuliaIndex {
 			luceneQuery = handleScoreFunction(query.getScoreFunction(), luceneQuery);
 		}
 
-		BooleanClause clause = new BooleanClause(luceneQuery, occur);
-		return clause;
+		return new BooleanClause(luceneQuery, occur);
 	}
 
 	private FunctionScoreQuery handleScoreFunction(String scoreFunction, Query query) throws java.text.ParseException {
@@ -584,15 +683,8 @@ public class ZuliaIndex {
 			}
 
 			Query query;
-			boolean dismax = zuliaQuery.getDismax();
-			float dismaxTie = zuliaQuery.getDismaxTie();
 
-			if (zuliaQuery.getLegacy()) {
-				query = parseWithLegacyQueryParser(queryText, minimumShouldMatchNumber, defaultOperator, defaultSearchFieldList, dismax, dismaxTie);
-			}
-			else {
-				query = parseWithQueryParser(queryText, minimumShouldMatchNumber, defaultOperator, defaultSearchFieldList, dismax);
-			}
+			query = parseWithQueryParser(queryText, minimumShouldMatchNumber, defaultOperator, defaultSearchFieldList);
 
 			boolean negative = QueryUtil.isNegative(query);
 			if (negative) {
@@ -607,7 +699,7 @@ public class ZuliaIndex {
 	}
 
 	private Query parseWithQueryParser(String queryText, int minimumShouldMatchNumber, ZuliaQuery.Query.Operator defaultOperator,
-			Collection<String> defaultSearchFieldList, boolean dismax) throws Exception {
+			Collection<String> defaultSearchFieldList) throws Exception {
 		Query query;
 		ZuliaFlexibleQueryParser qp = null;
 		try {
@@ -615,9 +707,6 @@ public class ZuliaIndex {
 			qp.setMinimumNumberShouldMatch(minimumShouldMatchNumber);
 			qp.setDefaultOperator(defaultOperator);
 			qp.setDefaultFields(defaultSearchFieldList);
-			if (dismax) {
-				throw new IllegalArgumentException("Dismax is only supported in legacy query parser");
-			}
 
 			query = qp.parse(queryText);
 		}
@@ -627,31 +716,7 @@ public class ZuliaIndex {
 		return query;
 	}
 
-	private Query parseWithLegacyQueryParser(String queryText, int minimumShouldMatchNumber, ZuliaQuery.Query.Operator defaultOperator,
-			Collection<String> defaultSearchFieldList, boolean dismax, float dismaxTie) throws Exception {
-
-		Query query;
-		ZuliaLegacyMultiFieldQueryParser qp = null;
-		try {
-			qp = legacyParsers.borrowObject();
-			qp.setMinimumNumberShouldMatch(minimumShouldMatchNumber);
-			qp.setDefaultOperator(defaultOperator);
-			qp.setDefaultFields(defaultSearchFieldList);
-			if (dismax) {
-				qp.enableDismax(dismaxTie);
-			}
-			else {
-				qp.disableDismax();
-			}
-			query = qp.parse(queryText);
-		}
-		finally {
-			legacyParsers.returnObject(qp);
-		}
-		return query;
-	}
-
-	public IndexShardResponse 	internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
+	public IndexShardResponse internalQuery(Query query, final InternalQueryRequest internalQueryRequest) throws Exception {
 
 		QueryRequest queryRequest = internalQueryRequest.getQueryRequest();
 		Set<ZuliaShard> shardsForQuery = new HashSet<>();
@@ -661,6 +726,40 @@ public class ZuliaIndex {
 				shardsForQuery.addAll(shardsFromRouting);
 			}
 		}
+
+		ShardQuery shardQuery = getShardQuery(query, queryRequest);
+
+		IndexShardResponse.Builder builder = IndexShardResponse.newBuilder();
+
+		List<Future<ShardQueryResponse>> responses = new ArrayList<>();
+
+		for (final ZuliaShard shard : shardsForQuery) {
+			Future<ShardQueryResponse> response = shardPool.submit(() -> shard.queryShard(shardQuery));
+			responses.add(response);
+		}
+
+		for (Future<ShardQueryResponse> response : responses) {
+			try {
+				ShardQueryResponse rs = response.get();
+				builder.addShardQueryResponse(rs);
+			}
+			catch (ExecutionException e) {
+				Throwable t = e.getCause();
+
+				if (t instanceof OutOfMemoryError) {
+					throw (OutOfMemoryError) t;
+				}
+
+				throw ((Exception) e.getCause());
+			}
+		}
+
+		builder.setIndexName(indexName);
+		return builder.build();
+
+	}
+
+	public ShardQuery getShardQuery(Query query, QueryRequest queryRequest) throws Exception {
 
 		int amount = queryRequest.getAmount() + queryRequest.getStart();
 
@@ -751,49 +850,10 @@ public class ZuliaIndex {
 			fieldSimilarityMap.put(fieldSimilarity.getField(), fieldSimilarity.getSimilarity());
 		}
 
-		IndexShardResponse.Builder builder = IndexShardResponse.newBuilder();
-
-		List<Future<ShardQueryResponse>> responses = new ArrayList<>();
-
-		for (final ZuliaShard shard : shardsForQuery) {
-
-			Future<ShardQueryResponse> response = shardPool.submit(() -> {
-
-				QueryCacheKey queryCacheKey = null;
-
-				if (!queryRequest.getDontCache()) {
-					queryCacheKey = new QueryCacheKey(queryRequest);
-				}
-
-				return shard.queryShard(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap.get(shard.getShardNumber()), queryRequest.getFacetRequest(),
-						queryRequest.getSortRequest(), queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(),
-						queryRequest.getDocumentMaskedFieldsList(), queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(),
-						queryRequest.getDebug());
-			});
-
-			responses.add(response);
-
-		}
-
-		for (Future<ShardQueryResponse> response : responses) {
-			try {
-				ShardQueryResponse rs = response.get();
-				builder.addShardQueryResponse(rs);
-			}
-			catch (ExecutionException e) {
-				Throwable t = e.getCause();
-
-				if (t instanceof OutOfMemoryError) {
-					throw (OutOfMemoryError) t;
-				}
-
-				throw ((Exception) e.getCause());
-			}
-		}
-
-		builder.setIndexName(indexName);
-		return builder.build();
-
+		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
+		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
+				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug());
 	}
 
 	public Integer getNumberOfShards() {
@@ -1107,8 +1167,8 @@ public class ZuliaIndex {
 
 	}
 
-	public IndexMapping getIndexMapping() {
-		return indexMapping;
+	public IndexShardMapping getIndexShardMapping() {
+		return indexShardMapping;
 	}
 
 	public String getIndexName() {
@@ -1116,7 +1176,7 @@ public class ZuliaIndex {
 	}
 
 	public void loadShards(Predicate<Node> thisNodeTest) throws Exception {
-		List<ShardMapping> shardMappingList = indexMapping.getShardMappingList();
+		List<ShardMapping> shardMappingList = indexShardMapping.getShardMappingList();
 		for (ShardMapping shardMapping : shardMappingList) {
 			if (thisNodeTest.test(shardMapping.getPrimaryNode())) {
 				loadShard(shardMapping.getShardNumber(), true);

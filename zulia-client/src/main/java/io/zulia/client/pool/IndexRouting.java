@@ -1,6 +1,5 @@
 package io.zulia.client.pool;
 
-import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.util.ShardUtil;
 
@@ -14,7 +13,7 @@ import java.util.Random;
 import java.util.Set;
 
 import static io.zulia.message.ZuliaBase.Node;
-import static io.zulia.message.ZuliaIndex.IndexMapping;
+import static io.zulia.message.ZuliaIndex.IndexShardMapping;
 import static io.zulia.message.ZuliaIndex.ShardMapping;
 
 public class IndexRouting {
@@ -25,20 +24,20 @@ public class IndexRouting {
 	private Map<String, Map<Integer, Node>> indexMapping = new HashMap<>();
 	private Map<String, Integer> shardCountMapping = new HashMap<>();
 
-	public IndexRouting(List<IndexMapping> indexMappings, List<IndexAlias> indexAliases) {
+	public IndexRouting(List<IndexShardMapping> indexShardMappings, List<IndexAlias> indexAliases) {
 
 		for (IndexAlias indexAlias : indexAliases) {
-			aliasToIndex.put(indexAlias.getAliasName(),indexAlias.getIndexName());
+			aliasToIndex.put(indexAlias.getAliasName(), indexAlias.getIndexName());
 		}
 
-		for (IndexMapping im : indexMappings) {
+		for (IndexShardMapping ism : indexShardMappings) {
 			Map<Integer, Node> segmentMapping = new HashMap<>();
-			for (ShardMapping sg : im.getShardMappingList()) {
+			for (ShardMapping sg : ism.getShardMappingList()) {
 				// TODO: Does this need to know primary or replica?
 				segmentMapping.put(sg.getShardNumber(), sg.getPrimaryNode());
 			}
-			shardCountMapping.put(im.getIndexName(), im.getNumberOfShards());
-			indexMapping.put(im.getIndexName(), segmentMapping);
+			shardCountMapping.put(ism.getIndexName(), ism.getNumberOfShards());
+			indexMapping.put(ism.getIndexName(), segmentMapping);
 		}
 	}
 
@@ -60,8 +59,6 @@ public class IndexRouting {
 		int shardNumber = ShardUtil.findShardForUniqueId(uniqueId, numberOfShards);
 		return shardMapping.get(shardNumber);
 	}
-
-
 
 	public Node getRandomNode(String indexName) {
 		indexName = handleAlias(indexName);

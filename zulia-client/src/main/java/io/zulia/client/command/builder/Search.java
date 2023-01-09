@@ -2,6 +2,7 @@ package io.zulia.client.command.builder;
 
 import io.zulia.client.command.base.MultiIndexRoutableCommand;
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.command.factory.RangeFilter;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.SearchResult;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
@@ -30,10 +31,39 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 	}
 
 	public Search(Iterable<String> indexes) {
+		setIndexes(indexes);
+	}
+
+	public Search setIndexes(Iterable<String> indexes) {
+
+		for (String index : indexes) {
+			if (index == null) {
+				throw new IllegalArgumentException("Index cannot be null");
+			}
+		}
+
+		queryRequest.clearIndex();
 		queryRequest.addAllIndex(indexes);
 		if (queryRequest.getIndexCount() == 0) {
 			throw new IllegalArgumentException("Indexes must be given for a query");
 		}
+		return this;
+	}
+
+	public Search setIndexes(String... indexes) {
+		return setIndexes(Arrays.asList(indexes));
+	}
+
+	public Search setIndex(String index) {
+		return setIndexes(List.of(index));
+	}
+
+	/**
+	 * @param rangeFilter - See {@link io.zulia.client.command.factory.FilterFactory}
+	 * @return
+	 */
+	public Search addQuery(RangeFilter<?> rangeFilter) {
+		return addQuery(rangeFilter.toQuery());
 	}
 
 	public Search addQuery(QueryBuilder queryBuilder) {
@@ -60,6 +90,15 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 
 	public Search setDontCache(boolean dontCache) {
 		queryRequest.setDontCache(dontCache);
+		return this;
+	}
+
+	public boolean getPinToCache() {
+		return queryRequest.getPinToCache();
+	}
+
+	public Search setPinToCache(boolean pinToCache) {
+		queryRequest.setPinToCache(pinToCache);
 		return this;
 	}
 
@@ -220,6 +259,15 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return queryRequest.getIndexList();
 	}
 
+	public Search setSearchLabel(String searchLabel) {
+		queryRequest.setSearchLabel(searchLabel);
+		return this;
+	}
+
+	public String getSearchLabel() {
+		return queryRequest.getSearchLabel();
+	}
+
 	@Override
 	public QueryRequest getRequest() {
 		queryRequest.setFacetRequest(facetRequest);
@@ -236,6 +284,6 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 
 	@Override
 	public String toString() {
-		return queryRequest.toString();
+		return getRequest().toString();
 	}
 }

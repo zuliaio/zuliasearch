@@ -16,6 +16,7 @@ defaultTasks("build", "installDist")
 
 tasks.withType<Test> {
     maxParallelForks = 1
+    maxHeapSize = "8g"
 }
 
 dependencies {
@@ -26,11 +27,13 @@ dependencies {
     implementation("org.apache.lucene:lucene-facet:$luceneVersion")
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.1")
 
     implementation("info.picocli:picocli:4.6.3")
     annotationProcessor("info.picocli:picocli-codegen:4.6.3")
 
     implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
+    implementation("com.datadoghq:sketches-java:0.8.2")
 
     implementation("com.cedarsoftware:json-io:4.13.0")
 
@@ -57,19 +60,25 @@ dependencies {
     testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.4.5")
+    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:3.5.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 
     api("org.yaml:snakeyaml:$snakeYamlVersion")
     annotationProcessor("io.micronaut.openapi:micronaut-openapi")
 
+
     //implementation("org.graalvm.js:js:21.3.1")
 }
+
+tasks.withType<JavaCompile> {
+    options.isFork = true
+    options.forkOptions.jvmArgs?.addAll(listOf("-Dmicronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.theme=flattop"))
+}
+
 
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
 zuliaScriptTask.applicationName = "zulia"
 zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
-
 
 val zuliaAdminScriptTask = tasks.register<CreateStartScripts>("createZuliaAdminScript") {
     applicationName = "zuliaadmin"
