@@ -101,7 +101,30 @@ public class StatCombiner {
 
 		// Generate return message
 		return StatGroup.newBuilder().setStatRequest(this.statRequest).setGlobalStats(globalStats)
-				.addAllFacetStats(facetStats.stream().map(FacetStats.Builder::build).toList()).build();
+				.addAllFacetStats(facetStats.stream().map(FacetStats.Builder::build).sorted(this::reverseCompareFacetStats).toList()).build();
+	}
+
+	/**
+	 * Comparator method for complex container type Facet Stats. Sorts by sum, if it exists and largest to smallest, rather than natural order
+	 * @param o1 Any facet stat value
+	 * @param o2 Any other facet stat value
+	 * @return Result of [Type].compare for actively populated datatype
+	 */
+	private int reverseCompareFacetStats(FacetStats o1, FacetStats o2) {
+		if (o1.hasSum() && o2.hasSum()) {
+			// Reversing the arguments reverses the comparison by the comparators
+			SortValue sv1 = o2.getSum();
+			SortValue sv2 = o1.getSum();
+			// Compare each type until one is not equal. If all are equal, values are equal
+			int comp = Double.compare(sv1.getDoubleValue(), sv2.getDoubleValue());
+			if (comp == 0) comp = Integer.compare(sv1.getIntegerValue(), sv2.getIntegerValue());
+			if (comp == 0) comp = Long.compare(sv1.getLongValue(), sv2.getLongValue());
+			if (comp == 0) comp = Float.compare(sv1.getFloatValue(), sv2.getFloatValue());
+			if (comp == 0) comp = Long.compare(sv1.getDateValue(), sv2.getDateValue());
+			return comp;
+		} else {
+			return 0;
+		}
 	}
 
 	/**
