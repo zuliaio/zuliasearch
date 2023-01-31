@@ -11,28 +11,29 @@ import java.util.logging.Logger;
 
 public class BatchDeleteServerRequest {
 
-    private final static Logger LOG = Logger.getLogger(BatchDeleteServerRequest.class.getSimpleName());
-    private final ZuliaIndexManager indexManager;
+	private final static Logger LOG = Logger.getLogger(BatchDeleteServerRequest.class.getSimpleName());
+	private final ZuliaIndexManager indexManager;
 
-    public BatchDeleteServerRequest(ZuliaIndexManager indexManager) {
-        this.indexManager = indexManager;
-    }
+	public BatchDeleteServerRequest(ZuliaIndexManager indexManager) {
+		this.indexManager = indexManager;
+	}
 
-    public void handleRequest(BatchDeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
-        try {
-            for (DeleteRequest deleteRequest : request.getRequestList()) {
-                DeleteResponse deleteResponse = indexManager.delete(deleteRequest);
-                responseObserver.onNext(deleteResponse);
-            }
+	public void handleRequest(BatchDeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+		try {
+			for (DeleteRequest deleteRequest : request.getRequestList()) {
+				DeleteResponse deleteResponse = indexManager.delete(deleteRequest);
+				responseObserver.onNext(deleteResponse);
+			}
 
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            responseObserver.onError(e);
-            onError(e);
-        }
-    }
+			responseObserver.onCompleted();
+		}
+		catch (Exception e) {
+			responseObserver.onError(e);
+			onError(e);
+		}
+	}
 
-    protected void onError(Exception e) {
-        LOG.log(Level.SEVERE, "Failed to handle batch delete", e);
-    }
+	protected void onError(Exception e) {
+		LOG.log(Level.SEVERE, "Failed to handle batch delete", e);
+	}
 }

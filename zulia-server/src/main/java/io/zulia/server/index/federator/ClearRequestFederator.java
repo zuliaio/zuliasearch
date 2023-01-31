@@ -12,32 +12,32 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
 public class ClearRequestFederator extends MasterSlaveNodeRequestFederator<ClearRequest, ClearResponse> {
-    private final InternalClient internalClient;
-    private final ZuliaIndex index;
+	private final InternalClient internalClient;
+	private final ZuliaIndex index;
 
-    public ClearRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
-                                 ExecutorService pool, InternalClient internalClient) throws IOException {
-        super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
-        this.internalClient = internalClient;
-        this.index = index;
-    }
+	public ClearRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
+			ExecutorService pool, InternalClient internalClient) throws IOException {
+		super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
+		this.internalClient = internalClient;
+		this.index = index;
+	}
 
-    @Override
-    protected ClearResponse processExternal(Node node, ClearRequest request) throws Exception {
-        return internalClient.clear(node, request);
-    }
+	@Override
+	protected ClearResponse processExternal(Node node, ClearRequest request) throws Exception {
+		return internalClient.clear(node, request);
+	}
 
-    @Override
-    protected ClearResponse processInternal(Node node, ClearRequest request) throws Exception {
-        return internalClear(index, request);
-    }
+	@Override
+	protected ClearResponse processInternal(Node node, ClearRequest request) throws Exception {
+		return internalClear(index, request);
+	}
 
-    public static ClearResponse internalClear(ZuliaIndex index, ClearRequest request) throws Exception {
-        return index.clear(request);
-    }
+	public static ClearResponse internalClear(ZuliaIndex index, ClearRequest request) throws Exception {
+		return index.clear(request);
+	}
 
-    public ClearResponse getResponse(ClearRequest request) throws Exception {
-        send(request);
-        return ClearResponse.newBuilder().build();
-    }
+	public ClearResponse getResponse(ClearRequest request) throws Exception {
+		send(request);
+		return ClearResponse.newBuilder().build();
+	}
 }

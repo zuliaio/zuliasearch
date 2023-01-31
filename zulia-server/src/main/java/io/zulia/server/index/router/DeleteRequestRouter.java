@@ -11,28 +11,28 @@ import java.io.IOException;
 import java.util.Collection;
 
 public class DeleteRequestRouter extends NodeRequestRouter<DeleteRequest, DeleteResponse> {
-    private final InternalClient internalClient;
-    private final ZuliaIndex index;
+	private final InternalClient internalClient;
+	private final ZuliaIndex index;
 
-    public DeleteRequestRouter(Node thisNode, Collection<Node> otherNodesActive, ZuliaIndex index, String uniqueId, InternalClient internalClient)
-            throws IOException {
-        super(thisNode, otherNodesActive, MasterSlaveSettings.MASTER_ONLY, index, uniqueId);
-        this.internalClient = internalClient;
-        this.index = index;
-    }
+	public DeleteRequestRouter(Node thisNode, Collection<Node> otherNodesActive, ZuliaIndex index, String uniqueId, InternalClient internalClient)
+			throws IOException {
+		super(thisNode, otherNodesActive, MasterSlaveSettings.MASTER_ONLY, index, uniqueId);
+		this.internalClient = internalClient;
+		this.index = index;
+	}
 
-    @Override
-    protected DeleteResponse processExternal(Node node, DeleteRequest request) throws Exception {
-        return internalClient.executeDelete(node, request);
-    }
+	@Override
+	protected DeleteResponse processExternal(Node node, DeleteRequest request) throws Exception {
+		return internalClient.executeDelete(node, request);
+	}
 
-    @Override
-    protected DeleteResponse processInternal(Node node, DeleteRequest request) throws Exception {
-        return internalDelete(index, request);
-    }
+	@Override
+	protected DeleteResponse processInternal(Node node, DeleteRequest request) throws Exception {
+		return internalDelete(index, request);
+	}
 
-    public static DeleteResponse internalDelete(ZuliaIndex index, DeleteRequest request) throws Exception {
-        return index.deleteDocument(request);
-    }
+	public static DeleteResponse internalDelete(ZuliaIndex index, DeleteRequest request) throws Exception {
+		return index.deleteDocument(request);
+	}
 }
 

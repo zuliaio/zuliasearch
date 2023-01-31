@@ -10,20 +10,20 @@ import java.io.IOException;
  */
 public class TempFileDeletingInputStream extends FileInputStream {
 
-    private final File file;
+	private final File file;
 
-    /**
-     * @param file - file to delete on stream close
-     * @throws FileNotFoundException - if file does not exist
-     */
-    public TempFileDeletingInputStream(File file) throws FileNotFoundException {
-        super(file);
-        this.file = file;
-    }
+	/**
+	 * @param file - file to delete on stream close
+	 * @throws FileNotFoundException - if file does not exist
+	 */
+	public TempFileDeletingInputStream(File file) throws FileNotFoundException {
+		super(file);
+		this.file = file;
+	}
 
-    @Override
-    public void close() throws IOException {
-        super.close();
-        file.delete();
-    }
+	@Override
+	public void close() throws IOException {
+		super.close();
+		file.delete();
+	}
 }

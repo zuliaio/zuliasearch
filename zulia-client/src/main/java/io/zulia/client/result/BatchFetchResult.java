@@ -12,43 +12,43 @@ import static io.zulia.message.ZuliaServiceOuterClass.BatchFetchResponse;
 
 public class BatchFetchResult extends Result {
 
-    @SuppressWarnings("unused")
-    private BatchFetchResponse batchFetchResponse;
+	@SuppressWarnings("unused")
+	private BatchFetchResponse batchFetchResponse;
 
-    private Iterator<FetchResponse> fetchResults;
+	private Iterator<FetchResponse> fetchResults;
 
-    public BatchFetchResult(Iterator<FetchResponse> fetchResults) {
-        this.fetchResults = fetchResults;
-    }
+	public BatchFetchResult(Iterator<FetchResponse> fetchResults) {
+		this.fetchResults = fetchResults;
+	}
 
-    public List<FetchResult> getFetchResults() {
-        ArrayList<FetchResult> list = new ArrayList<>();
-        getFetchResults(list::add);
-        return list;
-    }
+	public List<FetchResult> getFetchResults() {
+		ArrayList<FetchResult> list = new ArrayList<>();
+		getFetchResults(list::add);
+		return list;
+	}
 
-    public void getFetchResults(Consumer<FetchResult> fetchResultHandler) {
-        while (fetchResults.hasNext()) {
-            FetchResult fetchResult = new FetchResult(fetchResults.next());
-            fetchResultHandler.accept(fetchResult);
-        }
-    }
+	public void getFetchResults(Consumer<FetchResult> fetchResultHandler) {
+		while (fetchResults.hasNext()) {
+			FetchResult fetchResult = new FetchResult(fetchResults.next());
+			fetchResultHandler.accept(fetchResult);
+		}
+	}
 
-    public <T> List<T> getDocuments(GsonDocumentMapper<T> mapper) throws Exception {
-        ArrayList<T> list = new ArrayList<>();
-        getDocuments(mapper, list::add);
-        return list;
-    }
+	public <T> List<T> getDocuments(GsonDocumentMapper<T> mapper) throws Exception {
+		ArrayList<T> list = new ArrayList<>();
+		getDocuments(mapper, list::add);
+		return list;
+	}
 
-    public <T> void getDocuments(GsonDocumentMapper<T> mapper, Consumer<T> docHandler) throws Exception {
+	public <T> void getDocuments(GsonDocumentMapper<T> mapper, Consumer<T> docHandler) throws Exception {
 
-        while (fetchResults.hasNext()) {
-            FetchResult fetchResult = new FetchResult(fetchResults.next());
-            if (fetchResult.hasResultDocument()) {
-                docHandler.accept(fetchResult.getDocument(mapper));
-            }
-        }
+		while (fetchResults.hasNext()) {
+			FetchResult fetchResult = new FetchResult(fetchResults.next());
+			if (fetchResult.hasResultDocument()) {
+				docHandler.accept(fetchResult.getDocument(mapper));
+			}
+		}
 
-    }
+	}
 
 }

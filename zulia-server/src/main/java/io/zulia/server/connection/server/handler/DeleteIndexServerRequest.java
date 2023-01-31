@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class DeleteIndexServerRequest extends ServerRequestHandler<DeleteIndexResponse, DeleteIndexRequest> {
 
-    private final static Logger LOG = Logger.getLogger(DeleteIndexServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(DeleteIndexServerRequest.class.getSimpleName());
 
-    public DeleteIndexServerRequest(ZuliaIndexManager indexManager) {
-        super(indexManager);
-    }
+	public DeleteIndexServerRequest(ZuliaIndexManager indexManager) {
+		super(indexManager);
+	}
 
-    @Override
-    protected DeleteIndexResponse handleCall(ZuliaIndexManager indexManager, DeleteIndexRequest request) throws Exception {
-        return indexManager.deleteIndex(request);
-    }
+	@Override
+	protected DeleteIndexResponse handleCall(ZuliaIndexManager indexManager, DeleteIndexRequest request) throws Exception {
+		return indexManager.deleteIndex(request);
+	}
 
-    @Override
-    protected void onError(Throwable e) {
-        LOG.log(Level.SEVERE, "Failed to handle delete index", e);
-    }
+	@Override
+	protected void onError(Throwable e) {
+		LOG.log(Level.SEVERE, "Failed to handle delete index", e);
+	}
 }

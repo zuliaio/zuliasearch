@@ -17,32 +17,32 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
  */
 public class GetIndexConfig extends SimpleCommand<GetIndexSettingsRequest, GetIndexConfigResult> implements SingleIndexRoutableCommand {
 
-    private final String indexName;
+	private final String indexName;
 
-    public GetIndexConfig(String indexName) {
-        this.indexName = indexName;
-    }
+	public GetIndexConfig(String indexName) {
+		this.indexName = indexName;
+	}
 
-    @Override
-    public String getIndexName() {
-        return indexName;
-    }
+	@Override
+	public String getIndexName() {
+		return indexName;
+	}
 
-    @Override
-    public GetIndexSettingsRequest getRequest() {
-        return GetIndexSettingsRequest.newBuilder().setIndexName(indexName).build();
-    }
+	@Override
+	public GetIndexSettingsRequest getRequest() {
+		return GetIndexSettingsRequest.newBuilder().setIndexName(indexName).build();
+	}
 
-    @Override
-    public GetIndexConfigResult execute(ZuliaConnection zuliaConnection) {
+	@Override
+	public GetIndexConfigResult execute(ZuliaConnection zuliaConnection) {
 
-        ZuliaServiceBlockingStub service = zuliaConnection.getService();
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-        GetIndexSettingsResponse getIndexConfigResponse = service.getIndexSettings(getRequest());
+		GetIndexSettingsResponse getIndexConfigResponse = service.getIndexSettings(getRequest());
 
-        ClientIndexConfig indexConfig = new ClientIndexConfig();
-        indexConfig.configure(getIndexConfigResponse.getIndexSettings());
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.configure(getIndexConfigResponse.getIndexSettings());
 
-        return new GetIndexConfigResult(indexConfig);
-    }
+		return new GetIndexConfigResult(indexConfig);
+	}
 }

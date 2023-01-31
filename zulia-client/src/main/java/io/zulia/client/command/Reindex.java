@@ -16,29 +16,29 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
  */
 public class Reindex extends SimpleCommand<ReindexRequest, ReindexResult> implements SingleIndexRoutableCommand {
 
-    private String indexName;
+	private String indexName;
 
-    public Reindex(String indexName) {
-        this.indexName = indexName;
-    }
+	public Reindex(String indexName) {
+		this.indexName = indexName;
+	}
 
-    @Override
-    public String getIndexName() {
-        return indexName;
-    }
+	@Override
+	public String getIndexName() {
+		return indexName;
+	}
 
-    @Override
-    public ReindexRequest getRequest() {
-        return ReindexRequest.newBuilder().setIndexName(indexName).build();
-    }
+	@Override
+	public ReindexRequest getRequest() {
+		return ReindexRequest.newBuilder().setIndexName(indexName).build();
+	}
 
-    @Override
-    public ReindexResult execute(ZuliaConnection zuliaConnection) {
-        ZuliaServiceBlockingStub service = zuliaConnection.getService();
+	@Override
+	public ReindexResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-        ReindexResponse reindexResponse = service.reindex(getRequest());
+		ReindexResponse reindexResponse = service.reindex(getRequest());
 
-        return new ReindexResult(reindexResponse);
-    }
+		return new ReindexResult(reindexResponse);
+	}
 
 }

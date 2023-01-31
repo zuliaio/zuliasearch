@@ -6,20 +6,20 @@ import io.zulia.message.ZuliaServiceOuterClass.UpdateIndexResponse;
 
 public class UpdateIndexResult extends Result {
 
-    @SuppressWarnings("unused")
-    private final UpdateIndexResponse updateIndexResponse;
+	@SuppressWarnings("unused")
+	private final UpdateIndexResponse updateIndexResponse;
 
-    public UpdateIndexResult(UpdateIndexResponse updateIndexResponse) {
-        this.updateIndexResponse = updateIndexResponse;
-    }
+	public UpdateIndexResult(UpdateIndexResponse updateIndexResponse) {
+		this.updateIndexResponse = updateIndexResponse;
+	}
 
-    public ZuliaIndex.IndexSettings getFullIndexSettings() {
-        return updateIndexResponse.getFullIndexSettings();
-    }
+	public ZuliaIndex.IndexSettings getFullIndexSettings() {
+		return updateIndexResponse.getFullIndexSettings();
+	}
 
-    public ClientIndexConfig getClientIndexConfig() {
-        ClientIndexConfig clientIndexConfig = new ClientIndexConfig();
-        clientIndexConfig.configure(updateIndexResponse.getFullIndexSettings());
-        return clientIndexConfig;
-    }
+	public ClientIndexConfig getClientIndexConfig() {
+		ClientIndexConfig clientIndexConfig = new ClientIndexConfig();
+		clientIndexConfig.configure(updateIndexResponse.getFullIndexSettings());
+		return clientIndexConfig;
+	}
 }

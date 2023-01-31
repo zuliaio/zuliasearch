@@ -10,24 +10,24 @@ import static io.zulia.server.search.queryparser.processors.ZuliaQueryNodeProces
 
 public class ZuliaGlobalMinMatchProcessor implements QueryNodeProcessor {
 
-    private QueryConfigHandler queryConfigHandler;
+	private QueryConfigHandler queryConfigHandler;
 
-    @Override
-    public QueryNode process(QueryNode queryTree) {
-        Integer globalMinMatch = getQueryConfigHandler().get(GLOBAL_MM);
-        if (globalMinMatch != null && globalMinMatch > 1) {
-            return new MinShouldMatchNode(globalMinMatch, new GroupQueryNode(queryTree));
-        }
-        return queryTree;
-    }
+	@Override
+	public QueryNode process(QueryNode queryTree) {
+		Integer globalMinMatch = getQueryConfigHandler().get(GLOBAL_MM);
+		if (globalMinMatch != null && globalMinMatch > 1) {
+			return new MinShouldMatchNode(globalMinMatch, new GroupQueryNode(queryTree));
+		}
+		return queryTree;
+	}
 
-    @Override
-    public void setQueryConfigHandler(QueryConfigHandler queryConfigHandler) {
-        this.queryConfigHandler = queryConfigHandler;
-    }
+	@Override
+	public void setQueryConfigHandler(QueryConfigHandler queryConfigHandler) {
+		this.queryConfigHandler = queryConfigHandler;
+	}
 
-    @Override
-    public QueryConfigHandler getQueryConfigHandler() {
-        return queryConfigHandler;
-    }
+	@Override
+	public QueryConfigHandler getQueryConfigHandler() {
+		return queryConfigHandler;
+	}
 }

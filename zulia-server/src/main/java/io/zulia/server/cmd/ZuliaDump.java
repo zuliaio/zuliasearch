@@ -26,116 +26,117 @@ import java.util.logging.Logger;
 @CommandLine.Command(name = "zuliadump", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaDump implements Callable<Integer> {
 
-    private static final Logger LOG = Logger.getLogger(ZuliaDump.class.getSimpleName());
-    @CommandLine.Mixin
-    private ConnectionInfo connectionInfo;
+	private static final Logger LOG = Logger.getLogger(ZuliaDump.class.getSimpleName());
+	@CommandLine.Mixin
+	private ConnectionInfo connectionInfo;
 
-    @CommandLine.Mixin
-    private ShowStackArgs showStackArgs;
+	@CommandLine.Mixin
+	private ShowStackArgs showStackArgs;
 
-    @CommandLine.Mixin
-    private MultipleIndexArgs multipleIndexArgs;
+	@CommandLine.Mixin
+	private MultipleIndexArgs multipleIndexArgs;
 
-    @CommandLine.Option(names = {"-o", "--out"}, description = "Full path to the output directory. (default: ${DEFAULT-VALUE})")
-    private String out = System.getProperty("user.dir");
+	@CommandLine.Option(names = { "-o", "--out" }, description = "Full path to the output directory. (default: ${DEFAULT-VALUE})")
+	private String out = System.getProperty("user.dir");
 
-    @CommandLine.Option(names = {"-q", "--query"}, description = "Zulia query, matches all docs by default (default: ${DEFAULT-VALUE})")
-    private String q = "*:*";
+	@CommandLine.Option(names = { "-q", "--query" }, description = "Zulia query, matches all docs by default (default: ${DEFAULT-VALUE})")
+	private String q = "*:*";
 
-    @CommandLine.Option(names = {"-p", "--pageSize", "--rows"}, description = "Number of records in each page (default: ${DEFAULT-VALUE})")
-    private Integer pageSize = 1000;
+	@CommandLine.Option(names = { "-p", "--pageSize", "--rows" }, description = "Number of records in each page (default: ${DEFAULT-VALUE})")
+	private Integer pageSize = 1000;
 
-    @CommandLine.Option(names = {"-a", "--includeAssociatedDocs"}, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
-    private boolean includeAssociatedDocs = false;
+	@CommandLine.Option(names = { "-a", "--includeAssociatedDocs" }, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
+	private boolean includeAssociatedDocs = false;
 
-    @CommandLine.Option(arity = "1", names = {"-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
-    private boolean sortById = true;
+	@CommandLine.Option(arity = "1", names = { "-s",
+			"--sortById" }, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
+	private boolean sortById = true;
 
-    @CommandLine.Option(names = {"-d", "--idField"}, description = "Id Field Name (default: ${DEFAULT-VALUE})")
-    private String idField = "id";
+	@CommandLine.Option(names = { "-d", "--idField" }, description = "Id Field Name (default: ${DEFAULT-VALUE})")
+	private String idField = "id";
 
-    @Override
-    public Integer call() throws Exception {
-        ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
+	@Override
+	public Integer call() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
 
-        if (!sortById) {
-            LOG.warning("Sort By ID is disabled.  Do not use this on an actively changing index");
-        } else {
-            LOG.info("Sorting by results on field <" + idField + ">");
-        }
+		if (!sortById) {
+			LOG.warning("Sort By ID is disabled.  Do not use this on an actively changing index");
+		}
+		else {
+			LOG.info("Sorting by results on field <" + idField + ">");
+		}
 
-        Set<String> uniqueIds = new HashSet<>();
-        Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
-        for (String ind : indexes) {
-            queryAndWriteOutput(zuliaWorkPool, ind, q, pageSize, out, idField, uniqueIds, sortById);
-            if (includeAssociatedDocs) {
-                fetchAssociatedDocs(zuliaWorkPool, ind, out, uniqueIds);
-            }
-        }
+		Set<String> uniqueIds = new HashSet<>();
+		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
+		for (String ind : indexes) {
+			queryAndWriteOutput(zuliaWorkPool, ind, q, pageSize, out, idField, uniqueIds, sortById);
+			if (includeAssociatedDocs) {
+				fetchAssociatedDocs(zuliaWorkPool, ind, out, uniqueIds);
+			}
+		}
 
-        return CommandLine.ExitCode.OK;
-    }
+		return CommandLine.ExitCode.OK;
+	}
 
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String outputDir, String idField,
+			Set<String> uniqueIds, boolean sortById) throws Exception {
 
-    private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String outputDir, String idField,
-                                            Set<String> uniqueIds, boolean sortById) throws Exception {
+		// create zuliadump dir first
+		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
+		if (!Files.exists(Paths.get(zuliaDumpDir))) {
+			Files.createDirectory(Paths.get(zuliaDumpDir));
+		}
 
-        // create zuliadump dir first
-        String zuliaDumpDir = outputDir + File.separator + "zuliadump";
-        if (!Files.exists(Paths.get(zuliaDumpDir))) {
-            Files.createDirectory(Paths.get(zuliaDumpDir));
-        }
+		// create index dir
+		String indOutputDir = zuliaDumpDir + File.separator + index;
+		if (!Files.exists(Paths.get(indOutputDir))) {
+			Files.createDirectory(Paths.get(indOutputDir));
+		}
 
-        // create index dir
-        String indOutputDir = zuliaDumpDir + File.separator + index;
-        if (!Files.exists(Paths.get(indOutputDir))) {
-            Files.createDirectory(Paths.get(indOutputDir));
-        }
+		String recordsFilename = indOutputDir + File.separator + index + ".json";
+		String settingsFilename = indOutputDir + File.separator + index + "_settings.json";
 
-        String recordsFilename = indOutputDir + File.separator + index + ".json";
-        String settingsFilename = indOutputDir + File.separator + index + "_settings.json";
+		AtomicInteger count = new AtomicInteger();
+		LOG.info("Dumping index <" + index + ">");
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, idField, uniqueIds, sortById);
+		LOG.info("Finished dumping index <" + index + ">, total: " + count);
 
-        AtomicInteger count = new AtomicInteger();
-        LOG.info("Dumping index <" + index + ">");
-        ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, idField, uniqueIds, sortById);
-        LOG.info("Finished dumping index <" + index + ">, total: " + count);
+		try (FileWriter fileWriter = new FileWriter(settingsFilename, Charsets.UTF_8)) {
+			LOG.info("Writing settings for index <" + index + ">");
+			JsonFormat.Printer printer = JsonFormat.printer();
+			fileWriter.write(printer.print(workPool.getIndexConfig(new GetIndexConfig(index)).getIndexConfig().getIndexSettings()));
+			LOG.info("Finished writing settings for index <" + index + ">");
+		}
 
-        try (FileWriter fileWriter = new FileWriter(settingsFilename, Charsets.UTF_8)) {
-            LOG.info("Writing settings for index <" + index + ">");
-            JsonFormat.Printer printer = JsonFormat.printer();
-            fileWriter.write(printer.print(workPool.getIndexConfig(new GetIndexConfig(index)).getIndexConfig().getIndexSettings()));
-            LOG.info("Finished writing settings for index <" + index + ">");
-        }
+	}
 
-    }
+	private static void fetchAssociatedDocs(ZuliaWorkPool workPool, String index, String outputDir, Set<String> uniqueIds) throws Exception {
 
-    private static void fetchAssociatedDocs(ZuliaWorkPool workPool, String index, String outputDir, Set<String> uniqueIds) throws Exception {
+		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
+		String indOutputDir = zuliaDumpDir + File.separator + index;
 
-        String zuliaDumpDir = outputDir + File.separator + "zuliadump";
-        String indOutputDir = zuliaDumpDir + File.separator + index;
+		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + "> documents");
+		AtomicInteger count = new AtomicInteger(0);
+		WorkPool threadPool = new WorkPool(4);
+		for (String uniqueId : uniqueIds) {
+			threadPool.executeAsync(() -> {
 
-        LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + "> documents");
-        AtomicInteger count = new AtomicInteger(0);
-        WorkPool threadPool = new WorkPool(4);
-        for (String uniqueId : uniqueIds) {
-            threadPool.executeAsync(() -> {
+				workPool.fetchLargeAssociated(
+						new FetchLargeAssociated(uniqueId, index, Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()));
+				if (count.incrementAndGet() % 1000 == 0) {
+					LOG.info("Associated docs dumped so far: " + count);
+				}
 
-                workPool.fetchLargeAssociated(
-                        new FetchLargeAssociated(uniqueId, index, Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()));
-                if (count.incrementAndGet() % 1000 == 0) {
-                    LOG.info("Associated docs dumped so far: " + count);
-                }
+				return null;
+			});
+		}
+		LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents");
+		threadPool.shutdown();
+	}
 
-                return null;
-            });
-        }
-        LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents");
-        threadPool.shutdown();
-    }
+	public static void main(String[] args) {
 
-    public static void main(String[] args) {
-
-        ZuliaCommonCmd.runCommandLine(new ZuliaDump(), args);
-    }
+		ZuliaCommonCmd.runCommandLine(new ZuliaDump(), args);
+	}
 
 }

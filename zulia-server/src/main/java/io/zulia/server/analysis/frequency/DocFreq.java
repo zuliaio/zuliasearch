@@ -14,37 +14,37 @@ import java.util.HashMap;
  */
 public class DocFreq {
 
-    private final HashMap<String, Integer> docFreqMap;
-    private final ShardReader shardReader;
-    private final String field;
-    private final TFIDFSimilarity similarity;
-    private final int numDocs;
+	private final HashMap<String, Integer> docFreqMap;
+	private final ShardReader shardReader;
+	private final String field;
+	private final TFIDFSimilarity similarity;
+	private final int numDocs;
 
-    public DocFreq(ShardReader shardReader, String field) {
-        this.shardReader = shardReader;
-        this.field = field;
-        this.docFreqMap = new HashMap<>();
-        this.similarity = new ClassicSimilarity();
-        this.numDocs = shardReader.numDocs();
-    }
+	public DocFreq(ShardReader shardReader, String field) {
+		this.shardReader = shardReader;
+		this.field = field;
+		this.docFreqMap = new HashMap<>();
+		this.similarity = new ClassicSimilarity();
+		this.numDocs = shardReader.numDocs();
+	}
 
-    public int getDocFreq(String term) throws IOException {
-        Integer termDocFreq = this.docFreqMap.get(term);
-        if (termDocFreq == null) {
-            termDocFreq = shardReader.docFreq(field, term);
-            docFreqMap.put(term, termDocFreq);
-        }
+	public int getDocFreq(String term) throws IOException {
+		Integer termDocFreq = this.docFreqMap.get(term);
+		if (termDocFreq == null) {
+			termDocFreq = shardReader.docFreq(field, term);
+			docFreqMap.put(term, termDocFreq);
+		}
 
-        return termDocFreq;
+		return termDocFreq;
 
-    }
+	}
 
-    public double getScoreForTerm(long termFreq, long docFreq) {
-        return similarity.tf(termFreq) * similarity.idf(docFreq, numDocs);
-    }
+	public double getScoreForTerm(long termFreq, long docFreq) {
+		return similarity.tf(termFreq) * similarity.idf(docFreq, numDocs);
+	}
 
-    public int getNumDocsForPercent(float percent) {
-        return Math.round(numDocs * percent);
-    }
+	public int getNumDocsForPercent(float percent) {
+		return Math.round(numDocs * percent);
+	}
 
 }

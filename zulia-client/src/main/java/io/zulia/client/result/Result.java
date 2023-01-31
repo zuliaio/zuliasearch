@@ -2,18 +2,18 @@ package io.zulia.client.result;
 
 public class Result {
 
-    private long commandTimeMs;
+	private long commandTimeMs;
 
-    public Result() {
+	public Result() {
 
-    }
+	}
 
-    public Result setCommandTimeMs(long commandTimeMs) {
-        this.commandTimeMs = commandTimeMs;
-        return this;
-    }
+	public Result setCommandTimeMs(long commandTimeMs) {
+		this.commandTimeMs = commandTimeMs;
+		return this;
+	}
 
-    public long getCommandTimeMs() {
-        return commandTimeMs;
-    }
+	public long getCommandTimeMs() {
+		return commandTimeMs;
+	}
 }

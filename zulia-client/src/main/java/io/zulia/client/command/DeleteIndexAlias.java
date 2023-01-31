@@ -16,29 +16,29 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
  */
 public class DeleteIndexAlias extends SimpleCommand<DeleteIndexAliasRequest, DeleteIndexAliasResult> implements SingleIndexRoutableCommand {
 
-    private String aliasName;
+	private String aliasName;
 
-    public DeleteIndexAlias(String aliasName) {
-        this.aliasName = aliasName;
-    }
+	public DeleteIndexAlias(String aliasName) {
+		this.aliasName = aliasName;
+	}
 
-    @Override
-    public String getIndexName() {
-        return aliasName;
-    }
+	@Override
+	public String getIndexName() {
+		return aliasName;
+	}
 
-    @Override
-    public DeleteIndexAliasRequest getRequest() {
-        return DeleteIndexAliasRequest.newBuilder().setAliasName(aliasName).build();
-    }
+	@Override
+	public DeleteIndexAliasRequest getRequest() {
+		return DeleteIndexAliasRequest.newBuilder().setAliasName(aliasName).build();
+	}
 
-    @Override
-    public DeleteIndexAliasResult execute(ZuliaConnection zuliaConnection) {
-        ZuliaServiceBlockingStub service = zuliaConnection.getService();
+	@Override
+	public DeleteIndexAliasResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-        DeleteIndexAliasResponse indexAliasDeleteResponse = service.deleteIndexAlias(getRequest());
+		DeleteIndexAliasResponse indexAliasDeleteResponse = service.deleteIndexAlias(getRequest());
 
-        return new DeleteIndexAliasResult(indexAliasDeleteResponse);
-    }
+		return new DeleteIndexAliasResult(indexAliasDeleteResponse);
+	}
 
 }

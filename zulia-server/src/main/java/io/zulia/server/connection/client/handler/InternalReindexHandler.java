@@ -6,13 +6,13 @@ import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalReindexHandler extends InternalRequestHandler<ReindexResponse, ReindexRequest> {
-    public InternalReindexHandler(InternalClient internalClient) {
-        super(internalClient);
-    }
+	public InternalReindexHandler(InternalClient internalClient) {
+		super(internalClient);
+	}
 
-    @Override
-    protected ReindexResponse getResponse(ReindexRequest reindexRequest, InternalRpcConnection rpcConnection) {
-        return rpcConnection.getService().internalReindex(reindexRequest);
-    }
+	@Override
+	protected ReindexResponse getResponse(ReindexRequest reindexRequest, InternalRpcConnection rpcConnection) {
+		return rpcConnection.getService().internalReindex(reindexRequest);
+	}
 
 }

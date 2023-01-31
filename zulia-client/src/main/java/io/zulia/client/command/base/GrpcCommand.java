@@ -5,13 +5,13 @@ import io.zulia.client.result.Result;
 
 public abstract class GrpcCommand<R extends Result> implements BaseCommand<R> {
 
-    public abstract R execute(ZuliaConnection zuliaConnection) throws Exception;
+	public abstract R execute(ZuliaConnection zuliaConnection) throws Exception;
 
-    public R executeTimed(ZuliaConnection zuliaConnection) throws Exception {
-        long start = System.currentTimeMillis();
-        R r = execute(zuliaConnection);
-        long end = System.currentTimeMillis();
-        r.setCommandTimeMs(end - start);
-        return r;
-    }
+	public R executeTimed(ZuliaConnection zuliaConnection) throws Exception {
+		long start = System.currentTimeMillis();
+		R r = execute(zuliaConnection);
+		long end = System.currentTimeMillis();
+		r.setCommandTimeMs(end - start);
+		return r;
+	}
 }

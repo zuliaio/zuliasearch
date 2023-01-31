@@ -11,30 +11,30 @@ import static io.zulia.message.ZuliaServiceOuterClass.InternalCreateOrUpdateInde
 import static io.zulia.message.ZuliaServiceOuterClass.InternalCreateOrUpdateIndexResponse;
 
 public class CreateOrUpdateIndexRequestFederator extends AllNodeRequestFederator<InternalCreateOrUpdateIndexRequest, InternalCreateOrUpdateIndexResponse> {
-    private final InternalClient internalClient;
-    private final ZuliaIndexManager indexManager;
+	private final InternalClient internalClient;
+	private final ZuliaIndexManager indexManager;
 
-    public CreateOrUpdateIndexRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ExecutorService pool, InternalClient internalClient,
-                                               ZuliaIndexManager indexManager) {
-        super(thisNode, otherNodesActive, pool);
+	public CreateOrUpdateIndexRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ExecutorService pool, InternalClient internalClient,
+			ZuliaIndexManager indexManager) {
+		super(thisNode, otherNodesActive, pool);
 
-        this.internalClient = internalClient;
-        this.indexManager = indexManager;
-    }
+		this.internalClient = internalClient;
+		this.indexManager = indexManager;
+	}
 
-    @Override
-    protected InternalCreateOrUpdateIndexResponse processExternal(Node node, InternalCreateOrUpdateIndexRequest request) throws Exception {
-        return internalClient.createOrUpdateIndex(node, request);
-    }
+	@Override
+	protected InternalCreateOrUpdateIndexResponse processExternal(Node node, InternalCreateOrUpdateIndexRequest request) throws Exception {
+		return internalClient.createOrUpdateIndex(node, request);
+	}
 
-    @Override
-    protected InternalCreateOrUpdateIndexResponse processInternal(Node node, InternalCreateOrUpdateIndexRequest request) throws Exception {
-        return internalCreateOrUpdateIndex(indexManager, request);
-    }
+	@Override
+	protected InternalCreateOrUpdateIndexResponse processInternal(Node node, InternalCreateOrUpdateIndexRequest request) throws Exception {
+		return internalCreateOrUpdateIndex(indexManager, request);
+	}
 
-    public static InternalCreateOrUpdateIndexResponse internalCreateOrUpdateIndex(ZuliaIndexManager zuliaIndexManager,
-                                                                                  InternalCreateOrUpdateIndexRequest request) throws Exception {
-        return zuliaIndexManager.internalCreateOrUpdateIndex(request.getIndexName());
-    }
+	public static InternalCreateOrUpdateIndexResponse internalCreateOrUpdateIndex(ZuliaIndexManager zuliaIndexManager,
+			InternalCreateOrUpdateIndexRequest request) throws Exception {
+		return zuliaIndexManager.internalCreateOrUpdateIndex(request.getIndexName());
+	}
 
 }

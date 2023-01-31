@@ -7,6 +7,6 @@ package io.zulia.server.connection.server.validation;
  */
 public interface DefaultValidator<R> {
 
-    R validateAndSetDefault(R request);
+	R validateAndSetDefault(R request);
 
 }

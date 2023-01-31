@@ -7,12 +7,12 @@ package io.zulia.client.command;
  */
 public class DeleteAssociated extends Delete {
 
-    public DeleteAssociated(String uniqueId, String indexName, String fileName) {
-        super(uniqueId, indexName);
-        setDeleteDocument(false);
-        setFileName(fileName);
-        setDeleteDocument(false);
-        setDeleteAllAssociated(false);
-    }
+	public DeleteAssociated(String uniqueId, String indexName, String fileName) {
+		super(uniqueId, indexName);
+		setDeleteDocument(false);
+		setFileName(fileName);
+		setDeleteDocument(false);
+		setDeleteAllAssociated(false);
+	}
 
 }

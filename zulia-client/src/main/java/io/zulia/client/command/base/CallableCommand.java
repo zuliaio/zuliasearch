@@ -7,17 +7,17 @@ import java.util.concurrent.Callable;
 
 public class CallableCommand<R extends Result> implements Callable<R> {
 
-    private BaseCommand<R> command;
-    private ZuliaPool zuliaPool;
+	private BaseCommand<R> command;
+	private ZuliaPool zuliaPool;
 
-    public CallableCommand(ZuliaPool zuliaPool, BaseCommand<R> command) {
-        this.zuliaPool = zuliaPool;
-        this.command = command;
-    }
+	public CallableCommand(ZuliaPool zuliaPool, BaseCommand<R> command) {
+		this.zuliaPool = zuliaPool;
+		this.command = command;
+	}
 
-    @Override
-    public R call() throws Exception {
-        return zuliaPool.execute(command);
-    }
+	@Override
+	public R call() throws Exception {
+		return zuliaPool.execute(command);
+	}
 }
 

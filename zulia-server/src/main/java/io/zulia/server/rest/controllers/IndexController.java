@@ -25,49 +25,51 @@ import java.util.logging.Logger;
  */
 @Controller(ZuliaConstants.INDEX_URL)
 public class IndexController {
-    private final static Logger LOG = Logger.getLogger(IndexController.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(IndexController.class.getSimpleName());
 
-    @Get
-    @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-    public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) String index,
-                               @QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
+	@Get
+	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
+	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) String index,
+			@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
-        ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
-        try {
-            StringBuilder responseBuilder = new StringBuilder();
+		try {
+			StringBuilder responseBuilder = new StringBuilder();
 
-            GetIndexSettingsResponse getIndexSettingsResponse = indexManager.getIndexSettings(
-                    ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(index).build());
+			GetIndexSettingsResponse getIndexSettingsResponse = indexManager.getIndexSettings(
+					ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(index).build());
 
-            ZuliaIndex.IndexSettings indexSettings = getIndexSettingsResponse.getIndexSettings();
+			ZuliaIndex.IndexSettings indexSettings = getIndexSettingsResponse.getIndexSettings();
 
-            ZuliaServiceOuterClass.RestIndexSettingsResponse.Builder restIndexSettings = ZuliaServiceOuterClass.RestIndexSettingsResponse.newBuilder()
-                    .setIndexSettings(indexSettings);
+			ZuliaServiceOuterClass.RestIndexSettingsResponse.Builder restIndexSettings = ZuliaServiceOuterClass.RestIndexSettingsResponse.newBuilder()
+					.setIndexSettings(indexSettings);
 
-            for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
-                try {
-                    ZuliaServiceOuterClass.QueryRequest queryRequest = ZuliaServiceOuterClass.QueryRequest.parseFrom(bytes);
-                    restIndexSettings.addWarmingSearch(queryRequest);
-                } catch (Exception e) {
-                    LOG.severe("Failed to parse warming search: " + e.getMessage());
-                }
-            }
+			for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
+				try {
+					ZuliaServiceOuterClass.QueryRequest queryRequest = ZuliaServiceOuterClass.QueryRequest.parseFrom(bytes);
+					restIndexSettings.addWarmingSearch(queryRequest);
+				}
+				catch (Exception e) {
+					LOG.severe("Failed to parse warming search: " + e.getMessage());
+				}
+			}
 
-            responseBuilder.append(JsonFormat.printer().print(restIndexSettings));
+			responseBuilder.append(JsonFormat.printer().print(restIndexSettings));
 
-            String docString = responseBuilder.toString();
+			String docString = responseBuilder.toString();
 
-            if (pretty) {
-                docString = JsonWriter.formatJson(docString);
-            }
+			if (pretty) {
+				docString = JsonWriter.formatJson(docString);
+			}
 
-            return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
-        } catch (Exception e) {
-            return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
-        }
+		}
+		catch (Exception e) {
+			return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+		}
 
-    }
+	}
 
 }

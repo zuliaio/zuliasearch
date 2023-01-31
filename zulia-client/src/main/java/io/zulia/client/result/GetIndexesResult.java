@@ -6,26 +6,26 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
 
 public class GetIndexesResult extends Result {
 
-    private GetIndexesResponse getIndexesResponse;
+	private GetIndexesResponse getIndexesResponse;
 
-    public GetIndexesResult(GetIndexesResponse getIndexesResponse) {
-        this.getIndexesResponse = getIndexesResponse;
-    }
+	public GetIndexesResult(GetIndexesResponse getIndexesResponse) {
+		this.getIndexesResponse = getIndexesResponse;
+	}
 
-    public List<String> getIndexNames() {
-        return getIndexesResponse.getIndexNameList();
-    }
+	public List<String> getIndexNames() {
+		return getIndexesResponse.getIndexNameList();
+	}
 
-    public boolean containsIndex(String indexName) {
-        return getIndexesResponse.getIndexNameList().contains(indexName);
-    }
+	public boolean containsIndex(String indexName) {
+		return getIndexesResponse.getIndexNameList().contains(indexName);
+	}
 
-    public int getIndexCount() {
-        return getIndexesResponse.getIndexNameCount();
-    }
+	public int getIndexCount() {
+		return getIndexesResponse.getIndexNameCount();
+	}
 
-    @Override
-    public String toString() {
-        return getIndexesResponse.toString();
-    }
+	@Override
+	public String toString() {
+		return getIndexesResponse.toString();
+	}
 }

@@ -4,6 +4,6 @@ import io.zulia.message.ZuliaQuery;
 
 public interface QueryBuilder {
 
-    ZuliaQuery.Query getQuery();
+	ZuliaQuery.Query getQuery();
 
 }

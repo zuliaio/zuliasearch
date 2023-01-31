@@ -11,16 +11,16 @@ import java.util.logging.Logger;
  */
 public class LogUtil {
 
-    public static void init() {
-        Logger logger = Logger.getLogger("");
+	public static void init() {
+		Logger logger = Logger.getLogger("");
 
-        for (Handler h : logger.getHandlers()) {
-            CustomLogFormatter formatter = new CustomLogFormatter();
-            h.setFormatter(formatter);
-        }
+		for (Handler h : logger.getHandlers()) {
+			CustomLogFormatter formatter = new CustomLogFormatter();
+			h.setFormatter(formatter);
+		}
 
-        Logger.getLogger("org.mongodb").setLevel(Level.WARNING);
+		Logger.getLogger("org.mongodb").setLevel(Level.WARNING);
 
-    }
+	}
 
 }

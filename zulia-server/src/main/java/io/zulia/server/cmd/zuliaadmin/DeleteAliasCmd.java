@@ -11,23 +11,23 @@ import java.util.concurrent.Callable;
 @CommandLine.Command(name = "deleteAlias", description = "Deletes aliases(es) specified by --alias")
 public class DeleteAliasCmd implements Callable<Integer> {
 
-    @CommandLine.ParentCommand
-    private ZuliaAdmin zuliaAdmin;
+	@CommandLine.ParentCommand
+	private ZuliaAdmin zuliaAdmin;
 
-    @CommandLine.Mixin
-    private AliasArgs aliasArgs;
+	@CommandLine.Mixin
+	private AliasArgs aliasArgs;
 
-    @Override
-    public Integer call() throws Exception {
+	@Override
+	public Integer call() throws Exception {
 
-        ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
+		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-        Set<String> aliases = aliasArgs.resolveAliases(zuliaWorkPool);
+		Set<String> aliases = aliasArgs.resolveAliases(zuliaWorkPool);
 
-        for (String alias : aliases) {
-            zuliaWorkPool.deleteIndexAlias(alias);
-        }
+		for (String alias : aliases) {
+			zuliaWorkPool.deleteIndexAlias(alias);
+		}
 
-        return CommandLine.ExitCode.OK;
-    }
+		return CommandLine.ExitCode.OK;
+	}
 }

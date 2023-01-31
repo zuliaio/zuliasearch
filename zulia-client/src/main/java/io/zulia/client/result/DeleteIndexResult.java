@@ -4,11 +4,11 @@ import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
 
 public class DeleteIndexResult extends Result {
 
-    @SuppressWarnings("unused")
-    private DeleteIndexResponse deleteIndexResponse;
+	@SuppressWarnings("unused")
+	private DeleteIndexResponse deleteIndexResponse;
 
-    public DeleteIndexResult(DeleteIndexResponse deleteIndexResponse) {
-        this.deleteIndexResponse = deleteIndexResponse;
-    }
+	public DeleteIndexResult(DeleteIndexResponse deleteIndexResponse) {
+		this.deleteIndexResponse = deleteIndexResponse;
+	}
 
 }
