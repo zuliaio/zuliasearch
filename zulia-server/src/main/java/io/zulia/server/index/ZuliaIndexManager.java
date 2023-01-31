@@ -193,15 +193,10 @@ public class ZuliaIndexManager {
 
 		DocumentStorage documentStorage;
 		if (zuliaConfig.isCluster()) {
-			switch (zuliaConfig.getClusterStorageEngine()) {
-				case "s3":
-					documentStorage = new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false,
-							zuliaConfig.getS3());
-					break;
-				default:
-					documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
-					break;
-			}
+			documentStorage = switch (zuliaConfig.getClusterStorageEngine()) {
+				case "s3" -> new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false, zuliaConfig.getS3());
+				default -> new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+			};
 			;
 		}
 		else {
