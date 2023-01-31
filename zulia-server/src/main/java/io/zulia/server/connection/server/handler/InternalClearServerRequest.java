@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class InternalClearServerRequest extends ServerRequestHandler<ClearResponse, ClearRequest> {
 
-    private final static Logger LOG = Logger.getLogger(InternalClearServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(InternalClearServerRequest.class.getSimpleName());
 
-    public InternalClearServerRequest(ZuliaIndexManager indexManager) {
-        super(indexManager);
-    }
+	public InternalClearServerRequest(ZuliaIndexManager indexManager) {
+		super(indexManager);
+	}
 
-    @Override
-    protected ClearResponse handleCall(ZuliaIndexManager indexManager, ClearRequest request) throws Exception {
-        return indexManager.internalClear(request);
-    }
+	@Override
+	protected ClearResponse handleCall(ZuliaIndexManager indexManager, ClearRequest request) throws Exception {
+		return indexManager.internalClear(request);
+	}
 
-    @Override
-    protected void onError(Throwable e) {
-        LOG.log(Level.SEVERE, "Failed to handle internal clear", e);
-    }
+	@Override
+	protected void onError(Throwable e) {
+		LOG.log(Level.SEVERE, "Failed to handle internal clear", e);
+	}
 }

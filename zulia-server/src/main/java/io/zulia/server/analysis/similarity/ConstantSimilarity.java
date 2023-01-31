@@ -21,19 +21,19 @@ import org.apache.lucene.search.similarities.TFIDFSimilarity;
 
 public class ConstantSimilarity extends TFIDFSimilarity {
 
-    @Override
-    public float tf(float freq) {
-        return 1f;
-    }
+	@Override
+	public float tf(float freq) {
+		return 1f;
+	}
 
-    @Override
-    public float idf(long docFreq, long docCount) {
-        return 1f;
-    }
+	@Override
+	public float idf(long docFreq, long docCount) {
+		return 1f;
+	}
 
-    @Override
-    public float lengthNorm(int length) {
-        return 1f;
-    }
+	@Override
+	public float lengthNorm(int length) {
+		return 1f;
+	}
 
 }

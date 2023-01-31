@@ -4,11 +4,11 @@ import io.zulia.message.ZuliaServiceOuterClass.CreateIndexAliasResponse;
 
 public class CreateIndexAliasResult extends Result {
 
-    @SuppressWarnings("unused")
-    private CreateIndexAliasResponse createIndexAliasResponse;
+	@SuppressWarnings("unused")
+	private CreateIndexAliasResponse createIndexAliasResponse;
 
-    public CreateIndexAliasResult(CreateIndexAliasResponse createIndexAliasResponse) {
-        this.createIndexAliasResponse = createIndexAliasResponse;
-    }
+	public CreateIndexAliasResult(CreateIndexAliasResponse createIndexAliasResponse) {
+		this.createIndexAliasResponse = createIndexAliasResponse;
+	}
 
 }

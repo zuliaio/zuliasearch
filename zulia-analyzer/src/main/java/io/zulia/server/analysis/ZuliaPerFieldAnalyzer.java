@@ -7,10 +7,18 @@ import io.zulia.server.analysis.filter.BritishUSFilter;
 import io.zulia.server.analysis.filter.CaseProtectedWordsFilter;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.*;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.core.UpperCaseFilter;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.en.EnglishMinimalStemFilter;
 import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
@@ -63,15 +71,19 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
             if (ZuliaIndex.FieldConfig.FieldType.STRING.equals(fieldType)) {
                 if (analyzerSettings != null) {
                     a = getAnalyzerForField(analyzerSettings);
-                } else {
+                }
+                else {
                     a = new KeywordAnalyzer();
                 }
                 newFieldAnalyzers.put(ZuliaConstants.CHAR_LENGTH_PREFIX + indexFieldName, new WhitespaceAnalyzer());
-            } else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
+            }
+            else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
                 a = new BooleanAnalyzer();
-            } else if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
+            }
+            else if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
                 a = new WhitespaceAnalyzer();
-            } else {
+            }
+            else {
                 a = new KeywordAnalyzer();
             }
 
@@ -110,11 +122,14 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
                 Tokenizer src;
                 if (ZuliaIndex.AnalyzerSettings.Tokenizer.KEYWORD.equals(tokenizer)) {
                     src = new KeywordTokenizer();
-                } else if (ZuliaIndex.AnalyzerSettings.Tokenizer.WHITESPACE.equals(tokenizer)) {
+                }
+                else if (ZuliaIndex.AnalyzerSettings.Tokenizer.WHITESPACE.equals(tokenizer)) {
                     src = new WhitespaceTokenizer();
-                } else if (ZuliaIndex.AnalyzerSettings.Tokenizer.STANDARD.equals(tokenizer)) {
+                }
+                else if (ZuliaIndex.AnalyzerSettings.Tokenizer.STANDARD.equals(tokenizer)) {
                     src = new StandardTokenizer();
-                } else {
+                }
+                else {
                     throw new RuntimeException("Unknown tokenizer type <" + tokenizer);
                 }
 
@@ -134,29 +149,37 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
                 for (ZuliaIndex.AnalyzerSettings.Filter filter : filterList) {
                     if (ZuliaIndex.AnalyzerSettings.Filter.LOWERCASE.equals(filter)) {
                         tok = new LowerCaseFilter(lastTok);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.UPPERCASE.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.UPPERCASE.equals(filter)) {
                         tok = new UpperCaseFilter(lastTok);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.ASCII_FOLDING.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.ASCII_FOLDING.equals(filter)) {
                         tok = new ASCIIFoldingFilter(lastTok);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.TWO_TWO_SHINGLE.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.TWO_TWO_SHINGLE.equals(filter)) {
                         ShingleFilter shingleFilter = new ShingleFilter(lastTok, 2, 2);
                         shingleFilter.setOutputUnigrams(false);
                         tok = shingleFilter;
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.THREE_THREE_SHINGLE.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.THREE_THREE_SHINGLE.equals(filter)) {
                         ShingleFilter shingleFilter = new ShingleFilter(lastTok, 3, 3);
                         shingleFilter.setOutputUnigrams(false);
                         tok = shingleFilter;
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.FOUR_FOUR_SHINGLE.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.FOUR_FOUR_SHINGLE.equals(filter)) {
                         ShingleFilter shingleFilter = new ShingleFilter(lastTok, 4, 4);
                         shingleFilter.setOutputUnigrams(false);
                         tok = shingleFilter;
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.FIVE_FIVE_SHINGLE.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.FIVE_FIVE_SHINGLE.equals(filter)) {
                         ShingleFilter shingleFilter = new ShingleFilter(lastTok, 5, 5);
                         shingleFilter.setOutputUnigrams(false);
                         tok = shingleFilter;
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.KSTEM.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.KSTEM.equals(filter)) {
                         tok = new KStemFilter(lastTok);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.STOPWORDS.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.STOPWORDS.equals(filter)) {
                         CharArraySet stopWordsSet = EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
 
                         File file = new File(System.getProperty("user.home") + File.separator + ".zulia" + File.separator + "stopwords.txt");
@@ -164,27 +187,36 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
                             try {
                                 List<String> fileLines = Files.lines(file.toPath()).map(s -> s = s.trim()).collect(Collectors.toList());
                                 stopWordsSet = StopFilter.makeStopSet(fileLines);
-                            } catch (IOException e) {
+                            }
+                            catch (IOException e) {
                                 throw new RuntimeException(e);
                             }
                         }
 
                         tok = new StopFilter(lastTok, stopWordsSet);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_MIN_STEM.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_MIN_STEM.equals(filter)) {
                         tok = new EnglishMinimalStemFilter(lastTok);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.SNOWBALL_STEM.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.SNOWBALL_STEM.equals(filter)) {
                         tok = new SnowballFilter(lastTok, "English");
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_POSSESSIVE.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_POSSESSIVE.equals(filter)) {
                         tok = new EnglishPossessiveFilter(lastTok);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.MINHASH.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.MINHASH.equals(filter)) {
                         tok = new MinHashFilterFactory(Collections.emptyMap()).create(lastTok);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.BRITISH_US.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.BRITISH_US.equals(filter)) {
                         tok = new BritishUSFilter(lastTok);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.CONCAT_ALL.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.CONCAT_ALL.equals(filter)) {
                         tok = new WordDelimiterGraphFilter(lastTok, CATENATE_ALL, null);
-                    } else if (ZuliaIndex.AnalyzerSettings.Filter.CASE_PROTECTED_WORDS.equals(filter)) {
+                    }
+                    else if (ZuliaIndex.AnalyzerSettings.Filter.CASE_PROTECTED_WORDS.equals(filter)) {
                         tok = new CaseProtectedWordsFilter(lastTok);
-                    } else {
+                    }
+                    else {
                         throw new RuntimeException("Unknown filter type <" + filter + ">");
                     }
                     lastTok = tok;

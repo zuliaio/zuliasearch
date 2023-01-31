@@ -15,29 +15,29 @@ import io.zulia.message.ZuliaServiceOuterClass.ClearRequest;
  */
 public class ClearIndex extends SimpleCommand<ClearRequest, ClearIndexResult> implements SingleIndexRoutableCommand {
 
-    private String indexName;
+	private String indexName;
 
-    public ClearIndex(String indexName) {
-        this.indexName = indexName;
-    }
+	public ClearIndex(String indexName) {
+		this.indexName = indexName;
+	}
 
-    @Override
-    public String getIndexName() {
-        return indexName;
-    }
+	@Override
+	public String getIndexName() {
+		return indexName;
+	}
 
-    @Override
-    public ClearRequest getRequest() {
-        return ClearRequest.newBuilder().setIndexName(indexName).build();
-    }
+	@Override
+	public ClearRequest getRequest() {
+		return ClearRequest.newBuilder().setIndexName(indexName).build();
+	}
 
-    @Override
-    public ClearIndexResult execute(ZuliaConnection zuliaConnection) {
-        ZuliaServiceGrpc.ZuliaServiceBlockingStub service = zuliaConnection.getService();
+	@Override
+	public ClearIndexResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceGrpc.ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-        ZuliaServiceOuterClass.ClearResponse clearResponse = service.clear(getRequest());
+		ZuliaServiceOuterClass.ClearResponse clearResponse = service.clear(getRequest());
 
-        return new ClearIndexResult(clearResponse);
-    }
+		return new ClearIndexResult(clearResponse);
+	}
 
 }

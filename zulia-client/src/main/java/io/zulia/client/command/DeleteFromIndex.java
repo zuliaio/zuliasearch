@@ -8,10 +8,10 @@ package io.zulia.client.command;
  */
 public class DeleteFromIndex extends Delete {
 
-    public DeleteFromIndex(String uniqueId, String indexName) {
-        super(uniqueId, indexName);
-        setDeleteDocument(true);
-        setDeleteAllAssociated(false);
-    }
+	public DeleteFromIndex(String uniqueId, String indexName) {
+		super(uniqueId, indexName);
+		setDeleteDocument(true);
+		setDeleteAllAssociated(false);
+	}
 
 }

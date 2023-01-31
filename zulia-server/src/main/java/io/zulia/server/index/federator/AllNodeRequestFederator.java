@@ -7,11 +7,11 @@ import java.util.concurrent.ExecutorService;
 
 public abstract class AllNodeRequestFederator<I, O> extends NodeRequestFederator<I, O> {
 
-    public AllNodeRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ExecutorService pool) {
-        super(thisNode, otherNodesActive, pool);
+	public AllNodeRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ExecutorService pool) {
+		super(thisNode, otherNodesActive, pool);
 
-        nodes.add(thisNode);
-        nodes.addAll(otherNodesActive);
-    }
+		nodes.add(thisNode);
+		nodes.addAll(otherNodesActive);
+	}
 
 }

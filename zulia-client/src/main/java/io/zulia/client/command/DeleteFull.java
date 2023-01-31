@@ -2,10 +2,10 @@ package io.zulia.client.command;
 
 public class DeleteFull extends Delete {
 
-    public DeleteFull(String uniqueId, String indexName) {
-        super(uniqueId, indexName);
-        setDeleteDocument(true);
-        setDeleteAllAssociated(true);
-    }
+	public DeleteFull(String uniqueId, String indexName) {
+		super(uniqueId, indexName);
+		setDeleteDocument(true);
+		setDeleteAllAssociated(true);
+	}
 
 }

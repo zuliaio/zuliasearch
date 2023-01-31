@@ -12,114 +12,114 @@ import java.util.List;
 @Singleton
 public class ZuliaConfig {
 
-    private String dataPath = "data";
-    private boolean cluster = false;
-    private String clusterName = "zulia";
-    private String clusterStorageEngine = "gridfs";
-    private S3Config s3;
-    private List<MongoServer> mongoServers = Collections.singletonList(new MongoServer());
+	private String dataPath = "data";
+	private boolean cluster = false;
+	private String clusterName = "zulia";
+	private String clusterStorageEngine = "gridfs";
+	private S3Config s3;
+	private List<MongoServer> mongoServers = Collections.singletonList(new MongoServer());
 
-    private MongoConnectionString mongoConnection;
-    private MongoAuth mongoAuth;
-    private String serverAddress = null; //null means autodetect
-    private int servicePort = 32191;
-    private int restPort = 32192;
+	private MongoConnectionString mongoConnection;
+	private MongoAuth mongoAuth;
+	private String serverAddress = null; //null means autodetect
+	private int servicePort = 32191;
+	private int restPort = 32192;
 
-    public ZuliaConfig() {
-    }
+	public ZuliaConfig() {
+	}
 
-    public String getDataPath() {
-        return dataPath;
-    }
+	public String getDataPath() {
+		return dataPath;
+	}
 
-    public void setDataPath(String dataPath) {
-        this.dataPath = dataPath;
-    }
+	public void setDataPath(String dataPath) {
+		this.dataPath = dataPath;
+	}
 
-    public boolean isCluster() {
-        return cluster;
-    }
+	public boolean isCluster() {
+		return cluster;
+	}
 
-    public void setCluster(boolean cluster) {
-        this.cluster = cluster;
-    }
+	public void setCluster(boolean cluster) {
+		this.cluster = cluster;
+	}
 
-    public String getClusterName() {
-        return clusterName;
-    }
+	public String getClusterName() {
+		return clusterName;
+	}
 
-    public void setClusterName(String clusterName) {
-        this.clusterName = clusterName;
-    }
+	public void setClusterName(String clusterName) {
+		this.clusterName = clusterName;
+	}
 
-    public String getClusterStorageEngine() {
-        return clusterStorageEngine;
-    }
+	public String getClusterStorageEngine() {
+		return clusterStorageEngine;
+	}
 
-    public void setClusterStorageEngine(String clusterStorageEngine) {
-        this.clusterStorageEngine = clusterStorageEngine;
-    }
+	public void setClusterStorageEngine(String clusterStorageEngine) {
+		this.clusterStorageEngine = clusterStorageEngine;
+	}
 
-    public S3Config getS3() {
-        return s3;
-    }
+	public S3Config getS3() {
+		return s3;
+	}
 
-    public void setS3(S3Config s3) {
-        this.s3 = s3;
-    }
+	public void setS3(S3Config s3) {
+		this.s3 = s3;
+	}
 
-    public List<MongoServer> getMongoServers() {
-        return mongoServers;
-    }
+	public List<MongoServer> getMongoServers() {
+		return mongoServers;
+	}
 
-    public void setMongoServers(List<MongoServer> mongoServers) {
-        this.mongoServers = mongoServers;
-    }
+	public void setMongoServers(List<MongoServer> mongoServers) {
+		this.mongoServers = mongoServers;
+	}
 
-    public MongoConnectionString getMongoConnection() {
-        return mongoConnection;
-    }
+	public MongoConnectionString getMongoConnection() {
+		return mongoConnection;
+	}
 
-    public void setMongoConnection(MongoConnectionString mongoConnection) {
-        this.mongoConnection = mongoConnection;
-    }
+	public void setMongoConnection(MongoConnectionString mongoConnection) {
+		this.mongoConnection = mongoConnection;
+	}
 
-    public MongoAuth getMongoAuth() {
-        return mongoAuth;
-    }
+	public MongoAuth getMongoAuth() {
+		return mongoAuth;
+	}
 
-    public void setMongoAuth(MongoAuth mongoAuth) {
-        this.mongoAuth = mongoAuth;
-    }
+	public void setMongoAuth(MongoAuth mongoAuth) {
+		this.mongoAuth = mongoAuth;
+	}
 
-    public String getServerAddress() {
-        return serverAddress;
-    }
+	public String getServerAddress() {
+		return serverAddress;
+	}
 
-    public void setServerAddress(String serverAddress) {
-        this.serverAddress = serverAddress;
-    }
+	public void setServerAddress(String serverAddress) {
+		this.serverAddress = serverAddress;
+	}
 
-    public int getServicePort() {
-        return servicePort;
-    }
+	public int getServicePort() {
+		return servicePort;
+	}
 
-    public void setServicePort(int servicePort) {
-        this.servicePort = servicePort;
-    }
+	public void setServicePort(int servicePort) {
+		this.servicePort = servicePort;
+	}
 
-    public int getRestPort() {
-        return restPort;
-    }
+	public int getRestPort() {
+		return restPort;
+	}
 
-    public void setRestPort(int restPort) {
-        this.restPort = restPort;
-    }
+	public void setRestPort(int restPort) {
+		this.restPort = restPort;
+	}
 
-    @Override
-    public String toString() {
-        return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
-                + clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoAuth=" + mongoAuth + ", serverAddress='"
-                + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + '}';
-    }
+	@Override
+	public String toString() {
+		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
+				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoAuth=" + mongoAuth + ", serverAddress='"
+				+ serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + '}';
+	}
 }

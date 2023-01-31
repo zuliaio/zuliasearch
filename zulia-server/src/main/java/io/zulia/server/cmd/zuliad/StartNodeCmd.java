@@ -17,53 +17,53 @@ import java.util.logging.Logger;
 
 @CommandLine.Command(name = "start", description = "Start Zulia Node")
 public class StartNodeCmd implements Callable<Integer> {
-    public static final Logger LOG = Logger.getLogger(StartNodeCmd.class.getSimpleName());
+	public static final Logger LOG = Logger.getLogger(StartNodeCmd.class.getSimpleName());
 
-    @CommandLine.ParentCommand
-    private ZuliaD zuliadCmd;
+	@CommandLine.ParentCommand
+	private ZuliaD zuliadCmd;
 
-    @Override
-    public Integer call() throws Exception {
+	@Override
+	public Integer call() throws Exception {
 
-        ZuliaDConfig.setLuceneStatic();
+		ZuliaDConfig.setLuceneStatic();
 
-        ZuliaDConfig zuliaDConfig = new ZuliaDConfig(zuliadCmd.getConfigPath());
-        NodeService nodeService = zuliaDConfig.getNodeService();
-        ZuliaConfig zuliaConfig = zuliaDConfig.getZuliaConfig();
+		ZuliaDConfig zuliaDConfig = new ZuliaDConfig(zuliadCmd.getConfigPath());
+		NodeService nodeService = zuliaDConfig.getNodeService();
+		ZuliaConfig zuliaConfig = zuliaDConfig.getZuliaConfig();
 
-        Collection<ZuliaBase.Node> nodes = nodeService.getNodes();
+		Collection<ZuliaBase.Node> nodes = nodeService.getNodes();
 
-        if (zuliaConfig.isCluster()) {
-            if (nodes.isEmpty()) {
-                LOG.severe("No nodes added to the cluster");
-                return 3;
-            }
-        } else {
-            LOG.warning("Running in single node mode");
-        }
+		if (zuliaConfig.isCluster()) {
+			if (nodes.isEmpty()) {
+				LOG.severe("No nodes added to the cluster");
+				return 3;
+			}
+		}
+		else {
+			LOG.warning("Running in single node mode");
+		}
 
-        ZuliaDConfig.displayNodes(nodeService, "Registered nodes:");
+		ZuliaDConfig.displayNodes(nodeService, "Registered nodes:");
 
-        String zuliaArt = """
-                 ______     _ _
-                |___  /    | (_)
-                   / /_   _| |_  __ _
-                  / /| | | | | |/ _` |
-                 / /_| |_| | | | (_| |
-                /_____\\__,_|_|_|\\__,_|""";
+		String zuliaArt = """
+				 ______     _ _
+				|___  /    | (_)
+				   / /_   _| |_  __ _
+				  / /| | | | | |/ _` |
+				 / /_| |_| | | | (_| |
+				/_____\\__,_|_|_|\\__,_|""";
 
+		ZuliaCommonCmd.printOrange(zuliaArt);
+		System.out.println("  Zulia (" + ZuliaVersion.getVersion() + ") based on Lucene " + Version.LATEST);
+		System.out.println();
 
-        ZuliaCommonCmd.printOrange(zuliaArt);
-        System.out.println("  Zulia (" + ZuliaVersion.getVersion() + ") based on Lucene " + Version.LATEST);
-        System.out.println();
+		ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
 
-        ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
+		ZuliaNodeProvider.setZuliaNode(zuliaNode);
+		zuliaNode.start();
 
-        ZuliaNodeProvider.setZuliaNode(zuliaNode);
-        zuliaNode.start();
+		return 0;
 
-        return 0;
-
-    }
+	}
 
 }

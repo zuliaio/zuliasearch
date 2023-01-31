@@ -6,11 +6,11 @@ import java.util.Iterator;
 
 public class BatchDeleteResult extends Result {
 
-    @SuppressWarnings("unused")
-    private Iterator<DeleteResponse> batchDeleteResponse;
+	@SuppressWarnings("unused")
+	private Iterator<DeleteResponse> batchDeleteResponse;
 
-    public BatchDeleteResult(Iterator<DeleteResponse> batchDeleteResponse) {
-        this.batchDeleteResponse = batchDeleteResponse;
-    }
+	public BatchDeleteResult(Iterator<DeleteResponse> batchDeleteResponse) {
+		this.batchDeleteResponse = batchDeleteResponse;
+	}
 
 }

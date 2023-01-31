@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class UpdateIndexServerRequest extends ServerRequestHandler<UpdateIndexResponse, UpdateIndexRequest> {
 
-    private final static Logger LOG = Logger.getLogger(UpdateIndexServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(UpdateIndexServerRequest.class.getSimpleName());
 
-    public UpdateIndexServerRequest(ZuliaIndexManager indexManager) {
-        super(indexManager);
-    }
+	public UpdateIndexServerRequest(ZuliaIndexManager indexManager) {
+		super(indexManager);
+	}
 
-    @Override
-    protected UpdateIndexResponse handleCall(ZuliaIndexManager indexManager, UpdateIndexRequest request) throws Exception {
-        return indexManager.updateIndex(request);
-    }
+	@Override
+	protected UpdateIndexResponse handleCall(ZuliaIndexManager indexManager, UpdateIndexRequest request) throws Exception {
+		return indexManager.updateIndex(request);
+	}
 
-    @Override
-    protected void onError(Throwable e) {
-        LOG.log(Level.SEVERE, "Failed to handle create index", e);
-    }
+	@Override
+	protected void onError(Throwable e) {
+		LOG.log(Level.SEVERE, "Failed to handle create index", e);
+	}
 }

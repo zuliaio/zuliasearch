@@ -4,6 +4,6 @@ import io.zulia.message.ZuliaQuery;
 
 public interface HighlightBuilder {
 
-    ZuliaQuery.HighlightRequest getHighlight();
+	ZuliaQuery.HighlightRequest getHighlight();
 
 }

@@ -23,48 +23,49 @@ import java.io.File;
 @Controller(ZuliaConstants.STATS_URL)
 public class StatsController {
 
-    private static final int MB = 1024 * 1024;
+	private static final int MB = 1024 * 1024;
 
-    @Get
-    @Produces({MediaType.APPLICATION_JSON + ";charset=utf-8"})
-    public HttpResponse<String> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
+	@Get
+	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8" })
+	public HttpResponse<String> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
-        ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
-        try {
+		try {
 
-            Document mongoDocument = new Document();
+			Document mongoDocument = new Document();
 
-            Runtime runtime = Runtime.getRuntime();
+			Runtime runtime = Runtime.getRuntime();
 
-            File dataDir = new File(ZuliaNodeProvider.getZuliaNode().getZuliaConfig().getDataPath());
-            double freeDataDirSpaceGB = dataDir.getFreeSpace() / (1024.0 * 1024 * 1024);
-            double totalDataDirSpaceGB = dataDir.getTotalSpace() / (1024.0 * 1024 * 1024);
-            double usedDataDirSpaceGB = totalDataDirSpaceGB - freeDataDirSpaceGB;
+			File dataDir = new File(ZuliaNodeProvider.getZuliaNode().getZuliaConfig().getDataPath());
+			double freeDataDirSpaceGB = dataDir.getFreeSpace() / (1024.0 * 1024 * 1024);
+			double totalDataDirSpaceGB = dataDir.getTotalSpace() / (1024.0 * 1024 * 1024);
+			double usedDataDirSpaceGB = totalDataDirSpaceGB - freeDataDirSpaceGB;
 
-            mongoDocument.put("jvmUsedMemoryMB", (runtime.totalMemory() - runtime.freeMemory()) / MB);
-            mongoDocument.put("jvmFreeMemoryMB", runtime.freeMemory() / MB);
-            mongoDocument.put("jvmTotalMemoryMB", runtime.totalMemory() / MB);
-            mongoDocument.put("jvmMaxMemoryMB", runtime.maxMemory() / MB);
-            mongoDocument.put("freeDataDirSpaceGB", freeDataDirSpaceGB);
-            mongoDocument.put("totalDataDirSpaceGB", totalDataDirSpaceGB);
-            mongoDocument.put("usedDataDirSpaceGB", usedDataDirSpaceGB);
-            mongoDocument.put("zuliaVersion", ZuliaVersion.getVersion());
+			mongoDocument.put("jvmUsedMemoryMB", (runtime.totalMemory() - runtime.freeMemory()) / MB);
+			mongoDocument.put("jvmFreeMemoryMB", runtime.freeMemory() / MB);
+			mongoDocument.put("jvmTotalMemoryMB", runtime.totalMemory() / MB);
+			mongoDocument.put("jvmMaxMemoryMB", runtime.maxMemory() / MB);
+			mongoDocument.put("freeDataDirSpaceGB", freeDataDirSpaceGB);
+			mongoDocument.put("totalDataDirSpaceGB", totalDataDirSpaceGB);
+			mongoDocument.put("usedDataDirSpaceGB", usedDataDirSpaceGB);
+			mongoDocument.put("zuliaVersion", ZuliaVersion.getVersion());
 
-            indexManager.getStats();
+			indexManager.getStats();
 
-            String docString = mongoDocument.toJson();
+			String docString = mongoDocument.toJson();
 
-            if (pretty) {
-                docString = JsonWriter.formatJson(docString);
-            }
+			if (pretty) {
+				docString = JsonWriter.formatJson(docString);
+			}
 
-            return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
-        } catch (Exception e) {
-            return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
-        }
+		}
+		catch (Exception e) {
+			return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+		}
 
-    }
+	}
 
 }

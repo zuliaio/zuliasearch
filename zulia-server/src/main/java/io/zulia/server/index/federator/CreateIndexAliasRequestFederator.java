@@ -10,29 +10,29 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
 public class CreateIndexAliasRequestFederator extends AllNodeRequestFederator<InternalCreateIndexAliasRequest, CreateIndexAliasResponse> {
-    private final InternalClient internalClient;
-    private final ZuliaIndexManager indexManager;
+	private final InternalClient internalClient;
+	private final ZuliaIndexManager indexManager;
 
-    public CreateIndexAliasRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ExecutorService pool, InternalClient internalClient,
-                                            ZuliaIndexManager indexManager) {
-        super(thisNode, otherNodesActive, pool);
+	public CreateIndexAliasRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ExecutorService pool, InternalClient internalClient,
+			ZuliaIndexManager indexManager) {
+		super(thisNode, otherNodesActive, pool);
 
-        this.internalClient = internalClient;
-        this.indexManager = indexManager;
-    }
+		this.internalClient = internalClient;
+		this.indexManager = indexManager;
+	}
 
-    public static CreateIndexAliasResponse internalCreateIndexAlias(ZuliaIndexManager zuliaIndexManager, InternalCreateIndexAliasRequest request)
-            throws Exception {
-        return zuliaIndexManager.internalCreateIndexAlias(request.getAliasName());
-    }
+	public static CreateIndexAliasResponse internalCreateIndexAlias(ZuliaIndexManager zuliaIndexManager, InternalCreateIndexAliasRequest request)
+			throws Exception {
+		return zuliaIndexManager.internalCreateIndexAlias(request.getAliasName());
+	}
 
-    @Override
-    protected CreateIndexAliasResponse processExternal(Node node, InternalCreateIndexAliasRequest request) throws Exception {
-        return internalClient.createIndexAlias(node, request);
-    }
+	@Override
+	protected CreateIndexAliasResponse processExternal(Node node, InternalCreateIndexAliasRequest request) throws Exception {
+		return internalClient.createIndexAlias(node, request);
+	}
 
-    @Override
-    protected CreateIndexAliasResponse processInternal(Node node, InternalCreateIndexAliasRequest request) throws Exception {
-        return internalCreateIndexAlias(indexManager, request);
-    }
+	@Override
+	protected CreateIndexAliasResponse processInternal(Node node, InternalCreateIndexAliasRequest request) throws Exception {
+		return internalCreateIndexAlias(indexManager, request);
+	}
 }

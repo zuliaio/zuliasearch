@@ -16,26 +16,26 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
  */
 public class CreateIndexAlias extends SimpleCommand<CreateIndexAliasRequest, CreateIndexAliasResult> {
 
-    private final IndexAlias indexAlias;
+	private final IndexAlias indexAlias;
 
-    public CreateIndexAlias(IndexAlias indexAlias) {
-        this.indexAlias = indexAlias;
-    }
+	public CreateIndexAlias(IndexAlias indexAlias) {
+		this.indexAlias = indexAlias;
+	}
 
-    public CreateIndexAlias(String aliasName, String indexName) {
-        this.indexAlias = IndexAlias.newBuilder().setAliasName(aliasName).setIndexName(indexName).build();
-    }
+	public CreateIndexAlias(String aliasName, String indexName) {
+		this.indexAlias = IndexAlias.newBuilder().setAliasName(aliasName).setIndexName(indexName).build();
+	}
 
-    @Override
-    public CreateIndexAliasRequest getRequest() {
-        return CreateIndexAliasRequest.newBuilder().setIndexAlias(indexAlias).build();
-    }
+	@Override
+	public CreateIndexAliasRequest getRequest() {
+		return CreateIndexAliasRequest.newBuilder().setIndexAlias(indexAlias).build();
+	}
 
-    @Override
-    public CreateIndexAliasResult execute(ZuliaConnection zuliaConnection) {
-        ZuliaServiceBlockingStub service = zuliaConnection.getService();
-        CreateIndexAliasResponse createIndexResponse = service.createIndexAlias(getRequest());
-        return new CreateIndexAliasResult(createIndexResponse);
-    }
+	@Override
+	public CreateIndexAliasResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
+		CreateIndexAliasResponse createIndexResponse = service.createIndexAlias(getRequest());
+		return new CreateIndexAliasResult(createIndexResponse);
+	}
 
 }

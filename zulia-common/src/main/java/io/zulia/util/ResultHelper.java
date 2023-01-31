@@ -48,18 +48,22 @@ public class ResultHelper {
                     });
                     if (!values.isEmpty()) {
                         o = values;
-                    } else {
+                    }
+                    else {
                         o = null;
                     }
-                } else if (o instanceof org.bson.Document) {
+                }
+                else if (o instanceof org.bson.Document) {
                     org.bson.Document mongoDoc = (org.bson.Document) o;
                     o = mongoDoc.get(field);
-                } else {
+                }
+                else {
                     o = null;
                     break;
                 }
             }
-        } else {
+        }
+        else {
             o = mongoDocument.get(storedFieldName);
         }
 

@@ -11,22 +11,22 @@ import java.util.concurrent.Callable;
 @CommandLine.Command(name = "clearIndex", description = "Clears index(es) specified by --index")
 public class ClearIndexCmd implements Callable<Integer> {
 
-    @CommandLine.ParentCommand
-    private ZuliaAdmin zuliaAdmin;
+	@CommandLine.ParentCommand
+	private ZuliaAdmin zuliaAdmin;
 
-    @CommandLine.Mixin
-    private MultipleIndexArgs multipleIndexArgs;
+	@CommandLine.Mixin
+	private MultipleIndexArgs multipleIndexArgs;
 
-    @Override
-    public Integer call() throws Exception {
+	@Override
+	public Integer call() throws Exception {
 
-        ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
+		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-        Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
+		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
 
-        for (String index : indexes) {
-            zuliaWorkPool.clearIndex(index);
-        }
-        return CommandLine.ExitCode.OK;
-    }
+		for (String index : indexes) {
+			zuliaWorkPool.clearIndex(index);
+		}
+		return CommandLine.ExitCode.OK;
+	}
 }

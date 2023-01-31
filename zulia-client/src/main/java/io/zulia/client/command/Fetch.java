@@ -16,117 +16,115 @@ import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements ShardRoutableCommand {
 
-    private String uniqueId;
-    private String indexName;
-    private String filename;
-    private FetchType resultFetchType;
-    private FetchType associatedFetchType;
+	private String uniqueId;
+	private String indexName;
+	private String filename;
+	private FetchType resultFetchType;
+	private FetchType associatedFetchType;
 
-    private Set<String> documentFields = Collections.emptySet();
-    private Set<String> documentMaskedFields = Collections.emptySet();
+	private Set<String> documentFields = Collections.emptySet();
+	private Set<String> documentMaskedFields = Collections.emptySet();
 
+	public Fetch(String uniqueId, String indexName) {
+		this.uniqueId = uniqueId;
+		this.indexName = indexName;
+	}
 
-    public Fetch(String uniqueId, String indexName) {
-        this.uniqueId = uniqueId;
-        this.indexName = indexName;
-    }
+	public String getUniqueId() {
+		return uniqueId;
+	}
 
-    public String getUniqueId() {
-        return uniqueId;
-    }
+	@Override
+	public String getIndexName() {
+		return indexName;
+	}
 
-    @Override
-    public String getIndexName() {
-        return indexName;
-    }
+	public Fetch setFilename(String filename) {
+		this.filename = filename;
+		return this;
+	}
 
-    public Fetch setFilename(String filename) {
-        this.filename = filename;
-        return this;
-    }
+	public String getFileFame() {
+		return filename;
+	}
 
-    public String getFileFame() {
-        return filename;
-    }
+	public FetchType getResultFetchType() {
+		return resultFetchType;
+	}
 
-    public FetchType getResultFetchType() {
-        return resultFetchType;
-    }
+	public Fetch setResultFetchType(FetchType resultFetchType) {
+		this.resultFetchType = resultFetchType;
+		return this;
+	}
 
-    public Fetch setResultFetchType(FetchType resultFetchType) {
-        this.resultFetchType = resultFetchType;
-        return this;
-    }
+	public FetchType getAssociatedFetchType() {
+		return associatedFetchType;
+	}
 
-    public FetchType getAssociatedFetchType() {
-        return associatedFetchType;
-    }
+	public Fetch setAssociatedFetchType(FetchType associatedFetchType) {
+		this.associatedFetchType = associatedFetchType;
+		return this;
+	}
 
-    public Fetch setAssociatedFetchType(FetchType associatedFetchType) {
-        this.associatedFetchType = associatedFetchType;
-        return this;
-    }
+	public Set<String> getDocumentMaskedFields() {
+		return documentMaskedFields;
+	}
 
+	public Fetch addDocumentMaskedField(String documentMaskedField) {
+		if (documentMaskedFields.isEmpty()) {
+			documentMaskedFields = new LinkedHashSet<>();
+		}
 
-    public Set<String> getDocumentMaskedFields() {
-        return documentMaskedFields;
-    }
+		documentMaskedFields.add(documentMaskedField);
+		return this;
+	}
 
-    public Fetch addDocumentMaskedField(String documentMaskedField) {
-        if (documentMaskedFields.isEmpty()) {
-            documentMaskedFields = new LinkedHashSet<>();
-        }
+	public Set<String> getDocumentFields() {
+		return documentFields;
+	}
 
-        documentMaskedFields.add(documentMaskedField);
-        return this;
-    }
+	public Fetch addDocumentField(String documentField) {
+		if (documentFields.isEmpty()) {
+			this.documentFields = new LinkedHashSet<>();
+		}
+		documentFields.add(documentField);
+		return this;
+	}
 
-    public Set<String> getDocumentFields() {
-        return documentFields;
-    }
+	@Override
+	public FetchRequest getRequest() {
+		FetchRequest.Builder fetchRequestBuilder = FetchRequest.newBuilder();
+		if (uniqueId != null) {
+			fetchRequestBuilder.setUniqueId(uniqueId);
+		}
+		if (indexName != null) {
+			fetchRequestBuilder.setIndexName(indexName);
+		}
+		if (filename != null) {
+			fetchRequestBuilder.setFilename(filename);
+		}
+		if (resultFetchType != null) {
+			fetchRequestBuilder.setResultFetchType(resultFetchType);
+		}
+		if (associatedFetchType != null) {
+			fetchRequestBuilder.setAssociatedFetchType(associatedFetchType);
+		}
 
-    public Fetch addDocumentField(String documentField) {
-        if (documentFields.isEmpty()) {
-            this.documentFields = new LinkedHashSet<>();
-        }
-        documentFields.add(documentField);
-        return this;
-    }
+		fetchRequestBuilder.addAllDocumentFields(documentFields);
+		fetchRequestBuilder.addAllDocumentMaskedFields(documentMaskedFields);
 
-    @Override
-    public FetchRequest getRequest() {
-        FetchRequest.Builder fetchRequestBuilder = FetchRequest.newBuilder();
-        if (uniqueId != null) {
-            fetchRequestBuilder.setUniqueId(uniqueId);
-        }
-        if (indexName != null) {
-            fetchRequestBuilder.setIndexName(indexName);
-        }
-        if (filename != null) {
-            fetchRequestBuilder.setFilename(filename);
-        }
-        if (resultFetchType != null) {
-            fetchRequestBuilder.setResultFetchType(resultFetchType);
-        }
-        if (associatedFetchType != null) {
-            fetchRequestBuilder.setAssociatedFetchType(associatedFetchType);
-        }
+		return fetchRequestBuilder.build();
+	}
 
-        fetchRequestBuilder.addAllDocumentFields(documentFields);
-        fetchRequestBuilder.addAllDocumentMaskedFields(documentMaskedFields);
+	@Override
+	public FetchResult execute(ZuliaConnection zuliaConnection) {
 
-        return fetchRequestBuilder.build();
-    }
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-    @Override
-    public FetchResult execute(ZuliaConnection zuliaConnection) {
+		FetchResponse fetchResponse = service.fetch(getRequest());
 
-        ZuliaServiceBlockingStub service = zuliaConnection.getService();
+		return new FetchResult(fetchResponse);
 
-        FetchResponse fetchResponse = service.fetch(getRequest());
-
-        return new FetchResult(fetchResponse);
-
-    }
+	}
 
 }

@@ -9,13 +9,13 @@ import java.util.stream.Collectors;
  */
 public class QueryHelper {
 
-    public final static Function<String, String> ADD_QUOTES = (s) -> '"' + s + '"';
+	public final static Function<String, String> ADD_QUOTES = (s) -> '"' + s + '"';
 
-    public static String getOrQuery(String field, Collection<String> values, Function<String, String> modifier) {
-        return field + ":" + values.stream().map(modifier).collect(Collectors.joining(" OR "));
-    }
+	public static String getOrQuery(String field, Collection<String> values, Function<String, String> modifier) {
+		return field + ":" + values.stream().map(modifier).collect(Collectors.joining(" OR "));
+	}
 
-    public static String getOrTerms(Collection<String> values, Function<String, String> modifier) {
-        return values.stream().map(modifier).collect(Collectors.joining(" OR "));
-    }
+	public static String getOrTerms(Collection<String> values, Function<String, String> modifier) {
+		return values.stream().map(modifier).collect(Collectors.joining(" OR "));
+	}
 }

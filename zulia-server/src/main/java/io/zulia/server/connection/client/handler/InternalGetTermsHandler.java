@@ -6,13 +6,13 @@ import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalGetTermsHandler extends InternalRequestHandler<InternalGetTermsResponse, InternalGetTermsRequest> {
-    public InternalGetTermsHandler(InternalClient internalClient) {
-        super(internalClient);
-    }
+	public InternalGetTermsHandler(InternalClient internalClient) {
+		super(internalClient);
+	}
 
-    @Override
-    protected InternalGetTermsResponse getResponse(InternalGetTermsRequest getTermsRequest, InternalRpcConnection rpcConnection) {
-        return rpcConnection.getService().internalGetTerms(getTermsRequest);
-    }
+	@Override
+	protected InternalGetTermsResponse getResponse(InternalGetTermsRequest getTermsRequest, InternalRpcConnection rpcConnection) {
+		return rpcConnection.getService().internalGetTerms(getTermsRequest);
+	}
 
 }

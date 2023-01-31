@@ -27,30 +27,31 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
 @Controller(ZuliaConstants.INDEXES_URL)
 public class IndexesController {
 
-    @Get
-    @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-    public HttpResponse<?> get() {
+	@Get
+	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
+	public HttpResponse<?> get() {
 
-        ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
-        try {
-            GetIndexesResponse getIndexesResponse = indexManager.getIndexes(GetIndexesRequest.newBuilder().build());
+		try {
+			GetIndexesResponse getIndexesResponse = indexManager.getIndexes(GetIndexesRequest.newBuilder().build());
 
-            Document mongoDocument = new org.bson.Document();
-            ProtocolStringList indexNameList = getIndexesResponse.getIndexNameList();
-            List<String> sorted = new ArrayList<>(indexNameList);
-            Collections.sort(sorted);
-            mongoDocument.put("indexes", sorted);
-            String docString = mongoDocument.toJson();
+			Document mongoDocument = new org.bson.Document();
+			ProtocolStringList indexNameList = getIndexesResponse.getIndexNameList();
+			List<String> sorted = new ArrayList<>(indexNameList);
+			Collections.sort(sorted);
+			mongoDocument.put("indexes", sorted);
+			String docString = mongoDocument.toJson();
 
-            docString = JsonWriter.formatJson(docString);
+			docString = JsonWriter.formatJson(docString);
 
-            return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
-        } catch (Exception e) {
-            return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
-        }
+		}
+		catch (Exception e) {
+			return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+		}
 
-    }
+	}
 
 }

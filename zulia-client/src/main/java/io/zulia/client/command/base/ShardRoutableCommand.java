@@ -1,7 +1,7 @@
 package io.zulia.client.command.base;
 
 public interface ShardRoutableCommand {
-    String getUniqueId();
+	String getUniqueId();
 
-    String getIndexName();
+	String getIndexName();
 }

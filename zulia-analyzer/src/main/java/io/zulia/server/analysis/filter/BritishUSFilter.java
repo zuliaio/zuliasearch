@@ -18,48 +18,49 @@ import java.nio.charset.StandardCharsets;
  */
 public class BritishUSFilter extends TokenFilter {
 
-    private static final CharArrayMap<char[]> britishToUs = initializeDictHash();
+	private static final CharArrayMap<char[]> britishToUs = initializeDictHash();
 
-    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+	private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-    private static CharArrayMap<char[]> initializeDictHash() {
-        CharArrayMap<char[]> charMap = new CharArrayMap<>(2000, false);
+	private static CharArrayMap<char[]> initializeDictHash() {
+		CharArrayMap<char[]> charMap = new CharArrayMap<>(2000, false);
 
-        try {
-            URL url = BritishUSFilter.class.getResource("/british.txt");
-            String text = Resources.toString(url, StandardCharsets.UTF_8);
-            String[] lines = text.split("\n");
-            for (String line : lines) {
-                if (!line.startsWith("UK\tUS")) {
-                    String[] parts = line.split("\t");
-                    if (parts.length == 2) {
-                        charMap.put(parts[0].toCharArray(), parts[1].toCharArray());
-                    }
-                }
-            }
+		try {
+			URL url = BritishUSFilter.class.getResource("/british.txt");
+			String text = Resources.toString(url, StandardCharsets.UTF_8);
+			String[] lines = text.split("\n");
+			for (String line : lines) {
+				if (!line.startsWith("UK\tUS")) {
+					String[] parts = line.split("\t");
+					if (parts.length == 2) {
+						charMap.put(parts[0].toCharArray(), parts[1].toCharArray());
+					}
+				}
+			}
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return charMap;
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		return charMap;
 
-    }
+	}
 
-    public BritishUSFilter(TokenStream in) {
-        super(in);
-    }
+	public BritishUSFilter(TokenStream in) {
+		super(in);
+	}
 
-    @Override
-    public final boolean incrementToken() throws IOException {
-        if (!input.incrementToken()) {
-            return false;
-        }
+	@Override
+	public final boolean incrementToken() throws IOException {
+		if (!input.incrementToken()) {
+			return false;
+		}
 
-        char[] replacement = britishToUs.get(termAtt.buffer(), 0, termAtt.length());
-        if (replacement != null) {
-            termAtt.copyBuffer(replacement, 0, replacement.length);
-        }
-        return true;
-    }
+		char[] replacement = britishToUs.get(termAtt.buffer(), 0, termAtt.length());
+		if (replacement != null) {
+			termAtt.copyBuffer(replacement, 0, replacement.length);
+		}
+		return true;
+	}
 
 }

@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class InternalFetchServerRequest extends ServerRequestHandler<FetchResponse, FetchRequest> {
 
-    private final static Logger LOG = Logger.getLogger(InternalFetchServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(InternalFetchServerRequest.class.getSimpleName());
 
-    public InternalFetchServerRequest(ZuliaIndexManager indexManager) {
-        super(indexManager);
-    }
+	public InternalFetchServerRequest(ZuliaIndexManager indexManager) {
+		super(indexManager);
+	}
 
-    @Override
-    protected FetchResponse handleCall(ZuliaIndexManager indexManager, FetchRequest request) throws Exception {
-        return indexManager.internalFetch(request);
-    }
+	@Override
+	protected FetchResponse handleCall(ZuliaIndexManager indexManager, FetchRequest request) throws Exception {
+		return indexManager.internalFetch(request);
+	}
 
-    @Override
-    protected void onError(Throwable e) {
-        LOG.log(Level.SEVERE, "Failed to handle internal fetch", e);
-    }
+	@Override
+	protected void onError(Throwable e) {
+		LOG.log(Level.SEVERE, "Failed to handle internal fetch", e);
+	}
 }

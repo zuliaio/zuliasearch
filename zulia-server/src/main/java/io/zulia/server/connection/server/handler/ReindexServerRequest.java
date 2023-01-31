@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class ReindexServerRequest extends ServerRequestHandler<ReindexResponse, ReindexRequest> {
 
-    private final static Logger LOG = Logger.getLogger(ReindexServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(ReindexServerRequest.class.getSimpleName());
 
-    public ReindexServerRequest(ZuliaIndexManager indexManager) {
-        super(indexManager);
-    }
+	public ReindexServerRequest(ZuliaIndexManager indexManager) {
+		super(indexManager);
+	}
 
-    @Override
-    protected ReindexResponse handleCall(ZuliaIndexManager indexManager, ReindexRequest request) throws Exception {
-        return indexManager.reindex(request);
-    }
+	@Override
+	protected ReindexResponse handleCall(ZuliaIndexManager indexManager, ReindexRequest request) throws Exception {
+		return indexManager.reindex(request);
+	}
 
-    @Override
-    protected void onError(Throwable e) {
-        LOG.log(Level.SEVERE, "Failed to handle reindex", e);
-    }
+	@Override
+	protected void onError(Throwable e) {
+		LOG.log(Level.SEVERE, "Failed to handle reindex", e);
+	}
 }

@@ -2,8 +2,8 @@ package io.zulia.client.command.builder;
 
 public class MatchAllQuery extends ScoredQuery {
 
-    public MatchAllQuery() {
-        super(null);
-    }
+	public MatchAllQuery() {
+		super(null);
+	}
 
 }

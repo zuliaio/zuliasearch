@@ -23,36 +23,37 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 @Controller(ZuliaConstants.FIELDS_URL)
 public class FieldsController {
 
-    @Get
-    @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-    public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) final String indexName,
-                               @QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
+	@Get
+	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
+	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) final String indexName,
+			@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
-        ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
-        GetFieldNamesRequest fieldNamesRequest = GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
+		GetFieldNamesRequest fieldNamesRequest = GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
 
-        GetFieldNamesResponse fieldNamesResponse;
+		GetFieldNamesResponse fieldNamesResponse;
 
-        try {
-            fieldNamesResponse = indexManager.getFieldNames(fieldNamesRequest);
+		try {
+			fieldNamesResponse = indexManager.getFieldNames(fieldNamesRequest);
 
-            Document mongoDocument = new Document();
-            mongoDocument.put("index", indexName);
-            mongoDocument.put("fields", fieldNamesResponse.getFieldNameList());
+			Document mongoDocument = new Document();
+			mongoDocument.put("index", indexName);
+			mongoDocument.put("fields", fieldNamesResponse.getFieldNameList());
 
-            String docString = mongoDocument.toJson();
+			String docString = mongoDocument.toJson();
 
-            if (pretty) {
-                docString = JsonWriter.formatJson(docString);
-            }
+			if (pretty) {
+				docString = JsonWriter.formatJson(docString);
+			}
 
-            return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
-        } catch (Exception e) {
-            return HttpResponse.ok("Failed to fetch fields for index <" + indexName + ">: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
-        }
+		}
+		catch (Exception e) {
+			return HttpResponse.ok("Failed to fetch fields for index <" + indexName + ">: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+		}
 
-    }
+	}
 
 }

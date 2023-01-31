@@ -11,31 +11,31 @@ import java.util.concurrent.Callable;
 @CommandLine.Command(name = "deleteIndex", description = "Deletes index(es) specified by --index")
 public class DeleteIndexCmd implements Callable<Integer> {
 
-    @CommandLine.ParentCommand
-    private ZuliaAdmin zuliaAdmin;
+	@CommandLine.ParentCommand
+	private ZuliaAdmin zuliaAdmin;
 
-    @CommandLine.Mixin
-    private MultipleIndexArgs multipleIndexArgs;
+	@CommandLine.Mixin
+	private MultipleIndexArgs multipleIndexArgs;
 
-    @CommandLine.Option(names = {"-d", "--deleteAssociated"},
-            description = "Delete associated files")
-    private boolean deleteAssociated;
+	@CommandLine.Option(names = { "-d", "--deleteAssociated" }, description = "Delete associated files")
+	private boolean deleteAssociated;
 
-    @Override
-    public Integer call() throws Exception {
+	@Override
+	public Integer call() throws Exception {
 
-        ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
+		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-        Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
+		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
 
-        for (String index : indexes) {
-            if (deleteAssociated) {
-                zuliaWorkPool.deleteIndexAndAssociatedFiles(index);
-            } else {
-                zuliaWorkPool.deleteIndex(index);
-            }
-        }
+		for (String index : indexes) {
+			if (deleteAssociated) {
+				zuliaWorkPool.deleteIndexAndAssociatedFiles(index);
+			}
+			else {
+				zuliaWorkPool.deleteIndex(index);
+			}
+		}
 
-        return CommandLine.ExitCode.OK;
-    }
+		return CommandLine.ExitCode.OK;
+	}
 }

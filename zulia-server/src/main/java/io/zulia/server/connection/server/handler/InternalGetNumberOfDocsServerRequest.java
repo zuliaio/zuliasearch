@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class InternalGetNumberOfDocsServerRequest extends ServerRequestHandler<GetNumberOfDocsResponse, InternalGetNumberOfDocsRequest> {
 
-    private final static Logger LOG = Logger.getLogger(InternalGetNumberOfDocsServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(InternalGetNumberOfDocsServerRequest.class.getSimpleName());
 
-    public InternalGetNumberOfDocsServerRequest(ZuliaIndexManager indexManager) {
-        super(indexManager);
-    }
+	public InternalGetNumberOfDocsServerRequest(ZuliaIndexManager indexManager) {
+		super(indexManager);
+	}
 
-    @Override
-    protected GetNumberOfDocsResponse handleCall(ZuliaIndexManager indexManager, InternalGetNumberOfDocsRequest request) throws Exception {
-        return indexManager.getNumberOfDocsInternal(request);
-    }
+	@Override
+	protected GetNumberOfDocsResponse handleCall(ZuliaIndexManager indexManager, InternalGetNumberOfDocsRequest request) throws Exception {
+		return indexManager.getNumberOfDocsInternal(request);
+	}
 
-    @Override
-    protected void onError(Throwable e) {
-        LOG.log(Level.SEVERE, "Failed to handle internal get number of docs", e);
-    }
+	@Override
+	protected void onError(Throwable e) {
+		LOG.log(Level.SEVERE, "Failed to handle internal get number of docs", e);
+	}
 }

@@ -6,13 +6,13 @@ import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalDeleteIndexAliasHandler extends InternalRequestHandler<DeleteIndexAliasResponse, DeleteIndexAliasRequest> {
-    public InternalDeleteIndexAliasHandler(InternalClient internalClient) {
-        super(internalClient);
-    }
+	public InternalDeleteIndexAliasHandler(InternalClient internalClient) {
+		super(internalClient);
+	}
 
-    @Override
-    protected DeleteIndexAliasResponse getResponse(DeleteIndexAliasRequest deleteIndexAliasRequest, InternalRpcConnection rpcConnection) {
-        return rpcConnection.getService().internalDeleteIndexAlias(deleteIndexAliasRequest);
-    }
+	@Override
+	protected DeleteIndexAliasResponse getResponse(DeleteIndexAliasRequest deleteIndexAliasRequest, InternalRpcConnection rpcConnection) {
+		return rpcConnection.getService().internalDeleteIndexAlias(deleteIndexAliasRequest);
+	}
 
 }

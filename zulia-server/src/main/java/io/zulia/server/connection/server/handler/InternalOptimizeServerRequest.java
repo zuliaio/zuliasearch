@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class InternalOptimizeServerRequest extends ServerRequestHandler<OptimizeResponse, OptimizeRequest> {
 
-    private final static Logger LOG = Logger.getLogger(InternalOptimizeServerRequest.class.getSimpleName());
+	private final static Logger LOG = Logger.getLogger(InternalOptimizeServerRequest.class.getSimpleName());
 
-    public InternalOptimizeServerRequest(ZuliaIndexManager indexManager) {
-        super(indexManager);
-    }
+	public InternalOptimizeServerRequest(ZuliaIndexManager indexManager) {
+		super(indexManager);
+	}
 
-    @Override
-    protected OptimizeResponse handleCall(ZuliaIndexManager indexManager, OptimizeRequest request) throws Exception {
-        return indexManager.internalOptimize(request);
-    }
+	@Override
+	protected OptimizeResponse handleCall(ZuliaIndexManager indexManager, OptimizeRequest request) throws Exception {
+		return indexManager.internalOptimize(request);
+	}
 
-    @Override
-    protected void onError(Throwable e) {
-        LOG.log(Level.SEVERE, "Failed to handle internal optimize", e);
-    }
+	@Override
+	protected void onError(Throwable e) {
+		LOG.log(Level.SEVERE, "Failed to handle internal optimize", e);
+	}
 }

@@ -12,22 +12,22 @@ import java.util.concurrent.Callable;
 @CommandLine.Command(name = "displayAliases", description = "Displays aliases")
 public class DisplayAliasesCmd implements Callable<Integer> {
 
-    @CommandLine.ParentCommand
-    private ZuliaAdmin zuliaAdmin;
+	@CommandLine.ParentCommand
+	private ZuliaAdmin zuliaAdmin;
 
-    @Override
-    public Integer call() throws Exception {
+	@Override
+	public Integer call() throws Exception {
 
-        ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
+		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-        List<ZuliaIndex.IndexAlias> indexAliases = zuliaWorkPool.getNodes().getIndexAliases();
-        ZuliaCommonCmd.printMagenta(String.format("%40s | %40s", "Alias", "Index"));
+		List<ZuliaIndex.IndexAlias> indexAliases = zuliaWorkPool.getNodes().getIndexAliases();
+		ZuliaCommonCmd.printMagenta(String.format("%40s | %40s", "Alias", "Index"));
 
-        for (ZuliaIndex.IndexAlias indexAlias : indexAliases) {
-            System.out.printf("%40s | %40s", indexAlias.getAliasName(), indexAlias.getIndexName());
-            System.out.println();
-        }
+		for (ZuliaIndex.IndexAlias indexAlias : indexAliases) {
+			System.out.printf("%40s | %40s", indexAlias.getAliasName(), indexAlias.getIndexName());
+			System.out.println();
+		}
 
-        return CommandLine.ExitCode.OK;
-    }
+		return CommandLine.ExitCode.OK;
+	}
 }

@@ -5,12 +5,12 @@ import java.util.Date;
 
 public class DateWithTimeRangeFilter extends RangeFilter<Date> {
 
-    public DateWithTimeRangeFilter(String field) {
-        super(field);
-    }
+	public DateWithTimeRangeFilter(String field) {
+		super(field);
+	}
 
-    @Override
-    public String getAsString(Date val) {
-        return DateTimeFormatter.ISO_INSTANT.format(val.toInstant());
-    }
+	@Override
+	public String getAsString(Date val) {
+		return DateTimeFormatter.ISO_INSTANT.format(val.toInstant());
+	}
 }

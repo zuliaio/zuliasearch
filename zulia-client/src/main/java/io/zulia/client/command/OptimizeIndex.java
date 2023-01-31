@@ -17,29 +17,29 @@ import static io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
  */
 public class OptimizeIndex extends SimpleCommand<ZuliaServiceOuterClass.OptimizeRequest, OptimizeIndexResult> implements SingleIndexRoutableCommand {
 
-    private String indexName;
+	private String indexName;
 
-    public OptimizeIndex(String indexName) {
-        this.indexName = indexName;
-    }
+	public OptimizeIndex(String indexName) {
+		this.indexName = indexName;
+	}
 
-    @Override
-    public String getIndexName() {
-        return indexName;
-    }
+	@Override
+	public String getIndexName() {
+		return indexName;
+	}
 
-    @Override
-    public OptimizeRequest getRequest() {
-        return OptimizeRequest.newBuilder().setIndexName(indexName).build();
-    }
+	@Override
+	public OptimizeRequest getRequest() {
+		return OptimizeRequest.newBuilder().setIndexName(indexName).build();
+	}
 
-    @Override
-    public OptimizeIndexResult execute(ZuliaConnection zuliaConnection) {
-        ZuliaServiceBlockingStub service = zuliaConnection.getService();
+	@Override
+	public OptimizeIndexResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-        OptimizeResponse optimizeResponse = service.optimize(getRequest());
+		OptimizeResponse optimizeResponse = service.optimize(getRequest());
 
-        return new OptimizeIndexResult(optimizeResponse);
-    }
+		return new OptimizeIndexResult(optimizeResponse);
+	}
 
 }

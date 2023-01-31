@@ -16,44 +16,44 @@ import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
  */
 public class DeleteIndex extends SimpleCommand<DeleteIndexRequest, DeleteIndexResult> implements SingleIndexRoutableCommand {
 
-    private String indexName;
-    private boolean deleteAssociated;
+	private String indexName;
+	private boolean deleteAssociated;
 
-    public DeleteIndex(String indexName) {
-        this.indexName = indexName;
-    }
+	public DeleteIndex(String indexName) {
+		this.indexName = indexName;
+	}
 
-    public DeleteIndex setIndexName(String indexName) {
-        this.indexName = indexName;
-        return this;
-    }
+	public DeleteIndex setIndexName(String indexName) {
+		this.indexName = indexName;
+		return this;
+	}
 
-    public boolean isDeleteAssociated() {
-        return deleteAssociated;
-    }
+	public boolean isDeleteAssociated() {
+		return deleteAssociated;
+	}
 
-    public DeleteIndex setDeleteAssociated(boolean deleteAssociated) {
-        this.deleteAssociated = deleteAssociated;
-        return this;
-    }
+	public DeleteIndex setDeleteAssociated(boolean deleteAssociated) {
+		this.deleteAssociated = deleteAssociated;
+		return this;
+	}
 
-    @Override
-    public String getIndexName() {
-        return indexName;
-    }
+	@Override
+	public String getIndexName() {
+		return indexName;
+	}
 
-    @Override
-    public DeleteIndexRequest getRequest() {
-        return DeleteIndexRequest.newBuilder().setIndexName(indexName).setDeleteAssociated(deleteAssociated).build();
-    }
+	@Override
+	public DeleteIndexRequest getRequest() {
+		return DeleteIndexRequest.newBuilder().setIndexName(indexName).setDeleteAssociated(deleteAssociated).build();
+	}
 
-    @Override
-    public DeleteIndexResult execute(ZuliaConnection zuliaConnection) {
-        ZuliaServiceBlockingStub service = zuliaConnection.getService();
+	@Override
+	public DeleteIndexResult execute(ZuliaConnection zuliaConnection) {
+		ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-        DeleteIndexResponse indexDeleteResponse = service.deleteIndex(getRequest());
+		DeleteIndexResponse indexDeleteResponse = service.deleteIndex(getRequest());
 
-        return new DeleteIndexResult(indexDeleteResponse);
-    }
+		return new DeleteIndexResult(indexDeleteResponse);
+	}
 
 }
