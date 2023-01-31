@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class GetTermsServerRequest extends ServerRequestHandler<GetTermsResponse, GetTermsRequest> {
 
-	private final static Logger LOG = Logger.getLogger(GetTermsServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(GetTermsServerRequest.class.getSimpleName());
 
-	public GetTermsServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public GetTermsServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected GetTermsResponse handleCall(ZuliaIndexManager indexManager, GetTermsRequest request) throws Exception {
-		return indexManager.getTerms(request);
-	}
+    @Override
+    protected GetTermsResponse handleCall(ZuliaIndexManager indexManager, GetTermsRequest request) throws Exception {
+        return indexManager.getTerms(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle get terms request", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle get terms request", e);
+    }
 }

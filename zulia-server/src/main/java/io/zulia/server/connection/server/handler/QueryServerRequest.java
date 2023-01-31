@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class QueryServerRequest extends ServerRequestHandler<QueryResponse, QueryRequest> {
 
-	private final static Logger LOG = Logger.getLogger(QueryServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(QueryServerRequest.class.getSimpleName());
 
-	public QueryServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public QueryServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected QueryResponse handleCall(ZuliaIndexManager indexManager, QueryRequest request) throws Exception {
-		return indexManager.query(request);
-	}
+    @Override
+    protected QueryResponse handleCall(ZuliaIndexManager indexManager, QueryRequest request) throws Exception {
+        return indexManager.query(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle query", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle query", e);
+    }
 }

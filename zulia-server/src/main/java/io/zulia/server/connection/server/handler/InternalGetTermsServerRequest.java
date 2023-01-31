@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class InternalGetTermsServerRequest extends ServerRequestHandler<InternalGetTermsResponse, InternalGetTermsRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalGetTermsServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(InternalGetTermsServerRequest.class.getSimpleName());
 
-	public InternalGetTermsServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public InternalGetTermsServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected InternalGetTermsResponse handleCall(ZuliaIndexManager indexManager, InternalGetTermsRequest request) throws Exception {
-		return indexManager.internalGetTerms(request);
-	}
+    @Override
+    protected InternalGetTermsResponse handleCall(ZuliaIndexManager indexManager, InternalGetTermsRequest request) throws Exception {
+        return indexManager.internalGetTerms(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal get terms", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle internal get terms", e);
+    }
 }

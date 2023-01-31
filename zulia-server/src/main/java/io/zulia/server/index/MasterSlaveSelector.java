@@ -15,102 +15,99 @@ import java.util.Map;
 
 public class MasterSlaveSelector {
 
-	private final MasterSlaveSettings masterSlaveSettings;
-	private final List<Node> nodes;
-	private IndexShardMapping indexShardMapping;
+    private final MasterSlaveSettings masterSlaveSettings;
+    private final List<Node> nodes;
+    private IndexShardMapping indexShardMapping;
 
-	/**
-	 * @param masterSlaveSettings - the master slave preference
-	 * @param nodes               - list of nodes to select from, order of the list determines secondary that is selected
-	 * @param indexShardMapping   -
-	 */
-	public MasterSlaveSelector(MasterSlaveSettings masterSlaveSettings, List<Node> nodes, IndexShardMapping indexShardMapping) {
-		this.masterSlaveSettings = masterSlaveSettings;
-		this.nodes = nodes;
-		this.indexShardMapping = indexShardMapping;
-	}
+    /**
+     * @param masterSlaveSettings - the master slave preference
+     * @param nodes               - list of nodes to select from, order of the list determines secondary that is selected
+     * @param indexShardMapping   -
+     */
+    public MasterSlaveSelector(MasterSlaveSettings masterSlaveSettings, List<Node> nodes, IndexShardMapping indexShardMapping) {
+        this.masterSlaveSettings = masterSlaveSettings;
+        this.nodes = nodes;
+        this.indexShardMapping = indexShardMapping;
+    }
 
-	public Node getNodeForUniqueId(String uniqueId) throws ShardDoesNotExistException, ShardOfflineException {
-		int shardForUniqueId = getShardForUniqueId(uniqueId, indexShardMapping.getNumberOfShards());
+    public Node getNodeForUniqueId(String uniqueId) throws ShardDoesNotExistException, ShardOfflineException {
+        int shardForUniqueId = getShardForUniqueId(uniqueId, indexShardMapping.getNumberOfShards());
 
-		for (ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
-			if (shardMapping.getShardNumber() == shardForUniqueId) {
-				return getNodeFromShardMapping(shardMapping);
-			}
-		}
+        for (ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
+            if (shardMapping.getShardNumber() == shardForUniqueId) {
+                return getNodeFromShardMapping(shardMapping);
+            }
+        }
 
-		throw new ShardDoesNotExistException(indexShardMapping.getIndexName(), shardForUniqueId);
+        throw new ShardDoesNotExistException(indexShardMapping.getIndexName(), shardForUniqueId);
 
-	}
+    }
 
-	public Map<Node, IndexRouting.Builder> getNodesForIndex() throws ShardOfflineException {
+    public Map<Node, IndexRouting.Builder> getNodesForIndex() throws ShardOfflineException {
 
-		Map<Node, IndexRouting.Builder> map = new HashMap<>();
-		for (io.zulia.message.ZuliaIndex.ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
-			Node selectedNode = getNodeFromShardMapping(shardMapping);
-			map.computeIfAbsent(selectedNode, (k) -> IndexRouting.newBuilder()).addShard(shardMapping.getShardNumber());
-		}
+        Map<Node, IndexRouting.Builder> map = new HashMap<>();
+        for (io.zulia.message.ZuliaIndex.ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
+            Node selectedNode = getNodeFromShardMapping(shardMapping);
+            map.computeIfAbsent(selectedNode, (k) -> IndexRouting.newBuilder()).addShard(shardMapping.getShardNumber());
+        }
 
-		return map;
-	}
+        return map;
+    }
 
-	protected Node getNodeFromShardMapping(ShardMapping shardMapping) throws ShardOfflineException {
-		Node selectedNode;
-		if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings)) {
-			selectedNode = getSelectMasterNode(shardMapping);
-			if (selectedNode == null) {
-				throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
-			}
+    protected Node getNodeFromShardMapping(ShardMapping shardMapping) throws ShardOfflineException {
+        Node selectedNode;
+        if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings)) {
+            selectedNode = getSelectMasterNode(shardMapping);
+            if (selectedNode == null) {
+                throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+            }
 
-		}
-		else if (MasterSlaveSettings.SLAVE_ONLY.equals(masterSlaveSettings)) {
-			selectedNode = getSelectSlaveNode(shardMapping);
-			if (selectedNode == null) {
-				throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
-			}
-		}
-		else if (MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(masterSlaveSettings)) {
-			selectedNode = getSelectMasterNode(shardMapping);
-			if (selectedNode == null) {
-				selectedNode = getSelectSlaveNode(shardMapping);
-				if (selectedNode == null) {
-					throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
-				}
-			}
-		}
-		else {
-			throw new IllegalArgumentException("Unknown master slave setting");
-		}
-		return selectedNode;
-	}
+        } else if (MasterSlaveSettings.SLAVE_ONLY.equals(masterSlaveSettings)) {
+            selectedNode = getSelectSlaveNode(shardMapping);
+            if (selectedNode == null) {
+                throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+            }
+        } else if (MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(masterSlaveSettings)) {
+            selectedNode = getSelectMasterNode(shardMapping);
+            if (selectedNode == null) {
+                selectedNode = getSelectSlaveNode(shardMapping);
+                if (selectedNode == null) {
+                    throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+                }
+            }
+        } else {
+            throw new IllegalArgumentException("Unknown master slave setting");
+        }
+        return selectedNode;
+    }
 
-	protected Node getSelectMasterNode(ShardMapping shardMapping) {
-		Node selectedNode = null;
+    protected Node getSelectMasterNode(ShardMapping shardMapping) {
+        Node selectedNode = null;
 
-		for (Node onlineNode : nodes) {
-			if (ZuliaNode.isEqual(onlineNode, shardMapping.getPrimaryNode())) {
-				selectedNode = onlineNode;
-				break;
-			}
-		}
+        for (Node onlineNode : nodes) {
+            if (ZuliaNode.isEqual(onlineNode, shardMapping.getPrimaryNode())) {
+                selectedNode = onlineNode;
+                break;
+            }
+        }
 
-		return selectedNode;
-	}
+        return selectedNode;
+    }
 
-	protected Node getSelectSlaveNode(ShardMapping shardMapping) {
+    protected Node getSelectSlaveNode(ShardMapping shardMapping) {
 
-		for (Node secondaryNode : shardMapping.getReplicaNodeList()) {
-			for (Node onlineNode : nodes) {
-				if (ZuliaNode.isEqual(onlineNode, secondaryNode)) {
-					return onlineNode;
-				}
-			}
-		}
+        for (Node secondaryNode : shardMapping.getReplicaNodeList()) {
+            for (Node onlineNode : nodes) {
+                if (ZuliaNode.isEqual(onlineNode, secondaryNode)) {
+                    return onlineNode;
+                }
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	public static int getShardForUniqueId(String uniqueId, int numOfShards) {
-		return Math.abs(uniqueId.hashCode()) % numOfShards;
-	}
+    public static int getShardForUniqueId(String uniqueId, int numOfShards) {
+        return Math.abs(uniqueId.hashCode()) % numOfShards;
+    }
 }

@@ -6,7 +6,7 @@ import io.zulia.message.ZuliaIndex;
 import java.util.List;
 
 public interface NodeWeightComputation {
-	List<ZuliaBase.Node> getNodesSortedByWeight();
+    List<ZuliaBase.Node> getNodesSortedByWeight();
 
-	void addShard(ZuliaBase.Node node, ZuliaIndex.IndexSettings indexSettings, boolean primary);
+    void addShard(ZuliaBase.Node node, ZuliaIndex.IndexSettings indexSettings, boolean primary);
 }

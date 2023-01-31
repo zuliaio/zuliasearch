@@ -5,6 +5,6 @@ import io.zulia.client.result.Result;
 
 public abstract class RESTCommand<R extends Result> implements BaseCommand<R> {
 
-	public abstract R execute(ZuliaRESTClient zuliaRESTClient) throws Exception;
+    public abstract R execute(ZuliaRESTClient zuliaRESTClient) throws Exception;
 
 }

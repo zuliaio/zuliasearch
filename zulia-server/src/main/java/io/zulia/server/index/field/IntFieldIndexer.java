@@ -5,20 +5,20 @@ import org.apache.lucene.document.IntPoint;
 
 public class IntFieldIndexer extends NumericFieldIndexer {
 
-	public static final IntFieldIndexer INSTANCE = new IntFieldIndexer();
+    public static final IntFieldIndexer INSTANCE = new IntFieldIndexer();
 
-	protected IntFieldIndexer() {
+    protected IntFieldIndexer() {
 
-	}
+    }
 
-	@Override
-	protected Field createField(Number o, String indexedFieldName) {
-		return new IntPoint(indexedFieldName, o.intValue());
-	}
+    @Override
+    protected Field createField(Number o, String indexedFieldName) {
+        return new IntPoint(indexedFieldName, o.intValue());
+    }
 
-	@Override
-	protected Number parseString(String value) {
-		return Integer.parseInt(value);
-	}
+    @Override
+    protected Number parseString(String value) {
+        return Integer.parseInt(value);
+    }
 
 }

@@ -4,11 +4,11 @@ import io.zulia.message.ZuliaServiceOuterClass.ReindexResponse;
 
 public class ReindexResult extends Result {
 
-	@SuppressWarnings("unused")
-	private ReindexResponse reindexResponse;
+    @SuppressWarnings("unused")
+    private ReindexResponse reindexResponse;
 
-	public ReindexResult(ReindexResponse reindexResponse) {
-		this.reindexResponse = reindexResponse;
-	}
+    public ReindexResult(ReindexResponse reindexResponse) {
+        this.reindexResponse = reindexResponse;
+    }
 
 }

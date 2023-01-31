@@ -19,108 +19,108 @@ import java.util.List;
 @Singleton
 public class MongoNodeService implements NodeService {
 
-	private static final String NODES = "nodes";
-	private static final String SERVER_ADDRESS = "serverAddress";
-	private static final String SERVICE_PORT = "servicePort";
-	private static final String REST_PORT = "restPort";
-	private static final String HEARTBEAT = "heartbeat";
-	private static final String VERSION = "version";
+    private static final String NODES = "nodes";
+    private static final String SERVER_ADDRESS = "serverAddress";
+    private static final String SERVICE_PORT = "servicePort";
+    private static final String REST_PORT = "restPort";
+    private static final String HEARTBEAT = "heartbeat";
+    private static final String VERSION = "version";
 
-	private final MongoClient mongoClient;
-	private final String clusterName;
+    private final MongoClient mongoClient;
+    private final String clusterName;
 
-	public MongoNodeService(MongoClient mongoClient, String clusterName) {
-		this.mongoClient = mongoClient;
-		this.clusterName = clusterName;
+    public MongoNodeService(MongoClient mongoClient, String clusterName) {
+        this.mongoClient = mongoClient;
+        this.clusterName = clusterName;
 
-		MongoCollection<Document> collection = getCollection();
-		collection.createIndex(new Document(SERVER_ADDRESS, 1).append(SERVICE_PORT, 1), new IndexOptions().unique(true).background(true));
+        MongoCollection<Document> collection = getCollection();
+        collection.createIndex(new Document(SERVER_ADDRESS, 1).append(SERVICE_PORT, 1), new IndexOptions().unique(true).background(true));
 
-	}
+    }
 
-	private MongoCollection<Document> getCollection() {
-		return mongoClient.getDatabase(clusterName).getCollection(NODES);
-	}
+    private MongoCollection<Document> getCollection() {
+        return mongoClient.getDatabase(clusterName).getCollection(NODES);
+    }
 
-	@Override
-	public Collection<Node> getNodes() {
+    @Override
+    public Collection<Node> getNodes() {
 
-		List<Node> nodes = new ArrayList<>();
-		for (Document d : getCollection().find()) {
-			Node node = documentToNode(d);
-			nodes.add(node);
+        List<Node> nodes = new ArrayList<>();
+        for (Document d : getCollection().find()) {
+            Node node = documentToNode(d);
+            nodes.add(node);
 
-		}
+        }
 
-		return nodes;
-	}
+        return nodes;
+    }
 
-	@Override
-	public Node getNode(String serverAddress, int servicePort) {
+    @Override
+    public Node getNode(String serverAddress, int servicePort) {
 
-		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
-		Document d = getCollection().find(query).first();
+        Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
+        Document d = getCollection().find(query).first();
 
-		return documentToNode(d);
+        return documentToNode(d);
 
-	}
+    }
 
-	@Override
-	public void addNode(Node node) {
+    @Override
+    public void addNode(Node node) {
 
-		Document query = new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort());
+        Document query = new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort());
 
-		getCollection().replaceOne(query, nodeToDocument(node), new ReplaceOptions().upsert(true));
+        getCollection().replaceOne(query, nodeToDocument(node), new ReplaceOptions().upsert(true));
 
-	}
+    }
 
-	@Override
-	public void updateHeartbeat(String serverAddress, int servicePort) {
-		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
+    @Override
+    public void updateHeartbeat(String serverAddress, int servicePort) {
+        Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
 
-		Bson update = Updates.currentDate(HEARTBEAT);
+        Bson update = Updates.currentDate(HEARTBEAT);
 
-		getCollection().updateOne(query, update);
+        getCollection().updateOne(query, update);
 
-	}
+    }
 
-	@Override
-	public void updateVersion(String serverAddress, int servicePort, String version) {
-		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
-		getCollection().updateOne(query, new Document("version", ZuliaVersion.getVersion()));
-	}
+    @Override
+    public void updateVersion(String serverAddress, int servicePort, String version) {
+        Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
+        getCollection().updateOne(query, new Document("version", ZuliaVersion.getVersion()));
+    }
 
-	@Override
-	public void removeHeartbeat(String serverAddress, int servicePort) {
-		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
+    @Override
+    public void removeHeartbeat(String serverAddress, int servicePort) {
+        Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
 
-		Bson update = Updates.unset(HEARTBEAT);
+        Bson update = Updates.unset(HEARTBEAT);
 
-		getCollection().updateOne(query, update);
+        getCollection().updateOne(query, update);
 
-	}
+    }
 
-	@Override
-	public void removeNode(String serverAddress, int servicePort) {
+    @Override
+    public void removeNode(String serverAddress, int servicePort) {
 
-		getCollection().deleteOne(new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort));
-	}
+        getCollection().deleteOne(new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort));
+    }
 
-	private Document nodeToDocument(Node node) {
-		return new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort()).append(SERVICE_PORT, node.getServicePort())
-				.append(REST_PORT, node.getRestPort()).append(VERSION, node.getVersion());
-	}
+    private Document nodeToDocument(Node node) {
+        return new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort()).append(SERVICE_PORT, node.getServicePort())
+                .append(REST_PORT, node.getRestPort()).append(VERSION, node.getVersion());
+    }
 
-	private Node documentToNode(Document d) {
-		if (d != null) {
-			String version = d.getString(VERSION);
-			if (version == null) {
-				version = "";
-			}
-			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT))
-					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0)
-					.setVersion(version).build();
-		}
-		return null;
-	}
+    private Node documentToNode(Document d) {
+        if (d != null) {
+            String version = d.getString(VERSION);
+            if (version == null) {
+                version = "";
+            }
+            return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT))
+                    .setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0)
+                    .setVersion(version).build();
+        }
+        return null;
+    }
 }

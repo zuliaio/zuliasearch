@@ -15,25 +15,25 @@ import java.util.concurrent.Callable;
 @CommandLine.Command(name = "importAliases", description = "Import aliases from file")
 public class ImportAliasesCmd implements Callable<Integer> {
 
-	@CommandLine.ParentCommand
-	private ZuliaAdmin zuliaAdmin;
+    @CommandLine.ParentCommand
+    private ZuliaAdmin zuliaAdmin;
 
-	@CommandLine.Option(names = {"-f", "--file"}, description = "Input file to read JSON import from", required = true)
-	private File inputFile;
+    @CommandLine.Option(names = {"-f", "--file"}, description = "Input file to read JSON import from", required = true)
+    private File inputFile;
 
-	@Override
-	public Integer call() throws Exception {
+    @Override
+    public Integer call() throws Exception {
 
-		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
+        ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-		List<String> aliases = Files.readAllLines(inputFile.toPath());
+        List<String> aliases = Files.readAllLines(inputFile.toPath());
 
-		for (String alias : aliases) {
-			ZuliaIndex.IndexAlias.Builder indexAliasBuilder = ZuliaIndex.IndexAlias.newBuilder();
-			JsonFormat.parser().merge(alias, indexAliasBuilder);
-			zuliaWorkPool.createIndexAlias(new CreateIndexAlias(indexAliasBuilder.build()));
-		}
+        for (String alias : aliases) {
+            ZuliaIndex.IndexAlias.Builder indexAliasBuilder = ZuliaIndex.IndexAlias.newBuilder();
+            JsonFormat.parser().merge(alias, indexAliasBuilder);
+            zuliaWorkPool.createIndexAlias(new CreateIndexAlias(indexAliasBuilder.build()));
+        }
 
-		return CommandLine.ExitCode.OK;
-	}
+        return CommandLine.ExitCode.OK;
+    }
 }

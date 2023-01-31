@@ -10,27 +10,27 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
 
 public class GetNodesResult extends Result {
 
-	private GetNodesResponse getNodesResponse;
+    private GetNodesResponse getNodesResponse;
 
-	public GetNodesResult(GetNodesResponse getNodesResponse) {
-		this.getNodesResponse = getNodesResponse;
-	}
+    public GetNodesResult(GetNodesResponse getNodesResponse) {
+        this.getNodesResponse = getNodesResponse;
+    }
 
-	public List<Node> getNodes() {
-		return getNodesResponse.getNodeList();
-	}
+    public List<Node> getNodes() {
+        return getNodesResponse.getNodeList();
+    }
 
-	public List<IndexShardMapping> getIndexShardMappings() {
-		return getNodesResponse.getIndexShardMappingList();
-	}
+    public List<IndexShardMapping> getIndexShardMappings() {
+        return getNodesResponse.getIndexShardMappingList();
+    }
 
-	public List<IndexAlias> getIndexAliases() {
-		return getNodesResponse.getIndexAliasList();
-	}
+    public List<IndexAlias> getIndexAliases() {
+        return getNodesResponse.getIndexAliasList();
+    }
 
-	@Override
-	public String toString() {
-		return getNodesResponse.toString();
-	}
+    @Override
+    public String toString() {
+        return getNodesResponse.toString();
+    }
 
 }

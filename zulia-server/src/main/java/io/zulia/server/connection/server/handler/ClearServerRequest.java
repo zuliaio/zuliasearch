@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class ClearServerRequest extends ServerRequestHandler<ClearResponse, ClearRequest> {
 
-	private final static Logger LOG = Logger.getLogger(ClearServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(ClearServerRequest.class.getSimpleName());
 
-	public ClearServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public ClearServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected ClearResponse handleCall(ZuliaIndexManager indexManager, ClearRequest request) throws Exception {
-		return indexManager.clear(request);
-	}
+    @Override
+    protected ClearResponse handleCall(ZuliaIndexManager indexManager, ClearRequest request) throws Exception {
+        return indexManager.clear(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle clear", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle clear", e);
+    }
 }

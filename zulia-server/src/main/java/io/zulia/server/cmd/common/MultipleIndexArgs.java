@@ -10,34 +10,33 @@ import java.util.regex.Pattern;
 
 public class MultipleIndexArgs {
 
-	@CommandLine.Option(names = { "-i", "--indexes",
-			"--index" }, paramLabel = "index", description = "Index name (wildcard allowed).  For multiple indexes, repeat arg or use commas to separate within a single arg", split = ",", required = true)
-	private Collection<String> indexes;
+    @CommandLine.Option(names = {"-i", "--indexes",
+            "--index"}, paramLabel = "index", description = "Index name (wildcard allowed).  For multiple indexes, repeat arg or use commas to separate within a single arg", split = ",", required = true)
+    private Collection<String> indexes;
 
-	public Set<String> resolveIndexes(ZuliaWorkPool pool) throws Exception {
+    public Set<String> resolveIndexes(ZuliaWorkPool pool) throws Exception {
 
-		Set<String> resolvedIndexes = new LinkedHashSet<>();
-		Collection<String> allIndexes = null;
+        Set<String> resolvedIndexes = new LinkedHashSet<>();
+        Collection<String> allIndexes = null;
 
-		for (String index : indexes) {
-			if (index.contains("*")) {
-				if (allIndexes == null) {
-					allIndexes = pool.getIndexes().getIndexNames();
-				}
-				Pattern indexPattern = Pattern.compile(index.replace("*", ".*"));
-				for (String i : allIndexes) {
-					if (indexPattern.matcher(i).matches()) {
-						resolvedIndexes.add(i);
-					}
-				}
-			}
-			else {
-				resolvedIndexes.add(index);
-			}
+        for (String index : indexes) {
+            if (index.contains("*")) {
+                if (allIndexes == null) {
+                    allIndexes = pool.getIndexes().getIndexNames();
+                }
+                Pattern indexPattern = Pattern.compile(index.replace("*", ".*"));
+                for (String i : allIndexes) {
+                    if (indexPattern.matcher(i).matches()) {
+                        resolvedIndexes.add(i);
+                    }
+                }
+            } else {
+                resolvedIndexes.add(index);
+            }
 
-		}
+        }
 
-		return resolvedIndexes;
-	}
+        return resolvedIndexes;
+    }
 
 }

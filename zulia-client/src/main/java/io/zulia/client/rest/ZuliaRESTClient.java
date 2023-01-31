@@ -6,12 +6,7 @@ import com.google.gson.JsonParser;
 import io.zulia.ZuliaConstants;
 import io.zulia.util.HttpHelper;
 import io.zulia.util.ZuliaUtil;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
 import okio.BufferedSink;
 import okio.Okio;
 import org.bson.Document;
@@ -29,172 +24,163 @@ import java.util.zip.ZipOutputStream;
 
 public class ZuliaRESTClient {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaRESTClient.class.getName());
-	private final String url;
-	private final OkHttpClient client;
+    private static final Logger LOG = Logger.getLogger(ZuliaRESTClient.class.getName());
+    private final String url;
+    private final OkHttpClient client;
 
-	public ZuliaRESTClient(String server, int restPort) {
-		url = "http://" + server + ":" + restPort;
+    public ZuliaRESTClient(String server, int restPort) {
+        url = "http://" + server + ":" + restPort;
 
-		client = new OkHttpClient().newBuilder().readTimeout(120, TimeUnit.SECONDS).connectTimeout(120, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS)
-				.build();
-		LOG.info("Created OkHttp client for url: " + url);
-	}
+        client = new OkHttpClient().newBuilder().readTimeout(120, TimeUnit.SECONDS).connectTimeout(120, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS)
+                .build();
+        LOG.info("Created OkHttp client for url: " + url);
+    }
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, byte[] bytes) throws Exception {
+    public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, byte[] bytes) throws Exception {
 
-		try {
-			RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, null, bytes);
-			Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
-			Response response = client.newCall(request).execute();
-			response.close();
-		}
-		catch (Exception e) {
-			if (e.getMessage().startsWith("Out of size:")) {
-				LOG.log(Level.WARNING, "Failed to store file <" + fileName + "> due to mismatch size.");
-			}
-			else {
-				LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
-				throw e;
-			}
-		}
+        try {
+            RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, null, bytes);
+            Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
+            Response response = client.newCall(request).execute();
+            response.close();
+        } catch (Exception e) {
+            if (e.getMessage().startsWith("Out of size:")) {
+                LOG.log(Level.WARNING, "Failed to store file <" + fileName + "> due to mismatch size.");
+            } else {
+                LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
+                throw e;
+            }
+        }
 
-	}
+    }
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, File file) throws Exception {
+    public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, File file) throws Exception {
 
-		try {
-			RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, file, null);
-			Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
-			Response response = client.newCall(request).execute();
-			response.close();
-		}
-		catch (Exception e) {
-			if (e.getMessage().startsWith("Out of size:")) {
-				LOG.log(Level.WARNING, "Failed to store file <" + fileName + "> due to mismatch size.");
-			}
-			else {
-				LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
-				throw e;
-			}
-		}
+        try {
+            RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, file, null);
+            Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
+            Response response = client.newCall(request).execute();
+            response.close();
+        } catch (Exception e) {
+            if (e.getMessage().startsWith("Out of size:")) {
+                LOG.log(Level.WARNING, "Failed to store file <" + fileName + "> due to mismatch size.");
+            } else {
+                LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
+                throw e;
+            }
+        }
 
-	}
+    }
 
-	public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination, boolean closeStream) throws Exception {
+    public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination, boolean closeStream) throws Exception {
 
-		try {
-			Request request = new Request.Builder().url(
-							url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
-					.method("GET", null).build();
-			Response response = client.newCall(request).execute();
-			BufferedSink sink = Okio.buffer(Okio.sink(destination));
-			sink.writeAll(Objects.requireNonNull(response.body(), "No body for file '" + fileName + "'.").source());
-			sink.close();
-			response.close();
-		}
-		finally {
-			if (closeStream) {
-				destination.close();
-			}
-		}
+        try {
+            Request request = new Request.Builder().url(
+                            url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
+                    .method("GET", null).build();
+            Response response = client.newCall(request).execute();
+            BufferedSink sink = Okio.buffer(Okio.sink(destination));
+            sink.writeAll(Objects.requireNonNull(response.body(), "No body for file '" + fileName + "'.").source());
+            sink.close();
+            response.close();
+        } finally {
+            if (closeStream) {
+                destination.close();
+            }
+        }
 
-	}
+    }
 
-	public void fetchAssociatedMetadata(String uniqueId, String indexName, String fileName, OutputStream destination) {
+    public void fetchAssociatedMetadata(String uniqueId, String indexName, String fileName, OutputStream destination) {
 
-		try {
-			Request request = new Request.Builder().url(
-							url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
-					.method("GET", null).build();
-			Response response = client.newCall(request).execute();
-			Document document = ZuliaUtil.byteArrayToMongoDocument(Objects.requireNonNull(response.body()).bytes());
-			destination.write(Objects.requireNonNull(document.toJson().getBytes(StandardCharsets.UTF_8), "No body for file"));
-			response.close();
-		}
-		catch (Throwable t) {
-			LOG.log(Level.SEVERE,
-					"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + t.getMessage());
-		}
+        try {
+            Request request = new Request.Builder().url(
+                            url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
+                    .method("GET", null).build();
+            Response response = client.newCall(request).execute();
+            Document document = ZuliaUtil.byteArrayToMongoDocument(Objects.requireNonNull(response.body()).bytes());
+            destination.write(Objects.requireNonNull(document.toJson().getBytes(StandardCharsets.UTF_8), "No body for file"));
+            response.close();
+        } catch (Throwable t) {
+            LOG.log(Level.SEVERE,
+                    "Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + t.getMessage());
+        }
 
-	}
+    }
 
-	public void fetchAssociated(String uniqueId, String indexName, OutputStream destination, boolean closeStream) throws Exception {
+    public void fetchAssociated(String uniqueId, String indexName, OutputStream destination, boolean closeStream) throws Exception {
 
-		Request request = new Request.Builder().url(
-						url + ZuliaConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName)))
-				.method("GET", null).build();
-		Response response = client.newCall(request).execute();
+        Request request = new Request.Builder().url(
+                        url + ZuliaConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName)))
+                .method("GET", null).build();
+        Response response = client.newCall(request).execute();
 
-		String allIdsJson = Objects.requireNonNull(response.body()).string();
-		JsonObject result = JsonParser.parseString(allIdsJson).getAsJsonObject();
-		JsonArray filenames = result.getAsJsonArray("filenames");
+        String allIdsJson = Objects.requireNonNull(response.body()).string();
+        JsonObject result = JsonParser.parseString(allIdsJson).getAsJsonObject();
+        JsonArray filenames = result.getAsJsonArray("filenames");
 
-		ZipOutputStream zipOutputStream = null;
-		try {
-			zipOutputStream = new ZipOutputStream(destination);
+        ZipOutputStream zipOutputStream = null;
+        try {
+            zipOutputStream = new ZipOutputStream(destination);
 
-			for (int i = 0; i < filenames.size(); i++) {
-				String filename = filenames.get(i).getAsString();
-				String fileDir = filename + File.separator;
-				zipOutputStream.putNextEntry(new ZipEntry(fileDir));
-				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename));
-				fetchAssociated(uniqueId, indexName, filename, zipOutputStream, false);
-				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename + "_metadata.json"));
-				fetchAssociatedMetadata(uniqueId, indexName, filename, zipOutputStream);
-			}
+            for (int i = 0; i < filenames.size(); i++) {
+                String filename = filenames.get(i).getAsString();
+                String fileDir = filename + File.separator;
+                zipOutputStream.putNextEntry(new ZipEntry(fileDir));
+                zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename));
+                fetchAssociated(uniqueId, indexName, filename, zipOutputStream, false);
+                zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename + "_metadata.json"));
+                fetchAssociatedMetadata(uniqueId, indexName, filename, zipOutputStream);
+            }
 
-		}
-		finally {
-			if (closeStream) {
-				if (zipOutputStream != null) {
-					zipOutputStream.close();
-				}
-			}
-			response.close();
-		}
+        } finally {
+            if (closeStream) {
+                if (zipOutputStream != null) {
+                    zipOutputStream.close();
+                }
+            }
+            response.close();
+        }
 
-	}
+    }
 
-	private HashMap<String, Object> createParameters(String uniqueId, String indexName) {
-		HashMap<String, Object> parameters = new HashMap<>();
-		parameters.put(ZuliaConstants.ID, uniqueId);
-		parameters.put(ZuliaConstants.INDEX, indexName);
-		return parameters;
-	}
+    private HashMap<String, Object> createParameters(String uniqueId, String indexName) {
+        HashMap<String, Object> parameters = new HashMap<>();
+        parameters.put(ZuliaConstants.ID, uniqueId);
+        parameters.put(ZuliaConstants.INDEX, indexName);
+        return parameters;
+    }
 
-	private HashMap<String, Object> createParameters(String uniqueId, String indexName, String fileName) {
-		HashMap<String, Object> parameters = new HashMap<>();
-		parameters.put(ZuliaConstants.ID, uniqueId);
-		parameters.put(ZuliaConstants.FILE_NAME, fileName);
-		parameters.put(ZuliaConstants.INDEX, indexName);
-		return parameters;
-	}
+    private HashMap<String, Object> createParameters(String uniqueId, String indexName, String fileName) {
+        HashMap<String, Object> parameters = new HashMap<>();
+        parameters.put(ZuliaConstants.ID, uniqueId);
+        parameters.put(ZuliaConstants.FILE_NAME, fileName);
+        parameters.put(ZuliaConstants.INDEX, indexName);
+        return parameters;
+    }
 
-	private RequestBody getRequestBody(String uniqueId, String indexName, String fileName, Document metadata, File file, byte[] bytes) {
+    private RequestBody getRequestBody(String uniqueId, String indexName, String fileName, Document metadata, File file, byte[] bytes) {
 
-		RequestBody body;
-		RequestBody uploadFileRequest;
+        RequestBody body;
+        RequestBody uploadFileRequest;
 
-		if (file != null) {
-			uploadFileRequest = RequestBody.create(file, MediaType.parse(ZuliaUtil.guessExtension(file)));
-		}
-		else {
-			uploadFileRequest = RequestBody.create(bytes, MediaType.parse(ZuliaUtil.guessExtension(bytes)));
-		}
+        if (file != null) {
+            uploadFileRequest = RequestBody.create(file, MediaType.parse(ZuliaUtil.guessExtension(file)));
+        } else {
+            uploadFileRequest = RequestBody.create(bytes, MediaType.parse(ZuliaUtil.guessExtension(bytes)));
+        }
 
-		if (metadata != null) {
-			body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
-					.addFormDataPart("indexName", indexName).addFormDataPart("metaJson", metadata.toJson()).addFormDataPart("file", fileName, uploadFileRequest)
-					.build();
-		}
-		else {
-			body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
-					.addFormDataPart("indexName", indexName).addFormDataPart("file", fileName, uploadFileRequest).build();
-		}
+        if (metadata != null) {
+            body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
+                    .addFormDataPart("indexName", indexName).addFormDataPart("metaJson", metadata.toJson()).addFormDataPart("file", fileName, uploadFileRequest)
+                    .build();
+        } else {
+            body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
+                    .addFormDataPart("indexName", indexName).addFormDataPart("file", fileName, uploadFileRequest).build();
+        }
 
-		return body;
+        return body;
 
-	}
+    }
 
 }

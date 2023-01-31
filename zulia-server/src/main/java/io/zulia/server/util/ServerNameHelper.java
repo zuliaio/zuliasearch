@@ -7,27 +7,27 @@ import java.net.SocketException;
 import java.util.Enumeration;
 
 public class ServerNameHelper {
-	public static String getLocalServer() throws SocketException {
-		Enumeration<NetworkInterface> nicList;
-		NetworkInterface nic;
-		Enumeration<InetAddress> nicAddrList;
-		InetAddress nicAddr;
+    public static String getLocalServer() throws SocketException {
+        Enumeration<NetworkInterface> nicList;
+        NetworkInterface nic;
+        Enumeration<InetAddress> nicAddrList;
+        InetAddress nicAddr;
 
-		nicList = NetworkInterface.getNetworkInterfaces();
-		while (nicList.hasMoreElements()) {
-			nic = nicList.nextElement();
-			if (!nic.isLoopback() && nic.isUp()) {
-				nicAddrList = nic.getInetAddresses();
-				while (nicAddrList.hasMoreElements()) {
-					nicAddr = nicAddrList.nextElement();
-					if (nicAddr instanceof Inet4Address) {
-						return nicAddr.getCanonicalHostName();
-					}
-				}
-			}
-		}
-		
-		return null;
-		
-	}
+        nicList = NetworkInterface.getNetworkInterfaces();
+        while (nicList.hasMoreElements()) {
+            nic = nicList.nextElement();
+            if (!nic.isLoopback() && nic.isUp()) {
+                nicAddrList = nic.getInetAddresses();
+                while (nicAddrList.hasMoreElements()) {
+                    nicAddr = nicAddrList.nextElement();
+                    if (nicAddr instanceof Inet4Address) {
+                        return nicAddr.getCanonicalHostName();
+                    }
+                }
+            }
+        }
+
+        return null;
+
+    }
 }

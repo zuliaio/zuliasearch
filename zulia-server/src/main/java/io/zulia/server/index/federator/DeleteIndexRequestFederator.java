@@ -10,29 +10,29 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
 public class DeleteIndexRequestFederator extends AllNodeRequestFederator<DeleteIndexRequest, DeleteIndexResponse> {
-	private final InternalClient internalClient;
-	private final ZuliaIndexManager indexManager;
+    private final InternalClient internalClient;
+    private final ZuliaIndexManager indexManager;
 
-	public DeleteIndexRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ExecutorService pool, InternalClient internalClient,
-			ZuliaIndexManager indexManager) {
-		super(thisNode, otherNodesActive, pool);
+    public DeleteIndexRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ExecutorService pool, InternalClient internalClient,
+                                       ZuliaIndexManager indexManager) {
+        super(thisNode, otherNodesActive, pool);
 
-		this.internalClient = internalClient;
-		this.indexManager = indexManager;
-	}
+        this.internalClient = internalClient;
+        this.indexManager = indexManager;
+    }
 
-	@Override
-	protected DeleteIndexResponse processExternal(Node node, DeleteIndexRequest request) throws Exception {
-		return internalClient.deleteIndex(node, request);
-	}
+    @Override
+    protected DeleteIndexResponse processExternal(Node node, DeleteIndexRequest request) throws Exception {
+        return internalClient.deleteIndex(node, request);
+    }
 
-	@Override
-	protected DeleteIndexResponse processInternal(Node node, DeleteIndexRequest request) throws Exception {
-		return internalDeleteIndex(indexManager, request);
-	}
+    @Override
+    protected DeleteIndexResponse processInternal(Node node, DeleteIndexRequest request) throws Exception {
+        return internalDeleteIndex(indexManager, request);
+    }
 
-	public static DeleteIndexResponse internalDeleteIndex(ZuliaIndexManager zuliaIndexManager, DeleteIndexRequest request) throws Exception {
-		return zuliaIndexManager.internalDeleteIndex(request);
-	}
+    public static DeleteIndexResponse internalDeleteIndex(ZuliaIndexManager zuliaIndexManager, DeleteIndexRequest request) throws Exception {
+        return zuliaIndexManager.internalDeleteIndex(request);
+    }
 
 }

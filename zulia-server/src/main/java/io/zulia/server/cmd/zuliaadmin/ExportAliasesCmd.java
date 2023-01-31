@@ -17,33 +17,33 @@ import java.util.concurrent.Callable;
 @CommandLine.Command(name = "exportAliases", description = "Exports aliases to a file given by --alias")
 public class ExportAliasesCmd implements Callable<Integer> {
 
-	@CommandLine.ParentCommand
-	private ZuliaAdmin zuliaAdmin;
+    @CommandLine.ParentCommand
+    private ZuliaAdmin zuliaAdmin;
 
-	@CommandLine.Mixin
-	private AliasArgs aliasArgs;
+    @CommandLine.Mixin
+    private AliasArgs aliasArgs;
 
-	@CommandLine.Option(names = {"-f", "--file"}, description = "Output file to save the JSON export", required = true)
-	private File outputFile;
+    @CommandLine.Option(names = {"-f", "--file"}, description = "Output file to save the JSON export", required = true)
+    private File outputFile;
 
-	@Override
-	public Integer call() throws Exception {
+    @Override
+    public Integer call() throws Exception {
 
-		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
+        ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
-		List<ZuliaIndex.IndexAlias> indexAliases = zuliaWorkPool.getNodes().getIndexAliases();
+        List<ZuliaIndex.IndexAlias> indexAliases = zuliaWorkPool.getNodes().getIndexAliases();
 
-		Set<String> aliases = aliasArgs.resolveAliases(zuliaWorkPool);
+        Set<String> aliases = aliasArgs.resolveAliases(zuliaWorkPool);
 
-		try (FileWriter fileWriter = new FileWriter(outputFile, Charsets.UTF_8)) {
-			for (ZuliaIndex.IndexAlias indexAlias : indexAliases) {
-				if (aliases.contains(indexAlias.getAliasName())) {
-					JsonFormat.Printer printer = JsonFormat.printer().omittingInsignificantWhitespace();
-					fileWriter.write(printer.print(indexAlias) + "\n");
-				}
-			}
-		}
+        try (FileWriter fileWriter = new FileWriter(outputFile, Charsets.UTF_8)) {
+            for (ZuliaIndex.IndexAlias indexAlias : indexAliases) {
+                if (aliases.contains(indexAlias.getAliasName())) {
+                    JsonFormat.Printer printer = JsonFormat.printer().omittingInsignificantWhitespace();
+                    fileWriter.write(printer.print(indexAlias) + "\n");
+                }
+            }
+        }
 
-		return CommandLine.ExitCode.OK;
-	}
+        return CommandLine.ExitCode.OK;
+    }
 }

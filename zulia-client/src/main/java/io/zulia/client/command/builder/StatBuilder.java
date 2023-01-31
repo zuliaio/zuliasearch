@@ -4,5 +4,5 @@ import io.zulia.message.ZuliaQuery;
 
 public interface StatBuilder {
 
-	ZuliaQuery.StatRequest getStatRequest();
+    ZuliaQuery.StatRequest getStatRequest();
 }

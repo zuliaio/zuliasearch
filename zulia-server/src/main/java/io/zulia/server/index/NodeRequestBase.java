@@ -7,22 +7,22 @@ import java.util.Collection;
 
 public abstract class NodeRequestBase<I, O> {
 
-	protected final Node thisNode;
-	protected final Collection<Node> otherNodesActive;
+    protected final Node thisNode;
+    protected final Collection<Node> otherNodesActive;
 
-	public NodeRequestBase(Node thisNode, Collection<Node> otherNodesActive) {
+    public NodeRequestBase(Node thisNode, Collection<Node> otherNodesActive) {
 
-		this.thisNode = thisNode;
-		this.otherNodesActive = otherNodesActive;
+        this.thisNode = thisNode;
+        this.otherNodesActive = otherNodesActive;
 
-	}
+    }
 
-	public boolean nodeIsLocal(Node node) {
-		return ZuliaNode.isEqual(node, thisNode);
-	}
+    public boolean nodeIsLocal(Node node) {
+        return ZuliaNode.isEqual(node, thisNode);
+    }
 
-	protected abstract O processExternal(Node node, I request) throws Exception;
+    protected abstract O processExternal(Node node, I request) throws Exception;
 
-	protected abstract O processInternal(Node node, I request) throws Exception;
+    protected abstract O processInternal(Node node, I request) throws Exception;
 
 }

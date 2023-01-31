@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class InternalCreateIndexServerRequest extends ServerRequestHandler<InternalCreateOrUpdateIndexResponse, InternalCreateOrUpdateIndexRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalCreateIndexServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(InternalCreateIndexServerRequest.class.getSimpleName());
 
-	public InternalCreateIndexServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public InternalCreateIndexServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected InternalCreateOrUpdateIndexResponse handleCall(ZuliaIndexManager indexManager, InternalCreateOrUpdateIndexRequest request) throws Exception {
-		return indexManager.internalCreateOrUpdateIndex(request.getIndexName());
-	}
+    @Override
+    protected InternalCreateOrUpdateIndexResponse handleCall(ZuliaIndexManager indexManager, InternalCreateOrUpdateIndexRequest request) throws Exception {
+        return indexManager.internalCreateOrUpdateIndex(request.getIndexName());
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal create index", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle internal create index", e);
+    }
 }

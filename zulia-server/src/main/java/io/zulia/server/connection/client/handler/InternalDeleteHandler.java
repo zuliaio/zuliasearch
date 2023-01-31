@@ -6,13 +6,13 @@ import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.connection.client.InternalRpcConnection;
 
 public class InternalDeleteHandler extends InternalRequestHandler<DeleteResponse, DeleteRequest> {
-	public InternalDeleteHandler(InternalClient internalClient) {
-		super(internalClient);
-	}
+    public InternalDeleteHandler(InternalClient internalClient) {
+        super(internalClient);
+    }
 
-	@Override
-	protected DeleteResponse getResponse(DeleteRequest deleteRequest, InternalRpcConnection rpcConnection) {
-		return rpcConnection.getService().internalDelete(deleteRequest);
-	}
+    @Override
+    protected DeleteResponse getResponse(DeleteRequest deleteRequest, InternalRpcConnection rpcConnection) {
+        return rpcConnection.getService().internalDelete(deleteRequest);
+    }
 
 }

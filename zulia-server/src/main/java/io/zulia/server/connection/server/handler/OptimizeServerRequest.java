@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class OptimizeServerRequest extends ServerRequestHandler<OptimizeResponse, OptimizeRequest> {
 
-	private final static Logger LOG = Logger.getLogger(OptimizeServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(OptimizeServerRequest.class.getSimpleName());
 
-	public OptimizeServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public OptimizeServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected OptimizeResponse handleCall(ZuliaIndexManager indexManager, OptimizeRequest request) throws Exception {
-		return indexManager.optimize(request);
-	}
+    @Override
+    protected OptimizeResponse handleCall(ZuliaIndexManager indexManager, OptimizeRequest request) throws Exception {
+        return indexManager.optimize(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle optimize", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle optimize", e);
+    }
 }

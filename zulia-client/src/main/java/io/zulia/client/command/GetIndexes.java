@@ -11,22 +11,22 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
 
 public class GetIndexes extends SimpleCommand<ZuliaServiceOuterClass.GetIndexesRequest, GetIndexesResult> {
 
-	public GetIndexes() {
+    public GetIndexes() {
 
-	}
+    }
 
-	@Override
-	public GetIndexesRequest getRequest() {
-		return GetIndexesRequest.newBuilder().build();
-	}
+    @Override
+    public GetIndexesRequest getRequest() {
+        return GetIndexesRequest.newBuilder().build();
+    }
 
-	@Override
-	public GetIndexesResult execute(ZuliaConnection zuliaConnection) {
-		ZuliaServiceGrpc.ZuliaServiceBlockingStub service = zuliaConnection.getService();
+    @Override
+    public GetIndexesResult execute(ZuliaConnection zuliaConnection) {
+        ZuliaServiceGrpc.ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		GetIndexesResponse getIndexesResponse = service.getIndexes(getRequest());
+        GetIndexesResponse getIndexesResponse = service.getIndexes(getRequest());
 
-		return new GetIndexesResult(getIndexesResponse);
-	}
+        return new GetIndexesResult(getIndexesResponse);
+    }
 
 }

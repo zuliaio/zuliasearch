@@ -4,5 +4,5 @@ import io.zulia.message.ZuliaQuery.FieldSort;
 
 public interface SortBuilder {
 
-	FieldSort getSort();
+    FieldSort getSort();
 }

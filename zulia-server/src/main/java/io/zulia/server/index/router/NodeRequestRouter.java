@@ -13,26 +13,26 @@ import java.util.List;
 
 public abstract class NodeRequestRouter<I, O> extends NodeRequestBase<I, O> {
 
-	private Node node;
+    private Node node;
 
-	public NodeRequestRouter(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index, String uniqueId)
-			throws IOException {
+    public NodeRequestRouter(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index, String uniqueId)
+            throws IOException {
 
-		super(thisNode, otherNodesActive);
+        super(thisNode, otherNodesActive);
 
-		List<Node> nodeList = new ArrayList<>();
-		nodeList.add(thisNode);
-		nodeList.addAll(otherNodesActive);
+        List<Node> nodeList = new ArrayList<>();
+        nodeList.add(thisNode);
+        nodeList.addAll(otherNodesActive);
 
-		this.node = new MasterSlaveSelector(masterSlaveSettings, nodeList, index.getIndexShardMapping()).getNodeForUniqueId(uniqueId);
+        this.node = new MasterSlaveSelector(masterSlaveSettings, nodeList, index.getIndexShardMapping()).getNodeForUniqueId(uniqueId);
 
-	}
+    }
 
-	public O send(final I request) throws Exception {
-		if (nodeIsLocal(node)) {
-			return processInternal(node, request);
-		}
-		return processExternal(node, request);
-	}
+    public O send(final I request) throws Exception {
+        if (nodeIsLocal(node)) {
+            return processInternal(node, request);
+        }
+        return processExternal(node, request);
+    }
 
 }

@@ -4,13 +4,13 @@ import io.zulia.server.node.ZuliaNode;
 
 public class ZuliaNodeProvider {
 
-	private static ZuliaNode zuliaNode;
+    private static ZuliaNode zuliaNode;
 
-	public static void setZuliaNode(ZuliaNode zuliaNode) {
-		ZuliaNodeProvider.zuliaNode = zuliaNode;
-	}
+    public static void setZuliaNode(ZuliaNode zuliaNode) {
+        ZuliaNodeProvider.zuliaNode = zuliaNode;
+    }
 
-	public static ZuliaNode getZuliaNode() {
-		return zuliaNode;
-	}
+    public static ZuliaNode getZuliaNode() {
+        return zuliaNode;
+    }
 }

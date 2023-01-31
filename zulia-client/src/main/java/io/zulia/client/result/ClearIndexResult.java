@@ -4,12 +4,12 @@ import io.zulia.message.ZuliaServiceOuterClass.ClearResponse;
 
 public class ClearIndexResult extends Result {
 
-	@SuppressWarnings("unused")
-	private ClearResponse clearResponse;
+    @SuppressWarnings("unused")
+    private ClearResponse clearResponse;
 
-	public ClearIndexResult(ClearResponse clearResponse) {
-		this.clearResponse = clearResponse;
+    public ClearIndexResult(ClearResponse clearResponse) {
+        this.clearResponse = clearResponse;
 
-	}
+    }
 
 }

@@ -11,29 +11,28 @@ import java.util.logging.Logger;
 
 public class BatchFetchServerRequest {
 
-	private final static Logger LOG = Logger.getLogger(BatchFetchServerRequest.class.getSimpleName());
-	private final ZuliaIndexManager indexManager;
+    private final static Logger LOG = Logger.getLogger(BatchFetchServerRequest.class.getSimpleName());
+    private final ZuliaIndexManager indexManager;
 
-	public BatchFetchServerRequest(ZuliaIndexManager indexManager) {
-		this.indexManager = indexManager;
-	}
+    public BatchFetchServerRequest(ZuliaIndexManager indexManager) {
+        this.indexManager = indexManager;
+    }
 
-	public void handleRequest(BatchFetchRequest request, StreamObserver<FetchResponse> responseObserver) {
-		try {
-			for (FetchRequest fetchRequest : request.getFetchRequestList()) {
-				FetchResponse fetchResponse = indexManager.fetch(fetchRequest);
-				responseObserver.onNext(fetchResponse);
-			}
+    public void handleRequest(BatchFetchRequest request, StreamObserver<FetchResponse> responseObserver) {
+        try {
+            for (FetchRequest fetchRequest : request.getFetchRequestList()) {
+                FetchResponse fetchResponse = indexManager.fetch(fetchRequest);
+                responseObserver.onNext(fetchResponse);
+            }
 
-			responseObserver.onCompleted();
-		}
-		catch (Exception e) {
-			responseObserver.onError(e);
-			onError(e);
-		}
-	}
-	
-	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle batch fetch", e);
-	}
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(e);
+            onError(e);
+        }
+    }
+
+    protected void onError(Exception e) {
+        LOG.log(Level.SEVERE, "Failed to handle batch fetch", e);
+    }
 }
