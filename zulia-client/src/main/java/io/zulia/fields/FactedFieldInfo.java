@@ -1,78 +1,70 @@
 package io.zulia.fields;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static io.zulia.message.ZuliaQuery.Facet;
 
 public class FactedFieldInfo<T> {
-	private final String facetPrefix;
-	private final Field field;
+    private final String facetPrefix;
+    private final Field field;
 
-	public FactedFieldInfo(Field field, String facetPrefix) {
-		this.facetPrefix = facetPrefix;
-		this.field = field;
-	}
+    public FactedFieldInfo(Field field, String facetPrefix) {
+        this.facetPrefix = facetPrefix;
+        this.field = field;
+    }
 
-	public String getFacetPrefix() {
-		return facetPrefix;
-	}
+    public String getFacetPrefix() {
+        return facetPrefix;
+    }
 
-	public List<Facet> build(T object) throws IllegalArgumentException, IllegalAccessException {
-		if (object != null) {
-			ArrayList<Facet> list = new ArrayList<>();
-			Object o = field.get(object);
+    public List<Facet> build(T object) throws IllegalArgumentException, IllegalAccessException {
+        if (object != null) {
+            ArrayList<Facet> list = new ArrayList<>();
+            Object o = field.get(object);
 
-			if (o != null) {
+            if (o != null) {
 
-				if (o instanceof Collection<?>) {
-					Collection<?> l = (Collection<?>) o;
-					for (Object s : l) {
-						Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
-						lmFacetBuilder.setValue(s.toString());
-						list.add(lmFacetBuilder.build());
-					}
-				}
-				else if (o.getClass().isArray()) {
-					Object[] l = (Object[]) o;
-					for (Object s : l) {
-						Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
-						lmFacetBuilder.setValue(s.toString());
-						list.add(lmFacetBuilder.build());
-					}
-				}
-				else if (o instanceof Date) {
-					Date d = (Date) o;
-					Calendar cal = Calendar.getInstance();
-					cal.setTime(d);
+                if (o instanceof Collection<?>) {
+                    Collection<?> l = (Collection<?>) o;
+                    for (Object s : l) {
+                        Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
+                        lmFacetBuilder.setValue(s.toString());
+                        list.add(lmFacetBuilder.build());
+                    }
+                } else if (o.getClass().isArray()) {
+                    Object[] l = (Object[]) o;
+                    for (Object s : l) {
+                        Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
+                        lmFacetBuilder.setValue(s.toString());
+                        list.add(lmFacetBuilder.build());
+                    }
+                } else if (o instanceof Date) {
+                    Date d = (Date) o;
+                    Calendar cal = Calendar.getInstance();
+                    cal.setTime(d);
 
-					//TODO configurable
-					int year = cal.get(Calendar.YEAR);
-					int month = cal.get(Calendar.MONTH) + 1;
-					int day = cal.get(Calendar.DAY_OF_MONTH);
+                    //TODO configurable
+                    int year = cal.get(Calendar.YEAR);
+                    int month = cal.get(Calendar.MONTH) + 1;
+                    int day = cal.get(Calendar.DAY_OF_MONTH);
 
-					Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
-					lmFacetBuilder.setValue(year + "" + month + "" + day);
+                    Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
+                    lmFacetBuilder.setValue(year + "" + month + "" + day);
 
-					list.add(lmFacetBuilder.build());
-				}
-				else {
-					Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
-					lmFacetBuilder.setValue(o.toString());
-					list.add(lmFacetBuilder.build());
-				}
+                    list.add(lmFacetBuilder.build());
+                } else {
+                    Facet.Builder lmFacetBuilder = Facet.newBuilder().setLabel(facetPrefix);
+                    lmFacetBuilder.setValue(o.toString());
+                    list.add(lmFacetBuilder.build());
+                }
 
-				return list;
-			}
-		}
+                return list;
+            }
+        }
 
-		return Collections.emptyList();
+        return Collections.emptyList();
 
-	}
+    }
 
 }

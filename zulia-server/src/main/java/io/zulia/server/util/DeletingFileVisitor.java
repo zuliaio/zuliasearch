@@ -9,23 +9,23 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 public class DeletingFileVisitor extends SimpleFileVisitor<Path> {
 
-	@Override
-	public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
-		if (attributes.isRegularFile()) {
-			Files.delete(file);
-		}
-		return FileVisitResult.CONTINUE;
-	}
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) throws IOException {
+        if (attributes.isRegularFile()) {
+            Files.delete(file);
+        }
+        return FileVisitResult.CONTINUE;
+    }
 
-	@Override
-	public FileVisitResult postVisitDirectory(Path directory, IOException ioe) throws IOException {
-		Files.delete(directory);
-		return FileVisitResult.CONTINUE;
-	}
+    @Override
+    public FileVisitResult postVisitDirectory(Path directory, IOException ioe) throws IOException {
+        Files.delete(directory);
+        return FileVisitResult.CONTINUE;
+    }
 
-	@Override
-	public FileVisitResult visitFileFailed(Path file, IOException ioe) {
-		ioe.printStackTrace();
-		return FileVisitResult.CONTINUE;
-	}
+    @Override
+    public FileVisitResult visitFileFailed(Path file, IOException ioe) {
+        ioe.printStackTrace();
+        return FileVisitResult.CONTINUE;
+    }
 }

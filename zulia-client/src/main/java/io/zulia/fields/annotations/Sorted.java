@@ -2,22 +2,16 @@ package io.zulia.fields.annotations;
 
 import io.zulia.message.ZuliaIndex.SortAs.StringHandling;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 @Documented
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.FIELD })
+@Target({ElementType.FIELD})
 @Repeatable(SortedFields.class)
 public @interface Sorted {
 
-	StringHandling stringHandling() default StringHandling.STANDARD;
+    StringHandling stringHandling() default StringHandling.STANDARD;
 
-	String fieldName() default "";
+    String fieldName() default "";
 }

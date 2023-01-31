@@ -4,11 +4,11 @@ import static io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
 
 public class OptimizeIndexResult extends Result {
 
-	@SuppressWarnings("unused")
-	private OptimizeResponse optimizeResponse;
+    @SuppressWarnings("unused")
+    private OptimizeResponse optimizeResponse;
 
-	public OptimizeIndexResult(OptimizeResponse optimizeResponse) {
-		this.optimizeResponse = optimizeResponse;
-	}
+    public OptimizeIndexResult(OptimizeResponse optimizeResponse) {
+        this.optimizeResponse = optimizeResponse;
+    }
 
 }

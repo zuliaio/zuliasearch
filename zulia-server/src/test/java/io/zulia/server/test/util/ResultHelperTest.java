@@ -13,92 +13,92 @@ import java.util.List;
 
 public class ResultHelperTest {
 
-	@Test
-	public void testFieldExtraction() throws Exception {
+    @Test
+    public void testFieldExtraction() throws Exception {
 
-		Document testMongoDocument = new Document();
-		testMongoDocument.put("field1", "someVal");
-		testMongoDocument.put("myfield", 40);
+        Document testMongoDocument = new Document();
+        testMongoDocument.put("field1", "someVal");
+        testMongoDocument.put("myfield", 40);
 
-		Document embeddedDocumentOne = new Document();
-		embeddedDocumentOne.put("subfield1", "val2");
+        Document embeddedDocumentOne = new Document();
+        embeddedDocumentOne.put("subfield1", "val2");
 
-		Document embeddedDocumentTwo = new Document();
-		embeddedDocumentTwo.put("otherfield", "1");
-		embeddedDocumentOne.put("subfield2", embeddedDocumentTwo);
+        Document embeddedDocumentTwo = new Document();
+        embeddedDocumentTwo.put("otherfield", "1");
+        embeddedDocumentOne.put("subfield2", embeddedDocumentTwo);
 
-		testMongoDocument.put("field2", embeddedDocumentOne);
+        testMongoDocument.put("field2", embeddedDocumentOne);
 
-		List<Document> docs = new ArrayList<>();
-		Document embeddedDocumentThree = new Document();
-		embeddedDocumentThree.put("key1", "val1");
-		embeddedDocumentThree.put("key2", "val2");
-		Document embeddedDocumentFour = new Document();
-		embeddedDocumentFour.put("key1", "someval");
-		docs.add(embeddedDocumentThree);
-		docs.add(embeddedDocumentFour);
-		testMongoDocument.put("thisfield", docs);
+        List<Document> docs = new ArrayList<>();
+        Document embeddedDocumentThree = new Document();
+        embeddedDocumentThree.put("key1", "val1");
+        embeddedDocumentThree.put("key2", "val2");
+        Document embeddedDocumentFour = new Document();
+        embeddedDocumentFour.put("key1", "someval");
+        docs.add(embeddedDocumentThree);
+        docs.add(embeddedDocumentFour);
+        testMongoDocument.put("thisfield", docs);
 
-		Assertions.assertEquals(Arrays.asList("val1", "someval"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key1"));
-		Assertions.assertEquals(Arrays.asList("val2"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key2"));
+        Assertions.assertEquals(Arrays.asList("val1", "someval"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key1"));
+        Assertions.assertEquals(Arrays.asList("val2"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key2"));
 
-		Assertions.assertEquals("1", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield"));
-		Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield1"));
-		Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1.otherfield"));
-		Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "thing"));
-		Assertions.assertEquals("someVal", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field1"));
-		Assertions.assertEquals("val2", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1"));
-		Assertions.assertEquals(40, ResultHelper.getValueFromMongoDocument(testMongoDocument, "myfield"));
+        Assertions.assertEquals("1", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield"));
+        Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield1"));
+        Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1.otherfield"));
+        Assertions.assertEquals(null, ResultHelper.getValueFromMongoDocument(testMongoDocument, "thing"));
+        Assertions.assertEquals("someVal", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field1"));
+        Assertions.assertEquals("val2", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1"));
+        Assertions.assertEquals(40, ResultHelper.getValueFromMongoDocument(testMongoDocument, "myfield"));
 
-	}
+    }
 
-	@Test
-	public void testSerialization() {
-		Document testMongoDocument = new Document();
-		testMongoDocument.put("field1", "someVal");
-		testMongoDocument.put("myfield", 40);
+    @Test
+    public void testSerialization() {
+        Document testMongoDocument = new Document();
+        testMongoDocument.put("field1", "someVal");
+        testMongoDocument.put("myfield", 40);
 
-		{
-			byte[] bytes = ZuliaUtil.mongoDocumentToByteArray(testMongoDocument);
-			Document testMongoDocumentReborn = ZuliaUtil.byteArrayToMongoDocument(bytes);
+        {
+            byte[] bytes = ZuliaUtil.mongoDocumentToByteArray(testMongoDocument);
+            Document testMongoDocumentReborn = ZuliaUtil.byteArrayToMongoDocument(bytes);
 
-			Assertions.assertEquals("someVal", testMongoDocumentReborn.getString("field1"));
-			Assertions.assertEquals(40, (int) testMongoDocumentReborn.getInteger("myfield"));
-		}
+            Assertions.assertEquals("someVal", testMongoDocumentReborn.getString("field1"));
+            Assertions.assertEquals(40, (int) testMongoDocumentReborn.getInteger("myfield"));
+        }
 
-		{
-			ByteString byteString = ZuliaUtil.mongoDocumentToByteString(testMongoDocument);
-			Document testMongoDocumentReborn = ZuliaUtil.byteStringToMongoDocument(byteString);
+        {
+            ByteString byteString = ZuliaUtil.mongoDocumentToByteString(testMongoDocument);
+            Document testMongoDocumentReborn = ZuliaUtil.byteStringToMongoDocument(byteString);
 
-			Assertions.assertEquals("someVal", testMongoDocumentReborn.getString("field1"));
-			Assertions.assertEquals(40, (int) testMongoDocumentReborn.getInteger("myfield"));
-		}
-	}
+            Assertions.assertEquals("someVal", testMongoDocumentReborn.getString("field1"));
+            Assertions.assertEquals(40, (int) testMongoDocumentReborn.getInteger("myfield"));
+        }
+    }
 
-	@Test
-	public void testFromJson() {
-		String json = """
-				{
-				  "id": 1,
-				  "title": "iPhone 11",
-				  "category": [
-				    "Mobile Phone",
-				    "Electronics"
-				  ],
-				  "rating": 4.3,
-				  "description": "iPhone 11, 64 GB"
-				}""";
+    @Test
+    public void testFromJson() {
+        String json = """
+                {
+                  "id": 1,
+                  "title": "iPhone 11",
+                  "category": [
+                    "Mobile Phone",
+                    "Electronics"
+                  ],
+                  "rating": 4.3,
+                  "description": "iPhone 11, 64 GB"
+                }""";
 
-		Document document = ZuliaUtil.jsonToMongoDocument(json);
+        Document document = ZuliaUtil.jsonToMongoDocument(json);
 
-		Assertions.assertEquals(1, document.getInteger("id"));
-		Assertions.assertEquals("iPhone 11", document.getString("title"));
-		Assertions.assertEquals(List.of("Mobile Phone", "Electronics"), document.getList("category", String.class));
-		Assertions.assertEquals(4.3, document.getDouble("rating"), 0.0001);
-		Assertions.assertEquals("iPhone 11, 64 GB", document.getString("description"));
+        Assertions.assertEquals(1, document.getInteger("id"));
+        Assertions.assertEquals("iPhone 11", document.getString("title"));
+        Assertions.assertEquals(List.of("Mobile Phone", "Electronics"), document.getList("category", String.class));
+        Assertions.assertEquals(4.3, document.getDouble("rating"), 0.0001);
+        Assertions.assertEquals("iPhone 11, 64 GB", document.getString("description"));
 
-		String jsonOut = ZuliaUtil.mongoDocumentToJson(document, true);
-		Assertions.assertEquals(json, jsonOut);
-	}
+        String jsonOut = ZuliaUtil.mongoDocumentToJson(document, true);
+        Assertions.assertEquals(json, jsonOut);
+    }
 
 }

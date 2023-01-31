@@ -33,80 +33,79 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
 @Controller(ZuliaConstants.NODES_URL)
 public class NodesController {
 
-	@Get
-	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-	public HttpResponse<?> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
-			@QueryValue(value = ZuliaConstants.ACTIVE, defaultValue = "false") Boolean active) {
+    @Get
+    @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
+    public HttpResponse<?> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
+                               @QueryValue(value = ZuliaConstants.ACTIVE, defaultValue = "false") Boolean active) {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+        ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
-		try {
-			GetNodesResponse getNodesResponse = indexManager.getNodes(GetNodesRequest.newBuilder().setActiveOnly(active).build());
+        try {
+            GetNodesResponse getNodesResponse = indexManager.getNodes(GetNodesRequest.newBuilder().setActiveOnly(active).build());
 
-			org.bson.Document mongoDocument = new org.bson.Document();
+            org.bson.Document mongoDocument = new org.bson.Document();
 
-			List<Document> memberObjList = new ArrayList<>();
-			for (Node node : getNodesResponse.getNodeList()) {
-				Document memberObj = new Document();
-				memberObj.put("serverAddress", node.getServerAddress());
-				memberObj.put("servicePort", node.getServicePort());
-				memberObj.put("restPort", node.getRestPort());
-				memberObj.put("heartbeat", node.getHeartbeat());
+            List<Document> memberObjList = new ArrayList<>();
+            for (Node node : getNodesResponse.getNodeList()) {
+                Document memberObj = new Document();
+                memberObj.put("serverAddress", node.getServerAddress());
+                memberObj.put("servicePort", node.getServicePort());
+                memberObj.put("restPort", node.getRestPort());
+                memberObj.put("heartbeat", node.getHeartbeat());
 
-				List<Document> indexMappingList = new ArrayList<>();
-				for (IndexShardMapping indexShardMapping : getNodesResponse.getIndexShardMappingList()) {
+                List<Document> indexMappingList = new ArrayList<>();
+                for (IndexShardMapping indexShardMapping : getNodesResponse.getIndexShardMappingList()) {
 
-					TreeSet<Integer> primaryShards = new TreeSet<>();
-					TreeSet<Integer> replicaShards = new TreeSet<>();
-					for (ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
-						if (ZuliaNode.isEqual(shardMapping.getPrimaryNode(), node)) {
-							primaryShards.add(shardMapping.getShardNumber());
-						}
-						for (Node replica : shardMapping.getReplicaNodeList()) {
-							if (ZuliaNode.isEqual(replica, node)) {
-								replicaShards.add(shardMapping.getShardNumber());
-							}
-						}
+                    TreeSet<Integer> primaryShards = new TreeSet<>();
+                    TreeSet<Integer> replicaShards = new TreeSet<>();
+                    for (ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
+                        if (ZuliaNode.isEqual(shardMapping.getPrimaryNode(), node)) {
+                            primaryShards.add(shardMapping.getShardNumber());
+                        }
+                        for (Node replica : shardMapping.getReplicaNodeList()) {
+                            if (ZuliaNode.isEqual(replica, node)) {
+                                replicaShards.add(shardMapping.getShardNumber());
+                            }
+                        }
 
-					}
+                    }
 
-					Document shards = new Document();
-					shards.put("name", indexShardMapping.getIndexName());
+                    Document shards = new Document();
+                    shards.put("name", indexShardMapping.getIndexName());
 
-					int indexWeight = -1;
-					GetIndexSettingsResponse indexSettings = indexManager.getIndexSettings(
-							ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(indexShardMapping.getIndexName()).build());
-					if (indexSettings != null) { //paranoid
-						indexWeight = indexSettings.getIndexSettings().getIndexWeight();
-					}
+                    int indexWeight = -1;
+                    GetIndexSettingsResponse indexSettings = indexManager.getIndexSettings(
+                            ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(indexShardMapping.getIndexName()).build());
+                    if (indexSettings != null) { //paranoid
+                        indexWeight = indexSettings.getIndexSettings().getIndexWeight();
+                    }
 
-					shards.put("indexWeight", indexWeight);
-					shards.put("primary", primaryShards);
-					shards.put("replica", replicaShards);
+                    shards.put("indexWeight", indexWeight);
+                    shards.put("primary", primaryShards);
+                    shards.put("replica", replicaShards);
 
-					indexMappingList.add(shards);
-				}
-				memberObj.put("indexMappings", indexMappingList);
+                    indexMappingList.add(shards);
+                }
+                memberObj.put("indexMappings", indexMappingList);
 
-				memberObjList.add(memberObj);
+                memberObjList.add(memberObj);
 
-			}
+            }
 
-			mongoDocument.put("members", memberObjList);
+            mongoDocument.put("members", memberObjList);
 
-			String docString = mongoDocument.toJson();
+            String docString = mongoDocument.toJson();
 
-			if (pretty) {
-				docString = JsonWriter.formatJson(docString);
-			}
+            if (pretty) {
+                docString = JsonWriter.formatJson(docString);
+            }
 
-			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+            return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 
-		}
-		catch (Exception e) {
-			return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
-		}
+        } catch (Exception e) {
+            return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+        }
 
-	}
+    }
 
 }

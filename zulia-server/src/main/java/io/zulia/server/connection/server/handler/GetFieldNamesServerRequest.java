@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class GetFieldNamesServerRequest extends ServerRequestHandler<GetFieldNamesResponse, GetFieldNamesRequest> {
 
-	private final static Logger LOG = Logger.getLogger(GetFieldNamesServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(GetFieldNamesServerRequest.class.getSimpleName());
 
-	public GetFieldNamesServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public GetFieldNamesServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected GetFieldNamesResponse handleCall(ZuliaIndexManager indexManager, GetFieldNamesRequest request) throws Exception {
-		return indexManager.getFieldNames(request);
-	}
+    @Override
+    protected GetFieldNamesResponse handleCall(ZuliaIndexManager indexManager, GetFieldNamesRequest request) throws Exception {
+        return indexManager.getFieldNames(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle get field names", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle get field names", e);
+    }
 }

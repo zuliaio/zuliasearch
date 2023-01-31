@@ -5,211 +5,211 @@ import "zulia_base.proto";
 option java_package = "io.zulia.message";
 
 message IndexShardMapping {
-    string indexName = 1;
-    uint32 numberOfShards = 2;
-    repeated ShardMapping shardMapping = 3;
+  string indexName = 1;
+  uint32 numberOfShards = 2;
+  repeated ShardMapping shardMapping = 3;
 }
 
 message IndexAlias {
-    string aliasName = 1;
-    string indexName = 2;
+  string aliasName = 1;
+  string indexName = 2;
 }
 
 message ShardMapping {
-    uint32 shardNumber = 1;
-    Node primaryNode = 2;
-    repeated Node replicaNode = 3;
+  uint32 shardNumber = 1;
+  Node primaryNode = 2;
+  repeated Node replicaNode = 3;
 }
 
 message IndexSettings {
-    string indexName = 1;
-    uint32 numberOfShards = 2; // default 1
-    uint32 numberOfReplicas = 3; // default 1
+  string indexName = 1;
+  uint32 numberOfShards = 2; // default 1
+  uint32 numberOfReplicas = 3; // default 1
 
-    //server populated
-    int64 createTime = 4;
-    int64 updateTime = 5;
+  //server populated
+  int64 createTime = 4;
+  int64 updateTime = 5;
 
-    repeated string defaultSearchField = 6;
-    repeated AnalyzerSettings analyzerSettings = 7;
-    repeated FieldConfig fieldConfig = 8;
+  repeated string defaultSearchField = 6;
+  repeated AnalyzerSettings analyzerSettings = 7;
+  repeated FieldConfig fieldConfig = 8;
 
-    double requestFactor = 9; // default 2.0
-    uint32 minShardRequest = 10; //default 2
-    double shardTolerance = 11; //default 0
+  double requestFactor = 9; // default 2.0
+  uint32 minShardRequest = 10; //default 2
+  double shardTolerance = 11; //default 0
 
-    uint32 shardQueryCacheSize = 12; // default 512
-    uint32 shardQueryCacheMaxAmount = 13; // default 256
+  uint32 shardQueryCacheSize = 12; // default 512
+  uint32 shardQueryCacheMaxAmount = 13; // default 256
 
-    uint32 idleTimeWithoutCommit = 14; // default 5
-    uint32 shardCommitInterval = 15; // default 3200
+  uint32 idleTimeWithoutCommit = 14; // default 5
+  uint32 shardCommitInterval = 15; // default 3200
 
-    uint32 indexWeight = 16; //default 1
+  uint32 indexWeight = 16; //default 1
 
-    uint32 ramBufferMB = 17; //default 128
+  uint32 ramBufferMB = 17; //default 128
 
-    bytes meta = 18;
+  bytes meta = 18;
 
-    // index has list of query request objects stored a byte array instead of a message
-    // this ensures a query message format change can be handled on serialization and just fail to load the query vs. the whole index
-    // is also removes proto file dependencies between index and query
-    repeated bytes warmingSearches = 19;
+  // index has list of query request objects stored a byte array instead of a message
+  // this ensures a query message format change can be handled on serialization and just fail to load the query vs. the whole index
+  // is also removes proto file dependencies between index and query
+  repeated bytes warmingSearches = 19;
 
-    uint32 commitToWarmTime = 20; // default 5
+  uint32 commitToWarmTime = 20; // default 5
 
 }
 
 
 message UpdateIndexSettings {
-    message Operation {
-        enum OperationType {
-            MERGE = 0;
-            REPLACE = 1;
-        }
-        bool enable = 1;
-        OperationType operationType = 2;
-        repeated string removedKeys = 3;
+  message Operation {
+    enum OperationType {
+      MERGE = 0;
+      REPLACE = 1;
     }
+    bool enable = 1;
+    OperationType operationType = 2;
+    repeated string removedKeys = 3;
+  }
 
-    bool setDefaultSearchField = 1;
-    repeated string defaultSearchField = 2;
+  bool setDefaultSearchField = 1;
+  repeated string defaultSearchField = 2;
 
-    repeated AnalyzerSettings analyzerSettings = 3;
-    Operation analyzerSettingsOperation = 4; // keyed by name
+  repeated AnalyzerSettings analyzerSettings = 3;
+  Operation analyzerSettingsOperation = 4; // keyed by name
 
-    repeated FieldConfig fieldConfig = 5;
-    Operation fieldConfigOperation = 6; // keyed by storedFieldName
+  repeated FieldConfig fieldConfig = 5;
+  Operation fieldConfigOperation = 6; // keyed by storedFieldName
 
-    bool setRequestFactor = 7;
-    double requestFactor = 8;
+  bool setRequestFactor = 7;
+  double requestFactor = 8;
 
-    bool setMinShardRequest = 9;
-    uint32 minShardRequest = 10;
+  bool setMinShardRequest = 9;
+  uint32 minShardRequest = 10;
 
-    bool setShardTolerance = 11;
-    double shardTolerance = 12;
+  bool setShardTolerance = 11;
+  double shardTolerance = 12;
 
-    bool setShardQueryCacheSize = 13;
-    uint32 shardQueryCacheSize = 14;
+  bool setShardQueryCacheSize = 13;
+  uint32 shardQueryCacheSize = 14;
 
-    bool setShardQueryCacheMaxAmount = 15;
-    uint32 shardQueryCacheMaxAmount = 16;
+  bool setShardQueryCacheMaxAmount = 15;
+  uint32 shardQueryCacheMaxAmount = 16;
 
-    bool setIdleTimeWithoutCommit = 17;
-    uint32 idleTimeWithoutCommit = 18;
+  bool setIdleTimeWithoutCommit = 17;
+  uint32 idleTimeWithoutCommit = 18;
 
-    bool setShardCommitInterval = 19;
-    uint32 shardCommitInterval = 20;
+  bool setShardCommitInterval = 19;
+  uint32 shardCommitInterval = 20;
 
-    bool setIndexWeight = 21;
-    uint32 indexWeight = 22;
+  bool setIndexWeight = 21;
+  uint32 indexWeight = 22;
 
-    bool setRamBufferMB = 23;
-    uint32 ramBufferMB = 24;
+  bool setRamBufferMB = 23;
+  uint32 ramBufferMB = 24;
 
-    Operation metaUpdateOperation = 25;
-    bytes metadata = 26;
+  Operation metaUpdateOperation = 25;
+  bytes metadata = 26;
 
-    Operation warmingSearchesOperation = 27;
-    repeated bytes warmingSearches = 28;
+  Operation warmingSearchesOperation = 27;
+  repeated bytes warmingSearches = 28;
 }
 
 
 
 message FieldConfig {
 
-    reserved 6; //old projectAs
+  reserved 6; //old projectAs
 
-    enum FieldType {
-        STRING = 0;
-        NUMERIC_INT = 1;
-        NUMERIC_LONG = 2;
-        NUMERIC_FLOAT = 3;
-        NUMERIC_DOUBLE = 4;
-        DATE = 5;
-        BOOL = 6;
-        UNIT_VECTOR = 7;
-        VECTOR = 8;
-    }
+  enum FieldType {
+    STRING = 0;
+    NUMERIC_INT = 1;
+    NUMERIC_LONG = 2;
+    NUMERIC_FLOAT = 3;
+    NUMERIC_DOUBLE = 4;
+    DATE = 5;
+    BOOL = 6;
+    UNIT_VECTOR = 7;
+    VECTOR = 8;
+  }
 
-    FieldType fieldType = 1;
-    string storedFieldName = 2;
-    repeated IndexAs indexAs = 3;
-    repeated FacetAs facetAs = 4;
-    repeated SortAs sortAs = 5;
-    string displayName = 7;
-    string description = 8;
+  FieldType fieldType = 1;
+  string storedFieldName = 2;
+  repeated IndexAs indexAs = 3;
+  repeated FacetAs facetAs = 4;
+  repeated SortAs sortAs = 5;
+  string displayName = 7;
+  string description = 8;
 }
 
 
 message AnalyzerSettings {
 
 
-    enum Tokenizer {
-        STANDARD = 0;
-        KEYWORD = 1;
-        WHITESPACE = 2;
-    }
+  enum Tokenizer {
+    STANDARD = 0;
+    KEYWORD = 1;
+    WHITESPACE = 2;
+  }
 
-    enum Filter {
-        LOWERCASE = 0;
-        UPPERCASE = 1;
-        STOPWORDS = 2;
-        ASCII_FOLDING = 3;
-        KSTEM = 4;
-        ENGLISH_MIN_STEM = 5;
-        SNOWBALL_STEM = 6;
-        ENGLISH_POSSESSIVE = 7;
-        MINHASH = 8;
-        TWO_TWO_SHINGLE = 9;
-        THREE_THREE_SHINGLE = 10;
-        FOUR_FOUR_SHINGLE = 11;
-        FIVE_FIVE_SHINGLE = 12;
-        BRITISH_US = 13;
-        CONCAT_ALL = 14;
-        CASE_PROTECTED_WORDS = 15;
-    }
+  enum Filter {
+    LOWERCASE = 0;
+    UPPERCASE = 1;
+    STOPWORDS = 2;
+    ASCII_FOLDING = 3;
+    KSTEM = 4;
+    ENGLISH_MIN_STEM = 5;
+    SNOWBALL_STEM = 6;
+    ENGLISH_POSSESSIVE = 7;
+    MINHASH = 8;
+    TWO_TWO_SHINGLE = 9;
+    THREE_THREE_SHINGLE = 10;
+    FOUR_FOUR_SHINGLE = 11;
+    FIVE_FIVE_SHINGLE = 12;
+    BRITISH_US = 13;
+    CONCAT_ALL = 14;
+    CASE_PROTECTED_WORDS = 15;
+  }
 
 
-    string name = 1;
-    Tokenizer tokenizer = 2; //STANDARD default
-    repeated Filter filter = 3;
-    Similarity similarity = 4; //BM25 default
+  string name = 1;
+  Tokenizer tokenizer = 2; //STANDARD default
+  repeated Filter filter = 3;
+  Similarity similarity = 4; //BM25 default
 
 }
 
 
 message IndexAs {
-    string indexFieldName = 1;
-    string analyzerName = 2;
+  string indexFieldName = 1;
+  string analyzerName = 2;
 }
 
 message Superbit {
-    uint32 inputDim = 1;
-    uint32 batches = 2; //default 1
-    uint32 seed = 3; //default 1357
+  uint32 inputDim = 1;
+  uint32 batches = 2; //default 1
+  uint32 seed = 3; //default 1357
 }
 
 message FacetAs {
-    enum DateHandling {
-        DATE_YYYY_MM_DD = 0;
-        DATE_YYYYMMDD = 1;
-    }
-    string facetName = 1;
-    DateHandling dateHandling = 2;
-    bool hierarchical = 3;
+  enum DateHandling {
+    DATE_YYYY_MM_DD = 0;
+    DATE_YYYYMMDD = 1;
+  }
+  string facetName = 1;
+  DateHandling dateHandling = 2;
+  bool hierarchical = 3;
 }
 
 message SortAs {
-    enum StringHandling {
-        STANDARD = 0;
-        LOWERCASE = 1;
-        FOLDING = 2;
-        LOWERCASE_FOLDING = 3;
-    }
+  enum StringHandling {
+    STANDARD = 0;
+    LOWERCASE = 1;
+    FOLDING = 2;
+    LOWERCASE_FOLDING = 3;
+  }
 
-    string sortFieldName = 1;
-    StringHandling stringHandling = 2;
+  string sortFieldName = 1;
+  StringHandling stringHandling = 2;
 
 }
 

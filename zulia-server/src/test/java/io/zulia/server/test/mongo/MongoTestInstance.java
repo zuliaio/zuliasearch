@@ -17,14 +17,15 @@ public class MongoTestInstance {
     private String testInstanceUrl;
     private MongodProcess mongodProcess;
 
-    public MongoTestInstance() { }
+    public MongoTestInstance() {
+    }
 
     public String getInstanceUrl() {
         return testInstanceUrl;
     }
 
     public void shutdown() {
-        if(mongodProcess != null) {
+        if (mongodProcess != null) {
             mongodProcess.stop();
         }
     }

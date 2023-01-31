@@ -10,34 +10,34 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 /**
  * Returns all the fields from a given index
- * @author mdavis
  *
+ * @author mdavis
  */
 public class GetFields extends SimpleCommand<ZuliaServiceOuterClass.GetFieldNamesRequest, GetFieldsResult> implements SingleIndexRoutableCommand {
 
-	private String indexName;
+    private String indexName;
 
-	public GetFields(String indexName) {
-		this.indexName = indexName;
-	}
+    public GetFields(String indexName) {
+        this.indexName = indexName;
+    }
 
-	@Override
-	public String getIndexName() {
-		return indexName;
-	}
+    @Override
+    public String getIndexName() {
+        return indexName;
+    }
 
-	@Override
-	public ZuliaServiceOuterClass.GetFieldNamesRequest getRequest() {
-		return ZuliaServiceOuterClass.GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
-	}
+    @Override
+    public ZuliaServiceOuterClass.GetFieldNamesRequest getRequest() {
+        return ZuliaServiceOuterClass.GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
+    }
 
-	@Override
-	public GetFieldsResult execute(ZuliaConnection zuliaConnection) {
-		ZuliaServiceBlockingStub service = zuliaConnection.getService();
+    @Override
+    public GetFieldsResult execute(ZuliaConnection zuliaConnection) {
+        ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		ZuliaServiceOuterClass.GetFieldNamesResponse getFieldNamesResponse = service.getFieldNames(getRequest());
+        ZuliaServiceOuterClass.GetFieldNamesResponse getFieldNamesResponse = service.getFieldNames(getRequest());
 
-		return new GetFieldsResult(getFieldNamesResponse);
-	}
+        return new GetFieldsResult(getFieldNamesResponse);
+    }
 
 }
