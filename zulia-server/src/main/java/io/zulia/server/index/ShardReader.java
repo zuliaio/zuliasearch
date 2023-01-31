@@ -41,6 +41,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.Fragmenter;
@@ -186,6 +187,7 @@ public class ShardReader implements AutoCloseable {
 		PerFieldSimilarityWrapper similarity = getSimilarity(shardQuery.getSimilarityOverrideMap());
 
 		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+		StoredFields storedFields = indexSearcher.storedFields();
 
 		//similarity is only set query time, indexing time all these similarities are the same
 		indexSearcher.setSimilarity(similarity);
@@ -260,14 +262,14 @@ public class ShardReader implements AutoCloseable {
 		List<AnalysisHandler> analysisHandlerList = getAnalysisHandlerList(shardQuery.getAnalysisRequestList());
 
 		for (int i = 0; i < numResults; i++) {
-			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, shardQuery.getSortRequest(), sorting, results, i,
+			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(storedFields, shardQuery.getSortRequest(), sorting, results, i,
 					shardQuery.getResultFetchType(), shardQuery.getFieldsToReturn(), shardQuery.getFieldsToMask(), highlighterList, analysisHandlerList);
 
 			shardQueryReponseBuilder.addScoredResult(srBuilder.build());
 		}
 
 		if (moreAvailable) {
-			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(indexSearcher, shardQuery.getSortRequest(), sorting, results, numResults,
+			ZuliaQuery.ScoredResult.Builder srBuilder = handleDocResult(storedFields, shardQuery.getSortRequest(), sorting, results, numResults,
 					ZuliaQuery.FetchType.NONE, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 			shardQueryReponseBuilder.setNext(srBuilder);
 		}
@@ -627,8 +629,8 @@ public class ShardReader implements AutoCloseable {
 		return collector;
 	}
 
-	private ZuliaQuery.ScoredResult.Builder handleDocResult(IndexSearcher is, ZuliaQuery.SortRequest sortRequest, boolean sorting, ScoreDoc[] results, int i,
-			ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList,
+	private ZuliaQuery.ScoredResult.Builder handleDocResult(StoredFields storedFields, ZuliaQuery.SortRequest sortRequest, boolean sorting, ScoreDoc[] results,
+			int i, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaHighlighter> highlighterList,
 			List<AnalysisHandler> analysisHandlerList) throws Exception {
 		int luceneShardId = results[i].doc;
 
@@ -641,7 +643,7 @@ public class ShardReader implements AutoCloseable {
 			fieldsToFetch = fetchSetWithMeta;
 		}
 
-		Document d = is.doc(luceneShardId, fieldsToFetch);
+		Document d = storedFields.document(luceneShardId, fieldsToFetch);
 
 		IndexableField f = d.getField(ZuliaConstants.TIMESTAMP_FIELD);
 		long timestamp = f.numericValue().longValue();
@@ -988,6 +990,7 @@ public class ShardReader implements AutoCloseable {
 
 	public void streamAllDocs(Consumer<Document> documentConsumer) throws IOException {
 
+		StoredFields storedFields = indexReader.storedFields();
 		for (LeafReaderContext leaf : indexReader.leaves()) {
 			Bits leafLiveDocs = leaf.reader().getLiveDocs();
 			DocIdSetIterator allDocs = DocIdSetIterator.range(leaf.docBase, leaf.docBase + leaf.reader().maxDoc());
@@ -1002,7 +1005,7 @@ public class ShardReader implements AutoCloseable {
 			int docId;
 
 			while ((docId = allDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-				Document d = indexReader.document(docId);
+				Document d = storedFields.document(docId);
 				documentConsumer.accept(d);
 			}
 
