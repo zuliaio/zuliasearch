@@ -52,772 +52,794 @@ import java.util.stream.Collectors;
 
 public class ZuliaIndexManager {
 
-    private static final Logger LOG = Logger.getLogger(ZuliaIndexManager.class.getName());
+	private static final Logger LOG = Logger.getLogger(ZuliaIndexManager.class.getName());
 
-    private final IndexService indexService;
-    private final InternalClient internalClient;
-    private final ExecutorService pool;
-    private final ConcurrentHashMap<String, ZuliaIndex> indexMap;
+	private final IndexService indexService;
+	private final InternalClient internalClient;
+	private final ExecutorService pool;
+	private final ConcurrentHashMap<String, ZuliaIndex> indexMap;
 
-    private final ZuliaConfig zuliaConfig;
-    private final NodeService nodeService;
+	private final ZuliaConfig zuliaConfig;
+	private final NodeService nodeService;
 
-    private final Node thisNode;
-    private Collection<Node> currentOtherNodesActive = Collections.emptyList();
+	private final Node thisNode;
+	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
 
-    private ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
+	private ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<String, String> indexAliasMap;
+	private final ConcurrentHashMap<String, String> indexAliasMap;
 
-    public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
+	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
-        this.zuliaConfig = zuliaConfig;
+		this.zuliaConfig = zuliaConfig;
 
-        this.thisNode = ZuliaNode.nodeFromConfig(zuliaConfig);
-        this.nodeService = nodeService;
+		this.thisNode = ZuliaNode.nodeFromConfig(zuliaConfig);
+		this.nodeService = nodeService;
 
-        if (zuliaConfig.isCluster()) {
-            indexService = new MongoIndexService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
-        } else {
-            indexService = new FSIndexService(zuliaConfig);
-        }
+		if (zuliaConfig.isCluster()) {
+			indexService = new MongoIndexService(MongoProvider.getMongoClient(), zuliaConfig.getClusterName());
+		}
+		else {
+			indexService = new FSIndexService(zuliaConfig);
+		}
 
-        this.internalClient = new InternalClient();
+		this.internalClient = new InternalClient();
 
-        this.indexMap = new ConcurrentHashMap<>();
-        this.indexAliasMap = new ConcurrentHashMap<>();
+		this.indexMap = new ConcurrentHashMap<>();
+		this.indexAliasMap = new ConcurrentHashMap<>();
 
-        for (IndexAlias indexAlias : indexService.getIndexAliases()) {
-            indexAliasMap.put(indexAlias.getAliasName(), indexAlias.getIndexName());
-        }
+		for (IndexAlias indexAlias : indexService.getIndexAliases()) {
+			indexAliasMap.put(indexAlias.getAliasName(), indexAlias.getIndexName());
+		}
 
-        this.pool = Executors.newCachedThreadPool(new ZuliaThreadFactory("manager"));
+		this.pool = Executors.newCachedThreadPool(new ZuliaThreadFactory("manager"));
 
-    }
+	}
 
-    public void handleNodeAdded(Collection<Node> currentOtherNodesActive, Node nodeAdded) {
-        LOG.info(getLogPrefix() + " added node " + nodeAdded.getServerAddress() + ":" + nodeAdded.getServicePort());
+	public void handleNodeAdded(Collection<Node> currentOtherNodesActive, Node nodeAdded) {
+		LOG.info(getLogPrefix() + " added node " + nodeAdded.getServerAddress() + ":" + nodeAdded.getServicePort());
 
-        internalClient.addNode(nodeAdded);
-        this.currentOtherNodesActive = currentOtherNodesActive;
-    }
+		internalClient.addNode(nodeAdded);
+		this.currentOtherNodesActive = currentOtherNodesActive;
+	}
 
-    private String getLogPrefix() {
-        return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
-    }
+	private String getLogPrefix() {
+		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
+	}
 
-    public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
-        LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":"
-                + nodeRemoved.getServicePort());
-        internalClient.removeNode(nodeRemoved);
-        this.currentOtherNodesActive = currentOtherNodesActive;
-    }
+	public void handleNodeRemoved(Collection<Node> currentOtherNodesActive, Node nodeRemoved) {
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " removed node " + nodeRemoved.getServerAddress() + ":"
+				+ nodeRemoved.getServicePort());
+		internalClient.removeNode(nodeRemoved);
+		this.currentOtherNodesActive = currentOtherNodesActive;
+	}
 
-    public void shutdown() {
+	public void shutdown() {
 
-        internalClient.close();
+		internalClient.close();
 
-        pool.shutdownNow();
+		pool.shutdownNow();
 
-        indexMap.values().parallelStream().forEach(zuliaIndex -> {
-            try {
-                zuliaIndex.unload(false);
-            } catch (IOException e) {
-                LOG.log(Level.SEVERE, "Failed to unload index: " + zuliaIndex.getIndexName(), e);
-            }
-        });
+		indexMap.values().parallelStream().forEach(zuliaIndex -> {
+			try {
+				zuliaIndex.unload(false);
+			}
+			catch (IOException e) {
+				LOG.log(Level.SEVERE, "Failed to unload index: " + zuliaIndex.getIndexName(), e);
+			}
+		});
 
-    }
+	}
 
-    public void init() throws Exception {
-        List<IndexSettings> indexes = indexService.getIndexes();
-        for (IndexSettings indexSettings : indexes) {
-            pool.submit(() -> {
-                try {
-                    loadIndex(indexSettings);
-                } catch (Exception e) {
-                    LOG.log(Level.SEVERE, e.getClass().getSimpleName() + ":", e);
-                    throw new RuntimeException(e);
-                }
-            });
-        }
+	public void init() throws Exception {
+		List<IndexSettings> indexes = indexService.getIndexes();
+		for (IndexSettings indexSettings : indexes) {
+			pool.submit(() -> {
+				try {
+					loadIndex(indexSettings);
+				}
+				catch (Exception e) {
+					LOG.log(Level.SEVERE, e.getClass().getSimpleName() + ":", e);
+					throw new RuntimeException(e);
+				}
+			});
+		}
 
-    }
+	}
 
-    private void loadIndex(String indexName) throws Exception {
-
-        IndexSettings indexSettings = indexService.getIndex(indexName);
+	private void loadIndex(String indexName) throws Exception {
 
-        if (indexSettings == null) {
-            throw new IndexDoesNotExistException(indexName);
-        }
+		IndexSettings indexSettings = indexService.getIndex(indexName);
 
-        loadIndex(indexSettings);
-    }
-
-    private void loadIndex(IndexSettings indexSettings) throws Exception {
-        LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " loading index <" + indexSettings.getIndexName() + ">");
-
-        IndexShardMapping indexShardMapping = indexService.getIndexShardMapping(indexSettings.getIndexName());
-
-        ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
-
-        String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
-
-        DocumentStorage documentStorage;
-        if (zuliaConfig.isCluster()) {
-            switch (zuliaConfig.getClusterStorageEngine()) {
-                case "s3":
-                    documentStorage = new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false,
-                            zuliaConfig.getS3());
-                    break;
-                default:
-                    documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
-                    break;
-            }
-            ;
-        } else {
-            documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
-        }
+		if (indexSettings == null) {
+			throw new IndexDoesNotExistException(indexName);
+		}
 
-        ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
-
-        indexMap.put(indexSettings.getIndexName(), zuliaIndex);
+		loadIndex(indexSettings);
+	}
 
-        zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
-    }
-
-    public GetIndexesResponse getIndexes(@SuppressWarnings("unused") GetIndexesRequest request) throws Exception {
-        GetIndexesResponse.Builder getIndexesResponse = GetIndexesResponse.newBuilder();
-        for (IndexSettings indexSettings : indexService.getIndexes()) {
-            getIndexesResponse.addIndexName(indexSettings.getIndexName());
-        }
-        return getIndexesResponse.build();
-    }
-
-    public FetchResponse fetch(FetchRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        FetchRequestRouter router = new FetchRequestRouter(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i, request.getUniqueId(),
-                internalClient);
-        return router.send(request);
-
-    }
-
-    public FetchResponse internalFetch(FetchRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        return FetchRequestRouter.internalFetch(i, request);
-    }
-
-    public ZuliaBase.AssociatedDocument getAssociatedDocument(String indexName, String uniqueId, String fileName) throws Exception {
-        ZuliaIndex i = getIndexFromName(indexName);
-        return i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.FULL);
-    }
-
-    public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws Exception {
-        ZuliaIndex i = getIndexFromName(indexName);
-        return i.getAssociatedDocumentStream(uniqueId, fileName);
-    }
-
-    public OutputStream getAssociatedDocumentOutputStream(String indexName, String uniqueId, String fileName, Document metadata) throws Exception {
-        ZuliaIndex i = getIndexFromName(indexName);
-        long timestamp = System.currentTimeMillis();
-        return i.getAssociatedDocumentOutputStream(uniqueId, fileName, timestamp, metadata);
-    }
+	private void loadIndex(IndexSettings indexSettings) throws Exception {
+		LOG.info(zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " loading index <" + indexSettings.getIndexName() + ">");
 
-    public List<String> getAssociatedFilenames(String indexName, String uniqueId) throws Exception {
-        ZuliaIndex i = getIndexFromName(indexName);
-        return i.getAssociatedFilenames(uniqueId);
-    }
+		IndexShardMapping indexShardMapping = indexService.getIndexShardMapping(indexSettings.getIndexName());
 
-    public void getAssociatedFilenames(String indexName, Writer writer, Document filter) throws Exception {
-        ZuliaIndex i = getIndexFromName(indexName);
-        i.getAssociatedDocuments(writer, filter);
-    }
+		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
 
-    public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
+		String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
 
-        List<IndexShardMapping> indexShardMappingList = indexService.getIndexShardMappings();
-        List<IndexAlias> indexAliasesList = indexService.getIndexAliases();
-        if ((request.getActiveOnly())) {
-            return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexShardMapping(indexShardMappingList)
-                    .addAllIndexAlias(indexAliasesList).build();
-        } else {
-            return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexShardMapping(indexShardMappingList)
-                    .addAllIndexAlias(indexAliasesList).build();
-        }
-    }
-
-    public InternalQueryResponse internalQuery(InternalQueryRequest request) throws Exception {
-
-        Map<String, Query> queryMap = new HashMap<>();
-        Set<ZuliaIndex> indexes = new HashSet<>();
-
-        populateIndexesAndIndexMap(request.getQueryRequest(), queryMap, indexes);
-
-        return QueryRequestFederator.internalQuery(indexes, request, queryMap);
-    }
-
-    public QueryResponse query(QueryRequest request) throws Exception {
-        request = new QueryRequestValidator().validateAndSetDefault(request);
-
-        Map<String, Query> queryMap = new HashMap<>();
-        Set<ZuliaIndex> indexes = new HashSet<>();
-
-        populateIndexesAndIndexMap(request, queryMap, indexes);
-
-        QueryRequestFederator federator = new QueryRequestFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), indexes, pool,
-                internalClient, queryMap);
-
-        return federator.getResponse(request);
-    }
-
-    private void populateIndexesAndIndexMap(QueryRequest queryRequest, Map<String, Query> queryMap, Set<ZuliaIndex> indexes) throws Exception {
-
-        for (String indexName : queryRequest.getIndexList()) {
-
-            ZuliaIndex index = getIndexFromName(indexName);
-            indexes.add(index);
-
-            Query query = index.getQuery(queryRequest);
-            queryMap.put(handleAlias(indexName), query);
-        }
-    }
-
-    public StoreResponse store(StoreRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        StoreRequestRouter router = new StoreRequestRouter(thisNode, currentOtherNodesActive, i, request.getUniqueId(), internalClient);
-        return router.send(request);
-    }
-
-    public StoreResponse internalStore(StoreRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        return StoreRequestRouter.internalStore(i, request);
-    }
-
-    public DeleteResponse delete(DeleteRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        DeleteRequestRouter router = new DeleteRequestRouter(thisNode, currentOtherNodesActive, i, request.getUniqueId(), internalClient);
-        return router.send(request);
-    }
-
-    public DeleteResponse internalDelete(DeleteRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        return DeleteRequestRouter.internalDelete(i, request);
-    }
-
-    public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
-        //if existing index make sure not to allow changing number of shards
-
-        String requestString = request.toString();
-
-        if (requestString.length() > (1024 * 1024)) {
-            requestString = requestString.substring(0, 1024 * 1024) + "...";
-        }
-
-        LOG.info(getLogPrefix() + " creating index: " + requestString);
-        request = new CreateIndexRequestValidator().validateAndSetDefault(request);
-
-        NodeWeightComputation nodeWeightComputation = new DefaultNodeWeightComputation(indexService, thisNode, currentOtherNodesActive);
-
-        IndexSettings indexSettings = request.getIndexSettings();
-
-        String indexName = indexSettings.getIndexName();
-        IndexSettings existingIndex = indexService.getIndex(indexName);
-
-        long currentTimeMillis = System.currentTimeMillis();
-        if (existingIndex == null) {
-
-            indexSettings = indexSettings.toBuilder().setCreateTime(currentTimeMillis).build();
-
-            IndexShardMapping.Builder indexShardMapping = IndexShardMapping.newBuilder();
-            indexShardMapping.setIndexName(indexName);
-            indexShardMapping.setNumberOfShards(indexSettings.getNumberOfShards());
-
-            for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
-
-                List<Node> nodes = nodeWeightComputation.getNodesSortedByWeight();
-
-                ShardMapping.Builder shardMapping = ShardMapping.newBuilder();
-
-                Node primaryNode = nodes.remove(0);
-                shardMapping.setPrimaryNode(primaryNode);
-                shardMapping.setShardNumber(i);
-                nodeWeightComputation.addShard(primaryNode, indexSettings, true);
-
-                for (int r = 0; r < nodes.size(); r++) {
-                    if (r < indexSettings.getNumberOfReplicas()) {
-                        Node replicaNode = nodes.get(r);
-                        shardMapping.addReplicaNode(replicaNode);
-                        nodeWeightComputation.addShard(replicaNode, indexSettings, false);
-                    } else {
-                        break;
-                    }
-                }
-
-                indexShardMapping.addShardMapping(shardMapping);
-            }
-
-            indexService.storeIndexShardMapping(indexShardMapping.build());
-        } else {
-
-            if (existingIndex.equals(indexSettings)) {
-                LOG.info("No changes to existing index <" + indexName + ">");
-                return CreateIndexResponse.newBuilder().build();
-            }
-
-            if (existingIndex.getNumberOfShards() != indexSettings.getNumberOfShards()) {
-                throw new IllegalArgumentException("Cannot change shards for existing index");
-            }
-
-            //TODO handle changing of replication factor
-            if (existingIndex.getNumberOfReplicas() != indexSettings.getNumberOfReplicas()) {
-                throw new IllegalArgumentException("Cannot change replication factor for existing index yet");
-            }
+		DocumentStorage documentStorage;
+		if (zuliaConfig.isCluster()) {
+            documentStorage = switch (zuliaConfig.getClusterStorageEngine()) {
+                case "s3" ->
+                        new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false,
+                                zuliaConfig.getS3());
+                default ->
+                        new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+            };
 
         }
-        indexSettings = indexSettings.toBuilder().setUpdateTime(currentTimeMillis).build();
-        indexService.storeIndex(indexSettings);
-
-        CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
-                pool, internalClient, this);
-
-        try {
-            @SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
-                    InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(indexName).build());
-        } catch (Exception e) {
-            if (existingIndex != null) {
-                LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexSettings().getIndexName() + ">: ", e);
-                throw new Exception("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
-            } else {
-                throw new Exception("Failed to create index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
-
-            }
-        }
-
-        return CreateIndexResponse.newBuilder().build();
-    }
-
-    public UpdateIndexResponse updateIndex(UpdateIndexRequest request) throws Exception {
-
-        String orgIndexName = request.getIndexName();
-
-        if (orgIndexName.isEmpty()) {
-            throw new IllegalArgumentException("Index name must be given");
-        }
-
-        String indexName = handleAlias(orgIndexName);
-
-        if (!indexName.equals(orgIndexName)) {
-            LOG.info("Update Index Following Alias <" + orgIndexName + "> to index <" + indexName + ">");
-        }
-
-        Lock lock = indexUpdateMap.computeIfAbsent(indexName, s -> new ReentrantLock());
-        try {
-            lock.lock();
-
-            IndexSettings indexSettings = indexService.getIndex(indexName);
-            if (indexSettings == null) {
-                LOG.log(Level.SEVERE, "Failed to update index <" + indexName + "> that does not exist");
-
-                throw new Exception("Failed to update index <" + indexName + "> that does not exist");
-            }
-
-            LOG.info("Updating Index <" + indexName + "> with <" + request.getUpdateIndexSettings() + ">");
-
-            UpdateIndexSettings updateIndexSettings = request.getUpdateIndexSettings();
-
-            IndexSettings.Builder existingSettings = indexSettings.toBuilder();
-
-            if (updateIndexSettings.getAnalyzerSettingsOperation().getEnable()) {
-                List<AnalyzerSettings> analyzerSettings = updateWithAction(updateIndexSettings.getAnalyzerSettingsOperation(),
-                        existingSettings.getAnalyzerSettingsList(), updateIndexSettings.getAnalyzerSettingsList(), AnalyzerSettings::getName);
-                existingSettings.clearAnalyzerSettings();
-                existingSettings.addAllAnalyzerSettings(analyzerSettings);
-            }
-
-            if (updateIndexSettings.getFieldConfigOperation().getEnable()) {
-                List<FieldConfig> fieldConfigs = updateWithAction(updateIndexSettings.getFieldConfigOperation(), existingSettings.getFieldConfigList(),
-                        updateIndexSettings.getFieldConfigList(), FieldConfig::getStoredFieldName);
-                existingSettings.clearFieldConfig();
-                existingSettings.addAllFieldConfig(fieldConfigs);
-            }
-
-            if (updateIndexSettings.getWarmingSearchesOperation().getEnable()) {
-                List<ByteString> existingWarmingBytes = existingSettings.getWarmingSearchesList();
-                List<QueryRequest> existingWarmingSearch = new ArrayList<>();
-                for (ByteString existingWarmingByte : existingWarmingBytes) {
-                    try {
-                        QueryRequest queryRequest = QueryRequest.parseFrom(existingWarmingByte);
-                        queryRequest = new QueryRequestValidator().validateAndSetDefault(queryRequest);
-                        existingWarmingSearch.add(queryRequest);
-                    } catch (Exception e) {
-                        LOG.severe("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
-                    }
-                }
-
-                List<QueryRequest> warmingSearch = new ArrayList<>();
-                for (ByteString updates : updateIndexSettings.getWarmingSearchesList()) {
-                    try {
-                        QueryRequest queryRequest = QueryRequest.parseFrom(updates);
-                        if (queryRequest.getSearchLabel().isEmpty()) {
-                            throw new RuntimeException("A search label is required for a warming search");
-                        }
-                        warmingSearch.add(queryRequest);
-                    } catch (Exception e) {
-                        throw new RuntimeException("Failed to parse existing warming search update", e);
-                    }
-                }
-
-                List<QueryRequest> warmingSearches = updateWithAction(updateIndexSettings.getWarmingSearchesOperation(), existingWarmingSearch, warmingSearch,
-                        QueryRequest::getSearchLabel);
-                existingSettings.clearWarmingSearches();
-                existingSettings.addAllWarmingSearches(warmingSearches.stream().map(QueryRequest::toByteString).toList());
-            }
-
-            if (updateIndexSettings.getSetDefaultSearchField()) {
-                existingSettings.clearDefaultSearchField();
-                existingSettings.addAllDefaultSearchField(updateIndexSettings.getDefaultSearchFieldList());
-            }
-
-            if (updateIndexSettings.getSetRequestFactor()) {
-                existingSettings.setRequestFactor(updateIndexSettings.getRequestFactor());
-            }
-
-            if (updateIndexSettings.getSetMinShardRequest()) {
-                existingSettings.setMinShardRequest(updateIndexSettings.getMinShardRequest());
-            }
-
-            if (updateIndexSettings.getSetShardTolerance()) {
-                existingSettings.setShardTolerance(updateIndexSettings.getShardTolerance());
-            }
-
-            if (updateIndexSettings.getSetShardQueryCacheSize()) {
-                existingSettings.setShardQueryCacheSize(updateIndexSettings.getShardQueryCacheSize());
-            }
-
-            if (updateIndexSettings.getSetShardQueryCacheMaxAmount()) {
-                existingSettings.setShardQueryCacheMaxAmount(updateIndexSettings.getShardQueryCacheMaxAmount());
-            }
-
-            if (updateIndexSettings.getSetIdleTimeWithoutCommit()) {
-                existingSettings.setIdleTimeWithoutCommit(updateIndexSettings.getIdleTimeWithoutCommit());
-            }
-
-            if (updateIndexSettings.getSetShardCommitInterval()) {
-                existingSettings.setShardCommitInterval(updateIndexSettings.getShardCommitInterval());
-            }
-
-            if (updateIndexSettings.getSetRamBufferMB()) {
-                existingSettings.setRamBufferMB(updateIndexSettings.getRamBufferMB());
-            }
-
-            if (updateIndexSettings.getSetIndexWeight()) {
-                existingSettings.setIndexWeight(updateIndexSettings.getIndexWeight());
-            }
-
-            Operation metaUpdateOperation = updateIndexSettings.getMetaUpdateOperation();
-            if (metaUpdateOperation.getEnable()) {
-                Document existingMeta = ZuliaUtil.byteStringToMongoDocument(existingSettings.getMeta());
-
-                Document newMetadata = ZuliaUtil.byteStringToMongoDocument(updateIndexSettings.getMetadata());
-
-                if (OperationType.MERGE.equals(metaUpdateOperation.getOperationType())) {
-                    existingMeta.putAll(newMetadata);
-                } else if (OperationType.REPLACE.equals(metaUpdateOperation.getOperationType())) {
-                    existingMeta = newMetadata;
-                } else {
-                    throw new IllegalArgumentException("Unknown operation type <" + metaUpdateOperation.getOperationType() + ">");
-                }
-
-                if (!metaUpdateOperation.getRemovedKeysList().isEmpty()) {
-                    for (String key : metaUpdateOperation.getRemovedKeysList()) {
-                        existingMeta.remove(key);
-                    }
-                }
-
-                existingSettings.setMeta(ZuliaUtil.mongoDocumentToByteString(existingMeta));
-            }
-
-            CreateIndexRequestValidator.validateIndexSettingsAndSetDefaults(existingSettings);
-            indexSettings = existingSettings.build();
-
-            indexService.storeIndex(indexSettings);
-
-            CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
-                    pool, internalClient, this);
-
-            try {
-                @SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
-                        InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(indexName).build());
-
-                return UpdateIndexResponse.newBuilder().setFullIndexSettings(indexSettings).build();
-            } catch (Exception e) {
-                throw new Exception("Failed to update index <" + indexName + ">: " + e.getMessage());
-            }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private <T> List<T> updateWithAction(Operation operation, List<T> existingValues, List<T> updates, Function<T, String> keyFunction) {
-
-        BinaryOperator<T> firstOne = (t, t2) -> t; // take the first one if duplicate labels
-
-        List<T> newValues;
-        if (OperationType.MERGE.equals(operation.getOperationType())) {
-            if (!updates.isEmpty()) {
-
-                Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new));
-
-                List<T> existingWithReplacements = existingValues.stream().map(value -> {
-                    T replacement = toUpdate.get(keyFunction.apply(value));
-                    if (replacement != null) {
-                        toUpdate.remove(keyFunction.apply(value));
-                        return replacement;
-                    }
-                    return value;
-                }).collect(Collectors.toList());
-                existingWithReplacements.addAll(toUpdate.values());
-                newValues = existingWithReplacements;
-            } else {
-                newValues = existingValues;
-            }
-        } else if (OperationType.REPLACE.equals(operation.getOperationType())) {
-            newValues = new ArrayList<>(updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new)).values());
-        } else {
-            throw new IllegalArgumentException("Unknown operation type <" + operation.getOperationType() + ">");
-        }
-
-        if (!operation.getRemovedKeysList().isEmpty()) {
-            Set<String> toDelete = new HashSet<>(operation.getRemovedKeysList());
-            return newValues.stream().filter(value -> !toDelete.contains(keyFunction.apply(value))).collect(Collectors.toList());
-        }
-        return newValues;
-
-    }
-
-    public InternalCreateOrUpdateIndexResponse internalCreateOrUpdateIndex(String indexName) throws Exception {
-
-        ZuliaIndex zuliaIndex = indexMap.get(indexName);
-        if (zuliaIndex == null) {
-            loadIndex(indexName);
-        } else {
-            zuliaIndex.reloadIndexSettings();
-        }
-
-        return InternalCreateOrUpdateIndexResponse.newBuilder().setLoaded(zuliaIndex == null).build();
-
-    }
-
-    public DeleteIndexResponse deleteIndex(DeleteIndexRequest request) throws Exception {
-        LOG.info(getLogPrefix() + "Received delete index request for <" + request.getIndexName() + ">");
-
-        DeleteIndexRequestFederator deleteIndexRequestFederator = new DeleteIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
-                this);
-
-        @SuppressWarnings("unused") List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
-
-        String indexName = request.getIndexName();
-        indexService.removeIndex(indexName);
-        indexService.removeIndexShardMapping(indexName);
-
-        return DeleteIndexResponse.newBuilder().build();
-
-    }
-
-    public DeleteIndexResponse internalDeleteIndex(DeleteIndexRequest request) throws Exception {
-        String indexName = request.getIndexName();
-        ZuliaIndex zuliaIndex = indexMap.get(indexName);
-        if (zuliaIndex != null) {
-            LOG.info(getLogPrefix() + "Deleting index <" + request.getIndexName() + ">");
-            //zuliaIndex.unload(true);
-            zuliaIndex.deleteIndex(request.getDeleteAssociated());
-            indexMap.remove(indexName);
-            LOG.info(getLogPrefix() + "Deleted index <" + request.getIndexName() + ">");
-        } else {
-            LOG.info(getLogPrefix() + "Index <" + request.getIndexName() + "> was not found");
-        }
-        return DeleteIndexResponse.newBuilder().build();
-    }
-
-    public GetNumberOfDocsResponse getNumberOfDocs(GetNumberOfDocsRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        GetNumberOfDocsRequestFederator federator = new GetNumberOfDocsRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i,
-                pool, internalClient);
-        return federator.getResponse(request);
-
-    }
-
-    public GetNumberOfDocsResponse getNumberOfDocsInternal(InternalGetNumberOfDocsRequest internalRequest) throws Exception {
-        ZuliaIndex i = getIndexFromName(internalRequest.getGetNumberOfDocsRequest().getIndexName());
-        return GetNumberOfDocsRequestFederator.internalGetNumberOfDocs(i, internalRequest);
-    }
-
-    public ClearResponse clear(ClearRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        ClearRequestFederator federator = new ClearRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
-                internalClient);
-        return federator.getResponse(request);
-    }
-
-    public ClearResponse internalClear(ClearRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        return ClearRequestFederator.internalClear(i, request);
-    }
-
-    public OptimizeResponse optimize(OptimizeRequest request) throws Exception {
-
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        OptimizeRequestFederator federator = new OptimizeRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
-                internalClient);
-        return federator.getResponse(request);
-    }
-
-    public OptimizeResponse internalOptimize(OptimizeRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        return OptimizeRequestFederator.internalOptimize(i, request);
-    }
-
-    public ReindexResponse reindex(ReindexRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        ReindexRequestFederator federator = new ReindexRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
-                internalClient);
-        return federator.getResponse(request);
-    }
-
-    public ReindexResponse internalReindex(ReindexRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        return ReindexRequestFederator.internalReindex(i, request);
-    }
-
-    public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
-        MasterSlaveSettings masterSlaveSettings = request.getMasterSlaveSettings();
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        GetFieldNamesRequestFederator federator = new GetFieldNamesRequestFederator(thisNode, currentOtherNodesActive, masterSlaveSettings, i, pool,
-                internalClient);
-        return federator.getResponse(request);
-
-    }
-
-    public GetFieldNamesResponse internalGetFieldNames(InternalGetFieldNamesRequest request) throws Exception {
-        GetFieldNamesRequest getFieldNamesRequest = request.getGetFieldNamesRequest();
-        ZuliaIndex i = getIndexFromName(getFieldNamesRequest.getIndexName());
-        return GetFieldNamesRequestFederator.internalGetFieldNames(i, request);
-    }
-
-    public GetTermsResponse getTerms(GetTermsRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        GetTermsRequestFederator federator = new GetTermsRequestFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i, pool,
-                internalClient);
-        return federator.getResponse(request);
-
-    }
-
-    public InternalGetTermsResponse internalGetTerms(InternalGetTermsRequest request) throws Exception {
-        GetTermsRequest getTermsRequest = request.getGetTermsRequest();
-        ZuliaIndex i = getIndexFromName(getTermsRequest.getIndexName());
-        return GetTermsRequestFederator.internalGetTerms(i, request);
-    }
-
-    public GetIndexSettingsResponse getIndexSettings(GetIndexSettingsRequest request) throws Exception {
-        ZuliaIndex i = getIndexFromName(request.getIndexName());
-        if (i != null) {
-            return GetIndexSettingsResponse.newBuilder().setIndexSettings(i.getIndexConfig().getIndexSettings()).build();
-        }
-        return null;
-    }
-
-    private ZuliaIndex getIndexFromName(String indexName) throws IndexDoesNotExistException {
-
-        String orgIndex = indexName;
-        indexName = handleAlias(indexName);
-
-        ZuliaIndex i = indexMap.get(indexName);
-        if (i == null) {
-
-            if (orgIndex.equals(indexName)) {
-                throw new IndexDoesNotExistException(indexName);
-            } else {
-                throw new IndexDoesNotExistException(orgIndex + "->" + indexName);
-            }
-        }
-        return i;
-    }
-
-    private String handleAlias(String indexName) {
-        if (indexAliasMap.containsKey(indexName)) {
-            indexName = indexAliasMap.get(indexName);
-        }
-        return indexName;
-    }
-
-    public CreateIndexAliasResponse createIndexAlias(CreateIndexAliasRequest request) throws Exception {
-        IndexAlias indexAlias = request.getIndexAlias();
-
-        String aliasName = indexAlias.getAliasName();
-
-        if (aliasName.isEmpty()) {
-            throw new IllegalArgumentException("Alias name cannot be null or empty");
-        }
-
-        if (indexAlias.getIndexName().isEmpty()) {
-            throw new IllegalArgumentException("Index name cannot be null or empty");
-        }
-
-        IndexAlias existingAlias = indexService.getIndexAlias(aliasName);
-
-        indexService.storeIndexAlias(indexAlias);
-
-        CreateIndexAliasRequestFederator createIndexRequestFederator = new CreateIndexAliasRequestFederator(thisNode, currentOtherNodesActive, pool,
-                internalClient, this);
-
-        try {
-            @SuppressWarnings("unused") List<CreateIndexAliasResponse> send = createIndexRequestFederator.send(
-                    InternalCreateIndexAliasRequest.newBuilder().setAliasName(aliasName).build());
-        } catch (Exception e) {
-            if (existingAlias == null) {
-                LOG.log(Level.SEVERE, "Failed to update index alias <" + aliasName + ">: ", e);
-                throw new Exception("Failed to update index alias <" + aliasName + ">: " + e.getMessage());
-            } else {
-                throw new Exception("Failed to create index alias <" + aliasName + ">: " + e.getMessage());
-
-            }
-        }
-
-        return CreateIndexAliasResponse.newBuilder().build();
-
-    }
-
-    public DeleteIndexAliasResponse deleteIndexAlias(DeleteIndexAliasRequest request) throws Exception {
-        indexService.removeIndexAlias(request.getAliasName());
-
-        DeleteIndexAliasRequestFederator deleteIndexAliasRequestFederator = new DeleteIndexAliasRequestFederator(thisNode, currentOtherNodesActive, pool,
-                internalClient, this);
-
-        try {
-            @SuppressWarnings("unused") List<DeleteIndexAliasResponse> send = deleteIndexAliasRequestFederator.send(request);
-        } catch (Exception e) {
-            throw new Exception("Failed to delete index alias <" + request.getAliasName() + ">: " + e.getMessage());
-        }
-
-        return DeleteIndexAliasResponse.newBuilder().build();
-
-    }
-
-    public CreateIndexAliasResponse internalCreateIndexAlias(String aliasName) throws Exception {
-        IndexAlias indexAlias = indexService.getIndexAlias(aliasName);
-        indexAliasMap.put(indexAlias.getAliasName(), indexAlias.getIndexName());
-        return CreateIndexAliasResponse.newBuilder().build();
-    }
-
-    public DeleteIndexAliasResponse internalDeleteIndexAlias(DeleteIndexAliasRequest request) {
-        indexAliasMap.remove(request.getAliasName());
-        return DeleteIndexAliasResponse.newBuilder().build();
-    }
-
-    public void getStats() {
-        for (ZuliaIndex value : indexMap.values()) {
-
-        }
-    }
+		else {
+			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
+		}
+
+		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
+
+		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
+
+		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
+	}
+
+	public GetIndexesResponse getIndexes(@SuppressWarnings("unused") GetIndexesRequest request) throws Exception {
+		GetIndexesResponse.Builder getIndexesResponse = GetIndexesResponse.newBuilder();
+		for (IndexSettings indexSettings : indexService.getIndexes()) {
+			getIndexesResponse.addIndexName(indexSettings.getIndexName());
+		}
+		return getIndexesResponse.build();
+	}
+
+	public FetchResponse fetch(FetchRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		FetchRequestRouter router = new FetchRequestRouter(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i, request.getUniqueId(),
+				internalClient);
+		return router.send(request);
+
+	}
+
+	public FetchResponse internalFetch(FetchRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return FetchRequestRouter.internalFetch(i, request);
+	}
+
+	public ZuliaBase.AssociatedDocument getAssociatedDocument(String indexName, String uniqueId, String fileName) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		return i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.FULL);
+	}
+
+	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		return i.getAssociatedDocumentStream(uniqueId, fileName);
+	}
+
+	public OutputStream getAssociatedDocumentOutputStream(String indexName, String uniqueId, String fileName, Document metadata) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		long timestamp = System.currentTimeMillis();
+		return i.getAssociatedDocumentOutputStream(uniqueId, fileName, timestamp, metadata);
+	}
+
+	public List<String> getAssociatedFilenames(String indexName, String uniqueId) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		return i.getAssociatedFilenames(uniqueId);
+	}
+
+	public void getAssociatedFilenames(String indexName, Writer writer, Document filter) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		i.getAssociatedDocuments(writer, filter);
+	}
+
+	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
+
+		List<IndexShardMapping> indexShardMappingList = indexService.getIndexShardMappings();
+		List<IndexAlias> indexAliasesList = indexService.getIndexAliases();
+		if ((request.getActiveOnly())) {
+			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexShardMapping(indexShardMappingList)
+					.addAllIndexAlias(indexAliasesList).build();
+		}
+		else {
+			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexShardMapping(indexShardMappingList)
+					.addAllIndexAlias(indexAliasesList).build();
+		}
+	}
+
+	public InternalQueryResponse internalQuery(InternalQueryRequest request) throws Exception {
+
+		Map<String, Query> queryMap = new HashMap<>();
+		Set<ZuliaIndex> indexes = new HashSet<>();
+
+		populateIndexesAndIndexMap(request.getQueryRequest(), queryMap, indexes);
+
+		return QueryRequestFederator.internalQuery(indexes, request, queryMap);
+	}
+
+	public QueryResponse query(QueryRequest request) throws Exception {
+		request = new QueryRequestValidator().validateAndSetDefault(request);
+
+		Map<String, Query> queryMap = new HashMap<>();
+		Set<ZuliaIndex> indexes = new HashSet<>();
+
+		populateIndexesAndIndexMap(request, queryMap, indexes);
+
+		QueryRequestFederator federator = new QueryRequestFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), indexes, pool,
+				internalClient, queryMap);
+
+		return federator.getResponse(request);
+	}
+
+	private void populateIndexesAndIndexMap(QueryRequest queryRequest, Map<String, Query> queryMap, Set<ZuliaIndex> indexes) throws Exception {
+
+		for (String indexName : queryRequest.getIndexList()) {
+
+			ZuliaIndex index = getIndexFromName(indexName);
+			indexes.add(index);
+
+			Query query = index.getQuery(queryRequest);
+			queryMap.put(handleAlias(indexName), query);
+		}
+	}
+
+	public StoreResponse store(StoreRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		StoreRequestRouter router = new StoreRequestRouter(thisNode, currentOtherNodesActive, i, request.getUniqueId(), internalClient);
+		return router.send(request);
+	}
+
+	public StoreResponse internalStore(StoreRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return StoreRequestRouter.internalStore(i, request);
+	}
+
+	public DeleteResponse delete(DeleteRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		DeleteRequestRouter router = new DeleteRequestRouter(thisNode, currentOtherNodesActive, i, request.getUniqueId(), internalClient);
+		return router.send(request);
+	}
+
+	public DeleteResponse internalDelete(DeleteRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return DeleteRequestRouter.internalDelete(i, request);
+	}
+
+	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
+		//if existing index make sure not to allow changing number of shards
+
+		String requestString = request.toString();
+
+		if (requestString.length() > (1024 * 1024)) {
+			requestString = requestString.substring(0, 1024 * 1024) + "...";
+		}
+
+		LOG.info(getLogPrefix() + " creating index: " + requestString);
+		request = new CreateIndexRequestValidator().validateAndSetDefault(request);
+
+		NodeWeightComputation nodeWeightComputation = new DefaultNodeWeightComputation(indexService, thisNode, currentOtherNodesActive);
+
+		IndexSettings indexSettings = request.getIndexSettings();
+
+		String indexName = indexSettings.getIndexName();
+		IndexSettings existingIndex = indexService.getIndex(indexName);
+
+		long currentTimeMillis = System.currentTimeMillis();
+		if (existingIndex == null) {
+
+			indexSettings = indexSettings.toBuilder().setCreateTime(currentTimeMillis).build();
+
+			IndexShardMapping.Builder indexShardMapping = IndexShardMapping.newBuilder();
+			indexShardMapping.setIndexName(indexName);
+			indexShardMapping.setNumberOfShards(indexSettings.getNumberOfShards());
+
+			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
+
+				List<Node> nodes = nodeWeightComputation.getNodesSortedByWeight();
+
+				ShardMapping.Builder shardMapping = ShardMapping.newBuilder();
+
+				Node primaryNode = nodes.remove(0);
+				shardMapping.setPrimaryNode(primaryNode);
+				shardMapping.setShardNumber(i);
+				nodeWeightComputation.addShard(primaryNode, indexSettings, true);
+
+				for (int r = 0; r < nodes.size(); r++) {
+					if (r < indexSettings.getNumberOfReplicas()) {
+						Node replicaNode = nodes.get(r);
+						shardMapping.addReplicaNode(replicaNode);
+						nodeWeightComputation.addShard(replicaNode, indexSettings, false);
+					}
+					else {
+						break;
+					}
+				}
+
+				indexShardMapping.addShardMapping(shardMapping);
+			}
+
+			indexService.storeIndexShardMapping(indexShardMapping.build());
+		}
+		else {
+
+			if (existingIndex.equals(indexSettings)) {
+				LOG.info("No changes to existing index <" + indexName + ">");
+				return CreateIndexResponse.newBuilder().build();
+			}
+
+			if (existingIndex.getNumberOfShards() != indexSettings.getNumberOfShards()) {
+				throw new IllegalArgumentException("Cannot change shards for existing index");
+			}
+
+			//TODO handle changing of replication factor
+			if (existingIndex.getNumberOfReplicas() != indexSettings.getNumberOfReplicas()) {
+				throw new IllegalArgumentException("Cannot change replication factor for existing index yet");
+			}
+
+		}
+		indexSettings = indexSettings.toBuilder().setUpdateTime(currentTimeMillis).build();
+		indexService.storeIndex(indexSettings);
+
+		CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
+				pool, internalClient, this);
+
+		try {
+			@SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
+					InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(indexName).build());
+		}
+		catch (Exception e) {
+			if (existingIndex != null) {
+				LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexSettings().getIndexName() + ">: ", e);
+				throw new Exception("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
+			}
+			else {
+				throw new Exception("Failed to create index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
+
+			}
+		}
+
+		return CreateIndexResponse.newBuilder().build();
+	}
+
+	public UpdateIndexResponse updateIndex(UpdateIndexRequest request) throws Exception {
+
+		String orgIndexName = request.getIndexName();
+
+		if (orgIndexName.isEmpty()) {
+			throw new IllegalArgumentException("Index name must be given");
+		}
+
+		String indexName = handleAlias(orgIndexName);
+
+		if (!indexName.equals(orgIndexName)) {
+			LOG.info("Update Index Following Alias <" + orgIndexName + "> to index <" + indexName + ">");
+		}
+
+		Lock lock = indexUpdateMap.computeIfAbsent(indexName, s -> new ReentrantLock());
+		try {
+			lock.lock();
+
+			IndexSettings indexSettings = indexService.getIndex(indexName);
+			if (indexSettings == null) {
+				LOG.log(Level.SEVERE, "Failed to update index <" + indexName + "> that does not exist");
+
+				throw new Exception("Failed to update index <" + indexName + "> that does not exist");
+			}
+
+			LOG.info("Updating Index <" + indexName + "> with <" + request.getUpdateIndexSettings() + ">");
+
+			UpdateIndexSettings updateIndexSettings = request.getUpdateIndexSettings();
+
+			IndexSettings.Builder existingSettings = indexSettings.toBuilder();
+
+			if (updateIndexSettings.getAnalyzerSettingsOperation().getEnable()) {
+				List<AnalyzerSettings> analyzerSettings = updateWithAction(updateIndexSettings.getAnalyzerSettingsOperation(),
+						existingSettings.getAnalyzerSettingsList(), updateIndexSettings.getAnalyzerSettingsList(), AnalyzerSettings::getName);
+				existingSettings.clearAnalyzerSettings();
+				existingSettings.addAllAnalyzerSettings(analyzerSettings);
+			}
+
+			if (updateIndexSettings.getFieldConfigOperation().getEnable()) {
+				List<FieldConfig> fieldConfigs = updateWithAction(updateIndexSettings.getFieldConfigOperation(), existingSettings.getFieldConfigList(),
+						updateIndexSettings.getFieldConfigList(), FieldConfig::getStoredFieldName);
+				existingSettings.clearFieldConfig();
+				existingSettings.addAllFieldConfig(fieldConfigs);
+			}
+
+			if (updateIndexSettings.getWarmingSearchesOperation().getEnable()) {
+				List<ByteString> existingWarmingBytes = existingSettings.getWarmingSearchesList();
+				List<QueryRequest> existingWarmingSearch = new ArrayList<>();
+				for (ByteString existingWarmingByte : existingWarmingBytes) {
+					try {
+						QueryRequest queryRequest = QueryRequest.parseFrom(existingWarmingByte);
+						queryRequest = new QueryRequestValidator().validateAndSetDefault(queryRequest);
+						existingWarmingSearch.add(queryRequest);
+					}
+					catch (Exception e) {
+						LOG.severe("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
+					}
+				}
+
+				List<QueryRequest> warmingSearch = new ArrayList<>();
+				for (ByteString updates : updateIndexSettings.getWarmingSearchesList()) {
+					try {
+						QueryRequest queryRequest = QueryRequest.parseFrom(updates);
+						if (queryRequest.getSearchLabel().isEmpty()) {
+							throw new RuntimeException("A search label is required for a warming search");
+						}
+						warmingSearch.add(queryRequest);
+					}
+					catch (Exception e) {
+						throw new RuntimeException("Failed to parse existing warming search update", e);
+					}
+				}
+
+				List<QueryRequest> warmingSearches = updateWithAction(updateIndexSettings.getWarmingSearchesOperation(), existingWarmingSearch, warmingSearch,
+						QueryRequest::getSearchLabel);
+				existingSettings.clearWarmingSearches();
+				existingSettings.addAllWarmingSearches(warmingSearches.stream().map(QueryRequest::toByteString).toList());
+			}
+
+			if (updateIndexSettings.getSetDefaultSearchField()) {
+				existingSettings.clearDefaultSearchField();
+				existingSettings.addAllDefaultSearchField(updateIndexSettings.getDefaultSearchFieldList());
+			}
+
+			if (updateIndexSettings.getSetRequestFactor()) {
+				existingSettings.setRequestFactor(updateIndexSettings.getRequestFactor());
+			}
+
+			if (updateIndexSettings.getSetMinShardRequest()) {
+				existingSettings.setMinShardRequest(updateIndexSettings.getMinShardRequest());
+			}
+
+			if (updateIndexSettings.getSetShardTolerance()) {
+				existingSettings.setShardTolerance(updateIndexSettings.getShardTolerance());
+			}
+
+			if (updateIndexSettings.getSetShardQueryCacheSize()) {
+				existingSettings.setShardQueryCacheSize(updateIndexSettings.getShardQueryCacheSize());
+			}
+
+			if (updateIndexSettings.getSetShardQueryCacheMaxAmount()) {
+				existingSettings.setShardQueryCacheMaxAmount(updateIndexSettings.getShardQueryCacheMaxAmount());
+			}
+
+			if (updateIndexSettings.getSetIdleTimeWithoutCommit()) {
+				existingSettings.setIdleTimeWithoutCommit(updateIndexSettings.getIdleTimeWithoutCommit());
+			}
+
+			if (updateIndexSettings.getSetShardCommitInterval()) {
+				existingSettings.setShardCommitInterval(updateIndexSettings.getShardCommitInterval());
+			}
+
+			if (updateIndexSettings.getSetRamBufferMB()) {
+				existingSettings.setRamBufferMB(updateIndexSettings.getRamBufferMB());
+			}
+
+			if (updateIndexSettings.getSetIndexWeight()) {
+				existingSettings.setIndexWeight(updateIndexSettings.getIndexWeight());
+			}
+
+			Operation metaUpdateOperation = updateIndexSettings.getMetaUpdateOperation();
+			if (metaUpdateOperation.getEnable()) {
+				Document existingMeta = ZuliaUtil.byteStringToMongoDocument(existingSettings.getMeta());
+
+				Document newMetadata = ZuliaUtil.byteStringToMongoDocument(updateIndexSettings.getMetadata());
+
+				if (OperationType.MERGE.equals(metaUpdateOperation.getOperationType())) {
+					existingMeta.putAll(newMetadata);
+				}
+				else if (OperationType.REPLACE.equals(metaUpdateOperation.getOperationType())) {
+					existingMeta = newMetadata;
+				}
+				else {
+					throw new IllegalArgumentException("Unknown operation type <" + metaUpdateOperation.getOperationType() + ">");
+				}
+
+				if (!metaUpdateOperation.getRemovedKeysList().isEmpty()) {
+					for (String key : metaUpdateOperation.getRemovedKeysList()) {
+						existingMeta.remove(key);
+					}
+				}
+
+				existingSettings.setMeta(ZuliaUtil.mongoDocumentToByteString(existingMeta));
+			}
+
+			CreateIndexRequestValidator.validateIndexSettingsAndSetDefaults(existingSettings);
+			indexSettings = existingSettings.build();
+
+			indexService.storeIndex(indexSettings);
+
+			CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
+					pool, internalClient, this);
+
+			try {
+				@SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
+						InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(indexName).build());
+
+				return UpdateIndexResponse.newBuilder().setFullIndexSettings(indexSettings).build();
+			}
+			catch (Exception e) {
+				throw new Exception("Failed to update index <" + indexName + ">: " + e.getMessage());
+			}
+		}
+		finally {
+			lock.unlock();
+		}
+	}
+
+	private <T> List<T> updateWithAction(Operation operation, List<T> existingValues, List<T> updates, Function<T, String> keyFunction) {
+
+		BinaryOperator<T> firstOne = (t, t2) -> t; // take the first one if duplicate labels
+
+		List<T> newValues;
+		if (OperationType.MERGE.equals(operation.getOperationType())) {
+			if (!updates.isEmpty()) {
+
+				Map<String, T> toUpdate = updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new));
+
+				List<T> existingWithReplacements = existingValues.stream().map(value -> {
+					T replacement = toUpdate.get(keyFunction.apply(value));
+					if (replacement != null) {
+						toUpdate.remove(keyFunction.apply(value));
+						return replacement;
+					}
+					return value;
+				}).collect(Collectors.toList());
+				existingWithReplacements.addAll(toUpdate.values());
+				newValues = existingWithReplacements;
+			}
+			else {
+				newValues = existingValues;
+			}
+		}
+		else if (OperationType.REPLACE.equals(operation.getOperationType())) {
+			newValues = new ArrayList<>(updates.stream().collect(Collectors.toMap(keyFunction, Function.identity(), firstOne, LinkedHashMap::new)).values());
+		}
+		else {
+			throw new IllegalArgumentException("Unknown operation type <" + operation.getOperationType() + ">");
+		}
+
+		if (!operation.getRemovedKeysList().isEmpty()) {
+			Set<String> toDelete = new HashSet<>(operation.getRemovedKeysList());
+			return newValues.stream().filter(value -> !toDelete.contains(keyFunction.apply(value))).collect(Collectors.toList());
+		}
+		return newValues;
+
+	}
+
+	public InternalCreateOrUpdateIndexResponse internalCreateOrUpdateIndex(String indexName) throws Exception {
+
+		ZuliaIndex zuliaIndex = indexMap.get(indexName);
+		if (zuliaIndex == null) {
+			loadIndex(indexName);
+		}
+		else {
+			zuliaIndex.reloadIndexSettings();
+		}
+
+		return InternalCreateOrUpdateIndexResponse.newBuilder().setLoaded(zuliaIndex == null).build();
+
+	}
+
+	public DeleteIndexResponse deleteIndex(DeleteIndexRequest request) throws Exception {
+		LOG.info(getLogPrefix() + "Received delete index request for <" + request.getIndexName() + ">");
+
+		DeleteIndexRequestFederator deleteIndexRequestFederator = new DeleteIndexRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient,
+				this);
+
+		@SuppressWarnings("unused") List<DeleteIndexResponse> response = deleteIndexRequestFederator.send(request);
+
+		String indexName = request.getIndexName();
+		indexService.removeIndex(indexName);
+		indexService.removeIndexShardMapping(indexName);
+
+		return DeleteIndexResponse.newBuilder().build();
+
+	}
+
+	public DeleteIndexResponse internalDeleteIndex(DeleteIndexRequest request) throws Exception {
+		String indexName = request.getIndexName();
+		ZuliaIndex zuliaIndex = indexMap.get(indexName);
+		if (zuliaIndex != null) {
+			LOG.info(getLogPrefix() + "Deleting index <" + request.getIndexName() + ">");
+			//zuliaIndex.unload(true);
+			zuliaIndex.deleteIndex(request.getDeleteAssociated());
+			indexMap.remove(indexName);
+			LOG.info(getLogPrefix() + "Deleted index <" + request.getIndexName() + ">");
+		}
+		else {
+			LOG.info(getLogPrefix() + "Index <" + request.getIndexName() + "> was not found");
+		}
+		return DeleteIndexResponse.newBuilder().build();
+	}
+
+	public GetNumberOfDocsResponse getNumberOfDocs(GetNumberOfDocsRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		GetNumberOfDocsRequestFederator federator = new GetNumberOfDocsRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i,
+				pool, internalClient);
+		return federator.getResponse(request);
+
+	}
+
+	public GetNumberOfDocsResponse getNumberOfDocsInternal(InternalGetNumberOfDocsRequest internalRequest) throws Exception {
+		ZuliaIndex i = getIndexFromName(internalRequest.getGetNumberOfDocsRequest().getIndexName());
+		return GetNumberOfDocsRequestFederator.internalGetNumberOfDocs(i, internalRequest);
+	}
+
+	public ClearResponse clear(ClearRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		ClearRequestFederator federator = new ClearRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+				internalClient);
+		return federator.getResponse(request);
+	}
+
+	public ClearResponse internalClear(ClearRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return ClearRequestFederator.internalClear(i, request);
+	}
+
+	public OptimizeResponse optimize(OptimizeRequest request) throws Exception {
+
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		OptimizeRequestFederator federator = new OptimizeRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+				internalClient);
+		return federator.getResponse(request);
+	}
+
+	public OptimizeResponse internalOptimize(OptimizeRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return OptimizeRequestFederator.internalOptimize(i, request);
+	}
+
+	public ReindexResponse reindex(ReindexRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		ReindexRequestFederator federator = new ReindexRequestFederator(thisNode, currentOtherNodesActive, MasterSlaveSettings.MASTER_ONLY, i, pool,
+				internalClient);
+		return federator.getResponse(request);
+	}
+
+	public ReindexResponse internalReindex(ReindexRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		return ReindexRequestFederator.internalReindex(i, request);
+	}
+
+	public GetFieldNamesResponse getFieldNames(GetFieldNamesRequest request) throws Exception {
+		MasterSlaveSettings masterSlaveSettings = request.getMasterSlaveSettings();
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		GetFieldNamesRequestFederator federator = new GetFieldNamesRequestFederator(thisNode, currentOtherNodesActive, masterSlaveSettings, i, pool,
+				internalClient);
+		return federator.getResponse(request);
+
+	}
+
+	public GetFieldNamesResponse internalGetFieldNames(InternalGetFieldNamesRequest request) throws Exception {
+		GetFieldNamesRequest getFieldNamesRequest = request.getGetFieldNamesRequest();
+		ZuliaIndex i = getIndexFromName(getFieldNamesRequest.getIndexName());
+		return GetFieldNamesRequestFederator.internalGetFieldNames(i, request);
+	}
+
+	public GetTermsResponse getTerms(GetTermsRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		GetTermsRequestFederator federator = new GetTermsRequestFederator(thisNode, currentOtherNodesActive, request.getMasterSlaveSettings(), i, pool,
+				internalClient);
+		return federator.getResponse(request);
+
+	}
+
+	public InternalGetTermsResponse internalGetTerms(InternalGetTermsRequest request) throws Exception {
+		GetTermsRequest getTermsRequest = request.getGetTermsRequest();
+		ZuliaIndex i = getIndexFromName(getTermsRequest.getIndexName());
+		return GetTermsRequestFederator.internalGetTerms(i, request);
+	}
+
+	public GetIndexSettingsResponse getIndexSettings(GetIndexSettingsRequest request) throws Exception {
+		ZuliaIndex i = getIndexFromName(request.getIndexName());
+		if (i != null) {
+			return GetIndexSettingsResponse.newBuilder().setIndexSettings(i.getIndexConfig().getIndexSettings()).build();
+		}
+		return null;
+	}
+
+	private ZuliaIndex getIndexFromName(String indexName) throws IndexDoesNotExistException {
+
+		String orgIndex = indexName;
+		indexName = handleAlias(indexName);
+
+		ZuliaIndex i = indexMap.get(indexName);
+		if (i == null) {
+
+			if (orgIndex.equals(indexName)) {
+				throw new IndexDoesNotExistException(indexName);
+			}
+			else {
+				throw new IndexDoesNotExistException(orgIndex + "->" + indexName);
+			}
+		}
+		return i;
+	}
+
+	private String handleAlias(String indexName) {
+		if (indexAliasMap.containsKey(indexName)) {
+			indexName = indexAliasMap.get(indexName);
+		}
+		return indexName;
+	}
+
+	public CreateIndexAliasResponse createIndexAlias(CreateIndexAliasRequest request) throws Exception {
+		IndexAlias indexAlias = request.getIndexAlias();
+
+		String aliasName = indexAlias.getAliasName();
+
+		if (aliasName.isEmpty()) {
+			throw new IllegalArgumentException("Alias name cannot be null or empty");
+		}
+
+		if (indexAlias.getIndexName().isEmpty()) {
+			throw new IllegalArgumentException("Index name cannot be null or empty");
+		}
+
+		IndexAlias existingAlias = indexService.getIndexAlias(aliasName);
+
+		indexService.storeIndexAlias(indexAlias);
+
+		CreateIndexAliasRequestFederator createIndexRequestFederator = new CreateIndexAliasRequestFederator(thisNode, currentOtherNodesActive, pool,
+				internalClient, this);
+
+		try {
+			@SuppressWarnings("unused") List<CreateIndexAliasResponse> send = createIndexRequestFederator.send(
+					InternalCreateIndexAliasRequest.newBuilder().setAliasName(aliasName).build());
+		}
+		catch (Exception e) {
+			if (existingAlias == null) {
+				LOG.log(Level.SEVERE, "Failed to update index alias <" + aliasName + ">: ", e);
+				throw new Exception("Failed to update index alias <" + aliasName + ">: " + e.getMessage());
+			}
+			else {
+				throw new Exception("Failed to create index alias <" + aliasName + ">: " + e.getMessage());
+
+			}
+		}
+
+		return CreateIndexAliasResponse.newBuilder().build();
+
+	}
+
+	public DeleteIndexAliasResponse deleteIndexAlias(DeleteIndexAliasRequest request) throws Exception {
+		indexService.removeIndexAlias(request.getAliasName());
+
+		DeleteIndexAliasRequestFederator deleteIndexAliasRequestFederator = new DeleteIndexAliasRequestFederator(thisNode, currentOtherNodesActive, pool,
+				internalClient, this);
+
+		try {
+			@SuppressWarnings("unused") List<DeleteIndexAliasResponse> send = deleteIndexAliasRequestFederator.send(request);
+		}
+		catch (Exception e) {
+			throw new Exception("Failed to delete index alias <" + request.getAliasName() + ">: " + e.getMessage());
+		}
+
+		return DeleteIndexAliasResponse.newBuilder().build();
+
+	}
+
+	public CreateIndexAliasResponse internalCreateIndexAlias(String aliasName) throws Exception {
+		IndexAlias indexAlias = indexService.getIndexAlias(aliasName);
+		indexAliasMap.put(indexAlias.getAliasName(), indexAlias.getIndexName());
+		return CreateIndexAliasResponse.newBuilder().build();
+	}
+
+	public DeleteIndexAliasResponse internalDeleteIndexAlias(DeleteIndexAliasRequest request) {
+		indexAliasMap.remove(request.getAliasName());
+		return DeleteIndexAliasResponse.newBuilder().build();
+	}
+
+	public void getStats() {
+		for (ZuliaIndex value : indexMap.values()) {
+
+		}
+	}
 }

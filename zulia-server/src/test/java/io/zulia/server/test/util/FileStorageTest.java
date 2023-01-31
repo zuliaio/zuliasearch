@@ -17,18 +17,20 @@ import org.bson.Document;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 public class FileStorageTest {
 
-    public static final String TEST_INDEX = "testIndex";
-    private ZuliaWorkPool zuliaWorkPool;
+	public static final String TEST_INDEX = "testIndex";
+	private ZuliaWorkPool zuliaWorkPool;
 
-    public static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 
-        FileStorageTest fileStorageTest = new FileStorageTest();
+		FileStorageTest fileStorageTest = new FileStorageTest();
         System.out.println("Initiating work pool.");
         fileStorageTest.init();
         System.out.println("Creating index.");
@@ -39,116 +41,118 @@ public class FileStorageTest {
 
         System.out.println("Indexing documents.");
         AtomicInteger idCounter = new AtomicInteger(1);
-        Files.list(Paths.get(pdfsDir)).forEach(file -> {
-            if (file.toFile().getName().endsWith("pdf")) {
-                Document doc = new Document("id", idCounter.getAndIncrement() + "");
-                doc.put("title", fileStorageTest.getRandomString());
-                doc.put("abstract", fileStorageTest.getRandomString());
+        try (Stream<Path> list = Files.list(Paths.get(pdfsDir))) {
+            list.forEach(file -> {
+                if (file.toFile().getName().endsWith("pdf")) {
+                    Document doc = new Document("id", idCounter.getAndIncrement() + "");
+                    doc.put("title", fileStorageTest.getRandomString());
+                    doc.put("abstract", fileStorageTest.getRandomString());
 
-                try {
-                    fileStorageTest.indexDocument(doc);
-                    Document meta = new Document();
-                    meta.put("extension", "pdf");
-                    meta.put("contentType", "application/pdf");
-                    fileStorageTest.storeFile(doc.getString("id"), file.toFile().getName(), meta, file.toFile());
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    try {
+                        fileStorageTest.indexDocument(doc);
+                        Document meta = new Document();
+                        meta.put("extension", "pdf");
+                        meta.put("contentType", "application/pdf");
+                        fileStorageTest.storeFile(doc.getString("id"), file.toFile().getName(), meta, file.toFile());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
+                    if (idCounter.get() % 100 == 0) {
+                        System.out.println("So far indexed: " + idCounter);
+                    }
+
                 }
+            });
+        }
+		System.out.println("Finished indexing: " + idCounter);
 
-                if (idCounter.get() % 100 == 0) {
-                    System.out.println("So far indexed: " + idCounter);
-                }
+		fileStorageTest.query();
 
-            }
-        });
-        System.out.println("Finished indexing: " + idCounter);
+		System.out.println("All good, clean up.");
+		fileStorageTest.cleanUp();
 
-        fileStorageTest.query();
+	}
 
-        System.out.println("All good, clean up.");
-        fileStorageTest.cleanUp();
+	private void cleanUp() throws Exception {
+		zuliaWorkPool.deleteIndex(TEST_INDEX);
+		zuliaWorkPool.shutdown();
+	}
 
-    }
+	private void query() throws Exception {
+		Search search = new Search(TEST_INDEX).setAmount(10000);
+		SearchResult queryResult = zuliaWorkPool.search(search);
+		System.out.println("Results: " + queryResult.getTotalHits());
+	}
 
-    private void cleanUp() throws Exception {
-        zuliaWorkPool.deleteIndex(TEST_INDEX);
-        zuliaWorkPool.shutdown();
-    }
+	private void init() throws Exception {
+		ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
+		zuliaPoolConfig.addNode("localhost", 32191, 32192);
 
-    private void query() throws Exception {
-        Search search = new Search(TEST_INDEX).setAmount(10000);
-        SearchResult queryResult = zuliaWorkPool.search(search);
-        System.out.println("Results: " + queryResult.getTotalHits());
-    }
+		zuliaPoolConfig.setDefaultRetries(1);
+		zuliaPoolConfig.setNodeUpdateEnabled(false);
+		zuliaPoolConfig.setMaxConnections(32);
 
-    private void init() throws Exception {
-        ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
-        zuliaPoolConfig.addNode("localhost", 32191, 32192);
+		zuliaWorkPool = new ZuliaWorkPool(zuliaPoolConfig);
+	}
 
-        zuliaPoolConfig.setDefaultRetries(1);
-        zuliaPoolConfig.setNodeUpdateEnabled(false);
-        zuliaPoolConfig.setMaxConnections(32);
+	private void createIndex() throws Exception {
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.setIndexName(TEST_INDEX);
+		indexConfig.setNumberOfShards(1);
+		indexConfig.setShardCommitInterval(64000);
 
-        zuliaWorkPool = new ZuliaWorkPool(zuliaPoolConfig);
-    }
+		indexConfig.addAnalyzerSetting(
+				ZuliaIndex.AnalyzerSettings.newBuilder().setName("text").addFilter(ZuliaIndex.AnalyzerSettings.Filter.CASE_PROTECTED_WORDS)
+						.addFilter(ZuliaIndex.AnalyzerSettings.Filter.LOWERCASE).addFilter(ZuliaIndex.AnalyzerSettings.Filter.ASCII_FOLDING)
+						.addFilter(ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_POSSESSIVE).addFilter(ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_MIN_STEM)
+						.addFilter(ZuliaIndex.AnalyzerSettings.Filter.BRITISH_US).build());
+		indexConfig.addAnalyzerSetting(ZuliaIndex.AnalyzerSettings.newBuilder().setName("entity").addFilter(ZuliaIndex.AnalyzerSettings.Filter.LOWERCASE)
+				.addFilter(ZuliaIndex.AnalyzerSettings.Filter.ASCII_FOLDING).build());
 
-    private void createIndex() throws Exception {
-        ClientIndexConfig indexConfig = new ClientIndexConfig();
-        indexConfig.setIndexName(TEST_INDEX);
-        indexConfig.setNumberOfShards(1);
-        indexConfig.setShardCommitInterval(64000);
+		FieldConfigBuilder fieldConfigBuilder = FieldConfigBuilder.createString("title");
+		fieldConfigBuilder.indexAs("text", "title");
+		fieldConfigBuilder.displayName("Title");
+		indexConfig.addFieldConfig(fieldConfigBuilder);
 
-        indexConfig.addAnalyzerSetting(
-                ZuliaIndex.AnalyzerSettings.newBuilder().setName("text").addFilter(ZuliaIndex.AnalyzerSettings.Filter.CASE_PROTECTED_WORDS)
-                        .addFilter(ZuliaIndex.AnalyzerSettings.Filter.LOWERCASE).addFilter(ZuliaIndex.AnalyzerSettings.Filter.ASCII_FOLDING)
-                        .addFilter(ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_POSSESSIVE).addFilter(ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_MIN_STEM)
-                        .addFilter(ZuliaIndex.AnalyzerSettings.Filter.BRITISH_US).build());
-        indexConfig.addAnalyzerSetting(ZuliaIndex.AnalyzerSettings.newBuilder().setName("entity").addFilter(ZuliaIndex.AnalyzerSettings.Filter.LOWERCASE)
-                .addFilter(ZuliaIndex.AnalyzerSettings.Filter.ASCII_FOLDING).build());
+		FieldConfigBuilder fieldConfigBuilder2 = FieldConfigBuilder.createString("abstract");
+		fieldConfigBuilder2.indexAs("text", "abstract");
+		fieldConfigBuilder2.displayName("Abstract");
+		indexConfig.addFieldConfig(fieldConfigBuilder2);
 
-        FieldConfigBuilder fieldConfigBuilder = FieldConfigBuilder.createString("title");
-        fieldConfigBuilder.indexAs("text", "title");
-        fieldConfigBuilder.displayName("Title");
-        indexConfig.addFieldConfig(fieldConfigBuilder);
+		FieldConfigBuilder fieldConfigBuilder3 = FieldConfigBuilder.createString("id");
+		fieldConfigBuilder3.indexAs(DefaultAnalyzers.STANDARD, "id");
+		fieldConfigBuilder3.displayName("ID");
+		indexConfig.addFieldConfig(fieldConfigBuilder3);
 
-        FieldConfigBuilder fieldConfigBuilder2 = FieldConfigBuilder.createString("abstract");
-        fieldConfigBuilder2.indexAs("text", "abstract");
-        fieldConfigBuilder2.displayName("Abstract");
-        indexConfig.addFieldConfig(fieldConfigBuilder2);
+		CreateIndex createOrUpdateIndex = new CreateIndex(indexConfig);
+		zuliaWorkPool.createIndex(createOrUpdateIndex);
+	}
 
-        FieldConfigBuilder fieldConfigBuilder3 = FieldConfigBuilder.createString("id");
-        fieldConfigBuilder3.indexAs(DefaultAnalyzers.STANDARD, "id");
-        fieldConfigBuilder3.displayName("ID");
-        indexConfig.addFieldConfig(fieldConfigBuilder3);
+	private void storeFile(String documentId, String filename, Document meta, File content) throws Exception {
 
-        CreateIndex createOrUpdateIndex = new CreateIndex(indexConfig);
-        zuliaWorkPool.createIndex(createOrUpdateIndex);
-    }
+		zuliaWorkPool.delete(new DeleteAssociated(documentId, TEST_INDEX, filename));
 
-    private void storeFile(String documentId, String filename, Document meta, File content) throws Exception {
+		StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(documentId, TEST_INDEX, filename, content);
+		storeLargeAssociated.setMeta(meta);
+		zuliaWorkPool.storeLargeAssociated(storeLargeAssociated);
 
-        zuliaWorkPool.delete(new DeleteAssociated(documentId, TEST_INDEX, filename));
+	}
 
-        StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(documentId, TEST_INDEX, filename, content);
-        storeLargeAssociated.setMeta(meta);
-        zuliaWorkPool.storeLargeAssociated(storeLargeAssociated);
+	private void indexDocument(Document document) throws Exception {
+		Store store = new Store(document.getString("id"), TEST_INDEX);
+		store.setResultDocument(new ResultDocBuilder().setDocument(document));
+		zuliaWorkPool.store(store);
+	}
 
-    }
+	private String getRandomString() {
+		int leftLimit = 97; // letter 'a'
+		int rightLimit = 122; // letter 'z'
+		int targetStringLength = 10;
+		Random random = new Random();
 
-    private void indexDocument(Document document) throws Exception {
-        Store store = new Store(document.getString("id"), TEST_INDEX);
-        store.setResultDocument(new ResultDocBuilder().setDocument(document));
-        zuliaWorkPool.store(store);
-    }
-
-    private String getRandomString() {
-        int leftLimit = 97; // letter 'a'
-        int rightLimit = 122; // letter 'z'
-        int targetStringLength = 10;
-        Random random = new Random();
-
-        return random.ints(leftLimit, rightLimit + 1).limit(targetStringLength)
-                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
-    }
+		return random.ints(leftLimit, rightLimit + 1).limit(targetStringLength)
+				.collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
+	}
 
 }

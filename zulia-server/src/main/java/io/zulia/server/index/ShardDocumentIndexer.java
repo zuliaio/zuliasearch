@@ -99,7 +99,7 @@ public class ShardDocumentIndexer {
                 StringFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
             } else if (FieldTypeUtil.isVectorFieldType(fieldType)) {
                 if (o instanceof Collection collection) {
-                    luceneDocument.add(new KnnVectorField(indexedFieldName, Floats.toArray(collection),
+                    luceneDocument.add(new KnnFloatVectorField(indexedFieldName, Floats.toArray(collection),
                             ZuliaIndex.FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ?
                                     VectorSimilarityFunction.DOT_PRODUCT :
                                     VectorSimilarityFunction.COSINE));
