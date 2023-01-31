@@ -7,35 +7,34 @@ import io.zulia.server.index.ZuliaIndexManager;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Created by Matt Davis on 6/28/17.
+ *
  * @author mdavis
  */
 public class ZuliaServiceServer {
 
-	private Server server;
+    private Server server;
 
-	public ZuliaServiceServer(ZuliaConfig zuliaConfig, ZuliaIndexManager indexManager) {
+    public ZuliaServiceServer(ZuliaConfig zuliaConfig, ZuliaIndexManager indexManager) {
 
-		int externalServicePort = zuliaConfig.getServicePort();
+        int externalServicePort = zuliaConfig.getServicePort();
 
-		ZuliaServiceHandler zuliaServiceHandler = new ZuliaServiceHandler(indexManager);
-		server = NettyServerBuilder.forPort(externalServicePort).addService(zuliaServiceHandler).maxInboundMessageSize(128 * 1024 * 1024).build();
-	}
+        ZuliaServiceHandler zuliaServiceHandler = new ZuliaServiceHandler(indexManager);
+        server = NettyServerBuilder.forPort(externalServicePort).addService(zuliaServiceHandler).maxInboundMessageSize(128 * 1024 * 1024).build();
+    }
 
-	public void start() throws IOException {
-		server.start();
-	}
+    public void start() throws IOException {
+        server.start();
+    }
 
-	public void shutdown() {
-		server.shutdown();
-		try {
-			server.awaitTermination(2, TimeUnit.SECONDS);
-		}
-		catch (InterruptedException ignored) {
+    public void shutdown() {
+        server.shutdown();
+        try {
+            server.awaitTermination(2, TimeUnit.SECONDS);
+        } catch (InterruptedException ignored) {
 
-		}
-	}
+        }
+    }
 }

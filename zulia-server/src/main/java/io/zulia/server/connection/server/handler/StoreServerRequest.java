@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class StoreServerRequest extends ServerRequestHandler<StoreResponse, StoreRequest> {
 
-	private final static Logger LOG = Logger.getLogger(StoreServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(StoreServerRequest.class.getSimpleName());
 
-	public StoreServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public StoreServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected StoreResponse handleCall(ZuliaIndexManager indexManager, StoreRequest request) throws Exception {
-		return indexManager.store(request);
-	}
+    @Override
+    protected StoreResponse handleCall(ZuliaIndexManager indexManager, StoreRequest request) throws Exception {
+        return indexManager.store(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle store", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle store", e);
+    }
 }

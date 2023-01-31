@@ -4,5 +4,5 @@ import io.zulia.message.ZuliaQuery;
 
 public interface CountFacetBuilder {
 
-	ZuliaQuery.CountRequest getFacetCount();
+    ZuliaQuery.CountRequest getFacetCount();
 }

@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class CreateIndexAliasServerRequest extends ServerRequestHandler<CreateIndexAliasResponse, CreateIndexAliasRequest> {
 
-	private final static Logger LOG = Logger.getLogger(CreateIndexAliasServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(CreateIndexAliasServerRequest.class.getSimpleName());
 
-	public CreateIndexAliasServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public CreateIndexAliasServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected CreateIndexAliasResponse handleCall(ZuliaIndexManager indexManager, CreateIndexAliasRequest request) throws Exception {
-		return indexManager.createIndexAlias(request);
-	}
+    @Override
+    protected CreateIndexAliasResponse handleCall(ZuliaIndexManager indexManager, CreateIndexAliasRequest request) throws Exception {
+        return indexManager.createIndexAlias(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle create or update index alias", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle create or update index alias", e);
+    }
 }

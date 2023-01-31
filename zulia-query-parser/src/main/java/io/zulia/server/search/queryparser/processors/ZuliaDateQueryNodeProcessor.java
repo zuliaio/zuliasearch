@@ -36,98 +36,93 @@ import java.util.List;
 
 public class ZuliaDateQueryNodeProcessor extends QueryNodeProcessorImpl {
 
-	public ZuliaDateQueryNodeProcessor() {
-		// empty constructor
-	}
+    public ZuliaDateQueryNodeProcessor() {
+        // empty constructor
+    }
 
-	@Override
-	protected QueryNode postProcessNode(QueryNode node) {
+    @Override
+    protected QueryNode postProcessNode(QueryNode node) {
 
-		QueryConfigHandler config = getQueryConfigHandler();
+        QueryConfigHandler config = getQueryConfigHandler();
 
-		if (config != null) {
+        if (config != null) {
 
-			if (node instanceof FieldQueryNode fieldQueryNode && !(node.getParent() instanceof RangeQueryNode)) {
-				CharSequence field = fieldQueryNode.getField();
-				FieldConfig fieldConfig = config.getFieldConfig(StringUtils.toString(field));
-				if (fieldConfig != null) {
-					ZuliaIndex.FieldConfig.FieldType zuliaFieldType = fieldConfig.get(ZuliaQueryNodeProcessorPipeline.ZULIA_FIELD_TYPE);
-					if (FieldTypeUtil.isDateFieldType(zuliaFieldType)) {
-						try {
-							String date = fieldQueryNode.getTextAsString();
-							if (date != null && !date.isEmpty()) {
-								fieldQueryNode.setValue(String.valueOf(getDateAsLong(date)));
-							}
-						}
-						catch (Exception e) {
-							return new MatchNoDocsQueryNode();
-						}
-					}
-				}
-			}
-			else if (node instanceof TermRangeQueryNode termRangeNode) {
-				CharSequence field = termRangeNode.getField();
+            if (node instanceof FieldQueryNode fieldQueryNode && !(node.getParent() instanceof RangeQueryNode)) {
+                CharSequence field = fieldQueryNode.getField();
+                FieldConfig fieldConfig = config.getFieldConfig(StringUtils.toString(field));
+                if (fieldConfig != null) {
+                    ZuliaIndex.FieldConfig.FieldType zuliaFieldType = fieldConfig.get(ZuliaQueryNodeProcessorPipeline.ZULIA_FIELD_TYPE);
+                    if (FieldTypeUtil.isDateFieldType(zuliaFieldType)) {
+                        try {
+                            String date = fieldQueryNode.getTextAsString();
+                            if (date != null && !date.isEmpty()) {
+                                fieldQueryNode.setValue(String.valueOf(getDateAsLong(date)));
+                            }
+                        } catch (Exception e) {
+                            return new MatchNoDocsQueryNode();
+                        }
+                    }
+                }
+            } else if (node instanceof TermRangeQueryNode termRangeNode) {
+                CharSequence field = termRangeNode.getField();
 
-				FieldConfig fieldConfig = config.getFieldConfig(StringUtils.toString(field));
+                FieldConfig fieldConfig = config.getFieldConfig(StringUtils.toString(field));
 
-				if (fieldConfig != null) {
-					ZuliaIndex.FieldConfig.FieldType zuliaFieldType = fieldConfig.get(ZuliaQueryNodeProcessorPipeline.ZULIA_FIELD_TYPE);
+                if (fieldConfig != null) {
+                    ZuliaIndex.FieldConfig.FieldType zuliaFieldType = fieldConfig.get(ZuliaQueryNodeProcessorPipeline.ZULIA_FIELD_TYPE);
 
-					if (FieldTypeUtil.isDateFieldType(zuliaFieldType)) {
+                    if (FieldTypeUtil.isDateFieldType(zuliaFieldType)) {
 
-						FieldQueryNode upper = termRangeNode.getUpperBound();
-						FieldQueryNode lower = termRangeNode.getLowerBound();
+                        FieldQueryNode upper = termRangeNode.getUpperBound();
+                        FieldQueryNode lower = termRangeNode.getLowerBound();
 
-						try {
-							String lowerText = lower.getTextAsString();
-							if (lowerText != null && !lowerText.isEmpty()) {
-								lower.setValue(String.valueOf(getDateAsLong(lowerText)));
-							}
-						}
-						catch (Exception e) {
-							return new MatchNoDocsQueryNode();
-						}
+                        try {
+                            String lowerText = lower.getTextAsString();
+                            if (lowerText != null && !lowerText.isEmpty()) {
+                                lower.setValue(String.valueOf(getDateAsLong(lowerText)));
+                            }
+                        } catch (Exception e) {
+                            return new MatchNoDocsQueryNode();
+                        }
 
-						try {
-							String upperText = upper.getTextAsString();
-							if (upperText != null && !upperText.isEmpty()) {
-								upper.setValue(String.valueOf(getDateAsLong(upperText)));
-							}
-						}
-						catch (Exception e) {
-							return new MatchNoDocsQueryNode();
-						}
-					}
+                        try {
+                            String upperText = upper.getTextAsString();
+                            if (upperText != null && !upperText.isEmpty()) {
+                                upper.setValue(String.valueOf(getDateAsLong(upperText)));
+                            }
+                        } catch (Exception e) {
+                            return new MatchNoDocsQueryNode();
+                        }
+                    }
 
-				}
+                }
 
-			}
+            }
 
-		}
-		return node;
-	}
+        }
+        return node;
+    }
 
-	@Override
-	protected QueryNode preProcessNode(QueryNode node) {
+    @Override
+    protected QueryNode preProcessNode(QueryNode node) {
 
-		return node;
-	}
+        return node;
+    }
 
-	@Override
-	protected List<QueryNode> setChildrenOrder(List<QueryNode> children) {
+    @Override
+    protected List<QueryNode> setChildrenOrder(List<QueryNode> children) {
 
-		return children;
-	}
+        return children;
+    }
 
-	private static Long getDateAsLong(String dateString) {
-		long epochMilli;
-		if (dateString.contains(":")) {
-			epochMilli = Instant.parse(dateString).toEpochMilli();
-		}
-		else {
-			LocalDate parse = LocalDate.parse(dateString, DateTimeFormatter.ISO_LOCAL_DATE);
-			epochMilli = parse.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
-		}
-		return epochMilli;
-	}
+    private static Long getDateAsLong(String dateString) {
+        long epochMilli;
+        if (dateString.contains(":")) {
+            epochMilli = Instant.parse(dateString).toEpochMilli();
+        } else {
+            LocalDate parse = LocalDate.parse(dateString, DateTimeFormatter.ISO_LOCAL_DATE);
+            epochMilli = parse.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli();
+        }
+        return epochMilli;
+    }
 }

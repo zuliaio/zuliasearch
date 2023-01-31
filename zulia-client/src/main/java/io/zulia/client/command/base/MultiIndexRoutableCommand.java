@@ -4,5 +4,5 @@ import java.util.Collection;
 
 public interface MultiIndexRoutableCommand {
 
-	Collection<String> getIndexNames();
+    Collection<String> getIndexNames();
 }

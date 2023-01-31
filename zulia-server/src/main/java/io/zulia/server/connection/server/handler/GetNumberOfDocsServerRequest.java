@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class GetNumberOfDocsServerRequest extends ServerRequestHandler<GetNumberOfDocsResponse, GetNumberOfDocsRequest> {
 
-	private final static Logger LOG = Logger.getLogger(GetNumberOfDocsServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(GetNumberOfDocsServerRequest.class.getSimpleName());
 
-	public GetNumberOfDocsServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public GetNumberOfDocsServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected GetNumberOfDocsResponse handleCall(ZuliaIndexManager indexManager, GetNumberOfDocsRequest request) throws Exception {
-		return indexManager.getNumberOfDocs(request);
-	}
+    @Override
+    protected GetNumberOfDocsResponse handleCall(ZuliaIndexManager indexManager, GetNumberOfDocsRequest request) throws Exception {
+        return indexManager.getNumberOfDocs(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle get number of documents", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle get number of documents", e);
+    }
 }

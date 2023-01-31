@@ -8,246 +8,246 @@ import io.zulia.server.index.ZuliaIndexManager;
 
 public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 
-	private final InternalQueryServerRequest internalQueryServerRequest;
-	private final QueryServerRequest queryServerRequest;
-	private final StoreServerRequest storeServerRequest;
-	private final InternalStoreServerRequest internalStoreServerRequest;
-	private final DeleteServerRequest deleteServerRequest;
-	private final InternalDeleteServerRequest internalDeleteServerRequest;
-	private final BatchDeleteServerRequest batchDeleteServerRequest;
-	private final FetchServerRequest fetchServerServerRequest;
-	private final InternalFetchServerRequest internalFetchServerServerRequest;
-	private final BatchFetchServerRequest batchFetchServerRequest;
-	private final CreateIndexServerRequest createIndexServerRequest;
+    private final InternalQueryServerRequest internalQueryServerRequest;
+    private final QueryServerRequest queryServerRequest;
+    private final StoreServerRequest storeServerRequest;
+    private final InternalStoreServerRequest internalStoreServerRequest;
+    private final DeleteServerRequest deleteServerRequest;
+    private final InternalDeleteServerRequest internalDeleteServerRequest;
+    private final BatchDeleteServerRequest batchDeleteServerRequest;
+    private final FetchServerRequest fetchServerServerRequest;
+    private final InternalFetchServerRequest internalFetchServerServerRequest;
+    private final BatchFetchServerRequest batchFetchServerRequest;
+    private final CreateIndexServerRequest createIndexServerRequest;
 
-	private final UpdateIndexServerRequest updateIndexServerRequest;
-	private final InternalCreateIndexServerRequest internalCreateIndexServerRequest;
-	private final DeleteIndexServerRequest deleteIndexServerRequest;
-	private final InternalDeleteIndexServerRequest internalDeleteIndexServerRequest;
-	private final GetIndexesServerRequest getIndexesServerRequest;
-	private final GetNumberOfDocsServerRequest getNumberOfDocsServerRequest;
-	private final InternalGetNumberOfDocsServerRequest internalGetNumberOfDocsServerRequest;
-	private final ClearServerRequest clearServerRequest;
-	private final InternalClearServerRequest internalClearServerRequest;
-	private final OptimizeServerRequest optimizeServerRequest;
-	private final InternalOptimizeServerRequest internalOptimizeServerRequest;
-	private final GetFieldNamesServerRequest getFieldNamesServerRequest;
-	private final InternalGetFieldNamesServerRequest internalGetFieldNamesServerRequest;
-	private final GetTermsServerRequest getTermsServerRequest;
-	private final InternalGetTermsServerRequest internalGetTermsServerRequest;
-	private final GetNodesServerRequest getNodesServerRequest;
-	private final GetIndexSettingsServerRequest getIndexSettingsServerRequest;
-	private final ReindexServerRequest reindexServerRequest;
-	private final InternalReindexServerRequest internalReindexRequest;
-	private final DeleteIndexAliasServerRequest deleteIndexAliasServerRequest;
-	private final CreateIndexAliasServerRequest createIndexAliasServerRequest;
-	private final InternalCreateIndexAliasServerRequest internalCreateIndexAliasServerRequest;
-	private final InternalDeleteIndexAliasServerRequest internalDeleteIndexAliasServerRequest;
+    private final UpdateIndexServerRequest updateIndexServerRequest;
+    private final InternalCreateIndexServerRequest internalCreateIndexServerRequest;
+    private final DeleteIndexServerRequest deleteIndexServerRequest;
+    private final InternalDeleteIndexServerRequest internalDeleteIndexServerRequest;
+    private final GetIndexesServerRequest getIndexesServerRequest;
+    private final GetNumberOfDocsServerRequest getNumberOfDocsServerRequest;
+    private final InternalGetNumberOfDocsServerRequest internalGetNumberOfDocsServerRequest;
+    private final ClearServerRequest clearServerRequest;
+    private final InternalClearServerRequest internalClearServerRequest;
+    private final OptimizeServerRequest optimizeServerRequest;
+    private final InternalOptimizeServerRequest internalOptimizeServerRequest;
+    private final GetFieldNamesServerRequest getFieldNamesServerRequest;
+    private final InternalGetFieldNamesServerRequest internalGetFieldNamesServerRequest;
+    private final GetTermsServerRequest getTermsServerRequest;
+    private final InternalGetTermsServerRequest internalGetTermsServerRequest;
+    private final GetNodesServerRequest getNodesServerRequest;
+    private final GetIndexSettingsServerRequest getIndexSettingsServerRequest;
+    private final ReindexServerRequest reindexServerRequest;
+    private final InternalReindexServerRequest internalReindexRequest;
+    private final DeleteIndexAliasServerRequest deleteIndexAliasServerRequest;
+    private final CreateIndexAliasServerRequest createIndexAliasServerRequest;
+    private final InternalCreateIndexAliasServerRequest internalCreateIndexAliasServerRequest;
+    private final InternalDeleteIndexAliasServerRequest internalDeleteIndexAliasServerRequest;
 
-	public ZuliaServiceHandler(ZuliaIndexManager indexManager) {
-		internalQueryServerRequest = new InternalQueryServerRequest(indexManager);
-		queryServerRequest = new QueryServerRequest(indexManager);
-		storeServerRequest = new StoreServerRequest(indexManager);
-		internalStoreServerRequest = new InternalStoreServerRequest(indexManager);
-		deleteServerRequest = new DeleteServerRequest(indexManager);
-		internalDeleteServerRequest = new InternalDeleteServerRequest(indexManager);
-		batchDeleteServerRequest = new BatchDeleteServerRequest(indexManager);
-		fetchServerServerRequest = new FetchServerRequest(indexManager);
-		internalFetchServerServerRequest = new InternalFetchServerRequest(indexManager);
-		batchFetchServerRequest = new BatchFetchServerRequest(indexManager);
-		createIndexServerRequest = new CreateIndexServerRequest(indexManager);
-		updateIndexServerRequest = new UpdateIndexServerRequest(indexManager);
-		internalCreateIndexServerRequest = new InternalCreateIndexServerRequest(indexManager);
-		deleteIndexServerRequest = new DeleteIndexServerRequest(indexManager);
-		internalDeleteIndexServerRequest = new InternalDeleteIndexServerRequest(indexManager);
-		getIndexesServerRequest = new GetIndexesServerRequest(indexManager);
-		getNumberOfDocsServerRequest = new GetNumberOfDocsServerRequest(indexManager);
-		internalGetNumberOfDocsServerRequest = new InternalGetNumberOfDocsServerRequest(indexManager);
-		clearServerRequest = new ClearServerRequest(indexManager);
-		internalClearServerRequest = new InternalClearServerRequest(indexManager);
-		optimizeServerRequest = new OptimizeServerRequest(indexManager);
-		internalOptimizeServerRequest = new InternalOptimizeServerRequest(indexManager);
-		getFieldNamesServerRequest = new GetFieldNamesServerRequest(indexManager);
-		internalGetFieldNamesServerRequest = new InternalGetFieldNamesServerRequest(indexManager);
-		getTermsServerRequest = new GetTermsServerRequest(indexManager);
-		internalGetTermsServerRequest = new InternalGetTermsServerRequest(indexManager);
-		getNodesServerRequest = new GetNodesServerRequest(indexManager);
-		getIndexSettingsServerRequest = new GetIndexSettingsServerRequest(indexManager);
-		reindexServerRequest = new ReindexServerRequest(indexManager);
-		internalReindexRequest = new InternalReindexServerRequest(indexManager);
-		deleteIndexAliasServerRequest = new DeleteIndexAliasServerRequest(indexManager);
-		createIndexAliasServerRequest = new CreateIndexAliasServerRequest(indexManager);
-		internalCreateIndexAliasServerRequest = new InternalCreateIndexAliasServerRequest(indexManager);
-		internalDeleteIndexAliasServerRequest = new InternalDeleteIndexAliasServerRequest(indexManager);
-	}
+    public ZuliaServiceHandler(ZuliaIndexManager indexManager) {
+        internalQueryServerRequest = new InternalQueryServerRequest(indexManager);
+        queryServerRequest = new QueryServerRequest(indexManager);
+        storeServerRequest = new StoreServerRequest(indexManager);
+        internalStoreServerRequest = new InternalStoreServerRequest(indexManager);
+        deleteServerRequest = new DeleteServerRequest(indexManager);
+        internalDeleteServerRequest = new InternalDeleteServerRequest(indexManager);
+        batchDeleteServerRequest = new BatchDeleteServerRequest(indexManager);
+        fetchServerServerRequest = new FetchServerRequest(indexManager);
+        internalFetchServerServerRequest = new InternalFetchServerRequest(indexManager);
+        batchFetchServerRequest = new BatchFetchServerRequest(indexManager);
+        createIndexServerRequest = new CreateIndexServerRequest(indexManager);
+        updateIndexServerRequest = new UpdateIndexServerRequest(indexManager);
+        internalCreateIndexServerRequest = new InternalCreateIndexServerRequest(indexManager);
+        deleteIndexServerRequest = new DeleteIndexServerRequest(indexManager);
+        internalDeleteIndexServerRequest = new InternalDeleteIndexServerRequest(indexManager);
+        getIndexesServerRequest = new GetIndexesServerRequest(indexManager);
+        getNumberOfDocsServerRequest = new GetNumberOfDocsServerRequest(indexManager);
+        internalGetNumberOfDocsServerRequest = new InternalGetNumberOfDocsServerRequest(indexManager);
+        clearServerRequest = new ClearServerRequest(indexManager);
+        internalClearServerRequest = new InternalClearServerRequest(indexManager);
+        optimizeServerRequest = new OptimizeServerRequest(indexManager);
+        internalOptimizeServerRequest = new InternalOptimizeServerRequest(indexManager);
+        getFieldNamesServerRequest = new GetFieldNamesServerRequest(indexManager);
+        internalGetFieldNamesServerRequest = new InternalGetFieldNamesServerRequest(indexManager);
+        getTermsServerRequest = new GetTermsServerRequest(indexManager);
+        internalGetTermsServerRequest = new InternalGetTermsServerRequest(indexManager);
+        getNodesServerRequest = new GetNodesServerRequest(indexManager);
+        getIndexSettingsServerRequest = new GetIndexSettingsServerRequest(indexManager);
+        reindexServerRequest = new ReindexServerRequest(indexManager);
+        internalReindexRequest = new InternalReindexServerRequest(indexManager);
+        deleteIndexAliasServerRequest = new DeleteIndexAliasServerRequest(indexManager);
+        createIndexAliasServerRequest = new CreateIndexAliasServerRequest(indexManager);
+        internalCreateIndexAliasServerRequest = new InternalCreateIndexAliasServerRequest(indexManager);
+        internalDeleteIndexAliasServerRequest = new InternalDeleteIndexAliasServerRequest(indexManager);
+    }
 
-	@Override
-	public void internalQuery(InternalQueryRequest request, StreamObserver<InternalQueryResponse> responseObserver) {
-		internalQueryServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalQuery(InternalQueryRequest request, StreamObserver<InternalQueryResponse> responseObserver) {
+        internalQueryServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void query(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
-		queryServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void query(QueryRequest request, StreamObserver<QueryResponse> responseObserver) {
+        queryServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void store(StoreRequest request, StreamObserver<StoreResponse> responseObserver) {
-		storeServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void store(StoreRequest request, StreamObserver<StoreResponse> responseObserver) {
+        storeServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalStore(StoreRequest request, StreamObserver<StoreResponse> responseObserver) {
-		internalStoreServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalStore(StoreRequest request, StreamObserver<StoreResponse> responseObserver) {
+        internalStoreServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
-		deleteServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void delete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+        deleteServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalDelete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
-		internalDeleteServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalDelete(DeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+        internalDeleteServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void batchDelete(BatchDeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
-		batchDeleteServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void batchDelete(BatchDeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
+        batchDeleteServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void fetch(FetchRequest request, StreamObserver<FetchResponse> responseObserver) {
-		fetchServerServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void fetch(FetchRequest request, StreamObserver<FetchResponse> responseObserver) {
+        fetchServerServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalFetch(FetchRequest request, StreamObserver<FetchResponse> responseObserver) {
-		internalFetchServerServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalFetch(FetchRequest request, StreamObserver<FetchResponse> responseObserver) {
+        internalFetchServerServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void batchFetch(BatchFetchRequest request, StreamObserver<FetchResponse> responseObserver) {
-		batchFetchServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void batchFetch(BatchFetchRequest request, StreamObserver<FetchResponse> responseObserver) {
+        batchFetchServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void createIndex(CreateIndexRequest request, StreamObserver<CreateIndexResponse> responseObserver) {
-		createIndexServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void createIndex(CreateIndexRequest request, StreamObserver<CreateIndexResponse> responseObserver) {
+        createIndexServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void updateIndex(UpdateIndexRequest request, StreamObserver<UpdateIndexResponse> responseObserver) {
-		updateIndexServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void updateIndex(UpdateIndexRequest request, StreamObserver<UpdateIndexResponse> responseObserver) {
+        updateIndexServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalCreateOrUpdateIndex(InternalCreateOrUpdateIndexRequest request, StreamObserver<InternalCreateOrUpdateIndexResponse> responseObserver) {
-		internalCreateIndexServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalCreateOrUpdateIndex(InternalCreateOrUpdateIndexRequest request, StreamObserver<InternalCreateOrUpdateIndexResponse> responseObserver) {
+        internalCreateIndexServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void deleteIndex(DeleteIndexRequest request, StreamObserver<DeleteIndexResponse> responseObserver) {
-		deleteIndexServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void deleteIndex(DeleteIndexRequest request, StreamObserver<DeleteIndexResponse> responseObserver) {
+        deleteIndexServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalDeleteIndex(DeleteIndexRequest request, StreamObserver<DeleteIndexResponse> responseObserver) {
-		internalDeleteIndexServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalDeleteIndex(DeleteIndexRequest request, StreamObserver<DeleteIndexResponse> responseObserver) {
+        internalDeleteIndexServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void getIndexes(GetIndexesRequest request, StreamObserver<GetIndexesResponse> responseObserver) {
-		getIndexesServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void getIndexes(GetIndexesRequest request, StreamObserver<GetIndexesResponse> responseObserver) {
+        getIndexesServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void getNumberOfDocs(GetNumberOfDocsRequest request, StreamObserver<GetNumberOfDocsResponse> responseObserver) {
-		getNumberOfDocsServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void getNumberOfDocs(GetNumberOfDocsRequest request, StreamObserver<GetNumberOfDocsResponse> responseObserver) {
+        getNumberOfDocsServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalGetNumberOfDocs(InternalGetNumberOfDocsRequest request, StreamObserver<GetNumberOfDocsResponse> responseObserver) {
-		internalGetNumberOfDocsServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalGetNumberOfDocs(InternalGetNumberOfDocsRequest request, StreamObserver<GetNumberOfDocsResponse> responseObserver) {
+        internalGetNumberOfDocsServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void clear(ClearRequest request, StreamObserver<ClearResponse> responseObserver) {
-		clearServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void clear(ClearRequest request, StreamObserver<ClearResponse> responseObserver) {
+        clearServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalClear(ClearRequest request, StreamObserver<ClearResponse> responseObserver) {
-		internalClearServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalClear(ClearRequest request, StreamObserver<ClearResponse> responseObserver) {
+        internalClearServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void optimize(OptimizeRequest request, StreamObserver<OptimizeResponse> responseObserver) {
-		optimizeServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void optimize(OptimizeRequest request, StreamObserver<OptimizeResponse> responseObserver) {
+        optimizeServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalOptimize(OptimizeRequest request, StreamObserver<OptimizeResponse> responseObserver) {
-		internalOptimizeServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalOptimize(OptimizeRequest request, StreamObserver<OptimizeResponse> responseObserver) {
+        internalOptimizeServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void getFieldNames(GetFieldNamesRequest request, StreamObserver<GetFieldNamesResponse> responseObserver) {
-		getFieldNamesServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void getFieldNames(GetFieldNamesRequest request, StreamObserver<GetFieldNamesResponse> responseObserver) {
+        getFieldNamesServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalGetFieldNames(InternalGetFieldNamesRequest request, StreamObserver<GetFieldNamesResponse> responseObserver) {
-		internalGetFieldNamesServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalGetFieldNames(InternalGetFieldNamesRequest request, StreamObserver<GetFieldNamesResponse> responseObserver) {
+        internalGetFieldNamesServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void getTerms(GetTermsRequest request, StreamObserver<GetTermsResponse> responseObserver) {
-		getTermsServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void getTerms(GetTermsRequest request, StreamObserver<GetTermsResponse> responseObserver) {
+        getTermsServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalGetTerms(InternalGetTermsRequest request, StreamObserver<InternalGetTermsResponse> responseObserver) {
-		internalGetTermsServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalGetTerms(InternalGetTermsRequest request, StreamObserver<InternalGetTermsResponse> responseObserver) {
+        internalGetTermsServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void getNodes(GetNodesRequest request, StreamObserver<GetNodesResponse> responseObserver) {
-		getNodesServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void getNodes(GetNodesRequest request, StreamObserver<GetNodesResponse> responseObserver) {
+        getNodesServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void getIndexSettings(GetIndexSettingsRequest request, StreamObserver<GetIndexSettingsResponse> responseObserver) {
-		getIndexSettingsServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void getIndexSettings(GetIndexSettingsRequest request, StreamObserver<GetIndexSettingsResponse> responseObserver) {
+        getIndexSettingsServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalReindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
-		internalReindexRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalReindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
+        internalReindexRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void reindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
-		reindexServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void reindex(ReindexRequest request, StreamObserver<ReindexResponse> responseObserver) {
+        reindexServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void createIndexAlias(CreateIndexAliasRequest request, StreamObserver<CreateIndexAliasResponse> responseObserver) {
-		createIndexAliasServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void createIndexAlias(CreateIndexAliasRequest request, StreamObserver<CreateIndexAliasResponse> responseObserver) {
+        createIndexAliasServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void deleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
-		deleteIndexAliasServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void deleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
+        deleteIndexAliasServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalCreateIndexAlias(InternalCreateIndexAliasRequest request, StreamObserver<CreateIndexAliasResponse> responseObserver) {
-		internalCreateIndexAliasServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalCreateIndexAlias(InternalCreateIndexAliasRequest request, StreamObserver<CreateIndexAliasResponse> responseObserver) {
+        internalCreateIndexAliasServerRequest.handleRequest(request, responseObserver);
+    }
 
-	@Override
-	public void internalDeleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
-		internalDeleteIndexAliasServerRequest.handleRequest(request, responseObserver);
-	}
+    @Override
+    public void internalDeleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
+        internalDeleteIndexAliasServerRequest.handleRequest(request, responseObserver);
+    }
 }

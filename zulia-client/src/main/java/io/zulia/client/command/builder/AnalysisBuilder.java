@@ -4,6 +4,6 @@ import io.zulia.message.ZuliaQuery.AnalysisRequest;
 
 public interface AnalysisBuilder {
 
-	AnalysisRequest getAnalysis();
+    AnalysisRequest getAnalysis();
 
 }

@@ -9,19 +9,19 @@ import java.util.logging.Logger;
 
 public class FetchServerRequest extends ServerRequestHandler<FetchResponse, FetchRequest> {
 
-	private final static Logger LOG = Logger.getLogger(FetchServerRequest.class.getSimpleName());
+    private final static Logger LOG = Logger.getLogger(FetchServerRequest.class.getSimpleName());
 
-	public FetchServerRequest(ZuliaIndexManager indexManager) {
-		super(indexManager);
-	}
+    public FetchServerRequest(ZuliaIndexManager indexManager) {
+        super(indexManager);
+    }
 
-	@Override
-	protected FetchResponse handleCall(ZuliaIndexManager indexManager, FetchRequest request) throws Exception {
-		return indexManager.fetch(request);
-	}
+    @Override
+    protected FetchResponse handleCall(ZuliaIndexManager indexManager, FetchRequest request) throws Exception {
+        return indexManager.fetch(request);
+    }
 
-	@Override
-	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle fetch", e);
-	}
+    @Override
+    protected void onError(Throwable e) {
+        LOG.log(Level.SEVERE, "Failed to handle fetch", e);
+    }
 }

@@ -22,87 +22,85 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<QueryRequest, InternalQueryResponse> {
-	private final InternalClient internalClient;
-	private final Collection<ZuliaIndex> indexes;
+    private final InternalClient internalClient;
+    private final Collection<ZuliaIndex> indexes;
 
-	private final Map<String, Query> queryMap;
+    private final Map<String, Query> queryMap;
 
-	private static final Logger LOG = Logger.getLogger(QueryRequestFederator.class.getSimpleName());
+    private static final Logger LOG = Logger.getLogger(QueryRequestFederator.class.getSimpleName());
 
-	private static AtomicLong queryNumber = new AtomicLong();
+    private static AtomicLong queryNumber = new AtomicLong();
 
-	public QueryRequestFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, Collection<ZuliaIndex> indexes,
-			ExecutorService pool, InternalClient internalClient, Map<String, Query> queryMap) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, indexes, pool);
-		this.internalClient = internalClient;
-		this.indexes = indexes;
-		this.queryMap = queryMap;
-	}
+    public QueryRequestFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, Collection<ZuliaIndex> indexes,
+                                 ExecutorService pool, InternalClient internalClient, Map<String, Query> queryMap) throws IOException {
+        super(thisNode, otherNodesActive, masterSlaveSettings, indexes, pool);
+        this.internalClient = internalClient;
+        this.indexes = indexes;
+        this.queryMap = queryMap;
+    }
 
-	@Override
-	protected InternalQueryResponse processExternal(Node node, QueryRequest request) throws Exception {
-		InternalQueryRequest internalQueryRequest = InternalQueryRequest.newBuilder().addAllIndexRouting(getIndexRouting(node)).setQueryRequest(request)
-				.build();
-		return internalClient.executeQuery(node, internalQueryRequest);
-	}
+    @Override
+    protected InternalQueryResponse processExternal(Node node, QueryRequest request) throws Exception {
+        InternalQueryRequest internalQueryRequest = InternalQueryRequest.newBuilder().addAllIndexRouting(getIndexRouting(node)).setQueryRequest(request)
+                .build();
+        return internalClient.executeQuery(node, internalQueryRequest);
+    }
 
-	@Override
-	protected InternalQueryResponse processInternal(Node node, QueryRequest request) throws Exception {
-		InternalQueryRequest internalQueryRequest = InternalQueryRequest.newBuilder().addAllIndexRouting(getIndexRouting(node)).setQueryRequest(request)
-				.build();
-		return internalQuery(indexes, internalQueryRequest, queryMap);
-	}
+    @Override
+    protected InternalQueryResponse processInternal(Node node, QueryRequest request) throws Exception {
+        InternalQueryRequest internalQueryRequest = InternalQueryRequest.newBuilder().addAllIndexRouting(getIndexRouting(node)).setQueryRequest(request)
+                .build();
+        return internalQuery(indexes, internalQueryRequest, queryMap);
+    }
 
-	public static InternalQueryResponse internalQuery(Collection<ZuliaIndex> indexes, InternalQueryRequest request, Map<String, Query> queryMap)
-			throws Exception {
-		InternalQueryResponse.Builder internalQueryResponseBuilder = InternalQueryResponse.newBuilder();
-		for (ZuliaIndex index : indexes) {
-			Query query = queryMap.get(index.getIndexName());
-			IndexShardResponse isr = index.internalQuery(query, request);
-			internalQueryResponseBuilder.addIndexShardResponse(isr);
-		}
-		return internalQueryResponseBuilder.build();
-	}
+    public static InternalQueryResponse internalQuery(Collection<ZuliaIndex> indexes, InternalQueryRequest request, Map<String, Query> queryMap)
+            throws Exception {
+        InternalQueryResponse.Builder internalQueryResponseBuilder = InternalQueryResponse.newBuilder();
+        for (ZuliaIndex index : indexes) {
+            Query query = queryMap.get(index.getIndexName());
+            IndexShardResponse isr = index.internalQuery(query, request);
+            internalQueryResponseBuilder.addIndexShardResponse(isr);
+        }
+        return internalQueryResponseBuilder.build();
+    }
 
-	public QueryResponse getResponse(QueryRequest request) throws Exception {
+    public QueryResponse getResponse(QueryRequest request) throws Exception {
 
-		long queryId = queryNumber.getAndIncrement();
+        long queryId = queryNumber.getAndIncrement();
 
-		long start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
 
-		String queryJson = JsonFormat.printer().print(request);
-		LOG.info("Running id <" + queryId + "> query <" + queryJson + ">");
+        String queryJson = JsonFormat.printer().print(request);
+        LOG.info("Running id <" + queryId + "> query <" + queryJson + ">");
 
-		List<InternalQueryResponse> results = send(request);
+        List<InternalQueryResponse> results = send(request);
 
-		QueryCombiner queryCombiner = new QueryCombiner(indexes, request, results);
+        QueryCombiner queryCombiner = new QueryCombiner(indexes, request, results);
 
-		QueryResponse qr = queryCombiner.getQueryResponse();
+        QueryResponse qr = queryCombiner.getQueryResponse();
 
-		long end = System.currentTimeMillis();
-		handleLog(queryId, qr, end - start);
-		if (!queryCombiner.isShort()) {
-			return qr;
-		}
-		else {
-			if (!request.getFetchFull()) {
-				QueryRequest newRequest = request.toBuilder().setFetchFull(true).build();
-				return getResponse(newRequest);
-			}
-			throw new Exception("Full fetch request is short");
-		}
+        long end = System.currentTimeMillis();
+        handleLog(queryId, qr, end - start);
+        if (!queryCombiner.isShort()) {
+            return qr;
+        } else {
+            if (!request.getFetchFull()) {
+                QueryRequest newRequest = request.toBuilder().setFetchFull(true).build();
+                return getResponse(newRequest);
+            }
+            throw new Exception("Full fetch request is short");
+        }
 
-	}
+    }
 
-	private static void handleLog(long queryId, QueryResponse qr, long time) {
-		String prefix = "Finished query";
-		if (qr.getShardsQueried() == qr.getShardsPinned()) {
-			prefix = "Finished query from pinned cache";
-		}
-		else if (qr.getShardsQueried() == qr.getShardsCached()) {
-			prefix = "Finished query from cache";
-		}
+    private static void handleLog(long queryId, QueryResponse qr, long time) {
+        String prefix = "Finished query";
+        if (qr.getShardsQueried() == qr.getShardsPinned()) {
+            prefix = "Finished query from pinned cache";
+        } else if (qr.getShardsQueried() == qr.getShardsCached()) {
+            prefix = "Finished query from cache";
+        }
 
-		LOG.info(prefix + " id <" + queryId + "> with result size " + String.format("%.2f", (qr.getSerializedSize() / 1024.0)) + "KB in " + time + "ms");
-	}
+        LOG.info(prefix + " id <" + queryId + "> with result size " + String.format("%.2f", (qr.getSerializedSize() / 1024.0)) + "KB in " + time + "ms");
+    }
 }

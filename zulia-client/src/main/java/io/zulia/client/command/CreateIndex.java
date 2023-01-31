@@ -13,33 +13,32 @@ import static io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
  * Creates or updates (replaces) an index.  To do partial config/schema updates of an existing index use {@link UpdateIndex}
  *
  * @author mdavis
- *
  */
 public class CreateIndex extends SimpleCommand<CreateIndexRequest, CreateIndexResult> {
 
-	private ClientIndexConfig indexConfig;
+    private ClientIndexConfig indexConfig;
 
-	public CreateIndex(ClientIndexConfig indexConfig) {
-		this.indexConfig = indexConfig;
-	}
+    public CreateIndex(ClientIndexConfig indexConfig) {
+        this.indexConfig = indexConfig;
+    }
 
-	@Override
-	public CreateIndexRequest getRequest() {
-		CreateIndexRequest.Builder createIndexRequestBuilder = CreateIndexRequest.newBuilder();
+    @Override
+    public CreateIndexRequest getRequest() {
+        CreateIndexRequest.Builder createIndexRequestBuilder = CreateIndexRequest.newBuilder();
 
-		if (indexConfig != null) {
-			createIndexRequestBuilder.setIndexSettings(indexConfig.getIndexSettings());
-		}
+        if (indexConfig != null) {
+            createIndexRequestBuilder.setIndexSettings(indexConfig.getIndexSettings());
+        }
 
-		return createIndexRequestBuilder.build();
-	}
+        return createIndexRequestBuilder.build();
+    }
 
-	@Override
-	public CreateIndexResult execute(ZuliaConnection zuliaConnection) {
-		ZuliaServiceBlockingStub service = zuliaConnection.getService();
-		CreateIndexResponse createIndexResponse = service.createIndex(getRequest());
+    @Override
+    public CreateIndexResult execute(ZuliaConnection zuliaConnection) {
+        ZuliaServiceBlockingStub service = zuliaConnection.getService();
+        CreateIndexResponse createIndexResponse = service.createIndex(getRequest());
 
-		return new CreateIndexResult(createIndexResponse);
-	}
+        return new CreateIndexResult(createIndexResponse);
+    }
 
 }

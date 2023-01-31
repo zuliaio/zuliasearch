@@ -7,55 +7,55 @@ import java.util.Collection;
 
 public class TermQuery implements QueryBuilder {
 
-	private final ZuliaQuery.Query.Builder builder;
+    private final ZuliaQuery.Query.Builder builder;
 
-	public TermQuery(String... field) {
-		this(Arrays.asList(field));
-	}
+    public TermQuery(String... field) {
+        this(Arrays.asList(field));
+    }
 
-	public TermQuery(Collection<String> field) {
-		if (field.isEmpty()) {
-			throw new IllegalArgumentException("Field(s) must be not empty");
-		}
+    public TermQuery(Collection<String> field) {
+        if (field.isEmpty()) {
+            throw new IllegalArgumentException("Field(s) must be not empty");
+        }
 
-		builder = ZuliaQuery.Query.newBuilder().addAllQf(field).setQueryType(ZuliaQuery.Query.QueryType.TERMS);
-	}
+        builder = ZuliaQuery.Query.newBuilder().addAllQf(field).setQueryType(ZuliaQuery.Query.QueryType.TERMS);
+    }
 
-	public TermQuery addTerm(String term) {
-		builder.addTerm(term);
-		return this;
-	}
+    public TermQuery addTerm(String term) {
+        builder.addTerm(term);
+        return this;
+    }
 
-	public TermQuery addTerms(Iterable<String> term) {
-		builder.addAllTerm(term);
-		return this;
-	}
+    public TermQuery addTerms(Iterable<String> term) {
+        builder.addAllTerm(term);
+        return this;
+    }
 
-	public QueryBuilder addTerms(String... terms) {
-		for (String term : terms) {
-			builder.addTerm(term);
-		}
-		return this;
-	}
+    public QueryBuilder addTerms(String... terms) {
+        for (String term : terms) {
+            builder.addTerm(term);
+        }
+        return this;
+    }
 
-	public QueryBuilder exclude() {
-		builder.setQueryType(ZuliaQuery.Query.QueryType.TERMS_NOT);
-		return this;
-	}
+    public QueryBuilder exclude() {
+        builder.setQueryType(ZuliaQuery.Query.QueryType.TERMS_NOT);
+        return this;
+    }
 
-	public QueryBuilder include() {
-		builder.setQueryType(ZuliaQuery.Query.QueryType.TERMS);
-		return this;
-	}
+    public QueryBuilder include() {
+        builder.setQueryType(ZuliaQuery.Query.QueryType.TERMS);
+        return this;
+    }
 
-	public TermQuery clearTerms() {
-		builder.clearTerm();
-		return this;
-	}
+    public TermQuery clearTerms() {
+        builder.clearTerm();
+        return this;
+    }
 
-	@Override
-	public ZuliaQuery.Query getQuery() {
-		return builder.build();
-	}
+    @Override
+    public ZuliaQuery.Query getQuery() {
+        return builder.build();
+    }
 
 }

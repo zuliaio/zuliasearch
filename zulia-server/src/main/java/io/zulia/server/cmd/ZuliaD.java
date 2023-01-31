@@ -10,31 +10,31 @@ import picocli.CommandLine;
 
 import java.io.File;
 
-@CommandLine.Command(name = "zuliad", subcommands = { AddNodeCmd.class, ListNodesCmd.class, RemoveNodeCmd.class,
-		StartNodeCmd.class }, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
+@CommandLine.Command(name = "zuliad", subcommands = {AddNodeCmd.class, ListNodesCmd.class, RemoveNodeCmd.class,
+        StartNodeCmd.class}, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaD {
 
-	@CommandLine.Option(names = "--config", description = "Full path to the config (defaults to $APP_HOME/config/zulia.properties)", scope = CommandLine.ScopeType.INHERIT)
-	private String configPath = "config" + File.separator + "zulia.properties";
+    @CommandLine.Option(names = "--config", description = "Full path to the config (defaults to $APP_HOME/config/zulia.properties)", scope = CommandLine.ScopeType.INHERIT)
+    private String configPath = "config" + File.separator + "zulia.properties";
 
-	@CommandLine.Mixin
-	private ShowStackArgs showStackArgs;
+    @CommandLine.Mixin
+    private ShowStackArgs showStackArgs;
 
-	public String getConfigPath() {
-		if (!configPath.startsWith(File.separator)) {
-			String prefix = System.getenv("APP_HOME");
-			if (prefix != null) {
-				return prefix + File.separator + configPath;
-			}
-		}
+    public String getConfigPath() {
+        if (!configPath.startsWith(File.separator)) {
+            String prefix = System.getenv("APP_HOME");
+            if (prefix != null) {
+                return prefix + File.separator + configPath;
+            }
+        }
 
-		return configPath;
-	}
+        return configPath;
+    }
 
-	public static void main(String[] args) {
+    public static void main(String[] args) {
 
-		ZuliaCommonCmd.runCommandLine(new ZuliaD(), args);
+        ZuliaCommonCmd.runCommandLine(new ZuliaD(), args);
 
-	}
+    }
 
 }
