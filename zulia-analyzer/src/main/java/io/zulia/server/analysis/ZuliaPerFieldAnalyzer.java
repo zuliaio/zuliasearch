@@ -7,18 +7,10 @@ import io.zulia.server.analysis.filter.BritishUSFilter;
 import io.zulia.server.analysis.filter.CaseProtectedWordsFilter;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.UpperCaseFilter;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.core.*;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.en.EnglishMinimalStemFilter;
 import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
@@ -39,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.CATENATE_ALL;
 
@@ -185,8 +178,10 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 						File file = new File(System.getProperty("user.home") + File.separator + ".zulia" + File.separator + "stopwords.txt");
 						if (file.exists()) {
 							try {
-								List<String> fileLines = Files.lines(file.toPath()).map(s -> s = s.trim()).collect(Collectors.toList());
-								stopWordsSet = StopFilter.makeStopSet(fileLines);
+								try (Stream<String> lines = Files.lines(file.toPath())) {
+									List<String> fileLines = lines.map(String::trim).collect(Collectors.toList());
+									stopWordsSet = StopFilter.makeStopSet(fileLines);
+								}
 							}
 							catch (IOException e) {
 								throw new RuntimeException(e);

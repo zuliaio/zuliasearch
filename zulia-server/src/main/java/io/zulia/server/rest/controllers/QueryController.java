@@ -585,26 +585,24 @@ public class QueryController {
 	private void truncateDocumentValues(Document document) {
 		for (String key : document.keySet()) {
 			if (document.get(key) instanceof Document) {
-				truncateDocumentValues((Document) document.get(key));
-			}
-			if (document.get(key) instanceof String) {
-				String value = (String) document.get(key);
-				if (value.length() > 750) {
-					document.put(key, value.substring(0, 750) + "...truncated for UI...");
-				}
-			}
-			if (document.get(key) instanceof List) {
-				List<?> o = (List<?>) document.get(key);
-				if (!o.isEmpty()) {
-					if (o.get(0) instanceof Document) {
-						for (Object oDoc : o) {
-							Document subDoc = (Document) oDoc;
-							for (String subKey : subDoc.keySet()) {
-								Object subValue = subDoc.get(subKey);
-								if (subValue instanceof List) {
-									if (!((List<?>) subValue).isEmpty()) {
-										if (((List<?>) subValue).get(0) instanceof String) {
-											if (((List<String>) subValue).size() > 10) {
+                truncateDocumentValues((Document) document.get(key));
+            }
+            if (document.get(key) instanceof String value) {
+                if (value.length() > 750) {
+                    document.put(key, value.substring(0, 750) + "...truncated for UI...");
+                }
+            }
+            if (document.get(key) instanceof List<?> o) {
+                if (!o.isEmpty()) {
+                    if (o.get(0) instanceof Document) {
+                        for (Object oDoc : o) {
+                            Document subDoc = (Document) oDoc;
+                            for (String subKey : subDoc.keySet()) {
+                                Object subValue = subDoc.get(subKey);
+                                if (subValue instanceof List) {
+                                    if (!((List<?>) subValue).isEmpty()) {
+                                        if (((List<?>) subValue).get(0) instanceof String) {
+                                            if (((List<String>) subValue).size() > 10) {
 												List<String> value = ((List<String>) subValue).subList(0, 10);
 												value.add("list truncated for UI");
 												subDoc.put(subKey, value);
@@ -654,64 +652,51 @@ public class QueryController {
 		for (String field : fields) {
 			Object obj = ResultHelper.getValueFromMongoDocument(document, field);
 			if (obj != null) {
-				if (obj instanceof List) {
-					List value = (List) obj;
+                if (obj instanceof List value) {
 
-					if (!value.isEmpty()) {
-						responseBuilder.append("\"");
+                    if (!value.isEmpty()) {
+                        responseBuilder.append("\"");
 
-						boolean first = true;
-						for (Object o : value) {
+                        boolean first = true;
+                        for (Object o : value) {
 
-							if (first) {
-								first = false;
-							}
+                            if (first) {
+                                first = false;
+                            }
 							else {
 								responseBuilder.append(";");
 							}
 
-							if (o instanceof String) {
+                            if (o instanceof String item) {
 
-								String item = (String) o;
+                                if (item.contains("\"")) {
+                                    item = item.replace("\"", "\"\"");
+                                }
 
-								if (item.contains("\"")) {
-									item = item.replace("\"", "\"\"");
-								}
+                                responseBuilder.append(item);
 
-								responseBuilder.append(item);
+                            } else if (o instanceof Document) {
+                                responseBuilder.append(((Document) o).toJson().replace("\"", "\"\""));
+                            } else {
+                                responseBuilder.append(o.toString());
+                            }
+                        }
+                        responseBuilder.append("\"");
+                    }
 
-							}
-							else if (o instanceof Document) {
-								responseBuilder.append(((Document) o).toJson().replace("\"", "\"\""));
-							}
-							else {
-								responseBuilder.append(o.toString());
-							}
-						}
-						responseBuilder.append("\"");
-					}
-
-				}
-				else if (obj instanceof Date) {
-					Date value = (Date) obj;
-					responseBuilder.append(value.toString());
-				}
-				else if (obj instanceof Number) {
-					Number value = (Number) obj;
-					responseBuilder.append(value);
-				}
-				else if (obj instanceof Boolean) {
-					Boolean value = (Boolean) obj;
-					responseBuilder.append(value);
-				}
-				else if (obj instanceof Document) {
-					responseBuilder.append("\"");
-					responseBuilder.append(((Document) obj).toJson().replace("\"", "\"\""));
-					responseBuilder.append("\"");
-				}
-				else {
-					String value = (String) obj;
-					if (value.contains(",") || value.contains(" ") || value.contains("\"") || value.contains("\n")) {
+                } else if (obj instanceof Date value) {
+                    responseBuilder.append(value.toString());
+                } else if (obj instanceof Number value) {
+                    responseBuilder.append(value);
+                } else if (obj instanceof Boolean value) {
+                    responseBuilder.append(value);
+                } else if (obj instanceof Document) {
+                    responseBuilder.append("\"");
+                    responseBuilder.append(((Document) obj).toJson().replace("\"", "\"\""));
+                    responseBuilder.append("\"");
+                } else {
+                    String value = (String) obj;
+                    if (value.contains(",") || value.contains(" ") || value.contains("\"") || value.contains("\n")) {
 						responseBuilder.append("\"");
 						responseBuilder.append(value.replace("\"", "\"\""));
 						responseBuilder.append("\"");

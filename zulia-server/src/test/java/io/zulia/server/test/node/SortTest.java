@@ -13,13 +13,7 @@ import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -508,14 +502,14 @@ public class SortTest {
 		search.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD).ascending());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals("0", searchResult.getFirstDocument().get("id"));
-		Assertions.assertEquals("0", searchResult.getFirstResult().getUniqueId());
+        Assertions.assertEquals("0", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD).descending());
 		searchResult = zuliaWorkPool.search(search);
 		//99 here instead of 199 because sorting as a string not a number
-		Assertions.assertEquals("99", searchResult.getFirstDocument().get("id"));
-		Assertions.assertEquals("99", searchResult.getFirstResult().getUniqueId());
+        Assertions.assertEquals("99", searchResult.getFirstDocument().get("id"));
+        Assertions.assertEquals("99", searchResult.getFirstCompleteResult().getUniqueId());
 
 	}
 
@@ -540,12 +534,12 @@ public class SortTest {
 
 		search.addSort(new Sort("|||stringList|||").descending());
 		SearchResult searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("10", searchResult.getFirstResult().getUniqueId());
+        Assertions.assertEquals("10", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|||stringList|||").ascending());
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("30", searchResult.getFirstResult().getUniqueId());
+        searchResult = zuliaWorkPool.search(search);
+        Assertions.assertEquals("30", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|||madeUp|||").descending());
@@ -553,13 +547,13 @@ public class SortTest {
 
 		search.clearSort();
 		search.addSort(new Sort("|||intList|||").descending());
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("40", searchResult.getFirstResult().getUniqueId());
+        searchResult = zuliaWorkPool.search(search);
+        Assertions.assertEquals("40", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|||intList|||").ascending());
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("6", searchResult.getFirstResult().getUniqueId());
+        searchResult = zuliaWorkPool.search(search);
+        Assertions.assertEquals("6", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|intList|").ascending());
@@ -571,13 +565,13 @@ public class SortTest {
 
 		search.clearSort();
 		search.addSort(new Sort("|stringList|").descending());
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("20", searchResult.getFirstResult().getUniqueId());
+        searchResult = zuliaWorkPool.search(search);
+        Assertions.assertEquals("20", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|stringList|").ascending().missingLast());
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("6", searchResult.getFirstResult().getUniqueId());
+        searchResult = zuliaWorkPool.search(search);
+        Assertions.assertEquals("6", searchResult.getFirstCompleteResult().getUniqueId());
 	}
 
 	@Test

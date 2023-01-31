@@ -5,12 +5,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.zulia.util.ZuliaThreadFactory;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WorkPool {
@@ -27,17 +22,16 @@ public class WorkPool {
 	}
 
 	public WorkPool(int threads, int maxQueued, String poolName) {
-		BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(maxQueued) {
-			private static final long serialVersionUID = 1L;
+		BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(maxQueued) {
+            private static final long serialVersionUID = 1L;
 
-			@Override
-			public boolean offer(Runnable e) {
-				try {
-					put(e);
-				}
-				catch (InterruptedException e1) {
-					throw new RuntimeException(e1);
-				}
+            @Override
+            public boolean offer(Runnable e) {
+                try {
+                    put(e);
+                } catch (InterruptedException e1) {
+                    throw new RuntimeException(e1);
+                }
 				return true;
 			}
 

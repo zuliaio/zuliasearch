@@ -7,15 +7,7 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.Writer;
+import java.io.*;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -125,9 +117,10 @@ public class FileDocumentStorage implements DocumentStorage {
 
 		Path p = Path.of(pathForUniqueId);
 		if (Files.exists(p)) {
-			Stream<Path> list = Files.list(p);
-			return list.map(Path::toFile).map(File::getName).collect(Collectors.toList());
-		}
+            try (Stream<Path> list = Files.list(p)) {
+                return list.map(Path::toFile).map(File::getName).collect(Collectors.toList());
+            }
+        }
 		return Collections.emptyList();
 	}
 

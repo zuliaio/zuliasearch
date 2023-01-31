@@ -52,30 +52,25 @@ public class ZuliaUtil {
 	}
 
 	public static void handleLists(Object o, Consumer<? super Object> action, AtomicInteger listSize) {
-		if (o instanceof Collection) {
-			Collection<?> c = (Collection<?>) o;
-			c.stream().filter(Objects::nonNull).forEach(obj -> {
-				if (obj instanceof Collection) {
-					handleLists(obj, action, listSize);
-				}
-				else {
-					listSize.incrementAndGet();
-					action.accept(obj);
-				}
-			});
-		}
-		else if (o instanceof Object[]) {
-			Object[] arr = (Object[]) o;
-			for (Object obj : arr) {
-				if (obj != null) {
-					listSize.incrementAndGet();
-					action.accept(action);
-				}
-			}
-		}
-		else {
-			if (o != null) {
-				listSize.incrementAndGet();
+		if (o instanceof Collection<?> c) {
+            c.stream().filter(Objects::nonNull).forEach(obj -> {
+                if (obj instanceof Collection) {
+                    handleLists(obj, action, listSize);
+                } else {
+                    listSize.incrementAndGet();
+                    action.accept(obj);
+                }
+            });
+        } else if (o instanceof Object[] arr) {
+            for (Object obj : arr) {
+                if (obj != null) {
+                    listSize.incrementAndGet();
+                    action.accept(action);
+                }
+            }
+        } else {
+            if (o != null) {
+                listSize.incrementAndGet();
 				action.accept(o);
 			}
 		}
@@ -122,18 +117,18 @@ public class ZuliaUtil {
 
 	public static int computeLevenshteinDistance(String string1, String string2) {
 
-		char str1[] = string1.toCharArray();
-		char str2[] = string2.toCharArray();
+        char[] str1 = string1.toCharArray();
+        char[] str2 = string2.toCharArray();
 
-		int insert = 40;
-		int delete = 40;
-		int substitute = 40;
-		int substituteCase = 1;
+        int insert = 40;
+        int delete = 40;
+        int substitute = 40;
+        int substituteCase = 1;
 
-		if (string1.length() < string2.length()) {
-			insert = 2;
-		}
-		int distance[][] = new int[str1.length + 1][str2.length + 1];
+        if (string1.length() < string2.length()) {
+            insert = 2;
+        }
+        int[][] distance = new int[str1.length + 1][str2.length + 1];
 
 		for (int i = 0; i <= str1.length; i++) {
 			distance[i][0] = i * delete;

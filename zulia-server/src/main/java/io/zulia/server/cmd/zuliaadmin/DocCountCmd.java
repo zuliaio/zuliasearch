@@ -19,7 +19,7 @@ public class DocCountCmd implements Callable<Integer> {
 	public enum Sort {
 		size,
 		abc,
-		given;
+		given
 	}
 
 	@CommandLine.ParentCommand

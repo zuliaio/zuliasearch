@@ -4,13 +4,7 @@ import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
-import io.zulia.message.ZuliaIndex.AnalyzerSettings;
-import io.zulia.message.ZuliaIndex.FieldConfig;
-import io.zulia.message.ZuliaIndex.IndexAlias;
-import io.zulia.message.ZuliaIndex.IndexSettings;
-import io.zulia.message.ZuliaIndex.IndexShardMapping;
-import io.zulia.message.ZuliaIndex.ShardMapping;
-import io.zulia.message.ZuliaIndex.UpdateIndexSettings;
+import io.zulia.message.ZuliaIndex.*;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation.OperationType;
 import io.zulia.message.ZuliaQuery;
@@ -29,17 +23,7 @@ import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
 import io.zulia.server.filestorage.S3DocumentStorage;
-import io.zulia.server.index.federator.ClearRequestFederator;
-import io.zulia.server.index.federator.CreateIndexAliasRequestFederator;
-import io.zulia.server.index.federator.CreateOrUpdateIndexRequestFederator;
-import io.zulia.server.index.federator.DeleteIndexAliasRequestFederator;
-import io.zulia.server.index.federator.DeleteIndexRequestFederator;
-import io.zulia.server.index.federator.GetFieldNamesRequestFederator;
-import io.zulia.server.index.federator.GetNumberOfDocsRequestFederator;
-import io.zulia.server.index.federator.GetTermsRequestFederator;
-import io.zulia.server.index.federator.OptimizeRequestFederator;
-import io.zulia.server.index.federator.QueryRequestFederator;
-import io.zulia.server.index.federator.ReindexRequestFederator;
+import io.zulia.server.index.federator.*;
 import io.zulia.server.index.router.DeleteRequestRouter;
 import io.zulia.server.index.router.FetchRequestRouter;
 import io.zulia.server.index.router.StoreRequestRouter;
@@ -54,15 +38,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -193,17 +169,15 @@ public class ZuliaIndexManager {
 
 		DocumentStorage documentStorage;
 		if (zuliaConfig.isCluster()) {
-			switch (zuliaConfig.getClusterStorageEngine()) {
-				case "s3":
-					documentStorage = new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false,
-							zuliaConfig.getS3());
-					break;
-				default:
-					documentStorage = new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
-					break;
-			}
-			;
-		}
+            documentStorage = switch (zuliaConfig.getClusterStorageEngine()) {
+                case "s3" ->
+                        new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false,
+                                zuliaConfig.getS3());
+                default ->
+                        new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
+            };
+
+        }
 		else {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
 		}

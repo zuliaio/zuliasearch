@@ -36,31 +36,26 @@ public class ResultHelper {
 			o = mongoDocument;
 			String[] fields = storedFieldName.split("\\.");
 			for (String field : fields) {
-				if (o instanceof List) {
-					List<?> list = (List<?>) o;
-					List<Object> values = new ArrayList<>();
-					list.stream().filter(item -> item instanceof org.bson.Document).forEach(item -> {
-						org.bson.Document dbObj = (org.bson.Document) item;
-						Object object = dbObj.get(field);
-						if (object != null) {
-							values.add(object);
-						}
-					});
-					if (!values.isEmpty()) {
-						o = values;
-					}
-					else {
-						o = null;
-					}
-				}
-				else if (o instanceof org.bson.Document) {
-					org.bson.Document mongoDoc = (org.bson.Document) o;
-					o = mongoDoc.get(field);
-				}
-				else {
-					o = null;
-					break;
-				}
+                if (o instanceof List<?> list) {
+                    List<Object> values = new ArrayList<>();
+                    list.stream().filter(item -> item instanceof org.bson.Document).forEach(item -> {
+                        org.bson.Document dbObj = (org.bson.Document) item;
+                        Object object = dbObj.get(field);
+                        if (object != null) {
+                            values.add(object);
+                        }
+                    });
+                    if (!values.isEmpty()) {
+                        o = values;
+                    } else {
+                        o = null;
+                    }
+                } else if (o instanceof Document mongoDoc) {
+                    o = mongoDoc.get(field);
+                } else {
+                    o = null;
+                    break;
+                }
 			}
 		}
 		else {

@@ -6,12 +6,7 @@ import io.grpc.StatusRuntimeException;
 import io.zulia.ZuliaConstants;
 import io.zulia.cache.MetaKeys;
 import io.zulia.client.command.GetNodes;
-import io.zulia.client.command.base.BaseCommand;
-import io.zulia.client.command.base.GrpcCommand;
-import io.zulia.client.command.base.MultiIndexRoutableCommand;
-import io.zulia.client.command.base.RESTCommand;
-import io.zulia.client.command.base.ShardRoutableCommand;
-import io.zulia.client.command.base.SingleIndexRoutableCommand;
+import io.zulia.client.command.base.*;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.result.GetNodesResult;
@@ -159,19 +154,14 @@ public class ZuliaPool {
 			try {
 
 				if (routingEnabled && (indexRouting != null)) {
-					if (command instanceof ShardRoutableCommand) {
-						ShardRoutableCommand rc = (ShardRoutableCommand) command;
-						selectedNode = indexRouting.getNode(rc.getIndexName(), rc.getUniqueId());
-					}
-					else if (command instanceof SingleIndexRoutableCommand) {
-						SingleIndexRoutableCommand sirc = (SingleIndexRoutableCommand) command;
-						selectedNode = indexRouting.getRandomNode(sirc.getIndexName());
-					}
-					else if (command instanceof MultiIndexRoutableCommand) {
-						MultiIndexRoutableCommand mirc = (MultiIndexRoutableCommand) command;
-						selectedNode = indexRouting.getRandomNode(mirc.getIndexNames());
-					}
-				}
+                    if (command instanceof ShardRoutableCommand rc) {
+                        selectedNode = indexRouting.getNode(rc.getIndexName(), rc.getUniqueId());
+                    } else if (command instanceof SingleIndexRoutableCommand sirc) {
+                        selectedNode = indexRouting.getRandomNode(sirc.getIndexName());
+                    } else if (command instanceof MultiIndexRoutableCommand mirc) {
+                        selectedNode = indexRouting.getRandomNode(mirc.getIndexNames());
+                    }
+                }
 
 				if (selectedNode == null) {
 					List<Node> tempList = nodes; //stop array index out bounds on updates without locking

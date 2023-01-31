@@ -4,13 +4,7 @@ import io.zulia.client.command.CreateIndex;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.doc.ResultDocBuilder;
-import io.zulia.fields.annotations.AsField;
-import io.zulia.fields.annotations.DefaultSearch;
-import io.zulia.fields.annotations.Embedded;
-import io.zulia.fields.annotations.Indexed;
-import io.zulia.fields.annotations.IndexedFields;
-import io.zulia.fields.annotations.Settings;
-import io.zulia.fields.annotations.UniqueId;
+import io.zulia.fields.annotations.*;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.util.AnnotationUtil;
 import org.bson.Document;
@@ -120,7 +114,7 @@ public class Mapper<T> extends GsonDocumentMapper<T> {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 
 		for (DefaultSearchFieldInfo<T> defaultSearchField : defaultSearchFields) {
-			indexConfig.addDefaultSearchField(defaultSearchField.getFieldName());
+			indexConfig.addDefaultSearchField(defaultSearchField.fieldName());
 		}
 
 		indexConfig.setIndexName(settings.indexName());

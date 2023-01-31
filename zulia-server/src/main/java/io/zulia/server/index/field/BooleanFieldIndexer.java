@@ -30,34 +30,26 @@ public class BooleanFieldIndexer extends FieldIndexer {
 	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) throws Exception {
 		if (value != null) {
 			if (value instanceof Boolean) {
-				d.add((new Field(indexedFieldName, value.toString(), notStoredTextField)));
-			}
-			else if (value instanceof String) {
-				String v = (String) value;
-				if (BooleanAnalyzer.truePattern.matcher(v).matches()) {
-					d.add((new Field(indexedFieldName, BooleanAnalyzer.TRUE_TOKEN, notStoredTextField)));
-				}
-				else if (BooleanAnalyzer.falsePattern.matcher(v).matches()) {
-					d.add((new Field(indexedFieldName, BooleanAnalyzer.FALSE_TOKEN, notStoredTextField)));
-				}
-				else {
-					throw new Exception(
-							"String for Boolean field be 'Yes', 'No', 'Y', 'N', '1', '0', 'True', 'False', 'T', 'F' (case insensitive) for <" + storedFieldName
-									+ "> and found <" + v + ">");
-				}
-			}
-			else if (value instanceof Number) {
-				Number number = (Number) value;
-				int v = number.intValue();
-				if (v == 0 || v == 1) {
-					d.add((new Field(indexedFieldName, String.valueOf(v), notStoredTextField)));
-				}
-				else {
-					throw new Exception("Number for Boolean field must be 0 or 1 for <" + storedFieldName + "> and found <" + v + ">");
-				}
-			}
-			else {
-				throw new Exception(
+                d.add((new Field(indexedFieldName, value.toString(), notStoredTextField)));
+            } else if (value instanceof String v) {
+                if (BooleanAnalyzer.truePattern.matcher(v).matches()) {
+                    d.add((new Field(indexedFieldName, BooleanAnalyzer.TRUE_TOKEN, notStoredTextField)));
+                } else if (BooleanAnalyzer.falsePattern.matcher(v).matches()) {
+                    d.add((new Field(indexedFieldName, BooleanAnalyzer.FALSE_TOKEN, notStoredTextField)));
+                } else {
+                    throw new Exception(
+                            "String for Boolean field be 'Yes', 'No', 'Y', 'N', '1', '0', 'True', 'False', 'T', 'F' (case insensitive) for <" + storedFieldName
+                                    + "> and found <" + v + ">");
+                }
+            } else if (value instanceof Number number) {
+                int v = number.intValue();
+                if (v == 0 || v == 1) {
+                    d.add((new Field(indexedFieldName, String.valueOf(v), notStoredTextField)));
+                } else {
+                    throw new Exception("Number for Boolean field must be 0 or 1 for <" + storedFieldName + "> and found <" + v + ">");
+                }
+            } else {
+                throw new Exception(
 						"Expecting collection of data type of Boolean, String, or Number for field <" + storedFieldName + "> and found <" + value.getClass()
 								.getSimpleName() + ">");
 

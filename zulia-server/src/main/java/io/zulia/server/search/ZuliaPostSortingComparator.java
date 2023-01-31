@@ -147,6 +147,5 @@ public class ZuliaPostSortingComparator implements Comparator<ScoredResult> {
 		return compare;
 	}
 
-	;
 
 }

@@ -2,25 +2,14 @@ package io.zulia.server.index;
 
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
-import io.zulia.message.ZuliaBase.AssociatedDocument;
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
-import io.zulia.message.ZuliaBase.Node;
-import io.zulia.message.ZuliaBase.ResultDocument;
-import io.zulia.message.ZuliaBase.ShardCountResponse;
-import io.zulia.message.ZuliaBase.Similarity;
+import io.zulia.message.ZuliaBase.*;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.message.ZuliaIndex.ShardMapping;
 import io.zulia.message.ZuliaQuery;
-import io.zulia.message.ZuliaQuery.Facet;
-import io.zulia.message.ZuliaQuery.FacetRequest;
-import io.zulia.message.ZuliaQuery.FetchType;
-import io.zulia.message.ZuliaQuery.FieldSimilarity;
-import io.zulia.message.ZuliaQuery.IndexShardResponse;
+import io.zulia.message.ZuliaQuery.*;
 import io.zulia.message.ZuliaQuery.Query.QueryType;
-import io.zulia.message.ZuliaQuery.ShardQueryResponse;
-import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
@@ -53,14 +42,8 @@ import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DoubleValuesSource;
-import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.KnnVectorQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
 
@@ -71,20 +54,8 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -486,13 +457,13 @@ public class ZuliaIndex {
 			throw new IllegalArgumentException("Cosine sim query must give at least one query field (qf)");
 		}
 		else if (query.getQfList().size() == 1) {
-			return new KnnVectorQuery(query.getQfList().get(0), vector, query.getVectorTopN(), getPreFilter(query.getVectorPreQueryList()));
+			return new KnnFloatVectorQuery(query.getQfList().get(0), vector, query.getVectorTopN(), getPreFilter(query.getVectorPreQueryList()));
 		}
 		else {
 			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
 			BooleanQuery preFilter = getPreFilter(query.getVectorPreQueryList());
 			for (String field : query.getQfList()) {
-				KnnVectorQuery knnVectorQuery = new KnnVectorQuery(field, vector, query.getVectorTopN(), preFilter);
+				KnnFloatVectorQuery knnVectorQuery = new KnnFloatVectorQuery(field, vector, query.getVectorTopN(), preFilter);
 				booleanQueryBuilder.add(knnVectorQuery, BooleanClause.Occur.SHOULD);
 			}
 			return booleanQueryBuilder.build();

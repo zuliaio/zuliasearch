@@ -1,15 +1,6 @@
 package io.zulia.fields;
 
-import io.zulia.fields.annotations.AsField;
-import io.zulia.fields.annotations.DefaultSearch;
-import io.zulia.fields.annotations.Embedded;
-import io.zulia.fields.annotations.Faceted;
-import io.zulia.fields.annotations.FacetedFields;
-import io.zulia.fields.annotations.Indexed;
-import io.zulia.fields.annotations.IndexedFields;
-import io.zulia.fields.annotations.Sorted;
-import io.zulia.fields.annotations.SortedFields;
-import io.zulia.fields.annotations.UniqueId;
+import io.zulia.fields.annotations.*;
 import io.zulia.message.ZuliaIndex.FacetAs;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
@@ -60,12 +51,11 @@ public class FieldConfigMapper<T> {
 		Class<?> fieldType = f.getType();
 
 		if (List.class.isAssignableFrom(fieldType)) {
-			Type genericType = f.getGenericType();
-			if (genericType instanceof ParameterizedType) {
-				ParameterizedType pType = (ParameterizedType) genericType;
-				fieldType = (Class<?>) pType.getActualTypeArguments()[0];
-			}
-		}
+            Type genericType = f.getGenericType();
+            if (genericType instanceof ParameterizedType pType) {
+                fieldType = (Class<?>) pType.getActualTypeArguments()[0];
+            }
+        }
 
 		if (f.isAnnotationPresent(Embedded.class)) {
 			if (f.isAnnotationPresent(IndexedFields.class) || f.isAnnotationPresent(Indexed.class) || f.isAnnotationPresent(Faceted.class) || f

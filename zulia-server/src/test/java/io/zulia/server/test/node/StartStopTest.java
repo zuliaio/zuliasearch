@@ -4,13 +4,7 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.ZuliaConstants;
 import io.zulia.client.command.Reindex;
 import io.zulia.client.command.Store;
-import io.zulia.client.command.builder.CountFacet;
-import io.zulia.client.command.builder.FilterQuery;
-import io.zulia.client.command.builder.MatchAllQuery;
-import io.zulia.client.command.builder.ScoredQuery;
-import io.zulia.client.command.builder.Search;
-import io.zulia.client.command.builder.Sort;
-import io.zulia.client.command.builder.TermQuery;
+import io.zulia.client.command.builder.*;
 import io.zulia.client.command.factory.FilterFactory;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -23,13 +17,7 @@ import io.zulia.message.ZuliaIndex.FacetAs.DateHandling;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.*;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -462,15 +450,15 @@ public class StartStopTest {
 			Assertions.assertNull(sr.getFirstDocument().get("title"), "First Title should be null");
 
 			s.setAmount(3).clearSort().addSort(new Sort("title").descending().missingFirst());
-			;
-			sr = zuliaWorkPool.search(s);
+
+            sr = zuliaWorkPool.search(s);
 
 			Assertions.assertEquals(3, sr.getDocuments().size(), "Three records should be returned");
 			Assertions.assertEquals("Special Userguide", sr.getFirstDocument().get("title"), "First Title should be Special Userguide");
 
 			s.clearSort().addSort(new Sort("title").descending().missingLast());
-			;
-			sr = zuliaWorkPool.search(s);
+
+            sr = zuliaWorkPool.search(s);
 
 			Assertions.assertEquals(3, sr.getDocuments().size(), "Three records should be returned");
 			Assertions.assertNull(sr.getFirstDocument().get("title"), "First Title should be null");
