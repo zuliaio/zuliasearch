@@ -40,14 +40,11 @@ public class ZuliaNode {
 
 		membershipTimer = new Timer();
 
-		Runtime.getRuntime().addShutdownHook(new Thread() {
-			@Override
-			public void run() {
-				if (started) {
-					shutdown();
-				}
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			if (started) {
+				shutdown();
 			}
-		});
+		}));
 
 	}
 

@@ -54,11 +54,8 @@ public class FetchController {
 					return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
 				}
 
-				return HttpResponse.ok("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").status(ZuliaConstants.NOT_FOUND);
 			}
-			else {
-				return HttpResponse.ok("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").status(ZuliaConstants.NOT_FOUND);
-			}
+			return HttpResponse.ok("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").status(ZuliaConstants.NOT_FOUND);
 
 		}
 		catch (Exception e) {
