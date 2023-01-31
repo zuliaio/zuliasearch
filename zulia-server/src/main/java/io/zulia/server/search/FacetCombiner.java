@@ -16,22 +16,8 @@ import java.util.stream.Collectors;
 
 public class FacetCombiner {
 
-	public static class FacetGroupWithShardIndex {
-		private final FacetGroup facetGroup;
-		private final int shardIndex;
+	public record FacetGroupWithShardIndex(FacetGroup facetGroup, int shardIndex) {
 
-		public FacetGroupWithShardIndex(FacetGroup facetGroup, int shardIndex) {
-			this.facetGroup = facetGroup;
-			this.shardIndex = shardIndex;
-		}
-
-		public FacetGroup getFacetGroup() {
-			return facetGroup;
-		}
-
-		public int getShardIndex() {
-			return shardIndex;
-		}
 	}
 
 	private final List<FacetGroupWithShardIndex> facetGroups;
@@ -52,7 +38,7 @@ public class FacetCombiner {
 
 	public FacetGroup getCombinedFacetGroup() {
 		if (facetGroups.size() == 1) {
-			return facetGroups.get(0).getFacetGroup();
+			return facetGroups.get(0).facetGroup();
 		}
 		else {
 
@@ -62,8 +48,8 @@ public class FacetCombiner {
 			long[] minForShard = new long[shardReponses];
 
 			for (FacetGroupWithShardIndex facetGroupWithShardIndex : facetGroups) {
-				FacetGroup fg = facetGroupWithShardIndex.getFacetGroup();
-				int shardIndex = facetGroupWithShardIndex.getShardIndex();
+				FacetGroup fg = facetGroupWithShardIndex.facetGroup();
+				int shardIndex = facetGroupWithShardIndex.shardIndex();
 
 				for (FacetCount fc : fg.getFacetCountList()) {
 					String facet = fc.getFacet();
