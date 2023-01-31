@@ -8,28 +8,28 @@ import org.apache.lucene.document.TextField;
 
 public class BooleanFieldIndexer extends FieldIndexer {
 
-	public static final BooleanFieldIndexer INSTANCE = new BooleanFieldIndexer();
-	private static final FieldType notStoredTextField;
+    public static final BooleanFieldIndexer INSTANCE = new BooleanFieldIndexer();
+    private static final FieldType notStoredTextField;
 
-	static {
-		notStoredTextField = new FieldType(TextField.TYPE_NOT_STORED);
-		notStoredTextField.setStoreTermVectors(true);
-		notStoredTextField.setStoreTermVectorOffsets(true);
-		notStoredTextField.setStoreTermVectorPositions(true);
-		// For PostingsHighlighter in Lucene 4.1 +
-		// notStoredTextField.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-		// example: https://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/highlighter/src/test/org/apache/lucene/search/postingshighlight/TestPostingsHighlighter.java
-		notStoredTextField.freeze();
-	}
+    static {
+        notStoredTextField = new FieldType(TextField.TYPE_NOT_STORED);
+        notStoredTextField.setStoreTermVectors(true);
+        notStoredTextField.setStoreTermVectorOffsets(true);
+        notStoredTextField.setStoreTermVectorPositions(true);
+        // For PostingsHighlighter in Lucene 4.1 +
+        // notStoredTextField.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+        // example: https://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/highlighter/src/test/org/apache/lucene/search/postingshighlight/TestPostingsHighlighter.java
+        notStoredTextField.freeze();
+    }
 
-	protected BooleanFieldIndexer() {
+    protected BooleanFieldIndexer() {
 
-	}
+    }
 
-	@Override
-	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) throws Exception {
-		if (value != null) {
-			if (value instanceof Boolean) {
+    @Override
+    protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) throws Exception {
+        if (value != null) {
+            if (value instanceof Boolean) {
                 d.add((new Field(indexedFieldName, value.toString(), notStoredTextField)));
             } else if (value instanceof String v) {
                 if (BooleanAnalyzer.truePattern.matcher(v).matches()) {
@@ -50,11 +50,11 @@ public class BooleanFieldIndexer extends FieldIndexer {
                 }
             } else {
                 throw new Exception(
-						"Expecting collection of data type of Boolean, String, or Number for field <" + storedFieldName + "> and found <" + value.getClass()
-								.getSimpleName() + ">");
+                        "Expecting collection of data type of Boolean, String, or Number for field <" + storedFieldName + "> and found <" + value.getClass()
+                                .getSimpleName() + ">");
 
-			}
-		}
-	}
+            }
+        }
+    }
 
 }

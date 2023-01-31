@@ -14,28 +14,28 @@ import static io.zulia.message.ZuliaQuery.ScoredResult;
  */
 public class ResultHelper {
 
-	public static Document getDocumentFromScoredResult(ScoredResult scoredResult) {
-		if (scoredResult.hasResultDocument()) {
-			ResultDocument rd = scoredResult.getResultDocument();
-			return getDocumentFromResultDocument(rd);
-		}
-		return null;
-	}
+    public static Document getDocumentFromScoredResult(ScoredResult scoredResult) {
+        if (scoredResult.hasResultDocument()) {
+            ResultDocument rd = scoredResult.getResultDocument();
+            return getDocumentFromResultDocument(rd);
+        }
+        return null;
+    }
 
-	public static Document getDocumentFromResultDocument(ResultDocumentOrBuilder rd) {
-		if (rd.getDocument() != null) {
-			return ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
-		}
-		return null;
-	}
+    public static Document getDocumentFromResultDocument(ResultDocumentOrBuilder rd) {
+        if (rd.getDocument() != null) {
+            return ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
+        }
+        return null;
+    }
 
-	public static Object getValueFromMongoDocument(org.bson.Document mongoDocument, String storedFieldName) {
+    public static Object getValueFromMongoDocument(org.bson.Document mongoDocument, String storedFieldName) {
 
-		Object o;
-		if (storedFieldName.contains(".")) {
-			o = mongoDocument;
-			String[] fields = storedFieldName.split("\\.");
-			for (String field : fields) {
+        Object o;
+        if (storedFieldName.contains(".")) {
+            o = mongoDocument;
+            String[] fields = storedFieldName.split("\\.");
+            for (String field : fields) {
                 if (o instanceof List<?> list) {
                     List<Object> values = new ArrayList<>();
                     list.stream().filter(item -> item instanceof org.bson.Document).forEach(item -> {
@@ -56,13 +56,12 @@ public class ResultHelper {
                     o = null;
                     break;
                 }
-			}
-		}
-		else {
-			o = mongoDocument.get(storedFieldName);
-		}
+            }
+        } else {
+            o = mongoDocument.get(storedFieldName);
+        }
 
-		return o;
-	}
+        return o;
+    }
 
 }
