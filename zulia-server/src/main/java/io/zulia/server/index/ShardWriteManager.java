@@ -7,6 +7,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -91,7 +92,7 @@ public class ShardWriteManager {
 	private void openTaxoWriter(Path pathToTaxo) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
-		this.taxoWriter = new DirectoryTaxonomyWriter(nrtCachingDirectory);
+		this.taxoWriter = new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(64000));
 
 	}
 
