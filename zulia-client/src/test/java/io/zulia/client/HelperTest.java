@@ -7,7 +7,7 @@ import io.zulia.message.ZuliaQuery;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.Function;
+import java.util.List;
 
 public class HelperTest {
 
@@ -30,9 +30,8 @@ public class HelperTest {
 		}
 
 		{
-			Function<String, String> quoteAndTrim = s -> Values.VALUE_QUOTER.apply(s).trim();
-			String query = Values.all().valueHandler(quoteAndTrim).of("   slow cat   ", "   Pink Shirt ").asString();
-			Assertions.assertEquals("(\"slow cat\" AND \"Pink Shirt\")", query);
+			String query = Values.all().valueHandlerChain(List.of(String::toLowerCase, Values.VALUE_QUOTER)).of("slow cat", "Pink Shirt").asString();
+			Assertions.assertEquals("(\"slow cat\" AND \"pink shirt\")", query);
 		}
 
 		{
