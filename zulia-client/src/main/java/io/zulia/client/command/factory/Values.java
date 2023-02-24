@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.function.Function;
 
 public class Values {
+
 	public static final Joiner COMMA_JOINER = Joiner.on(",");
 	public static final Joiner SPACE_JOINER = Joiner.on(" ");
 	public static final Joiner OR_JOINER = Joiner.on(" OR ");
@@ -95,6 +96,17 @@ public class Values {
 
 	public Values valueHandler(Function<String, String> valueHandler) {
 		this.valueHandler = valueHandler;
+		return this;
+	}
+
+	public Values valueHandlerChain(List<Function<String, String>> valueHandler) {
+		this.valueHandler = s -> {
+
+			for (Function<String, String> handler : valueHandler) {
+				s = handler.apply(s);
+			}
+			return s;
+		};
 		return this;
 	}
 
