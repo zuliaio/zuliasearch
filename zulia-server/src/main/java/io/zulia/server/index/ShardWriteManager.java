@@ -214,8 +214,7 @@ public class ShardWriteManager {
 	}
 
 	public void indexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
-		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadata);
-		luceneDocument = facetsConfig.build(taxoWriter, luceneDocument);
+		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadata, taxoWriter);
 		Term updateQuery = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 		indexWriter.updateDocument(updateQuery, luceneDocument);
 

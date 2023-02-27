@@ -25,16 +25,23 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
 
@@ -49,7 +56,8 @@ public class ShardDocumentIndexer {
 
 	}
 
-	public Document getIndexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
+	public Document getIndexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata,
+			DirectoryTaxonomyWriter taxoWriter) throws Exception {
 		Document luceneDocument = new Document();
 
 		luceneDocument.add(new StringField(ZuliaConstants.ID_FIELD, uniqueId, Field.Store.YES));
@@ -60,13 +68,15 @@ public class ShardDocumentIndexer {
 		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadata))));
 		luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(mongoDocument))));
 
-		addStoredFieldsForDocument(mongoDocument, luceneDocument);
+		addUserFields(mongoDocument, luceneDocument, taxoWriter);
 
 		return luceneDocument;
 
 	}
 
-	private void addStoredFieldsForDocument(org.bson.Document mongoDocument, Document luceneDocument) throws Exception {
+	private void addUserFields(org.bson.Document mongoDocument, Document luceneDocument, DirectoryTaxonomyWriter taxoWriter) throws Exception {
+
+		Map<String, Set<FacetLabel>> facetFieldToOrdinals = new HashMap<>();
 		for (String storedFieldName : indexConfig.getIndexedStoredFieldNames()) {
 
 			ZuliaIndex.FieldConfig fc = indexConfig.getFieldConfig(storedFieldName);
@@ -78,19 +88,52 @@ public class ShardDocumentIndexer {
 				Object o = ResultHelper.getValueFromMongoDocument(mongoDocument, storedFieldName);
 
 				if (o != null) {
-					handleFacetsForStoredField(luceneDocument, fc, o);
+					generateFacetLabels(fc, o, facetFieldToOrdinals);
 
-					handleSortForStoredField(luceneDocument, storedFieldName, fc, o);
+					addSortForStoredField(luceneDocument, storedFieldName, fc, o);
 
-					handleIndexingForStoredField(luceneDocument, storedFieldName, fc, fieldType, o);
+					addIndexingForStoredField(luceneDocument, storedFieldName, fc, fieldType, o);
 
 				}
 			}
 
 		}
+
+		addFacets(luceneDocument, taxoWriter, facetFieldToOrdinals);
 	}
 
-	private void handleIndexingForStoredField(Document luceneDocument, String storedFieldName, ZuliaIndex.FieldConfig fc,
+	private static void addFacets(Document luceneDocument, DirectoryTaxonomyWriter taxoWriter, Map<String, Set<FacetLabel>> facetFieldToOrdinals)
+			throws IOException {
+		for (String facetField : facetFieldToOrdinals.keySet()) {
+
+			Set<FacetLabel> facetLabels = facetFieldToOrdinals.get(facetField);
+
+			TreeSet<Integer> ordinalSetForFacet = new TreeSet<>();
+
+			for (FacetLabel facetLabel : facetLabels) {
+				for (int i = 1; i <= facetLabel.length; i++) {
+					luceneDocument.add(
+							new StringField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, FacetsConfig.pathToString(facetLabel.components, i), Field.Store.NO));
+				}
+
+				int ordinal = taxoWriter.addCategory(facetLabel);
+				ordinalSetForFacet.add(ordinal);
+				int parent = taxoWriter.getParent(ordinal);
+				while (parent > 0) {
+					ordinalSetForFacet.add(parent);
+					parent = taxoWriter.getParent(parent);
+				}
+
+			}
+
+			for (int ordinal : ordinalSetForFacet) {
+				luceneDocument.add(new SortedNumericDocValuesField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, ordinal));
+			}
+
+		}
+	}
+
+	private void addIndexingForStoredField(Document luceneDocument, String storedFieldName, ZuliaIndex.FieldConfig fc,
 			ZuliaIndex.FieldConfig.FieldType fieldType, Object o) throws Exception {
 		for (ZuliaIndex.IndexAs indexAs : fc.getIndexAsList()) {
 
@@ -132,7 +175,7 @@ public class ShardDocumentIndexer {
 		}
 	}
 
-	private void handleSortForStoredField(Document d, String storedFieldName, ZuliaIndex.FieldConfig fc, Object o) {
+	private void addSortForStoredField(Document d, String storedFieldName, ZuliaIndex.FieldConfig fc, Object o) {
 
 		ZuliaIndex.FieldConfig.FieldType fieldType = fc.getFieldType();
 		for (ZuliaIndex.SortAs sortAs : fc.getSortAsList()) {
@@ -257,80 +300,105 @@ public class ShardDocumentIndexer {
 		}
 	}
 
-	private void handleFacetsForStoredField(Document doc, ZuliaIndex.FieldConfig fc, Object o) {
+	private void generateFacetLabels(ZuliaIndex.FieldConfig fc, Object o, Map<String, Set<FacetLabel>> facetFieldToOrdinals) {
 		for (ZuliaIndex.FacetAs fa : fc.getFacetAsList()) {
 
 			String facetName = fa.getFacetName();
 
-			if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
-				ZuliaIndex.FacetAs.DateHandling dateHandling = fa.getDateHandling();
-				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-					if (obj instanceof Date) {
-						LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
+			Set<FacetLabel> facetFieldsForField = new TreeSet<>();
+			facetFieldToOrdinals.put(facetName, facetFieldsForField);
+			if (fa.getHierarchical()) {
 
-						if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
-							if (fa.getHierarchical()) {
-								doc.add(new FacetField(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
+				if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
+					ZuliaIndex.FacetAs.DateHandling dateHandling = fa.getDateHandling();
+					ZuliaUtil.handleListsUniqueValues(o, obj -> {
+						if (obj instanceof Date) {
+							LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
+
+							if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
+								facetFieldsForField.add(
+										new FacetLabel(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
+
+							}
+							else if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
+								facetFieldsForField.add(
+										new FacetLabel(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
+
 							}
 							else {
-								String date = String.format("%02d%02d%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
-								addFacet(doc, facetName, date);
+								throw new RuntimeException("Not handled date handling <" + dateHandling + "> for facet <" + fa.getFacetName() + ">");
 							}
-						}
-						else if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
-							if (fa.getHierarchical()) {
-								doc.add(new FacetField(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
-							}
-							else {
-								String date = String.format("%02d-%02d-%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
-								addFacet(doc, facetName, date);
-							}
+
 						}
 						else {
-							throw new RuntimeException("Not handled date handling <" + dateHandling + "> for facet <" + fa.getFacetName() + ">");
+							throw new RuntimeException("Cannot facet date for document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName()
+									+ ">: excepted Date or Collection of Date, found <" + o.getClass().getSimpleName() + ">");
 						}
+					});
+				}
+				else {
+					ZuliaUtil.handleListsUniqueValues(o, obj -> {
+						String val = obj.toString();
+						if (!val.isEmpty()) {
+							List<String> path = facetPathSplitter.splitToList(val);
+							facetFieldsForField.add(new FacetLabel(facetName, path.toArray(new String[0])));
+						}
+					});
+				}
 
-					}
-					else {
-						throw new RuntimeException("Cannot facet date for document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName()
-								+ ">: excepted Date or Collection of Date, found <" + o.getClass().getSimpleName() + ">");
-					}
-				});
-			}
-			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fc.getFieldType())) {
-				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-					String string = obj.toString();
-
-					if (BooleanAnalyzer.truePattern.matcher(string).matches()) {
-						doc.add(new FacetField(facetName, "True"));
-					}
-					else if (BooleanAnalyzer.falsePattern.matcher(string).matches()) {
-						doc.add(new FacetField(facetName, "False"));
-					}
-
-				});
 			}
 			else {
-				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-					String string = obj.toString();
-					if (!string.isEmpty()) {
-						if (fa.getHierarchical()) {
-							List<String> path = facetPathSplitter.splitToList(string);
-							doc.add(new FacetField(facetName, path.toArray(new String[0])));
+				if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
+					ZuliaIndex.FacetAs.DateHandling dateHandling = fa.getDateHandling();
+					ZuliaUtil.handleListsUniqueValues(o, obj -> {
+						if (obj instanceof Date) {
+							LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
+
+							if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
+								String date = String.format("%02d%02d%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
+								facetFieldsForField.add(new FacetLabel(facetName, date));
+
+							}
+							else if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
+								String date = String.format("%02d-%02d-%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
+								facetFieldsForField.add(new FacetLabel(facetName, date));
+
+							}
+							else {
+								throw new RuntimeException("Not handled date handling <" + dateHandling + "> for facet <" + fa.getFacetName() + ">");
+							}
+
 						}
 						else {
-							doc.add(new FacetField(facetName, string));
+							throw new RuntimeException("Cannot facet date for document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName()
+									+ ">: excepted Date or Collection of Date, found <" + o.getClass().getSimpleName() + ">");
 						}
-					}
-				});
+					});
+				}
+				else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fc.getFieldType())) {
+					ZuliaUtil.handleListsUniqueValues(o, obj -> {
+						String string = obj.toString();
+
+						if (BooleanAnalyzer.truePattern.matcher(string).matches()) {
+							facetFieldsForField.add(new FacetLabel(facetName, "True"));
+						}
+						else if (BooleanAnalyzer.falsePattern.matcher(string).matches()) {
+							facetFieldsForField.add(new FacetLabel(facetName, "False"));
+						}
+
+					});
+				}
+				else {
+					ZuliaUtil.handleListsUniqueValues(o, obj -> {
+						String val = obj.toString();
+						if (!val.isEmpty()) {
+							facetFieldsForField.add(new FacetLabel(facetName, val));
+						}
+					});
+				}
+
 			}
 
-		}
-	}
-
-	private void addFacet(Document doc, String facetName, String value) {
-		if (!value.isEmpty()) {
-			doc.add(new FacetField(facetName, value));
 		}
 	}
 
