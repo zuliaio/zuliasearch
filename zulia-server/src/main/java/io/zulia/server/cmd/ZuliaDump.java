@@ -84,7 +84,7 @@ public class ZuliaDump implements Callable<Integer> {
 		// create zuliadump dir first
 		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
 		if (!Files.exists(Paths.get(zuliaDumpDir))) {
-			Files.createDirectory(Paths.get(zuliaDumpDir));
+			Files.createDirectories(Paths.get(zuliaDumpDir));
 		}
 
 		// create index dir
