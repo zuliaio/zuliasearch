@@ -213,7 +213,7 @@ public class ShardWriteManager {
 		indexWriter.deleteAll();
 	}
 
-	public void indexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
+	public void indexDocument(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata) throws Exception {
 		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadata, taxoWriter);
 		Term updateQuery = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 		indexWriter.updateDocument(updateQuery, luceneDocument);

@@ -56,7 +56,7 @@ public class ShardDocumentIndexer {
 
 	}
 
-	public Document getIndexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata,
+	public Document getIndexDocument(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata,
 			DirectoryTaxonomyWriter taxoWriter) throws Exception {
 		Document luceneDocument = new Document();
 
@@ -65,10 +65,13 @@ public class ShardDocumentIndexer {
 				new BytesRef(uniqueId)));
 		luceneDocument.add(new LongPoint(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
 		luceneDocument.add(new StoredField(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
-		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadata))));
-		luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(mongoDocument))));
-
-		addUserFields(mongoDocument, luceneDocument, taxoWriter);
+		if (!metadata.isEmpty()) {
+			luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(metadata.getByteArray())));
+		}
+		if (!mongoDocument.isEmpty()) {
+			luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(mongoDocument.getByteArray())));
+			addUserFields(mongoDocument.getDocument(), luceneDocument, taxoWriter);
+		}
 
 		return luceneDocument;
 
@@ -118,10 +121,13 @@ public class ShardDocumentIndexer {
 
 				int ordinal = taxoWriter.addCategory(facetLabel);
 				ordinalSetForFacet.add(ordinal);
-				int parent = taxoWriter.getParent(ordinal);
-				while (parent > 0) {
-					ordinalSetForFacet.add(parent);
-					parent = taxoWriter.getParent(parent);
+
+				if (facetLabel.components.length > 2) {
+					int parent = taxoWriter.getParent(ordinal);
+					while (parent > 0) {
+						ordinalSetForFacet.add(parent);
+						parent = taxoWriter.getParent(parent);
+					}
 				}
 
 			}

@@ -20,7 +20,6 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -52,32 +51,24 @@ public class ZuliaUtil {
 	}
 
 	public static void handleLists(Object o, Consumer<? super Object> action, AtomicInteger listSize) {
-		if (o instanceof Collection) {
-			Collection<?> c = (Collection<?>) o;
-			c.stream().filter(Objects::nonNull).forEach(obj -> {
-				if (obj instanceof Collection) {
+		if (o instanceof Collection<?> c) {
+			for (Object obj : c) {
+				if (obj != null) {
 					handleLists(obj, action, listSize);
 				}
-				else {
-					listSize.incrementAndGet();
-					action.accept(obj);
-				}
-			});
+			}
+
 		}
-		else if (o instanceof Object[]) {
-			Object[] arr = (Object[]) o;
+		else if (o instanceof Object[] arr) {
 			for (Object obj : arr) {
 				if (obj != null) {
-					listSize.incrementAndGet();
-					action.accept(action);
+					handleLists(obj, action, listSize);
 				}
 			}
 		}
-		else {
-			if (o != null) {
-				listSize.incrementAndGet();
-				action.accept(o);
-			}
+		else if (o != null) {
+			listSize.incrementAndGet();
+			action.accept(o);
 		}
 	}
 
@@ -214,5 +205,11 @@ public class ZuliaUtil {
 			return document.toJson(JsonWriterSettings.builder().indent(true).outputMode(JsonMode.RELAXED).build());
 		}
 		return document.toJson();
+	}
+
+	public static void main(String[] args) {
+		String[] s = new String[] { "test", "!" };
+
+		handleLists(s, System.out::println);
 	}
 }

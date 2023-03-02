@@ -11,11 +11,9 @@ import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.server.search.ShardQuery;
-import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.bson.Document;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -151,17 +149,17 @@ public class ZuliaShard {
 
 					String uniqueId = d.get(ZuliaConstants.ID_FIELD);
 
-					Document mongoDocument = null;
-					Document metadata = null;
+					DocumentContainer mongoDocument = null;
+					DocumentContainer metadata = null;
 
 					BytesRef metaRef = d.getBinaryValue(ZuliaConstants.STORED_META_FIELD);
 					if (metaRef != null) {
-						metadata = ZuliaUtil.byteArrayToMongoDocument(metaRef.bytes);
+						metadata = new DocumentContainer(metaRef.bytes);
 					}
 
 					BytesRef docRef = d.getBinaryValue(ZuliaConstants.STORED_DOC_FIELD);
 					if (docRef != null) {
-						mongoDocument = ZuliaUtil.byteArrayToMongoDocument(docRef.bytes);
+						mongoDocument = new DocumentContainer(docRef.bytes);
 					}
 
 					if (!trackedIds.contains(uniqueId)) {
@@ -191,7 +189,7 @@ public class ZuliaShard {
 		shardWriteManager.close();
 	}
 
-	public void index(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
+	public void index(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata) throws Exception {
 		if (!primary) {
 			throw new IllegalStateException("Cannot index document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
 		}
