@@ -268,6 +268,11 @@ public class S3DocumentStorage implements DocumentStorage {
 		}
 	}
 
+	/**
+	 * This translates the External document to look like an internal document stored in another S3 location that the zulia instance should have access too.
+	 * @param registration
+	 * @throws Exception
+	 */
 	@Override
 	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) throws Exception {
 		Document reg = ZuliaUtil.byteArrayToMongoDocument(registration.getRegistration().toByteArray());
