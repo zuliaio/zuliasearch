@@ -11,6 +11,7 @@ import com.mongodb.client.gridfs.GridFSFindIterable;
 import com.mongodb.client.gridfs.model.GridFSFile;
 import com.mongodb.client.gridfs.model.GridFSUploadOptions;
 import com.mongodb.client.model.IndexOptions;
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.util.ZuliaUtil;
@@ -284,6 +285,11 @@ public class MongoDocumentStorage implements DocumentStorage {
 		GridFSBucket gridFS = createGridFSConnection();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, uniqueId))
 				.forEach((Consumer<? super GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
+	}
+
+	@Override
+	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) throws Exception {
+		throw new UnsupportedOperationException("Cannot register a file store in your mongo instance with Zulia's mongo instance.");
 	}
 
 }

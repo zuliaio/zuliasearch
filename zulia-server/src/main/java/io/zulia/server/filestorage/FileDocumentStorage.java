@@ -1,6 +1,7 @@
 package io.zulia.server.filestorage;
 
 import com.google.protobuf.ByteString;
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.server.config.ZuliaConfig;
@@ -142,6 +143,11 @@ public class FileDocumentStorage implements DocumentStorage {
 	public void deleteAssociatedDocuments(String uniqueId) throws IOException {
 		String pathForUniqueId = getFullPathToUniqueId(uniqueId);
 		deletePath(Path.of(pathForUniqueId));
+	}
+
+	@Override
+	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) throws Exception {
+		throw new UnsupportedOperationException("Cannot register a locally stored file with Zulia.");
 	}
 
 	@Override
