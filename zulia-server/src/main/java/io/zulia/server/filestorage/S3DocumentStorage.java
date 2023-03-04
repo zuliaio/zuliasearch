@@ -9,6 +9,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.internal.HexUtils;
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.server.config.cluster.S3Config;
@@ -52,6 +53,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	private static final String TIMESTAMP = "_tstamp_";
 	private static final String DOCUMENT_UNIQUE_ID_KEY = "_uid_";
 	private static final String FILE_UNIQUE_ID_KEY = "_fid_";
+	private static final String FILE_EXTERNAL = "_external_";
 	private static final String COLLECTION = "associatedFiles.info";
 	public static final String FILENAME = "filename";
 
@@ -248,9 +250,11 @@ public class S3DocumentStorage implements DocumentStorage {
 		Document doc = found.first();
 		if (null != doc) {
 			client.getDatabase(dbName).getCollection(COLLECTION).deleteOne(Filters.eq("_id", doc.getObjectId("_id")));
-			Document s3Info = doc.get("s3", Document.class);
-			DeleteObjectRequest dor = DeleteObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
-			s3.deleteObject(dor);
+			if (!doc.getBoolean("metadata." + FILE_EXTERNAL, false)) {
+				Document s3Info = doc.get("s3", Document.class);
+				DeleteObjectRequest dor = DeleteObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
+				s3.deleteObject(dor);
+			}
 		}
 	}
 
@@ -259,10 +263,42 @@ public class S3DocumentStorage implements DocumentStorage {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + DOCUMENT_UNIQUE_ID_KEY, uniqueId));
 		for (Document doc : found) {
 			client.getDatabase(dbName).getCollection(COLLECTION).deleteOne(Filters.eq("_id", doc.getObjectId("_id")));
-			Document s3Info = doc.get("s3", Document.class);
-			DeleteObjectRequest dor = DeleteObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
-			s3.deleteObject(dor);
+			if (!doc.getBoolean("metadata." + FILE_EXTERNAL, false)) {
+				Document s3Info = doc.get("s3", Document.class);
+				DeleteObjectRequest dor = DeleteObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
+				s3.deleteObject(dor);
+			}
 		}
+	}
+
+	/**
+	 * This translates the External document to look like an internal document stored in another S3 location that the zulia instance should have access too.
+	 * @param registration
+	 * @throws Exception
+	 */
+	@Override
+	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) throws Exception {
+		Document reg = ZuliaUtil.byteArrayToMongoDocument(registration.getRegistration().toByteArray());
+		assert(reg.containsKey("location"));
+		assert(reg.containsKey("metadata"));
+
+		Document metadata = reg.get("metadata", Document.class);
+		metadata.put(TIMESTAMP, registration.getTimestamp());
+		metadata.put(DOCUMENT_UNIQUE_ID_KEY, registration.getDocumentUniqueId());
+		metadata.put(FILE_UNIQUE_ID_KEY, String.join("-", registration.getDocumentUniqueId(), registration.getFilename()));
+		metadata.put(FILE_EXTERNAL, true);
+
+		Document s3Location = reg.get("location", Document.class);
+		assert(s3Location.containsKey("bucket"));
+		assert(s3Location.containsKey("region"));
+		assert(s3Location.containsKey("key"));
+
+		Document TOC = new Document();
+		TOC.put("filename", registration.getFilename());
+		TOC.put("metadata", metadata);
+		TOC.put("s3", s3Location);
+
+		client.getDatabase(dbName).getCollection(COLLECTION).insertOne(TOC);
 	}
 
 	@Override
@@ -274,7 +310,8 @@ public class S3DocumentStorage implements DocumentStorage {
 
 	@Override
 	public void deleteAllDocuments() throws Exception {
-		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find();
+		//Gets the list of keys only that are not stored externally.
+		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.ne("metadata." + FILE_EXTERNAL, true));
 		deleteAllKeys(found);
 		client.getDatabase(dbName).getCollection(COLLECTION).drop();
 	}

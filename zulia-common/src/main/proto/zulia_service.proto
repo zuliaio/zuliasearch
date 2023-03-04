@@ -99,7 +99,8 @@ message StoreRequest {
     string indexName = 2;
     ResultDocument resultDocument = 3;
     repeated AssociatedDocument associatedDocument = 4;
-    bool clearExistingAssociated = 5;
+    repeated ExternalDocument externalDocument = 5;
+    bool clearExistingAssociated = 6;
 }
 
 message StoreResponse {

@@ -349,6 +349,12 @@ public class ZuliaIndex {
 			documentStorage.storeAssociatedDocument(ad);
 		}
 
+		for (ZuliaBase.ExternalDocument ed : storeRequest.getExternalDocumentList()) {
+			ed = ZuliaBase.ExternalDocument.newBuilder(ed).setTimestamp(timestamp).build();
+			documentStorage.registerExternalDocument(ed);
+		}
+
+
 		return StoreResponse.newBuilder().build();
 
 	}
