@@ -4,6 +4,7 @@ import io.zulia.client.config.ClientIndexConfig;
 
 /**
  * Created by Payam Meyer on 4/3/17.
+ *
  * @author pmeyer
  */
 public class GetIndexConfigResult extends Result {

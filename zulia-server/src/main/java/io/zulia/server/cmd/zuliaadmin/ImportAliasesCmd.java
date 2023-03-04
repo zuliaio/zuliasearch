@@ -18,7 +18,7 @@ public class ImportAliasesCmd implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private ZuliaAdmin zuliaAdmin;
 
-	@CommandLine.Option(names = {"-f", "--file"}, description = "Input file to read JSON import from", required = true)
+	@CommandLine.Option(names = { "-f", "--file" }, description = "Input file to read JSON import from", required = true)
 	private File inputFile;
 
 	@Override

@@ -26,7 +26,6 @@ public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult
 	}
 
 	/**
-	 *
 	 * @param uniqueId
 	 * @param indexName
 	 * @param fileName
@@ -41,7 +40,6 @@ public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult
 	}
 
 	/**
-	 *
 	 * @param uniqueId
 	 * @param indexName
 	 * @param destination - OutputStream for a zip file of all files for the unique id

@@ -11,8 +11,8 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 /**
  * Reindexes a given index
- * @author mdavis
  *
+ * @author mdavis
  */
 public class Reindex extends SimpleCommand<ReindexRequest, ReindexResult> implements SingleIndexRoutableCommand {
 

@@ -12,8 +12,8 @@ import static io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
 
 /**
  * Optimizes a given index
- * @author mdavis
  *
+ * @author mdavis
  */
 public class OptimizeIndex extends SimpleCommand<ZuliaServiceOuterClass.OptimizeRequest, OptimizeIndexResult> implements SingleIndexRoutableCommand {
 

@@ -36,22 +36,23 @@ public class ZuliaDump implements Callable<Integer> {
 	@CommandLine.Mixin
 	private MultipleIndexArgs multipleIndexArgs;
 
-	@CommandLine.Option(names = {"-o", "--out"}, description = "Full path to the output directory. (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(names = { "-o", "--out" }, description = "Full path to the output directory. (default: ${DEFAULT-VALUE})")
 	private String out = System.getProperty("user.dir");
 
-	@CommandLine.Option(names = {"-q", "--query"}, description = "Zulia query, matches all docs by default (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(names = { "-q", "--query" }, description = "Zulia query, matches all docs by default (default: ${DEFAULT-VALUE})")
 	private String q = "*:*";
 
 	@CommandLine.Option(names = { "-p", "--pageSize", "--rows" }, description = "Number of records in each page (default: ${DEFAULT-VALUE})")
 	private Integer pageSize = 1000;
 
-	@CommandLine.Option(names = { "-a", "--includeAssociatedDocs"}, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(names = { "-a", "--includeAssociatedDocs" }, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
 	private boolean includeAssociatedDocs = false;
 
-	@CommandLine.Option(arity = "1", names = { "-s", "--sortById"}, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(arity = "1", names = { "-s",
+			"--sortById" }, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
 	private boolean sortById = true;
 
-	@CommandLine.Option(names = { "-d", "--idField"}, description = "Id Field Name (default: ${DEFAULT-VALUE})")
+	@CommandLine.Option(names = { "-d", "--idField" }, description = "Id Field Name (default: ${DEFAULT-VALUE})")
 	private String idField = "id";
 
 	@Override
@@ -76,7 +77,6 @@ public class ZuliaDump implements Callable<Integer> {
 
 		return CommandLine.ExitCode.OK;
 	}
-
 
 	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String outputDir, String idField,
 			Set<String> uniqueIds, boolean sortById) throws Exception {

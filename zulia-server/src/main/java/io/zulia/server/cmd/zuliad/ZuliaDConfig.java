@@ -4,7 +4,12 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import com.mongodb.*;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
+import com.mongodb.ServerApi;
+import com.mongodb.ServerApiVersion;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import io.zulia.message.ZuliaBase;
@@ -104,7 +109,8 @@ public class ZuliaDConfig {
 
 				MongoClient mongoClient = MongoClients.create(mongoClientOptions.build());
 				MongoProvider.setMongoClient(mongoClient);
-			} else {
+			}
+			else {
 				List<MongoServer> mongoServers = zuliaConfig.getMongoServers();
 				List<ServerAddress> serverAddressList = new ArrayList<>();
 				for (MongoServer mongoServer : mongoServers) {

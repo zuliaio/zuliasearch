@@ -20,13 +20,17 @@ import org.apache.lucene.queryparser.charstream.CharStream;
  * limitations under the License.
  */
 
-/** Token Manager. */
+/**
+ * Token Manager.
+ */
 public class ZuliaSyntaxParserTokenManager implements ZuliaSyntaxParserConstants {
 
 	/** Debug output. */
 	// (debugStream omitted).
 
-	/** Set debug output. */
+	/**
+	 * Set debug output.
+	 */
 	// (setDebugStream omitted).
 	private final int jjStopStringLiteralDfa_2(int pos, long active0) {
 		switch (pos) {
@@ -2031,7 +2035,9 @@ public class ZuliaSyntaxParserTokenManager implements ZuliaSyntaxParserConstants
 		}
 	}
 
-	/** Token literal values. */
+	/**
+	 * Token literal values.
+	 */
 	public static final String[] jjstrLiteralImages = { "", null, null, null, null, null, null, null, null, null, null, "\146\156\72", "\53", "\55", "\51",
 			"\72", "\75", "\74", "\74\75", "\76", "\76\75", "\136", "\176", null, null, null, null, "\133", "\173", "\50", null, "\141\146\164\145\162",
 			"\142\145\146\157\162\145", null, "\143\157\156\164\141\151\156\151\156\147", "\145\170\164\145\156\144", "\157\162", null, null, null, null, null,
@@ -2107,7 +2113,9 @@ public class ZuliaSyntaxParserTokenManager implements ZuliaSyntaxParserConstants
 	int jjmatchedPos;
 	int jjmatchedKind;
 
-	/** Get the next Token. */
+	/**
+	 * Get the next Token.
+	 */
 	public Token getNextToken() {
 		Token matchedToken;
 		int curPos = 0;
@@ -2230,19 +2238,25 @@ public class ZuliaSyntaxParserTokenManager implements ZuliaSyntaxParserConstants
 		while (start++ != end);
 	}
 
-	/** Constructor. */
+	/**
+	 * Constructor.
+	 */
 	public ZuliaSyntaxParserTokenManager(CharStream stream) {
 
 		input_stream = stream;
 	}
 
-	/** Constructor. */
+	/**
+	 * Constructor.
+	 */
 	public ZuliaSyntaxParserTokenManager(CharStream stream, int lexState) {
 		ReInit(stream);
 		SwitchTo(lexState);
 	}
 
-	/** Reinitialise parser. */
+	/**
+	 * Reinitialise parser.
+	 */
 
 	public void ReInit(CharStream stream) {
 
@@ -2259,13 +2273,17 @@ public class ZuliaSyntaxParserTokenManager implements ZuliaSyntaxParserConstants
 			jjrounds[i] = 0x80000000;
 	}
 
-	/** Reinitialise parser. */
+	/**
+	 * Reinitialise parser.
+	 */
 	public void ReInit(CharStream stream, int lexState) {
 		ReInit(stream);
 		SwitchTo(lexState);
 	}
 
-	/** Switch to specified lex state. */
+	/**
+	 * Switch to specified lex state.
+	 */
 	public void SwitchTo(int lexState) {
 		if (lexState >= 3 || lexState < 0)
 			throw new TokenMgrError("Error: Ignoring invalid lexical state : " + lexState + ". State unchanged.", TokenMgrError.INVALID_LEXICAL_STATE);
@@ -2273,10 +2291,14 @@ public class ZuliaSyntaxParserTokenManager implements ZuliaSyntaxParserConstants
 			curLexState = lexState;
 	}
 
-	/** Lexer state names. */
+	/**
+	 * Lexer state names.
+	 */
 	public static final String[] lexStateNames = { "Function", "Range", "DEFAULT", };
 
-	/** Lex State array. */
+	/**
+	 * Lex State array.
+	 */
 	public static final int[] jjnewLexState = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 1,
 			2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 2, 2, -1, -1, -1, };
 	static final long[] jjtoToken = { 0x1ffffffffffff01L, };

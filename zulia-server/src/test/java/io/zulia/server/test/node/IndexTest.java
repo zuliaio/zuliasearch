@@ -433,7 +433,7 @@ public class IndexTest {
 
 		{
 			GetIndexConfigResult largeTest = zuliaWorkPool.getIndexConfig("large test");
-			Assertions.assertEquals( 100002,largeTest.getIndexConfig().getFieldConfigMap().size());
+			Assertions.assertEquals(100002, largeTest.getIndexConfig().getFieldConfigMap().size());
 		}
 
 	}

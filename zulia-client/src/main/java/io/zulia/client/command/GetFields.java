@@ -10,8 +10,8 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 /**
  * Returns all the fields from a given index
- * @author mdavis
  *
+ * @author mdavis
  */
 public class GetFields extends SimpleCommand<ZuliaServiceOuterClass.GetFieldNamesRequest, GetFieldsResult> implements SingleIndexRoutableCommand {
 

@@ -12,6 +12,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
 
 /**
  * Created by Payam Meyer on 4/3/17.
+ *
  * @author pmeyer
  */
 public class GetIndexConfig extends SimpleCommand<GetIndexSettingsRequest, GetIndexConfigResult> implements SingleIndexRoutableCommand {

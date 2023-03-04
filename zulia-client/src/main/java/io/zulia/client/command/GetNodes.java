@@ -10,8 +10,8 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
 
 /**
  * Returns the current cluster members list
- * @author mdavis
  *
+ * @author mdavis
  */
 public class GetNodes extends SimpleCommand<GetNodesRequest, GetNodesResult> {
 

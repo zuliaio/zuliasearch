@@ -26,7 +26,6 @@ import java.util.logging.Logger;
 public class InternalClient {
 	private final static Logger LOG = Logger.getLogger(InternalClient.class.getSimpleName());
 
-
 	private ConcurrentHashMap<String, GenericObjectPool<InternalRpcConnection>> internalConnectionPoolMap;
 
 	private final InternalQueryHandler internalQueryHandler;

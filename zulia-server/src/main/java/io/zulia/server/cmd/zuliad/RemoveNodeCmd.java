@@ -15,7 +15,7 @@ public class RemoveNodeCmd implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private ZuliaD zuliadCmd;
 
-	@CommandLine.Option(names = {"--server","--address"}, description = "Server to remove from the cluster", required = true)
+	@CommandLine.Option(names = { "--server", "--address" }, description = "Server to remove from the cluster", required = true)
 	private String server;
 
 	@CommandLine.Option(names = "--servicePort", description = "Service port of server to remove from the cluster", required = true)

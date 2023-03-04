@@ -35,13 +35,13 @@ import java.util.logging.Logger;
 
 /**
  * Created by Payam Meyer on 8/7/17.
+ *
  * @author pmeyer
  */
 @Controller(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL)
 public class AssociatedController {
 
 	private final static Logger LOG = Logger.getLogger(AssociatedController.class.getSimpleName());
-
 
 	@Get("/metadata")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)

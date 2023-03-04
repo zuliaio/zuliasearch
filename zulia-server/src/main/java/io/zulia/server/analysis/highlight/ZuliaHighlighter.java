@@ -7,6 +7,7 @@ import org.apache.lucene.search.highlight.Scorer;
 
 /**
  * Created by Matt Davis on 6/21/16.
+ *
  * @author mdavis
  */
 public class ZuliaHighlighter extends Highlighter {

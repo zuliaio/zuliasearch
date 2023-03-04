@@ -13,7 +13,6 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
  * Creates or updates am index alias
  *
  * @author mdavis
- *
  */
 public class CreateIndexAlias extends SimpleCommand<CreateIndexAliasRequest, CreateIndexAliasResult> {
 

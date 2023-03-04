@@ -118,8 +118,8 @@ public class MongoNodeService implements NodeService {
 				version = "";
 			}
 			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT))
-					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0)
-					.setVersion(version).build();
+					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0).setVersion(version)
+					.build();
 		}
 		return null;
 	}

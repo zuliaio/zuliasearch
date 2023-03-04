@@ -40,8 +40,7 @@ public class StoreAssociatedFileCmd implements Callable<Integer> {
 			throw new FileNotFoundException(fileToStore.getAbsolutePath() + " does not exist");
 		}
 
-		StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(id, index, fileName,
-				Files.readAllBytes(fileToStore.toPath()));
+		StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(id, index, fileName, Files.readAllBytes(fileToStore.toPath()));
 		zuliaWorkPool.storeLargeAssociated(storeLargeAssociated);
 
 		return CommandLine.ExitCode.OK;

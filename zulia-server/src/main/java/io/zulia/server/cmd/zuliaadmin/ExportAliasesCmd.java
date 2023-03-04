@@ -23,7 +23,7 @@ public class ExportAliasesCmd implements Callable<Integer> {
 	@CommandLine.Mixin
 	private AliasArgs aliasArgs;
 
-	@CommandLine.Option(names = {"-f", "--file"}, description = "Output file to save the JSON export", required = true)
+	@CommandLine.Option(names = { "-f", "--file" }, description = "Output file to save the JSON export", required = true)
 	private File outputFile;
 
 	@Override

@@ -17,8 +17,7 @@ public class DeleteIndexCmd implements Callable<Integer> {
 	@CommandLine.Mixin
 	private MultipleIndexArgs multipleIndexArgs;
 
-	@CommandLine.Option(names = {"-d", "--deleteAssociated"},
-			description = "Delete associated files")
+	@CommandLine.Option(names = { "-d", "--deleteAssociated" }, description = "Delete associated files")
 	private boolean deleteAssociated;
 
 	@Override

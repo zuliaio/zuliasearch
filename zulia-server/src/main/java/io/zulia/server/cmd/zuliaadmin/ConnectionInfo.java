@@ -6,7 +6,7 @@ import picocli.CommandLine;
 
 public class ConnectionInfo {
 
-	@CommandLine.Option(names = {"--address","--server"} , description = "Zulia Server Address")
+	@CommandLine.Option(names = { "--address", "--server" }, description = "Zulia Server Address")
 	public String address = "localhost";
 
 	@CommandLine.Option(names = "--port", description = "Zulia Port")

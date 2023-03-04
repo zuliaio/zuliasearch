@@ -126,8 +126,9 @@ public class FileDocumentStorage implements DocumentStorage {
 
 		Path p = Path.of(pathForUniqueId);
 		if (Files.exists(p)) {
-			Stream<Path> list = Files.list(p);
-			return list.map(Path::toFile).map(File::getName).collect(Collectors.toList());
+			try (Stream<Path> files = Files.list(p)) {
+				return files.map(Path::toFile).map(File::getName).collect(Collectors.toList());
+			}
 		}
 		return Collections.emptyList();
 	}

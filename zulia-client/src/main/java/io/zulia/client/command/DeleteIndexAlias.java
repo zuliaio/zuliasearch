@@ -11,8 +11,8 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 /**
  * Deletes an index alias.  If index alias does not exist throws an exception
- * @author mdavis
  *
+ * @author mdavis
  */
 public class DeleteIndexAlias extends SimpleCommand<DeleteIndexAliasRequest, DeleteIndexAliasResult> implements SingleIndexRoutableCommand {
 

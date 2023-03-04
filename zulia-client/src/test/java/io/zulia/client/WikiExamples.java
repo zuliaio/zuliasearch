@@ -807,7 +807,5 @@ public class WikiExamples {
 		List<Article> articles = searchResult.getMappedDocuments(mapper);
 	}
 
-
-
 }
 

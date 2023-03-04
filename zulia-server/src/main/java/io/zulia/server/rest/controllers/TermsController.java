@@ -25,6 +25,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 
 /**
  * Created by Payam Meyer on 8/7/17.
+ *
  * @author pmeyer
  */
 @Controller(ZuliaConstants.TERMS_URL)
@@ -82,7 +83,6 @@ public class TermsController {
 				JsonFormat.parser().merge(fuzzyTermJson, fuzzyTermBuilder);
 				termsBuilder.setFuzzyTerm(fuzzyTermBuilder);
 			}
-
 			catch (InvalidProtocolBufferException e) {
 				return HttpResponse.ok("Failed to parse analyzer json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
 						.status(ZuliaConstants.INTERNAL_ERROR);

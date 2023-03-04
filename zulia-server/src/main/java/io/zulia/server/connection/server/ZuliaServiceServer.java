@@ -7,10 +7,10 @@ import io.zulia.server.index.ZuliaIndexManager;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * Created by Matt Davis on 6/28/17.
+ *
  * @author mdavis
  */
 public class ZuliaServiceServer {

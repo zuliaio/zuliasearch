@@ -9,6 +9,7 @@ import static io.zulia.message.ZuliaQuery.ScoredResult;
 
 /**
  * Created by Payam Meyer on 8/7/17.
+ *
  * @author pmeyer
  */
 public class CursorHelper {

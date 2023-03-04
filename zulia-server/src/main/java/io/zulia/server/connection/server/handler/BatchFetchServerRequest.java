@@ -32,7 +32,7 @@ public class BatchFetchServerRequest {
 			onError(e);
 		}
 	}
-	
+
 	protected void onError(Exception e) {
 		LOG.log(Level.SEVERE, "Failed to handle batch fetch", e);
 	}

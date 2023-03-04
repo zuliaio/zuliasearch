@@ -17,6 +17,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 
 /**
  * Created by Payam Meyer on 8/7/17.
+ *
  * @author pmeyer
  */
 @Controller(ZuliaConstants.FIELDS_URL)

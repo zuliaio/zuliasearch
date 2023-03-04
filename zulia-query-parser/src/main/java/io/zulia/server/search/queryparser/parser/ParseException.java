@@ -12,7 +12,7 @@ import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
  * You can explicitly create objects of this exception type by
  * calling the method generateParseException in the generated
  * parser.
- *
+ * <p>
  * You can modify this class to customize your error reporting
  * mechanisms so long as you retain the public fields.
  */
@@ -57,7 +57,9 @@ public class ParseException extends QueryNodeParseException {
 		super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, "Error"));
 	}
 
-	/** Constructor with message. */
+	/**
+	 * Constructor with message.
+	 */
 	public ParseException(Message message) {
 		super(message);
 	}

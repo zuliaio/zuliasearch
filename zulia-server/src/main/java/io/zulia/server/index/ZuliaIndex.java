@@ -57,7 +57,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.KnnVectorQuery;
+import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
@@ -492,13 +492,13 @@ public class ZuliaIndex {
 			throw new IllegalArgumentException("Cosine sim query must give at least one query field (qf)");
 		}
 		else if (query.getQfList().size() == 1) {
-			return new KnnVectorQuery(query.getQfList().get(0), vector, query.getVectorTopN(), getPreFilter(query.getVectorPreQueryList()));
+			return new KnnFloatVectorQuery(query.getQfList().get(0), vector, query.getVectorTopN(), getPreFilter(query.getVectorPreQueryList()));
 		}
 		else {
 			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
 			BooleanQuery preFilter = getPreFilter(query.getVectorPreQueryList());
 			for (String field : query.getQfList()) {
-				KnnVectorQuery knnVectorQuery = new KnnVectorQuery(field, vector, query.getVectorTopN(), preFilter);
+				KnnFloatVectorQuery knnVectorQuery = new KnnFloatVectorQuery(field, vector, query.getVectorTopN(), preFilter);
 				booleanQueryBuilder.add(knnVectorQuery, BooleanClause.Occur.SHOULD);
 			}
 			return booleanQueryBuilder.build();

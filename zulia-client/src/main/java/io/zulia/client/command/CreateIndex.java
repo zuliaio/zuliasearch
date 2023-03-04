@@ -13,7 +13,6 @@ import static io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
  * Creates or updates (replaces) an index.  To do partial config/schema updates of an existing index use {@link UpdateIndex}
  *
  * @author mdavis
- *
  */
 public class CreateIndex extends SimpleCommand<CreateIndexRequest, CreateIndexResult> {
 

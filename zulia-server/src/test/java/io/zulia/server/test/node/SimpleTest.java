@@ -104,7 +104,6 @@ public class SimpleTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount * 3, searchResult.getTotalHits());
 
-
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("blue").addQueryField("title"));
 		searchResult = zuliaWorkPool.search(search);
@@ -113,12 +112,12 @@ public class SimpleTest {
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("blue").addQueryField("description"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(2*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(2 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("blue").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(2*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(2 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("Blue*").addQueryFields("title"));
@@ -128,13 +127,12 @@ public class SimpleTest {
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("Blue*").addQueryFields("description"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("Blue*").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
-
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("small").addQueryFields("title"));
@@ -149,7 +147,7 @@ public class SimpleTest {
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("small").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(2*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(2 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("small").addQueryFields("title"));
@@ -157,134 +155,129 @@ public class SimpleTest {
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("red* BLUE*").addQueryFields("title","description").setDefaultOperator(Operator.AND));
+		search.addQuery(new ScoredQuery("red* BLUE*").addQueryFields("title", "description").setDefaultOperator(Operator.AND));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(2*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(2 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("red* BLUE*").addQueryFields("title","description").setDefaultOperator(Operator.OR));
+		search.addQuery(new ScoredQuery("red* BLUE*").addQueryFields("title", "description").setDefaultOperator(Operator.OR));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(4*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(4 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("red* BLUE* small").addQueryFields("title","description").setDefaultOperator(Operator.OR).setMinShouldMatch(2));
+		search.addQuery(new ScoredQuery("red* BLUE* small").addQueryFields("title", "description").setDefaultOperator(Operator.OR).setMinShouldMatch(2));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("title,description:(red* BLUE* small)").setDefaultOperator(Operator.OR).setMinShouldMatch(2));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("title,description:(red* BLUE* small)~2").setDefaultOperator(Operator.OR));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
 		search.addQuery(new ScoredQuery("title,description:(red* BLUE* small)@2").setDefaultOperator(Operator.OR));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("(red* BLUE* small)~2").addQueryFields("title","description").setDefaultOperator(Operator.OR));
+		search.addQuery(new ScoredQuery("(red* BLUE* small)~2").addQueryFields("title", "description").setDefaultOperator(Operator.OR));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("\"something really special\"").addQueryFields("title","description"));
+		search.addQuery(new ScoredQuery("\"something really special\"").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("\"something really special\" AND rating:[4.0 TO *]").addQueryFields("title","description"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("description:\"something really special\"").addQueryFields("title","description"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(0, searchResult.getTotalHits());
-
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("boring AND (reddish OR red)").addQueryFields("title","description"));
+		search.addQuery(new ScoredQuery("\"something really special\" AND rating:[4.0 TO *]").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("\"something really special\"~1").addQueryFields("title","description"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(3*repeatCount, searchResult.getTotalHits());
-
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("\"something special\"~1").addQueryFields("title","description"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(5*repeatCount, searchResult.getTotalHits());
-
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("fn:ordered(pink big)").addQueryFields("title","description"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("fn:ordered(big pink)").addQueryFields("title","description"));
+		search.addQuery(new ScoredQuery("description:\"something really special\"").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("fn:ordered(pink big) AND rating:[1 TO 3.0]").addQueryFields("title","description"));
+		search.addQuery(new ScoredQuery("boring AND (reddish OR red)").addQueryFields("title", "description"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("\"something really special\"~1").addQueryFields("title", "description"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3 * repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("\"something special\"~1").addQueryFields("title", "description"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(5 * repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("fn:ordered(pink big)").addQueryFields("title", "description"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("fn:ordered(big pink)").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("fn:ordered(pink big) AND rating:[3.0 TO 5.0]").addQueryFields("title","description"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("title:fn:ordered(pink big) AND rating:[3.0 TO 5.0]").addQueryFields("title","description"));
+		search.addQuery(new ScoredQuery("fn:ordered(pink big) AND rating:[1 TO 3.0]").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("description:fn:ordered(pink big) AND rating:[3.0 TO 5.0]").addQueryFields("id","rating"));
+		search.addQuery(new ScoredQuery("fn:ordered(pink big) AND rating:[3.0 TO 5.0]").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("description:big").addQueryFields("id","rating"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(2*repeatCount, searchResult.getTotalHits());
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("description:fn:ordered(big big)").addQueryFields("id","rating"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("description:fn:ordered(big big big)").addQueryFields("id","rating"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("description:fn:unordered(big big big)").addQueryFields("id","rating"));
-		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
-
-
-		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("description:fn:ordered(big big big big)").addQueryFields("id","rating"));
+		search.addQuery(new ScoredQuery("title:fn:ordered(pink big) AND rating:[3.0 TO 5.0]").addQueryFields("title", "description"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX);
-		search.addQuery(new ScoredQuery("description:fn:unordered(big big big big)").addQueryFields("id","rating"));
+		search.addQuery(new ScoredQuery("description:fn:ordered(pink big) AND rating:[3.0 TO 5.0]").addQueryFields("id", "rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:big").addQueryFields("id", "rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2 * repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:ordered(big big)").addQueryFields("id", "rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:ordered(big big big)").addQueryFields("id", "rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:unordered(big big big)").addQueryFields("id", "rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:ordered(big big big big)").addQueryFields("id", "rating"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
 
+		search = new Search(SIMPLE_TEST_INDEX);
+		search.addQuery(new ScoredQuery("description:fn:unordered(big big big big)").addQueryFields("id", "rating"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
 		search.addQuery(new ScoredQuery("white").addQueryFields("description"));
@@ -294,7 +287,7 @@ public class SimpleTest {
 		List<String> titleHighlightsForFirstDoc = firstCompleteResult.getHighlightsForField("description");
 		Assertions.assertEquals(1, titleHighlightsForFirstDoc.size());
 		String expected = titleHighlightsForFirstDoc.get(0);
-		Assertions.assertEquals(expected,"plain <em>white</em> and red");
+		Assertions.assertEquals(expected, "plain <em>white</em> and red");
 
 		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
 		search.addQuery(new ScoredQuery("white").addQueryFields("description"));
@@ -303,9 +296,8 @@ public class SimpleTest {
 		firstCompleteResult = searchResult.getFirstCompleteResult();
 		titleHighlightsForFirstDoc = firstCompleteResult.getHighlightsForField("description");
 		Assertions.assertEquals(1, titleHighlightsForFirstDoc.size());
-		 expected = titleHighlightsForFirstDoc.get(0);
-		Assertions.assertEquals(expected,"plain <b>white</b> and red");
-
+		expected = titleHighlightsForFirstDoc.get(0);
+		Assertions.assertEquals(expected, "plain <b>white</b> and red");
 
 	}
 

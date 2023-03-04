@@ -40,7 +40,6 @@ public class ResultDocBuilder {
 		return this;
 	}
 
-
 	public String getUniqueId() {
 		return resultDocumentBuilder.getUniqueId();
 	}

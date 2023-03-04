@@ -21,7 +21,9 @@ import java.util.List;
 // this is important if a numeric field and normal field are both queried at the same time, i.e. defaultFields = title, pubYear with query "cancer"
 public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 
-	/** Constructs a {@link ZuliaPointQueryNodeProcessor} object. */
+	/**
+	 * Constructs a {@link ZuliaPointQueryNodeProcessor} object.
+	 */
 	public ZuliaPointQueryNodeProcessor() {
 		// empty constructor
 	}

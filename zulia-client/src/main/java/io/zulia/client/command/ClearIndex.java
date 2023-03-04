@@ -10,8 +10,8 @@ import io.zulia.message.ZuliaServiceOuterClass.ClearRequest;
 
 /**
  * Removes all documents from a given index
- * @author mdavis
  *
+ * @author mdavis
  */
 public class ClearIndex extends SimpleCommand<ClearRequest, ClearIndexResult> implements SingleIndexRoutableCommand {
 

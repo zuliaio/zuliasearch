@@ -25,7 +25,6 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 	private Set<String> documentFields = Collections.emptySet();
 	private Set<String> documentMaskedFields = Collections.emptySet();
 
-
 	public Fetch(String uniqueId, String indexName) {
 		this.uniqueId = uniqueId;
 		this.indexName = indexName;
@@ -66,7 +65,6 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 		this.associatedFetchType = associatedFetchType;
 		return this;
 	}
-
 
 	public Set<String> getDocumentMaskedFields() {
 		return documentMaskedFields;

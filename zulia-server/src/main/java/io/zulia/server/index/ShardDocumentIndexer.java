@@ -19,7 +19,7 @@ import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.KnnVectorField;
+import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -53,7 +53,8 @@ public class ShardDocumentIndexer {
 		Document luceneDocument = new Document();
 
 		luceneDocument.add(new StringField(ZuliaConstants.ID_FIELD, uniqueId, Field.Store.YES));
-		luceneDocument.add(new SortedSetDocValuesField(indexConfig.getSortField(ZuliaConstants.ID_SORT_FIELD, ZuliaIndex.FieldConfig.FieldType.STRING), new BytesRef(uniqueId)));
+		luceneDocument.add(new SortedSetDocValuesField(indexConfig.getSortField(ZuliaConstants.ID_SORT_FIELD, ZuliaIndex.FieldConfig.FieldType.STRING),
+				new BytesRef(uniqueId)));
 		luceneDocument.add(new LongPoint(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
 		luceneDocument.add(new StoredField(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
 		luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(ZuliaUtil.mongoDocumentToByteArray(metadata))));
@@ -119,7 +120,7 @@ public class ShardDocumentIndexer {
 			}
 			else if (FieldTypeUtil.isVectorFieldType(fieldType)) {
 				if (o instanceof Collection collection) {
-					luceneDocument.add(new KnnVectorField(indexedFieldName, Floats.toArray(collection),
+					luceneDocument.add(new KnnFloatVectorField(indexedFieldName, Floats.toArray(collection),
 							ZuliaIndex.FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ?
 									VectorSimilarityFunction.DOT_PRODUCT :
 									VectorSimilarityFunction.COSINE));

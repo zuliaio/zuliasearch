@@ -11,7 +11,9 @@ import java.util.List;
 
 public class ZuliaPureWildcardNodeProcessor extends QueryNodeProcessorImpl {
 
-	/** Constructs a {@link ZuliaPureWildcardNodeProcessor} object. */
+	/**
+	 * Constructs a {@link ZuliaPureWildcardNodeProcessor} object.
+	 */
 	public ZuliaPureWildcardNodeProcessor() {
 		// empty constructor
 	}

@@ -151,7 +151,6 @@ public class SimpleJsonTest {
 		Assertions.assertEquals(singleLineJson, searchResult.getFirstDocumentAsJson());
 		Assertions.assertEquals(singleLineJson, searchResult.getDocumentsAsJson().get(0));
 
-
 		String prettyJson = """
 				{
 				  "documentId": "3",

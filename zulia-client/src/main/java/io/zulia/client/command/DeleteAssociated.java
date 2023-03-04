@@ -2,8 +2,8 @@ package io.zulia.client.command;
 
 /**
  * Removes the associated documents for a unique id with a specific filename
- * @author mdavis
  *
+ * @author mdavis
  */
 public class DeleteAssociated extends Delete {
 

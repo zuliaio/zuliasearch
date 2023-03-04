@@ -319,11 +319,11 @@ public class ClientIndexConfig {
 		this.warmingSearches.add(search.getRequest());
 		return this;
 	}
+
 	public ClientIndexConfig addWarmingSearch(QueryRequest queryRequest) {
 		this.warmingSearches.add(queryRequest);
 		return this;
 	}
-
 
 	public void configure(IndexSettings indexSettings) {
 		this.indexName = indexSettings.getIndexName();

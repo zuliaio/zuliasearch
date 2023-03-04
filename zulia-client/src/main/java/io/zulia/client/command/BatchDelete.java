@@ -17,45 +17,45 @@ import static io.zulia.message.ZuliaServiceOuterClass.BatchDeleteRequest;
 
 public class BatchDelete extends SimpleCommand<ZuliaServiceOuterClass.BatchDeleteRequest, BatchDeleteResult> {
 
-	private List<Delete> deletes;
+    private List<Delete> deletes;
 
-	public BatchDelete() {
-		deletes = new ArrayList<Delete>();
-	}
+    public BatchDelete() {
+        deletes = new ArrayList<Delete>();
+    }
 
-	public BatchDelete addDelete(Delete delete) {
-		deletes.add(delete);
-		return this;
-	}
+    public BatchDelete addDelete(Delete delete) {
+        deletes.add(delete);
+        return this;
+    }
 
-	public BatchDelete deleteDocumentFromQueryResult(SearchResult queryResult) {
+    public BatchDelete deleteDocumentFromQueryResult(SearchResult queryResult) {
 
-		for (CompleteResult completeResult : queryResult.getCompleteResults()) {
-			Delete delete = new DeleteDocument(completeResult.getUniqueId(), completeResult.getIndexName());
-			deletes.add(delete);
-		}
+        for (CompleteResult completeResult : queryResult.getCompleteResults()) {
+            Delete delete = new DeleteDocument(completeResult.getUniqueId(), completeResult.getIndexName());
+            deletes.add(delete);
+        }
 
-		return this;
-	}
+        return this;
+    }
 
-	@Override
-	public BatchDeleteRequest getRequest() {
-		BatchDeleteRequest.Builder batchDeleteRequest = BatchDeleteRequest.newBuilder();
+    @Override
+    public BatchDeleteRequest getRequest() {
+        BatchDeleteRequest.Builder batchDeleteRequest = BatchDeleteRequest.newBuilder();
 
-		for (Delete delete : deletes) {
-			batchDeleteRequest.addRequest(delete.getRequest());
-		}
+        for (Delete delete : deletes) {
+            batchDeleteRequest.addRequest(delete.getRequest());
+        }
 
-		return batchDeleteRequest.build();
-	}
+        return batchDeleteRequest.build();
+    }
 
-	@Override
-	public BatchDeleteResult execute(ZuliaConnection zuliaConnection) {
-		ZuliaServiceBlockingStub service = zuliaConnection.getService();
+    @Override
+    public BatchDeleteResult execute(ZuliaConnection zuliaConnection) {
+        ZuliaServiceBlockingStub service = zuliaConnection.getService();
 
-		Iterator<DeleteResponse> batchDeleteResponse = service.batchDelete(getRequest());
+        Iterator<DeleteResponse> batchDeleteResponse = service.batchDelete(getRequest());
 
-		return new BatchDeleteResult(batchDeleteResponse);
-	}
+        return new BatchDeleteResult(batchDeleteResponse);
+    }
 
 }

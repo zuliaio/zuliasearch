@@ -26,8 +26,8 @@ public class ServerNameHelper {
 				}
 			}
 		}
-		
+
 		return null;
-		
+
 	}
 }

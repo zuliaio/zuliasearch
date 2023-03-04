@@ -28,7 +28,7 @@ public class Mapper<T> extends GsonDocumentMapper<T> {
 
 	private final UniqueIdFieldInfo<T> uniqueIdField;
 
-	private final List<DefaultSearchFieldInfo<T>> defaultSearchFields = new ArrayList<>();
+	private final List<DefaultSearchFieldInfo> defaultSearchFields = new ArrayList<>();
 
 	private final Settings settings;
 
@@ -86,7 +86,7 @@ public class Mapper<T> extends GsonDocumentMapper<T> {
 
 				@SuppressWarnings("unused") DefaultSearch defaultSearch = f.getAnnotation(DefaultSearch.class);
 
-				defaultSearchFields.add(new DefaultSearchFieldInfo<>(f, fieldName));
+				defaultSearchFields.add(new DefaultSearchFieldInfo(f, fieldName));
 
 			}
 
@@ -119,8 +119,8 @@ public class Mapper<T> extends GsonDocumentMapper<T> {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 
-		for (DefaultSearchFieldInfo<T> defaultSearchField : defaultSearchFields) {
-			indexConfig.addDefaultSearchField(defaultSearchField.getFieldName());
+		for (DefaultSearchFieldInfo defaultSearchField : defaultSearchFields) {
+			indexConfig.addDefaultSearchField(defaultSearchField.fieldName());
 		}
 
 		indexConfig.setIndexName(settings.indexName());

@@ -140,7 +140,6 @@ public class FieldWildcardTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(4, searchResult.getTotalHits());
 
-
 		search = new Search(WILDCARD_JSON_TEST_INDEX);
 		search.addQuery(new ScoredQuery("*:slovak"));
 		searchResult = zuliaWorkPool.search(search);

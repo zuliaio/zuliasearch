@@ -3,8 +3,8 @@ package io.zulia.client.command;
 /**
  * Deletes a document from the Zulia index specified without
  * removing associated documents
- * @author mdavis
  *
+ * @author mdavis
  */
 public class DeleteFromIndex extends Delete {
 

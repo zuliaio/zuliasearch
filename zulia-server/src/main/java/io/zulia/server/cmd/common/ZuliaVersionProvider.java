@@ -5,7 +5,7 @@ import picocli.CommandLine;
 
 public class ZuliaVersionProvider implements CommandLine.IVersionProvider {
 	@Override
-	public String[] getVersion()  {
-		return new String[]{ZuliaVersion.getVersion()};
+	public String[] getVersion() {
+		return new String[] { ZuliaVersion.getVersion() };
 	}
 }

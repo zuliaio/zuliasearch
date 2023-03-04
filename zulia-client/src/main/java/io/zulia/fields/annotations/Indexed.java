@@ -10,8 +10,6 @@ import java.lang.annotation.Target;
 
 /**
  * Specifics a field should be indexed
- *
- *
  */
 @Documented
 @Inherited
@@ -21,7 +19,6 @@ import java.lang.annotation.Target;
 public @interface Indexed {
 	/**
 	 * Sets the analyzer to use to index the field
-	 *
 	 */
 	String analyzerName() default "";
 

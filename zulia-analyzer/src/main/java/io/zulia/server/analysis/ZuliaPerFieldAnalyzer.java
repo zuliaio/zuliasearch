@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.CATENATE_ALL;
 
@@ -184,8 +185,8 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 
 						File file = new File(System.getProperty("user.home") + File.separator + ".zulia" + File.separator + "stopwords.txt");
 						if (file.exists()) {
-							try {
-								List<String> fileLines = Files.lines(file.toPath()).map(s -> s = s.trim()).collect(Collectors.toList());
+							try (Stream<String> lines = Files.lines(file.toPath()).map(String::trim)) {
+								List<String> fileLines = lines.collect(Collectors.toList());
 								stopWordsSet = StopFilter.makeStopSet(fileLines);
 							}
 							catch (IOException e) {

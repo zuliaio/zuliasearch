@@ -17,9 +17,11 @@ import org.bson.Document;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 public class FileStorageTest {
 
@@ -39,29 +41,31 @@ public class FileStorageTest {
 
 		System.out.println("Indexing documents.");
 		AtomicInteger idCounter = new AtomicInteger(1);
-		Files.list(Paths.get(pdfsDir)).forEach(file -> {
-			if (file.toFile().getName().endsWith("pdf")) {
-				Document doc = new Document("id", idCounter.getAndIncrement() + "");
-				doc.put("title", fileStorageTest.getRandomString());
-				doc.put("abstract", fileStorageTest.getRandomString());
+		try (Stream<Path> files = Files.list(Paths.get(pdfsDir))) {
+			files.forEach(file -> {
+				if (file.toFile().getName().endsWith("pdf")) {
+					Document doc = new Document("id", idCounter.getAndIncrement() + "");
+					doc.put("title", fileStorageTest.getRandomString());
+					doc.put("abstract", fileStorageTest.getRandomString());
 
-				try {
-					fileStorageTest.indexDocument(doc);
-					Document meta = new Document();
-					meta.put("extension", "pdf");
-					meta.put("contentType", "application/pdf");
-					fileStorageTest.storeFile(doc.getString("id"), file.toFile().getName(), meta, file.toFile());
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
+					try {
+						fileStorageTest.indexDocument(doc);
+						Document meta = new Document();
+						meta.put("extension", "pdf");
+						meta.put("contentType", "application/pdf");
+						fileStorageTest.storeFile(doc.getString("id"), file.toFile().getName(), meta, file.toFile());
+					}
+					catch (Exception e) {
+						e.printStackTrace();
+					}
 
-				if (idCounter.get() % 100 == 0) {
-					System.out.println("So far indexed: " + idCounter);
-				}
+					if (idCounter.get() % 100 == 0) {
+						System.out.println("So far indexed: " + idCounter);
+					}
 
-			}
-		});
+				}
+			});
+		}
 		System.out.println("Finished indexing: " + idCounter);
 
 		fileStorageTest.query();

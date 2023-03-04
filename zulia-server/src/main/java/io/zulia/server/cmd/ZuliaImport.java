@@ -32,7 +32,7 @@ public class ZuliaImport implements Callable<Integer> {
 	@CommandLine.Mixin
 	private SingleIndexArgs singleIndexArgs;
 
-	@CommandLine.Option(names = {"--idField"}, description = "ID field name, defaults to 'id'")
+	@CommandLine.Option(names = { "--idField" }, description = "ID field name, defaults to 'id'")
 	private String idField = "id";
 
 	@CommandLine.Option(names = "--dir", description = "Full path to the zuliaexport directory.", required = true)

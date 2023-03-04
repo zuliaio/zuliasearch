@@ -104,7 +104,6 @@ public class NumericSetTest {
 		Assertions.assertEquals("2", searchResult.getCompleteResults().get(1).getUniqueId());
 		Assertions.assertEquals("5", searchResult.getCompleteResults().get(2).getUniqueId());
 
-
 		search = new Search(NUMERIC_SET_TEST);
 		search.addQuery(new NumericSetQuery("intField").addIntValues(Arrays.asList(1, 2))).addSort(new Sort("id"));
 		search.setAmount(10);
@@ -121,16 +120,14 @@ public class NumericSetTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(2, searchResult.getTotalHits());
 
-
 		search = new Search(NUMERIC_SET_TEST);
-		search.addQuery(new NumericSetQuery("floatField").addValues(565.0f,2000f));
+		search.addQuery(new NumericSetQuery("floatField").addValues(565.0f, 2000f));
 		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(2, searchResult.getTotalHits());
 
-
 		search = new Search(NUMERIC_SET_TEST);
-		search.addQuery(new NumericSetQuery("doubleField").addValues(2.01,2.0));
+		search.addQuery(new NumericSetQuery("doubleField").addValues(2.01, 2.0));
 		search.setAmount(3);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(3, searchResult.getTotalHits());

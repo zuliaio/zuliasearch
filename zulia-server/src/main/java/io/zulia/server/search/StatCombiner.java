@@ -19,40 +19,12 @@ import java.util.List;
 
 public class StatCombiner {
 
-	public static class StatGroupWithShardIndex {
-		private final StatGroupInternal statGroup;
-		private final int shardIndex;
+	public record StatGroupWithShardIndex(StatGroupInternal statGroup, int shardIndex) {
 
-		public StatGroupWithShardIndex(StatGroupInternal statGroup, int shardIndex) {
-			this.statGroup = statGroup;
-			this.shardIndex = shardIndex;
-		}
-
-		public StatGroupInternal getStatGroup() {
-			return statGroup;
-		}
-
-		public int getShardIndex() {
-			return shardIndex;
-		}
 	}
 
-	private static class FacetStatsWithShardIndex {
-		private final FacetStatsInternal facetStats;
-		private final int shardIndex;
+	private record FacetStatsWithShardIndex(FacetStatsInternal facetStats, int shardIndex) {
 
-		public FacetStatsWithShardIndex(FacetStatsInternal facetStats, int shardIndex) {
-			this.facetStats = facetStats;
-			this.shardIndex = shardIndex;
-		}
-
-		public FacetStatsInternal getFacetStats() {
-			return facetStats;
-		}
-
-		public int getShardIndex() {
-			return shardIndex;
-		}
 	}
 
 	private final List<StatGroupWithShardIndex> statGroups;
@@ -72,16 +44,16 @@ public class StatCombiner {
 	public ZuliaQuery.StatGroup getCombinedStatGroupAndConvertToExternalType() {
 		// Get global stats
 		List<FacetStatsWithShardIndex> globalStatsInternal = new ArrayList<>();
-		statGroups.forEach(sg -> globalStatsInternal.add(new FacetStatsWithShardIndex(sg.getStatGroup().getGlobalStats(), sg.getShardIndex())));
+		statGroups.forEach(sg -> globalStatsInternal.add(new FacetStatsWithShardIndex(sg.statGroup().getGlobalStats(), sg.shardIndex())));
 
 		// Create a map grouping of lists of facets to be merged
 		HashMap<String, List<FacetStatsWithShardIndex>> facetStatsGroups = new HashMap<>();
 		statGroups.forEach(statGroup ->
 				// Group all sets of facet stats
-				statGroup.getStatGroup().getFacetStatsList().forEach(facetStats -> {
+				statGroup.statGroup().getFacetStatsList().forEach(facetStats -> {
 					String localName = facetStats.getFacet();
 					List<FacetStatsWithShardIndex> temp2 = facetStatsGroups.getOrDefault(localName, new ArrayList<>());
-					temp2.add(new FacetStatsWithShardIndex(facetStats, statGroup.getShardIndex()));
+					temp2.add(new FacetStatsWithShardIndex(facetStats, statGroup.shardIndex()));
 					facetStatsGroups.put(localName, temp2);
 				}));
 
@@ -101,7 +73,36 @@ public class StatCombiner {
 
 		// Generate return message
 		return StatGroup.newBuilder().setStatRequest(this.statRequest).setGlobalStats(globalStats)
-				.addAllFacetStats(facetStats.stream().map(FacetStats.Builder::build).toList()).build();
+				.addAllFacetStats(facetStats.stream().map(FacetStats.Builder::build).sorted(this::reverseCompareFacetStats).toList()).build();
+	}
+
+	/**
+	 * Comparator method for complex container type Facet Stats. Sorts by sum, if it exists and largest to smallest, rather than natural order
+	 *
+	 * @param o1 Any facet stat value
+	 * @param o2 Any other facet stat value
+	 * @return Result of [Type].compare for actively populated datatype
+	 */
+	private int reverseCompareFacetStats(FacetStats o1, FacetStats o2) {
+		if (o1.hasSum() && o2.hasSum()) {
+			// Reversing the arguments reverses the comparison by the comparators
+			SortValue sv1 = o2.getSum();
+			SortValue sv2 = o1.getSum();
+			// Compare each type until one is not equal. If all are equal, values are equal
+			int comp = Double.compare(sv1.getDoubleValue(), sv2.getDoubleValue());
+			if (comp == 0)
+				comp = Integer.compare(sv1.getIntegerValue(), sv2.getIntegerValue());
+			if (comp == 0)
+				comp = Long.compare(sv1.getLongValue(), sv2.getLongValue());
+			if (comp == 0)
+				comp = Float.compare(sv1.getFloatValue(), sv2.getFloatValue());
+			if (comp == 0)
+				comp = Long.compare(sv1.getDateValue(), sv2.getDateValue());
+			return comp;
+		}
+		else {
+			return 0;
+		}
 	}
 
 	/**
@@ -112,7 +113,7 @@ public class StatCombiner {
 	 */
 	private List<Integer> getNonReportingShards(List<FacetStatsWithShardIndex> facetStats) {
 		boolean[] mask = new boolean[shardReponses]; // Defaults to false (arrays are also fast)
-		facetStats.forEach(f -> mask[f.getShardIndex()] = true); // Set values to true
+		facetStats.forEach(f -> mask[f.shardIndex()] = true); // Set values to true
 
 		List<Integer> missingShards = new ArrayList<>();
 		for (int i = 0; i < shardReponses; i++) {
@@ -135,7 +136,7 @@ public class StatCombiner {
 		for (StatGroupWithShardIndex sgi : statGroups) {
 			if (missingIndexes.contains(sgi.shardIndex)) {
 				StatCarrier sc = new StatCarrier();
-				sgi.getStatGroup().getFacetStatsList().forEach(facetStatsInternal -> sc.addErrorStat(facetStatsInternal.getSum()));
+				sgi.statGroup().getFacetStatsList().forEach(facetStatsInternal -> sc.addErrorStat(facetStatsInternal.getSum()));
 				statCarriers.add(sc);
 			}
 		}
@@ -157,14 +158,14 @@ public class StatCombiner {
 	 * @return Combined FacetStats message object ready to be returned to the user
 	 */
 	private FacetStats.Builder convertAndCombineFacetStats(List<FacetStatsWithShardIndex> internalStats) {
-		String facetName = internalStats.get(0).getFacetStats().getFacet();
+		String facetName = internalStats.get(0).facetStats().getFacet();
 
 		// If there are missing shard responses AND not all facets were requested there must be error
 		// -1 means all facets were requested so no error is possible in this case
 		boolean hasError = statRequest.getShardFacets() != -1 && internalStats.size() < shardReponses;
 
 		// No results to convert here. Return a blank value
-		if (internalStats.get(0).getFacetStats().getSerializedSize() == 0) {
+		if (internalStats.get(0).facetStats().getSerializedSize() == 0) {
 			return FacetStats.newBuilder();
 		}
 
@@ -175,7 +176,7 @@ public class StatCombiner {
 			DDSketch combinedSketch = DDSketches.unboundedDense(statRequest.getPrecision());
 			for (FacetStatsWithShardIndex fsi : internalStats) {
 				// Handle DDSketches
-				DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.getFacetStats().getStatSketch());
+				DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.facetStats().getStatSketch());
 				combinedSketch.mergeWith(sketch);
 			}
 
@@ -191,7 +192,7 @@ public class StatCombiner {
 
 		// Accumulate the local stats
 		StatCarrier carrier = new StatCarrier();
-		internalStats.stream().map(FacetStatsWithShardIndex::getFacetStats).toList().forEach(carrier::addStat);
+		internalStats.stream().map(FacetStatsWithShardIndex::facetStats).toList().forEach(carrier::addStat);
 
 		// Build combined final FacetStats that can be returned to the user
 		return FacetStats.newBuilder().setFacet(facetName).setMin(carrier.getMin()).setMax(carrier.getMax()).setSum(carrier.getSum())
@@ -209,7 +210,8 @@ public class StatCombiner {
 		private SortValue.Builder minValue = null;
 		private SortValue.Builder errorValue = null; // Will be a min
 
-		public StatCarrier() { }
+		public StatCarrier() {
+		}
 
 		/**
 		 * Handles combining a new stat value into the existing stat value set
@@ -246,9 +248,13 @@ public class StatCombiner {
 			return maxValue.build();
 		}
 
-		private SortValue getSum() { return sum.build(); }
+		private SortValue getSum() {
+			return sum.build();
+		}
 
-		private SortValue getErrorValue() { return errorValue.build(); }
+		private SortValue getErrorValue() {
+			return errorValue.build();
+		}
 
 		/**
 		 * Method for merging new data into a SortValue builder for Max value (also handles error bounding for min value)

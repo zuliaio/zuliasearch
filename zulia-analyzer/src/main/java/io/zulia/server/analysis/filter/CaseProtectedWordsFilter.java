@@ -13,9 +13,7 @@ public class CaseProtectedWordsFilter extends KeywordMarkerFilter {
 	 * Create a new CaseProtectedWordsFilter, that marks the current token as a
 	 * keyword if the tokens term buffer is contained in protected words
 	 *
-	 * @param in
-	 *          TokenStream to filter
-
+	 * @param in TokenStream to filter
 	 */
 	public CaseProtectedWordsFilter(final TokenStream in) {
 		super(in);

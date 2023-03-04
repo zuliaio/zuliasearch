@@ -148,10 +148,10 @@ public class FieldStats {
 	}
 
 	public String formatPercent(int count, int total) {
-		return String.format("%.3f",((count*100.0)/total)) + "%";
+		return String.format("%.3f", ((count * 100.0) / total)) + "%";
 	}
 
 	public String formatPerDoc(int count, int total) {
-		return String.format("%.2f",(((double)count)/total)) + "/doc";
+		return String.format("%.2f", (((double) count) / total)) + "/doc";
 	}
 }

@@ -18,9 +18,7 @@ public class DisplayNodesCmd implements Callable<Integer> {
 	@CommandLine.ParentCommand
 	private ZuliaAdmin zuliaAdmin;
 
-
-	@CommandLine.Option(names = {"-a", "--activeOnly"},
-			description = "Show only active nodes")
+	@CommandLine.Option(names = { "-a", "--activeOnly" }, description = "Show only active nodes")
 	private boolean activeOnly;
 
 	@Override

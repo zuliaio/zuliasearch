@@ -18,8 +18,8 @@ import static io.zulia.message.ZuliaQuery.FetchType;
 
 /**
  * Fetches multiple documents in a single call
- * @author mdavis
  *
+ * @author mdavis
  */
 public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResult> {
 

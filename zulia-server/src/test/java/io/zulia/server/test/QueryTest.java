@@ -32,7 +32,7 @@ public class QueryTest {
 			//no-op
 		});
 		long end = System.currentTimeMillis();
-		System.out.println("breast AND cancer All Matches," + (end-start));
+		System.out.println("breast AND cancer All Matches," + (end - start));
 
 		search.setResultFetchType(ZuliaQuery.FetchType.NONE);
 		search.clearSort();
@@ -43,7 +43,7 @@ public class QueryTest {
 			//no-op
 		});
 		end = System.currentTimeMillis();
-		System.out.println("breast AND cancer All Matches Sort Id (None)," + (end-start));
+		System.out.println("breast AND cancer All Matches Sort Id (None)," + (end - start));
 
 		search.setResultFetchType(ZuliaQuery.FetchType.FULL);
 		search.clearSort();
@@ -54,7 +54,7 @@ public class QueryTest {
 			//no-op
 		});
 		end = System.currentTimeMillis();
-		System.out.println("breast AND cancer All Matches Sort Id (Full)," + (end-start));
+		System.out.println("breast AND cancer All Matches Sort Id (Full)," + (end - start));
 
 	}
 }

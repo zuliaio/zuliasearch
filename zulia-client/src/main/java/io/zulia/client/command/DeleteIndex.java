@@ -11,8 +11,8 @@ import static io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
 
 /**
  * Deletes an index.  If index does not exist throws an exception
- * @author mdavis
  *
+ * @author mdavis
  */
 public class DeleteIndex extends SimpleCommand<DeleteIndexRequest, DeleteIndexResult> implements SingleIndexRoutableCommand {
 

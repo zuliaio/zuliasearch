@@ -28,7 +28,7 @@ public class DocCountCmd implements Callable<Integer> {
 	@CommandLine.Mixin
 	private MultipleIndexArgs multipleIndexArgs;
 
-	@CommandLine.Option(names = {"-s", "--sort"}, description = "Sort results by (${COMPLETION-CANDIDATES}).  default: ${DEFAULT-VALUE}")
+	@CommandLine.Option(names = { "-s", "--sort" }, description = "Sort results by (${COMPLETION-CANDIDATES}).  default: ${DEFAULT-VALUE}")
 	private Sort sort = Sort.given;
 
 	@Override
@@ -64,7 +64,6 @@ public class DocCountCmd implements Callable<Integer> {
 				System.out.println();
 			}
 
-
 			System.out.printf("%40s   %22s", "", total);
 			System.out.println();
 		}
@@ -72,8 +71,6 @@ public class DocCountCmd implements Callable<Integer> {
 			GetNumberOfDocsResult numberOfDocs = zuliaWorkPool.getNumberOfDocs(indexes.iterator().next());
 			System.out.println(numberOfDocs.getNumberOfDocs());
 		}
-
-
 
 		return CommandLine.ExitCode.OK;
 	}

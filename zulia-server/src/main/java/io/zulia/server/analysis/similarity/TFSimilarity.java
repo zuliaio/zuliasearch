@@ -36,5 +36,4 @@ public class TFSimilarity extends TFIDFSimilarity {
 		return 1f;
 	}
 
-
 }

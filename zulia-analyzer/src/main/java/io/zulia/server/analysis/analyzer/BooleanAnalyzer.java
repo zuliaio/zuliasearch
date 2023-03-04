@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 
 /**
  * Created by Matt Davis on 2/10/16.
-
  */
 public class BooleanAnalyzer extends Analyzer {
 

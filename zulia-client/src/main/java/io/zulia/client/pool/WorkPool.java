@@ -43,8 +43,8 @@ public class WorkPool {
 
 		};
 
-		pool = MoreExecutors
-				.listeningDecorator(new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, workQueue, new ZuliaThreadFactory(poolName)));
+		pool = MoreExecutors.listeningDecorator(
+				new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, workQueue, new ZuliaThreadFactory(poolName)));
 	}
 
 	public <T> ListenableFuture<T> executeAsync(Callable<T> task) {

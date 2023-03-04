@@ -1,8 +1,5 @@
 package io.zulia.server.connection.server.handler;
 
-import io.zulia.message.ZuliaServiceOuterClass;
-import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
-import io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
 import io.zulia.message.ZuliaServiceOuterClass.UpdateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.UpdateIndexResponse;
 import io.zulia.server.index.ZuliaIndexManager;

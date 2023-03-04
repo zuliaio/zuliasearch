@@ -30,7 +30,6 @@ public class VectorTopNQuery implements QueryBuilder {
 		return builder.build();
 	}
 
-
 	public VectorTopNQuery addPreFilterQuery(QueryBuilder queryBuilder) {
 		builder.addVectorPreQuery(queryBuilder.getQuery());
 		return this;

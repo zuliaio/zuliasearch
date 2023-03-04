@@ -9,8 +9,6 @@ import java.lang.annotation.Target;
 
 /**
  * Specifics a field should be indexed
- *
- *
  */
 @Documented
 @Inherited

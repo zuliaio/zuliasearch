@@ -223,7 +223,7 @@ import java.util.TooManyListenersException;
  *       </code> field where at least two of the three terms (<code>quick</code>, <code>
  *        brown</code> and <code>fox</code>) occur within five positions of each other.
  * </ul>
- *
+ * <p>
  * Please refer to the {@linkplain org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn
  * interval functions package} for more information on which functions are available and how they
  * work.
@@ -237,7 +237,9 @@ import java.util.TooManyListenersException;
 // copied from org.apache.lucene.queryparser.flexible.standard.StandardQueryParser within changes noted as zulia -
 public class ZuliaStandardQueryParser extends QueryParserHelper implements CommonQueryParserConfiguration {
 
-	/** Constructs a {@link ZuliaStandardQueryParser} object. */
+	/**
+	 * Constructs a {@link ZuliaStandardQueryParser} object.
+	 */
 	public ZuliaStandardQueryParser() {
 		super(new StandardQueryConfigHandler(),
 				// zulia - set zulia syntax parser, query node pipeline and tree builder
@@ -272,7 +274,7 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 	 * {@link Query}. For more reference about this method, check {@link
 	 * QueryParserHelper#parse(String, String)}.
 	 *
-	 * @param query the query string
+	 * @param query        the query string
 	 * @param defaultField the default field used by the text parser
 	 * @return the object built from the query
 	 * @throws QueryNodeException if something wrong happens along the three phases
@@ -329,16 +331,18 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 		getQueryConfigHandler().set(ConfigurationKeys.ENABLE_POSITION_INCREMENTS, enabled);
 	}
 
-	/** @see #setEnablePositionIncrements(boolean) */
+	/**
+	 * @see #setEnablePositionIncrements(boolean)
+	 */
 	@Override
 	public boolean getEnablePositionIncrements() {
-		Boolean enablePositionsIncrements =
-				getQueryConfigHandler().get(ConfigurationKeys.ENABLE_POSITION_INCREMENTS);
+		Boolean enablePositionsIncrements = getQueryConfigHandler().get(ConfigurationKeys.ENABLE_POSITION_INCREMENTS);
 
 		if (enablePositionsIncrements == null) {
 			return false;
 
-		} else {
+		}
+		else {
 			return enablePositionsIncrements;
 		}
 	}
@@ -356,7 +360,9 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 		getQueryConfigHandler().set(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD, method);
 	}
 
-	/** @see #setMultiTermRewriteMethod(org.apache.lucene.search.MultiTermQuery.RewriteMethod) */
+	/**
+	 * @see #setMultiTermRewriteMethod(org.apache.lucene.search.MultiTermQuery.RewriteMethod)
+	 */
 	@Override
 	public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
 		return getQueryConfigHandler().get(ConfigurationKeys.MULTI_TERM_REWRITE_METHOD);
@@ -412,13 +418,17 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 		return getQueryConfigHandler().get(ConfigurationKeys.POINTS_CONFIG_MAP);
 	}
 
-	/** Set locale used by date range parsing. */
+	/**
+	 * Set locale used by date range parsing.
+	 */
 	@Override
 	public void setLocale(Locale locale) {
 		getQueryConfigHandler().set(ConfigurationKeys.LOCALE, locale);
 	}
 
-	/** Returns current locale, allowing access by subclasses. */
+	/**
+	 * Returns current locale, allowing access by subclasses.
+	 */
 	@Override
 	public Locale getLocale() {
 		return getQueryConfigHandler().get(ConfigurationKeys.LOCALE);
@@ -452,28 +462,33 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 		return getQueryConfigHandler().get(ConfigurationKeys.ANALYZER);
 	}
 
-	/** @see #setAllowLeadingWildcard(boolean) */
+	/**
+	 * @see #setAllowLeadingWildcard(boolean)
+	 */
 	@Override
 	public boolean getAllowLeadingWildcard() {
-		Boolean allowLeadingWildcard =
-				getQueryConfigHandler().get(ConfigurationKeys.ALLOW_LEADING_WILDCARD);
+		Boolean allowLeadingWildcard = getQueryConfigHandler().get(ConfigurationKeys.ALLOW_LEADING_WILDCARD);
 
 		if (allowLeadingWildcard == null) {
 			return false;
 
-		} else {
+		}
+		else {
 			return allowLeadingWildcard;
 		}
 	}
 
-	/** Get the minimal similarity for fuzzy queries. */
+	/**
+	 * Get the minimal similarity for fuzzy queries.
+	 */
 	@Override
 	public float getFuzzyMinSim() {
 		FuzzyConfig fuzzyConfig = getQueryConfigHandler().get(ConfigurationKeys.FUZZY_CONFIG);
 
 		if (fuzzyConfig == null) {
 			return FuzzyQuery.defaultMaxEdits;
-		} else {
+		}
+		else {
 			return fuzzyConfig.getMinSimilarity();
 		}
 	}
@@ -489,12 +504,15 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 
 		if (fuzzyConfig == null) {
 			return FuzzyQuery.defaultPrefixLength;
-		} else {
+		}
+		else {
 			return fuzzyConfig.getPrefixLength();
 		}
 	}
 
-	/** Gets the default slop for phrases. */
+	/**
+	 * Gets the default slop for phrases.
+	 */
 	@Override
 	public int getPhraseSlop() {
 		Integer phraseSlop = getQueryConfigHandler().get(ConfigurationKeys.PHRASE_SLOP);
@@ -502,7 +520,8 @@ public class ZuliaStandardQueryParser extends QueryParserHelper implements Commo
 		if (phraseSlop == null) {
 			return 0;
 
-		} else {
+		}
+		else {
 			return phraseSlop;
 		}
 	}

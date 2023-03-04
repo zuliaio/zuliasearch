@@ -16,7 +16,6 @@ public @interface Settings {
 
 	int numberOfShards();
 
-
 	double requestFactor() default 2.0;
 
 	int minSeqmentRequest() default 2;
@@ -30,6 +29,5 @@ public @interface Settings {
 	int shardQueryCacheSize() default 512;
 
 	int shardQueryCacheMaxAmount() default 256;
-
 
 }

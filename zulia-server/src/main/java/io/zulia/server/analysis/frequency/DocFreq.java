@@ -9,6 +9,7 @@ import java.util.HashMap;
 
 /**
  * Created by Matt Davis on 6/28/16.
+ *
  * @author mdavis
  */
 public class DocFreq {

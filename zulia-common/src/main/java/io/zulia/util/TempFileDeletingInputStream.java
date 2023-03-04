@@ -13,7 +13,6 @@ public class TempFileDeletingInputStream extends FileInputStream {
 	private final File file;
 
 	/**
-	 *
 	 * @param file - file to delete on stream close
 	 * @throws FileNotFoundException - if file does not exist
 	 */

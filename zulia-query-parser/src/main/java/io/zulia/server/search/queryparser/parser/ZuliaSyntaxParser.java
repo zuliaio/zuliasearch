@@ -60,7 +60,8 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 
 	/**
 	 * Parses a query string, returning a {@link org.apache.lucene.queryparser.flexible.core.nodes.QueryNode}.
-	 * @param query  the query string to be parsed.
+	 *
+	 * @param query the query string to be parsed.
 	 * @throws ParseException if the parsing fails
 	 */
 	@Override
@@ -2309,11 +2310,17 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		return false;
 	}
 
-	/** Generated Token Manager. */
+	/**
+	 * Generated Token Manager.
+	 */
 	public ZuliaSyntaxParserTokenManager token_source;
-	/** Current token. */
+	/**
+	 * Current token.
+	 */
 	public Token token;
-	/** Next token. */
+	/**
+	 * Next token.
+	 */
 	public Token jj_nt;
 	private int jj_ntk;
 	private Token jj_scanpos, jj_lastpos;
@@ -2343,7 +2350,9 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private boolean jj_rescan = false;
 	private int jj_gc = 0;
 
-	/** Constructor with user supplied CharStream. */
+	/**
+	 * Constructor with user supplied CharStream.
+	 */
 	public ZuliaSyntaxParser(CharStream stream) {
 		token_source = new ZuliaSyntaxParserTokenManager(stream);
 		token = new Token();
@@ -2355,7 +2364,9 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 			jj_2_rtns[i] = new JJCalls();
 	}
 
-	/** Reinitialise. */
+	/**
+	 * Reinitialise.
+	 */
 	public void ReInit(CharStream stream) {
 		token_source.ReInit(stream);
 		token = new Token();
@@ -2367,7 +2378,9 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 			jj_2_rtns[i] = new JJCalls();
 	}
 
-	/** Constructor with generated Token Manager. */
+	/**
+	 * Constructor with generated Token Manager.
+	 */
 	public ZuliaSyntaxParser(ZuliaSyntaxParserTokenManager tm) {
 		token_source = tm;
 		token = new Token();
@@ -2379,7 +2392,9 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 			jj_2_rtns[i] = new JJCalls();
 	}
 
-	/** Reinitialise. */
+	/**
+	 * Reinitialise.
+	 */
 	public void ReInit(ZuliaSyntaxParserTokenManager tm) {
 		token_source = tm;
 		token = new Token();
@@ -2454,7 +2469,9 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		return false;
 	}
 
-	/** Get the next Token. */
+	/**
+	 * Get the next Token.
+	 */
 	final public Token getNextToken() {
 		if (token.next != null)
 			token = token.next;
@@ -2465,7 +2482,9 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		return token;
 	}
 
-	/** Get the specific Token. */
+	/**
+	 * Get the specific Token.
+	 */
 	final public Token getToken(int index) {
 		Token t = token;
 		for (int i = 0; i < index; i++) {
@@ -2529,7 +2548,9 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		}
 	}
 
-	/** Generate ParseException. */
+	/**
+	 * Generate ParseException.
+	 */
 	public ParseException generateParseException() {
 		jj_expentries.clear();
 		boolean[] la1tokens = new boolean[57];
@@ -2569,16 +2590,22 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private int trace_indent = 0;
 	private boolean trace_enabled;
 
-	/** Trace enabled. */
+	/**
+	 * Trace enabled.
+	 */
 	final public boolean trace_enabled() {
 		return trace_enabled;
 	}
 
-	/** Enable tracing. */
+	/**
+	 * Enable tracing.
+	 */
 	final public void enable_tracing() {
 	}
 
-	/** Disable tracing. */
+	/**
+	 * Disable tracing.
+	 */
 	final public void disable_tracing() {
 	}
 

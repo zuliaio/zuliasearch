@@ -5,8 +5,7 @@ import io.zulia.message.ZuliaServiceOuterClass.InternalCreateOrUpdateIndexRespon
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.connection.client.InternalRpcConnection;
 
-public class InternalCreateOrUpdateIndexHandler
-		extends InternalRequestHandler<InternalCreateOrUpdateIndexResponse, InternalCreateOrUpdateIndexRequest> {
+public class InternalCreateOrUpdateIndexHandler extends InternalRequestHandler<InternalCreateOrUpdateIndexResponse, InternalCreateOrUpdateIndexRequest> {
 	public InternalCreateOrUpdateIndexHandler(InternalClient internalClient) {
 		super(internalClient);
 	}

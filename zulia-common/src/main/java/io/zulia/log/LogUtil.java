@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 
 /**
  * Created by Payam Meyer on 8/3/17.
+ *
  * @author pmeyer
  */
 public class LogUtil {

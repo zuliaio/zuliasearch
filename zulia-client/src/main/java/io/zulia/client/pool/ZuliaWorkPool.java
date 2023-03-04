@@ -41,7 +41,6 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return clearIndexAsync(new ClearIndex(index));
 	}
 
-
 	public ListenableFuture<ClearIndexResult> clearIndexAsync(ClearIndex clearIndex) throws Exception {
 		return executeAsync(clearIndex);
 	}
@@ -166,7 +165,6 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new GetNodes().setActiveOnly(true));
 	}
 
-
 	public ListenableFuture<GetNodesResult> getNodesAsync() throws Exception {
 		return executeAsync(new GetNodes());
 	}
@@ -219,7 +217,8 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		searchAllAsScoredResult(search, scoredResult -> {
 			try {
 				mappedDocumentHandler.accept(mapper.fromScoredResult(scoredResult));
-			} catch (Exception e) {
+			}
+			catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		});
@@ -307,6 +306,5 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 	public List<IndexAlias> getIndexAliases() throws Exception {
 		return getNodes().getIndexAliases();
 	}
-
 
 }

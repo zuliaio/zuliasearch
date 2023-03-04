@@ -1,6 +1,5 @@
 package io.zulia;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -18,6 +17,6 @@ public class DefaultAnalyzers {
 	public static final String TWO_TWO_SHINGLE = "twoTwoShingle";
 	public static final String THREE_THREE_SHINGLE = "threeThreeShingle";
 
-
-	public static Set<String> ALL_ANALYZERS = Set.of(KEYWORD, LC_KEYWORD,LC_CONCAT_ALL, STANDARD,MIN_STEM,KSTEMMED, LSH, TWO_TWO_SHINGLE, THREE_THREE_SHINGLE);
+	public static Set<String> ALL_ANALYZERS = Set.of(KEYWORD, LC_KEYWORD, LC_CONCAT_ALL, STANDARD, MIN_STEM, KSTEMMED, LSH, TWO_TWO_SHINGLE,
+			THREE_THREE_SHINGLE);
 }

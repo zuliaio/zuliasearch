@@ -10,7 +10,9 @@ import java.util.Collection;
 
 public class QueryUtil {
 
-	/** From org.apache.solr.search.QueryUtils **/
+	/**
+	 * From org.apache.solr.search.QueryUtils
+	 **/
 	public static boolean isNegative(Query q) {
 		if (!(q instanceof BooleanQuery))
 			return false;
@@ -25,7 +27,8 @@ public class QueryUtil {
 		return true;
 	}
 
-	/** Fixes a negative query by adding a MatchAllDocs query clause.
+	/**
+	 * Fixes a negative query by adding a MatchAllDocs query clause.
 	 * The query passed in *must* be a negative query.
 	 */
 	public static Query fixNegativeQuery(Query q) {
