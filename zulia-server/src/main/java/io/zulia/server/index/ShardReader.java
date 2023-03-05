@@ -689,7 +689,9 @@ public class ShardReader implements AutoCloseable {
 
 		if (ZuliaQuery.FetchType.FULL.equals(resultFetchType) || ZuliaQuery.FetchType.META.equals(resultFetchType)) {
 			BytesRef metaRef = d.getBinaryValue(ZuliaConstants.STORED_META_FIELD);
-			rdBuilder.setMetadata(ByteString.copyFrom(metaRef.bytes));
+			if (metaRef != null) {
+				rdBuilder.setMetadata(ByteString.copyFrom(metaRef.bytes));
+			}
 		}
 
 		if (ZuliaQuery.FetchType.FULL.equals(resultFetchType)) {

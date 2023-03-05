@@ -1,4 +1,4 @@
-package io.zulia.server.search;
+package io.zulia.server.search.stat;
 
 import com.datadoghq.sketch.ddsketch.DDSketch;
 import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;

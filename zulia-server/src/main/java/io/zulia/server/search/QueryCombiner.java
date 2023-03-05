@@ -21,6 +21,7 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
 import io.zulia.server.index.ZuliaIndex;
 import io.zulia.server.search.queryparser.ZuliaParser;
+import io.zulia.server.search.stat.StatCombiner;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -16,13 +16,15 @@
  */
 package io.zulia.server.search;
 
-import com.datadoghq.sketch.ddsketch.DDSketch;
-import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
-import com.datadoghq.sketch.ddsketch.DDSketches;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.server.search.stat.DoubleStats;
+import io.zulia.server.search.stat.LongStats;
+import io.zulia.server.search.stat.StatFactory;
+import io.zulia.server.search.stat.Stats;
+import io.zulia.server.search.stat.TopStatsQueue;
 import org.apache.lucene.facet.FacetUtils;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
@@ -33,8 +35,6 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.ConjunctionUtils;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,33 +42,48 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public class TaxonomyStatsHandler {
 
-	protected final Stats[][] fieldFacetStats;
-	protected final Stats[] fieldStats;
+	protected final Stats<?>[][] fieldFacetStats;
+	protected final Stats<?>[] fieldStats;
+
 	private final HashMap<String, ZuliaQuery.StatRequest> statRequestMap;
-	private final List<String> fieldsList;
+	private final List<String> numericFieldsList;
+
+	private final ArrayList<String> numericFieldSortValueList;
 	private final TaxonomyReader taxoReader;
 	private final List<ZuliaIndex.FieldConfig.FieldType> fieldTypes;
 	private final List<Double> requestPrecisions;
-	private final ServerIndexConfig serverIndexConfig;
+
 	private int[] children;
 	private int[] siblings;
 
 	public TaxonomyStatsHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests, ServerIndexConfig serverIndexConfig)
 			throws IOException {
-		this.serverIndexConfig = serverIndexConfig;
 
 		boolean facetLevel = statRequests.stream().map(ZuliaQuery.StatRequest::getFacetField).anyMatch(s -> !s.getLabel().isEmpty());
 		boolean global = statRequests.stream().map(ZuliaQuery.StatRequest::getFacetField).anyMatch(s -> s.getLabel().isEmpty());
 
 		this.statRequestMap = new HashMap<>();
+
+		for (ZuliaQuery.StatRequest statRequest : statRequests) {
+			//global
+			if (statRequest.getFacetField().getLabel().isEmpty()) {
+				global = true;
+			}
+			else {
+				facetLevel = true;
+			}
+		}
+
 		statRequests.forEach(statRequest -> this.statRequestMap.put(statRequest.getNumericField(), statRequest));
 		Set<String> numericFields = this.statRequestMap.keySet();
 
 		fieldTypes = new ArrayList<>();
 		requestPrecisions = new ArrayList<>();
+		numericFieldSortValueList = new ArrayList<>();
 		for (String numericField : numericFields) {
 			ZuliaIndex.FieldConfig.FieldType fieldTypeForSortField = serverIndexConfig.getFieldTypeForSortField(numericField);
 			if (fieldTypeForSortField == null) {
@@ -80,12 +95,15 @@ public class TaxonomyStatsHandler {
 
 			fieldTypes.add(fieldTypeForSortField);
 			requestPrecisions.add(statRequestMap.get(numericField).getPrecision());
+			numericFieldSortValueList.add(serverIndexConfig.getSortField(numericField, fieldTypeForSortField));
+
+			statRequestMap.get(numericField);
 		}
 
-		this.fieldsList = new ArrayList<>(numericFields);
+		this.numericFieldsList = new ArrayList<>(numericFields);
 
 		if (facetLevel) {
-			this.fieldFacetStats = new Stats[fieldsList.size()][taxoReader.getSize()];
+			this.fieldFacetStats = new Stats[numericFieldsList.size()][taxoReader.getSize()];
 			this.taxoReader = taxoReader;
 		}
 		else {
@@ -94,9 +112,11 @@ public class TaxonomyStatsHandler {
 		}
 
 		if (global) {
-			this.fieldStats = new Stats[fieldsList.size()];
+			this.fieldStats = new Stats[numericFieldsList.size()];
 			for (int i = 0; i < fieldStats.length; i++) {
-				this.fieldStats[i] = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldTypes.get(i)), requestPrecisions.get(i));
+				Double precision = requestPrecisions.get(i);
+				ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(i);
+				this.fieldStats[i] = StatFactory.getStatForFieldType(fieldType, precision).get();
 			}
 
 		}
@@ -104,7 +124,7 @@ public class TaxonomyStatsHandler {
 			this.fieldStats = null;
 		}
 
-		sumValues(fc.getMatchingDocs(), fieldsList);
+		sumValues(fc.getMatchingDocs(), numericFieldsList);
 	}
 
 	private void sumValues(List<MatchingDocs> matchingDocs, List<String> fieldsList) throws IOException {
@@ -116,12 +136,16 @@ public class TaxonomyStatsHandler {
 		int[] ordinalDocValues = new int[0];
 		long[] numericValues = new long[0];
 
+		List<Supplier<? extends Stats<?>>> statConstructor = new ArrayList<>(fieldsList.size());
+		for (int f = 0; f < fieldsList.size(); f++) {
+			ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(f);
+			statConstructor.add(StatFactory.getStatForFieldType(fieldType, requestPrecisions.get(f)));
+		}
+
 		for (MatchingDocs hits : matchingDocs) {
 
 			for (int f = 0; f < fieldsList.size(); f++) {
-				ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(f);
-				String field = serverIndexConfig.getSortField(fieldsList.get(f), fieldType);
-				functionValues[f] = DocValues.getSortedNumeric(hits.context.reader(), field);
+				functionValues[f] = DocValues.getSortedNumeric(hits.context.reader(), numericFieldSortValueList.get(f));
 			}
 
 			DocIdSetIterator docs = hits.bits.iterator();
@@ -152,41 +176,42 @@ public class TaxonomyStatsHandler {
 				for (int f = 0; f < fieldsList.size(); f++) {
 
 					SortedNumericDocValues functionValue = functionValues[f];
-					ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(f);
+
 					if (functionValue.advanceExact(doc)) {
-						if (functionValue.docValueCount() > numericValues.length) {
-							numericValues = new long[functionValue.docValueCount()];
+						int numericValueCount = functionValue.docValueCount();
+						if (numericValueCount > numericValues.length) {
+							numericValues = new long[numericValueCount];
 						}
-						for (int j = 0; j < functionValue.docValueCount(); j++) {
-							long value = functionValue.nextValue();
-							numericValues[j] = value;
+						for (int j = 0; j < numericValueCount; j++) {
+							numericValues[j] = functionValue.nextValue();
 						}
 
 						if (ordinalCount != -1) {
 
 							for (int i = 0; i < ordinalCount; i++) {
 								int ordIndex = ordinalDocValues[i];
-								Stats stats = fieldFacetStats[f][ordIndex];
+								Stats<?> stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
-									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType), requestPrecisions.get(f));
+									stats = statConstructor.get(f).get();
+									stats.setOrdinal(ordIndex);
 									fieldFacetStats[f][ordIndex] = stats;
 								}
 								stats.newDoc(true);
 							}
-							for (int j = 0; j < functionValue.docValueCount(); j++) {
+							for (int j = 0; j < numericValueCount; j++) {
 								for (int i = 0; i < ordinalCount; i++) {
 									int ordIndex = ordinalDocValues[i];
-									Stats stats = fieldFacetStats[f][ordIndex];
-									addUpValue(fieldType, numericValues[j], stats);
+									Stats<?> stats = fieldFacetStats[f][ordIndex];
+									stats.handleDocValue(numericValues[j]);
 								}
 
 							}
 						}
 						if (fieldStats != null) {
-							Stats stats = fieldStats[f];
+							Stats<?> stats = fieldStats[f];
 							stats.newDoc(true);
-							for (int j = 0; j < functionValue.docValueCount(); j++) {
-								addUpValue(fieldType, numericValues[j], stats);
+							for (int j = 0; j < numericValueCount; j++) {
+								stats.handleDocValue(numericValues[j]);
 							}
 						}
 					}
@@ -194,16 +219,17 @@ public class TaxonomyStatsHandler {
 						if (ordinalCount != -1) {
 							for (int i = 0; i < ordinalCount; i++) {
 								int ordIndex = ordinalDocValues[i];
-								Stats stats = fieldFacetStats[f][ordIndex];
+								Stats<?> stats = fieldFacetStats[f][ordIndex];
 								if (stats == null) {
-									stats = new Stats(FieldTypeUtil.isNumericFloatingPointFieldType(fieldType), requestPrecisions.get(f));
+									stats = statConstructor.get(f).get();
+									stats.setOrdinal(ordIndex);
 									fieldFacetStats[f][ordIndex] = stats;
 								}
 								stats.newDoc(false);
 							}
 						}
 						if (fieldStats != null) {
-							Stats stats = fieldStats[f];
+							Stats<?> stats = fieldStats[f];
 							stats.newDoc(false);
 						}
 					}
@@ -212,42 +238,26 @@ public class TaxonomyStatsHandler {
 		}
 	}
 
-	private void addUpValue(ZuliaIndex.FieldConfig.FieldType fieldType, long value, Stats stats) {
-		if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-			stats.newValue(NumericUtils.sortableLongToDouble(value));
-		}
-		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-			stats.newValue(NumericUtils.sortableIntToFloat((int) value));
-		}
-		else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-			stats.newValue(value);
-		}
-		else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-			stats.newValue((int) value);
-		}
-		else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
-			stats.newValue((int) value);
-		}
-	}
-
 	public ZuliaQuery.FacetStatsInternal getGlobalStatsForNumericField(String field) {
-		int fieldIndex = fieldsList.indexOf(field);
+		int fieldIndex = numericFieldsList.indexOf(field);
 
 		if (fieldIndex == -1) {
 			throw new IllegalArgumentException("Field <" + field + "> was not given in constructor");
 		}
 
-		return createFacetStat(fieldStats[fieldIndex], "");
+		Stats<?> fieldStat = fieldStats[fieldIndex];
+		System.out.println(fieldStat.buildResponse());
+		return fieldStat.buildResponse().build();
 	}
 
 	public List<ZuliaQuery.FacetStatsInternal> getTopChildren(String field, int topN, String dim, String... path) throws IOException {
-		int fieldIndex = fieldsList.indexOf(field);
+		int fieldIndex = numericFieldsList.indexOf(field);
 
 		if (fieldIndex == -1) {
 			throw new IllegalArgumentException("Field <" + field + "> was not given in constructor");
 		}
 
-		Stats[] stats = fieldFacetStats[fieldIndex];
+		Stats<?>[] stats = fieldFacetStats[fieldIndex];
 
 		if (topN <= 0) {
 			throw new IllegalArgumentException("topN must be > 0 (got: " + topN + ")");
@@ -259,8 +269,10 @@ public class TaxonomyStatsHandler {
 			return null;
 		}
 
-		TopStatQueue q = new TopStatQueue(Math.min(taxoReader.getSize(), topN));
+		ZuliaIndex.FieldConfig.FieldType fieldType = fieldTypes.get(fieldIndex);
+		Stats<?> statType = StatFactory.getStatForFieldType(fieldType, 0).get();
 
+		//TODO this will move up
 		if (children == null) {
 			children = taxoReader.getParallelTaxonomyArrays().children();
 		}
@@ -271,162 +283,63 @@ public class TaxonomyStatsHandler {
 
 		int ord = children[dimOrd];
 
-		double doubleBottomValue = Double.NEGATIVE_INFINITY;
-		long longBottomValue = Long.MIN_VALUE;
+		if (statType instanceof LongStats) {
+			TopStatsQueue<LongStats> q = new TopStatsQueue<>(Math.min(taxoReader.getSize(), topN));
+			long longBottomValue = Long.MIN_VALUE;
 
-		while (ord != TaxonomyReader.INVALID_ORDINAL) {
-			Stats stat = stats[ord];
-			if (stat != null) {
-				stat.ordinal = ord;
-				if (stat.isFloatingPoint()) {
-					if (stat.doubleSum > doubleBottomValue) {
+			while (ord != TaxonomyReader.INVALID_ORDINAL) {
+				LongStats stat = (LongStats) stats[ord];
+				if (stat != null) {
+					if (stat.getLongSum() > longBottomValue) {
 						q.insertWithOverflow(stat);
 						if (q.size() == topN) {
-							doubleBottomValue = q.top().doubleSum;
+							longBottomValue = q.top().getLongSum();
 						}
 					}
+
 				}
-				else {
-					if (stat.longSum > longBottomValue) {
-						q.insertWithOverflow(stat);
-						if (q.size() == topN) {
-							longBottomValue = q.top().longSum;
-						}
-					}
-				}
+				ord = siblings[ord];
 			}
 
-			ord = siblings[ord];
+			return getFacetStatsInternals(cp, q);
+		}
+		else if (statType instanceof DoubleStats) {
+			TopStatsQueue<DoubleStats> q = new TopStatsQueue<>(Math.min(taxoReader.getSize(), topN));
+			double doubleBottomValue = Double.NEGATIVE_INFINITY;
+
+			while (ord != TaxonomyReader.INVALID_ORDINAL) {
+				DoubleStats stat = (DoubleStats) stats[ord];
+				if (stat != null) {
+					if (stat.getDoubleSum() > doubleBottomValue) {
+						q.insertWithOverflow(stat);
+						if (q.size() == topN) {
+							doubleBottomValue = q.top().getDoubleSum();
+						}
+					}
+
+				}
+
+				ord = siblings[ord];
+			}
+
+			return getFacetStatsInternals(cp, q);
+		}
+		else {
+			throw new IllegalStateException("Unknown field state type <" + statType + ">");
 		}
 
+	}
+
+	private List<ZuliaQuery.FacetStatsInternal> getFacetStatsInternals(FacetLabel cp, TopStatsQueue<?> q) throws IOException {
 		ZuliaQuery.FacetStatsInternal[] facetStats = new ZuliaQuery.FacetStatsInternal[q.size()];
 		for (int i = facetStats.length - 1; i >= 0; i--) {
-			Stats stat = q.pop();
-			FacetLabel child = taxoReader.getPath(stat.ordinal);
+			Stats<?> stat = q.pop();
+			FacetLabel child = taxoReader.getPath(stat.getOrdinal());
 			String label = child.components[cp.length];
-			facetStats[i] = createFacetStat(stat, label);
+			facetStats[i] = stat.buildResponse().setFacet(label).build();
 		}
 
 		return Arrays.asList(facetStats);
-	}
-
-	private ZuliaQuery.FacetStatsInternal createFacetStat(Stats stat, String label) {
-		ZuliaQuery.SortValue sum = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longSum).setDoubleValue(stat.doubleSum).build();
-		ZuliaQuery.SortValue min = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMinValue).setDoubleValue(stat.doubleMinValue).build();
-		ZuliaQuery.SortValue max = ZuliaQuery.SortValue.newBuilder().setLongValue(stat.longMaxValue).setDoubleValue(stat.doubleMaxValue).build();
-
-		// Add the "always-specified" values first
-		ZuliaQuery.FacetStatsInternal.Builder builder = ZuliaQuery.FacetStatsInternal.newBuilder().setFacet(label).setDocCount(stat.docCount)
-				.setAllDocCount(stat.allDocCount).setValueCount(stat.valueCount).setSum(sum).setMin(min).setMax(max);
-
-		// Add stat sketch if specified
-		if (stat.sketch != null) {
-			builder.setStatSketch(DDSketchProtoBinding.toProto(stat.sketch));
-		}
-
-		// Build and return
-		return builder.build();
-
-	}
-
-	public static class TopStatQueue extends PriorityQueue<Stats> {
-
-		public TopStatQueue(int topN) {
-			super(topN);
-		}
-
-		@Override
-		protected boolean lessThan(Stats a, Stats b) {
-			if (a.doubleSum < b.doubleSum || a.longSum < b.longSum) {
-				return true;
-			}
-			else if (a.doubleSum > b.doubleSum || a.longSum > b.longSum) {
-				return false;
-			}
-			else {
-				return a.ordinal > b.ordinal;
-			}
-		}
-	}
-
-	public static class Stats {
-
-		private final boolean floatingPoint;
-		private int ordinal;
-		private long docCount;
-		private long allDocCount;
-		private long valueCount;
-
-		private double doubleSum;
-		private double doubleMinValue = Double.POSITIVE_INFINITY;
-		private double doubleMaxValue = Double.NEGATIVE_INFINITY;
-
-		private long longSum;
-		private long longMinValue = Long.MAX_VALUE;
-		private long longMaxValue = Long.MIN_VALUE;
-
-		private DDSketch sketch = null;
-
-		public Stats(boolean floatingPoint) {
-			if (floatingPoint) {
-				longMinValue = 0;
-				longMaxValue = 0;
-			}
-			else {
-				doubleMinValue = 0;
-				doubleMaxValue = 0;
-			}
-			this.floatingPoint = floatingPoint;
-		}
-
-		// overload constructor for building w/ precision
-		public Stats(boolean floatingPoint, double precision) {
-			this(floatingPoint);
-			// Cannot perform DDSketch with perfect precision.
-			// May indicate that precision was not requested. This prevents quantile from running.
-			if (precision > 0.0) {
-				this.sketch = DDSketches.unboundedDense(precision);
-			}
-		}
-
-		public void newDoc(boolean countNonNull) {
-			allDocCount++;
-			if (countNonNull) {
-				docCount++;
-			}
-		}
-
-		public void newValue(double newValue) {
-			this.doubleSum += newValue;
-			if (newValue < doubleMinValue) {
-				doubleMinValue = newValue;
-			}
-			if (newValue > doubleMaxValue) {
-				doubleMaxValue = newValue;
-			}
-			this.valueCount++;
-			if (this.sketch != null) {
-				this.sketch.accept(newValue);
-			}
-		}
-
-		public void newValue(long newValue) {
-			this.longSum += newValue;
-			if (newValue < longMinValue) {
-				longMinValue = newValue;
-			}
-			if (newValue > longMaxValue) {
-				longMaxValue = newValue;
-			}
-			this.valueCount++;
-			if (this.sketch != null) {
-				this.sketch.accept(newValue);
-			}
-		}
-
-		public boolean isFloatingPoint() {
-			return floatingPoint;
-		}
 	}
 
 }
