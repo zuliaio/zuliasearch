@@ -13,7 +13,6 @@ import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.server.search.ShardQuery;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -149,18 +148,8 @@ public class ZuliaShard {
 
 					String uniqueId = d.get(ZuliaConstants.ID_FIELD);
 
-					DocumentContainer mongoDocument = null;
-					DocumentContainer metadata = null;
-
-					BytesRef metaRef = d.getBinaryValue(ZuliaConstants.STORED_META_FIELD);
-					if (metaRef != null) {
-						metadata = new DocumentContainer(metaRef.bytes);
-					}
-
-					BytesRef docRef = d.getBinaryValue(ZuliaConstants.STORED_DOC_FIELD);
-					if (docRef != null) {
-						mongoDocument = new DocumentContainer(docRef.bytes);
-					}
+					DocumentContainer mongoDocument = new DocumentContainer(d.getBinaryValue(ZuliaConstants.STORED_DOC_FIELD));
+					DocumentContainer metadata = new DocumentContainer(d.getBinaryValue(ZuliaConstants.STORED_META_FIELD));
 
 					if (!trackedIds.contains(uniqueId)) {
 						shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);
