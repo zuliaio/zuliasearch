@@ -1,4 +1,4 @@
-package io.zulia.server.search.stat;
+package io.zulia.server.search.aggregation.stats;
 
 import org.apache.lucene.util.NumericUtils;
 

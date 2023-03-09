@@ -1,4 +1,4 @@
-package io.zulia.server.search.stat;
+package io.zulia.server.search.aggregation.stats;
 
 public class IntLongStats extends LongStats {
 	public IntLongStats(double precision) {

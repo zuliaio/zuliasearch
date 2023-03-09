@@ -75,6 +75,7 @@ public interface ZuliaConstants {
 	String CHAR_LENGTH_PREFIX = "_lmcl_";
 	String LIST_LENGTH_PREFIX = "_lmll_";
 	String SORT_SUFFIX = "_lmss_";
+	String FACET_STORAGE = "_lmfs_";
 
 	String HIGHLIGHT = "hl";
 

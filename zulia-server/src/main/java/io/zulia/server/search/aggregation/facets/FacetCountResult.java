@@ -1,4 +1,4 @@
-package io.zulia.server.search;
+package io.zulia.server.search.aggregation.facets;
 
 import java.util.Comparator;
 

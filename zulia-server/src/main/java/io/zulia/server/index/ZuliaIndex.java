@@ -1022,7 +1022,7 @@ public class ZuliaIndex {
 			if (field.startsWith(FacetsConfig.DEFAULT_INDEX_FIELD_NAME)) {
 				toRemove.add(field);
 			}
-			else if (field.startsWith(ZuliaConstants.SUPERBIT_PREFIX)) {
+			if (field.startsWith(ZuliaConstants.FACET_STORAGE)) {
 				toRemove.add(field);
 			}
 			else if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX)) {

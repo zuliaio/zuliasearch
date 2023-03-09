@@ -2,6 +2,11 @@ package io.zulia.server.index;
 
 import com.google.common.base.Splitter;
 import com.google.common.primitives.Floats;
+import com.koloboke.collect.map.IntObjMap;
+import com.koloboke.collect.map.hash.HashIntObjMaps;
+import com.koloboke.collect.set.IntSet;
+import com.koloboke.collect.set.hash.HashIntSet;
+import com.koloboke.collect.set.hash.HashIntSets;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
@@ -17,6 +22,7 @@ import io.zulia.server.index.field.StringFieldIndexer;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.KnnFloatVectorField;
@@ -33,6 +39,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
@@ -42,12 +50,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntConsumer;
 
 import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
 
 public class ShardDocumentIndexer {
 
 	private final static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
+
+	private final static Map<String, Integer> dimToOrdinal = new ConcurrentHashMap<>();
 
 	private final ServerIndexConfig indexConfig;
 
@@ -79,7 +91,7 @@ public class ShardDocumentIndexer {
 
 	private void addUserFields(org.bson.Document mongoDocument, Document luceneDocument, DirectoryTaxonomyWriter taxoWriter) throws Exception {
 
-		Map<String, Set<FacetLabel>> facetFieldToOrdinals = new HashMap<>();
+		Map<String, Set<FacetLabel>> facetFieldToFacetLabels = new HashMap<>();
 		for (String storedFieldName : indexConfig.getIndexedStoredFieldNames()) {
 
 			ZuliaIndex.FieldConfig fc = indexConfig.getFieldConfig(storedFieldName);
@@ -91,7 +103,7 @@ public class ShardDocumentIndexer {
 				Object o = ResultHelper.getValueFromMongoDocument(mongoDocument, storedFieldName);
 
 				if (o != null) {
-					generateFacetLabels(fc, o, facetFieldToOrdinals);
+					generateFacetLabels(fc, o, facetFieldToFacetLabels);
 
 					addSortForStoredField(luceneDocument, storedFieldName, fc, o);
 
@@ -102,41 +114,66 @@ public class ShardDocumentIndexer {
 
 		}
 
-		addFacets(luceneDocument, taxoWriter, facetFieldToOrdinals);
+		//important that every document has facets (even if empty stored) for intersecting the iterators and doing simultaneous processing of stats and facets stats
+		addFacets(luceneDocument, taxoWriter, facetFieldToFacetLabels);
 	}
 
-	private static void addFacets(Document luceneDocument, DirectoryTaxonomyWriter taxoWriter, Map<String, Set<FacetLabel>> facetFieldToOrdinals)
+	private static void addFacets(Document luceneDocument, DirectoryTaxonomyWriter taxoWriter, Map<String, Set<FacetLabel>> facetFieldToFacetLabels)
 			throws IOException {
-		for (String facetField : facetFieldToOrdinals.keySet()) {
 
-			Set<FacetLabel> facetLabels = facetFieldToOrdinals.get(facetField);
+		IntObjMap<IntSet> facetDimToOrdinal = HashIntObjMaps.newMutableMap();
 
-			TreeSet<Integer> ordinalSetForFacet = new TreeSet<>();
+		int fieldOrdinalCount = 0;
+		for (String facetField : facetFieldToFacetLabels.keySet()) {
+
+			Set<FacetLabel> facetLabels = facetFieldToFacetLabels.get(facetField);
+
+			int dimOridinal = dimToOrdinal.computeIfAbsent(facetField, s -> {
+				try {
+					return taxoWriter.addCategory(new FacetLabel(facetField));
+				}
+				catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
+
+			HashIntSet fieldOrdinals = HashIntSets.newMutableSet();
+			facetDimToOrdinal.put(dimOridinal, fieldOrdinals);
 
 			for (FacetLabel facetLabel : facetLabels) {
+
 				for (int i = 1; i <= facetLabel.length; i++) {
 					luceneDocument.add(
 							new StringField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, FacetsConfig.pathToString(facetLabel.components, i), Field.Store.NO));
 				}
 
 				int ordinal = taxoWriter.addCategory(facetLabel);
-				ordinalSetForFacet.add(ordinal);
+				fieldOrdinals.add(ordinal);
 
-				if (facetLabel.components.length > 2) {
-					int parent = taxoWriter.getParent(ordinal);
-					while (parent > 0) {
-						ordinalSetForFacet.add(parent);
-						parent = taxoWriter.getParent(parent);
-					}
+				int parent = taxoWriter.getParent(ordinal);
+				while (parent != dimOridinal && parent > 0) {
+					fieldOrdinals.add(parent);
+					parent = taxoWriter.getParent(parent);
 				}
 
 			}
 
-			for (int ordinal : ordinalSetForFacet) {
-				luceneDocument.add(new SortedNumericDocValuesField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, ordinal));
-			}
-
+			fieldOrdinalCount += fieldOrdinals.size();
 		}
+
+		TreeSet<Integer> orderedDimOrdinals = new TreeSet<>(facetDimToOrdinal.keySet());
+
+		ByteBuffer byteBuffer = ByteBuffer.allocate(((orderedDimOrdinals.size() * 2) + fieldOrdinalCount) * 4);
+
+		IntBuffer ordinalBuffer = byteBuffer.asIntBuffer();
+		for (Integer dimOrdinal : orderedDimOrdinals) {
+			IntSet fieldOrdinals = facetDimToOrdinal.get(dimOrdinal);
+			ordinalBuffer.put(dimOrdinal);
+			ordinalBuffer.put(fieldOrdinals.size());
+			fieldOrdinals.forEach((IntConsumer) ordinalBuffer::put);
+		}
+
+		luceneDocument.add(new BinaryDocValuesField(ZuliaConstants.FACET_STORAGE, new BytesRef(byteBuffer.array())));
 	}
 
 	private void addIndexingForStoredField(Document luceneDocument, String storedFieldName, ZuliaIndex.FieldConfig fc,
@@ -306,13 +343,13 @@ public class ShardDocumentIndexer {
 		}
 	}
 
-	private void generateFacetLabels(ZuliaIndex.FieldConfig fc, Object o, Map<String, Set<FacetLabel>> facetFieldToOrdinals) {
+	private void generateFacetLabels(ZuliaIndex.FieldConfig fc, Object o, Map<String, Set<FacetLabel>> facetFieldToFacetLabels) {
 		for (ZuliaIndex.FacetAs fa : fc.getFacetAsList()) {
 
 			String facetName = fa.getFacetName();
 
 			Set<FacetLabel> facetFieldsForField = new TreeSet<>();
-			facetFieldToOrdinals.put(facetName, facetFieldsForField);
+			facetFieldToFacetLabels.put(facetName, facetFieldsForField);
 			if (fa.getHierarchical()) {
 
 				if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {

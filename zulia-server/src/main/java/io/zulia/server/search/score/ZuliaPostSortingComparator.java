@@ -1,4 +1,4 @@
-package io.zulia.server.search;
+package io.zulia.server.search.score;
 
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex.FieldConfig;

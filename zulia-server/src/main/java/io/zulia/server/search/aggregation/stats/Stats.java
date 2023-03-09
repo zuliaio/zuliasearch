@@ -1,4 +1,4 @@
-package io.zulia.server.search.stat;
+package io.zulia.server.search.aggregation.stats;
 
 import com.datadoghq.sketch.ddsketch.DDSketch;
 import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
@@ -25,9 +25,9 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 
 	public abstract void handleDocValue(long docValue);
 
-	public void newDoc(boolean countNonNull) {
+	public void newDoc(boolean hasValues) {
 		allDocCount++;
-		if (countNonNull) {
+		if (hasValues) {
 			docCount++;
 		}
 	}
@@ -56,4 +56,10 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 		return builder;
 	}
 
+	public void handleNumericValues(long[] numericValues, int numericValueCount) {
+		newDoc(numericValueCount != -1);
+		for (int j = 0; j < numericValueCount; j++) {
+			handleDocValue(numericValues[j]);
+		}
+	}
 }

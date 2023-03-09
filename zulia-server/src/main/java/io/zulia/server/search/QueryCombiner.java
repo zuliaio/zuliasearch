@@ -20,8 +20,10 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
 import io.zulia.server.index.ZuliaIndex;
+import io.zulia.server.search.aggregation.facets.FacetCombiner;
+import io.zulia.server.search.aggregation.stats.StatCombiner;
 import io.zulia.server.search.queryparser.ZuliaParser;
-import io.zulia.server.search.stat.StatCombiner;
+import io.zulia.server.search.score.ZuliaPostSortingComparator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,9 +38,6 @@ import java.util.logging.Logger;
 public class QueryCombiner {
 
 	private final static Logger log = Logger.getLogger(QueryCombiner.class.getSimpleName());
-
-	private final static Comparator<ScoredResult> scoreCompare = new ScoreCompare();
-	private final static Comparator<ScoredResult> reverseScoreCompare = new ReverseScoreCompare();
 
 	private final List<InternalQueryResponse> responses;
 	private final Map<String, Map<Integer, ShardQueryResponse>> indexToShardQueryResponseMap;

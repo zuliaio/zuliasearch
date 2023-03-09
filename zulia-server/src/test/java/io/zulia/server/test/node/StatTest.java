@@ -108,18 +108,26 @@ public class StatTest {
 			add(1.0);
 		}};
 
-		Search search = new Search(STAT_TEST_INDEX);
+		Search search;
+		SearchResult searchResult;
+
+		search = new Search(STAT_TEST_INDEX);
 		search.addStat(new NumericStat("rating").setPercentiles(percentiles));
 		search.addQuery(new FilterQuery("title:boring").exclude());
 
-		SearchResult searchResult = zuliaWorkPool.search(search);
-
-		FacetStats ratingStat = searchResult.getNumericFieldStat("rating");
-		ratingTest(ratingStat);
+		searchResult = zuliaWorkPool.search(search);
+		ratingTest(searchResult.getNumericFieldStat("rating"));
 
 		search.clearStat();
 		search.addStat(new StatFacet("rating", "normalFacet").setPercentiles(percentiles));
 		searchResult = zuliaWorkPool.search(search);
+		ratingNormalTest(searchResult);
+
+		search.clearStat();
+		search.addStat(new NumericStat("rating").setPercentiles(percentiles));
+		search.addStat(new StatFacet("rating", "normalFacet").setPercentiles(percentiles));
+		searchResult = zuliaWorkPool.search(search);
+		ratingTest(searchResult.getNumericFieldStat("rating"));
 		ratingNormalTest(searchResult);
 
 		search.clearStat();
