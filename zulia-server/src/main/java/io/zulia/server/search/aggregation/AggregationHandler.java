@@ -129,7 +129,7 @@ public class AggregationHandler {
 				final OrdinalBuffer ordinalBuffer;
 				if (needsFacets) {
 					ordinalBuffer = new OrdinalBuffer(ordinalBinaryValues.binaryValue());
-					if (globalFacetInfo.getDimensionOrdinals().length == 0) {
+					if (globalFacetInfo.getDimensionOrdinals().length != 0) {
 						ordinalBuffer.handleFacets(globalFacetInfo.getDimensionOrdinals(), globalFacetInfo::tallyOrdinal);
 					}
 				}
@@ -187,34 +187,38 @@ public class AggregationHandler {
 		TaxonomyReader.ChildrenIterator childrenIterator = taxoReader.getChildren(dimOrd);
 
 		TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(taxoReader.getSize(), topN));
-		int intBottomValue = Integer.MIN_VALUE;
+		int bottomValue = Integer.MIN_VALUE;
+		int bottomOrd = Integer.MAX_VALUE;
 		int child;
+		TopOrdAndIntQueue.OrdAndValue reuse = null;
 		while ((child = childrenIterator.next()) != TaxonomyReader.INVALID_ORDINAL) {
 			int count = globalFacetInfo.getOrdinalCount(child);
 			if (count != 0) {
-				if (count > intBottomValue) {
-					TopOrdAndIntQueue.OrdAndValue ordAndValue = new TopOrdAndIntQueue.OrdAndValue();
-					ordAndValue.ord = child;
-					ordAndValue.value = count;
-					q.insertWithOverflow(ordAndValue);
+				if (count > bottomValue || (count == bottomValue && child < bottomOrd)) {
+					if (reuse == null) {
+						reuse = new TopOrdAndIntQueue.OrdAndValue();
+					}
+					reuse.ord = child;
+					reuse.value = count;
+					reuse = q.insertWithOverflow(reuse);
 					if (q.size() == topN) {
-						intBottomValue = q.top().value;
+						bottomValue = q.top().value;
+						bottomOrd = q.top().ord;
 					}
 				}
 			}
 
 		}
 
-		ZuliaQuery.FacetGroup.Builder builder = ZuliaQuery.FacetGroup.newBuilder();
 		ZuliaQuery.FacetCount[] facetCounts = new ZuliaQuery.FacetCount[q.size()];
 		for (int i = facetCounts.length - 1; i >= 0; i--) {
 			TopOrdAndIntQueue.OrdAndValue ordValue = q.pop();
 			FacetLabel c = taxoReader.getPath(ordValue.ord);
 			String label = c.components[countPath.length];
-			builder.addFacetCount(ZuliaQuery.FacetCount.newBuilder().setFacet(label).setCount(ordValue.value).build());
+			facetCounts[i] = ZuliaQuery.FacetCount.newBuilder().setFacet(label).setCount(ordValue.value).build();
 		}
 
-		return builder;
+		return ZuliaQuery.FacetGroup.newBuilder().addAllFacetCount(Arrays.stream(facetCounts).toList());
 	}
 
 	public ZuliaQuery.FacetStatsInternal getGlobalStatsForNumericField(String field) {
