@@ -4,7 +4,6 @@ import org.apache.lucene.util.BytesRef;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.util.function.IntConsumer;
 
 public class OrdinalBuffer {
 	private final IntBuffer ordinalBuffer;
@@ -13,7 +12,8 @@ public class OrdinalBuffer {
 		ordinalBuffer = ByteBuffer.wrap(bytesRef.bytes, bytesRef.offset, bytesRef.length).asIntBuffer();
 	}
 
-	public void handleFacets(int[] requestDimensionOrdinals, IntConsumer ordinalHandler) {
+	public void handleFacets(OrdinalConsumer ordinalConsumer) {
+		int[] requestDimensionOrdinals = ordinalConsumer.requestedDimensionOrdinals();
 		ordinalBuffer.position(0);
 		if (ordinalBuffer.hasRemaining()) {
 			int storedDimOrdinal = -1;
@@ -35,7 +35,7 @@ public class OrdinalBuffer {
 
 				if (requestedDimOrdinal == storedDimOrdinal) {
 					for (int i = 0; i < storedOrdinalLengthForDim; i++) {
-						ordinalHandler.accept(ordinalBuffer.get());
+						ordinalConsumer.handleOrdinal(ordinalBuffer.get());
 					}
 					storedOrdinalLengthForDim = 0;
 				}

@@ -6,13 +6,14 @@ import io.zulia.server.search.aggregation.facets.FacetInfo;
 import io.zulia.server.search.aggregation.ordinal.DoubleMapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.ordinal.LongMapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
+import io.zulia.server.search.aggregation.ordinal.OrdinalConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedNumericDocValues;
 
 import java.io.IOException;
 
-public class NumericFieldStatInfo extends FacetInfo {
+public class NumericFieldStatInfo extends FacetInfo implements OrdinalConsumer {
 
 	private long[] numericValues;
 
@@ -128,5 +129,11 @@ public class NumericFieldStatInfo extends FacetInfo {
 
 	public String getNumericFieldName() {
 		return numericFieldName;
+	}
+
+	@Override
+	public void handleOrdinal(int ordinal) {
+		Stats<?> stats = facetStatStorage.getOrCreateStat(ordinal);
+		stats.handleNumericValues(numericValues, numericValueCount);
 	}
 }

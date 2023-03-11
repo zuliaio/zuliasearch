@@ -25,11 +25,12 @@ public class FacetInfo {
 		return !facets.isEmpty();
 	}
 
-	public int[] getDimensionOrdinals() {
-		if (dimensionOrdinalsArray == null) {
-			dimensionOrdinalsArray = dimensionOrdinals.stream().mapToInt(Integer::intValue).toArray();
-			Arrays.sort(dimensionOrdinalsArray);
-		}
+	public void computeSortedOrdinalArray() {
+		dimensionOrdinalsArray = dimensionOrdinals.stream().mapToInt(Integer::intValue).toArray();
+		Arrays.sort(dimensionOrdinalsArray);
+	}
+
+	public int[] requestedDimensionOrdinals() {
 		return dimensionOrdinalsArray;
 	}
 

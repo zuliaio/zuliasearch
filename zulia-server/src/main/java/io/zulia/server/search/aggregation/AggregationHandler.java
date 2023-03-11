@@ -37,7 +37,6 @@ import org.apache.lucene.search.ConjunctionUtils;
 import org.apache.lucene.search.DocIdSetIterator;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +45,7 @@ import java.util.Map;
 public class AggregationHandler {
 
 	private final TaxonomyReader taxoReader;
-	private final List<NumericFieldStatInfo> fields;
+	private final NumericFieldStatInfo[] fields;
 	private final boolean needsFacets;
 
 	private final CountFacetInfo globalFacetInfo;
@@ -100,8 +99,18 @@ public class AggregationHandler {
 			needsFacetLocal = true;
 		}
 
+		if (globalFacetInfo.hasFacets()) {
+			globalFacetInfo.computeSortedOrdinalArray();
+		}
+
 		this.needsFacets = needsFacetLocal;
-		this.fields = new ArrayList<>(fieldToDimensions.values());
+		this.fields = fieldToDimensions.values().toArray(new NumericFieldStatInfo[0]);
+
+		for (NumericFieldStatInfo field : fields) {
+			if (field.hasFacets()) {
+				field.computeSortedOrdinalArray();
+			}
+		}
 
 		sumValues(fc.getMatchingDocs());
 	}
@@ -129,8 +138,8 @@ public class AggregationHandler {
 				final OrdinalBuffer ordinalBuffer;
 				if (needsFacets) {
 					ordinalBuffer = new OrdinalBuffer(ordinalBinaryValues.binaryValue());
-					if (globalFacetInfo.getDimensionOrdinals().length != 0) {
-						ordinalBuffer.handleFacets(globalFacetInfo.getDimensionOrdinals(), globalFacetInfo::tallyOrdinal);
+					if (globalFacetInfo.hasFacets()) {
+						ordinalBuffer.handleFacets(globalFacetInfo);
 					}
 				}
 				else {
@@ -139,22 +148,13 @@ public class AggregationHandler {
 
 				for (NumericFieldStatInfo field : fields) {
 					field.advanceNumericValues(doc);
-					int numericValueCount = field.getNumericValueCount();
-					long[] numericValues = field.getNumericValues();
 
 					if (field.hasFacets()) {
-						final MapStatOrdinalStorage<?> facetStatStorage = field.getFacetStatStorage();
-						final int[] requestDimensionOrdinals = field.getDimensionOrdinals();
-
-						ordinalBuffer.handleFacets(requestDimensionOrdinals, ordinal -> {
-							Stats<?> stats = facetStatStorage.getOrCreateStat(ordinal);
-							stats.handleNumericValues(numericValues, numericValueCount);
-						});
-
+						ordinalBuffer.handleFacets(field);
 					}
 					if (field.hasGlobal()) {
 						Stats<?> stats = field.getGlobalStats();
-						stats.handleNumericValues(numericValues, numericValueCount);
+						stats.handleNumericValues(field.getNumericValues(), field.getNumericValueCount());
 					}
 
 				}
