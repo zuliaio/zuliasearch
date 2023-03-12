@@ -51,10 +51,8 @@ public class StatCombiner {
 		statGroups.forEach(statGroup ->
 				// Group all sets of facet stats
 				statGroup.statGroup().getFacetStatsList().forEach(facetStats -> {
-					String localName = facetStats.getFacet();
-					List<FacetStatsWithShardIndex> temp2 = facetStatsGroups.getOrDefault(localName, new ArrayList<>());
-					temp2.add(new FacetStatsWithShardIndex(facetStats, statGroup.shardIndex()));
-					facetStatsGroups.put(localName, temp2);
+					facetStatsGroups.computeIfAbsent(facetStats.getFacet(), s -> new ArrayList<>())
+							.add(new FacetStatsWithShardIndex(facetStats, statGroup.shardIndex()));
 				}));
 
 		// Send each group through the converter to generate a list
