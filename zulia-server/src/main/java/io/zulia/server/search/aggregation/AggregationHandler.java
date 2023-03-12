@@ -16,6 +16,8 @@
  */
 package io.zulia.server.search.aggregation;
 
+import com.koloboke.collect.map.ObjObjMap;
+import com.koloboke.collect.map.hash.HashObjObjMaps;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
@@ -38,9 +40,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class AggregationHandler {
 
@@ -55,7 +55,7 @@ public class AggregationHandler {
 
 		this.taxoReader = taxoReader;
 
-		Map<String, NumericFieldStatInfo> fieldToDimensions = new HashMap<>();
+		ObjObjMap<String, NumericFieldStatInfo> fieldToDimensions = HashObjObjMaps.newMutableMap();
 
 		boolean needsFacetLocal = false;
 		for (ZuliaQuery.StatRequest statRequest : statRequests) {

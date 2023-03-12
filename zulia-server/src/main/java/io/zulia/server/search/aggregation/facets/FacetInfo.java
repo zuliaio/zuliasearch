@@ -1,19 +1,22 @@
 package io.zulia.server.search.aggregation.facets;
 
+import com.koloboke.collect.set.IntSet;
+import com.koloboke.collect.set.ObjSet;
+import com.koloboke.collect.set.hash.HashIntSets;
+import com.koloboke.collect.set.hash.HashObjSets;
+
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 public class FacetInfo {
-	private Set<String> facets;
+	private ObjSet<String> facets;
 
-	private Set<Integer> dimensionOrdinals;
+	private IntSet dimensionOrdinals;
 
 	private int[] dimensionOrdinalsArray;
 
 	public FacetInfo() {
-		this.facets = new HashSet<>();
-		this.dimensionOrdinals = new HashSet<>();
+		this.facets = HashObjSets.newMutableSet();
+		this.dimensionOrdinals = HashIntSets.newMutableSet();
 	}
 
 	public void addFacet(String facet, int dimensionOrdinal) {
@@ -26,7 +29,7 @@ public class FacetInfo {
 	}
 
 	public void computeSortedOrdinalArray() {
-		dimensionOrdinalsArray = dimensionOrdinals.stream().mapToInt(Integer::intValue).toArray();
+		dimensionOrdinalsArray = dimensionOrdinals.toIntArray();
 		Arrays.sort(dimensionOrdinalsArray);
 	}
 
