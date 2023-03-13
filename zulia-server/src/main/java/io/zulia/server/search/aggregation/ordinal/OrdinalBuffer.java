@@ -5,7 +5,7 @@ import org.apache.lucene.util.BytesRef;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-public class OrdinalBuffer {
+public class OrdinalBuffer implements FacetHandler {
 	private final IntBuffer ordinalBuffer;
 
 	public OrdinalBuffer(BytesRef bytesRef) {

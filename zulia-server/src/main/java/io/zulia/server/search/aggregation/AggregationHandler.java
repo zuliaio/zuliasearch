@@ -18,14 +18,16 @@ package io.zulia.server.search.aggregation;
 
 import com.koloboke.collect.map.ObjObjMap;
 import com.koloboke.collect.map.hash.HashObjObjMaps;
-import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.server.search.aggregation.facets.BinaryFacetReader;
 import io.zulia.server.search.aggregation.facets.CountFacetInfo;
+import io.zulia.server.search.aggregation.facets.FacetsReader;
+import io.zulia.server.search.aggregation.facets.LegacyFacetReader;
+import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
-import io.zulia.server.search.aggregation.ordinal.OrdinalBuffer;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatInfo;
 import io.zulia.server.search.aggregation.stats.Stats;
 import org.apache.lucene.facet.FacetsCollector;
@@ -33,9 +35,7 @@ import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.TopOrdAndIntQueue;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.search.ConjunctionUtils;
 import org.apache.lucene.search.DocIdSetIterator;
 
 import java.io.IOException;
@@ -126,31 +126,35 @@ public class AggregationHandler {
 
 			DocIdSetIterator docs = hits.bits.iterator();
 
-			BinaryDocValues ordinalBinaryValues = null;
+			FacetsReader facetReader = null;
 
 			if (needsFacets) {
-				ordinalBinaryValues = reader.getBinaryDocValues(ZuliaConstants.FACET_STORAGE);
-				docs = ConjunctionUtils.intersectIterators(Arrays.asList(docs, ordinalBinaryValues));
+				facetReader = new BinaryFacetReader(reader);
+				if (!facetReader.hasValues()) {
+					facetReader = new LegacyFacetReader(reader);
+				}
+				docs = facetReader.getCombinedIterator(docs);
 			}
 
 			for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
 
-				final OrdinalBuffer ordinalBuffer;
+				final FacetHandler facetHandler;
 				if (needsFacets) {
-					ordinalBuffer = new OrdinalBuffer(ordinalBinaryValues.binaryValue());
+					facetHandler = facetReader.getFacetHandler();
+
 					if (globalFacetInfo.hasFacets()) {
-						ordinalBuffer.handleFacets(globalFacetInfo);
+						facetHandler.handleFacets(globalFacetInfo);
 					}
 				}
 				else {
-					ordinalBuffer = null;
+					facetHandler = null;
 				}
 
 				for (NumericFieldStatInfo field : fields) {
 					field.advanceNumericValues(doc);
 
 					if (field.hasFacets()) {
-						ordinalBuffer.handleFacets(field);
+						facetHandler.handleFacets(field);
 					}
 					if (field.hasGlobal()) {
 						Stats<?> stats = field.getGlobalStats();
