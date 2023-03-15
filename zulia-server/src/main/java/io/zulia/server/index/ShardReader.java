@@ -60,16 +60,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static io.zulia.ZuliaConstants.SORT_SUFFIX;
 
 public class ShardReader implements AutoCloseable {
 
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
-	private final static Pattern sortedDocValuesMessage = Pattern.compile(
-			"unexpected docvalues type NONE for field '(.*)' \\(expected one of \\[SORTED, SORTED_SET\\]\\)\\. Re-index with correct docvalues type.");
 	private final static Set<String> fetchSet = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD);
 	private final static Set<String> fetchSetWithMeta = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD);
 	private final static Set<String> fetchSetWithDocument = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD,
@@ -208,32 +204,21 @@ public class ShardReader implements AutoCloseable {
 
 		ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder = ZuliaQuery.ShardQueryResponse.newBuilder();
 
-		try {
-			ZuliaQuery.FacetRequest facetRequest = shardQuery.getFacetRequest();
-			if (facetRequest != null) {
-				List<ZuliaQuery.CountRequest> countRequestList = facetRequest.getCountRequestList();
-				List<ZuliaQuery.StatRequest> statRequestList = facetRequest.getStatRequestList();
+		ZuliaQuery.FacetRequest facetRequest = shardQuery.getFacetRequest();
 
-				boolean hasFacetRequests = !countRequestList.isEmpty();
-				boolean hasStatRequests = !statRequestList.isEmpty();
+		List<ZuliaQuery.CountRequest> countRequestList = facetRequest.getCountRequestList();
+		List<ZuliaQuery.StatRequest> statRequestList = facetRequest.getStatRequestList();
 
-				if (hasFacetRequests || hasStatRequests) {
-					FacetsCollector facetsCollector = new FacetsCollector();
-					indexSearcher.search(shardQuery.getQuery(), MultiCollector.wrap(collector, facetsCollector));
-					handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector);
-				}
-			}
-			indexSearcher.search(shardQuery.getQuery(), collector);
+		boolean hasFacetRequests = !countRequestList.isEmpty();
+		boolean hasStatRequests = !statRequestList.isEmpty();
 
+		if (hasFacetRequests || hasStatRequests) {
+			FacetsCollector facetsCollector = new FacetsCollector();
+			indexSearcher.search(shardQuery.getQuery(), MultiCollector.wrap(collector, facetsCollector));
+			handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector);
 		}
-		catch (IllegalStateException e) {
-			Matcher m = sortedDocValuesMessage.matcher(e.getMessage());
-			if (m.matches()) {
-				String field = m.group(1);
-				throw new Exception("Field <" + field + "> must have sortAs defined to be sortable");
-			}
-
-			throw e;
+		else {
+			indexSearcher.search(shardQuery.getQuery(), collector);
 		}
 
 		TopDocs topDocs = collector.topDocs();
@@ -318,6 +303,10 @@ public class ShardReader implements AutoCloseable {
 			if (!label.isEmpty()) {
 
 				int numOfFacets = getFacetCount(statRequest.getShardFacets(), statRequest.getMaxFacets());
+
+				if (!indexConfig.existingFacet(label)) {
+					throw new IllegalArgumentException(label + " is not defined as a facetable field");
+				}
 
 				if (indexConfig.isHierarchicalFacet(label)) {
 					List<ZuliaQuery.FacetStatsInternal> topChildren = aggregationHandler.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
