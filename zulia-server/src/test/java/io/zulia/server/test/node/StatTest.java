@@ -161,6 +161,11 @@ public class StatTest {
 		Assertions.assertEquals(0, ratingByFacet.get(0).getMax().getDoubleValue());
 		Assertions.assertEquals(0, ratingByFacet.get(0).getSum().getDoubleValue());
 
+		search = new Search(STAT_TEST_INDEX);
+		search.addStat(new StatFacet("rating", "madeUp"));
+		Search finalSearch2 = search;
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch2), "Expecting: madeUp is not defined as a facetable field");
+
 	}
 
 	private void ratingTest(FacetStats ratingStat) {
