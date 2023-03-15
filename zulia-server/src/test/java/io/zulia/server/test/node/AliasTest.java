@@ -138,6 +138,8 @@ public class AliasTest {
 		Assertions.assertEquals(6, getTermsResult.getTerms().size());
 
 		GetIndexesResult indexes = zuliaWorkPool.getIndexes();
+		Assertions.assertTrue(indexes.getIndexNames().contains(ALIAS_TEST_INDEX));
+		Assertions.assertFalse(indexes.getIndexNames().contains("someAlias"));
 		Assertions.assertEquals(1, indexes.getIndexNames().size());
 
 		GetNodesResult nodes = zuliaWorkPool.getNodes();
