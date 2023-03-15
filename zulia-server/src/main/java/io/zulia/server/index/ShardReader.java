@@ -222,10 +222,8 @@ public class ShardReader implements AutoCloseable {
 					indexSearcher.search(shardQuery.getQuery(), MultiCollector.wrap(collector, facetsCollector));
 					handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector);
 				}
-				else {
-					indexSearcher.search(shardQuery.getQuery(), collector);
-				}
 			}
+			indexSearcher.search(shardQuery.getQuery(), collector);
 
 		}
 		catch (IllegalStateException e) {
