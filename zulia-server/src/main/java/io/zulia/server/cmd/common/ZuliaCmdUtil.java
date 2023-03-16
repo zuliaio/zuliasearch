@@ -42,6 +42,11 @@ import java.util.zip.ZipEntry;
 import static io.zulia.message.ZuliaQuery.FetchType.META;
 
 public class ZuliaCmdUtil {
+	public enum AssociatedFilesHandling {
+		skip,
+		skipExisting,
+		overwrite
+	}
 
 	private static final Logger LOG = Logger.getLogger(ZuliaCmdUtil.class.getSimpleName());
 
@@ -95,7 +100,7 @@ public class ZuliaCmdUtil {
 	}
 
 	public static void index(String inputDir, String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count,
-			Integer threads, Boolean skipExistingFiles) throws Exception {
+			Integer threads, AssociatedFilesHandling associatedFilesHandling) throws Exception {
 		WorkPool threadPool = new WorkPool(threads);
 		try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
 			String line;
@@ -137,7 +142,7 @@ public class ZuliaCmdUtil {
 							}
 
 							// ensure the file was extractable
-							if (Files.exists(destDir.toPath())) {
+							if (!AssociatedFilesHandling.skip.equals(associatedFilesHandling) && Files.exists(destDir.toPath())) {
 
 								List<Path> tempFiles;
 								try (Stream<Path> sp = Files.list(destDir.toPath())) {
@@ -171,7 +176,7 @@ public class ZuliaCmdUtil {
 												}
 											}
 
-											if (skipExistingFiles) {
+											if (AssociatedFilesHandling.skipExisting.equals(associatedFilesHandling)) {
 												if (!fileExists(workPool, id, filename, index)) {
 													storeAssociatedDoc(index, workPool, id, filename, meta, file);
 												}

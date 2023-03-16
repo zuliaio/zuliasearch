@@ -48,8 +48,8 @@ public class ShardQuery {
 
 	public static ShardQuery queryById(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask) {
 		Query query = new TermQuery(new Term(ZuliaConstants.ID_FIELD, uniqueId));
-		return new ShardQuery(query, null, 1, Collections.<Integer, FieldDoc>emptyMap(), null, null, null, resultFetchType, fieldsToReturn, fieldsToMask,
-				Collections.emptyList(), Collections.emptyList(), false);
+		return new ShardQuery(query, null, 1, Collections.emptyMap(), ZuliaQuery.FacetRequest.newBuilder().build(), null, null, resultFetchType, fieldsToReturn,
+				fieldsToMask, Collections.emptyList(), Collections.emptyList(), false);
 	}
 
 	public Query getQuery() {

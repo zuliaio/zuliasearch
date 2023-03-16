@@ -1,4 +1,4 @@
-package io.zulia.server.search;
+package io.zulia.server.search.aggregation.facets;
 
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;

@@ -99,7 +99,7 @@ subprojects {
 
     dependencies {
         //testImplementation("org.testng:testng:6.14.3")
-        testImplementation("org.junit.jupiter:junit-jupiter:5.5.2")
+        testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
     }
 
     tasks.withType<Test> {

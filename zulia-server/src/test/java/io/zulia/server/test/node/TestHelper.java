@@ -138,6 +138,9 @@ public class TestHelper {
 	public static void createNodes(int nodeCount) {
 		int port = 20000;
 
+		//drop nodes and index configs
+		MongoProvider.getMongoClient().getDatabase(TEST_CLUSTER_NAME).drop();
+
 		for (int i = 0; i < nodeCount; i++) {
 			ZuliaBase.Node node = ZuliaBase.Node.newBuilder().setServerAddress("localhost").setServicePort(++port).setRestPort(++port).build();
 			nodeService.addNode(node);

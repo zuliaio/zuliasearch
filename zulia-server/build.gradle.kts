@@ -11,6 +11,7 @@ val protobufVersion: String by project
 val micronautVersion: String by project
 val amazonVersion: String by project
 val snakeYamlVersion: String by project
+val kolobokeVersion: String by project
 
 defaultTasks("build", "installDist")
 
@@ -28,6 +29,9 @@ dependencies {
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.1")
+
+    api("com.koloboke:koloboke-api-jdk8:$kolobokeVersion")
+    api("com.koloboke:koloboke-impl-jdk8:$kolobokeVersion")
 
     implementation("info.picocli:picocli:4.6.3")
     annotationProcessor("info.picocli:picocli-codegen:4.6.3")

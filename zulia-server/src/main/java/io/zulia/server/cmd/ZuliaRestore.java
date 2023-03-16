@@ -52,8 +52,9 @@ public class ZuliaRestore implements Callable<Integer> {
 	@CommandLine.Option(names = "--drop", description = "Drop the index before restoring (default: ${DEFAULT-VALUE})")
 	private Boolean drop = false;
 
-	@CommandLine.Option(names = "--skipExistingFiles", description = "Skip storing files if they already exist  (default: ${DEFAULT-VALUE})")
-	public Boolean skipExistingFiles = false;
+	@CommandLine.Option(names = { "-a",
+			"--associatedFilesHandling" }, description = "Options for handling associated files if included in the dump. Options: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE})")
+	public ZuliaCmdUtil.AssociatedFilesHandling associatedFilesHandling = ZuliaCmdUtil.AssociatedFilesHandling.skip;
 
 	@Override
 	public Integer call() throws Exception {
@@ -63,7 +64,7 @@ public class ZuliaRestore implements Callable<Integer> {
 
 		if (indexes != null) {
 			for (String index : indexes) {
-				restore(zuliaWorkPool, dir, index, idField, drop, threads, skipExistingFiles);
+				restore(zuliaWorkPool, dir, index, idField, drop, threads, associatedFilesHandling);
 			}
 		}
 		else {
@@ -72,7 +73,7 @@ public class ZuliaRestore implements Callable<Integer> {
 				for (Path indexDir : list.toList()) {
 					try {
 						String ind = indexDir.getFileName().toString();
-						restore(zuliaWorkPool, dir, ind, idField, drop, threads, skipExistingFiles);
+						restore(zuliaWorkPool, dir, ind, idField, drop, threads, associatedFilesHandling);
 					}
 					catch (Exception e) {
 						throw new Exception("There was a problem restoring index <" + indexDir.getFileName() + ">");
@@ -84,8 +85,8 @@ public class ZuliaRestore implements Callable<Integer> {
 		return CommandLine.ExitCode.OK;
 	}
 
-	private static void restore(ZuliaWorkPool workPool, String dir, String index, String idField, Boolean drop, Integer threads, Boolean skipExistingFiles)
-			throws Exception {
+	private static void restore(ZuliaWorkPool workPool, String dir, String index, String idField, Boolean drop, Integer threads,
+			ZuliaCmdUtil.AssociatedFilesHandling associatedFilesHandling) throws Exception {
 		String inputDir = dir + File.separator + index;
 		String recordsFilename = inputDir + File.separator + index + ".json";
 		String settingsFilename = inputDir + File.separator + index + "_settings.json";
@@ -106,7 +107,7 @@ public class ZuliaRestore implements Callable<Integer> {
 
 			AtomicInteger count = new AtomicInteger();
 			LOG.info("Starting to index records for index <" + index + ">");
-			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count, threads, skipExistingFiles);
+			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count, threads, associatedFilesHandling);
 			LOG.info("Finished indexing for index <" + index + "> with total records: " + count);
 		}
 		else {

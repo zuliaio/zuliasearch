@@ -37,7 +37,6 @@ import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.search.queryparser.ZuliaParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ZuliaThreadFactory;
-import io.zulia.util.ZuliaUtil;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
@@ -320,20 +319,8 @@ public class ZuliaIndex {
 
 		if (storeRequest.hasResultDocument()) {
 			ResultDocument resultDocument = storeRequest.getResultDocument();
-			Document document;
-			if (!resultDocument.getDocument().isEmpty()) {
-				document = ZuliaUtil.byteArrayToMongoDocument(resultDocument.getDocument().toByteArray());
-			}
-			else {
-				document = new Document();
-			}
-			Document metadata;
-			if (!resultDocument.getMetadata().isEmpty()) {
-				metadata = ZuliaUtil.byteArrayToMongoDocument(resultDocument.getMetadata().toByteArray());
-			}
-			else {
-				metadata = new Document();
-			}
+			DocumentContainer document = new DocumentContainer(resultDocument.getDocument());
+			DocumentContainer metadata = new DocumentContainer(resultDocument.getMetadata());
 
 			ZuliaShard s = findShardFromUniqueId(uniqueId);
 			s.index(uniqueId, timestamp, document, metadata);
@@ -1041,7 +1028,7 @@ public class ZuliaIndex {
 			if (field.startsWith(FacetsConfig.DEFAULT_INDEX_FIELD_NAME)) {
 				toRemove.add(field);
 			}
-			else if (field.startsWith(ZuliaConstants.SUPERBIT_PREFIX)) {
+			if (field.startsWith(ZuliaConstants.FACET_STORAGE)) {
 				toRemove.add(field);
 			}
 			else if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX)) {
