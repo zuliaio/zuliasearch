@@ -92,7 +92,8 @@ public class ShardWriteManager {
 	private void openTaxoWriter(Path pathToTaxo) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
-		this.taxoWriter = new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(64000));
+		this.taxoWriter = new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND,
+				new LruTaxonomyWriterCache(32 * 1024 * 1024));
 
 	}
 
@@ -213,9 +214,8 @@ public class ShardWriteManager {
 		indexWriter.deleteAll();
 	}
 
-	public void indexDocument(String uniqueId, long timestamp, org.bson.Document mongoDocument, org.bson.Document metadata) throws Exception {
-		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadata);
-		luceneDocument = facetsConfig.build(taxoWriter, luceneDocument);
+	public void indexDocument(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata) throws Exception {
+		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadata, taxoWriter);
 		Term updateQuery = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 		indexWriter.updateDocument(updateQuery, luceneDocument);
 
