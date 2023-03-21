@@ -7,7 +7,20 @@ import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.processors.NoChildOptimizationQueryNodeProcessor;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorPipeline;
 import org.apache.lucene.queryparser.flexible.core.processors.RemoveDeletedQueryNodesProcessor;
-import org.apache.lucene.queryparser.flexible.standard.processors.*;
+import org.apache.lucene.queryparser.flexible.standard.processors.AllowLeadingWildcardProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.AnalyzerQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.BooleanQuery2ModifierNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.BooleanSingleChildOptimizationQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.BoostQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.DefaultPhraseSlopQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.FuzzyQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.IntervalQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.MultiTermRewriteMethodProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.OpenRangeQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.PhraseSlopQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.RegexpQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.RemoveEmptyNonLeafQueryNodeProcessor;
+import org.apache.lucene.queryparser.flexible.standard.processors.WildcardQueryNodeProcessor;
 
 //Copied from org.apache.lucene.queryparser.flexible.standard.processors.StandardQueryNodeProcessorPipeline within changes noted below as // zulia -
 
@@ -35,10 +48,9 @@ public class ZuliaQueryNodeProcessorPipeline extends QueryNodeProcessorPipeline 
 		//handled by ZuliaPureWildcardNodeProcessor
 		//add(new MatchAllDocsQueryNodeProcessor());
 		add(new OpenRangeQueryNodeProcessor());
-		//zulia - add ZuliaDateQueryNodeProcessor and ZuliaPointQueryNodeProcessor
-		add(new ZuliaDateQueryNodeProcessor());
+		//zulia - add ZuliaPointQueryNodeProcessor comment PointRangeQueryNodeProcessor
 		add(new ZuliaPointQueryNodeProcessor());
-		add(new PointRangeQueryNodeProcessor());
+		//add(new PointRangeQueryNodeProcessor());
 		//zulia - remove term range query parser, replaced by ZuliaDateRangeQueryNodeProcessor above
 		//add(new TermRangeQueryNodeProcessor());
 		add(new AllowLeadingWildcardProcessor());

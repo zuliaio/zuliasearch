@@ -17,8 +17,8 @@ public class DateFieldIndexer extends FieldIndexer {
 	@Override
 	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) throws Exception {
 		if (value != null) {
-			if (value instanceof Date) {
-				d.add(createField((Date) value, indexedFieldName));
+			if (value instanceof Date date) {
+				d.add(createField(date, indexedFieldName));
 			}
 			else {
 				throw new Exception(
