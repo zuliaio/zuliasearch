@@ -28,10 +28,13 @@ public class ServerIndexConfig {
 
 	private ConcurrentHashMap<String, FieldConfig> fieldConfigMap;
 	private ConcurrentHashMap<String, IndexAs> indexAsMap;
+
 	private ConcurrentHashMap<String, FieldConfig.FieldType> indexFieldType;
 	private ConcurrentHashMap<String, FieldConfig.FieldType> sortFieldType;
 	private ConcurrentHashMap<String, AnalyzerSettings> analyzerMap;
 	private ConcurrentHashMap<String, String> indexToStoredMap;
+
+	private ConcurrentHashMap<String, String> indexToFirstSortMap;
 	private ConcurrentHashMap<String, FacetAs> facetAsMap;
 
 	private List<ZuliaServiceOuterClass.QueryRequest> warmingSearches;
@@ -84,11 +87,17 @@ public class ServerIndexConfig {
 
 		this.indexAsMap = new ConcurrentHashMap<>();
 		this.indexToStoredMap = new ConcurrentHashMap<>();
+		this.indexToFirstSortMap = new ConcurrentHashMap<>();
 		for (String storedFieldName : fieldConfigMap.keySet()) {
 			FieldConfig fc = fieldConfigMap.get(storedFieldName);
 			for (IndexAs indexAs : fc.getIndexAsList()) {
 				indexAsMap.put(indexAs.getIndexFieldName(), indexAs);
 				indexToStoredMap.put(indexAs.getIndexFieldName(), storedFieldName);
+
+				for (SortAs sortAs : fc.getSortAsList()) {
+					indexToFirstSortMap.put(indexAs.getIndexFieldName(), getSortField(sortAs.getSortFieldName(), fc.getFieldType()));
+					break;
+				}
 			}
 		}
 
@@ -137,6 +146,10 @@ public class ServerIndexConfig {
 		return sortFieldName + ZuliaConstants.SORT_SUFFIX + fieldType;
 	}
 
+	public String getFirstSortFieldFromIndexField(String indexField) {
+		return indexToFirstSortMap.get(indexField);
+	}
+
 	public IndexSettings getIndexSettings() {
 		return indexSettings;
 	}
@@ -168,6 +181,11 @@ public class ServerIndexConfig {
 	}
 
 	public FieldConfig.FieldType getFieldTypeForIndexField(String fieldName) {
+		boolean lengthPrefix = fieldName.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || fieldName.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX);
+		if (lengthPrefix) {
+			return FieldConfig.FieldType.NUMERIC_INT;
+		}
+
 		return indexFieldType.get(fieldName);
 	}
 
