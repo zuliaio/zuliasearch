@@ -4,7 +4,6 @@ import com.google.common.base.Splitter;
 import com.google.common.primitives.Floats;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
-import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.index.field.BooleanFieldIndexer;
@@ -14,6 +13,7 @@ import io.zulia.server.index.field.FloatFieldIndexer;
 import io.zulia.server.index.field.IntFieldIndexer;
 import io.zulia.server.index.field.LongFieldIndexer;
 import io.zulia.server.index.field.StringFieldIndexer;
+import io.zulia.util.BooleanUtil;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
@@ -205,15 +205,11 @@ public class ShardDocumentIndexer {
 					}
 					else {
 						String string = obj.toString();
-						if (BooleanAnalyzer.truePattern.matcher(string).matches()) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 1);
+						int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
+						if (booleanInt >= 0) {
+							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, booleanInt);
 							d.add(docValue);
 						}
-						else if (BooleanAnalyzer.falsePattern.matcher(string).matches()) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 0);
-							d.add(docValue);
-						}
-
 					}
 				});
 			}
@@ -301,11 +297,12 @@ public class ShardDocumentIndexer {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					String string = obj.toString();
 
-					if (BooleanAnalyzer.truePattern.matcher(string).matches()) {
-						doc.add(new FacetField(facetName, "True"));
-					}
-					else if (BooleanAnalyzer.falsePattern.matcher(string).matches()) {
+					int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
+					if (booleanInt == 0) {
 						doc.add(new FacetField(facetName, "False"));
+					}
+					else if (booleanInt == 1) {
+						doc.add(new FacetField(facetName, "True"));
 					}
 
 				});

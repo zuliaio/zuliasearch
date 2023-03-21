@@ -1,26 +1,12 @@
 package io.zulia.server.index.field;
 
-import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
+import io.zulia.util.BooleanUtil;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.IntPoint;
 
 public class BooleanFieldIndexer extends FieldIndexer {
 
 	public static final BooleanFieldIndexer INSTANCE = new BooleanFieldIndexer();
-	private static final FieldType notStoredTextField;
-
-	static {
-		notStoredTextField = new FieldType(TextField.TYPE_NOT_STORED);
-		notStoredTextField.setStoreTermVectors(true);
-		notStoredTextField.setStoreTermVectorOffsets(true);
-		notStoredTextField.setStoreTermVectorPositions(true);
-		// For PostingsHighlighter in Lucene 4.1 +
-		// notStoredTextField.setIndexOptions(FieldInfo.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-		// example: https://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/highlighter/src/test/org/apache/lucene/search/postingshighlight/TestPostingsHighlighter.java
-		notStoredTextField.freeze();
-	}
 
 	protected BooleanFieldIndexer() {
 
@@ -29,28 +15,32 @@ public class BooleanFieldIndexer extends FieldIndexer {
 	@Override
 	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) throws Exception {
 		if (value != null) {
-			if (value instanceof Boolean) {
-				d.add((new Field(indexedFieldName, value.toString(), notStoredTextField)));
+
+			boolean boolVal;
+			if (value instanceof Boolean val) {
+				boolVal = val;
 			}
-			else if (value instanceof String) {
-				String v = (String) value;
-				if (BooleanAnalyzer.truePattern.matcher(v).matches()) {
-					d.add((new Field(indexedFieldName, BooleanAnalyzer.TRUE_TOKEN, notStoredTextField)));
+			else if (value instanceof String s) {
+				int booleanInt = BooleanUtil.getStringAsBooleanInt(s);
+				if (booleanInt == 1) {
+					boolVal = true;
 				}
-				else if (BooleanAnalyzer.falsePattern.matcher(v).matches()) {
-					d.add((new Field(indexedFieldName, BooleanAnalyzer.FALSE_TOKEN, notStoredTextField)));
+				else if (booleanInt == 0) {
+					boolVal = false;
 				}
 				else {
 					throw new Exception(
 							"String for Boolean field be 'Yes', 'No', 'Y', 'N', '1', '0', 'True', 'False', 'T', 'F' (case insensitive) for <" + storedFieldName
-									+ "> and found <" + v + ">");
+									+ "> and found <" + s + ">");
 				}
 			}
-			else if (value instanceof Number) {
-				Number number = (Number) value;
+			else if (value instanceof Number number) {
 				int v = number.intValue();
-				if (v == 0 || v == 1) {
-					d.add((new Field(indexedFieldName, String.valueOf(v), notStoredTextField)));
+				if (v == 0) {
+					boolVal = false;
+				}
+				else if (v == 1) {
+					boolVal = true;
 				}
 				else {
 					throw new Exception("Number for Boolean field must be 0 or 1 for <" + storedFieldName + "> and found <" + v + ">");
@@ -62,6 +52,7 @@ public class BooleanFieldIndexer extends FieldIndexer {
 								.getSimpleName() + ">");
 
 			}
+			d.add(new IntPoint(indexedFieldName, boolVal ? 1 : 0));
 		}
 	}
 
