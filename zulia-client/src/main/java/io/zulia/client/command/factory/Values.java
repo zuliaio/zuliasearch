@@ -47,6 +47,10 @@ public class Values {
 		AT_LEAST
 	}
 
+	public static Values single(String value) {
+		return new Values(Type.ANY, null).of(value);
+	}
+
 	public static Values any() {
 		return new Values(Type.ANY, null);
 	}
