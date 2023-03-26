@@ -34,7 +34,7 @@ public class SortTest {
 
 	private static ZuliaWorkPool zuliaWorkPool;
 
-	private static final String INDEX_NAME = "titleSort";
+	private static final String INDEX_NAME = "sortTest";
 
 	@BeforeAll
 	public static void initAll() throws Exception {
