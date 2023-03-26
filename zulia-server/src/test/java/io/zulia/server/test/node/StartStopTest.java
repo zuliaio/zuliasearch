@@ -40,7 +40,7 @@ import java.util.List;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class StartStopTest {
 
-	public static final String FACET_TEST_INDEX = "plugged-54a725bc148f6dd7d62bc600";
+	public static final String FACET_TEST_INDEX = "ssTest";
 
 	private final int COUNT_PER_ISSN = 10;
 	private final String uniqueIdPrefix = "myId-";
