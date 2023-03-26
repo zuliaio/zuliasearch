@@ -33,8 +33,8 @@ dependencies {
     api("com.koloboke:koloboke-api-jdk8:$kolobokeVersion")
     api("com.koloboke:koloboke-impl-jdk8:$kolobokeVersion")
 
-    implementation("info.picocli:picocli:4.6.3")
-    annotationProcessor("info.picocli:picocli-codegen:4.6.3")
+    implementation("info.picocli:picocli:4.7.1")
+    annotationProcessor("info.picocli:picocli-codegen:4.7.1")
 
     implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
     implementation("com.datadoghq:sketches-java:0.8.2")
