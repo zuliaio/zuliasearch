@@ -7,7 +7,6 @@ description = "Zulia Server"
 
 val luceneVersion: String by project
 val mongoDriverVersion: String by project
-val protobufVersion: String by project
 val micronautVersion: String by project
 val amazonVersion: String by project
 val snakeYamlVersion: String by project
@@ -36,14 +35,13 @@ dependencies {
     implementation("info.picocli:picocli:4.7.1")
     annotationProcessor("info.picocli:picocli-codegen:4.7.1")
 
-    implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
     implementation("com.datadoghq:sketches-java:0.8.2")
 
     implementation("com.cedarsoftware:json-io:4.14.0")
 
     implementation("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
-    implementation("org.apache.commons:commons-compress:1.21")
+    implementation("org.apache.commons:commons-compress:1.22")
     implementation("org.xerial.snappy:snappy-java:1.1.9.1")
     implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
     implementation("software.amazon.awssdk:s3")
