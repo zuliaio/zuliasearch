@@ -4,7 +4,7 @@ import io.zulia.message.ZuliaQuery;
 
 public class Highlight implements HighlightBuilder {
 
-	private ZuliaQuery.HighlightRequest.Builder highlightBuilder = ZuliaQuery.HighlightRequest.newBuilder();
+	private final ZuliaQuery.HighlightRequest.Builder highlightBuilder = ZuliaQuery.HighlightRequest.newBuilder();
 
 	public Highlight(String field) {
 		highlightBuilder.setField(field);

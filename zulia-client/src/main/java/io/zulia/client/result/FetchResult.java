@@ -84,7 +84,7 @@ public class FetchResult extends Result {
 		return null;
 	}
 
-	public <T> T getDocument(GsonDocumentMapper<T> mapper) throws Exception {
+	public <T> T getDocument(GsonDocumentMapper<T> mapper) {
 		if (fetchResponse.hasResultDocument()) {
 			Document document = getDocument();
 			return mapper.fromDocument(document);
