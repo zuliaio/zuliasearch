@@ -18,13 +18,17 @@ import static io.zulia.message.ZuliaIndex.ShardMapping;
 
 public class IndexRouting {
 
-	private Random random = new Random();
+	private final Random random = new Random();
 
-	private Map<String, String> aliasToIndex = new HashMap<>();
-	private Map<String, Map<Integer, Node>> indexMapping = new HashMap<>();
-	private Map<String, Integer> shardCountMapping = new HashMap<>();
+	private final Map<String, String> aliasToIndex;
+	private final Map<String, Map<Integer, Node>> indexMapping;
+	private final Map<String, Integer> shardCountMapping;
 
 	public IndexRouting(List<IndexShardMapping> indexShardMappings, List<IndexAlias> indexAliases) {
+
+		aliasToIndex = new HashMap<>();
+		indexMapping = new HashMap<>();
+		shardCountMapping = new HashMap<>();
 
 		for (IndexAlias indexAlias : indexAliases) {
 			aliasToIndex.put(indexAlias.getAliasName(), indexAlias.getIndexName());

@@ -6,7 +6,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
 
 public class GetIndexesResult extends Result {
 
-	private GetIndexesResponse getIndexesResponse;
+	private final GetIndexesResponse getIndexesResponse;
 
 	public GetIndexesResult(GetIndexesResponse getIndexesResponse) {
 		this.getIndexesResponse = getIndexesResponse;

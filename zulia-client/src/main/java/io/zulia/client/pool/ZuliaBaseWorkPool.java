@@ -17,7 +17,7 @@ public class ZuliaBaseWorkPool extends WorkPool {
 
 	private static AtomicInteger counter = new AtomicInteger(0);
 
-	public ZuliaBaseWorkPool(ZuliaPoolConfig zuliaPoolConfig) throws Exception {
+	public ZuliaBaseWorkPool(ZuliaPoolConfig zuliaPoolConfig) {
 		this(new ZuliaPool(zuliaPoolConfig), zuliaPoolConfig.getPoolName() != null ? zuliaPoolConfig.getPoolName() : "zuliaPool-" + counter.getAndIncrement());
 	}
 
@@ -44,7 +44,7 @@ public class ZuliaBaseWorkPool extends WorkPool {
 		zuliaPool.updateNodesAndRouting();
 	}
 
-	public void updateNodes(List<Node> nodes) throws Exception {
+	public void updateNodes(List<Node> nodes) {
 		zuliaPool.updateNodes(nodes);
 	}
 
