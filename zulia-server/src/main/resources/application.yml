@@ -1,7 +1,7 @@
 micronaut:
   http:
     client:
-      max-content-length: 10737418240
+      max-content-length: 2147483647
   server:
     max-request-size: 10737418240
     port: 32192
