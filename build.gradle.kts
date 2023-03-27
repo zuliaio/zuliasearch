@@ -6,7 +6,7 @@ plugins {
     signing
     `maven-publish`
     id("org.ajoberstar.reckon") version "0.16.1"
-    id("com.google.protobuf") version "0.9.1" apply false
+    id("com.google.protobuf") version "0.9.2" apply false
 }
 
 configure<ReckonExtension> {
