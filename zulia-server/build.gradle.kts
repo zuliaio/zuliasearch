@@ -27,7 +27,9 @@ dependencies {
     implementation("org.apache.lucene:lucene-facet:$luceneVersion")
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
-    implementation("com.github.ben-manes.caffeine:caffeine:3.1.5")
+
+    //caffiene 3.1.2 cause issues with the cache test
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.1")
 
     api("com.koloboke:koloboke-api-jdk8:$kolobokeVersion")
     api("com.koloboke:koloboke-impl-jdk8:$kolobokeVersion")
