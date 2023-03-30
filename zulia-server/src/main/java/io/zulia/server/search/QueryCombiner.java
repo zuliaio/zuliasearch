@@ -19,10 +19,10 @@ import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.analysis.frequency.TermFreq;
+import io.zulia.server.config.SortFieldInfo;
 import io.zulia.server.index.ZuliaIndex;
 import io.zulia.server.search.aggregation.facets.FacetCombiner;
 import io.zulia.server.search.aggregation.stats.StatCombiner;
-import io.zulia.server.search.queryparser.ZuliaParser;
 import io.zulia.server.search.score.ZuliaPostSortingComparator;
 
 import java.util.ArrayList;
@@ -353,34 +353,31 @@ public class QueryCombiner {
 
 	private HashMap<String, FieldConfig.FieldType> createSortTypeMap(List<FieldSort> fieldSortList) throws Exception {
 		HashMap<String, FieldConfig.FieldType> sortTypeMap = new HashMap<>();
-		if (!fieldSortList.isEmpty()) {
 
-			for (FieldSort fieldSort : fieldSortList) {
-				String sortField = fieldSort.getSortField();
+		for (FieldSort fieldSort : fieldSortList) {
+			String sortField = fieldSort.getSortField();
 
-				if (ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
+			for (ZuliaIndex index : indexes) {
+				FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);
 
-					for (ZuliaIndex index : indexes) {
-						FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);
+				SortFieldInfo sortFieldInfo = index.getSortFieldType(sortField);
+				FieldConfig.FieldType indexSortType = sortFieldInfo.getFieldType();
 
-						FieldConfig.FieldType indexSortType = index.getSortFieldType(sortField);
-						if (currentSortType == null) {
-							sortTypeMap.put(sortField, indexSortType);
-						}
-						else {
-							if (!currentSortType.equals(indexSortType)) {
-								log.severe("Sort fields must be defined the same in all indexes searched in a single query");
-								String message =
-										"Cannot sort on field <" + sortField + ">: found type: <" + currentSortType + "> then type: <" + indexSortType + ">";
-								log.severe(message);
+				if (currentSortType == null) {
+					sortTypeMap.put(sortField, indexSortType);
+				}
+				else {
+					if (!currentSortType.equals(indexSortType)) {
+						log.severe("Sort fields must be defined the same in all indexes searched in a single query");
+						String message = "Cannot sort on field <" + sortField + ">: found type: <" + currentSortType + "> then type: <" + indexSortType + ">";
+						log.severe(message);
 
-								throw new Exception(message);
-							}
-						}
+						throw new Exception(message);
 					}
 				}
 			}
 		}
+
 		return sortTypeMap;
 	}
 

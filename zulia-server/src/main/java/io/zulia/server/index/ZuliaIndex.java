@@ -24,8 +24,10 @@ import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
+import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.config.SortFieldInfo;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
@@ -34,7 +36,6 @@ import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
-import io.zulia.server.search.queryparser.ZuliaParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ZuliaThreadFactory;
 import org.apache.commons.pool2.BasePooledObjectFactory;
@@ -114,7 +115,6 @@ public class ZuliaIndex {
 	private final IndexService indexService;
 
 	private final IndexShardMapping indexShardMapping;
-	private final FacetsConfig facetsConfig;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService,
 			IndexShardMapping indexShardMapping) {
@@ -125,8 +125,6 @@ public class ZuliaIndex {
 		this.numberOfShards = indexConfig.getNumberOfShards();
 		this.indexService = indexService;
 		this.indexShardMapping = indexShardMapping;
-		this.facetsConfig = new FacetsConfig();
-		configureFacets();
 
 		this.documentStorage = documentStorage;
 
@@ -187,8 +185,8 @@ public class ZuliaIndex {
 
 	}
 
-	public FieldConfig.FieldType getSortFieldType(String fieldName) {
-		return indexConfig.getFieldTypeForSortField(fieldName);
+	public SortFieldInfo getSortFieldType(String fieldName) {
+		return indexConfig.getSortFieldInfo(fieldName);
 	}
 
 	private void doCommit(boolean force) {
@@ -252,8 +250,8 @@ public class ZuliaIndex {
 
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
 
-		ShardWriteManager shardWriteManager = new ShardWriteManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), facetsConfig,
-				indexConfig, zuliaPerFieldAnalyzer);
+		ShardWriteManager shardWriteManager = new ShardWriteManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), indexConfig,
+				zuliaPerFieldAnalyzer);
 
 		ZuliaShard s = new ZuliaShard(shardWriteManager, primary);
 
@@ -341,7 +339,6 @@ public class ZuliaIndex {
 			documentStorage.registerExternalDocument(ed);
 		}
 
-
 		return StoreResponse.newBuilder().build();
 
 	}
@@ -426,39 +423,45 @@ public class ZuliaIndex {
 	}
 
 	private Query getNumericSetQuery(ZuliaQuery.Query query, String field) {
-		FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(field);
+		IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(field);
+
+		FieldConfig.FieldType fieldType = indexFieldInfo.getFieldType();
+		String searchField = indexFieldInfo.getInternalFieldName();
+
 		ZuliaQuery.NumericSet numericSet = query.getNumericSet();
 
 		if (fieldType == null) {
 			throw new IllegalArgumentException("Field <" + field + "> is not indexed");
 		}
-		else if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-			List<Integer> integerValueList = numericSet.getIntegerValueList();
-			if (integerValueList.isEmpty()) {
-				throw new IllegalArgumentException("No integer values for integer field <" + field + "> for numeric set query");
+		else {
+			if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+				List<Integer> integerValueList = numericSet.getIntegerValueList();
+				if (integerValueList.isEmpty()) {
+					throw new IllegalArgumentException("No integer values for integer field <" + field + "> for numeric set query");
+				}
+				return IntPoint.newSetQuery(searchField, integerValueList);
 			}
-			return IntPoint.newSetQuery(field, integerValueList);
-		}
-		else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-			List<Long> longValueList = numericSet.getLongValueList();
-			if (longValueList.isEmpty()) {
-				throw new IllegalArgumentException("No long values for long field <" + field + "> for numeric set query");
+			else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+				List<Long> longValueList = numericSet.getLongValueList();
+				if (longValueList.isEmpty()) {
+					throw new IllegalArgumentException("No long values for long field <" + field + "> for numeric set query");
+				}
+				return LongPoint.newSetQuery(searchField, longValueList);
 			}
-			return LongPoint.newSetQuery(field, longValueList);
-		}
-		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-			List<Float> floatValueList = numericSet.getFloatValueList();
-			if (floatValueList.isEmpty()) {
-				throw new IllegalArgumentException("No float values for float field <" + field + "> for numeric set query");
+			else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+				List<Float> floatValueList = numericSet.getFloatValueList();
+				if (floatValueList.isEmpty()) {
+					throw new IllegalArgumentException("No float values for float field <" + field + "> for numeric set query");
+				}
+				return FloatPoint.newSetQuery(searchField, floatValueList);
 			}
-			return FloatPoint.newSetQuery(field, floatValueList);
-		}
-		else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-			List<Double> doubleValueList = numericSet.getDoubleValueList();
-			if (doubleValueList.isEmpty()) {
-				throw new IllegalArgumentException("No double values for double field <" + field + "> for numeric set query");
+			else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+				List<Double> doubleValueList = numericSet.getDoubleValueList();
+				if (doubleValueList.isEmpty()) {
+					throw new IllegalArgumentException("No double values for double field <" + field + "> for numeric set query");
+				}
+				return DoublePoint.newSetQuery(searchField, doubleValueList);
 			}
-			return DoublePoint.newSetQuery(field, doubleValueList);
 		}
 		throw new IllegalArgumentException("No field type of <" + fieldType + "> is not supported for numeric set queries");
 
@@ -541,7 +544,9 @@ public class ZuliaIndex {
 
 			List<Facet> drillDownList = facetRequest.getDrillDownList();
 			if (!drillDownList.isEmpty()) {
-				DrillDownQuery drillDownQuery = new DrillDownQuery(facetsConfig);
+
+				//TODO fix me
+				DrillDownQuery drillDownQuery = new DrillDownQuery(new FacetsConfig());
 				for (Facet drillDown : drillDownList) {
 					drillDownQuery.add(drillDown.getLabel(), drillDown.getValue());
 				}
@@ -619,28 +624,26 @@ public class ZuliaIndex {
 		bindings.add(ZuliaConstants.SCORE_FIELD, DoubleValuesSource.SCORES);
 		for (String var : expr.variables) {
 			if (!ZuliaConstants.SCORE_FIELD.equals(var)) {
-				FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForSortField(var);
+				SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(var);
+				FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 				if (fieldType == null) {
 					throw new IllegalArgumentException("Score Function references unknown sort field <" + var + ">");
 				}
 
-				if (fieldType == FieldConfig.FieldType.NUMERIC_INT) {
+				if (FieldTypeUtil.isStoredAsInt(fieldType)) {
 					bindings.add(var, DoubleValuesSource.fromIntField(var));
 				}
-				else if (fieldType == FieldConfig.FieldType.NUMERIC_LONG) {
+				else if (FieldTypeUtil.isStoredAsLong(fieldType)) {
 					bindings.add(var, DoubleValuesSource.fromLongField(var));
 				}
-				else if (fieldType == FieldConfig.FieldType.NUMERIC_FLOAT) {
+				else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
 					bindings.add(var, DoubleValuesSource.fromFloatField(var));
 				}
-				else if (fieldType == FieldConfig.FieldType.NUMERIC_DOUBLE) {
+				else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
 					bindings.add(var, DoubleValuesSource.fromDoubleField(var));
 				}
-				else if (fieldType == FieldConfig.FieldType.DATE) {
-					bindings.add(var, DoubleValuesSource.fromLongField(var));
-				}
 				else {
-					throw new IllegalArgumentException("Score Function references sort field with non numeric or date type <" + var + ">");
+					throw new IllegalArgumentException("Score Function references sort field that is not numeric or date type <" + var + ">");
 				}
 			}
 			//
@@ -785,13 +788,10 @@ public class ZuliaIndex {
 					for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
 
 						String sortField = fs.getSortField();
-						FieldConfig.FieldType sortType = indexConfig.getFieldTypeForSortField(sortField);
+						SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
+						FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 
-						if (!ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
-							sortType = FieldConfig.FieldType.NUMERIC_LONG;
-						}
-
-						if (sortType == null) {
+						if (sortFieldInfo == null) {
 							throw new Exception(sortField + " is not defined as a sortable field");
 						}
 
@@ -801,24 +801,25 @@ public class ZuliaIndex {
 							sortTerms[sortTermsIndex] = sortValue.getFloatValue();
 						}
 						else if (sortValue.getExists()) {
-							if (FieldTypeUtil.isNumericOrDateFieldType(sortType)) {
-								if (FieldTypeUtil.isNumericIntFieldType(sortType)) {
+							if (FieldTypeUtil.isHandledAsNumericFieldType(fieldType)) {
+								if (FieldTypeUtil.isStoredAsInt(fieldType)) {
 									sortTerms[sortTermsIndex] = sortValue.getIntegerValue();
 								}
-								else if (FieldTypeUtil.isNumericLongFieldType(sortType)) {
+								else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
 									sortTerms[sortTermsIndex] = sortValue.getLongValue();
 								}
-								else if (FieldTypeUtil.isNumericFloatFieldType(sortType)) {
-									sortTerms[sortTermsIndex] = sortValue.getFloatValue();
-								}
-								else if (FieldTypeUtil.isNumericDoubleFieldType(sortType)) {
-									sortTerms[sortTermsIndex] = sortValue.getDoubleValue();
-								}
-								else if (FieldTypeUtil.isDateFieldType(sortType)) {
+								else if (FieldTypeUtil.isDateFieldType(fieldType)) {
+									//TODO should this just use the LongValue and isStoredAsLong(fieldType) above (see note in ShardReader too)
 									sortTerms[sortTermsIndex] = sortValue.getDateValue();
 								}
+								else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+									sortTerms[sortTermsIndex] = sortValue.getFloatValue();
+								}
+								else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+									sortTerms[sortTermsIndex] = sortValue.getDoubleValue();
+								}
 								else {
-									throw new Exception("Invalid numeric sort type <" + sortType + "> for sort field <" + sortField + ">");
+									throw new Exception("Invalid numeric sort type <" + fieldType + "> for sort field <" + sortField + ">");
 								}
 							}
 							else { //string
@@ -865,7 +866,6 @@ public class ZuliaIndex {
 		}
 
 		indexConfig.configure(indexSettings);
-		configureFacets();
 		zuliaPerFieldAnalyzer.refresh();
 
 		for (ZuliaShard s : primaryShardMap.values()) {
@@ -884,13 +884,6 @@ public class ZuliaIndex {
 			}
 		}
 
-	}
-
-	public void configureFacets() {
-		for (String facetField : indexConfig.getFacetFields()) {
-			facetsConfig.setHierarchical(facetField, indexConfig.isHierarchicalFacet(facetField));
-			facetsConfig.setMultiValued(facetField, true);
-		}
 	}
 
 	public OptimizeResponse optimize(OptimizeRequest request) throws Exception {
@@ -1025,16 +1018,16 @@ public class ZuliaIndex {
 
 		List<String> toRemove = new ArrayList<>();
 		for (String field : fields) {
-			if (field.startsWith(FacetsConfig.DEFAULT_INDEX_FIELD_NAME)) {
+			if (field.startsWith(ZuliaConstants.FACET_DRILL_DOWN_FIELD)) {
 				toRemove.add(field);
 			}
 			if (field.startsWith(ZuliaConstants.FACET_STORAGE)) {
 				toRemove.add(field);
 			}
-			else if (field.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX)) {
+			else if (FieldTypeUtil.isCharLengthField(field)) {
 				toRemove.add(field);
 			}
-			else if (field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX)) {
+			else if (FieldTypeUtil.isListLengthField(field)) {
 				toRemove.add(field);
 			}
 			else if (field.contains(ZuliaConstants.SORT_SUFFIX)) {

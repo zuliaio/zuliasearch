@@ -1,6 +1,7 @@
 package io.zulia.server.search.queryparser.builder;
 
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.queryparser.node.ZuliaPointRangeQueryNode;
 import org.apache.lucene.document.DoublePoint;
@@ -10,7 +11,6 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
-import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryBuilder;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
@@ -35,13 +35,14 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 		Number lowerNumber = lowerNumericNode.getValue();
 		Number upperNumber = upperNumericNode.getValue();
 
-		FieldType fieldType = numericRangeNode.getFieldConfig();
+		IndexFieldInfo indexFieldInfo = numericRangeNode.getIndexFieldMapping();
+		FieldType fieldType = indexFieldInfo.getFieldType();
 
-		String field = StringUtils.toString(numericRangeNode.getField());
+		String field = indexFieldInfo.getInternalFieldName();
 		boolean minInclusive = numericRangeNode.isLowerInclusive();
 		boolean maxInclusive = numericRangeNode.isUpperInclusive();
 
-		if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+		if (FieldTypeUtil.isStoredAsInt(fieldType)) {
 			Integer lower = (Integer) lowerNumber;
 			if (lower == null) {
 				lower = Integer.MIN_VALUE;
@@ -59,7 +60,7 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			}
 			return IntPoint.newRangeQuery(field, lower, upper);
 		}
-		else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+		else if (FieldTypeUtil.isStoredAsLong(fieldType)) {
 			Long lower = (Long) lowerNumber;
 			if (lower == null) {
 				lower = Long.MIN_VALUE;

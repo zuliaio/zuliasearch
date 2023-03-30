@@ -9,6 +9,7 @@ import com.koloboke.collect.set.hash.HashIntSet;
 import com.koloboke.collect.set.hash.HashIntSets;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.index.field.BooleanFieldIndexer;
@@ -73,14 +74,14 @@ public class ShardDocumentIndexer {
 		Document luceneDocument = new Document();
 
 		luceneDocument.add(new StringField(ZuliaConstants.ID_FIELD, uniqueId, Field.Store.YES));
-		luceneDocument.add(new SortedSetDocValuesField(indexConfig.getSortField(ZuliaConstants.ID_SORT_FIELD, ZuliaIndex.FieldConfig.FieldType.STRING),
-				new BytesRef(uniqueId)));
+		luceneDocument.add(
+				new SortedSetDocValuesField(FieldTypeUtil.getSortField(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), new BytesRef(uniqueId)));
 		luceneDocument.add(new LongPoint(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
 		luceneDocument.add(new StoredField(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
-		if (!metadata.isEmpty()) {
+		if (metadata.hasDocument()) {
 			luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(metadata.getByteArray())));
 		}
-		if (!mongoDocument.isEmpty()) {
+		if (mongoDocument.hasDocument()) {
 			luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(mongoDocument.getByteArray())));
 			addUserFields(mongoDocument.getDocument(), luceneDocument, taxoWriter);
 		}
@@ -92,24 +93,15 @@ public class ShardDocumentIndexer {
 	private void addUserFields(org.bson.Document mongoDocument, Document luceneDocument, DirectoryTaxonomyWriter taxoWriter) throws Exception {
 
 		Map<String, Set<FacetLabel>> facetFieldToFacetLabels = new HashMap<>();
-		for (String storedFieldName : indexConfig.getIndexedStoredFieldNames()) {
+		for (FieldConfig fc : indexConfig.getIndexSettings().getFieldConfigList()) {
+			String storedFieldName = fc.getStoredFieldName();
+			FieldConfig.FieldType fieldType = fc.getFieldType();
 
-			ZuliaIndex.FieldConfig fc = indexConfig.getFieldConfig(storedFieldName);
-
-			if (fc != null) {
-
-				ZuliaIndex.FieldConfig.FieldType fieldType = fc.getFieldType();
-
-				Object o = ResultHelper.getValueFromMongoDocument(mongoDocument, storedFieldName);
-
-				if (o != null) {
-					generateFacetLabels(fc, o, facetFieldToFacetLabels);
-
-					addSortForStoredField(luceneDocument, storedFieldName, fc, o);
-
-					addIndexingForStoredField(luceneDocument, storedFieldName, fc, fieldType, o);
-
-				}
+			Object o = ResultHelper.getValueFromMongoDocument(mongoDocument, storedFieldName);
+			if (o != null) {
+				generateFacetLabels(fc, o, facetFieldToFacetLabels);
+				addSortForStoredField(luceneDocument, storedFieldName, fc, o);
+				addIndexingForStoredField(luceneDocument, storedFieldName, fc, fieldType, o);
 			}
 
 		}
@@ -144,7 +136,7 @@ public class ShardDocumentIndexer {
 
 				for (int i = 1; i <= facetLabel.length; i++) {
 					luceneDocument.add(
-							new StringField(FacetsConfig.DEFAULT_INDEX_FIELD_NAME, FacetsConfig.pathToString(facetLabel.components, i), Field.Store.NO));
+							new StringField(ZuliaConstants.FACET_DRILL_DOWN_FIELD, FacetsConfig.pathToString(facetLabel.components, i), Field.Store.NO));
 				}
 
 				int ordinal = taxoWriter.addCategory(facetLabel);
@@ -176,8 +168,8 @@ public class ShardDocumentIndexer {
 		luceneDocument.add(new BinaryDocValuesField(ZuliaConstants.FACET_STORAGE, new BytesRef(byteBuffer.array())));
 	}
 
-	private void addIndexingForStoredField(Document luceneDocument, String storedFieldName, ZuliaIndex.FieldConfig fc,
-			ZuliaIndex.FieldConfig.FieldType fieldType, Object o) throws Exception {
+	private void addIndexingForStoredField(Document luceneDocument, String storedFieldName, FieldConfig fc, FieldConfig.FieldType fieldType, Object o)
+			throws Exception {
 		for (ZuliaIndex.IndexAs indexAs : fc.getIndexAsList()) {
 
 			String indexedFieldName = indexAs.getIndexFieldName();
@@ -207,9 +199,7 @@ public class ShardDocumentIndexer {
 			else if (FieldTypeUtil.isVectorFieldType(fieldType)) {
 				if (o instanceof Collection collection) {
 					luceneDocument.add(new KnnFloatVectorField(indexedFieldName, Floats.toArray(collection),
-							ZuliaIndex.FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ?
-									VectorSimilarityFunction.DOT_PRODUCT :
-									VectorSimilarityFunction.COSINE));
+							FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ? VectorSimilarityFunction.DOT_PRODUCT : VectorSimilarityFunction.COSINE));
 				}
 			}
 			else {
@@ -218,88 +208,14 @@ public class ShardDocumentIndexer {
 		}
 	}
 
-	private void addSortForStoredField(Document d, String storedFieldName, ZuliaIndex.FieldConfig fc, Object o) {
+	private void addSortForStoredField(Document d, String storedFieldName, FieldConfig fc, Object o) {
 
-		ZuliaIndex.FieldConfig.FieldType fieldType = fc.getFieldType();
+		FieldConfig.FieldType fieldType = fc.getFieldType();
 		for (ZuliaIndex.SortAs sortAs : fc.getSortAsList()) {
 
-			String sortFieldName = indexConfig.getSortField(sortAs.getSortFieldName(), fieldType);
+			String sortFieldName = FieldTypeUtil.getSortField(sortAs.getSortFieldName(), fieldType);
 
-			if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
-				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-
-					if (FieldTypeUtil.isDateFieldType(fieldType)) {
-						if (obj instanceof Date date) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, date.getTime());
-							d.add(docValue);
-						}
-						else {
-							throw new RuntimeException(
-									"Expecting date for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
-											+ ">");
-						}
-					}
-					else {
-						if (obj instanceof Number number) {
-
-							SortedNumericDocValuesField docValue;
-							if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, number.intValue());
-							}
-							else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, number.longValue());
-							}
-							else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.floatToSortableInt(number.floatValue()));
-							}
-							else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.doubleToSortableLong(number.doubleValue()));
-							}
-							else {
-								throw new RuntimeException(
-										"Not handled numeric field type <" + fieldType + "> for document field <" + storedFieldName + "> / sort field <"
-												+ sortFieldName + ">");
-							}
-
-							d.add(docValue);
-						}
-						else {
-							throw new RuntimeException(
-									"Expecting number for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
-											+ ">");
-						}
-					}
-				});
-			}
-			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
-
-				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-					if (obj instanceof Boolean) {
-						SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, (Boolean) obj ? 1 : 0);
-						d.add(docValue);
-					}
-					else if (obj instanceof Number) {
-						Number num = (Number) (obj);
-						if (num.intValue() == 1) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 1);
-							d.add(docValue);
-						}
-						else if (num.intValue() == 0) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 0);
-							d.add(docValue);
-						}
-					}
-					else {
-						String string = obj.toString();
-						int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
-						if (booleanInt >= 0) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, booleanInt);
-							d.add(docValue);
-						}
-					}
-				});
-			}
-			else if (ZuliaIndex.FieldConfig.FieldType.STRING.equals(fieldType)) {
+			if (FieldTypeUtil.isStringFieldType(fieldType)) {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					String text = o.toString();
 
@@ -331,6 +247,104 @@ public class ShardDocumentIndexer {
 					d.add(docValue);
 				});
 			}
+			else if (FieldTypeUtil.isNumericFieldType(fieldType)) {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
+					if (obj instanceof Number number) {
+
+						SortedNumericDocValuesField docValue;
+						if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+							docValue = new SortedNumericDocValuesField(sortFieldName, number.intValue());
+						}
+						else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+							docValue = new SortedNumericDocValuesField(sortFieldName, number.longValue());
+						}
+						else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+							docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.floatToSortableInt(number.floatValue()));
+						}
+						else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+							docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.doubleToSortableLong(number.doubleValue()));
+						}
+						else {
+							throw new RuntimeException(
+									"Not handled numeric field type <" + fieldType + "> for sort field <" + sortAs.getSortFieldName() + "> from number");
+						}
+
+						d.add(docValue);
+					}
+					else if (obj instanceof String value) {
+						SortedNumericDocValuesField docValue;
+						try {
+							if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+								docValue = new SortedNumericDocValuesField(sortFieldName, Integer.parseInt(value));
+							}
+							else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+								docValue = new SortedNumericDocValuesField(sortFieldName, Long.parseLong(value));
+							}
+							else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.floatToSortableInt(Float.parseFloat(value)));
+							}
+							else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.doubleToSortableLong(Double.parseDouble(value)));
+							}
+							else {
+								throw new RuntimeException(
+										"Not handled numeric field type <" + fieldType + "> for sort field <" + sortAs.getSortFieldName() + "> from string");
+							}
+							d.add(docValue);
+						}
+						catch (NumberFormatException e) {
+							throw new RuntimeException(
+									"String value <" + value + "> for field <" + sortAs.getSortFieldName() + "> cannot be parsed as numeric type <" + fieldType
+											+ ">");
+						}
+					}
+					else {
+						throw new RuntimeException(
+								"Expecting number for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
+										+ ">");
+					}
+				});
+			}
+			else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
+					if (obj instanceof Boolean) {
+						SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, (Boolean) obj ? 1 : 0);
+						d.add(docValue);
+					}
+					else if (obj instanceof Number) {
+						Number num = (Number) (obj);
+						if (num.intValue() == 1) {
+							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 1);
+							d.add(docValue);
+						}
+						else if (num.intValue() == 0) {
+							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 0);
+							d.add(docValue);
+						}
+					}
+					else {
+						String string = obj.toString();
+						int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
+						if (booleanInt >= 0) {
+							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, booleanInt);
+							d.add(docValue);
+						}
+					}
+				});
+			}
+			else if (FieldTypeUtil.isDateFieldType(fieldType)) {
+				ZuliaUtil.handleListsUniqueValues(o, obj -> {
+					if (obj instanceof Date date) {
+						SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, date.getTime());
+						d.add(docValue);
+					}
+					else {
+						throw new RuntimeException(
+								"Expecting date for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
+										+ ">");
+					}
+				});
+			}
 			else {
 				throw new RuntimeException(
 						"Not handled field type <" + fieldType + "> for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">");
@@ -339,7 +353,7 @@ public class ShardDocumentIndexer {
 		}
 	}
 
-	private void generateFacetLabels(ZuliaIndex.FieldConfig fc, Object o, Map<String, Set<FacetLabel>> facetFieldToFacetLabels) {
+	private void generateFacetLabels(FieldConfig fc, Object o, Map<String, Set<FacetLabel>> facetFieldToFacetLabels) {
 		for (ZuliaIndex.FacetAs fa : fc.getFacetAsList()) {
 
 			String facetName = fa.getFacetName();
@@ -348,7 +362,7 @@ public class ShardDocumentIndexer {
 			facetFieldToFacetLabels.put(facetName, facetFieldsForField);
 			if (fa.getHierarchical()) {
 
-				if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
+				if (FieldTypeUtil.isDateFieldType(fc.getFieldType())) {
 					ZuliaIndex.FacetAs.DateHandling dateHandling = fa.getDateHandling();
 					ZuliaUtil.handleListsUniqueValues(o, obj -> {
 						if (obj instanceof Date) {
@@ -387,7 +401,7 @@ public class ShardDocumentIndexer {
 
 			}
 			else {
-				if (ZuliaIndex.FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
+				if (FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
 					ZuliaIndex.FacetAs.DateHandling dateHandling = fa.getDateHandling();
 					ZuliaUtil.handleListsUniqueValues(o, obj -> {
 						if (obj instanceof Date) {
@@ -414,17 +428,17 @@ public class ShardDocumentIndexer {
 						}
 					});
 				}
-				else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fc.getFieldType())) {
+				else if (FieldConfig.FieldType.BOOL.equals(fc.getFieldType())) {
 					ZuliaUtil.handleListsUniqueValues(o, obj -> {
 						String string = obj.toString();
 
-					int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
-					if (booleanInt == 1) {
-						facetFieldsForField.add(new FacetLabel(facetName, "True"));
+						int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
+						if (booleanInt == 1) {
+							facetFieldsForField.add(new FacetLabel(facetName, "True"));
 						}
-					else if (booleanInt == 0) {
-						facetFieldsForField.add(new FacetLabel(facetName, "False"));
-					}
+						else if (booleanInt == 0) {
+							facetFieldsForField.add(new FacetLabel(facetName, "False"));
+						}
 
 					});
 				}

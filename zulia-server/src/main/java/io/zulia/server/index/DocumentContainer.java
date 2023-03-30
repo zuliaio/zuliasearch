@@ -10,7 +10,7 @@ public class DocumentContainer {
 	private final byte[] byteArray;
 	private final Document document;
 
-	private final boolean isEmpty;
+	private final boolean hasDocument;
 
 	public DocumentContainer(BytesRef binaryValue) {
 		this(binaryValue != null ? binaryValue.bytes : null);
@@ -24,12 +24,12 @@ public class DocumentContainer {
 		if (bytes != null && bytes.length > 0) {
 			this.byteArray = bytes;
 			this.document = ZuliaUtil.byteArrayToMongoDocument(byteArray);
-			this.isEmpty = false;
+			this.hasDocument = true;
 		}
 		else {
 			this.document = null;
 			this.byteArray = null;
-			this.isEmpty = true;
+			this.hasDocument = false;
 		}
 	}
 
@@ -41,7 +41,7 @@ public class DocumentContainer {
 		return document;
 	}
 
-	public boolean isEmpty() {
-		return isEmpty;
+	public boolean hasDocument() {
+		return hasDocument;
 	}
 }

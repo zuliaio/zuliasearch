@@ -1,5 +1,7 @@
 package io.zulia.server.index.field;
 
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.server.field.FieldTypeUtil;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongPoint;
 
@@ -13,7 +15,7 @@ public class LongFieldIndexer extends NumericFieldIndexer {
 
 	@Override
 	protected Field createField(Number o, String indexedFieldName) {
-		return new LongPoint(indexedFieldName, o.longValue());
+		return new LongPoint(FieldTypeUtil.getIndexField(indexedFieldName, FieldType.NUMERIC_LONG), o.longValue());
 	}
 
 	@Override

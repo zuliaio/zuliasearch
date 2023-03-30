@@ -79,7 +79,7 @@ public class WikiExamples {
 				true); //Periodically update the nodes of the cluster and to enable smart routing to the correct node. Do not use this with ssh port forwarding.  This can be done manually with zuliaWorkPool.updateNodes();
 		zuliaPoolConfig.setNodeUpdateInterval(10000); //Interval to update the nodes in ms
 		zuliaPoolConfig.setRoutingEnabled(
-				true); //enable routing indexing to the correct server, this only works if automatic node updating is enabled or it is periodically called manually.
+				true); //enable routing indexing to the correct server, this only works if automatic node updating is enabled, or it is periodically called manually.
 
 		//create the connection pool
 		ZuliaWorkPool zuliaWorkPool = new ZuliaWorkPool(zuliaPoolConfig);
@@ -97,19 +97,19 @@ public class WikiExamples {
 		zuliaWorkPool.createIndex(createIndex);
 	}
 
-	public void createIndexCustomAnalyzer(ClientIndexConfig clientIndexConfig) throws Exception {
+	public void createIndexCustomAnalyzer(ClientIndexConfig clientIndexConfig) {
 		clientIndexConfig.addAnalyzerSetting("myAnalyzer", Tokenizer.WHITESPACE, Arrays.asList(Filter.ASCII_FOLDING, Filter.LOWERCASE), Similarity.BM25);
 		clientIndexConfig.addFieldConfig(FieldConfigBuilder.create("abstract", FieldType.STRING).indexAs("myAnalyzer"));
 	}
 
-	public void createIndexWarmedSearches(ClientIndexConfig clientIndexConfig) throws Exception {
+	public void createIndexWarmedSearches(ClientIndexConfig clientIndexConfig) {
 		Search search1 = new Search("someIndex").addQuery(new FilterQuery("the best query")).setSearchLabel("custom");
 		Search search2 = new Search("someIndex").addQuery(new FilterQuery("the worst query")).setSearchLabel("mine");
 		clientIndexConfig.addWarmingSearch(search1);
 		clientIndexConfig.addWarmingSearch(search2);
 	}
 
-	public void createIndexCustomMetadata(ClientIndexConfig clientIndexConfig) throws Exception {
+	public void createIndexCustomMetadata(ClientIndexConfig clientIndexConfig) {
 		clientIndexConfig.setMeta(new Document("category", "special").append("otherKey", 10));
 	}
 
@@ -146,7 +146,7 @@ public class WikiExamples {
 		zuliaWorkPool.updateIndex(updateIndex);
 	}
 
-	public void updateIndexMergeAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void updateIndexMergeAnalyzer(ZuliaWorkPool zuliaWorkPool) {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
 		// if an analyzer custom or mine exists, it will be updated with these settings, otherwise they are added
 		ZuliaIndex.AnalyzerSettings custom = ZuliaIndex.AnalyzerSettings.newBuilder().setName("custom").addFilter(Filter.LOWERCASE).build();
@@ -155,7 +155,7 @@ public class WikiExamples {
 		updateIndex.mergeAnalyzerSettings(custom, mine);
 	}
 
-	public void updateIndexReplaceAnalyzer(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void updateIndexReplaceAnalyzer(ZuliaWorkPool zuliaWorkPool) {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
 		// replaces all analyzers with the two custom analyzers given
 		ZuliaIndex.AnalyzerSettings custom = ZuliaIndex.AnalyzerSettings.newBuilder().setName("custom").addFilter(Filter.LOWERCASE).build();
@@ -192,7 +192,7 @@ public class WikiExamples {
 		zuliaWorkPool.updateIndex(updateIndex);
 	}
 
-	public void updateIndexMergeWarmedSearches(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void updateIndexMergeWarmedSearches(ZuliaWorkPool zuliaWorkPool) {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
 		// if a warmed search with search label custom or mine exists, it will be updated with these settings, otherwise they are added
 		Search search1 = new Search("someIndex").addQuery(new FilterQuery("the best query")).setSearchLabel("custom");
@@ -200,7 +200,7 @@ public class WikiExamples {
 		updateIndex.mergeWarmingSearches(search1, search2);
 	}
 
-	public void updateIndexReplaceWarmedSearches(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void updateIndexReplaceWarmedSearches(ZuliaWorkPool zuliaWorkPool) {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
 		// replaces all warmed searches with the given warmed searches
 		Search search1 = new Search("someIndex").addQuery(new FilterQuery("some stuff")).setSearchLabel("the best label");
@@ -384,7 +384,7 @@ public class WikiExamples {
 		}
 	}
 
-	public void cache(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void cache(ZuliaWorkPool zuliaWorkPool) {
 
 		// make sure this search stays in the query cache until the index is changed or zulia is restarted
 		Search search = new Search("myIndexName").setAmount(10);
@@ -424,21 +424,21 @@ public class WikiExamples {
 
 	// query fields set the search field used when one is not given for a term
 	// if query fields are not set on the query and a term is not qualified, the default search fields on the index will be used
-	public void queryFields(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void queryFields(ZuliaWorkPool zuliaWorkPool) {
 		Search search = new Search("myIndexName").setAmount(100);
 
 		// search for lung in title,abstract AND cancer in title,abstract AND treatment in title
 		search.addQuery(new ScoredQuery("lung cancer title:treatment").addQueryFields("title", "abstract").setDefaultOperator(ZuliaQuery.Query.Operator.AND));
 	}
 
-	public void queryFieldsDefault(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void queryFieldsDefault(ZuliaWorkPool zuliaWorkPool) {
 		// search for lung in default index fields OR cancer in default index fields
 		// OR is the default operator unless set
 		Search search = new Search("myIndexName").setAmount(100);
 		search.addQuery(new ScoredQuery("lung cancer"));
 	}
 
-	public void queryFieldsWildcard(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void queryFieldsWildcard(ZuliaWorkPool zuliaWorkPool) {
 		Search search = new Search("myIndexName").setAmount(100);
 
 		// search for lung in any field starting with title and abstract AND cancer in any field starting with title and abstract
@@ -474,7 +474,7 @@ public class WikiExamples {
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
 
-	public void numericFilters(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void numericFilters(ZuliaWorkPool zuliaWorkPool) {
 		Search search = new Search("myIndexName");
 		// Search for pub years in range [2015, 2020]
 		search.addQuery(FilterFactory.rangeInt("pubYear").setRange(2015, 2020));
@@ -494,7 +494,7 @@ public class WikiExamples {
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
 
-	public void numericSetQueries(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void numericSetQueries(ZuliaWorkPool zuliaWorkPool) {
 		Search search = new Search("myIndexName").setAmount(100);
 		//search for values 1, 5, 7, 9 in the field intField
 		search.addQuery(new NumericSetQuery("intField").addValues(1, 5, 7, 9));
@@ -527,14 +527,14 @@ public class WikiExamples {
 
 	}
 
-	public void vectorQueriesPreFilter(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void vectorQueriesPreFilter(ZuliaWorkPool zuliaWorkPool) {
 		Search search = new Search("vectorTestIndex").setAmount(100);
 		// filters for blue in the description then returns the top 3 documents closest to [1.0,0,0,0] in the field v
 		StandardQuery descriptionQuery = new FilterQuery("blue").addQueryField("description");
 		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v").addPreFilterQuery(descriptionQuery));
 	}
 
-	public void vectorQueriesPostFilter(ZuliaWorkPool zuliaWorkPool) throws Exception {
+	public void vectorQueriesPostFilter(ZuliaWorkPool zuliaWorkPool) {
 		Search search = new Search("vectorTestIndex").setAmount(100);
 		// returns the top 3 documents closest to [1.0,0,0,0] in the field v, then filters for red in the description (possible less than 3 now)
 		search.addQuery(new VectorTopNQuery(new float[] { 1.0f, 0.0f, 0.0f, 0.0f }, 3, "v"));
@@ -635,8 +635,8 @@ public class WikiExamples {
 		search.setAmount(100);
 		search.addQuery(new ScoredQuery("issn:1234-1234 AND title:special"));
 
-		// on a changing index a sort on  is necessary
-		// it can be sort on another field AND id as well
+		// on a changing index a sort on is necessary
+		// it can be a sort on another field AND id as well
 		search.addSort(new Sort("id"));
 
 		SearchResult firstResult = zuliaWorkPool.search(search);
@@ -652,7 +652,7 @@ public class WikiExamples {
 		search.addQuery(new ScoredQuery("issn:1234-1234 AND title:special"));
 
 		// on a changing index a sort on  is necessary
-		// it can be sort on another field AND id as well
+		// it can be a sort on another field AND id as well
 		search.addSort(new Sort("id"));
 
 		//option 1 - requires fetch type full (default)

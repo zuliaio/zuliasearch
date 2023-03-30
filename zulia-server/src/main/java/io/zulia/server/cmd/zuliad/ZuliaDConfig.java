@@ -24,6 +24,7 @@ import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.IndexSearcher;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 
@@ -61,7 +62,7 @@ public class ZuliaDConfig {
 				zuliaConfig = GSON.fromJson(fr, ZuliaConfig.class);
 			}
 			else if (config.endsWith("yml") || config.endsWith("yaml")) {
-				Yaml yaml = new Yaml(new Constructor(ZuliaConfig.class));
+				Yaml yaml = new Yaml(new Constructor(ZuliaConfig.class, new LoaderOptions()));
 				zuliaConfig = yaml.load(fr);
 			}
 			else {
@@ -156,11 +157,11 @@ public class ZuliaDConfig {
 		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
 	}
 
-	public NodeService getNodeService() throws IOException {
+	public NodeService getNodeService() {
 		return nodeService;
 	}
 
-	public ZuliaConfig getZuliaConfig() throws IOException {
+	public ZuliaConfig getZuliaConfig() {
 		return zuliaConfig;
 	}
 }

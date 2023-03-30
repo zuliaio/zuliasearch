@@ -17,7 +17,7 @@ public class MasterSlaveSelector {
 
 	private final MasterSlaveSettings masterSlaveSettings;
 	private final List<Node> nodes;
-	private IndexShardMapping indexShardMapping;
+	private final IndexShardMapping indexShardMapping;
 
 	/**
 	 * @param masterSlaveSettings - the master slave preference

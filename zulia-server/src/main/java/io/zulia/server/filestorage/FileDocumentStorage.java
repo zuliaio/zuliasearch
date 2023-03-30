@@ -110,7 +110,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void getAssociatedDocuments(Writer writer, Document filter) throws Exception {
+	public void getAssociatedDocuments(Writer writer, Document filter) {
 		throw new RuntimeException("Not implemented");
 	}
 
@@ -146,7 +146,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) throws Exception {
+	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) {
 		throw new UnsupportedOperationException("Cannot register a locally stored file with Zulia.");
 	}
 

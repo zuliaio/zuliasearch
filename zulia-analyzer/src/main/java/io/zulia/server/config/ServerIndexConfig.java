@@ -8,10 +8,12 @@ import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Tokenizer;
 import io.zulia.message.ZuliaIndex.FacetAs;
 import io.zulia.message.ZuliaIndex.FieldConfig;
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.message.ZuliaIndex.IndexAs;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.SortAs;
 import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.server.field.FieldTypeUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,15 +28,10 @@ public class ServerIndexConfig {
 	private final static Logger LOG = Logger.getLogger(ServerIndexConfig.class.getSimpleName());
 	private IndexSettings indexSettings;
 
-	private ConcurrentHashMap<String, FieldConfig> fieldConfigMap;
-	private ConcurrentHashMap<String, IndexAs> indexAsMap;
-
-	private ConcurrentHashMap<String, FieldConfig.FieldType> indexFieldType;
-	private ConcurrentHashMap<String, FieldConfig.FieldType> sortFieldType;
+	private ConcurrentHashMap<String, IndexFieldInfo> indexFieldMapping;
+	private ConcurrentHashMap<String, SortFieldInfo> sortFieldMapping;
 	private ConcurrentHashMap<String, AnalyzerSettings> analyzerMap;
-	private ConcurrentHashMap<String, String> indexToStoredMap;
 
-	private ConcurrentHashMap<String, String> indexToFirstSortMap;
 	private ConcurrentHashMap<String, FacetAs> facetAsMap;
 
 	private List<ZuliaServiceOuterClass.QueryRequest> warmingSearches;
@@ -46,87 +43,61 @@ public class ServerIndexConfig {
 	public void configure(IndexSettings indexSettings) {
 		this.indexSettings = indexSettings;
 
-		this.analyzerMap = new ConcurrentHashMap<>();
+		populateAnalyzers();
 
-		analyzerMap.put(DefaultAnalyzers.STANDARD,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.STOPWORDS).build());
-		analyzerMap.put(DefaultAnalyzers.KEYWORD, AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.KEYWORD).setTokenizer(Tokenizer.KEYWORD).build());
-		analyzerMap.put(DefaultAnalyzers.LC_KEYWORD,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LC_KEYWORD).setTokenizer(Tokenizer.KEYWORD).addFilter(Filter.LOWERCASE).build());
-		analyzerMap.put(DefaultAnalyzers.MIN_STEM,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.MIN_STEM).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
-						.addFilter(Filter.STOPWORDS).addFilter(Filter.ENGLISH_MIN_STEM).build());
-
-		analyzerMap.put(DefaultAnalyzers.TWO_TWO_SHINGLE,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.TWO_TWO_SHINGLE).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
-						.addFilter(Filter.TWO_TWO_SHINGLE).build());
-		analyzerMap.put(DefaultAnalyzers.THREE_THREE_SHINGLE,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.THREE_THREE_SHINGLE).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
-						.addFilter(Filter.THREE_THREE_SHINGLE).build());
-
-		analyzerMap.put(DefaultAnalyzers.LC_CONCAT_ALL,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LC_CONCAT_ALL).setTokenizer(Tokenizer.KEYWORD).addFilter(Filter.LOWERCASE)
-						.addFilter(Filter.CONCAT_ALL).build());
-
-		analyzerMap.put(DefaultAnalyzers.KSTEMMED,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.KSTEMMED).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
-						.addFilter(Filter.STOPWORDS).addFilter(Filter.KSTEM).build());
-		analyzerMap.put(DefaultAnalyzers.LSH,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LSH).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
-						.addFilter(Filter.ASCII_FOLDING).addFilter(Filter.KSTEM).addFilter(Filter.STOPWORDS).addFilter(Filter.FIVE_FIVE_SHINGLE)
-						.addFilter(Filter.MINHASH).build());
-
-		for (AnalyzerSettings analyzerSettings : indexSettings.getAnalyzerSettingsList()) {
-			analyzerMap.put(analyzerSettings.getName(), analyzerSettings);
-		}
-
-		this.fieldConfigMap = new ConcurrentHashMap<>();
-		for (FieldConfig fc : indexSettings.getFieldConfigList()) {
-			fieldConfigMap.put(fc.getStoredFieldName(), fc);
-		}
-
-		this.indexAsMap = new ConcurrentHashMap<>();
-		this.indexToStoredMap = new ConcurrentHashMap<>();
-		this.indexToFirstSortMap = new ConcurrentHashMap<>();
-		for (String storedFieldName : fieldConfigMap.keySet()) {
-			FieldConfig fc = fieldConfigMap.get(storedFieldName);
-			for (IndexAs indexAs : fc.getIndexAsList()) {
-				indexAsMap.put(indexAs.getIndexFieldName(), indexAs);
-				indexToStoredMap.put(indexAs.getIndexFieldName(), storedFieldName);
-
-				for (SortAs sortAs : fc.getSortAsList()) {
-					indexToFirstSortMap.put(indexAs.getIndexFieldName(), getSortField(sortAs.getSortFieldName(), fc.getFieldType()));
-					break;
-				}
-			}
-		}
-
+		this.indexFieldMapping = new ConcurrentHashMap<>();
+		this.sortFieldMapping = new ConcurrentHashMap<>();
 		this.facetAsMap = new ConcurrentHashMap<>();
-		for (String storedFieldName : fieldConfigMap.keySet()) {
-			FieldConfig fc = fieldConfigMap.get(storedFieldName);
+
+		for (FieldConfig fc : indexSettings.getFieldConfigList()) {
+			String storedFieldName = fc.getStoredFieldName();
+			FieldType fieldType = fc.getFieldType();
+
+			SortFieldInfo firstSortFieldInfo = null;
+			for (SortAs sortAs : fc.getSortAsList()) {
+				SortFieldInfo sortFieldInfo = new SortFieldInfo(FieldTypeUtil.getSortField(sortAs.getSortFieldName(), fieldType), fieldType);
+				if (firstSortFieldInfo == null) {
+					firstSortFieldInfo = sortFieldInfo;
+				}
+				sortFieldMapping.put(sortAs.getSortFieldName(), sortFieldInfo);
+			}
+
+			for (IndexAs indexAs : fc.getIndexAsList()) {
+				String indexFieldName = indexAs.getIndexFieldName();
+				String listLengthWrap = FieldTypeUtil.getListLengthWrap(indexFieldName);
+				String listLengthIndexField = FieldTypeUtil.getListLengthIndexField(indexFieldName);
+				String listLengthSortField = FieldTypeUtil.getListLengthSortField(indexFieldName);
+
+				indexFieldMapping.put(listLengthWrap,
+						new IndexFieldInfo(storedFieldName, listLengthIndexField, listLengthSortField, FieldType.NUMERIC_INT, indexAs));
+				sortFieldMapping.put(listLengthWrap, new SortFieldInfo(listLengthSortField, FieldType.NUMERIC_INT));
+				if (FieldTypeUtil.isStringFieldType(fieldType)) {
+					String charLengthWrap = FieldTypeUtil.getCharLengthWrap(indexFieldName);
+					String charLengthIndexField = FieldTypeUtil.getCharLengthIndexField(indexFieldName);
+					String charLengthSortField = FieldTypeUtil.getCharLengthSortField(indexFieldName);
+					indexFieldMapping.put(charLengthWrap,
+							new IndexFieldInfo(storedFieldName, charLengthIndexField, charLengthSortField, FieldType.NUMERIC_INT, indexAs));
+					sortFieldMapping.put(charLengthWrap, new SortFieldInfo(charLengthSortField, FieldType.NUMERIC_INT));
+				}
+
+				String internalSortFieldName = firstSortFieldInfo != null ? firstSortFieldInfo.getInternalSortFieldName() : null;
+				String indexField = FieldTypeUtil.getIndexField(indexFieldName, fieldType);
+				IndexFieldInfo indexFieldInfo = new IndexFieldInfo(storedFieldName, indexField, internalSortFieldName, fieldType, indexAs);
+				indexFieldMapping.put(indexFieldName, indexFieldInfo);
+			}
+
 			for (FacetAs facetAs : fc.getFacetAsList()) {
 				facetAsMap.put(facetAs.getFacetName(), facetAs);
 			}
 		}
 
-		this.indexFieldType = new ConcurrentHashMap<>();
-		for (String storedFieldName : fieldConfigMap.keySet()) {
-			FieldConfig fc = fieldConfigMap.get(storedFieldName);
-			for (IndexAs indexAs : fc.getIndexAsList()) {
-				indexFieldType.put(indexAs.getIndexFieldName(), fc.getFieldType());
-			}
-		}
-
-		this.sortFieldType = new ConcurrentHashMap<>();
-		for (String storedFieldName : fieldConfigMap.keySet()) {
-			FieldConfig fc = fieldConfigMap.get(storedFieldName);
-			for (SortAs sortAs : fc.getSortAsList()) {
-				sortFieldType.put(sortAs.getSortFieldName(), fc.getFieldType());
-			}
-		}
-
-		sortFieldType.put(ZuliaConstants.SCORE_FIELD, FieldConfig.FieldType.NUMERIC_FLOAT);
-		sortFieldType.put(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING);
+		indexFieldMapping.put(ZuliaConstants.ID_FIELD, new IndexFieldInfo(null, ZuliaConstants.ID_FIELD, ZuliaConstants.ID_SORT_FIELD, FieldType.STRING, null));
+		indexFieldMapping.put(ZuliaConstants.FACET_DRILL_DOWN_FIELD,
+				new IndexFieldInfo(null, ZuliaConstants.FACET_DRILL_DOWN_FIELD, null, FieldType.STRING, null));
+		indexFieldMapping.put(ZuliaConstants.FIELDS_LIST_FIELD, new IndexFieldInfo(null, ZuliaConstants.FIELDS_LIST_FIELD, null, FieldType.STRING, null));
+		sortFieldMapping.put(ZuliaConstants.SCORE_FIELD, new SortFieldInfo(null, FieldType.NUMERIC_FLOAT));
+		sortFieldMapping.put(ZuliaConstants.ID_SORT_FIELD,
+				new SortFieldInfo(FieldTypeUtil.getSortField(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), FieldType.STRING));
 
 		this.warmingSearches = new ArrayList<>();
 		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
@@ -142,26 +113,39 @@ public class ServerIndexConfig {
 
 	}
 
-	public String getSortField(String sortFieldName, FieldConfig.FieldType fieldType) {
-		return sortFieldName + ZuliaConstants.SORT_SUFFIX + fieldType;
-	}
+	private void populateAnalyzers() {
+		this.analyzerMap = new ConcurrentHashMap<>();
 
-	public String getFirstSortFieldFromIndexField(String indexField) {
-		return indexToFirstSortMap.get(indexField);
+		analyzerMap.put(DefaultAnalyzers.STANDARD,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.STOPWORDS).build());
+		analyzerMap.put(DefaultAnalyzers.KEYWORD, AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.KEYWORD).setTokenizer(Tokenizer.KEYWORD).build());
+		analyzerMap.put(DefaultAnalyzers.LC_KEYWORD,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LC_KEYWORD).setTokenizer(Tokenizer.KEYWORD).addFilter(Filter.LOWERCASE).build());
+		analyzerMap.put(DefaultAnalyzers.MIN_STEM,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.MIN_STEM).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
+						.addFilter(Filter.STOPWORDS).addFilter(Filter.ENGLISH_MIN_STEM).build());
+
+		analyzerMap.put(DefaultAnalyzers.TWO_TWO_SHINGLE,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.TWO_TWO_SHINGLE).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.TWO_TWO_SHINGLE).build());
+		analyzerMap.put(DefaultAnalyzers.THREE_THREE_SHINGLE,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.THREE_THREE_SHINGLE).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.THREE_THREE_SHINGLE).build());
+
+		analyzerMap.put(DefaultAnalyzers.LC_CONCAT_ALL,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LC_CONCAT_ALL).setTokenizer(Tokenizer.KEYWORD).addFilter(Filter.LOWERCASE).addFilter(Filter.CONCAT_ALL).build());
+
+		analyzerMap.put(DefaultAnalyzers.KSTEMMED,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.KSTEMMED).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.STOPWORDS).addFilter(Filter.KSTEM).build());
+		analyzerMap.put(DefaultAnalyzers.LSH,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LSH).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.ASCII_FOLDING).addFilter(Filter.KSTEM).addFilter(Filter.STOPWORDS).addFilter(Filter.FIVE_FIVE_SHINGLE)
+						.addFilter(Filter.MINHASH).build());
+
+		for (AnalyzerSettings analyzerSettings : indexSettings.getAnalyzerSettingsList()) {
+			analyzerMap.put(analyzerSettings.getName(), analyzerSettings);
+		}
 	}
 
 	public IndexSettings getIndexSettings() {
 		return indexSettings;
-	}
-
-	public AnalyzerSettings getAnalyzerSettingsForIndexField(String fieldName) {
-		IndexAs indexAs = indexAsMap.get(fieldName);
-		if (indexAs != null) {
-
-			String textAnalyzerName = indexAs.getAnalyzerName();
-			return getAnalyzerSettingsByName(textAnalyzerName);
-		}
-		return null;
 	}
 
 	public Set<String> getFacetFields() {
@@ -180,33 +164,16 @@ public class ServerIndexConfig {
 		return analyzerMap.get(textAnalyzerName);
 	}
 
-	public FieldConfig.FieldType getFieldTypeForIndexField(String fieldName) {
-		boolean lengthPrefix = fieldName.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) || fieldName.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX);
-		if (lengthPrefix) {
-			return FieldConfig.FieldType.NUMERIC_INT;
-		}
-
-		return indexFieldType.get(fieldName);
+	public SortFieldInfo getSortFieldInfo(String sortField) {
+		return sortFieldMapping.get(sortField);
 	}
 
-	public FieldConfig.FieldType getFieldTypeForSortField(String sortField) {
-		return sortFieldType.get(sortField);
+	public IndexFieldInfo getIndexFieldInfo(String field) {
+		return indexFieldMapping.get(field);
 	}
 
-	public Collection<IndexAs> getIndexAsValues() {
-		return indexAsMap.values();
-	}
-
-	public FieldConfig getFieldConfig(String storedFieldName) {
-		return fieldConfigMap.get(storedFieldName);
-	}
-
-	public String getStoredFieldName(String indexFieldName) {
-		return indexToStoredMap.get(indexFieldName);
-	}
-
-	public Set<String> getIndexedStoredFieldNames() {
-		return fieldConfigMap.keySet();
+	public Collection<String> getIndexedFields() {
+		return indexFieldMapping.keySet();
 	}
 
 	public int getNumberOfShards() {
@@ -230,7 +197,7 @@ public class ServerIndexConfig {
 			Set<String> matchingFieldNames = new TreeSet<>();
 
 			Pattern pattern = Pattern.compile(fieldWildcard);
-			for (String indexFieldName : indexAsMap.keySet()) {
+			for (String indexFieldName : getIndexedFields()) {
 				if (pattern.matcher(indexFieldName).matches()) {
 					matchingFieldNames.add(indexFieldName);
 				}
