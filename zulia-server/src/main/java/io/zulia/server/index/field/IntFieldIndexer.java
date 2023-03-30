@@ -1,5 +1,7 @@
 package io.zulia.server.index.field;
 
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.server.field.FieldTypeUtil;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
 
@@ -13,7 +15,7 @@ public class IntFieldIndexer extends NumericFieldIndexer {
 
 	@Override
 	protected Field createField(Number o, String indexedFieldName) {
-		return new IntPoint(indexedFieldName, o.intValue());
+		return new IntPoint(FieldTypeUtil.getIndexField(indexedFieldName, FieldType.NUMERIC_INT), o.intValue());
 	}
 
 	@Override

@@ -5,8 +5,8 @@ import java.io.IOException;
 public class ShardDoesNotExistException extends IOException {
 
 	private static final long serialVersionUID = 1L;
-	private String indexName;
-	private int shardNumber;
+	private final String indexName;
+	private final int shardNumber;
 
 	public ShardDoesNotExistException(String indexName, int shardNumber) {
 		super("Shard does not exist for index <" + indexName + "> with shard <" + shardNumber + ">");

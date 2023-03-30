@@ -329,7 +329,7 @@ public class SortTest {
 		search.clearSort();
 		search.addSort(new Sort(field).ascending().missingLast());
 		searchResult = zuliaWorkPool.search(search);
-		//mongodb bson does not support float so it comes back as a double, the search engine is indexing in float precision however
+		//mongodb bson does not support float, so it comes back as a double, the search engine is indexing in float precision however
 		Assertions.assertEquals(1.1f, (double) searchResult.getFirstDocument().get(field), 0.001f);
 
 		search.clearSort();

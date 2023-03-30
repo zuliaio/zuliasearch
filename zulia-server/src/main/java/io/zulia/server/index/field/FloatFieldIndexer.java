@@ -1,5 +1,7 @@
 package io.zulia.server.index.field;
 
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.server.field.FieldTypeUtil;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 
@@ -13,7 +15,7 @@ public class FloatFieldIndexer extends NumericFieldIndexer {
 
 	@Override
 	protected Field createField(Number o, String indexedFieldName) {
-		return new FloatPoint(indexedFieldName, o.floatValue());
+		return new FloatPoint(FieldTypeUtil.getIndexField(indexedFieldName, FieldType.NUMERIC_FLOAT), o.floatValue());
 	}
 
 	@Override

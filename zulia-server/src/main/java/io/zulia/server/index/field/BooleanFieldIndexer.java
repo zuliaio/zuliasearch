@@ -1,5 +1,7 @@
 package io.zulia.server.index.field;
 
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.util.BooleanUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
@@ -52,7 +54,7 @@ public class BooleanFieldIndexer extends FieldIndexer {
 								.getSimpleName() + ">");
 
 			}
-			d.add(new IntPoint(indexedFieldName, boolVal ? 1 : 0));
+			d.add(new IntPoint(FieldTypeUtil.getIndexField(indexedFieldName, FieldType.BOOL), boolVal ? 1 : 0));
 		}
 	}
 

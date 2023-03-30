@@ -54,13 +54,10 @@ public class NumericFieldStatInfo extends FacetInfo implements OrdinalConsumer {
 		else if (FieldTypeUtil.isNumericFloatFieldType(numericFieldType)) {
 			facetStatStorage = new DoubleMapStatOrdinalStorage(() -> new FloatDoubleStats(facetPrecision));
 		}
-		else if (FieldTypeUtil.isNumericLongFieldType(numericFieldType)) {
+		else if (FieldTypeUtil.isStoredAsLong(numericFieldType)) {
 			facetStatStorage = new LongMapStatOrdinalStorage(() -> new LongLongStats(facetPrecision));
 		}
-		else if (FieldTypeUtil.isNumericIntFieldType(numericFieldType)) {
-			facetStatStorage = new LongMapStatOrdinalStorage(() -> new IntLongStats(facetPrecision));
-		}
-		else if (FieldTypeUtil.isBooleanFieldType(numericFieldType)) {
+		else if (FieldTypeUtil.isStoredAsInt(numericFieldType)) {
 			facetStatStorage = new LongMapStatOrdinalStorage(() -> new IntLongStats(facetPrecision));
 		}
 		else {
@@ -76,13 +73,10 @@ public class NumericFieldStatInfo extends FacetInfo implements OrdinalConsumer {
 		else if (FieldTypeUtil.isNumericFloatFieldType(numericFieldType)) {
 			globalStats = new FloatDoubleStats(precision);
 		}
-		else if (FieldTypeUtil.isNumericLongFieldType(numericFieldType)) {
+		else if (FieldTypeUtil.isStoredAsLong(numericFieldType)) {
 			globalStats = new LongLongStats(precision);
 		}
-		else if (FieldTypeUtil.isNumericIntFieldType(numericFieldType)) {
-			globalStats = new IntLongStats(precision);
-		}
-		else if (FieldTypeUtil.isBooleanFieldType(numericFieldType)) {
+		else if (FieldTypeUtil.isStoredAsInt(numericFieldType)) {
 			globalStats = new IntLongStats(precision);
 		}
 		else {

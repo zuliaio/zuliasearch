@@ -15,13 +15,14 @@ import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.analysis.highlight.ZuliaHighlighter;
 import io.zulia.server.analysis.similarity.ConstantSimilarity;
 import io.zulia.server.analysis.similarity.TFSimilarity;
+import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.config.SortFieldInfo;
 import io.zulia.server.exceptions.WrappedCheckedException;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.aggregation.AggregationHandler;
-import io.zulia.server.search.queryparser.ZuliaParser;
 import io.zulia.server.util.FieldAndSubFields;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
@@ -29,7 +30,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetsCollector;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
@@ -61,8 +61,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-import static io.zulia.ZuliaConstants.SORT_SUFFIX;
-
 public class ShardReader implements AutoCloseable {
 
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
@@ -71,7 +69,6 @@ public class ShardReader implements AutoCloseable {
 	private final static Set<String> fetchSetWithDocument = Set.of(ZuliaConstants.ID_FIELD, ZuliaConstants.TIMESTAMP_FIELD, ZuliaConstants.STORED_META_FIELD,
 			ZuliaConstants.STORED_DOC_FIELD);
 
-	private final FacetsConfig facetsConfig;
 	private final DirectoryReader indexReader;
 	private final DirectoryTaxonomyReader taxoReader;
 	private final ServerIndexConfig indexConfig;
@@ -82,12 +79,11 @@ public class ShardReader implements AutoCloseable {
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> pinnedQueryResultCache;
 
-	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, FacetsConfig facetsConfig,
-			ServerIndexConfig indexConfig, ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
+	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
+			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
 		this.shardNumber = shardNumber;
 		this.indexReader = indexReader;
 		this.taxoReader = taxoReader;
-		this.facetsConfig = facetsConfig;
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
@@ -330,7 +326,7 @@ public class ShardReader implements AutoCloseable {
 
 	}
 
-	private List<AnalysisHandler> getAnalysisHandlerList(List<ZuliaQuery.AnalysisRequest> analysisRequests) throws Exception {
+	private List<AnalysisHandler> getAnalysisHandlerList(List<ZuliaQuery.AnalysisRequest> analysisRequests) {
 		if (analysisRequests.isEmpty()) {
 			return Collections.emptyList();
 		}
@@ -383,10 +379,12 @@ public class ShardReader implements AutoCloseable {
 		return new PerFieldSimilarityWrapper() {
 			@Override
 			public org.apache.lucene.search.similarities.Similarity get(String name) {
-
-				AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsForIndexField(name);
+				IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(name);
+				System.out.println("get sim: " + name);
+				ZuliaIndex.IndexAs indexAs = indexFieldInfo.getIndexAs();
+				AnalyzerSettings analyzerSettings = indexAs != null ? indexConfig.getAnalyzerSettingsByName(indexAs.getAnalyzerName()) : null;
 				ZuliaBase.Similarity similarity = ZuliaBase.Similarity.BM25;
-				if (analyzerSettings != null && analyzerSettings.getSimilarity() != null) {
+				if (analyzerSettings != null) {
 					similarity = analyzerSettings.getSimilarity();
 				}
 
@@ -446,44 +444,30 @@ public class ShardReader implements AutoCloseable {
 		for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
 			boolean reverse = ZuliaQuery.FieldSort.Direction.DESCENDING.equals(fs.getDirection());
 
-			String rewrittenField = ZuliaParser.rewriteLengthFields(fs.getSortField());
-
 			String sortField = fs.getSortField();
-
-			boolean lengthField = !rewrittenField.equals(sortField);
-
-			FieldType sortFieldType = indexConfig.getFieldTypeForSortField(sortField);
-
-			if (!lengthField) {
-				if (sortFieldType == null) {
-					throw new IllegalArgumentException("Field <" + sortField + "> is not defined as sortable");
-				}
-			}
-			else {
-				String fieldName = ZuliaParser.removeLengthBars(sortField);
-				FieldType fieldType = indexConfig.getFieldTypeForIndexField(fieldName);
-				if (fieldType == null) {
-					throw new IllegalArgumentException("Cannot sort on length of indexed field <" + fieldName + "> because no field is indexed with that name");
-				}
-				if (rewrittenField.startsWith(ZuliaConstants.CHAR_LENGTH_PREFIX) && !FieldTypeUtil.isStringFieldType(fieldType)) {
-					throw new IllegalArgumentException("Cannot sort on character length of indexed field <" + fieldName + "> because it is not a string field");
-				}
-			}
 
 			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
 				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
+				continue;
 			}
-			else if (lengthField) {
-				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
+
+			SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
+
+			FieldType sortFieldType = sortFieldInfo.getFieldType();
+			String internalSortFieldName = sortFieldInfo.getInternalSortFieldName();
+
+			if (FieldTypeUtil.isStringFieldType(sortFieldType)) {
+
+				SortedSetSelector.Type sortedSetSelector = SortedSetSelector.Type.MIN;
 				if (reverse) {
-					sortedNumericSelector = SortedNumericSelector.Type.MAX;
+					sortedSetSelector = SortedSetSelector.Type.MAX;
 				}
 
-				SortedNumericSortField e = new SortedNumericSortField(rewrittenField + SORT_SUFFIX, SortField.Type.INT, reverse, sortedNumericSelector);
-				e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
-				sortFields.add(e);
+				SortedSetSortField setSortField = new SortedSetSortField(internalSortFieldName, reverse, sortedSetSelector);
+				setSortField.setMissingValue(!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
+				sortFields.add(setSortField);
 			}
-			else if (FieldTypeUtil.isNumericOrDateFieldType(sortFieldType)) {
+			else {
 
 				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
 				if (reverse) {
@@ -491,10 +475,10 @@ public class ShardReader implements AutoCloseable {
 				}
 
 				SortField.Type type;
-				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
+				if (FieldTypeUtil.isStoredAsInt(sortFieldType)) {
 					type = SortField.Type.INT;
 				}
-				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType) || FieldTypeUtil.isDateFieldType(sortFieldType)) {
+				else if (FieldTypeUtil.isStoredAsLong(sortFieldType)) {
 					type = SortField.Type.LONG;
 				}
 				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
@@ -507,11 +491,11 @@ public class ShardReader implements AutoCloseable {
 					throw new Exception("Invalid numeric sort type <" + sortFieldType + "> for sort field <" + sortField + ">");
 				}
 
-				SortedNumericSortField e = new SortedNumericSortField(indexConfig.getSortField(sortField, sortFieldType), type, reverse, sortedNumericSelector);
-				if (FieldTypeUtil.isNumericIntFieldType(sortFieldType)) {
+				SortedNumericSortField e = new SortedNumericSortField(internalSortFieldName, type, reverse, sortedNumericSelector);
+				if (FieldTypeUtil.isStoredAsInt(sortFieldType)) {
 					e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
 				}
-				else if (FieldTypeUtil.isNumericLongFieldType(sortFieldType) || FieldTypeUtil.isDateFieldType(sortFieldType)) {
+				else if (FieldTypeUtil.isStoredAsLong(sortFieldType)) {
 					e.setMissingValue(!fs.getMissingLast() ? Long.MIN_VALUE : Long.MAX_VALUE);
 				}
 				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
@@ -522,27 +506,6 @@ public class ShardReader implements AutoCloseable {
 				}
 
 				sortFields.add(e);
-			}
-			else if (FieldTypeUtil.isBooleanFieldType(sortFieldType)) {
-				SortedNumericSelector.Type sortedNumericSelector = SortedNumericSelector.Type.MIN;
-				if (reverse) {
-					sortedNumericSelector = SortedNumericSelector.Type.MAX;
-				}
-				SortedNumericSortField e = new SortedNumericSortField(indexConfig.getSortField(sortField, sortFieldType), SortField.Type.INT, reverse,
-						sortedNumericSelector);
-				e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
-				sortFields.add(e);
-			}
-			else {
-
-				SortedSetSelector.Type sortedSetSelector = SortedSetSelector.Type.MIN;
-				if (reverse) {
-					sortedSetSelector = SortedSetSelector.Type.MAX;
-				}
-
-				SortedSetSortField setSortField = new SortedSetSortField(indexConfig.getSortField(sortField, sortFieldType), reverse, sortedSetSelector);
-				setSortField.setMissingValue(!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
-				sortFields.add(setSortField);
 			}
 
 		}
@@ -667,32 +630,28 @@ public class ShardReader implements AutoCloseable {
 				continue;
 			}
 
-			FieldType fieldTypeForSortField = indexConfig.getFieldTypeForSortField(sortField);
-
-			if (!ZuliaParser.rewriteLengthFields(sortField).equals(sortField)) {
-				fieldTypeForSortField = FieldType.NUMERIC_INT;
-			}
+			SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
+			FieldType fieldType = sortFieldInfo.getFieldType();
 
 			ZuliaQuery.SortValue.Builder sortValueBuilder = ZuliaQuery.SortValue.newBuilder().setExists(true);
-			if (FieldTypeUtil.isNumericOrDateFieldType(fieldTypeForSortField)) {
-				if (FieldTypeUtil.isNumericIntFieldType(fieldTypeForSortField)) {
+			if (FieldTypeUtil.isHandledAsNumericFieldType(fieldType)) {
+				if (FieldTypeUtil.isStoredAsInt(fieldType)) {
 					sortValueBuilder.setIntegerValue((Integer) o);
 				}
-				else if (FieldTypeUtil.isNumericLongFieldType(fieldTypeForSortField)) {
+				else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
 					sortValueBuilder.setLongValue((Long) o);
 				}
-				else if (FieldTypeUtil.isNumericFloatFieldType(fieldTypeForSortField)) {
-					sortValueBuilder.setFloatValue((Float) o);
-				}
-				else if (FieldTypeUtil.isNumericDoubleFieldType(fieldTypeForSortField)) {
-					sortValueBuilder.setDoubleValue((Double) o);
-				}
-				else if (FieldTypeUtil.isDateFieldType(fieldTypeForSortField)) {
+				else if (FieldTypeUtil.isDateFieldType(fieldType)) {
+					//TODO should this just use the LongValue and isStoredAsLong(fieldType) above
 					sortValueBuilder.setDateValue((Long) o);
 				}
-			}
-			else if (FieldTypeUtil.isBooleanFieldType(fieldTypeForSortField)) {
-				sortValueBuilder.setIntegerValue((Integer) o);
+				else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+					sortValueBuilder.setFloatValue((Float) o);
+				}
+				else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+					sortValueBuilder.setDoubleValue((Double) o);
+				}
+
 			}
 			else {
 				BytesRef b = (BytesRef) o;
@@ -710,7 +669,9 @@ public class ShardReader implements AutoCloseable {
 		for (ZuliaHighlighter highlighter : highlighterList) {
 			ZuliaQuery.HighlightRequest highlightRequest = highlighter.getHighlight();
 			String indexField = highlightRequest.getField();
-			String storedFieldName = indexConfig.getStoredFieldName(indexField);
+			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexField);
+			//TODO throw error?
+			String storedFieldName = indexFieldInfo != null ? indexFieldInfo.getStoredFieldName() : null;
 
 			if (storedFieldName != null) {
 				ZuliaQuery.HighlightResult.Builder highLightResult = ZuliaQuery.HighlightResult.newBuilder();
@@ -909,7 +870,7 @@ public class ShardReader implements AutoCloseable {
 				tr = taxoReader;
 			}
 
-			return new ShardReader(shardNumber, r, tr, facetsConfig, indexConfig, zuliaPerFieldAnalyzer);
+			return new ShardReader(shardNumber, r, tr, indexConfig, zuliaPerFieldAnalyzer);
 		}
 
 	}

@@ -4,7 +4,6 @@ import io.zulia.ZuliaConstants;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
@@ -27,7 +26,7 @@ public class ShardWriteManager {
 	private final static Logger LOG = Logger.getLogger(ShardWriteManager.class.getSimpleName());
 
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
-	private final FacetsConfig facetsConfig;
+
 	private final ShardDocumentIndexer shardDocumentIndexer;
 	private final ServerIndexConfig indexConfig;
 	private final int shardNumber;
@@ -42,12 +41,11 @@ public class ShardWriteManager {
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 
-	public ShardWriteManager(int shardNumber, Path pathToIndex, Path pathToTaxoIndex, FacetsConfig facetsConfig, ServerIndexConfig indexConfig,
+	public ShardWriteManager(int shardNumber, Path pathToIndex, Path pathToTaxoIndex, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
 
 		this.shardNumber = shardNumber;
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
-		this.facetsConfig = facetsConfig;
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
 
@@ -122,7 +120,7 @@ public class ShardWriteManager {
 		DirectoryReader indexReader = DirectoryReader.open(indexWriter);
 		DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 		taxoReader.setCacheSize(128000);
-		return new ShardReader(shardNumber, indexReader, taxoReader, facetsConfig, indexConfig, zuliaPerFieldAnalyzer);
+		return new ShardReader(shardNumber, indexReader, taxoReader, indexConfig, zuliaPerFieldAnalyzer);
 	}
 
 	public void commit() throws IOException {
@@ -202,7 +200,6 @@ public class ShardWriteManager {
 	public void deleteDocuments(String uniqueId) throws IOException {
 		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
 		indexWriter.deleteDocuments(term);
-
 	}
 
 	public void forceMerge(int maxNumberSegments) throws IOException {

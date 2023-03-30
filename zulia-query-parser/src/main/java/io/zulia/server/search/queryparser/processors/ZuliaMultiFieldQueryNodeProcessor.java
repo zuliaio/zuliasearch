@@ -17,7 +17,7 @@
 package io.zulia.server.search.queryparser.processors;
 
 import io.zulia.server.config.ServerIndexConfig;
-import io.zulia.server.search.queryparser.ZuliaParser;
+import io.zulia.server.field.FieldTypeUtil;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
@@ -55,7 +55,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 	}
 
 	@Override
-	protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
+	protected QueryNode postProcessNode(QueryNode node) {
 
 		return node;
 	}
@@ -73,7 +73,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 	}
 
 	@Override
-	protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
+	protected QueryNode preProcessNode(QueryNode node) {
 
 		if (node instanceof FieldableNode fieldNode) {
 
@@ -90,13 +90,13 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 					matchAll = "*".equals(fqn.getField().toString()) && "*".equals(fqn.getTextAsString());
 				}
 
-				List<String> fields = matchAll ? List.of(fieldsStr) : ZuliaParser.expandFields(serverIndexConfig, fieldsStr);
+				List<String> fields = matchAll ? List.of(fieldsStr) : FieldTypeUtil.expandFields(serverIndexConfig, fieldsStr);
 
 				if (fields.isEmpty()) {
 					return new MatchNoDocsQueryNode();
 				}
 
-				fieldNode.setField(ZuliaParser.rewriteLengthFields(fields.get(0)));
+				fieldNode.setField(fields.get(0));
 
 				if (fields.size() == 1) {
 					return fieldNode;
@@ -107,14 +107,14 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 			}
 			else if (fieldNode.getField() == null) {
 
-				List<String> fields = ZuliaParser.expandFields(serverIndexConfig, getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS));
+				List<String> fields = FieldTypeUtil.expandFields(serverIndexConfig, getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS));
 
 				if (fields == null) {
 					throw new IllegalArgumentException("StandardQueryConfigHandler.ConfigurationKeys.MULTI_FIELDS should be set on the QueryConfigHandler");
 				}
 
 				if (fields.size() > 0) {
-					fieldNode.setField(ZuliaParser.rewriteLengthFields(fields.get(0)));
+					fieldNode.setField((fields.get(0)));
 
 					if (fields.size() == 1) {
 						return fieldNode;
@@ -138,7 +138,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 		for (int i = 1; i < fields.size(); i++) {
 			try {
 				fieldNode = (FieldableNode) fieldNode.cloneTree();
-				fieldNode.setField(ZuliaParser.rewriteLengthFields(fields.get(i)));
+				fieldNode.setField(fields.get(i));
 				children.add(fieldNode);
 			}
 			catch (CloneNotSupportedException e) {

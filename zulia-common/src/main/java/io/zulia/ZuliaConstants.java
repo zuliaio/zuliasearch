@@ -94,4 +94,5 @@ public interface ZuliaConstants {
 
 	String FACET_PATH_DELIMITER = "/";
 
+	String FACET_DRILL_DOWN_FIELD = "$facets";
 }

@@ -1,28 +1,26 @@
 package io.zulia.server.search.queryparser.node;
 
-import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.server.config.IndexFieldInfo;
 import org.apache.lucene.queryparser.flexible.standard.nodes.AbstractRangeQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
 
 public class ZuliaPointRangeQueryNode extends AbstractRangeQueryNode<PointQueryNode> {
 
-	public FieldType fieldType;
-	private String sortField;
+	private IndexFieldInfo indexFieldInfo;
 
-	public ZuliaPointRangeQueryNode(PointQueryNode lower, PointQueryNode upper, boolean lowerInclusive, boolean upperInclusive, FieldType fieldType,
-			String sortField) {
-		setBounds(lower, upper, lowerInclusive, upperInclusive, fieldType, sortField);
+	public ZuliaPointRangeQueryNode(PointQueryNode lower, PointQueryNode upper, boolean lowerInclusive, boolean upperInclusive, IndexFieldInfo indexFieldInfo) {
+		setBounds(lower, upper, lowerInclusive, upperInclusive, indexFieldInfo);
 	}
 
-	public void setBounds(PointQueryNode lower, PointQueryNode upper, boolean lowerInclusive, boolean upperInclusive, FieldType fieldType, String sortField) {
+	public void setBounds(PointQueryNode lower, PointQueryNode upper, boolean lowerInclusive, boolean upperInclusive, IndexFieldInfo indexFieldInfo) {
 
 		super.setBounds(lower, upper, lowerInclusive, upperInclusive);
-		this.fieldType = fieldType;
-		this.sortField = sortField;
+		this.indexFieldInfo = indexFieldInfo;
+
 	}
 
-	public FieldType getFieldConfig() {
-		return this.fieldType;
+	public IndexFieldInfo getIndexFieldMapping() {
+		return indexFieldInfo;
 	}
 
 	@Override
@@ -32,10 +30,18 @@ public class ZuliaPointRangeQueryNode extends AbstractRangeQueryNode<PointQueryN
 		sb.append(isLowerInclusive());
 		sb.append("' upperInclusive='");
 		sb.append(isUpperInclusive());
-		sb.append("' fieldType='");
-		sb.append(fieldType);
-		sb.append("' sortField='");
-		sb.append(sortField);
+		sb.append("' indexFieldInfo.storedFieldName='");
+		sb.append(indexFieldInfo.getStoredFieldName());
+		sb.append("' indexFieldInfo.internalFieldName='");
+		sb.append(indexFieldInfo.getInternalFieldName());
+		sb.append("' indexFieldInfo.internalSortFieldName='");
+		sb.append(indexFieldInfo.getInternalSortFieldName());
+		sb.append("' indexFieldInfo.fieldType='");
+		sb.append(indexFieldInfo.getFieldType());
+		sb.append("' indexFieldInfo.indexAs.analyzerName='");
+		sb.append(indexFieldInfo.getIndexAs().getAnalyzerName());
+		sb.append("' indexFieldInfo.indexAs.indexFieldName='");
+		sb.append(indexFieldInfo.getIndexAs().getIndexFieldName());
 		sb.append("'>\n");
 		sb.append(getLowerBound()).append('\n');
 		sb.append(getUpperBound()).append('\n');

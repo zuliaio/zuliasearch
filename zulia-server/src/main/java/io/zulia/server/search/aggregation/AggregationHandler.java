@@ -18,9 +18,9 @@ package io.zulia.server.search.aggregation;
 
 import com.koloboke.collect.map.ObjObjMap;
 import com.koloboke.collect.map.hash.HashObjObjMaps;
-import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.config.SortFieldInfo;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.aggregation.facets.BinaryFacetReader;
 import io.zulia.server.search.aggregation.facets.CountFacetInfo;
@@ -66,17 +66,19 @@ public class AggregationHandler {
 
 			NumericFieldStatInfo fieldStatInfo = fieldToDimensions.computeIfAbsent(numericField, s -> {
 
-				ZuliaIndex.FieldConfig.FieldType numericFieldType = serverIndexConfig.getFieldTypeForSortField(numericField);
-				if (numericFieldType == null) {
+				SortFieldInfo numericSortFieldInfo = serverIndexConfig.getSortFieldInfo(numericField);
+				if (numericSortFieldInfo == null) {
+					//TODO fix this message to mention char list and list length
 					throw new IllegalArgumentException("Numeric field <" + numericField + "> must be indexed as a SORTABLE numeric field");
 				}
-				if (!FieldTypeUtil.isNumericFieldType(numericFieldType)) {
+				if (!FieldTypeUtil.isHandledAsNumericFieldType(numericSortFieldInfo.getFieldType())) {
+					//TODO fix this message to mention char list and list length
 					throw new IllegalArgumentException("Numeric field <" + numericField + "> must be indexed as a sortable NUMERIC field");
 				}
 
 				NumericFieldStatInfo info = new NumericFieldStatInfo(numericField);
-				info.setSortFieldName(serverIndexConfig.getSortField(numericField, numericFieldType));
-				info.setNumericFieldType(numericFieldType);
+				info.setSortFieldName(numericSortFieldInfo.getInternalSortFieldName());
+				info.setNumericFieldType(numericSortFieldInfo.getFieldType());
 
 				return info;
 			});

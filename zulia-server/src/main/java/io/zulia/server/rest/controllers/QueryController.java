@@ -386,7 +386,7 @@ public class QueryController {
 
 	}
 
-	private String buildHeaderForCSV(@Parameter(ZuliaConstants.FIELDS) List<String> fields) throws Exception {
+	private String buildHeaderForCSV(@Parameter(ZuliaConstants.FIELDS) List<String> fields) {
 
 		StringBuilder headerBuilder = new StringBuilder();
 		fields.stream().filter(field -> !field.startsWith("-")).forEach(field -> headerBuilder.append(field).append(","));
