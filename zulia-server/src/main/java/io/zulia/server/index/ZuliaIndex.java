@@ -49,8 +49,9 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
-import org.apache.lucene.facet.DrillDownQuery;
 import org.apache.lucene.facet.FacetsConfig;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause;
@@ -61,6 +62,7 @@ import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
 
@@ -542,15 +544,39 @@ public class ZuliaIndex {
 		if (qr.hasFacetRequest()) {
 			FacetRequest facetRequest = qr.getFacetRequest();
 
-			List<Facet> drillDownList = facetRequest.getDrillDownList();
+			List<ZuliaQuery.DrillDown> drillDownList = facetRequest.getDrillDownList();
 			if (!drillDownList.isEmpty()) {
 
-				//TODO fix me
-				DrillDownQuery drillDownQuery = new DrillDownQuery(new FacetsConfig());
-				for (Facet drillDown : drillDownList) {
-					drillDownQuery.add(drillDown.getLabel(), drillDown.getValue());
+				BooleanQuery.Builder drillDownQueries = new BooleanQuery.Builder();
+
+				boolean allNegative = true;
+				for (ZuliaQuery.DrillDown drillDown : drillDownList) {
+					if (!drillDown.getExclude()) {
+						allNegative = false;
+					}
+
+					BooleanQuery.Builder drillDownQuery = new BooleanQuery.Builder();
+
+					for (Facet facet : drillDown.getFacetValueList()) {
+
+						String[] path = facet.getPathList().toArray(String[]::new);
+						FacetLabel facetLabel = new FacetLabel(facet.getValue(), path);
+
+						TermQuery query = new TermQuery(
+								new Term(ZuliaConstants.FACET_DRILL_DOWN_FIELD, FacetsConfig.pathToString(drillDown.getLabel(), facetLabel.components)));
+						drillDownQuery.add(query,
+								ZuliaQuery.Query.Operator.OR.equals(drillDown.getOperator()) ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST);
+
+					}
+					drillDownQuery.setMinimumNumberShouldMatch(drillDown.getMm());
+					drillDownQueries.add(
+							new BooleanClause(drillDownQuery.build(), drillDown.getExclude() ? BooleanClause.Occur.MUST_NOT : BooleanClause.Occur.FILTER));
 				}
-				clauses.add(new BooleanClause(drillDownQuery, BooleanClause.Occur.FILTER));
+				if (allNegative) {
+					drillDownQueries.add(new BooleanClause(new MatchAllDocsQuery(), BooleanClause.Occur.FILTER));
+				}
+
+				clauses.add(new BooleanClause(drillDownQueries.build(), BooleanClause.Occur.FILTER));
 			}
 
 		}

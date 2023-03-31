@@ -7,6 +7,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.*;
 import io.zulia.client.command.builder.CountFacet;
+import io.zulia.client.command.builder.DrillDown;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.Highlight;
 import io.zulia.client.command.builder.NumericSetQuery;
@@ -555,7 +556,7 @@ public class WikiExamples {
 
 	public void countFacetDrillDown(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		Search search = new Search("myIndexName").setAmount(100);
-		search.addFacetDrillDown("issn", "1111-1111");
+		search.addFacetDrillDown(new DrillDown("issn").addValue("1111-1111"));
 		SearchResult searchResult = zuliaWorkPool.search(search);
 	}
 
