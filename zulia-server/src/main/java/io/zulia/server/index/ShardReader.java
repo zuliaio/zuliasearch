@@ -380,7 +380,6 @@ public class ShardReader implements AutoCloseable {
 			@Override
 			public org.apache.lucene.search.similarities.Similarity get(String name) {
 				IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(name);
-				System.out.println("get sim: " + name);
 				ZuliaIndex.IndexAs indexAs = indexFieldInfo.getIndexAs();
 				AnalyzerSettings analyzerSettings = indexAs != null ? indexConfig.getAnalyzerSettingsByName(indexAs.getAnalyzerName()) : null;
 				ZuliaBase.Similarity similarity = ZuliaBase.Similarity.BM25;
