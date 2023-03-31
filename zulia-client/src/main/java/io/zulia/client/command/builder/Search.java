@@ -8,7 +8,6 @@ import io.zulia.client.result.SearchResult;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaQuery;
-import io.zulia.message.ZuliaQuery.Facet;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaQuery.FieldSimilarity;
 import io.zulia.message.ZuliaQuery.LastResult;
@@ -25,6 +24,7 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 	private final QueryRequest.Builder queryRequest = QueryRequest.newBuilder();
 	private final ZuliaQuery.FacetRequest.Builder facetRequest = ZuliaQuery.FacetRequest.newBuilder();
 	private final ZuliaQuery.SortRequest.Builder sortRequest = ZuliaQuery.SortRequest.newBuilder();
+
 
 	public Search(String... indexes) {
 		this(Arrays.asList(indexes));
@@ -148,12 +148,12 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
-	public Search addFacetDrillDown(String label, String path) {
-		facetRequest.addDrillDown(Facet.newBuilder().setLabel(label).setValue(path).build());
+	public Search addFacetDrillDown(DrillDownBuilder drillDownBuilder) {
+		facetRequest.addDrillDown(drillDownBuilder.getDrillDown());
 		return this;
 	}
 
-	public List<Facet> getFacetDrillDowns() {
+	public List<ZuliaQuery.DrillDown> getFacetDrillDowns() {
 		return facetRequest.getDrillDownList();
 	}
 

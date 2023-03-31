@@ -24,7 +24,11 @@ import java.io.Writer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -255,14 +259,24 @@ public class QueryController {
 				}
 			}
 
-			if (drillDowns != null) {
+			if (drillDowns != null && !drillDowns.isEmpty()) {
+
+				Map<String, Set<String>> labelToValues = new HashMap<>();
+
 				for (String drillDown : drillDowns) {
 					if (drillDown.contains(":")) {
-						String value = drillDown.substring(drillDown.indexOf(":") + 1);
 						String field = drillDown.substring(0, drillDown.indexOf(":"));
-						frBuilder.addDrillDown(Facet.newBuilder().setLabel(field).setValue(value));
+						String value = drillDown.substring(drillDown.indexOf(":") + 1);
+						labelToValues.computeIfAbsent(field, s -> new HashSet<>()).add(value);
 					}
 				}
+
+				for (String label : labelToValues.keySet()) {
+					Set<String> values = labelToValues.get(label);
+					List<Facet> facetValues = values.stream().map(s -> Facet.newBuilder().setValue(s).build()).toList();
+					frBuilder.addDrillDown(DrillDown.newBuilder().setLabel(label).addAllFacetValue(facetValues));
+				}
+
 			}
 
 			qrBuilder.setFacetRequest(frBuilder);
