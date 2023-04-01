@@ -56,6 +56,7 @@ import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.KnnFloatVectorQuery;
@@ -562,8 +563,8 @@ public class ZuliaIndex {
 						String[] path = facet.getPathList().toArray(String[]::new);
 						FacetLabel facetLabel = new FacetLabel(facet.getValue(), path);
 
-						TermQuery query = new TermQuery(
-								new Term(ZuliaConstants.FACET_DRILL_DOWN_FIELD, FacetsConfig.pathToString(drillDown.getLabel(), facetLabel.components)));
+						Query query = new ConstantScoreQuery(new TermQuery(
+								new Term(ZuliaConstants.FACET_DRILL_DOWN_FIELD, FacetsConfig.pathToString(drillDown.getLabel(), facetLabel.components))));
 						drillDownQuery.add(query,
 								ZuliaQuery.Query.Operator.OR.equals(drillDown.getOperator()) ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST);
 
