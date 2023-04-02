@@ -452,6 +452,11 @@ public class ShardReader implements AutoCloseable {
 
 			SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
 
+			if (sortFieldInfo == null) {
+
+				throw new Exception("Field  <" + sortField + "> must be sortable");
+			}
+
 			FieldType sortFieldType = sortFieldInfo.getFieldType();
 			String internalSortFieldName = sortFieldInfo.getInternalSortFieldName();
 
