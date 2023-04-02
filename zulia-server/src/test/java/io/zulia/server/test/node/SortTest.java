@@ -655,6 +655,10 @@ public class SortTest {
 		search.addSort(new Sort("stars").descending());
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search), "Expected: Field <stars> is not defined as sortable");
 
+		search.clearSort();
+		search.addSort(new Sort("blahblah").descending());
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search), "Expected: Field <blahblah> is not defined as sortable");
+
 	}
 
 	@Test
