@@ -8,13 +8,17 @@ import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryBuilder;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
+import org.apache.lucene.search.IndexSortSortedNumericDocValuesRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.NumericUtils;
 
 public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 
@@ -39,6 +43,7 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 		FieldType fieldType = indexFieldInfo.getFieldType();
 
 		String field = indexFieldInfo.getInternalFieldName();
+		String sortField = indexFieldInfo.getInternalSortFieldName();
 		boolean minInclusive = numericRangeNode.isLowerInclusive();
 		boolean maxInclusive = numericRangeNode.isUpperInclusive();
 
@@ -58,7 +63,9 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			if (!maxInclusive) {
 				upper = upper - 1;
 			}
-			return IntPoint.newRangeQuery(field, lower, upper);
+			Query fallbackQuery = new IndexOrDocValuesQuery(IntPoint.newRangeQuery(field, lower, upper),
+					SortedNumericDocValuesField.newSlowRangeQuery(sortField, lower, upper));
+			return new IndexSortSortedNumericDocValuesRangeQuery(sortField, lower, upper, fallbackQuery);
 		}
 		else if (FieldTypeUtil.isStoredAsLong(fieldType)) {
 			Long lower = (Long) lowerNumber;
@@ -76,7 +83,9 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			if (!maxInclusive) {
 				upper = upper - 1;
 			}
-			return LongPoint.newRangeQuery(field, lower, upper);
+			Query fallbackQuery = new IndexOrDocValuesQuery(LongPoint.newRangeQuery(field, lower, upper),
+					SortedNumericDocValuesField.newSlowRangeQuery(sortField, lower, upper));
+			return new IndexSortSortedNumericDocValuesRangeQuery(sortField, lower, upper, fallbackQuery);
 		}
 		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
 			Float lower = (Float) lowerNumber;
@@ -94,7 +103,8 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			if (!maxInclusive) {
 				upper = Math.nextDown(upper);
 			}
-			return FloatPoint.newRangeQuery(field, lower, upper);
+			return new IndexOrDocValuesQuery(FloatPoint.newRangeQuery(field, lower, upper),
+					SortedNumericDocValuesField.newSlowRangeQuery(sortField, NumericUtils.floatToSortableInt(lower), NumericUtils.floatToSortableInt(upper)));
 		}
 		else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
 			Double lower = (Double) lowerNumber;
@@ -112,7 +122,9 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			if (!maxInclusive) {
 				upper = Math.nextDown(upper);
 			}
-			return DoublePoint.newRangeQuery(field, lower, upper);
+			return new IndexOrDocValuesQuery(DoublePoint.newRangeQuery(field, lower, upper),
+					SortedNumericDocValuesField.newSlowRangeQuery(sortField, NumericUtils.doubleToSortableLong(lower),
+							NumericUtils.doubleToSortableLong(upper)));
 		}
 		else {
 			throw new QueryNodeException(new MessageImpl(QueryParserMessages.UNSUPPORTED_NUMERIC_DATA_TYPE, fieldType));
