@@ -45,8 +45,12 @@ public class AnalysisHandler {
 		this.analysisRequest = analysisRequest;
 		this.indexField = analysisRequest.getField();
 		IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexField);
-		//TODO throw error?
-		this.storedFieldName = indexFieldInfo != null ? indexFieldInfo.getStoredFieldName() : null;
+
+		if (indexFieldInfo == null) {
+			throw new RuntimeException("Cannot analyze not indexed field <" + indexField + ">");
+		}
+
+		this.storedFieldName = indexFieldInfo.getStoredFieldName();
 		this.analyzer = analyzer;
 
 		this.summaryType = analysisRequest.getSummaryType();

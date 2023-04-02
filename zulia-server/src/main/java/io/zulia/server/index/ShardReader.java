@@ -674,7 +674,11 @@ public class ShardReader implements AutoCloseable {
 			ZuliaQuery.HighlightRequest highlightRequest = highlighter.getHighlight();
 			String indexField = highlightRequest.getField();
 			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexField);
-			//TODO throw error?
+
+			if (indexFieldInfo == null) {
+				throw new RuntimeException("Cannot highlight non-indexed field <" + indexField + ">");
+			}
+
 			String storedFieldName = indexFieldInfo != null ? indexFieldInfo.getStoredFieldName() : null;
 
 			if (storedFieldName != null) {
