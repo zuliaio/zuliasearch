@@ -46,6 +46,7 @@ import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -59,12 +60,14 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -397,6 +400,7 @@ public class ZuliaIndex {
 	}
 
 	private TermInSetQuery getTermInSetQuery(ZuliaQuery.Query query, String field) {
+
 		List<BytesRef> termBytesRef = new ArrayList<>();
 		for (String term : query.getTermList()) {
 			termBytesRef.add(new BytesRef(term));
@@ -430,6 +434,7 @@ public class ZuliaIndex {
 
 		FieldConfig.FieldType fieldType = indexFieldInfo.getFieldType();
 		String searchField = indexFieldInfo.getInternalFieldName();
+		String sortField = indexFieldInfo.getInternalSortFieldName();
 
 		ZuliaQuery.NumericSet numericSet = query.getNumericSet();
 
@@ -442,28 +447,52 @@ public class ZuliaIndex {
 				if (integerValueList.isEmpty()) {
 					throw new IllegalArgumentException("No integer values for integer field <" + field + "> for numeric set query");
 				}
-				return IntPoint.newSetQuery(searchField, integerValueList);
+
+				Query pointQuery = IntPoint.newSetQuery(searchField, integerValueList);
+				if (sortField == null) {
+					return pointQuery;
+				}
+				long[] pointsArray = integerValueList.stream().mapToLong(Integer::intValue).toArray();
+				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
 			}
 			else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
 				List<Long> longValueList = numericSet.getLongValueList();
 				if (longValueList.isEmpty()) {
 					throw new IllegalArgumentException("No long values for long field <" + field + "> for numeric set query");
 				}
-				return LongPoint.newSetQuery(searchField, longValueList);
+
+				Query pointQuery = LongPoint.newSetQuery(searchField, longValueList);
+				if (sortField == null) {
+					return pointQuery;
+				}
+				long[] pointsArray = longValueList.stream().mapToLong(Long::longValue).toArray();
+				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
 			}
 			else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
 				List<Float> floatValueList = numericSet.getFloatValueList();
 				if (floatValueList.isEmpty()) {
 					throw new IllegalArgumentException("No float values for float field <" + field + "> for numeric set query");
 				}
-				return FloatPoint.newSetQuery(searchField, floatValueList);
+
+				Query pointQuery = FloatPoint.newSetQuery(searchField, floatValueList);
+				if (sortField == null) {
+					return pointQuery;
+				}
+				long[] pointsArray = floatValueList.stream().mapToLong(NumericUtils::floatToSortableInt).toArray();
+				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
 			}
 			else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
 				List<Double> doubleValueList = numericSet.getDoubleValueList();
 				if (doubleValueList.isEmpty()) {
 					throw new IllegalArgumentException("No double values for double field <" + field + "> for numeric set query");
 				}
-				return DoublePoint.newSetQuery(searchField, doubleValueList);
+
+				Query pointQuery = DoublePoint.newSetQuery(searchField, doubleValueList);
+				if (sortField == null) {
+					return pointQuery;
+				}
+				long[] pointsArray = doubleValueList.stream().mapToLong(NumericUtils::doubleToSortableLong).toArray();
+				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
 			}
 		}
 		throw new IllegalArgumentException("No field type of <" + fieldType + "> is not supported for numeric set queries");
