@@ -83,8 +83,11 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			if (!maxInclusive) {
 				upper = upper - 1;
 			}
-			Query fallbackQuery = new IndexOrDocValuesQuery(LongPoint.newRangeQuery(field, lower, upper),
-					SortedNumericDocValuesField.newSlowRangeQuery(sortField, lower, upper));
+			Query pointQuery = LongPoint.newRangeQuery(field, lower, upper);
+			if (sortField == null) {
+				return pointQuery;
+			}
+			Query fallbackQuery = new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowRangeQuery(sortField, lower, upper));
 			return new IndexSortSortedNumericDocValuesRangeQuery(sortField, lower, upper, fallbackQuery);
 		}
 		else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
@@ -103,7 +106,11 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			if (!maxInclusive) {
 				upper = Math.nextDown(upper);
 			}
-			return new IndexOrDocValuesQuery(FloatPoint.newRangeQuery(field, lower, upper),
+			Query pointQuery = FloatPoint.newRangeQuery(field, lower, upper);
+			if (sortField == null) {
+				return pointQuery;
+			}
+			return new IndexOrDocValuesQuery(pointQuery,
 					SortedNumericDocValuesField.newSlowRangeQuery(sortField, NumericUtils.floatToSortableInt(lower), NumericUtils.floatToSortableInt(upper)));
 		}
 		else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
@@ -122,9 +129,12 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			if (!maxInclusive) {
 				upper = Math.nextDown(upper);
 			}
-			return new IndexOrDocValuesQuery(DoublePoint.newRangeQuery(field, lower, upper),
-					SortedNumericDocValuesField.newSlowRangeQuery(sortField, NumericUtils.doubleToSortableLong(lower),
-							NumericUtils.doubleToSortableLong(upper)));
+			Query pointQuery = DoublePoint.newRangeQuery(field, lower, upper);
+			if (sortField == null) {
+				return pointQuery;
+			}
+			return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowRangeQuery(sortField, NumericUtils.doubleToSortableLong(lower),
+					NumericUtils.doubleToSortableLong(upper)));
 		}
 		else {
 			throw new QueryNodeException(new MessageImpl(QueryParserMessages.UNSUPPORTED_NUMERIC_DATA_TYPE, fieldType));
