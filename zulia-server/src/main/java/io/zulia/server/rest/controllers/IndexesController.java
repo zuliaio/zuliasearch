@@ -7,7 +7,7 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
@@ -24,7 +24,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
  *
  * @author pmeyer
  */
-@Controller(ZuliaConstants.INDEXES_URL)
+@Controller(ZuliaRESTConstants.INDEXES_URL)
 public class IndexesController {
 
 	@Get
@@ -45,11 +45,11 @@ public class IndexesController {
 
 			docString = JsonWriter.formatJson(docString);
 
-			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaRESTConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaRESTConstants.INTERNAL_ERROR);
 		}
 
 	}

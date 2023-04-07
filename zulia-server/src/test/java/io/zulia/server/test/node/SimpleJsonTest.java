@@ -167,6 +167,11 @@ public class SimpleJsonTest {
 
 		Assertions.assertEquals(prettyJson, searchResult.getFirstDocumentAsPrettyJson());
 		Assertions.assertEquals(prettyJson, searchResult.getDocumentsAsPrettyJson().get(0));
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(new FilterQuery("madeUp:solr"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
 	}
 
 	@AfterAll

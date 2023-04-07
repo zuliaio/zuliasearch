@@ -19,6 +19,9 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 	public QueryRequest validateAndSetDefault(QueryRequest request) {
 		QueryRequest.Builder queryRequestBuilder = request.toBuilder();
 
+		ZuliaQuery.FetchType resultFetchType = queryRequestBuilder.getResultFetchType();
+		boolean fetchDocument = ZuliaQuery.FetchType.FULL.equals(resultFetchType) || ZuliaQuery.FetchType.ALL.equals(resultFetchType);
+
 		FacetRequest.Builder facetRequestBuilder = queryRequestBuilder.getFacetRequestBuilder();
 
 		for (ZuliaQuery.StatRequest.Builder statRequestBuilder : facetRequestBuilder.getStatRequestBuilderList()) {
@@ -73,6 +76,10 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 
 			}
 
+			if (!queryRequestBuilder.getHighlightRequestBuilderList().isEmpty() && !fetchDocument) {
+				throw new IllegalArgumentException("Highlighting requires a full fetch of the document");
+			}
+
 		}
 
 		if (queryRequestBuilder.getAnalysisRequestList() != null) {
@@ -83,6 +90,10 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 					analysisRequestBuilder.setTopN(10);
 				}
 
+			}
+
+			if (!queryRequestBuilder.getAnalysisRequestBuilderList().isEmpty() && !fetchDocument) {
+				throw new IllegalArgumentException("Analysis requires a full fetch of the document");
 			}
 
 		}

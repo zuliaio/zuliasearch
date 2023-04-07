@@ -147,7 +147,7 @@ public class TestHelper {
 		}
 	}
 
-	public static void stopNodes() throws Exception {
+	public static void stopNodes() {
 
 		for (ZuliaNode zuliaNode : zuliaNodes) {
 			zuliaNode.shutdown();

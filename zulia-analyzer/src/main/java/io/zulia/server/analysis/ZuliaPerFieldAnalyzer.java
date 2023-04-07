@@ -1,10 +1,11 @@
 package io.zulia.server.analysis;
 
-import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaIndex;
-import io.zulia.server.analysis.analyzer.BooleanAnalyzer;
+import io.zulia.message.ZuliaIndex.AnalyzerSettings;
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.server.analysis.filter.BritishUSFilter;
 import io.zulia.server.analysis.filter.CaseProtectedWordsFilter;
+import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.field.FieldTypeUtil;
 import org.apache.lucene.analysis.Analyzer;
@@ -61,27 +62,25 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 
 	public void refresh() {
 		Map<String, Analyzer> newFieldAnalyzers = new HashMap<>();
-		for (ZuliaIndex.IndexAs indexAs : indexConfig.getIndexAsValues()) {
-			String indexFieldName = indexAs.getIndexFieldName();
+		for (String indexFieldName : indexConfig.getIndexedFields()) {
 
-			ZuliaIndex.FieldConfig.FieldType fieldType = indexConfig.getFieldTypeForIndexField(indexFieldName);
-			ZuliaIndex.AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsForIndexField(indexFieldName);
+			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexFieldName);
+			ZuliaIndex.IndexAs indexAs = indexFieldInfo.getIndexAs();
+			AnalyzerSettings analyzerSettings = indexAs != null ? indexConfig.getAnalyzerSettingsByName(indexAs.getAnalyzerName()) : null;
+			FieldType fieldType = indexFieldInfo.getFieldType();
 
 			Analyzer a;
 
-			if (ZuliaIndex.FieldConfig.FieldType.STRING.equals(fieldType)) {
+			if (FieldTypeUtil.isStringFieldType(fieldType)) {
 				if (analyzerSettings != null) {
 					a = getAnalyzerForField(analyzerSettings);
 				}
 				else {
 					a = new KeywordAnalyzer();
 				}
-				newFieldAnalyzers.put(ZuliaConstants.CHAR_LENGTH_PREFIX + indexFieldName, new WhitespaceAnalyzer());
+				newFieldAnalyzers.put(FieldTypeUtil.getCharLengthIndexField(indexFieldName), new WhitespaceAnalyzer());
 			}
-			else if (ZuliaIndex.FieldConfig.FieldType.BOOL.equals(fieldType)) {
-				a = new BooleanAnalyzer();
-			}
-			else if (FieldTypeUtil.isNumericOrDateFieldType(fieldType)) {
+			else if (FieldTypeUtil.isHandledAsNumericFieldType(fieldType)) {
 				a = new WhitespaceAnalyzer();
 			}
 			else {
@@ -89,7 +88,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 			}
 
 			newFieldAnalyzers.put(indexFieldName, a);
-			newFieldAnalyzers.put(ZuliaConstants.LIST_LENGTH_PREFIX + indexFieldName, new WhitespaceAnalyzer());
+			newFieldAnalyzers.put(FieldTypeUtil.getListLengthIndexField(indexFieldName), new WhitespaceAnalyzer());
 
 		}
 
@@ -107,7 +106,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 		return "ZuliaPerFieldAnalyzerWrapper(" + fieldAnalyzers + ", default=" + defaultAnalyzer + ")";
 	}
 
-	public static Analyzer getAnalyzerForField(ZuliaIndex.AnalyzerSettings analyzerSettings) {
+	public static Analyzer getAnalyzerForField(AnalyzerSettings analyzerSettings) {
 
 		return new Analyzer() {
 
@@ -119,15 +118,15 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 			@Override
 			protected TokenStreamComponents createComponents(String fieldName) {
 
-				ZuliaIndex.AnalyzerSettings.Tokenizer tokenizer = analyzerSettings.getTokenizer();
+				AnalyzerSettings.Tokenizer tokenizer = analyzerSettings.getTokenizer();
 				Tokenizer src;
-				if (ZuliaIndex.AnalyzerSettings.Tokenizer.KEYWORD.equals(tokenizer)) {
+				if (AnalyzerSettings.Tokenizer.KEYWORD.equals(tokenizer)) {
 					src = new KeywordTokenizer();
 				}
-				else if (ZuliaIndex.AnalyzerSettings.Tokenizer.WHITESPACE.equals(tokenizer)) {
+				else if (AnalyzerSettings.Tokenizer.WHITESPACE.equals(tokenizer)) {
 					src = new WhitespaceTokenizer();
 				}
-				else if (ZuliaIndex.AnalyzerSettings.Tokenizer.STANDARD.equals(tokenizer)) {
+				else if (AnalyzerSettings.Tokenizer.STANDARD.equals(tokenizer)) {
 					src = new StandardTokenizer();
 				}
 				else {
@@ -146,41 +145,41 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 				TokenStream tok = src;
 				TokenStream lastTok = src;
 
-				List<ZuliaIndex.AnalyzerSettings.Filter> filterList = analyzerSettings.getFilterList();
-				for (ZuliaIndex.AnalyzerSettings.Filter filter : filterList) {
-					if (ZuliaIndex.AnalyzerSettings.Filter.LOWERCASE.equals(filter)) {
+				List<AnalyzerSettings.Filter> filterList = analyzerSettings.getFilterList();
+				for (AnalyzerSettings.Filter filter : filterList) {
+					if (AnalyzerSettings.Filter.LOWERCASE.equals(filter)) {
 						tok = new LowerCaseFilter(lastTok);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.UPPERCASE.equals(filter)) {
+					else if (AnalyzerSettings.Filter.UPPERCASE.equals(filter)) {
 						tok = new UpperCaseFilter(lastTok);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.ASCII_FOLDING.equals(filter)) {
+					else if (AnalyzerSettings.Filter.ASCII_FOLDING.equals(filter)) {
 						tok = new ASCIIFoldingFilter(lastTok);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.TWO_TWO_SHINGLE.equals(filter)) {
+					else if (AnalyzerSettings.Filter.TWO_TWO_SHINGLE.equals(filter)) {
 						ShingleFilter shingleFilter = new ShingleFilter(lastTok, 2, 2);
 						shingleFilter.setOutputUnigrams(false);
 						tok = shingleFilter;
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.THREE_THREE_SHINGLE.equals(filter)) {
+					else if (AnalyzerSettings.Filter.THREE_THREE_SHINGLE.equals(filter)) {
 						ShingleFilter shingleFilter = new ShingleFilter(lastTok, 3, 3);
 						shingleFilter.setOutputUnigrams(false);
 						tok = shingleFilter;
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.FOUR_FOUR_SHINGLE.equals(filter)) {
+					else if (AnalyzerSettings.Filter.FOUR_FOUR_SHINGLE.equals(filter)) {
 						ShingleFilter shingleFilter = new ShingleFilter(lastTok, 4, 4);
 						shingleFilter.setOutputUnigrams(false);
 						tok = shingleFilter;
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.FIVE_FIVE_SHINGLE.equals(filter)) {
+					else if (AnalyzerSettings.Filter.FIVE_FIVE_SHINGLE.equals(filter)) {
 						ShingleFilter shingleFilter = new ShingleFilter(lastTok, 5, 5);
 						shingleFilter.setOutputUnigrams(false);
 						tok = shingleFilter;
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.KSTEM.equals(filter)) {
+					else if (AnalyzerSettings.Filter.KSTEM.equals(filter)) {
 						tok = new KStemFilter(lastTok);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.STOPWORDS.equals(filter)) {
+					else if (AnalyzerSettings.Filter.STOPWORDS.equals(filter)) {
 						CharArraySet stopWordsSet = EnglishAnalyzer.ENGLISH_STOP_WORDS_SET;
 
 						File file = new File(System.getProperty("user.home") + File.separator + ".zulia" + File.separator + "stopwords.txt");
@@ -196,25 +195,25 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 
 						tok = new StopFilter(lastTok, stopWordsSet);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_MIN_STEM.equals(filter)) {
+					else if (AnalyzerSettings.Filter.ENGLISH_MIN_STEM.equals(filter)) {
 						tok = new EnglishMinimalStemFilter(lastTok);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.SNOWBALL_STEM.equals(filter)) {
+					else if (AnalyzerSettings.Filter.SNOWBALL_STEM.equals(filter)) {
 						tok = new SnowballFilter(lastTok, "English");
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.ENGLISH_POSSESSIVE.equals(filter)) {
+					else if (AnalyzerSettings.Filter.ENGLISH_POSSESSIVE.equals(filter)) {
 						tok = new EnglishPossessiveFilter(lastTok);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.MINHASH.equals(filter)) {
+					else if (AnalyzerSettings.Filter.MINHASH.equals(filter)) {
 						tok = new MinHashFilterFactory(Collections.emptyMap()).create(lastTok);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.BRITISH_US.equals(filter)) {
+					else if (AnalyzerSettings.Filter.BRITISH_US.equals(filter)) {
 						tok = new BritishUSFilter(lastTok);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.CONCAT_ALL.equals(filter)) {
+					else if (AnalyzerSettings.Filter.CONCAT_ALL.equals(filter)) {
 						tok = new WordDelimiterGraphFilter(lastTok, CATENATE_ALL, null);
 					}
-					else if (ZuliaIndex.AnalyzerSettings.Filter.CASE_PROTECTED_WORDS.equals(filter)) {
+					else if (AnalyzerSettings.Filter.CASE_PROTECTED_WORDS.equals(filter)) {
 						tok = new CaseProtectedWordsFilter(lastTok);
 					}
 					else {

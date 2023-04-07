@@ -57,13 +57,22 @@ message NumericSet {
 message Facet {
     string label = 1;
     string value = 2;
-    repeated  string path = 3;
+    repeated string path = 3;
 }
 
 message FacetRequest {
+    reserved 2; //old Facet drillDown
     repeated CountRequest countRequest = 1;
-    repeated Facet drillDown = 2;
     repeated StatRequest statRequest = 3;
+    repeated DrillDown drillDown = 4;
+}
+
+message DrillDown {
+    string label = 1;
+    repeated Facet facetValue = 2;
+    Query.Operator operator = 3; // default OR
+    uint32 mm = 4; // default 0
+    bool exclude = 5;
 }
 
 message StatRequest {
@@ -155,6 +164,7 @@ enum FetchType {
     FULL = 0;
     META = 1;
     NONE = 2;
+    ALL = 3;
 }
 
 message LastIndexResult {

@@ -6,6 +6,7 @@ import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.server.analysis.frequency.DocFreq;
 import io.zulia.server.analysis.frequency.TermFreq;
+import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
@@ -43,7 +44,13 @@ public class AnalysisHandler {
 	public AnalysisHandler(ShardReader shardReader, Analyzer analyzer, ServerIndexConfig indexConfig, AnalysisRequest analysisRequest) {
 		this.analysisRequest = analysisRequest;
 		this.indexField = analysisRequest.getField();
-		this.storedFieldName = indexConfig.getStoredFieldName(indexField);
+		IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexField);
+
+		if (indexFieldInfo == null) {
+			throw new RuntimeException("Cannot analyze not indexed field <" + indexField + ">");
+		}
+
+		this.storedFieldName = indexFieldInfo.getStoredFieldName();
 		this.analyzer = analyzer;
 
 		this.summaryType = analysisRequest.getSummaryType();

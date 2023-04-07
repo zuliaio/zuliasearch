@@ -16,7 +16,7 @@ public class InternalDeleteIndexAliasServerRequest extends ServerRequestHandler<
 	}
 
 	@Override
-	protected DeleteIndexAliasResponse handleCall(ZuliaIndexManager indexManager, DeleteIndexAliasRequest request) throws Exception {
+	protected DeleteIndexAliasResponse handleCall(ZuliaIndexManager indexManager, DeleteIndexAliasRequest request) {
 		return indexManager.internalDeleteIndexAlias(request);
 	}
 

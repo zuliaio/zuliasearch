@@ -13,7 +13,7 @@ import java.util.List;
 public class ResultHelperTest {
 
 	@Test
-	public void testFieldExtraction() throws Exception {
+	public void testFieldExtraction() {
 
 		Document testMongoDocument = new Document();
 		testMongoDocument.put("field1", "someVal");

@@ -1,7 +1,7 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.client.command.Reindex;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.ScoredQuery;
@@ -34,7 +34,7 @@ public class SortTest {
 
 	private static ZuliaWorkPool zuliaWorkPool;
 
-	private static final String INDEX_NAME = "titleSort";
+	private static final String INDEX_NAME = "sortTest";
 
 	@BeforeAll
 	public static void initAll() throws Exception {
@@ -329,7 +329,7 @@ public class SortTest {
 		search.clearSort();
 		search.addSort(new Sort(field).ascending().missingLast());
 		searchResult = zuliaWorkPool.search(search);
-		//mongodb bson does not support float so it comes back as a double, the search engine is indexing in float precision however
+		//mongodb bson does not support float, so it comes back as a double, the search engine is indexing in float precision however
 		Assertions.assertEquals(1.1f, (double) searchResult.getFirstDocument().get(field), 0.001f);
 
 		search.clearSort();
@@ -491,13 +491,13 @@ public class SortTest {
 		Assertions.assertEquals("40", searchResult.getFirstDocument().get("id"));
 
 		search.clearSort();
-		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD)); //default ascending
+		search.addSort(new Sort(ZuliaFieldConstants.SCORE_FIELD)); //default ascending
 		searchResult = zuliaWorkPool.search(search);
 
 		Assertions.assertEquals("30", searchResult.getFirstDocument().get("id"));
 
 		search.clearSort();
-		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD).descending());
+		search.addSort(new Sort(ZuliaFieldConstants.SCORE_FIELD).descending());
 		searchResult = zuliaWorkPool.search(search);
 
 		Assertions.assertEquals("40", searchResult.getFirstDocument().get("id"));
@@ -505,13 +505,13 @@ public class SortTest {
 		search = new Search(INDEX_NAME).setAmount(10);
 
 		search.clearSort();
-		search.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD).ascending());
+		search.addSort(new Sort(ZuliaFieldConstants.ID_SORT_FIELD).ascending());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals("0", searchResult.getFirstDocument().get("id"));
 		Assertions.assertEquals("0", searchResult.getFirstResult().getUniqueId());
 
 		search.clearSort();
-		search.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD).descending());
+		search.addSort(new Sort(ZuliaFieldConstants.ID_SORT_FIELD).descending());
 		searchResult = zuliaWorkPool.search(search);
 		//99 here instead of 199 because sorting as a string not a number
 		Assertions.assertEquals("99", searchResult.getFirstDocument().get("id"));
@@ -654,6 +654,10 @@ public class SortTest {
 		search.clearSort();
 		search.addSort(new Sort("stars").descending());
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search), "Expected: Field <stars> is not defined as sortable");
+
+		search.clearSort();
+		search.addSort(new Sort("blahblah").descending());
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search), "Expected: Field <blahblah> is not defined as sortable");
 
 	}
 

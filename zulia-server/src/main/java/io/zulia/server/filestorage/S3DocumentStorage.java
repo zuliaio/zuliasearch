@@ -151,7 +151,7 @@ public class S3DocumentStorage implements DocumentStorage {
 			case NONE, UNRECOGNIZED -> null;
 			case META ->
 					buildMetadataDocument(client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uid)).first());
-			case FULL ->
+			case FULL, ALL ->
 					buildFullDocument(client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uid)).first());
 		};
 	}
@@ -197,7 +197,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) throws Exception {
+	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) {
 		deleteAssociatedDocument(uniqueId, fileName);
 
 		Document TOC = new Document();
@@ -236,7 +236,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<String> getAssociatedFilenames(String uniqueId) throws Exception {
+	public List<String> getAssociatedFilenames(String uniqueId) {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + DOCUMENT_UNIQUE_ID_KEY, uniqueId));
 		List<String> files = new ArrayList<>();
 		found.map(doc -> doc.getString(FILENAME)).forEach(files::add);
@@ -244,7 +244,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void deleteAssociatedDocument(String uniqueId, String fileName) throws Exception {
+	public void deleteAssociatedDocument(String uniqueId, String fileName) {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION)
 				.find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, String.join("-", uniqueId, fileName)));
 		Document doc = found.first();
@@ -259,7 +259,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void deleteAssociatedDocuments(String uniqueId) throws Exception {
+	public void deleteAssociatedDocuments(String uniqueId) {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + DOCUMENT_UNIQUE_ID_KEY, uniqueId));
 		for (Document doc : found) {
 			client.getDatabase(dbName).getCollection(COLLECTION).deleteOne(Filters.eq("_id", doc.getObjectId("_id")));
@@ -273,14 +273,14 @@ public class S3DocumentStorage implements DocumentStorage {
 
 	/**
 	 * This translates the External document to look like an internal document stored in another S3 location that the zulia instance should have access too.
+	 *
 	 * @param registration
-	 * @throws Exception
 	 */
 	@Override
-	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) throws Exception {
+	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) {
 		Document reg = ZuliaUtil.byteArrayToMongoDocument(registration.getRegistration().toByteArray());
-		assert(reg.containsKey("location"));
-		assert(reg.containsKey("metadata"));
+		assert (reg.containsKey("location"));
+		assert (reg.containsKey("metadata"));
 
 		Document metadata = reg.get("metadata", Document.class);
 		metadata.put(TIMESTAMP, registration.getTimestamp());
@@ -302,14 +302,14 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void drop() throws Exception {
+	public void drop() {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find();
 		deleteAllKeys(found);
 		client.getDatabase(dbName).drop();
 	}
 
 	@Override
-	public void deleteAllDocuments() throws Exception {
+	public void deleteAllDocuments() {
 		//Gets the list of keys only that are not stored externally.
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.ne("metadata." + FILE_EXTERNAL, true));
 		deleteAllKeys(found);

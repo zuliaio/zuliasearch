@@ -9,7 +9,7 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
@@ -23,14 +23,14 @@ import java.util.logging.Logger;
  *
  * @author pmeyer
  */
-@Controller(ZuliaConstants.INDEX_URL)
+@Controller(ZuliaRESTConstants.INDEX_URL)
 public class IndexController {
 	private final static Logger LOG = Logger.getLogger(IndexController.class.getSimpleName());
 
 	@Get
 	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) String index,
-			@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
+	public HttpResponse<?> get(@QueryValue(ZuliaRESTConstants.INDEX) String index,
+			@QueryValue(value = ZuliaRESTConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -63,11 +63,11 @@ public class IndexController {
 				docString = JsonWriter.formatJson(docString);
 			}
 
-			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaRESTConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError("Failed to get index names: " + e.getMessage()).status(ZuliaRESTConstants.INTERNAL_ERROR);
 		}
 
 	}

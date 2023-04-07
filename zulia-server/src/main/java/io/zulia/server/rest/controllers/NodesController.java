@@ -7,7 +7,7 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
 import io.zulia.server.index.ZuliaIndexManager;
@@ -30,13 +30,13 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
  *
  * @author pmeyer
  */
-@Controller(ZuliaConstants.NODES_URL)
+@Controller(ZuliaRESTConstants.NODES_URL)
 public class NodesController {
 
 	@Get
 	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-	public HttpResponse<?> get(@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
-			@QueryValue(value = ZuliaConstants.ACTIVE, defaultValue = "false") Boolean active) {
+	public HttpResponse<?> get(@QueryValue(value = ZuliaRESTConstants.PRETTY, defaultValue = "true") Boolean pretty,
+			@QueryValue(value = ZuliaRESTConstants.ACTIVE, defaultValue = "false") Boolean active) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -100,11 +100,11 @@ public class NodesController {
 				docString = JsonWriter.formatJson(docString);
 			}
 
-			return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+			return HttpResponse.ok(docString).status(ZuliaRESTConstants.SUCCESS);
 
 		}
 		catch (Exception e) {
-			return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError("Failed to get cluster membership: " + e.getMessage()).status(ZuliaRESTConstants.INTERNAL_ERROR);
 		}
 
 	}

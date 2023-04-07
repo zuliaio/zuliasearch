@@ -9,7 +9,7 @@ public class ShardOfflineException extends IOException {
 	private static final long serialVersionUID = 1L;
 	private final int shardNumber;
 	private final MasterSlaveSettings masterSlaveSettings;
-	private String indexName;
+	private final String indexName;
 
 	public ShardOfflineException(String indexName, int shardNumber, MasterSlaveSettings masterSlaveSettings) {
 		super("Index <" + indexName + "> with shardNumber <" + shardNumber + "> is offline for <" + masterSlaveSettings + ">");

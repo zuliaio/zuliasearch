@@ -15,6 +15,16 @@ public class HelperTest {
 	public void valuesTest() {
 
 		{
+			String query = Values.single("fast cat").asString();
+			Assertions.assertEquals("(\"fast cat\")", query);
+		}
+
+		{
+			String query = Values.single("fast cat").withFields("title", "abstract").asString();
+			Assertions.assertEquals("title,abstract:(\"fast cat\")", query);
+		}
+
+		{
 			String query = Values.any().of("a", "b").asString();
 			Assertions.assertEquals("(a OR b)", query);
 		}

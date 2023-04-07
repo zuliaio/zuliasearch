@@ -46,6 +46,7 @@ public class FieldChangeTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("field1").indexAs(DefaultAnalyzers.STANDARD).sort().facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("field2").sort().facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("field3").indexAs(DefaultAnalyzers.STANDARD).sort().facet());
 		indexConfig.setIndexName(INDEX_NAME);
 		indexConfig.setNumberOfShards(1);
 		zuliaWorkPool.createIndex(indexConfig);
@@ -56,12 +57,14 @@ public class FieldChangeTest {
 			mongoDocument.put("id", uniqueId);
 			mongoDocument.put("field1", "someValue");
 			mongoDocument.put("field2", 123);
+			mongoDocument.put("field3", "hello");
 			zuliaWorkPool.store(new Store(uniqueId, INDEX_NAME, ResultDocBuilder.from(mongoDocument)));
 		}
 
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("field1").sort().facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("field2").indexAs(DefaultAnalyzers.STANDARD).sort().facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("field3").sort().facet());
 		indexConfig.setIndexName(INDEX_NAME);
 		indexConfig.setNumberOfShards(1);
 		zuliaWorkPool.createIndex(indexConfig);
@@ -73,6 +76,7 @@ public class FieldChangeTest {
 			mongoDocument.put("id", uniqueId);
 			mongoDocument.put("field1", 4343);
 			mongoDocument.put("field2", "important value");
+			mongoDocument.put("field3", true);
 			zuliaWorkPool.store(new Store(uniqueId, INDEX_NAME, ResultDocBuilder.from(mongoDocument)));
 
 			uniqueId = "" + 2;
@@ -80,6 +84,7 @@ public class FieldChangeTest {
 			mongoDocument.put("id", uniqueId);
 			mongoDocument.put("field1", 555);
 			mongoDocument.put("field2", "some value");
+			mongoDocument.put("field3", false);
 			zuliaWorkPool.store(new Store(uniqueId, INDEX_NAME, ResultDocBuilder.from(mongoDocument)));
 
 			uniqueId = "" + 3;
@@ -87,6 +92,7 @@ public class FieldChangeTest {
 			mongoDocument.put("id", uniqueId);
 			mongoDocument.put("field1", 4);
 			mongoDocument.put("field2", "abcd");
+			mongoDocument.put("field3", "yes");
 			zuliaWorkPool.store(new Store(uniqueId, INDEX_NAME, ResultDocBuilder.from(mongoDocument)));
 		}
 	}

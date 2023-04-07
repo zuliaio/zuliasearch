@@ -23,6 +23,7 @@ import org.apache.lucene.queryparser.charstream.CharStream;
 /**
  * Token Manager.
  */
+@SuppressWarnings("ALL")
 public class ZuliaSyntaxParserTokenManager implements ZuliaSyntaxParserConstants {
 
 	/** Debug output. */

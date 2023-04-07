@@ -14,7 +14,7 @@ import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
@@ -38,15 +38,15 @@ import java.util.logging.Logger;
  *
  * @author pmeyer
  */
-@Controller(ZuliaConstants.ASSOCIATED_DOCUMENTS_URL)
+@Controller(ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL)
 public class AssociatedController {
 
 	private final static Logger LOG = Logger.getLogger(AssociatedController.class.getSimpleName());
 
 	@Get("/metadata")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public HttpResponse<?> getMetadata(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.FILE_NAME) final String fileName,
-			@QueryValue(ZuliaConstants.INDEX) final String indexName) {
+	public HttpResponse<?> getMetadata(@QueryValue(ZuliaRESTConstants.ID) final String uniqueId,
+			@QueryValue(ZuliaRESTConstants.FILE_NAME) final String fileName, @QueryValue(ZuliaRESTConstants.INDEX) final String indexName) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -61,7 +61,7 @@ public class AssociatedController {
 				return ok;
 			}
 			else {
-				return HttpResponse.serverError(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
+				return HttpResponse.serverError(ZuliaRESTConstants.ID + " and " + ZuliaRESTConstants.FILE_NAME + " are required");
 			}
 		}
 		catch (Exception e) {
@@ -72,8 +72,8 @@ public class AssociatedController {
 
 	@Get
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public HttpResponse<?> get(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.FILE_NAME) final String fileName,
-			@QueryValue(ZuliaConstants.INDEX) final String indexName) {
+	public HttpResponse<?> get(@QueryValue(ZuliaRESTConstants.ID) final String uniqueId, @QueryValue(ZuliaRESTConstants.FILE_NAME) final String fileName,
+			@QueryValue(ZuliaRESTConstants.INDEX) final String indexName) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -87,7 +87,7 @@ public class AssociatedController {
 				return ok;
 			}
 			else {
-				return HttpResponse.serverError(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required");
+				return HttpResponse.serverError(ZuliaRESTConstants.ID + " and " + ZuliaRESTConstants.FILE_NAME + " are required");
 			}
 		}
 		catch (Exception e) {
@@ -97,7 +97,7 @@ public class AssociatedController {
 
 	@Get("/allForId")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public HttpResponse<?> get(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.INDEX) final String indexName) {
+	public HttpResponse<?> get(@QueryValue(ZuliaRESTConstants.ID) final String uniqueId, @QueryValue(ZuliaRESTConstants.INDEX) final String indexName) {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 		try {
 			if (uniqueId != null && indexName != null) {
@@ -153,7 +153,7 @@ public class AssociatedController {
 							LOG.log(Level.SEVERE, "Failed to close stream: " + e.getMessage(), e);
 						}
 						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">")
-								.status(ZuliaConstants.SUCCESS);
+								.status(ZuliaRESTConstants.SUCCESS);
 
 					}
 					else {
@@ -176,14 +176,14 @@ public class AssociatedController {
 
 		}
 		else {
-			return Mono.just(HttpResponse.serverError(ZuliaConstants.ID + " and " + ZuliaConstants.FILE_NAME + " are required"));
+			return Mono.just(HttpResponse.serverError(ZuliaRESTConstants.ID + " and " + ZuliaRESTConstants.FILE_NAME + " are required"));
 		}
 
 	}
 
 	@Get("/all")
 	@Produces(MediaType.APPLICATION_JSON)
-	public HttpResponse<?> getAll(@QueryValue(ZuliaConstants.INDEX) final String indexName, @Nullable @QueryValue(ZuliaConstants.QUERY) String query) {
+	public HttpResponse<?> getAll(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName, @Nullable @QueryValue(ZuliaRESTConstants.QUERY) String query) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -204,7 +204,7 @@ public class AssociatedController {
 			}
 		};
 
-		return HttpResponse.ok(writable).status(ZuliaConstants.SUCCESS);
+		return HttpResponse.ok(writable).status(ZuliaRESTConstants.SUCCESS);
 
 	}
 

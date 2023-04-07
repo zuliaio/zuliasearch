@@ -31,7 +31,7 @@ public class DeleteIndexAliasRequestFederator extends AllNodeRequestFederator<De
 		return internalDeleteIndexAlias(indexManager, request);
 	}
 
-	public static DeleteIndexAliasResponse internalDeleteIndexAlias(ZuliaIndexManager zuliaIndexManager, DeleteIndexAliasRequest request) throws Exception {
+	public static DeleteIndexAliasResponse internalDeleteIndexAlias(ZuliaIndexManager zuliaIndexManager, DeleteIndexAliasRequest request) {
 		return zuliaIndexManager.internalDeleteIndexAlias(request);
 	}
 

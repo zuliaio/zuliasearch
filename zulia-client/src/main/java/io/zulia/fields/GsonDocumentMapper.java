@@ -79,7 +79,7 @@ public class GsonDocumentMapper<T> {
 		return null;
 	}
 
-	public T fromScoredResult(ZuliaQuery.ScoredResult scoredResult) throws Exception {
+	public T fromScoredResult(ZuliaQuery.ScoredResult scoredResult) {
 		return fromDocument(ResultHelper.getDocumentFromScoredResult(scoredResult));
 	}
 

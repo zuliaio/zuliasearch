@@ -1,6 +1,6 @@
 package io.zulia.server.index.field;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
@@ -14,7 +14,7 @@ public abstract class FieldIndexer {
 
 	}
 
-	public void index(Document document, String storedFieldName, Object storedValue, String indexedFieldName) throws Exception {
+	public void index(Document document, String storedFieldName, Object storedValue, String indexedFieldName) {
 
 		AtomicInteger listSize = new AtomicInteger();
 		ZuliaUtil.handleLists(storedValue, obj -> {
@@ -29,8 +29,8 @@ public abstract class FieldIndexer {
 		//if stored value is a list or array
 		int size = listSize.get();
 
-		document.add(new IntPoint(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName, size));
-		document.add(new SortedNumericDocValuesField(ZuliaConstants.LIST_LENGTH_PREFIX + indexedFieldName + ZuliaConstants.SORT_SUFFIX, size));
+		document.add(new IntPoint(FieldTypeUtil.getListLengthIndexField(indexedFieldName), size));
+		document.add(new SortedNumericDocValuesField(FieldTypeUtil.getListLengthSortField(indexedFieldName), size));
 
 	}
 

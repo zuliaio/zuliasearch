@@ -12,7 +12,7 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.CursorHelper;
@@ -24,7 +24,11 @@ import java.io.Writer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -39,34 +43,37 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
  *
  * @author pmeyer
  */
-@Controller(ZuliaConstants.QUERY_URL)
+@Controller(ZuliaRESTConstants.QUERY_URL)
 public class QueryController {
 
 	private final static Logger LOG = Logger.getLogger(QueryController.class.getSimpleName());
 
 	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8", MediaType.TEXT_PLAIN + ";charset=utf-8" })
-	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) List<String> indexName,
-			@QueryValue(value = ZuliaConstants.QUERY, defaultValue = "*:*") String query,
-			@Nullable @QueryValue(ZuliaConstants.QUERY_FIELD) List<String> queryFields,
-			@Nullable @QueryValue(ZuliaConstants.FILTER_QUERY) List<String> filterQueries,
-			@Nullable @QueryValue(ZuliaConstants.QUERY_JSON) List<String> queryJsonList, @Nullable @QueryValue(ZuliaConstants.FIELDS) List<String> fields,
-			@QueryValue(value = ZuliaConstants.FETCH, defaultValue = "true") Boolean fetch,
-			@QueryValue(value = ZuliaConstants.ROWS, defaultValue = "0") Integer rows, @Nullable @QueryValue(ZuliaConstants.FACET) List<String> facet,
-			@Nullable @QueryValue(ZuliaConstants.DRILL_DOWN) List<String> drillDowns, @Nullable @QueryValue(ZuliaConstants.DEFAULT_OP) String defaultOperator,
-			@Nullable @QueryValue(ZuliaConstants.SORT) List<String> sort, @QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
-			@Nullable @QueryValue(value = ZuliaConstants.DISMAX, defaultValue = "false") Boolean dismax,
-			@Nullable @QueryValue(ZuliaConstants.DISMAX_TIE) Float dismaxTie, @Nullable @QueryValue(ZuliaConstants.MIN_MATCH) Integer mm,
-			@Nullable @QueryValue(ZuliaConstants.SIMILARITY) List<String> similarity,
-			@QueryValue(value = ZuliaConstants.DEBUG, defaultValue = "false") Boolean debug,
-			@QueryValue(value = ZuliaConstants.DONT_CACHE, defaultValue = "true") Boolean dontCache, @Nullable @QueryValue(ZuliaConstants.START) Integer start,
-			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT) List<String> highlightList,
-			@Nullable @QueryValue(ZuliaConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
-			@Nullable @QueryValue(ZuliaConstants.ANALYZE_JSON) List<String> analyzeJsonList,
-			@QueryValue(value = ZuliaConstants.FORMAT, defaultValue = "json") String format,
-			@QueryValue(value = ZuliaConstants.BATCH, defaultValue = "false") Boolean batch,
-			@QueryValue(value = ZuliaConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize, @Nullable @QueryValue(ZuliaConstants.CURSOR) String cursor,
-			@QueryValue(value = ZuliaConstants.TRUNCATE, defaultValue = "false") Boolean truncate) {
+	public HttpResponse<?> get(@QueryValue(ZuliaRESTConstants.INDEX) List<String> indexName,
+			@QueryValue(value = ZuliaRESTConstants.QUERY, defaultValue = "*:*") String query,
+			@Nullable @QueryValue(ZuliaRESTConstants.QUERY_FIELD) List<String> queryFields,
+			@Nullable @QueryValue(ZuliaRESTConstants.FILTER_QUERY) List<String> filterQueries,
+			@Nullable @QueryValue(ZuliaRESTConstants.QUERY_JSON) List<String> queryJsonList,
+			@Nullable @QueryValue(ZuliaRESTConstants.FIELDS) List<String> fields,
+			@QueryValue(value = ZuliaRESTConstants.FETCH, defaultValue = "true") Boolean fetch,
+			@QueryValue(value = ZuliaRESTConstants.ROWS, defaultValue = "0") Integer rows, @Nullable @QueryValue(ZuliaRESTConstants.FACET) List<String> facet,
+			@Nullable @QueryValue(ZuliaRESTConstants.DRILL_DOWN) List<String> drillDowns,
+			@Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator, @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
+			@QueryValue(value = ZuliaRESTConstants.PRETTY, defaultValue = "true") Boolean pretty,
+			@Nullable @QueryValue(value = ZuliaRESTConstants.DISMAX, defaultValue = "false") Boolean dismax,
+			@Nullable @QueryValue(ZuliaRESTConstants.DISMAX_TIE) Float dismaxTie, @Nullable @QueryValue(ZuliaRESTConstants.MIN_MATCH) Integer mm,
+			@Nullable @QueryValue(ZuliaRESTConstants.SIMILARITY) List<String> similarity,
+			@QueryValue(value = ZuliaRESTConstants.DEBUG, defaultValue = "false") Boolean debug,
+			@QueryValue(value = ZuliaRESTConstants.DONT_CACHE, defaultValue = "true") Boolean dontCache,
+			@Nullable @QueryValue(ZuliaRESTConstants.START) Integer start, @Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT) List<String> highlightList,
+			@Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
+			@Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList,
+			@QueryValue(value = ZuliaRESTConstants.FORMAT, defaultValue = "json") String format,
+			@QueryValue(value = ZuliaRESTConstants.BATCH, defaultValue = "false") Boolean batch,
+			@QueryValue(value = ZuliaRESTConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
+			@Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
+			@QueryValue(value = ZuliaRESTConstants.TRUNCATE, defaultValue = "false") Boolean truncate) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -81,7 +88,7 @@ public class QueryController {
 				outputCursor = true;
 				if (sort == null || sort.isEmpty()) {
 					return HttpResponse.created("Sort on unique value or value combination is required to use a cursor (i.e. id or title,id)")
-							.status(ZuliaConstants.INTERNAL_ERROR);
+							.status(ZuliaRESTConstants.INTERNAL_ERROR);
 				}
 			}
 
@@ -115,7 +122,7 @@ public class QueryController {
 					mainQueryBuilder.setDefaultOp(Query.Operator.OR);
 				}
 				else {
-					HttpResponse.created("Invalid default operator <" + defaultOperator + ">").status(ZuliaConstants.INTERNAL_ERROR);
+					HttpResponse.created("Invalid default operator <" + defaultOperator + ">").status(ZuliaRESTConstants.INTERNAL_ERROR);
 				}
 			}
 			mainQueryBuilder.setQueryType(Query.QueryType.SCORE_MUST);
@@ -145,13 +152,13 @@ public class QueryController {
 							fieldSimilarity.setSimilarity(Similarity.TFIDF);
 						}
 						else {
-							HttpResponse.created("Unknown similarity type <" + simType + ">").status(ZuliaConstants.INTERNAL_ERROR);
+							HttpResponse.created("Unknown similarity type <" + simType + ">").status(ZuliaRESTConstants.INTERNAL_ERROR);
 						}
 
 						qrBuilder.addFieldSimilarity(fieldSimilarity);
 					}
 					else {
-						HttpResponse.created("Similarity <" + sim + "> should be in the form field:simType").status(ZuliaConstants.INTERNAL_ERROR);
+						HttpResponse.created("Similarity <" + sim + "> should be in the form field:simType").status(ZuliaRESTConstants.INTERNAL_ERROR);
 					}
 				}
 			}
@@ -172,7 +179,7 @@ public class QueryController {
 					}
 					catch (InvalidProtocolBufferException e) {
 						return HttpResponse.created("Failed to parse query json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-								.status(ZuliaConstants.INTERNAL_ERROR);
+								.status(ZuliaRESTConstants.INTERNAL_ERROR);
 					}
 				}
 			}
@@ -193,7 +200,7 @@ public class QueryController {
 					}
 					catch (InvalidProtocolBufferException e) {
 						return HttpResponse.created("Failed to parse highlight json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-								.status(ZuliaConstants.INTERNAL_ERROR);
+								.status(ZuliaRESTConstants.INTERNAL_ERROR);
 					}
 				}
 			}
@@ -207,7 +214,7 @@ public class QueryController {
 					}
 					catch (InvalidProtocolBufferException e) {
 						return HttpResponse.created("Failed to parse analyzer json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-								.status(ZuliaConstants.INTERNAL_ERROR);
+								.status(ZuliaRESTConstants.INTERNAL_ERROR);
 					}
 				}
 			}
@@ -240,7 +247,7 @@ public class QueryController {
 						}
 						catch (Exception e) {
 							return HttpResponse.created("Invalid facet count <" + countString + "> for facet <" + f + ">")
-									.status(ZuliaConstants.INTERNAL_ERROR);
+									.status(ZuliaRESTConstants.INTERNAL_ERROR);
 						}
 					}
 
@@ -255,14 +262,24 @@ public class QueryController {
 				}
 			}
 
-			if (drillDowns != null) {
+			if (drillDowns != null && !drillDowns.isEmpty()) {
+
+				Map<String, Set<String>> labelToValues = new HashMap<>();
+
 				for (String drillDown : drillDowns) {
 					if (drillDown.contains(":")) {
-						String value = drillDown.substring(drillDown.indexOf(":") + 1);
 						String field = drillDown.substring(0, drillDown.indexOf(":"));
-						frBuilder.addDrillDown(Facet.newBuilder().setLabel(field).setValue(value));
+						String value = drillDown.substring(drillDown.indexOf(":") + 1);
+						labelToValues.computeIfAbsent(field, s -> new HashSet<>()).add(value);
 					}
 				}
+
+				for (String label : labelToValues.keySet()) {
+					Set<String> values = labelToValues.get(label);
+					List<Facet> facetValues = values.stream().map(s -> Facet.newBuilder().setValue(s).build()).toList();
+					frBuilder.addDrillDown(DrillDown.newBuilder().setLabel(label).addAllFacetValue(facetValues));
+				}
+
 			}
 
 			qrBuilder.setFacetRequest(frBuilder);
@@ -284,7 +301,7 @@ public class QueryController {
 						}
 						else {
 							return HttpResponse.created("Invalid sort direction <" + sortDir + "> for field <" + sortField + ">.  Expecting -1/1 or DESC/ASC")
-									.status(ZuliaConstants.INTERNAL_ERROR);
+									.status(ZuliaRESTConstants.INTERNAL_ERROR);
 						}
 					}
 					fieldSort.setSortField(sortField);
@@ -302,7 +319,7 @@ public class QueryController {
 					response = JsonWriter.formatJson(response);
 				}
 
-				return HttpResponse.ok(response).status(ZuliaConstants.SUCCESS).contentType(MediaType.APPLICATION_JSON_TYPE);
+				return HttpResponse.ok(response).status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.APPLICATION_JSON_TYPE);
 			}
 			else {
 				if (fields != null && !fields.isEmpty()) {
@@ -343,14 +360,14 @@ public class QueryController {
 						LocalDateTime now = LocalDateTime.now();
 						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
 
-						return HttpResponse.ok(writable).status(ZuliaConstants.SUCCESS)
+						return HttpResponse.ok(writable).status(ZuliaRESTConstants.SUCCESS)
 								.header("content-disposition", "attachment; filename = " + "zuliaDownload_" + now.format(formatter) + ".csv")
 								.contentType(MediaType.APPLICATION_OCTET_STREAM);
 					}
 					else {
 						QueryResponse qr = indexManager.query(qrBuilder.build());
 						String response = getCSVDocumentResponse(fields, qr);
-						return HttpResponse.ok(response).status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
+						return HttpResponse.ok(response).status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 					}
 				}
 				else if (facet != null && !facet.isEmpty() && rows == 0) {
@@ -370,23 +387,23 @@ public class QueryController {
 						}
 
 					}
-					return HttpResponse.ok(response.toString()).status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
+					return HttpResponse.ok(response.toString()).status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 				}
 				else {
 					return HttpResponse.ok(
 									"Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0")
-							.status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
+							.status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 				}
 			}
 		}
 		catch (Exception e) {
 			LOG.log(Level.SEVERE, e.getMessage(), e);
-			return HttpResponse.serverError(e.getClass().getSimpleName() + ":" + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError(e.getClass().getSimpleName() + ":" + e.getMessage()).status(ZuliaRESTConstants.INTERNAL_ERROR);
 		}
 
 	}
 
-	private String buildHeaderForCSV(@Parameter(ZuliaConstants.FIELDS) List<String> fields) throws Exception {
+	private String buildHeaderForCSV(@Parameter(ZuliaRESTConstants.FIELDS) List<String> fields) {
 
 		StringBuilder headerBuilder = new StringBuilder();
 		fields.stream().filter(field -> !field.startsWith("-")).forEach(field -> headerBuilder.append(field).append(","));

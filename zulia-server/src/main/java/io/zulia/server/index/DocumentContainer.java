@@ -1,6 +1,7 @@
 package io.zulia.server.index;
 
 import com.google.protobuf.ByteString;
+import io.zulia.server.util.BytesRefUtil;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
@@ -10,10 +11,10 @@ public class DocumentContainer {
 	private final byte[] byteArray;
 	private final Document document;
 
-	private final boolean isEmpty;
+	private final boolean hasDocument;
 
-	public DocumentContainer(BytesRef binaryValue) {
-		this(binaryValue != null ? binaryValue.bytes : null);
+	public DocumentContainer(BytesRef bytesRef) {
+		this(bytesRef != null ? BytesRefUtil.getByteArray(bytesRef) : null);
 	}
 
 	public DocumentContainer(ByteString byteString) {
@@ -24,12 +25,12 @@ public class DocumentContainer {
 		if (bytes != null && bytes.length > 0) {
 			this.byteArray = bytes;
 			this.document = ZuliaUtil.byteArrayToMongoDocument(byteArray);
-			this.isEmpty = false;
+			this.hasDocument = true;
 		}
 		else {
 			this.document = null;
 			this.byteArray = null;
-			this.isEmpty = true;
+			this.hasDocument = false;
 		}
 	}
 
@@ -41,7 +42,7 @@ public class DocumentContainer {
 		return document;
 	}
 
-	public boolean isEmpty() {
-		return isEmpty;
+	public boolean hasDocument() {
+		return hasDocument;
 	}
 }
