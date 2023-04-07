@@ -25,7 +25,6 @@ public abstract class ScoredDocLeafHandler<T> {
 
 	public T[] handle(IndexReader indexReader, ScoreDoc[] scoreDocs, IntFunction<T[]> resultArrayConstructor) throws IOException {
 
-		System.out.println("Handle " + scoreDocs.length);
 		if (scoreDocs.length > 0) {
 
 			IndexedScoreDoc[] zuliaResults = new IndexedScoreDoc[scoreDocs.length];
@@ -38,22 +37,16 @@ public abstract class ScoredDocLeafHandler<T> {
 			int docId = zuliaResults[0].getDocId();
 
 			List<LeafReaderContext> leaves = indexReader.leaves();
-			System.out.println("leaves count: " + leaves.size());
-			for (LeafReaderContext leaf : leaves) {
-				System.out.println(leaf.toString() + ": " + leaf.docBase);
-			}
+
 			LeafReaderContext currentLeaf = leaves.get(ReaderUtil.subIndex(docId, leaves));
 			handleNewLeaf(currentLeaf);
 			int endOfCurrentLeaf = currentLeaf.docBase + currentLeaf.reader().maxDoc();
-			System.out.println("Initial Leaf: " + currentLeaf.toString() + " ends with " + endOfCurrentLeaf);
 			for (IndexedScoreDoc indexedScoreDoc : zuliaResults) {
 				docId = indexedScoreDoc.getDocId();
-				System.out.println("Doc " + docId);
 
 				if (docId >= endOfCurrentLeaf) {
 					currentLeaf = leaves.get(ReaderUtil.subIndex(docId, leaves));
 					endOfCurrentLeaf = currentLeaf.docBase + currentLeaf.reader().maxDoc();
-					System.out.println("New Leaf: " + currentLeaf.toString() + " ends with " + endOfCurrentLeaf);
 					handleNewLeaf(currentLeaf);
 				}
 				results[indexedScoreDoc.index] = handleDocument(currentLeaf, docId - currentLeaf.docBase, indexedScoreDoc.scoreDoc);

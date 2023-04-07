@@ -42,6 +42,7 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -614,9 +615,13 @@ public class ShardReader implements AutoCloseable {
 			while ((docId = allDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
 				docId = docId - leaf.docBase;
 				idDocValues.advanceExact(docId);
-				metaDocValues.advanceExact(docId);
+				if (metaDocValues != null) {
+					metaDocValues.advanceExact(docId);
+				}
 				fullDocValues.advanceExact(docId);
-				documentConsumer.accept(new ReIndexContainer(idDocValues.binaryValue(), metaDocValues.binaryValue(), fullDocValues.binaryValue()));
+				BytesRef meta = metaDocValues != null ? metaDocValues.binaryValue() : new BytesRef(BytesRef.EMPTY_BYTES);
+				BytesRef fullDoc = fullDocValues.binaryValue();
+				documentConsumer.accept(new ReIndexContainer(idDocValues.binaryValue(), meta, fullDoc));
 			}
 
 		}
