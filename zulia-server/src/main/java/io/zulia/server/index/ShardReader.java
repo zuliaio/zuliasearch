@@ -52,7 +52,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
-
 public class ShardReader implements AutoCloseable {
 
 	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
@@ -618,9 +617,11 @@ public class ShardReader implements AutoCloseable {
 				if (metaDocValues != null) {
 					metaDocValues.advanceExact(docId);
 				}
-				fullDocValues.advanceExact(docId);
+				if (fullDocValues != null) {
+					fullDocValues.advanceExact(docId);
+				}
 				BytesRef meta = metaDocValues != null ? metaDocValues.binaryValue() : new BytesRef(BytesRef.EMPTY_BYTES);
-				BytesRef fullDoc = fullDocValues.binaryValue();
+				BytesRef fullDoc = fullDocValues != null ? fullDocValues.binaryValue() : new BytesRef(BytesRef.EMPTY_BYTES);
 				documentConsumer.accept(new ReIndexContainer(idDocValues.binaryValue(), meta, fullDoc));
 			}
 
