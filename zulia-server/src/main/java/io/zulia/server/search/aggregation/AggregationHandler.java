@@ -25,7 +25,6 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.aggregation.facets.BinaryFacetReader;
 import io.zulia.server.search.aggregation.facets.CountFacetInfo;
 import io.zulia.server.search.aggregation.facets.FacetsReader;
-import io.zulia.server.search.aggregation.facets.LegacyFacetReader;
 import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatInfo;
@@ -132,9 +131,6 @@ public class AggregationHandler {
 
 			if (needsFacets) {
 				facetReader = new BinaryFacetReader(reader);
-				if (!facetReader.hasValues()) {
-					facetReader = new LegacyFacetReader(reader);
-				}
 				docs = facetReader.getCombinedIterator(docs);
 			}
 
