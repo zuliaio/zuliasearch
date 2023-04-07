@@ -1,6 +1,7 @@
 package io.zulia.server.index;
 
 import com.google.protobuf.ByteString;
+import io.zulia.server.util.BytesRefUtil;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
@@ -12,8 +13,8 @@ public class DocumentContainer {
 
 	private final boolean hasDocument;
 
-	public DocumentContainer(BytesRef binaryValue) {
-		this(binaryValue != null ? binaryValue.bytes : null);
+	public DocumentContainer(BytesRef bytesRef) {
+		this(bytesRef != null ? BytesRefUtil.getByteArray(bytesRef) : null);
 	}
 
 	public DocumentContainer(ByteString byteString) {

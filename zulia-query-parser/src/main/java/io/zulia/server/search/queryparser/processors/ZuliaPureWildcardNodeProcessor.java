@@ -1,6 +1,6 @@
 package io.zulia.server.search.queryparser.processors;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.MatchAllDocsQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -30,7 +30,7 @@ public class ZuliaPureWildcardNodeProcessor extends QueryNodeProcessorImpl {
 					return new MatchAllDocsQueryNode();
 				}
 				else {
-					return new FieldQueryNode(ZuliaConstants.FIELDS_LIST_FIELD, field, wildcardQueryNode.getBegin(), wildcardQueryNode.getEnd());
+					return new FieldQueryNode(ZuliaFieldConstants.FIELDS_LIST_FIELD, field, wildcardQueryNode.getBegin(), wildcardQueryNode.getEnd());
 				}
 			}
 

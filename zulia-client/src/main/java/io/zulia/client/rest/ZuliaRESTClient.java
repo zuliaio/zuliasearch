@@ -3,7 +3,7 @@ package io.zulia.client.rest;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.util.HttpHelper;
 import io.zulia.util.ZuliaUtil;
 import okhttp3.MediaType;
@@ -45,7 +45,7 @@ public class ZuliaRESTClient {
 
 		try {
 			RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, null, bytes);
-			Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
+			Request request = new Request.Builder().url(url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
 			Response response = client.newCall(request).execute();
 			response.close();
 		}
@@ -65,7 +65,7 @@ public class ZuliaRESTClient {
 
 		try {
 			RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, file, null);
-			Request request = new Request.Builder().url(url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
+			Request request = new Request.Builder().url(url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
 			Response response = client.newCall(request).execute();
 			response.close();
 		}
@@ -85,7 +85,7 @@ public class ZuliaRESTClient {
 
 		try {
 			Request request = new Request.Builder().url(
-							url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
+							url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
 					.method("GET", null).build();
 			Response response = client.newCall(request).execute();
 			BufferedSink sink = Okio.buffer(Okio.sink(destination));
@@ -105,7 +105,7 @@ public class ZuliaRESTClient {
 
 		try {
 			Request request = new Request.Builder().url(
-							url + ZuliaConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
+							url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
 					.method("GET", null).build();
 			Response response = client.newCall(request).execute();
 			Document document = ZuliaUtil.byteArrayToMongoDocument(Objects.requireNonNull(response.body()).bytes());
@@ -122,7 +122,7 @@ public class ZuliaRESTClient {
 	public void fetchAssociated(String uniqueId, String indexName, OutputStream destination, boolean closeStream) throws Exception {
 
 		Request request = new Request.Builder().url(
-						url + ZuliaConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName)))
+						url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName)))
 				.method("GET", null).build();
 		Response response = client.newCall(request).execute();
 
@@ -158,16 +158,16 @@ public class ZuliaRESTClient {
 
 	private HashMap<String, Object> createParameters(String uniqueId, String indexName) {
 		HashMap<String, Object> parameters = new HashMap<>();
-		parameters.put(ZuliaConstants.ID, uniqueId);
-		parameters.put(ZuliaConstants.INDEX, indexName);
+		parameters.put(ZuliaRESTConstants.ID, uniqueId);
+		parameters.put(ZuliaRESTConstants.INDEX, indexName);
 		return parameters;
 	}
 
 	private HashMap<String, Object> createParameters(String uniqueId, String indexName, String fileName) {
 		HashMap<String, Object> parameters = new HashMap<>();
-		parameters.put(ZuliaConstants.ID, uniqueId);
-		parameters.put(ZuliaConstants.FILE_NAME, fileName);
-		parameters.put(ZuliaConstants.INDEX, indexName);
+		parameters.put(ZuliaRESTConstants.ID, uniqueId);
+		parameters.put(ZuliaRESTConstants.FILE_NAME, fileName);
+		parameters.put(ZuliaRESTConstants.INDEX, indexName);
 		return parameters;
 	}
 

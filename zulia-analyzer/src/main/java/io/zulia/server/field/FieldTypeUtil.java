@@ -1,7 +1,7 @@
 package io.zulia.server.field;
 
 import com.google.common.base.Splitter;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.server.config.ServerIndexConfig;
@@ -9,12 +9,8 @@ import io.zulia.server.config.ServerIndexConfig;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.zulia.ZuliaConstants.CHAR_LENGTH_PREFIX;
-
 public class FieldTypeUtil {
-	private static Splitter COMMA_SPLIT = Splitter.on(",").omitEmptyStrings();
-	private static String LIST_LENGTH_BARS = "|||";
-	private static String CHAR_LENGTH_BAR = "|";
+	private static final Splitter COMMA_SPLIT = Splitter.on(",").omitEmptyStrings();
 
 	public static boolean isNumericIntFieldType(FieldConfig.FieldType fieldType) {
 		return FieldConfig.FieldType.NUMERIC_INT.equals(fieldType);
@@ -70,31 +66,31 @@ public class FieldTypeUtil {
 	}
 
 	public static String getListLengthIndexField(String indexFieldName) {
-		return ZuliaConstants.LIST_LENGTH_PREFIX + indexFieldName;
+		return ZuliaFieldConstants.LIST_LENGTH_PREFIX + indexFieldName;
 	}
 
 	public static String getListLengthSortField(String indexFieldName) {
-		return ZuliaConstants.LIST_LENGTH_PREFIX + indexFieldName + ZuliaConstants.SORT_SUFFIX;
+		return ZuliaFieldConstants.LIST_LENGTH_PREFIX + indexFieldName + ZuliaFieldConstants.SORT_SUFFIX;
 	}
 
 	public static boolean isListLengthField(String field) {
-		return field.startsWith(ZuliaConstants.LIST_LENGTH_PREFIX);
+		return field.startsWith(ZuliaFieldConstants.LIST_LENGTH_PREFIX);
 	}
 
 	public static String getCharLengthIndexField(String indexFieldName) {
-		return CHAR_LENGTH_PREFIX + indexFieldName;
+		return ZuliaFieldConstants.CHAR_LENGTH_PREFIX + indexFieldName;
 	}
 
 	public static String getCharLengthSortField(String indexFieldName) {
-		return CHAR_LENGTH_PREFIX + indexFieldName + ZuliaConstants.SORT_SUFFIX;
+		return ZuliaFieldConstants.CHAR_LENGTH_PREFIX + indexFieldName + ZuliaFieldConstants.SORT_SUFFIX;
 	}
 
 	public static boolean isCharLengthField(String field) {
-		return field.startsWith(CHAR_LENGTH_PREFIX);
+		return field.startsWith(ZuliaFieldConstants.CHAR_LENGTH_PREFIX);
 	}
 
 	public static String getSortField(String sortFieldName, FieldConfig.FieldType fieldType) {
-		return sortFieldName + ZuliaConstants.SORT_SUFFIX + fieldType;
+		return sortFieldName + ZuliaFieldConstants.SORT_SUFFIX + fieldType;
 	}
 
 	public static String getIndexField(String indexFieldName, FieldConfig.FieldType fieldType) {
@@ -106,11 +102,11 @@ public class FieldTypeUtil {
 	}
 
 	public static String getCharLengthWrap(String field) {
-		return CHAR_LENGTH_BAR + field + CHAR_LENGTH_BAR;
+		return ZuliaFieldConstants.CHAR_LENGTH_BAR + field + ZuliaFieldConstants.CHAR_LENGTH_BAR;
 	}
 
 	public static String getListLengthWrap(String field) {
-		return LIST_LENGTH_BARS + field + LIST_LENGTH_BARS;
+		return ZuliaFieldConstants.LIST_LENGTH_BARS + field + ZuliaFieldConstants.LIST_LENGTH_BARS;
 	}
 
 	public static List<String> expandFields(ServerIndexConfig serverIndexConfig, CharSequence... fields) {

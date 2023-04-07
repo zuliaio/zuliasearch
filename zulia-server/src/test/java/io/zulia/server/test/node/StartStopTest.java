@@ -1,7 +1,7 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.client.command.Reindex;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.CountFacet;
@@ -213,7 +213,7 @@ public class StartStopTest {
 
 		Search search = new Search(FACET_TEST_INDEX).setAmount(10);
 		search.addQuery(new ScoredQuery("issn:\"1234-1234\" OR country:US"));
-		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD).ascending());
+		search.addSort(new Sort(ZuliaFieldConstants.SCORE_FIELD).ascending());
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
 
@@ -227,7 +227,7 @@ public class StartStopTest {
 		}
 
 		search.clearSort();
-		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD).descending());
+		search.addSort(new Sort(ZuliaFieldConstants.SCORE_FIELD).descending());
 		searchResult = zuliaWorkPool.search(search);
 
 		for (CompleteResult result : searchResult.getCompleteResults()) {
@@ -634,7 +634,7 @@ public class StartStopTest {
 
 			Assertions.assertEquals(totalRecords / 2, sr.getTotalHits(), "Total record count filtered on half mismatch");
 
-			s = new Search(FACET_TEST_INDEX).addQuery(new ScoredQuery("country:US")).setAmount(10);
+			s = new Search(FACET_TEST_INDEX).addQuery(new ScoredQuery("country:US")).setAmount(10).setResultFetchType(ZuliaQuery.FetchType.ALL);
 
 			sr = zuliaWorkPool.search(s);
 

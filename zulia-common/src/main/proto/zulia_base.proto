@@ -2,6 +2,13 @@ syntax = "proto3";
 
 option java_package = "io.zulia.message";
 
+message IdInfo {
+    string id = 1;
+    uint64 timestamp = 2;
+    uint32 majorVersion = 3;
+    uint32 minorVersion = 4;
+}
+
 enum MasterSlaveSettings {
     MASTER_ONLY = 0;
     SLAVE_ONLY = 1;

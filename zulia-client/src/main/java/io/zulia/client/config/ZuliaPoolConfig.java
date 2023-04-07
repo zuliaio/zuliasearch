@@ -1,6 +1,6 @@
 package io.zulia.client.config;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,11 +36,11 @@ public class ZuliaPoolConfig {
 	}
 
 	public ZuliaPoolConfig addNode(String serverAddress) {
-		return addNode(serverAddress, ZuliaConstants.DEFAULT_SERVICE_SERVICE_PORT, ZuliaConstants.DEFAULT_REST_SERVICE_PORT);
+		return addNode(serverAddress, ZuliaRESTConstants.DEFAULT_SERVICE_SERVICE_PORT, ZuliaRESTConstants.DEFAULT_REST_SERVICE_PORT);
 	}
 
 	public ZuliaPoolConfig addNode(String serverAddress, int externalPort) {
-		return addNode(serverAddress, externalPort, ZuliaConstants.DEFAULT_REST_SERVICE_PORT);
+		return addNode(serverAddress, externalPort, ZuliaRESTConstants.DEFAULT_REST_SERVICE_PORT);
 	}
 
 	public ZuliaPoolConfig addNode(String serverAddress, int servicePort, int restPort) {

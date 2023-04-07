@@ -10,7 +10,7 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
@@ -28,20 +28,23 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
  *
  * @author pmeyer
  */
-@Controller(ZuliaConstants.TERMS_URL)
+@Controller(ZuliaRESTConstants.TERMS_URL)
 public class TermsController {
 
 	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8", MediaType.TEXT_PLAIN + ";charset=utf-8" })
-	public HttpResponse<?> get(@QueryValue(ZuliaConstants.INDEX) final String indexName, @QueryValue(ZuliaConstants.FIELDS) final String field,
-			@Nullable @QueryValue(ZuliaConstants.AMOUNT) final Integer amount, @Nullable @QueryValue(ZuliaConstants.MIN_DOC_FREQ) final Integer minDocFreq,
-			@Nullable @QueryValue(ZuliaConstants.MIN_TERM_FREQ) final Integer minTermFreq,
-			@Nullable @QueryValue(ZuliaConstants.START_TERM) final String startTerm, @Nullable @QueryValue(ZuliaConstants.END_TERM) final String endTerm,
-			@Nullable @QueryValue(ZuliaConstants.TERM_FILTER) final String termFilter, @Nullable @QueryValue(ZuliaConstants.TERM_MATCH) final String termMatch,
-			@Nullable @QueryValue(ZuliaConstants.INCLUDE_TERM) final List<String> includeTerm,
-			@Nullable @QueryValue(ZuliaConstants.FUZZY_TERM_JSON) final String fuzzyTermJson,
-			@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty,
-			@QueryValue(value = ZuliaConstants.FORMAT, defaultValue = "json") final String format) {
+	public HttpResponse<?> get(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName, @QueryValue(ZuliaRESTConstants.FIELDS) final String field,
+			@Nullable @QueryValue(ZuliaRESTConstants.AMOUNT) final Integer amount,
+			@Nullable @QueryValue(ZuliaRESTConstants.MIN_DOC_FREQ) final Integer minDocFreq,
+			@Nullable @QueryValue(ZuliaRESTConstants.MIN_TERM_FREQ) final Integer minTermFreq,
+			@Nullable @QueryValue(ZuliaRESTConstants.START_TERM) final String startTerm,
+			@Nullable @QueryValue(ZuliaRESTConstants.END_TERM) final String endTerm,
+			@Nullable @QueryValue(ZuliaRESTConstants.TERM_FILTER) final String termFilter,
+			@Nullable @QueryValue(ZuliaRESTConstants.TERM_MATCH) final String termMatch,
+			@Nullable @QueryValue(ZuliaRESTConstants.INCLUDE_TERM) final List<String> includeTerm,
+			@Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson,
+			@QueryValue(value = ZuliaRESTConstants.PRETTY, defaultValue = "true") Boolean pretty,
+			@QueryValue(value = ZuliaRESTConstants.FORMAT, defaultValue = "json") final String format) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -85,7 +88,7 @@ public class TermsController {
 			}
 			catch (InvalidProtocolBufferException e) {
 				return HttpResponse.ok("Failed to parse analyzer json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-						.status(ZuliaConstants.INTERNAL_ERROR);
+						.status(ZuliaRESTConstants.INTERNAL_ERROR);
 			}
 
 		}
@@ -115,7 +118,7 @@ public class TermsController {
 					docString = JsonWriter.formatJson(docString);
 				}
 
-				return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS).contentType(MediaType.APPLICATION_JSON_TYPE + ";charset=utf-8");
+				return HttpResponse.ok(docString).status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.APPLICATION_JSON_TYPE + ";charset=utf-8");
 			}
 			else {
 
@@ -150,12 +153,13 @@ public class TermsController {
 					csvString.append(term.getScore());
 					csvString.append("\n");
 				}
-				return HttpResponse.ok(csvString).status(ZuliaConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
+				return HttpResponse.ok(csvString).status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 			}
 
 		}
 		catch (Exception e) {
-			return HttpResponse.serverError("Failed to fetch fields for index <" + indexName + ">: " + e.getMessage()).status(ZuliaConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError("Failed to fetch fields for index <" + indexName + ">: " + e.getMessage())
+					.status(ZuliaRESTConstants.INTERNAL_ERROR);
 		}
 
 	}

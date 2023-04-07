@@ -3,7 +3,7 @@ package io.zulia.client.pool;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.cache.MetaKeys;
 import io.zulia.client.command.GetNodes;
 import io.zulia.client.command.base.BaseCommand;
@@ -196,7 +196,7 @@ public class ZuliaPool {
 						}
 						else {
 							LOG.warning("Failed to find rest port for <" + nodeKey + "> using default");
-							restPort = ZuliaConstants.DEFAULT_REST_SERVICE_PORT;
+							restPort = ZuliaRESTConstants.DEFAULT_REST_SERVICE_PORT;
 						}
 					}
 
