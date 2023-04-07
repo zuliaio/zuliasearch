@@ -1,6 +1,6 @@
 package io.zulia.server.search.score;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FieldSort;
@@ -44,7 +44,7 @@ public class ZuliaPostSortingComparator implements Comparator<ScoredResult> {
 
 			FieldConfig.FieldType sortType = sortTypeMap.get(sortField);
 
-			if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+			if (ZuliaFieldConstants.SCORE_FIELD.equals(sortField)) {
 				if (FieldSort.Direction.DESCENDING.equals(fs.getDirection())) {
 					compare = scoreCompare.compare(o1, o2);
 				}

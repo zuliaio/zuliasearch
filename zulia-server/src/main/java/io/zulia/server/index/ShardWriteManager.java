@@ -1,6 +1,6 @@
 package io.zulia.server.index;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
 import org.apache.lucene.document.Document;
@@ -198,7 +198,7 @@ public class ShardWriteManager {
 	}
 
 	public void deleteDocuments(String uniqueId) throws IOException {
-		Term term = new Term(ZuliaConstants.ID_FIELD, uniqueId);
+		Term term = new Term(ZuliaFieldConstants.ID_FIELD, uniqueId);
 		indexWriter.deleteDocuments(term);
 	}
 
@@ -213,7 +213,7 @@ public class ShardWriteManager {
 
 	public void indexDocument(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata) throws Exception {
 		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadata, taxoWriter);
-		Term updateQuery = new Term(ZuliaConstants.ID_FIELD, uniqueId);
+		Term updateQuery = new Term(ZuliaFieldConstants.ID_FIELD, uniqueId);
 		indexWriter.updateDocument(updateQuery, luceneDocument);
 
 	}

@@ -2,7 +2,7 @@ package io.zulia.server.config;
 
 import com.google.protobuf.ByteString;
 import io.zulia.DefaultAnalyzers;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Tokenizer;
@@ -91,13 +91,15 @@ public class ServerIndexConfig {
 			}
 		}
 
-		indexFieldMapping.put(ZuliaConstants.ID_FIELD, new IndexFieldInfo(null, ZuliaConstants.ID_FIELD, ZuliaConstants.ID_SORT_FIELD, FieldType.STRING, null));
-		indexFieldMapping.put(ZuliaConstants.FACET_DRILL_DOWN_FIELD,
-				new IndexFieldInfo(null, ZuliaConstants.FACET_DRILL_DOWN_FIELD, null, FieldType.STRING, null));
-		indexFieldMapping.put(ZuliaConstants.FIELDS_LIST_FIELD, new IndexFieldInfo(null, ZuliaConstants.FIELDS_LIST_FIELD, null, FieldType.STRING, null));
-		sortFieldMapping.put(ZuliaConstants.SCORE_FIELD, new SortFieldInfo(null, FieldType.NUMERIC_FLOAT));
-		sortFieldMapping.put(ZuliaConstants.ID_SORT_FIELD,
-				new SortFieldInfo(FieldTypeUtil.getSortField(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), FieldType.STRING));
+		indexFieldMapping.put(ZuliaFieldConstants.ID_FIELD,
+				new IndexFieldInfo(null, ZuliaFieldConstants.ID_FIELD, ZuliaFieldConstants.ID_SORT_FIELD, FieldType.STRING, null));
+		indexFieldMapping.put(ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD,
+				new IndexFieldInfo(null, ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD, null, FieldType.STRING, null));
+		indexFieldMapping.put(ZuliaFieldConstants.FIELDS_LIST_FIELD,
+				new IndexFieldInfo(null, ZuliaFieldConstants.FIELDS_LIST_FIELD, null, FieldType.STRING, null));
+		sortFieldMapping.put(ZuliaFieldConstants.SCORE_FIELD, new SortFieldInfo(null, FieldType.NUMERIC_FLOAT));
+		sortFieldMapping.put(ZuliaFieldConstants.ID_SORT_FIELD,
+				new SortFieldInfo(FieldTypeUtil.getSortField(ZuliaFieldConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), FieldType.STRING));
 
 		this.warmingSearches = new ArrayList<>();
 		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {

@@ -7,7 +7,7 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.ResultHelper;
@@ -17,13 +17,13 @@ import org.bson.json.JsonWriterSettings;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
-@Controller(ZuliaConstants.FETCH_URL)
+@Controller(ZuliaRESTConstants.FETCH_URL)
 public class FetchController {
 
 	@Get
 	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-	public HttpResponse<?> get(@QueryValue(ZuliaConstants.ID) final String uniqueId, @QueryValue(ZuliaConstants.INDEX) final String indexName,
-			@QueryValue(value = ZuliaConstants.PRETTY, defaultValue = "true") Boolean pretty) {
+	public HttpResponse<?> get(@QueryValue(ZuliaRESTConstants.ID) final String uniqueId, @QueryValue(ZuliaRESTConstants.INDEX) final String indexName,
+			@QueryValue(value = ZuliaRESTConstants.PRETTY, defaultValue = "true") Boolean pretty) {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -51,16 +51,16 @@ public class FetchController {
 						docString = JsonWriter.formatJson(docString);
 					}
 
-					return HttpResponse.ok(docString).status(ZuliaConstants.SUCCESS);
+					return HttpResponse.ok(docString).status(ZuliaRESTConstants.SUCCESS);
 				}
 
 			}
-			return HttpResponse.ok("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").status(ZuliaConstants.NOT_FOUND);
+			return HttpResponse.ok("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">").status(ZuliaRESTConstants.NOT_FOUND);
 
 		}
 		catch (Exception e) {
 			return HttpResponse.serverError("Failed to fetch uniqueId <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage())
-					.status(ZuliaConstants.INTERNAL_ERROR);
+					.status(ZuliaRESTConstants.INTERNAL_ERROR);
 		}
 
 	}

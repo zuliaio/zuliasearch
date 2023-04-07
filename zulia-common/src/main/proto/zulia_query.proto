@@ -164,6 +164,7 @@ enum FetchType {
     FULL = 0;
     META = 1;
     NONE = 2;
+    ALL = 3;
 }
 
 message LastIndexResult {

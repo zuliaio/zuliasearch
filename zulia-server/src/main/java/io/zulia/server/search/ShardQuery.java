@@ -1,6 +1,6 @@
 package io.zulia.server.search;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaQuery;
 import org.apache.lucene.index.Term;
@@ -48,7 +48,7 @@ public class ShardQuery {
 	}
 
 	public static ShardQuery queryById(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask) {
-		Query query = new ConstantScoreQuery(new TermQuery(new Term(ZuliaConstants.ID_FIELD, uniqueId)));
+		Query query = new ConstantScoreQuery(new TermQuery(new Term(ZuliaFieldConstants.ID_FIELD, uniqueId)));
 		return new ShardQuery(query, null, 1, Collections.emptyMap(), ZuliaQuery.FacetRequest.newBuilder().build(), null, null, resultFetchType, fieldsToReturn,
 				fieldsToMask, Collections.emptyList(), Collections.emptyList(), false);
 	}

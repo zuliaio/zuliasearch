@@ -7,7 +7,8 @@ import com.koloboke.collect.map.hash.HashIntObjMaps;
 import com.koloboke.collect.set.IntSet;
 import com.koloboke.collect.set.hash.HashIntSet;
 import com.koloboke.collect.set.hash.HashIntSets;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.server.config.ServerIndexConfig;
@@ -22,6 +23,7 @@ import io.zulia.server.index.field.StringFieldIndexer;
 import io.zulia.util.BooleanUtil;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.ZuliaVersion;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -30,7 +32,6 @@ import org.apache.lucene.document.KnnFloatVectorField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
@@ -54,35 +55,43 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
 
-import static io.zulia.ZuliaConstants.FACET_PATH_DELIMITER;
-
 public class ShardDocumentIndexer {
 
-	private final static Splitter facetPathSplitter = Splitter.on(FACET_PATH_DELIMITER).omitEmptyStrings();
+	private final static Splitter facetPathSplitter = Splitter.on(ZuliaFieldConstants.FACET_PATH_DELIMITER).omitEmptyStrings();
 
 	private final static Map<String, Integer> dimToOrdinal = new ConcurrentHashMap<>();
 
 	private final ServerIndexConfig indexConfig;
+	private final int majorVersion;
+	private final int minorVersion;
+	private final String idSortField;
 
 	public ShardDocumentIndexer(ServerIndexConfig indexConfig) {
 		this.indexConfig = indexConfig;
-
+		this.majorVersion = ZuliaVersion.getMajor();
+		this.minorVersion = ZuliaVersion.getMinor();
+		this.idSortField = FieldTypeUtil.getSortField(ZuliaFieldConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING);
 	}
 
 	public Document getIndexDocument(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata,
 			DirectoryTaxonomyWriter taxoWriter) throws Exception {
 		Document luceneDocument = new Document();
+		luceneDocument.add(new StringField(ZuliaFieldConstants.ID_FIELD, uniqueId, Field.Store.NO));
+		luceneDocument.add(new SortedSetDocValuesField(idSortField, new BytesRef(uniqueId)));
+		luceneDocument.add(new LongPoint(ZuliaFieldConstants.TIMESTAMP_FIELD, timestamp));
 
-		luceneDocument.add(new StringField(ZuliaConstants.ID_FIELD, uniqueId, Field.Store.YES));
-		luceneDocument.add(
-				new SortedSetDocValuesField(FieldTypeUtil.getSortField(ZuliaConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), new BytesRef(uniqueId)));
-		luceneDocument.add(new LongPoint(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
-		luceneDocument.add(new StoredField(ZuliaConstants.TIMESTAMP_FIELD, timestamp));
+		ZuliaBase.IdInfo idInfo = ZuliaBase.IdInfo.newBuilder().setId(uniqueId).setTimestamp(timestamp).setMajorVersion(majorVersion)
+				.setMinorVersion(minorVersion).build();
+
+		byte[] idInfoBytes = idInfo.toByteArray();
+
+		luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.STORED_ID_FIELD, new BytesRef(idInfoBytes)));
+
 		if (metadata.hasDocument()) {
-			luceneDocument.add(new StoredField(ZuliaConstants.STORED_META_FIELD, new BytesRef(metadata.getByteArray())));
+			luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.STORED_META_FIELD, new BytesRef(metadata.getByteArray())));
 		}
 		if (mongoDocument.hasDocument()) {
-			luceneDocument.add(new StoredField(ZuliaConstants.STORED_DOC_FIELD, new BytesRef(mongoDocument.getByteArray())));
+			luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.STORED_DOC_FIELD, new BytesRef(mongoDocument.getByteArray())));
 			addUserFields(mongoDocument.getDocument(), luceneDocument, taxoWriter);
 		}
 
@@ -136,7 +145,7 @@ public class ShardDocumentIndexer {
 
 				for (int i = 1; i <= facetLabel.length; i++) {
 					luceneDocument.add(
-							new StringField(ZuliaConstants.FACET_DRILL_DOWN_FIELD, FacetsConfig.pathToString(facetLabel.components, i), Field.Store.NO));
+							new StringField(ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD, FacetsConfig.pathToString(facetLabel.components, i), Field.Store.NO));
 				}
 
 				int ordinal = taxoWriter.addCategory(facetLabel);
@@ -165,7 +174,7 @@ public class ShardDocumentIndexer {
 			fieldOrdinals.forEach((IntConsumer) ordinalBuffer::put);
 		}
 
-		luceneDocument.add(new BinaryDocValuesField(ZuliaConstants.FACET_STORAGE, new BytesRef(byteBuffer.array())));
+		luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.FACET_STORAGE, new BytesRef(byteBuffer.array())));
 	}
 
 	private void addIndexingForStoredField(Document luceneDocument, String storedFieldName, FieldConfig fc, FieldConfig.FieldType fieldType, Object o)
@@ -173,7 +182,7 @@ public class ShardDocumentIndexer {
 		for (ZuliaIndex.IndexAs indexAs : fc.getIndexAsList()) {
 
 			String indexedFieldName = indexAs.getIndexFieldName();
-			luceneDocument.add(new StringField(ZuliaConstants.FIELDS_LIST_FIELD, indexedFieldName, Field.Store.NO));
+			luceneDocument.add(new StringField(ZuliaFieldConstants.FIELDS_LIST_FIELD, indexedFieldName, Field.Store.NO));
 
 			if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 				IntFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);

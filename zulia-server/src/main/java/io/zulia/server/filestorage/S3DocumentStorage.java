@@ -151,7 +151,7 @@ public class S3DocumentStorage implements DocumentStorage {
 			case NONE, UNRECOGNIZED -> null;
 			case META ->
 					buildMetadataDocument(client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uid)).first());
-			case FULL ->
+			case FULL, ALL ->
 					buildFullDocument(client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + FILE_UNIQUE_ID_KEY, uid)).first());
 		};
 	}
@@ -197,7 +197,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) throws Exception {
+	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) {
 		deleteAssociatedDocument(uniqueId, fileName);
 
 		Document TOC = new Document();

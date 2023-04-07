@@ -1,6 +1,6 @@
 package io.zulia.server.index;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
@@ -593,7 +593,7 @@ public class ZuliaIndex {
 						FacetLabel facetLabel = new FacetLabel(facet.getValue(), path);
 
 						Query query = new ConstantScoreQuery(new TermQuery(
-								new Term(ZuliaConstants.FACET_DRILL_DOWN_FIELD, FacetsConfig.pathToString(drillDown.getLabel(), facetLabel.components))));
+								new Term(ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD, FacetsConfig.pathToString(drillDown.getLabel(), facetLabel.components))));
 						drillDownQuery.add(query,
 								ZuliaQuery.Query.Operator.OR.equals(drillDown.getOperator()) ? BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST);
 
@@ -677,9 +677,9 @@ public class ZuliaIndex {
 		SimpleBindings bindings = new SimpleBindings();
 
 		Expression expr = JavascriptCompiler.compile(scoreFunction);
-		bindings.add(ZuliaConstants.SCORE_FIELD, DoubleValuesSource.SCORES);
+		bindings.add(ZuliaFieldConstants.SCORE_FIELD, DoubleValuesSource.SCORES);
 		for (String var : expr.variables) {
-			if (!ZuliaConstants.SCORE_FIELD.equals(var)) {
+			if (!ZuliaFieldConstants.SCORE_FIELD.equals(var)) {
 				SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(var);
 				FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 				if (fieldType == null) {
@@ -853,7 +853,7 @@ public class ZuliaIndex {
 
 						ZuliaQuery.SortValue sortValue = sortValues.getSortValue(sortTermsIndex);
 
-						if (ZuliaConstants.SCORE_FIELD.equals(sortField)) {
+						if (ZuliaFieldConstants.SCORE_FIELD.equals(sortField)) {
 							sortTerms[sortTermsIndex] = sortValue.getFloatValue();
 						}
 						else if (sortValue.getExists()) {
@@ -1066,18 +1066,19 @@ public class ZuliaIndex {
 			}
 		}
 
-		fields.remove(ZuliaConstants.TIMESTAMP_FIELD);
-		fields.remove(ZuliaConstants.STORED_DOC_FIELD);
-		fields.remove(ZuliaConstants.STORED_META_FIELD);
-		fields.remove(ZuliaConstants.ID_FIELD);
-		fields.remove(ZuliaConstants.FIELDS_LIST_FIELD);
+		fields.remove(ZuliaFieldConstants.TIMESTAMP_FIELD);
+		fields.remove(ZuliaFieldConstants.STORED_ID_FIELD);
+		fields.remove(ZuliaFieldConstants.STORED_DOC_FIELD);
+		fields.remove(ZuliaFieldConstants.STORED_META_FIELD);
+		fields.remove(ZuliaFieldConstants.ID_FIELD);
+		fields.remove(ZuliaFieldConstants.FIELDS_LIST_FIELD);
 
 		List<String> toRemove = new ArrayList<>();
 		for (String field : fields) {
-			if (field.startsWith(ZuliaConstants.FACET_DRILL_DOWN_FIELD)) {
+			if (field.startsWith(ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD)) {
 				toRemove.add(field);
 			}
-			if (field.startsWith(ZuliaConstants.FACET_STORAGE)) {
+			if (field.startsWith(ZuliaFieldConstants.FACET_STORAGE)) {
 				toRemove.add(field);
 			}
 			else if (FieldTypeUtil.isCharLengthField(field)) {
@@ -1086,7 +1087,7 @@ public class ZuliaIndex {
 			else if (FieldTypeUtil.isListLengthField(field)) {
 				toRemove.add(field);
 			}
-			else if (field.contains(ZuliaConstants.SORT_SUFFIX)) {
+			else if (field.contains(ZuliaFieldConstants.SORT_SUFFIX)) {
 				toRemove.add(field);
 			}
 		}
