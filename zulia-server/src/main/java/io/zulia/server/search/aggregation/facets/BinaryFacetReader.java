@@ -1,6 +1,6 @@
 package io.zulia.server.search.aggregation.facets;
 
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.OrdinalBuffer;
 import org.apache.lucene.index.BinaryDocValues;
@@ -15,7 +15,7 @@ public class BinaryFacetReader implements FacetsReader {
 	private final BinaryDocValues ordinalBinaryValues;
 
 	public BinaryFacetReader(LeafReader reader) throws IOException {
-		ordinalBinaryValues = reader.getBinaryDocValues(ZuliaConstants.FACET_STORAGE);
+		ordinalBinaryValues = reader.getBinaryDocValues(ZuliaFieldConstants.FACET_STORAGE);
 	}
 
 	@Override

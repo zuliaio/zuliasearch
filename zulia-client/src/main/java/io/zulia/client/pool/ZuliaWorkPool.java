@@ -25,7 +25,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(batchFetch);
 	}
 
-	public ListenableFuture<BatchFetchResult> batchFetchAsync(BatchFetch batchFetch) throws Exception {
+	public ListenableFuture<BatchFetchResult> batchFetchAsync(BatchFetch batchFetch) {
 		return executeAsync(batchFetch);
 	}
 
@@ -41,7 +41,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return clearIndexAsync(new ClearIndex(index));
 	}
 
-	public ListenableFuture<ClearIndexResult> clearIndexAsync(ClearIndex clearIndex) throws Exception {
+	public ListenableFuture<ClearIndexResult> clearIndexAsync(ClearIndex clearIndex) {
 		return executeAsync(clearIndex);
 	}
 
@@ -61,11 +61,11 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new CreateIndexAlias(aliasName, indexName));
 	}
 
-	public ListenableFuture<CreateIndexResult> createIndexAsync(CreateIndex createIndex) throws Exception {
+	public ListenableFuture<CreateIndexResult> createIndexAsync(CreateIndex createIndex) {
 		return executeAsync(createIndex);
 	}
 
-	public ListenableFuture<CreateIndexResult> createIndexAsync(ClientIndexConfig indexConfig) throws Exception {
+	public ListenableFuture<CreateIndexResult> createIndexAsync(ClientIndexConfig indexConfig) {
 		return executeAsync(new CreateIndex(indexConfig));
 	}
 
@@ -73,7 +73,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(updateIndex);
 	}
 
-	public ListenableFuture<UpdateIndexResult> updateIndexAsync(UpdateIndex updateIndex) throws Exception {
+	public ListenableFuture<UpdateIndexResult> updateIndexAsync(UpdateIndex updateIndex) {
 		return executeAsync(updateIndex);
 	}
 
@@ -81,7 +81,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(delete);
 	}
 
-	public ListenableFuture<DeleteResult> deleteAsync(Delete delete) throws Exception {
+	public ListenableFuture<DeleteResult> deleteAsync(Delete delete) {
 		return executeAsync(delete);
 	}
 
@@ -89,7 +89,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(batchDelete);
 	}
 
-	public ListenableFuture<BatchDeleteResult> batchDeleteAsync(BatchDelete batchDelete) throws Exception {
+	public ListenableFuture<BatchDeleteResult> batchDeleteAsync(BatchDelete batchDelete) {
 		return executeAsync(batchDelete);
 	}
 
@@ -105,7 +105,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new DeleteIndexAlias(aliasName));
 	}
 
-	public ListenableFuture<DeleteIndexResult> deleteIndexAsync(String indexName) throws Exception {
+	public ListenableFuture<DeleteIndexResult> deleteIndexAsync(String indexName) {
 		return executeAsync(new DeleteIndex(indexName));
 	}
 
@@ -117,7 +117,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(deleteIndex);
 	}
 
-	public ListenableFuture<DeleteIndexResult> deleteIndexAsync(DeleteIndex deleteIndex) throws Exception {
+	public ListenableFuture<DeleteIndexResult> deleteIndexAsync(DeleteIndex deleteIndex) {
 		return executeAsync(deleteIndex);
 	}
 
@@ -125,7 +125,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(fetch);
 	}
 
-	public ListenableFuture<FetchResult> fetchAsync(Fetch fetch) throws Exception {
+	public ListenableFuture<FetchResult> fetchAsync(Fetch fetch) {
 		return executeAsync(fetch);
 	}
 
@@ -133,7 +133,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(fetchLargeAssociated);
 	}
 
-	public ListenableFuture<FetchLargeAssociatedResult> fetchLargeAssociatedAsync(FetchLargeAssociated fetchLargeAssociated) throws Exception {
+	public ListenableFuture<FetchLargeAssociatedResult> fetchLargeAssociatedAsync(FetchLargeAssociated fetchLargeAssociated) {
 		return executeAsync(fetchLargeAssociated);
 	}
 
@@ -145,7 +145,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(getFields);
 	}
 
-	public ListenableFuture<GetFieldsResult> getFieldsAsync(GetFields getFields) throws Exception {
+	public ListenableFuture<GetFieldsResult> getFieldsAsync(GetFields getFields) {
 		return executeAsync(getFields);
 	}
 
@@ -153,7 +153,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new GetIndexes());
 	}
 
-	public ListenableFuture<GetIndexesResult> getIndexesAsync() throws Exception {
+	public ListenableFuture<GetIndexesResult> getIndexesAsync() {
 		return executeAsync(new GetIndexes());
 	}
 
@@ -165,7 +165,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new GetNodes().setActiveOnly(true));
 	}
 
-	public ListenableFuture<GetNodesResult> getNodesAsync() throws Exception {
+	public ListenableFuture<GetNodesResult> getNodesAsync() {
 		return executeAsync(new GetNodes());
 	}
 
@@ -177,11 +177,11 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(getNumberOfDocs);
 	}
 
-	public ListenableFuture<GetNumberOfDocsResult> getNumberOfDocsAsync(String indexName) throws Exception {
+	public ListenableFuture<GetNumberOfDocsResult> getNumberOfDocsAsync(String indexName) {
 		return executeAsync(new GetNumberOfDocs(indexName));
 	}
 
-	public ListenableFuture<GetNumberOfDocsResult> getNumberOfDocsAsync(GetNumberOfDocs getNumberOfDocs) throws Exception {
+	public ListenableFuture<GetNumberOfDocsResult> getNumberOfDocsAsync(GetNumberOfDocs getNumberOfDocs) {
 		return executeAsync(getNumberOfDocs);
 	}
 
@@ -189,7 +189,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(getTerms);
 	}
 
-	public ListenableFuture<GetTermsResult> getTermsAsync(GetTerms getTerms) throws Exception {
+	public ListenableFuture<GetTermsResult> getTermsAsync(GetTerms getTerms) {
 		return executeAsync(getTerms);
 	}
 
@@ -205,7 +205,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return optimizeIndexAsync(new OptimizeIndex(index));
 	}
 
-	public ListenableFuture<OptimizeIndexResult> optimizeIndexAsync(OptimizeIndex optimizeIndex) throws Exception {
+	public ListenableFuture<OptimizeIndexResult> optimizeIndexAsync(OptimizeIndex optimizeIndex) {
 		return executeAsync(optimizeIndex);
 	}
 
@@ -250,7 +250,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		}
 	}
 
-	public ListenableFuture<SearchResult> searchAsync(Search search) throws Exception {
+	public ListenableFuture<SearchResult> searchAsync(Search search) {
 		return executeAsync(search);
 	}
 
@@ -258,7 +258,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(store);
 	}
 
-	public ListenableFuture<StoreResult> storeAsync(Store store) throws Exception {
+	public ListenableFuture<StoreResult> storeAsync(Store store) {
 		return executeAsync(store);
 	}
 
@@ -266,7 +266,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(storeLargeAssociated);
 	}
 
-	public ListenableFuture<StoreLargeAssociatedResult> storeLargeAssociatedAsync(StoreLargeAssociated storeLargeAssociated) throws Exception {
+	public ListenableFuture<StoreLargeAssociatedResult> storeLargeAssociatedAsync(StoreLargeAssociated storeLargeAssociated) {
 		return executeAsync(storeLargeAssociated);
 	}
 
@@ -283,7 +283,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(getIndexConfig);
 	}
 
-	public ListenableFuture<GetIndexConfigResult> getIndexConfigAsync(GetIndexConfig getIndexConfig) throws Exception {
+	public ListenableFuture<GetIndexConfigResult> getIndexConfigAsync(GetIndexConfig getIndexConfig) {
 		return executeAsync(getIndexConfig);
 	}
 
@@ -295,7 +295,7 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(reindex);
 	}
 
-	public ListenableFuture<ReindexResult> reindexAsync(Reindex reindex) throws Exception {
+	public ListenableFuture<ReindexResult> reindexAsync(Reindex reindex) {
 		return executeAsync(reindex);
 	}
 

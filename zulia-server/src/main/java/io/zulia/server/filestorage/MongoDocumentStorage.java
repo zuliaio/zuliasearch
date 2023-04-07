@@ -191,7 +191,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 		return null;
 	}
 
-	private AssociatedDocument loadGridFSToAssociatedDocument(GridFSBucket gridFS, GridFSFile file, FetchType fetchType) throws IOException {
+	private AssociatedDocument loadGridFSToAssociatedDocument(GridFSBucket gridFS, GridFSFile file, FetchType fetchType) {
 		AssociatedDocument.Builder aBuilder = AssociatedDocument.newBuilder();
 		aBuilder.setFilename(file.getFilename());
 		Document metadata = file.getMetadata();
@@ -288,7 +288,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) throws Exception {
+	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) {
 		throw new UnsupportedOperationException("Cannot register a file store in your mongo instance with Zulia's mongo instance.");
 	}
 

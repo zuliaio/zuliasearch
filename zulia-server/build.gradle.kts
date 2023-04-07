@@ -7,7 +7,6 @@ description = "Zulia Server"
 
 val luceneVersion: String by project
 val mongoDriverVersion: String by project
-val protobufVersion: String by project
 val micronautVersion: String by project
 val amazonVersion: String by project
 val snakeYamlVersion: String by project
@@ -28,23 +27,24 @@ dependencies {
     implementation("org.apache.lucene:lucene-facet:$luceneVersion")
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
+
+    //caffiene 3.1.2 cause issues with the cache test
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.1")
 
     api("com.koloboke:koloboke-api-jdk8:$kolobokeVersion")
     api("com.koloboke:koloboke-impl-jdk8:$kolobokeVersion")
 
-    implementation("info.picocli:picocli:4.6.3")
-    annotationProcessor("info.picocli:picocli-codegen:4.6.3")
+    implementation("info.picocli:picocli:4.7.1")
+    annotationProcessor("info.picocli:picocli-codegen:4.7.1")
 
-    implementation("com.google.protobuf:protobuf-java-util:$protobufVersion")
     implementation("com.datadoghq:sketches-java:0.8.2")
 
-    implementation("com.cedarsoftware:json-io:4.13.0")
+    implementation("com.cedarsoftware:json-io:4.14.0")
 
     implementation("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
-    implementation("org.apache.commons:commons-compress:1.21")
-    implementation("org.xerial.snappy:snappy-java:1.1.8.4")
+    implementation("org.apache.commons:commons-compress:1.22")
+    implementation("org.xerial.snappy:snappy-java:1.1.9.1")
     implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
     implementation("software.amazon.awssdk:s3")
 

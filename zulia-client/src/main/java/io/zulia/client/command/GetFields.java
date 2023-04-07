@@ -15,7 +15,7 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
  */
 public class GetFields extends SimpleCommand<ZuliaServiceOuterClass.GetFieldNamesRequest, GetFieldsResult> implements SingleIndexRoutableCommand {
 
-	private String indexName;
+	private final String indexName;
 
 	public GetFields(String indexName) {
 		this.indexName = indexName;

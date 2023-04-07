@@ -6,7 +6,7 @@ plugins {
     signing
     `maven-publish`
     id("org.ajoberstar.reckon") version "0.16.1"
-    id("com.google.protobuf") version "0.9.1" apply false
+    id("com.google.protobuf") version "0.9.2" apply false
 }
 
 configure<ReckonExtension> {
@@ -56,11 +56,11 @@ subprojects {
                 artifact(tasks["sourcesJar"])
                 artifact(tasks["javadocJar"])
                 pom {
-                    url.set("http://zulia.io")
+                    url.set("https://zulia.io")
                     licenses {
                         license {
                             name.set("The Apache License, Version 2.0")
-                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
                         }
                     }
                     developers {
@@ -69,14 +69,14 @@ subprojects {
                             name.set("Matt Davis")
                             email.set("matt.davis@ascend-tech.us")
                             organization.set("Ascendant Software Technology, LLC")
-                            organizationUrl.set("http://www.ascend-tech.us")
+                            organizationUrl.set("https://www.ascend-tech.us")
                         }
                         developer {
                             id.set("payam.meyer")
                             name.set("Payam Mayer")
                             email.set("payam.meyer@ascend-tech.us")
                             organization.set("Ascendant Software Technology, LLC")
-                            organizationUrl.set("http://www.ascend-tech.us")
+                            organizationUrl.set("https://www.ascend-tech.us")
                         }
                     }
                     scm {

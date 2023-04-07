@@ -15,7 +15,7 @@ public class InternalRpcConnectionFactory extends BasePooledObjectFactory<Intern
 	}
 
 	@Override
-	public InternalRpcConnection create() throws Exception {
+	public InternalRpcConnection create() {
 		return new InternalRpcConnection(memberAddress, internalServicePort);
 	}
 

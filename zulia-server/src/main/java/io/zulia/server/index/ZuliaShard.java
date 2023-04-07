@@ -1,6 +1,5 @@
 package io.zulia.server.index;
 
-import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
@@ -11,7 +10,7 @@ import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.server.search.ShardQuery;
-import org.apache.lucene.index.IndexableField;
+import io.zulia.server.util.BytesRefUtil;
 import org.apache.lucene.search.Query;
 
 import java.io.IOException;
@@ -143,13 +142,16 @@ public class ZuliaShard {
 				}
 
 				try {
-					IndexableField f = d.getField(ZuliaConstants.TIMESTAMP_FIELD);
-					long timestamp = f.numericValue().longValue();
 
-					String uniqueId = d.get(ZuliaConstants.ID_FIELD);
+					byte[] idInfoBytes = BytesRefUtil.getByteArray(d.idInfo());
+					ZuliaBase.IdInfo idInfo = ZuliaBase.IdInfo.parseFrom(idInfoBytes);
 
-					DocumentContainer mongoDocument = new DocumentContainer(d.getBinaryValue(ZuliaConstants.STORED_DOC_FIELD));
-					DocumentContainer metadata = new DocumentContainer(d.getBinaryValue(ZuliaConstants.STORED_META_FIELD));
+					long timestamp = idInfo.getTimestamp();
+
+					String uniqueId = idInfo.getId();
+
+					DocumentContainer metadata = new DocumentContainer(d.meta());
+					DocumentContainer mongoDocument = new DocumentContainer(d.fullDoc());
 
 					if (!trackedIds.contains(uniqueId)) {
 						shardWriteManager.indexDocument(uniqueId, timestamp, mongoDocument, metadata);

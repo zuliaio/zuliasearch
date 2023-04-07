@@ -12,9 +12,17 @@ public class ZuliaVersion {
 	private static final ZuliaVersion VERSION = new ZuliaVersion();
 	private String version;
 
+	private int major;
+	private int minor;
+
 	public ZuliaVersion() {
 		try (InputStream versionStream = ZuliaVersion.class.getResourceAsStream("/version")) {
 			version = new String(versionStream.readAllBytes(), StandardCharsets.UTF_8);
+
+			String next = version;
+			major = Integer.parseInt(next.substring(0, next.indexOf('.')));
+			next = next.substring(next.indexOf('.') + 1);
+			minor = Integer.parseInt(next.substring(0, next.indexOf('.')));
 		}
 		catch (IOException e) {
 			LOG.log(Level.SEVERE, "Failed to get the version.", e);
@@ -26,12 +34,12 @@ public class ZuliaVersion {
 		return VERSION.version;
 	}
 
-	/**
-	 * Gets the version of Zulia when versioning was added
-	 *
-	 * @return the version of Zulia when versioning was added
-	 */
-	public static String getVersionAdded() {
-		return "2.1.0";
+	public static int getMajor() {
+		return VERSION.major;
 	}
+
+	public static int getMinor() {
+		return VERSION.minor;
+	}
+
 }

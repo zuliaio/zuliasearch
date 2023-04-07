@@ -1,10 +1,11 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
-import io.zulia.ZuliaConstants;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.client.command.Reindex;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.CountFacet;
+import io.zulia.client.command.builder.DrillDown;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.MatchAllQuery;
 import io.zulia.client.command.builder.ScoredQuery;
@@ -40,7 +41,7 @@ import java.util.List;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class StartStopTest {
 
-	public static final String FACET_TEST_INDEX = "plugged-54a725bc148f6dd7d62bc600";
+	public static final String FACET_TEST_INDEX = "ssTest";
 
 	private final int COUNT_PER_ISSN = 10;
 	private final String uniqueIdPrefix = "myId-";
@@ -212,7 +213,7 @@ public class StartStopTest {
 
 		Search search = new Search(FACET_TEST_INDEX).setAmount(10);
 		search.addQuery(new ScoredQuery("issn:\"1234-1234\" OR country:US"));
-		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD).ascending());
+		search.addSort(new Sort(ZuliaFieldConstants.SCORE_FIELD).ascending());
 
 		SearchResult searchResult = zuliaWorkPool.search(search);
 
@@ -226,7 +227,7 @@ public class StartStopTest {
 		}
 
 		search.clearSort();
-		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD).descending());
+		search.addSort(new Sort(ZuliaFieldConstants.SCORE_FIELD).descending());
 		searchResult = zuliaWorkPool.search(search);
 
 		for (CompleteResult result : searchResult.getCompleteResults()) {
@@ -383,7 +384,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(
 				FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data").sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD).facet());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 
@@ -500,18 +501,19 @@ public class StartStopTest {
 
 		{
 			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide"));
-			s.addFacetDrillDown("issn", "1234-1234").addFacetDrillDown("country", "France");
+			s.addFacetDrillDown(new DrillDown("issn").addValue("1234-1234")).addFacetDrillDown(new DrillDown("country").addValue("France"));
 			s.addCountFacet(new CountFacet("issn"));
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
 			Assertions.assertEquals(COUNT_PER_ISSN / 2, sr.getTotalHits(), "Total record count after drill down mismatch");
-			Assertions.assertEquals(1, sr.getFacetCounts("issn").size(), "Number of issn facets  mismatch");
+			Assertions.assertEquals(1, sr.getFacetCounts("issn").size(), "Number of issn facets mismatch");
 
 		}
 
 		{
-			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide")).addFacetDrillDown("date", "2014-10-04");
+			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide"))
+					.addFacetDrillDown(new DrillDown("date").addValue("2014-10-04"));
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
@@ -521,7 +523,8 @@ public class StartStopTest {
 
 		{
 
-			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide")).addFacetDrillDown("date", "2013-09-04");
+			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide"))
+					.addFacetDrillDown(new DrillDown("date").addValue("2013-09-04"));
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
@@ -530,7 +533,55 @@ public class StartStopTest {
 		}
 
 		{
-			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide")).addFacetDrillDown("date", "2012-08-04");
+
+			Search s = new Search(FACET_TEST_INDEX).addFacetDrillDown(new DrillDown("testList").addValues("one", "two").all()).setAmount(1);
+
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			Assertions.assertEquals((totalRecords / 2), sr.getTotalHits(), "Total record count after drill down mismatch");
+
+			List<String> testList = sr.getFirstDocument().getList("testList", String.class);
+			Assertions.assertTrue(testList.contains("one"));
+			Assertions.assertTrue(testList.contains("two"));
+		}
+
+		{
+
+			Search s = new Search(FACET_TEST_INDEX).addFacetDrillDown(new DrillDown("testList").addValues("one", "two").all().exclude()).setAmount(1);
+			s.setDebug(true);
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			Assertions.assertEquals((totalRecords / 2), sr.getTotalHits(), "Total record count after drill down mismatch");
+
+			List<String> testList = sr.getFirstDocument().getList("testList", String.class);
+			Assertions.assertTrue(testList.contains("a"));
+			Assertions.assertTrue(testList.contains("b"));
+			Assertions.assertTrue(testList.contains("c"));
+		}
+
+		{
+
+			Search s = new Search(FACET_TEST_INDEX).addFacetDrillDown(new DrillDown("testList").addValues("one", "a").all());
+
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			Assertions.assertEquals(0, sr.getTotalHits(), "Total record count after drill down mismatch");
+
+		}
+
+		{
+
+			Search s = new Search(FACET_TEST_INDEX).addFacetDrillDown(new DrillDown("testList").addValues("one", "a").exclude().all());
+
+			SearchResult sr = zuliaWorkPool.search(s);
+
+			Assertions.assertEquals(totalRecords, sr.getTotalHits(), "Total record count after drill down mismatch");
+
+		}
+
+		{
+			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide"))
+					.addFacetDrillDown(new DrillDown("date").addValue("2012-08-04"));
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
@@ -539,7 +590,8 @@ public class StartStopTest {
 		}
 
 		{
-			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide")).addFacetDrillDown("issn", "1234-1234").setAmount(10);
+			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide")).addFacetDrillDown(new DrillDown("issn").addValue("1234-1234"))
+					.setAmount(10);
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
@@ -550,8 +602,8 @@ public class StartStopTest {
 
 		{
 
-			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide")).addFacetDrillDown("issn", "1234-1234")
-					.addFacetDrillDown("issn", "3333-1234");
+			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide"))
+					.addFacetDrillDown(new DrillDown("issn").addValues("1234-1234", "3333-1234"));
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
@@ -560,8 +612,8 @@ public class StartStopTest {
 		}
 		{
 
-			Search s = new Search(FACET_TEST_INDEX).addQuery(new ScoredQuery("title:userguide")).addFacetDrillDown("issn", "1234-1234")
-					.addFacetDrillDown("country", "France");
+			Search s = new Search(FACET_TEST_INDEX).addQuery(new ScoredQuery("title:userguide")).addFacetDrillDown(new DrillDown("issn").addValue("1234-1234"))
+					.addFacetDrillDown(new DrillDown("country").addValue("France"));
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
@@ -582,7 +634,7 @@ public class StartStopTest {
 
 			Assertions.assertEquals(totalRecords / 2, sr.getTotalHits(), "Total record count filtered on half mismatch");
 
-			s = new Search(FACET_TEST_INDEX).addQuery(new ScoredQuery("country:US")).setAmount(10);
+			s = new Search(FACET_TEST_INDEX).addQuery(new ScoredQuery("country:US")).setAmount(10).setResultFetchType(ZuliaQuery.FetchType.ALL);
 
 			sr = zuliaWorkPool.search(s);
 

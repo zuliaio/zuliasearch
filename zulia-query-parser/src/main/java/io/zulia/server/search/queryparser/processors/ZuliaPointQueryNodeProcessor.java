@@ -1,24 +1,26 @@
 package io.zulia.server.search.queryparser.processors;
 
-import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
-import org.apache.lucene.queryparser.flexible.core.config.FieldConfig;
-import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.server.config.IndexFieldInfo;
+import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.server.search.queryparser.node.ZuliaPointRangeQueryNode;
+import io.zulia.util.BooleanUtil;
+import io.zulia.util.ZuliaDateUtil;
 import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.MatchNoDocsQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.RangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryparser.flexible.standard.config.PointsConfig;
-import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
+import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.nodes.PointRangeQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.List;
+import java.util.Locale;
 
-//modified from PointQueryNodeProcessor to return MatchNoDocsQueryNode instead of throwing a parse exception.
-// this is important if a numeric field and normal field are both queried at the same time, i.e. defaultFields = title, pubYear with query "cancer"
 public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 
 	/**
@@ -29,64 +31,110 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 	}
 
 	@Override
-	protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
+	protected QueryNode postProcessNode(QueryNode node) {
 
-		if (node instanceof FieldQueryNode && !(node.getParent() instanceof RangeQueryNode)) {
+		if (node instanceof FieldQueryNode fieldNode && !(node.getParent() instanceof RangeQueryNode)) {
 
-			QueryConfigHandler config = getQueryConfigHandler();
+			ServerIndexConfig indexConfig = getQueryConfigHandler().get(ZuliaQueryNodeProcessorPipeline.ZULIA_INDEX_CONFIG);
 
-			if (config != null) {
-				FieldQueryNode fieldNode = (FieldQueryNode) node;
-				FieldConfig fieldConfig = config.getFieldConfig(fieldNode.getFieldAsString());
+			String field = fieldNode.getFieldAsString();
+			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(field);
+			if (indexFieldInfo != null) {
+				FieldType fieldType = indexFieldInfo.getFieldType();
 
-				if (fieldConfig != null) {
-					PointsConfig numericConfig = fieldConfig.get(ConfigurationKeys.POINTS_CONFIG);
+				if (FieldTypeUtil.isHandledAsNumericFieldType(fieldType)) {
 
-					if (numericConfig != null) {
+					String text = fieldNode.getTextAsString();
 
-						NumberFormat numberFormat = numericConfig.getNumberFormat();
-						String text = fieldNode.getTextAsString();
-						Number number;
+					NumberFormat numberFormat = FieldTypeUtil.isNumericFloatingPointFieldType(fieldType) ?
+							NumberFormat.getNumberInstance(Locale.ROOT) :
+							NumberFormat.getIntegerInstance(Locale.ROOT);
 
-						if (text.length() > 0) {
-
-							try {
-								number = numberFormat.parse(text);
-
-							}
-							catch (ParseException e) {
-								//zulia - dont throw exception, return match no docs
-								return new MatchNoDocsQueryNode();
-							}
-
-							if (Integer.class.equals(numericConfig.getType())) {
-								number = number.intValue();
-							}
-							else if (Long.class.equals(numericConfig.getType())) {
-								number = number.longValue();
-							}
-							else if (Double.class.equals(numericConfig.getType())) {
-								number = number.doubleValue();
-							}
-							else if (Float.class.equals(numericConfig.getType())) {
-								number = number.floatValue();
-							}
-
-						}
-						else {
-							//zulia - dont throw exception, return match no docs
-							return new MatchNoDocsQueryNode();
-						}
-
-						PointQueryNode lowerNode = new PointQueryNode(fieldNode.getField(), number, numberFormat);
-						PointQueryNode upperNode = new PointQueryNode(fieldNode.getField(), number, numberFormat);
-
-						return new PointRangeQueryNode(lowerNode, upperNode, true, true, numericConfig);
+					Number number = parseNumber(text, numberFormat, fieldType);
+					if (number == null) {
+						return new MatchNoDocsQueryNode();
 					}
+
+					PointQueryNode lowerNode = new PointQueryNode(field, number, numberFormat);
+					PointQueryNode upperNode = new PointQueryNode(field, number, numberFormat);
+
+					return new ZuliaPointRangeQueryNode(lowerNode, upperNode, true, true, indexFieldInfo);
+
+				}
+			}
+
+		}
+		else if (node instanceof TermRangeQueryNode termRangeNode) {
+			ServerIndexConfig indexConfig = getQueryConfigHandler().get(ZuliaQueryNodeProcessorPipeline.ZULIA_INDEX_CONFIG);
+
+			String field = StringUtils.toString(termRangeNode.getField());
+			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(field);
+			if (indexFieldInfo != null) {
+				FieldType fieldType = indexFieldInfo.getFieldType();
+				if (FieldTypeUtil.isHandledAsNumericFieldType(fieldType)) {
+
+					FieldQueryNode upper = termRangeNode.getUpperBound();
+					FieldQueryNode lower = termRangeNode.getLowerBound();
+
+					NumberFormat numberFormat = FieldTypeUtil.isNumericFloatingPointFieldType(fieldType) ?
+							NumberFormat.getNumberInstance(Locale.ROOT) :
+							NumberFormat.getIntegerInstance(Locale.ROOT);
+
+					Number lowerNumber = parseNumber(lower.getTextAsString(), numberFormat, fieldType);
+					if (lowerNumber == null && !lower.getTextAsString().isEmpty()) {
+						return new MatchNoDocsQueryNode();
+					}
+
+					Number upperNumber = parseNumber(upper.getTextAsString(), numberFormat, fieldType);
+					if (upperNumber == null && !upper.getTextAsString().isEmpty()) {
+						return new MatchNoDocsQueryNode();
+					}
+
+					PointQueryNode lowerNode = new PointQueryNode(field, lowerNumber, numberFormat);
+					PointQueryNode upperNode = new PointQueryNode(field, upperNumber, numberFormat);
+
+					return new ZuliaPointRangeQueryNode(lowerNode, upperNode, termRangeNode.isLowerInclusive(), termRangeNode.isUpperInclusive(),
+							indexFieldInfo);
+
 				}
 			}
 		}
 		return node;
+	}
+
+	private static Number parseNumber(String text, NumberFormat numberFormat, FieldType fieldType) {
+		Number number = null;
+		if (text.length() > 0) {
+			if (FieldTypeUtil.isNumericFieldType(fieldType)) {
+
+				try {
+					number = numberFormat.parse(text);
+
+					if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+						number = number.intValue();
+					}
+					else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+						number = number.longValue();
+					}
+					else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+						number = number.floatValue();
+					}
+					else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+						number = number.doubleValue();
+					}
+				}
+				catch (ParseException e) {
+
+				}
+			}
+			else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
+				number = BooleanUtil.getStringAsBooleanInt(text);
+			}
+			else if (FieldTypeUtil.isDateFieldType(fieldType)) {
+				number = ZuliaDateUtil.getDateAsLong(text);
+			}
+		}
+		return number;
 	}
 
 	@Override
@@ -98,4 +146,5 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 	protected List<QueryNode> setChildrenOrder(List<QueryNode> children) {
 		return children;
 	}
+
 }

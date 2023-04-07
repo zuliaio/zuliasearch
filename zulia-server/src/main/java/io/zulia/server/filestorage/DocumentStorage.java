@@ -33,10 +33,10 @@ public interface DocumentStorage {
 	/**
 	 * The method accepts the registration of an associated document that was created externally.  Primary use cae being something like S3.
 	 * Unsupported by local files storage
+	 *
 	 * @param registration
-	 * @throws Exception
 	 */
-	void registerExternalDocument(ExternalDocument registration) throws Exception;
+	void registerExternalDocument(ExternalDocument registration);
 
 	void drop() throws Exception;
 

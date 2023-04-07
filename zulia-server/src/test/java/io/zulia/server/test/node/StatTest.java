@@ -31,7 +31,7 @@ import java.util.List;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class StatTest {
 
-	public static final String STAT_TEST_INDEX = "stat";
+	public static final String STAT_TEST_INDEX = "stats";
 
 	private static ZuliaWorkPool zuliaWorkPool;
 	private static final int repeatCount = 100;

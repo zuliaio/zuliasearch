@@ -12,7 +12,7 @@ import java.util.Set;
 public class MapperTest {
 
 	@Test
-	public void testSimpleCase() throws Exception {
+	public void testSimpleCase() {
 
 		Date d = new Date();
 		TestObj1 testObj1 = new TestObj1("test", 14, Arrays.asList("1", "2"), Set.of(4, 6, 7), d, Long.MIN_VALUE, true);

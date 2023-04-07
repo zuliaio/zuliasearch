@@ -5,7 +5,7 @@ import io.zulia.client.result.Result;
 
 public abstract class GrpcCommand<R extends Result> implements BaseCommand<R> {
 
-	public abstract R execute(ZuliaConnection zuliaConnection) throws Exception;
+	public abstract R execute(ZuliaConnection zuliaConnection);
 
 	public R executeTimed(ZuliaConnection zuliaConnection) throws Exception {
 		long start = System.currentTimeMillis();

@@ -4,8 +4,8 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 
 public class QueryCacheKey {
 
-	private QueryRequest queryRequest;
-	private boolean pinned;
+	private final QueryRequest queryRequest;
+	private final boolean pinned;
 
 	public QueryCacheKey(QueryRequest queryRequest) {
 		this.pinned = queryRequest.getPinToCache();
@@ -61,4 +61,8 @@ public class QueryCacheKey {
 		return true;
 	}
 
+	@Override
+	public String toString() {
+		return queryRequest.toString();
+	}
 }

@@ -16,7 +16,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.CreateIndexResponse;
  */
 public class CreateIndex extends SimpleCommand<CreateIndexRequest, CreateIndexResult> {
 
-	private ClientIndexConfig indexConfig;
+	private final ClientIndexConfig indexConfig;
 
 	public CreateIndex(ClientIndexConfig indexConfig) {
 		this.indexConfig = indexConfig;
