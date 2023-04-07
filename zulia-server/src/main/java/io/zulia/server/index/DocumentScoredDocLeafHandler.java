@@ -116,16 +116,14 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 			rdBuilder.setUniqueId(idInfo.getId());
 			rdBuilder.setTimestamp(idInfo.getTimestamp());
 			if (meta) {
-				if (metaDocValues.advanceExact(docId)) {
+				if (metaDocValues != null && metaDocValues.advanceExact(docId)) {
 					byte[] metaBytes = BytesRefUtil.getByteArray(metaDocValues.binaryValue());
 					rdBuilder.setMetadata(ByteString.copyFrom(metaBytes));
 				}
-				else {
-					throw new IOException("Failed to parse meta field for document with lucene id <" + docId + ">");
-				}
 			}
+
 			if (full) {
-				if (fullDocValues.advanceExact(docId)) {
+				if (fullDocValues != null && fullDocValues.advanceExact(docId)) {
 					byte[] docBytes = BytesRefUtil.getByteArray(fullDocValues.binaryValue());
 					rdBuilder.setDocument(ByteString.copyFrom(docBytes));
 
@@ -146,9 +144,6 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 							}
 						}
 					}
-				}
-				else {
-					throw new IOException("Failed to parse full document field for document with lucene id <" + docId + ">");
 				}
 
 			}
