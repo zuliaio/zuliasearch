@@ -9,6 +9,7 @@ import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
@@ -26,6 +27,7 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.zulia.message.ZuliaIndex.SortAs.StringHandling.LOWERCASE_FOLDING;
 
@@ -714,6 +716,77 @@ public class SortTest {
 
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search), "Expected: Field <madeUp> is not defined as sortable");
 
+	}
+
+	@Test
+	@Order(16)
+	public void pagingTest() throws Exception {
+		SearchResult searchResult;
+		Search search = new Search(INDEX_NAME).setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(200, searchResult.getTotalHits());
+
+		{
+			AtomicInteger count = new AtomicInteger();
+			zuliaWorkPool.searchAll(search, sr -> {
+				System.out.println(sr.getLastResult());
+				for (CompleteResult completeResult : sr.getCompleteResults()) {
+					System.out.println(completeResult.getUniqueId());
+				}
+				count.addAndGet(sr.getCompleteResults().size());
+			});
+			Assertions.assertEquals(200, count.get());
+		}
+
+		{
+			AtomicInteger count = new AtomicInteger();
+			search.clearLastResult();
+			search.addSort(new Sort(ZuliaFieldConstants.ID_SORT_FIELD).ascending());
+			zuliaWorkPool.searchAll(search, sr -> {
+				count.addAndGet(sr.getCompleteResults().size());
+			});
+			Assertions.assertEquals(200, count.get());
+		}
+
+		{
+			AtomicInteger count = new AtomicInteger();
+			search.clearLastResult();
+			search.addSort(new Sort(ZuliaFieldConstants.ID_SORT_FIELD).descending());
+			zuliaWorkPool.searchAll(search, sr -> {
+				count.addAndGet(sr.getCompleteResults().size());
+			});
+			Assertions.assertEquals(200, count.get());
+		}
+
+		{
+			AtomicInteger count = new AtomicInteger();
+			search.clearLastResult();
+			search.addSort(new Sort("starsLong"));
+			zuliaWorkPool.searchAll(search, sr -> {
+				count.addAndGet(sr.getCompleteResults().size());
+			});
+			Assertions.assertEquals(200, count.get());
+		}
+
+		{
+			AtomicInteger count = new AtomicInteger();
+			search.clearLastResult();
+			search.addSort(new Sort("ratingDouble"));
+			zuliaWorkPool.searchAll(search, sr -> {
+				count.addAndGet(sr.getCompleteResults().size());
+			});
+			Assertions.assertEquals(200, count.get());
+		}
+
+		{
+			AtomicInteger count = new AtomicInteger();
+			search.clearLastResult();
+			search.addSort(new Sort("|title|"));
+			zuliaWorkPool.searchAll(search, sr -> {
+				count.addAndGet(sr.getCompleteResults().size());
+			});
+			Assertions.assertEquals(200, count.get());
+		}
 	}
 
 	@AfterAll
