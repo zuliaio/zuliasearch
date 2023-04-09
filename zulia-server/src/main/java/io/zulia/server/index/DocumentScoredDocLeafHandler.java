@@ -89,7 +89,7 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 	}
 
 	@Override
-	protected ZuliaQuery.ScoredResult handleDocument(LeafReaderContext currentLeaf, int docId, ScoreDoc scoreDoc) throws IOException {
+	protected ZuliaQuery.ScoredResult handleDocument(LeafReaderContext currentLeaf, int docId, int docBase, ScoreDoc scoreDoc) throws IOException {
 
 		ZuliaQuery.ScoredResult.Builder srBuilder = ZuliaQuery.ScoredResult.newBuilder();
 		srBuilder.setScore(scoreDoc.score);
@@ -97,8 +97,9 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 		srBuilder.setIndexName(indexName);
 		srBuilder.setShard(shardNumber);
 
+		int localDocId = docId - docBase;
 		ZuliaBase.IdInfo idInfo;
-		if (idDocValues.advanceExact(docId)) {
+		if (idDocValues.advanceExact(localDocId)) {
 			byte[] idInfoBytes = BytesRefUtil.getByteArray(idDocValues.binaryValue());
 
 			idInfo = ZuliaBase.IdInfo.parseFrom(idInfoBytes);
@@ -116,14 +117,14 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 			rdBuilder.setUniqueId(idInfo.getId());
 			rdBuilder.setTimestamp(idInfo.getTimestamp());
 			if (meta) {
-				if (metaDocValues != null && metaDocValues.advanceExact(docId)) {
+				if (metaDocValues != null && metaDocValues.advanceExact(localDocId)) {
 					byte[] metaBytes = BytesRefUtil.getByteArray(metaDocValues.binaryValue());
 					rdBuilder.setMetadata(ByteString.copyFrom(metaBytes));
 				}
 			}
 
 			if (full) {
-				if (fullDocValues != null && fullDocValues.advanceExact(docId)) {
+				if (fullDocValues != null && fullDocValues.advanceExact(localDocId)) {
 					byte[] docBytes = BytesRefUtil.getByteArray(fullDocValues.binaryValue());
 					rdBuilder.setDocument(ByteString.copyFrom(docBytes));
 
