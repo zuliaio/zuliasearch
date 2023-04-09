@@ -49,7 +49,7 @@ public abstract class ScoredDocLeafHandler<T> {
 					endOfCurrentLeaf = currentLeaf.docBase + currentLeaf.reader().maxDoc();
 					handleNewLeaf(currentLeaf);
 				}
-				results[indexedScoreDoc.index] = handleDocument(currentLeaf, docId - currentLeaf.docBase, indexedScoreDoc.scoreDoc);
+				results[indexedScoreDoc.index] = handleDocument(currentLeaf, docId, currentLeaf.docBase, indexedScoreDoc.scoreDoc);
 			}
 
 			Arrays.sort(zuliaResults, Comparator.comparing(IndexedScoreDoc::index));
@@ -60,6 +60,6 @@ public abstract class ScoredDocLeafHandler<T> {
 
 	protected abstract void handleNewLeaf(LeafReaderContext currentLeaf) throws IOException;
 
-	protected abstract T handleDocument(LeafReaderContext currentLeaf, int docId, ScoreDoc scoreDoc) throws IOException;
+	protected abstract T handleDocument(LeafReaderContext currentLeaf, int docId, int docBase, ScoreDoc scoreDoc) throws IOException;
 
 }
