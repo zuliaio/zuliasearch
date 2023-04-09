@@ -293,7 +293,7 @@ public class QueryCombiner {
 				}
 
 				if (lastForIndex == null) {
-					//this happen when amount from index is zero
+					//this happens when amount from index is zero
 					continue;
 				}
 
