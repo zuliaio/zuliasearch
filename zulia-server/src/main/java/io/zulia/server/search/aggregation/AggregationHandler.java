@@ -183,7 +183,7 @@ public class AggregationHandler {
 		FacetLabel countPath = new FacetLabel(dim, path);
 		int dimOrd = taxoReader.getOrdinal(countPath);
 		if (dimOrd == -1) {
-			return null;
+			return ZuliaQuery.FacetGroup.newBuilder();
 		}
 
 		TaxonomyReader.ChildrenIterator childrenIterator = taxoReader.getChildren(dimOrd);
