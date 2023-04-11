@@ -36,6 +36,8 @@ public class ZuliaShard {
 	private String trackingId;
 	private HashSet<String> trackedIds;
 
+	private boolean unloaded;
+
 	public ZuliaShard(ShardWriteManager shardWriteManager, boolean primary) throws Exception {
 
 		this.primary = primary;
@@ -90,6 +92,7 @@ public class ZuliaShard {
 
 	public void tryWarmSearches(ZuliaIndex zuliaIndex, boolean primary) {
 
+
 		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 
@@ -101,6 +104,10 @@ public class ZuliaShard {
 			for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
 				MasterSlaveSettings primaryReplicaSettings = warmingSearch.getMasterSlaveSettings();
 				boolean shardNeedsWarmForSearch = (primary ? usesPrimary : usesReplica).contains(primaryReplicaSettings);
+
+				if (unloaded) {
+					return;
+				}
 
 				if (shardNeedsWarmForSearch) {
 					try {
@@ -177,6 +184,7 @@ public class ZuliaShard {
 	}
 
 	public void close() throws IOException {
+		unloaded = true;
 		shardWriteManager.close();
 	}
 
