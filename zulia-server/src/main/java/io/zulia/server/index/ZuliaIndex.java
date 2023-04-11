@@ -228,28 +228,33 @@ public class ZuliaIndex {
 			doCommit(true);
 		}
 
-		LOG.info("Shutting shard pool for <" + indexName + ">");
+		LOG.info("Shutting down shard pool for <" + indexName + ">");
 		shardPool.shutdownNow();
 
-		LOG.info("Deleting primary shard.");
 		for (Integer shardNumber : primaryShardMap.keySet()) {
+			LOG.info("Unloading primary shard <" + shardNumber + "> for <" + indexName + ">");
 			unloadShard(shardNumber);
+			LOG.info("Unloaded primary shard <" + shardNumber + "> for <" + indexName + ">");
 			if (terminate) {
+				LOG.info("Deleting primary shard <" + shardNumber + "> for <" + indexName + ">");
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
+				LOG.info("Deleted primary shard <" + shardNumber + "> for <" + indexName + ">");
 			}
 		}
-		LOG.info("Deleted primary shard.");
 
 		LOG.info("Deleting replicas");
 		for (Integer shardNumber : replicaShardMap.keySet()) {
+			LOG.info("Unloading replica shard <" + shardNumber + "> for <" + indexName + ">");
 			unloadShard(shardNumber);
+			LOG.info("Unloaded replica shard <" + shardNumber + "> for <" + indexName + ">");
 			if (terminate) {
+				LOG.info("Deleting replica shard <" + shardNumber + "> for <" + indexName + ">");
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
+				LOG.info("Deleted replica shard <" + shardNumber + "> for <" + indexName + ">");
 			}
 		}
-		LOG.info("Deleted replicas");
 		LOG.info("Shut down shard pool for <" + indexName + ">");
 
 	}
