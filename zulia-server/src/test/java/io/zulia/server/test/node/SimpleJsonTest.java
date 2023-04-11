@@ -4,7 +4,9 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
+import io.zulia.client.command.builder.Sort;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
@@ -170,6 +172,26 @@ public class SimpleJsonTest {
 
 		search = new Search(SIMPLE_JSON_TEST_INDEX);
 		search.addQuery(new FilterQuery("madeUp:solr"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(new FilterQuery("solr").addQueryField("madeUp"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(new FilterQuery("madeUp:solr").addQueryFields("madeUp", "docTitle"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(new FilterQuery("solr").addQueryFields("madeUp", "docTitle"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("madeUp:solr")).addSort(new Sort("docAuthor"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
 	}
