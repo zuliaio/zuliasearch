@@ -8,7 +8,7 @@ plugins {
 
 
 
-defaultTasks("generateProto", "build")
+defaultTasks("generateProto", "version", "build")
 
 description = "Zulia Common"
 
