@@ -12,17 +12,20 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CacheTest {
+
+	@RegisterExtension
+	private static NodeExtension nodeExtension = new NodeExtension(1);
 
 	public static final String CACHE_TEST = "cacheTest";
 
@@ -32,22 +35,14 @@ public class CacheTest {
 
 	public static final String ALIAS_3 = "alias3";
 
-	private static ZuliaWorkPool zuliaWorkPool;
 	private static final int repeatCount = 50;
 	private static final int uniqueDocs = 7;
 
-	@BeforeAll
-	public static void initAll() throws Exception {
+	@Test
+	@Order(1)
+	public void createIndex() throws Exception {
 
-
-		TestHelper.createNodes(1);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -100,8 +95,8 @@ public class CacheTest {
 	}
 
 	private void indexRecord(String index, int id, String title, String description, Double rating) throws Exception {
-
-		String uniqueId = "" + id;
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+		String uniqueId = String.valueOf(id);
 
 		Document mongoDocument = new Document();
 		mongoDocument.put("id", uniqueId);
@@ -120,7 +115,7 @@ public class CacheTest {
 	@Test
 	@Order(3)
 	public void searchTest() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Thread.sleep(2000);
 
 		Search search;
@@ -284,15 +279,13 @@ public class CacheTest {
 	@Test
 	@Order(5)
 	public void restart() throws Exception {
-		TestHelper.stopNodes();
-		Thread.sleep(2000);
-		TestHelper.startNodes();
-		Thread.sleep(2000);
+		nodeExtension.restartNodes();
 	}
 
 	@Test
 	@Order(6)
 	public void confirm() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search;
 		SearchResult searchResult;
 
@@ -315,10 +308,5 @@ public class CacheTest {
 		Assertions.assertEquals(1, searchResult.getShardsQueried());
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }
 

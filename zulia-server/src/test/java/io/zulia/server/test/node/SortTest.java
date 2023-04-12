@@ -13,14 +13,14 @@ import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -33,27 +33,14 @@ import static io.zulia.message.ZuliaIndex.SortAs.StringHandling.LOWERCASE_FOLDIN
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SortTest {
-
-	private static ZuliaWorkPool zuliaWorkPool;
-
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
 	private static final String INDEX_NAME = "sortTest";
-
-	@BeforeAll
-	public static void initAll() throws Exception {
-
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
-	}
 
 	@Test
 	@Order(1)
 	public void indexingTest() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -180,6 +167,7 @@ public class SortTest {
 	@Test
 	@Order(2)
 	public void titleSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10);
@@ -223,6 +211,7 @@ public class SortTest {
 	@Test
 	@Order(3)
 	public void starsSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10);
@@ -266,6 +255,7 @@ public class SortTest {
 	@Test
 	@Order(4)
 	public void starsLongSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10);
@@ -309,6 +299,7 @@ public class SortTest {
 	@Test
 	@Order(5)
 	public void ratingSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10);
@@ -353,6 +344,7 @@ public class SortTest {
 	@Test
 	@Order(6)
 	public void ratingDoubleSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10);
@@ -396,6 +388,7 @@ public class SortTest {
 	@Test
 	@Order(7)
 	public void boolSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10);
@@ -439,6 +432,7 @@ public class SortTest {
 	@Test
 	@Order(8)
 	public void dateSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10);
@@ -485,6 +479,7 @@ public class SortTest {
 	@Test
 	@Order(9)
 	public void zuliaSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10).addQuery(new ScoredQuery("title:special OR title:secret"));
@@ -510,20 +505,21 @@ public class SortTest {
 		search.addSort(new Sort(ZuliaFieldConstants.ID_SORT_FIELD).ascending());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals("0", searchResult.getFirstDocument().get("id"));
-		Assertions.assertEquals("0", searchResult.getFirstResult().getUniqueId());
+		Assertions.assertEquals("0", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort(ZuliaFieldConstants.ID_SORT_FIELD).descending());
 		searchResult = zuliaWorkPool.search(search);
 		//99 here instead of 199 because sorting as a string not a number
 		Assertions.assertEquals("99", searchResult.getFirstDocument().get("id"));
-		Assertions.assertEquals("99", searchResult.getFirstResult().getUniqueId());
+		Assertions.assertEquals("99", searchResult.getFirstCompleteResult().getUniqueId());
 
 	}
 
 	@Test
 	@Order(10)
 	public void compoundSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(INDEX_NAME).setAmount(10);
 
 		search.addSort(new Sort("stars").descending());
@@ -538,16 +534,17 @@ public class SortTest {
 	@Test
 	@Order(11)
 	public void lengthSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(INDEX_NAME).setAmount(10);
 
 		search.addSort(new Sort("|||stringList|||").descending());
 		SearchResult searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("10", searchResult.getFirstResult().getUniqueId());
+		Assertions.assertEquals("10", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|||stringList|||").ascending());
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("30", searchResult.getFirstResult().getUniqueId());
+		Assertions.assertEquals("30", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|||madeUp|||").descending());
@@ -556,12 +553,12 @@ public class SortTest {
 		search.clearSort();
 		search.addSort(new Sort("|||intList|||").descending());
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("40", searchResult.getFirstResult().getUniqueId());
+		Assertions.assertEquals("40", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|||intList|||").ascending());
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("6", searchResult.getFirstResult().getUniqueId());
+		Assertions.assertEquals("6", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|intList|").ascending());
@@ -574,21 +571,18 @@ public class SortTest {
 		search.clearSort();
 		search.addSort(new Sort("|stringList|").descending());
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("20", searchResult.getFirstResult().getUniqueId());
+		Assertions.assertEquals("20", searchResult.getFirstCompleteResult().getUniqueId());
 
 		search.clearSort();
 		search.addSort(new Sort("|stringList|").ascending().missingLast());
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("6", searchResult.getFirstResult().getUniqueId());
+		Assertions.assertEquals("6", searchResult.getFirstCompleteResult().getUniqueId());
 	}
 
 	@Test
 	@Order(12)
 	public void restart() throws Exception {
-		TestHelper.stopNodes();
-		Thread.sleep(2000);
-		TestHelper.startNodes();
-		Thread.sleep(2000);
+		nodeExtension.restartNodes();
 	}
 
 	@Test
@@ -608,6 +602,7 @@ public class SortTest {
 	@Test
 	@Order(14)
 	public void reindexTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(
@@ -666,7 +661,7 @@ public class SortTest {
 	@Test
 	@Order(15)
 	public void multiIndexTest() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("magicNumber");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("id").sort());
@@ -688,7 +683,7 @@ public class SortTest {
 			}
 
 			Document mongoDocument = new Document().append("id", id).append("magicNumber", magicNumber);
-			zuliaWorkPool.store(new Store(id + "", "anotherIndex", ResultDocBuilder.from(mongoDocument)));
+			zuliaWorkPool.store(new Store(String.valueOf(id), "anotherIndex", ResultDocBuilder.from(mongoDocument)));
 		}
 
 		for (int id = 0; id < 100; id++) {
@@ -696,7 +691,7 @@ public class SortTest {
 			int magicNumber = (id % 10) + 5;
 
 			Document mongoDocument = new Document().append("id", id).append("magicNumber", magicNumber);
-			zuliaWorkPool.store(new Store(id + "", "anotherIndex2", ResultDocBuilder.from(mongoDocument)));
+			zuliaWorkPool.store(new Store(String.valueOf(id), "anotherIndex2", ResultDocBuilder.from(mongoDocument)));
 		}
 
 		SearchResult searchResult;
@@ -721,6 +716,7 @@ public class SortTest {
 	@Test
 	@Order(16)
 	public void pagingTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 		Search search = new Search(INDEX_NAME).setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
@@ -789,9 +785,4 @@ public class SortTest {
 		}
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }

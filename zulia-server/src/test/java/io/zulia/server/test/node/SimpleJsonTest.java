@@ -11,31 +11,27 @@ import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.fields.FieldConfigBuilder;
-import org.junit.jupiter.api.AfterAll;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SimpleJsonTest {
 
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
+
 	public static final String SIMPLE_JSON_TEST_INDEX = "simpleJsonTest";
 
-	private static ZuliaWorkPool zuliaWorkPool;
+	@Test
+	@Order(1)
+	public void createIndex() throws Exception {
 
-	@BeforeAll
-	public static void initAll() throws Exception {
-
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("docTitle");
@@ -56,6 +52,7 @@ public class SimpleJsonTest {
 	@Test
 	@Order(2)
 	public void index() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
 		String json1 = """				
 				{
@@ -118,7 +115,7 @@ public class SimpleJsonTest {
 	@Test
 	@Order(3)
 	public void searchTest() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(SIMPLE_JSON_TEST_INDEX);
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(4, searchResult.getTotalHits());
@@ -196,9 +193,4 @@ public class SimpleJsonTest {
 		Assertions.assertEquals(0, searchResult.getTotalHits());
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }
