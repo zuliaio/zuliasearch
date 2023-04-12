@@ -59,7 +59,7 @@ public class ShardDocumentIndexer {
 
 	private final static Splitter facetPathSplitter = Splitter.on(ZuliaFieldConstants.FACET_PATH_DELIMITER).omitEmptyStrings();
 
-	private final static Map<String, Integer> dimToOrdinal = new ConcurrentHashMap<>();
+	private final Map<String, Integer> dimToOrdinal = new ConcurrentHashMap<>();
 
 	private final ServerIndexConfig indexConfig;
 	private final int majorVersion;
@@ -119,7 +119,7 @@ public class ShardDocumentIndexer {
 		addFacets(luceneDocument, taxoWriter, facetFieldToFacetLabels);
 	}
 
-	private static void addFacets(Document luceneDocument, DirectoryTaxonomyWriter taxoWriter, Map<String, Set<FacetLabel>> facetFieldToFacetLabels)
+	private void addFacets(Document luceneDocument, DirectoryTaxonomyWriter taxoWriter, Map<String, Set<FacetLabel>> facetFieldToFacetLabels)
 			throws IOException {
 
 		IntObjMap<IntSet> facetDimToOrdinal = HashIntObjMaps.newMutableMap();
