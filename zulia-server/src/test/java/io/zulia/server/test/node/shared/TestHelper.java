@@ -1,4 +1,4 @@
-package io.zulia.server.test.node;
+package io.zulia.server.test.node.shared;
 
 import com.mongodb.client.MongoClients;
 import io.zulia.client.config.ZuliaPoolConfig;
@@ -58,6 +58,11 @@ public class TestHelper {
 
 		nodeService = new MongoNodeService(MongoProvider.getMongoClient(), TEST_CLUSTER_NAME);
 
+		clearData();
+
+	}
+
+	private static void clearData() {
 		try {
 			Path dataPath = Paths.get("/tmp/zuliaTest");
 
@@ -71,7 +76,6 @@ public class TestHelper {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
-
 	}
 
 	private static List<ZuliaNode> zuliaNodes = new ArrayList<>();
@@ -111,7 +115,7 @@ public class TestHelper {
 	}
 
 	public static void startNodes() throws Exception {
-
+		System.out.println("Starting <" + nodeService.getNodes().size() + "> Nodes");
 		int i = 0;
 		for (ZuliaBase.Node node : nodeService.getNodes()) {
 			ZuliaConfig zuliaConfig = new ZuliaConfig();
@@ -132,10 +136,13 @@ public class TestHelper {
 
 			zuliaNodes.add(zuliaNode);
 		}
+		System.out.println("Started <" + zuliaNodes.size() + "> Nodes");
 
 	}
 
 	public static void createNodes(int nodeCount) {
+		clearData();
+		System.out.println("Creating <" + nodeCount + "> Nodes");
 		int port = 20000;
 
 		//drop nodes and index configs
@@ -149,6 +156,7 @@ public class TestHelper {
 
 	public static void stopNodes() {
 
+		System.out.println("Stopping <" + zuliaNodes.size() + "> Nodes");
 		for (ZuliaNode zuliaNode : zuliaNodes) {
 			zuliaNode.shutdown();
 		}

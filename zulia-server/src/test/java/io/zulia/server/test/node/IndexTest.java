@@ -14,40 +14,28 @@ import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class IndexTest {
-
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
 	public static final String INDEX_TEST = "indexTest";
-
-	private static ZuliaWorkPool zuliaWorkPool;
-
-	@BeforeAll
-	public static void init() {
-
-	}
 
 	@Test
 	@Order(1)
 	public void createIndex() throws Exception {
 
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
 		{
 			ClientIndexConfig indexConfig = new ClientIndexConfig();
@@ -168,6 +156,7 @@ public class IndexTest {
 	@Test
 	@Order(2)
 	public void updateIndex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		{
 			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
 			updateIndex.setIndexWeight(4);
@@ -414,6 +403,7 @@ public class IndexTest {
 	@Test
 	@Order(3)
 	public void giantIndex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		{
 			ClientIndexConfig indexConfig = new ClientIndexConfig();
 			indexConfig.addDefaultSearchField("title");
@@ -438,9 +428,4 @@ public class IndexTest {
 
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }

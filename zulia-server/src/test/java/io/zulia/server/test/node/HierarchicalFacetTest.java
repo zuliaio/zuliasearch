@@ -10,14 +10,14 @@ import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaQuery.FacetCount;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opentest4j.AssertionFailedError;
 
 import java.time.LocalDate;
@@ -30,24 +30,20 @@ import java.util.List;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class HierarchicalFacetTest {
 
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
+
 	public static final String FACET_TEST_INDEX = "facetTestIndex";
 
 	private final int COUNT_PER_PATH = 10;
 
 	private final String[] paths = new String[] { "1/2/3", "1/3/4", "3/20/13", "a/b/c", "one/two/three", "1", "2/3/blah", "4/5/1000", "a/bee/sea" };
 
-	private static ZuliaWorkPool zuliaWorkPool;
+	@Test
+	@Order(1)
+	public void createIndex() throws Exception {
 
-	@BeforeAll
-	public static void initAll() throws Exception {
-
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
@@ -86,6 +82,7 @@ public class HierarchicalFacetTest {
 	}
 
 	private void indexRecord(int id, String path, int i) throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		boolean half = (i % 2 == 0);
 		boolean tenth = (i % 10 == 0);
 
@@ -125,6 +122,7 @@ public class HierarchicalFacetTest {
 	@Test
 	@Order(3)
 	public void facetTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(FACET_TEST_INDEX);
 		search.addCountFacet(new CountFacet("path"));
 		search.addCountFacet(new CountFacet("date"));
@@ -224,6 +222,7 @@ public class HierarchicalFacetTest {
 	@Test
 	@Order(4)
 	public void reindex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -245,15 +244,13 @@ public class HierarchicalFacetTest {
 	@Test
 	@Order(5)
 	public void restart() throws Exception {
-		TestHelper.stopNodes();
-		Thread.sleep(2000);
-		TestHelper.startNodes();
-		Thread.sleep(2000);
+		nodeExtension.restartNodes();
 	}
 
 	@Test
 	@Order(6)
 	public void confirm() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(FACET_TEST_INDEX);
 		String pathField = "path2";
 		search.addCountFacet(new CountFacet(pathField));
@@ -335,9 +332,4 @@ public class HierarchicalFacetTest {
 		}
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }

@@ -11,33 +11,30 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class VectorTest {
 
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
+
 	public static final String VECTOR_TEST = "vectorTest";
 
-	private static ZuliaWorkPool zuliaWorkPool;
 	private static final int uniqueDocs = 7;
 
-	@BeforeAll
-	public static void initAll() throws Exception {
+	@Test
+	@Order(1)
+	public void createIndex() throws Exception {
 
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
@@ -67,8 +64,8 @@ public class VectorTest {
 	}
 
 	private void indexRecord(int id, String title, String description, float[] vector) throws Exception {
-
-		String uniqueId = "" + id;
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+		String uniqueId = String.valueOf(id);
 
 		Document mongoDocument = new Document();
 		mongoDocument.put("id", uniqueId);
@@ -87,7 +84,7 @@ public class VectorTest {
 	@Test
 	@Order(3)
 	public void searchTest() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(VECTOR_TEST);
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(uniqueDocs, searchResult.getTotalHits());
@@ -127,10 +124,7 @@ public class VectorTest {
 	@Test
 	@Order(5)
 	public void restart() throws Exception {
-		TestHelper.stopNodes();
-		Thread.sleep(2000);
-		TestHelper.startNodes();
-		Thread.sleep(2000);
+		nodeExtension.restartNodes();
 	}
 
 	@Test
@@ -139,9 +133,4 @@ public class VectorTest {
 		searchTest();
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }

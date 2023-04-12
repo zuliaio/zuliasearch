@@ -18,35 +18,31 @@ import io.zulia.client.result.GetTermsResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+
 public class AliasTest {
+
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
 
 	public static final String ALIAS_TEST_INDEX = "aliasTest";
 
-	private static ZuliaWorkPool zuliaWorkPool;
 	private static final int repeatCount = 50;
 	private static final int uniqueDocs = 7;
 
-	@BeforeAll
-	public static void initAll() throws Exception {
-
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
-
+	@Test
+	@Order(1)
+	public void createIndex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -62,7 +58,7 @@ public class AliasTest {
 	@Test
 	@Order(2)
 	public void aliasIndex() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		for (int i = 0; i < repeatCount; i++) {
 
 			indexRecord(ALIAS_TEST_INDEX, i * uniqueDocs, "something special", 1.0);
@@ -90,8 +86,8 @@ public class AliasTest {
 	}
 
 	private void indexRecord(String index, int id, String title, Double rating) throws Exception {
-
-		String uniqueId = "" + id;
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+		String uniqueId = String.valueOf(id);
 
 		Document mongoDocument = new Document();
 		mongoDocument.put("id", uniqueId);
@@ -109,6 +105,7 @@ public class AliasTest {
 	@Test
 	@Order(3)
 	public void aliasSearchTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
 		Search search = new Search(ALIAS_TEST_INDEX);
 		SearchResult searchResult = zuliaWorkPool.search(search);
@@ -156,15 +153,13 @@ public class AliasTest {
 	@Test
 	@Order(5)
 	public void restart() throws Exception {
-		TestHelper.stopNodes();
-		Thread.sleep(2000);
-		TestHelper.startNodes();
-		Thread.sleep(2000);
+		nodeExtension.restartNodes();
 	}
 
 	@Test
 	@Order(6)
 	public void confirm() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(ALIAS_TEST_INDEX);
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount * 2 * uniqueDocs, searchResult.getTotalHits());
@@ -192,9 +187,4 @@ public class AliasTest {
 
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }

@@ -23,14 +23,14 @@ import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex.FacetAs.DateHandling;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -40,6 +40,9 @@ import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class StartStopTest {
+
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
 
 	public static final String FACET_TEST_INDEX = "ssTest";
 
@@ -52,19 +55,10 @@ public class StartStopTest {
 	private final int totalRecords = COUNT_PER_ISSN * issns.length;
 	private final int totalRecordsWithTitle = COUNT_PER_ISSN * (issns.length - 1);
 
-	private static ZuliaWorkPool zuliaWorkPool;
-
-	@BeforeAll
-	public static void initAll() throws Exception {
-
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
-
+	@Test
+	@Order(1)
+	public void createIndex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -92,7 +86,6 @@ public class StartStopTest {
 		Assertions.assertEquals(indexConfig.getNumberOfShards(), storedClientIndexConfig.getNumberOfShards());
 		Assertions.assertEquals(indexConfig.getFieldConfigMap(), storedClientIndexConfig.getFieldConfigMap());
 		Assertions.assertEquals(indexConfig.getMeta(), storedClientIndexConfig.getMeta());
-
 	}
 
 	@Test
@@ -120,6 +113,8 @@ public class StartStopTest {
 	}
 
 	private void indexRecord(int id, String issn, String eissn, int i) throws Exception {
+
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		boolean half = (i % 2 == 0);
 		boolean tenth = (i % 10 == 0);
 
@@ -210,7 +205,7 @@ public class StartStopTest {
 	@Test
 	@Order(3)
 	public void sortScoreBuilder() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(FACET_TEST_INDEX).setAmount(10);
 		search.addQuery(new ScoredQuery("issn:\"1234-1234\" OR country:US"));
 		search.addSort(new Sort(ZuliaFieldConstants.SCORE_FIELD).ascending());
@@ -244,7 +239,7 @@ public class StartStopTest {
 	@Test
 	@Order(3)
 	public void lengthTestBuilder() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search s = new Search(FACET_TEST_INDEX);
 		SearchResult searchResult = zuliaWorkPool.search(s);
 		long total = searchResult.getTotalHits();
@@ -282,6 +277,7 @@ public class StartStopTest {
 	@Test
 	@Order(3)
 	public void boolTestBuilder() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("testBool:true"));
 		SearchResult searchResult = zuliaWorkPool.search(s);
 		Assertions.assertEquals(6, searchResult.getTotalHits());
@@ -339,6 +335,7 @@ public class StartStopTest {
 	@Test
 	@Order(3)
 	public void termTestBuilder() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search s = new Search(FACET_TEST_INDEX);
 		s.addQuery(new TermQuery("id").addTerms("1", "2", "3", "4"));
 		SearchResult searchResult = zuliaWorkPool.search(s);
@@ -373,6 +370,7 @@ public class StartStopTest {
 	@Test
 	@Order(4)
 	public void reindex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -408,15 +406,13 @@ public class StartStopTest {
 	@Test
 	@Order(5)
 	public void restart() throws Exception {
-		TestHelper.stopNodes();
-		Thread.sleep(2000);
-		TestHelper.startNodes();
-		Thread.sleep(2000);
+		nodeExtension.restartNodes();
 	}
 
 	@Test
 	@Order(6)
 	public void confirmBuilder() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		{
 
 			Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("title:userguide")).addCountFacet(new CountFacet("issn").setTopN(30));
@@ -528,7 +524,7 @@ public class StartStopTest {
 
 			SearchResult sr = zuliaWorkPool.search(s);
 
-			Assertions.assertEquals((totalRecordsWithTitle * 2) / 5, sr.getTotalHits(), "Total record count after drill down mismatch");
+			Assertions.assertEquals((totalRecordsWithTitle * 2L) / 5, sr.getTotalHits(), "Total record count after drill down mismatch");
 
 		}
 
@@ -731,9 +727,4 @@ public class StartStopTest {
 
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }

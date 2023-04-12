@@ -9,38 +9,27 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class FieldChangeTest {
 
-	private static ZuliaWorkPool zuliaWorkPool;
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
 
 	private static final String INDEX_NAME = "fieldChange";
-
-	@BeforeAll
-	public static void initAll() throws Exception {
-
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
-	}
 
 	@Test
 	@Order(1)
 	public void indexingTest() throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -100,6 +89,7 @@ public class FieldChangeTest {
 	@Test
 	@Order(2)
 	public void sortTestAfterFieldChange() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
 		Search search = new Search(INDEX_NAME).setAmount(10);
@@ -125,9 +115,4 @@ public class FieldChangeTest {
 
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }

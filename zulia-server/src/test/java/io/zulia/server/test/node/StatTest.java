@@ -15,14 +15,14 @@ import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaQuery.FacetStats;
+import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opentest4j.AssertionFailedError;
 
 import java.util.ArrayList;
@@ -31,23 +31,18 @@ import java.util.List;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class StatTest {
 
+	@RegisterExtension
+	static final NodeExtension nodeExtension = new NodeExtension(3);
+
 	public static final String STAT_TEST_INDEX = "stats";
 
-	private static ZuliaWorkPool zuliaWorkPool;
 	private static final int repeatCount = 100;
 	private static final int shardCount = 5;
 
-	@BeforeAll
-	public static void initAll() throws Exception {
-
-		TestHelper.createNodes(3);
-
-		TestHelper.startNodes();
-
-		Thread.sleep(2000);
-
-		zuliaWorkPool = TestHelper.createClient();
-
+	@Test
+	@Order(1)
+	public void createIndex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -80,7 +75,7 @@ public class StatTest {
 	}
 
 	private void indexRecord(int id, String title, String pathFacet, String normalFacet, int authorCount, List<Double> rating) throws Exception {
-
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		String uniqueId = "" + id;
 
 		Document mongoDocument = new Document();
@@ -100,6 +95,7 @@ public class StatTest {
 	@Test
 	@Order(3)
 	public void statTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		List<Double> percentiles = new ArrayList<>() {{
 			add(0.0);
 			add(0.25);
@@ -249,6 +245,7 @@ public class StatTest {
 	@Test
 	@Order(4)
 	public void testRangeFilters() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 		Search search = new Search(STAT_TEST_INDEX);
 
@@ -304,6 +301,8 @@ public class StatTest {
 	@Test
 	@Order(5)
 	public void reindex() throws Exception {
+
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -326,15 +325,13 @@ public class StatTest {
 	@Test
 	@Order(6)
 	public void restart() throws Exception {
-		TestHelper.stopNodes();
-		Thread.sleep(2000);
-		TestHelper.startNodes();
-		Thread.sleep(2000);
+		nodeExtension.restartNodes();
 	}
 
 	@Test
 	@Order(7)
 	public void confirm() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(STAT_TEST_INDEX);
 		search.addQuery(new FilterQuery("title:boring").exclude());
 		search.addStat(new NumericStat("authorCount"));
@@ -463,9 +460,4 @@ public class StatTest {
 		Assertions.assertEquals(6L * repeatCount, authorCountStats.getValueCount());
 	}
 
-	@AfterAll
-	public static void shutdown() throws Exception {
-		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
-	}
 }
