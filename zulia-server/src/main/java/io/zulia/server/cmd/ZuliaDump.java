@@ -48,28 +48,14 @@ public class ZuliaDump implements Callable<Integer> {
 	@CommandLine.Option(names = { "-a", "--includeAssociatedDocs" }, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
 	private boolean includeAssociatedDocs = false;
 
-	@CommandLine.Option(arity = "1", names = { "-s",
-			"--sortById" }, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
-	private boolean sortById = true;
-
-	@CommandLine.Option(names = { "-d", "--idField" }, description = "Id Field Name (default: ${DEFAULT-VALUE})")
-	private String idField = "id";
-
 	@Override
 	public Integer call() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
 
-		if (!sortById) {
-			LOG.warning("Sort By ID is disabled.  Do not use this on an actively changing index");
-		}
-		else {
-			LOG.info("Sorting by results on field <" + idField + ">");
-		}
-
-		Set<String> uniqueIds = new HashSet<>();
 		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
 		for (String ind : indexes) {
-			queryAndWriteOutput(zuliaWorkPool, ind, q, pageSize, out, idField, uniqueIds, sortById);
+			Set<String> uniqueIds = new HashSet<>();
+			queryAndWriteOutput(zuliaWorkPool, ind, q, pageSize, out, uniqueIds);
 			if (includeAssociatedDocs) {
 				fetchAssociatedDocs(zuliaWorkPool, ind, out, uniqueIds);
 			}
@@ -78,8 +64,8 @@ public class ZuliaDump implements Callable<Integer> {
 		return CommandLine.ExitCode.OK;
 	}
 
-	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String outputDir, String idField,
-			Set<String> uniqueIds, boolean sortById) throws Exception {
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String outputDir, Set<String> uniqueIds)
+			throws Exception {
 
 		// create zuliadump dir first
 		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
@@ -98,7 +84,7 @@ public class ZuliaDump implements Callable<Integer> {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Dumping index <" + index + ">");
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, idField, uniqueIds, sortById);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, uniqueIds);
 		LOG.info("Finished dumping index <" + index + ">, total: " + count);
 
 		try (FileWriter fileWriter = new FileWriter(settingsFilename, Charsets.UTF_8)) {

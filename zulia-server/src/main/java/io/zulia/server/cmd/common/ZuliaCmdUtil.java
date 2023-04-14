@@ -1,11 +1,12 @@
 package io.zulia.server.cmd.common;
 
 import com.google.common.base.Charsets;
+import io.zulia.ZuliaConstants;
 import io.zulia.client.command.Fetch;
 import io.zulia.client.command.FetchAllAssociated;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.StoreLargeAssociated;
-import io.zulia.client.command.builder.ScoredQuery;
+import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
 import io.zulia.client.pool.WorkPool;
@@ -50,26 +51,24 @@ public class ZuliaCmdUtil {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaCmdUtil.class.getSimpleName());
 
-	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, String idField,
-			Set<String> uniqueIds, boolean sortById) throws Exception {
+	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, Set<String> uniqueIds)
+			throws Exception {
 		try (FileWriter fileWriter = new FileWriter(recordsFilename, Charsets.UTF_8)) {
 
-			Search zuliaQuery = new Search(index).addQuery(new ScoredQuery(q)).setAmount(rows);
-			if (sortById) {
-				zuliaQuery.addSort(new Sort(idField));
-			}
+			Search zuliaQuery = new Search(index).addQuery(new FilterQuery(q)).setAmount(rows);
+			zuliaQuery.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD));
 
 			try {
 				workPool.searchAll(zuliaQuery, queryResult -> {
 
 					long totalHits = queryResult.getTotalHits();
 
-					queryResult.getDocuments().forEach(doc -> {
+					queryResult.getCompleteResults().forEach(completeResult -> {
 						try {
 							if (uniqueIds != null) {
-								uniqueIds.add(doc.getString(idField));
+								uniqueIds.add(completeResult.getUniqueId());
 							}
-							fileWriter.write(doc.toJson());
+							fileWriter.write(completeResult.getDocument().toJson());
 							fileWriter.write(System.lineSeparator());
 
 							int c = count.incrementAndGet();
@@ -79,7 +78,7 @@ public class ZuliaCmdUtil {
 
 						}
 						catch (IOException e) {
-							LOG.log(Level.SEVERE, "Could not write record <" + doc + "> for index <" + index + ">", e);
+							LOG.log(Level.SEVERE, "Could not write record <" + completeResult.getUniqueId() + "> for index <" + index + ">", e);
 						}
 						catch (Throwable e) {
 							LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
