@@ -38,22 +38,11 @@ public class ZuliaExport implements Callable<Integer> {
 	@CommandLine.Option(names = { "-p", "--pageSize", "--rows" }, description = "Number of records in each page (default: ${DEFAULT-VALUE})")
 	private Integer pageSize = 1000;
 
-	@CommandLine.Option(arity = "1", names = { "-s",
-			"--sortById" }, description = "Sort results by Id (Needed for an index that is being indexed) (default: ${DEFAULT-VALUE})")
-	private boolean sortById = true;
-
-	@CommandLine.Option(names = { "-d", "--idField" }, description = "Id Field Name (default: ${DEFAULT-VALUE})")
-	private String idField = "id";
 
 	@Override
 	public Integer call() throws Exception {
 
-		if (!sortById) {
-			LOG.warning("Sort By ID is disabled.  Do not use this on an actively changing index");
-		}
-		else {
-			LOG.info("Sorting by results on field <" + idField + ">");
-		}
+
 
 		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
 
@@ -66,11 +55,11 @@ public class ZuliaExport implements Callable<Integer> {
 	}
 
 	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String out) throws Exception {
-		queryAndWriteOutput(workPool, index, q, pageSize, out, null, null, false);
+		queryAndWriteOutput(workPool, index, q, pageSize, out, null);
 	}
 
-	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String out, String idField, Set<String> uniqueIds,
-			boolean sortById) throws Exception {
+	private static void queryAndWriteOutput(ZuliaWorkPool workPool, String index, String q, Integer pageSize, String out, Set<String> uniqueIds)
+			throws Exception {
 
 		// create zuliaexport dir first
 		String zuliaExportDir = out + File.separator + "zuliaexport";
@@ -88,7 +77,7 @@ public class ZuliaExport implements Callable<Integer> {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Exporting from index <" + index + ">");
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, idField, uniqueIds, sortById);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, uniqueIds);
 		LOG.info("Finished exporting from index <" + index + ">, total: " + count);
 
 	}
