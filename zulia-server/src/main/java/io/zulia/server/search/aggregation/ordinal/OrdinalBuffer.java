@@ -18,6 +18,7 @@ public class OrdinalBuffer implements FacetHandler {
 		if (ordinalBuffer.hasRemaining()) {
 			int storedDimOrdinal = -1;
 			int storedOrdinalLengthForDim = 0;
+			outer:
 			for (int requestedDimOrdinal : requestDimensionOrdinals) {
 
 				while (storedDimOrdinal < requestedDimOrdinal) {
@@ -26,7 +27,7 @@ public class OrdinalBuffer implements FacetHandler {
 					}
 
 					if (!ordinalBuffer.hasRemaining()) {
-						break;
+						break outer;
 					}
 
 					storedDimOrdinal = ordinalBuffer.get();
