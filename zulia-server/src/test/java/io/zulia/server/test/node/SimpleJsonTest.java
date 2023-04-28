@@ -7,6 +7,7 @@ import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
+import io.zulia.client.command.factory.Values;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
@@ -42,7 +43,7 @@ public class SimpleJsonTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("isParent").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("parentDocId").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("docLanguage").indexAs(DefaultAnalyzers.LC_KEYWORD).sort().facet());
-
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("email").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.setIndexName(SIMPLE_JSON_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 
@@ -64,7 +65,8 @@ public class SimpleJsonTest {
 				    "docLanguage": [
 				      "en",
 				      "fr"
-				    ]
+				    ],
+				    "email":["some.dude+banking@hotmail.com"]
 				}""";
 		String json2 = """
 				{
@@ -76,7 +78,8 @@ public class SimpleJsonTest {
 				  "docLanguage": [
 				    "en",
 				    "fr"
-				  ]
+				  ],
+				  "email":["some.dude@gmail.com","john.doe@gmail.com"]
 				}""";
 		String json3 = """
 				{
@@ -191,6 +194,16 @@ public class SimpleJsonTest {
 		search.addQuery(new ScoredQuery("madeUp:solr")).addSort(new Sort("docAuthor"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(Values.all().of("some.dude@gmail.com", "john.doe@gmail.com").withFields("email").asFilterQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(Values.any().of("some.dude+banking@gmail.com", "john.doe@gmail.com").withFields("email").asFilterQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
 	}
 
 }
