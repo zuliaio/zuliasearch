@@ -43,7 +43,9 @@ public class SimpleJsonTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("isParent").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("parentDocId").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("docLanguage").indexAs(DefaultAnalyzers.LC_KEYWORD).sort().facet());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("email").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(
+				FieldConfigBuilder.createString("email").indexAs(DefaultAnalyzers.STANDARD, "emailStd").indexAs(DefaultAnalyzers.LC_KEYWORD, "emailLcKey")
+						.sort());
 		indexConfig.setIndexName(SIMPLE_JSON_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 
@@ -105,7 +107,8 @@ public class SimpleJsonTest {
 				  "docLanguage": [
 				    "en",
 				    "czech"
-				  ]
+				  ],
+				  "email":["some.dude@hotmail.com"]
 				}""";
 
 		zuliaWorkPool.store(new Store("1", SIMPLE_JSON_TEST_INDEX).setResultDocument(json1));
@@ -196,14 +199,35 @@ public class SimpleJsonTest {
 		Assertions.assertEquals(0, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_JSON_TEST_INDEX);
-		search.addQuery(Values.all().of("some.dude@gmail.com", "john.doe@gmail.com").withFields("email").asFilterQuery());
+		search.addQuery(Values.all().of("some.dude@gmail.com", "john.doe@gmail.com").withFields("emailStd").asFilterQuery());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(1, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_JSON_TEST_INDEX);
-		search.addQuery(Values.any().of("some.dude+banking@gmail.com", "john.doe@gmail.com").withFields("email").asFilterQuery());
+		search.addQuery(Values.any().of("some.dude+banking@hotmail.com", "john.doe@gmail.com").withFields("emailStd").asFilterQuery());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(Values.any().of("some.dude@hotmail.com").withFields("emailStd").asFilterQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(Values.all().of("some.dude@gmail.com", "john.doe@gmail.com").withFields("emailLcKey").asFilterQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(Values.any().of("some.dude+banking@hotmail.com", "john.doe@gmail.com").withFields("emailLcKey").asFilterQuery());
+		search.setDebug(true);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		search.addQuery(Values.any().of("some.dude@hotmail.com").withFields("emailLcKey").asFilterQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
 	}
 
 }
