@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 public class Values {
 
@@ -19,6 +20,8 @@ public class Values {
 
 	public static final Joiner AND_JOINER = Joiner.on(" AND ");
 
+	public static final Pattern NEEDS_QUOTING = Pattern.compile("[\\s\\\\+\\-!():^\\[\\]\"{}~*?|&/@]");
+
 	public static Function<String, String> VALUE_QUOTER = s -> {
 		s = s.trim();
 		//if starts and ends with quotes pass it through
@@ -27,11 +30,11 @@ public class Values {
 		}
 
 		//if it contains a space, quote and pass it through after escaping quotes
-		if (s.contains(" ") || s.contains("-")) {
+		if (NEEDS_QUOTING.matcher(s).find()) {
 			return "\"" + escapeQuotes(s) + "\"";
 		}
 
-		return escape(s);
+		return s;
 
 	};
 
