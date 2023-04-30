@@ -150,10 +150,6 @@ public class ServerIndexConfig {
 		return indexSettings;
 	}
 
-	public Set<String> getFacetFields() {
-		return facetAsMap.keySet();
-	}
-
 	public boolean existingFacet(String facet) {
 		return facetAsMap.containsKey(facet);
 	}
@@ -190,15 +186,15 @@ public class ServerIndexConfig {
 		return indexSettings.getRamBufferMB();
 	}
 
-	public Set<String> getMatchingFields(String fieldWildcard) {
+	public Set<String> getMatchingFields(String field) {
 
-		if (fieldWildcard.contains("*")) {
+		if (field.contains("*")) {
 
-			fieldWildcard = ("\\Q" + fieldWildcard + "\\E").replace("*", "\\E.*\\Q");
+			field = ("\\Q" + field + "\\E").replace("*", "\\E.*\\Q");
 
 			Set<String> matchingFieldNames = new TreeSet<>();
 
-			Pattern pattern = Pattern.compile(fieldWildcard);
+			Pattern pattern = Pattern.compile(field);
 			for (String indexFieldName : getIndexedFields()) {
 				if (pattern.matcher(indexFieldName).matches()) {
 					matchingFieldNames.add(indexFieldName);
@@ -206,7 +202,7 @@ public class ServerIndexConfig {
 			}
 			return matchingFieldNames;
 		}
-		return Set.of(fieldWildcard);
+		return Set.of(field);
 
 	}
 
