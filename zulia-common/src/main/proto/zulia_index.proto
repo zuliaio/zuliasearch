@@ -57,6 +57,8 @@ message IndexSettings {
 
     uint32 commitToWarmTime = 20; // default 5
 
+    repeated FieldAlias fieldAliases = 21;
+
 }
 
 
@@ -112,6 +114,9 @@ message UpdateIndexSettings {
 
     Operation warmingSearchesOperation = 27;
     repeated bytes warmingSearches = 28;
+
+    repeated FieldAlias fieldAlias = 29;
+    Operation fieldAliasOperation = 30; // keyed by alias
 }
 
 
@@ -139,6 +144,12 @@ message FieldConfig {
     repeated SortAs sortAs = 5;
     string displayName = 7;
     string description = 8;
+}
+
+
+message FieldAlias {
+    string alias = 1;
+    repeated string fieldOrFieldPattern = 2;
 }
 
 
