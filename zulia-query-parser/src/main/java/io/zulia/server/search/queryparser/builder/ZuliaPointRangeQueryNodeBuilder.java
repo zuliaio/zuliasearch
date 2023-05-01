@@ -63,8 +63,13 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 			if (!maxInclusive) {
 				upper = upper - 1;
 			}
-			Query fallbackQuery = new IndexOrDocValuesQuery(IntPoint.newRangeQuery(field, lower, upper),
-					SortedNumericDocValuesField.newSlowRangeQuery(sortField, lower, upper));
+			Query pointQuery = IntPoint.newRangeQuery(field, lower, upper);
+
+			if (sortField == null) {
+				return pointQuery;
+			}
+
+			Query fallbackQuery = new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowRangeQuery(sortField, lower, upper));
 			return new IndexSortSortedNumericDocValuesRangeQuery(sortField, lower, upper, fallbackQuery);
 		}
 		else if (FieldTypeUtil.isStoredAsLong(fieldType)) {
