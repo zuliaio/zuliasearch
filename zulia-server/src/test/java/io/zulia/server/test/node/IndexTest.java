@@ -2,6 +2,7 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.UpdateIndex;
+import io.zulia.client.command.builder.FieldMapping;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
@@ -136,6 +137,8 @@ public class IndexTest {
 			indexConfig.addWarmingSearch(new Search(INDEX_TEST).setSearchLabel("searching the stars").addQuery(new ScoredQuery("title:stars")));
 			indexConfig.addWarmingSearch(
 					new Search(INDEX_TEST).setSearchLabel("searching for cash").addQuery(new ScoredQuery("title:cash")).setPinToCache(true));
+			indexConfig.addFieldMapping(new FieldMapping("title").addMappedFields("category").includeSelf());
+			indexConfig.addFieldMapping(new FieldMapping("test").addMappedFields("title", "category"));
 
 			zuliaWorkPool.createIndex(indexConfig);
 
@@ -396,6 +399,66 @@ public class IndexTest {
 			Assertions.assertEquals("some stuff", clientIndexConfig.getWarmingSearches().get(0).getQuery(0).getQ());
 			Assertions.assertEquals("more stuff", clientIndexConfig.getWarmingSearches().get(1).getQuery(0).getQ());
 
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.removeFieldMappingByAlias("not exist");
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(2, indexSettings.getFieldMappingList().size());
+			//check some other fields to make sure they didn't change, only field mapping
+			Assertions.assertEquals(2, indexSettings.getWarmingSearchesCount());
+			Assertions.assertEquals(4, indexSettings.getIndexWeight());
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.removeFieldMappingByAlias("test");
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(1, indexSettings.getFieldMappingList().size());
+			Assertions.assertEquals("title", indexSettings.getFieldMappingList().get(0).getAlias());
+			//check some other fields to make sure they didn't change, only field mapping
+			Assertions.assertEquals(2, indexSettings.getWarmingSearchesCount());
+			Assertions.assertEquals(4, indexSettings.getIndexWeight());
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+
+			FieldMapping fieldMapping = new FieldMapping("test1").addMappedFields("someField", "someField2");
+			FieldMapping fieldMapping2 = new FieldMapping("test2").addMappedFields("someField2", "someField3");
+			updateIndex.replaceFieldMapping(fieldMapping, fieldMapping2);
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(2, indexSettings.getFieldMappingList().size());
+			Assertions.assertEquals("test1", indexSettings.getFieldMappingList().get(0).getAlias());
+			Assertions.assertEquals("test2", indexSettings.getFieldMappingList().get(1).getAlias());
+			//check some other fields to make sure they didn't change, only field mapping
+			Assertions.assertEquals(2, indexSettings.getWarmingSearchesCount());
+			Assertions.assertEquals(4, indexSettings.getIndexWeight());
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+
+			FieldMapping fieldMapping2 = new FieldMapping("test2").addMappedFields("someField2", "someField3", "someField4");
+			FieldMapping fieldMapping = new FieldMapping("test3").addMappedFields("someField100", "someField101");
+			updateIndex.mergeFieldMapping(fieldMapping, fieldMapping2);
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(3, indexSettings.getFieldMappingList().size());
+			Assertions.assertEquals("test1", indexSettings.getFieldMappingList().get(0).getAlias());
+			Assertions.assertEquals("test2", indexSettings.getFieldMappingList().get(1).getAlias());
+			Assertions.assertEquals("test3", indexSettings.getFieldMappingList().get(2).getAlias());
+			//check some other fields to make sure they didn't change, only field mapping
+			Assertions.assertEquals(2, indexSettings.getWarmingSearchesCount());
+			Assertions.assertEquals(4, indexSettings.getIndexWeight());
 		}
 
 	}

@@ -2,11 +2,13 @@ package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.command.base.SingleIndexRoutableCommand;
+import io.zulia.client.command.builder.FieldMappingBuilder;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.UpdateIndexResult;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.message.ZuliaIndex.FieldMapping;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation.OperationType;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
@@ -55,6 +57,9 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private UpdateIndexSettings.Operation.Builder warmingSearchOperation = UpdateIndexSettings.Operation.newBuilder();
 
 	private List<QueryRequest> warmingSearches = Collections.emptyList();
+
+	private final UpdateIndexSettings.Operation.Builder fieldMappingOperation = UpdateIndexSettings.Operation.newBuilder();
+	private List<ZuliaIndex.FieldMapping> fieldMappingList = Collections.emptyList();
 
 	public UpdateIndex(String indexName) {
 		this.indexName = indexName;
@@ -165,6 +170,54 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		this.fieldConfigOperation.setEnable(true);
 		this.fieldConfigOperation.setOperationType(OperationType.MERGE);
 		this.fieldConfigList = fieldConfigs;
+		return this;
+	}
+
+	public UpdateIndex removeFieldMappingByAlias(String... aliasesToRemove) {
+		return removeFieldMappingByAlias(Arrays.asList(aliasesToRemove));
+	}
+
+	public UpdateIndex removeFieldMappingByAlias(Collection<String> aliasesToRemove) {
+		this.fieldMappingOperation.setEnable(true);
+		this.fieldMappingOperation.addAllRemovedKeys(aliasesToRemove);
+		return this;
+	}
+
+	public UpdateIndex replaceFieldMapping(FieldMapping... fieldMapping) {
+		return replaceFieldMapping(Arrays.asList(fieldMapping));
+	}
+
+	public UpdateIndex replaceFieldMapping(FieldMappingBuilder... fieldMapping) {
+		return replaceFieldMapping(Arrays.stream(fieldMapping).map(FieldMappingBuilder::getFieldMapping).collect(Collectors.toList()));
+	}
+
+	public UpdateIndex replaceFieldMapping(List<FieldMapping> fieldMappings) {
+		if (fieldMappings == null) {
+			fieldMappings = Collections.emptyList();
+		}
+
+		this.fieldMappingOperation.setEnable(true);
+		this.fieldMappingOperation.setOperationType(OperationType.REPLACE);
+		this.fieldMappingList = fieldMappings;
+		return this;
+	}
+
+	public UpdateIndex mergeFieldMapping(FieldMapping... fieldMappings) {
+		return mergeFieldMapping(Arrays.asList(fieldMappings));
+	}
+
+	public UpdateIndex mergeFieldMapping(FieldMappingBuilder... mergeFieldMappings) {
+		return mergeFieldMapping(Arrays.stream(mergeFieldMappings).map(FieldMappingBuilder::getFieldMapping).toList());
+	}
+
+	public UpdateIndex mergeFieldMapping(List<FieldMapping> fieldMappings) {
+		if (fieldMappings == null || fieldMappings.isEmpty()) {
+			throw new IllegalArgumentException("Cannot merge null or empty field mappings");
+		}
+
+		this.fieldMappingOperation.setEnable(true);
+		this.fieldMappingOperation.setOperationType(OperationType.MERGE);
+		this.fieldMappingList = fieldMappings;
 		return this;
 	}
 
@@ -377,6 +430,9 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 
 		updateIndexSettings.addAllFieldConfig(fieldConfigList);
 		updateIndexSettings.setFieldConfigOperation(fieldConfigOperation);
+
+		updateIndexSettings.addAllFieldMapping(fieldMappingList);
+		updateIndexSettings.setFieldMappingOperation(fieldMappingOperation);
 
 		updateIndexSettings.addAllWarmingSearches(warmingSearches.stream().map(QueryRequest::toByteString).toList());
 		updateIndexSettings.setWarmingSearchesOperation(warmingSearchOperation);

@@ -6,19 +6,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.*;
-import io.zulia.client.command.builder.CountFacet;
-import io.zulia.client.command.builder.DrillDown;
-import io.zulia.client.command.builder.FilterQuery;
-import io.zulia.client.command.builder.Highlight;
-import io.zulia.client.command.builder.NumericSetQuery;
-import io.zulia.client.command.builder.NumericStat;
-import io.zulia.client.command.builder.ScoredQuery;
-import io.zulia.client.command.builder.Search;
-import io.zulia.client.command.builder.Sort;
-import io.zulia.client.command.builder.StandardQuery;
-import io.zulia.client.command.builder.StatFacet;
-import io.zulia.client.command.builder.TermQuery;
-import io.zulia.client.command.builder.VectorTopNQuery;
+import io.zulia.client.command.builder.*;
 import io.zulia.client.command.factory.FilterFactory;
 import io.zulia.client.command.factory.RangeBehavior;
 import io.zulia.client.config.ClientIndexConfig;
@@ -169,6 +157,29 @@ public class WikiExamples {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
 		// removes the analyzer field with name myCustomOne if it exists
 		updateIndex.removeAnalyzerSettingsByName("myCustomOne");
+		zuliaWorkPool.updateIndex(updateIndex);
+	}
+
+	public void updateIndexMergeFieldMapping(ZuliaWorkPool zuliaWorkPool) {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// if a field mapping with alias test1 or test2 exists, it will be updated with these mappings, otherwise they are added
+		FieldMappingBuilder test1 = new FieldMapping("test1").addMappedFields("field1", "field2");
+		FieldMappingBuilder test2 = new FieldMapping("test2").addMappedFields("field3", "fieldPattern4*").includeSelf();
+		updateIndex.mergeFieldMapping(test1, test2);
+	}
+
+	public void updateIndexReplaceFieldMapping(ZuliaWorkPool zuliaWorkPool) {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// replaces all field mappings with the two field mappings given
+		FieldMappingBuilder special = new FieldMapping("special").addMappedFields("specialist", "specialThings").includeSelf();
+		FieldMappingBuilder custom = new FieldMapping("custom").addMappedFields("custom*");
+		updateIndex.replaceFieldMapping(special, custom);
+	}
+
+	public void updateIndexRemoveFieldMapping(ZuliaWorkPool zuliaWorkPool) throws Exception {
+		UpdateIndex updateIndex = new UpdateIndex("someIndex");
+		// removes the field mapping with alias special if it exists
+		updateIndex.removeFieldMappingByAlias("special");
 		zuliaWorkPool.updateIndex(updateIndex);
 	}
 

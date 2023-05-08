@@ -3,6 +3,7 @@ package io.zulia.server.config;
 import com.google.protobuf.ByteString;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.ZuliaFieldConstants;
+import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Tokenizer;
@@ -17,6 +18,7 @@ import io.zulia.server.field.FieldTypeUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -35,6 +37,8 @@ public class ServerIndexConfig {
 	private ConcurrentHashMap<String, FacetAs> facetAsMap;
 
 	private List<ZuliaServiceOuterClass.QueryRequest> warmingSearches;
+
+	private ConcurrentHashMap<String, Set<String>> fieldMappingToFields;
 
 	public ServerIndexConfig(IndexSettings indexSettings) {
 		configure(indexSettings);
@@ -113,6 +117,22 @@ public class ServerIndexConfig {
 			}
 		}
 
+		this.fieldMappingToFields = new ConcurrentHashMap<>();
+
+		for (ZuliaIndex.FieldMapping fieldMapping : indexSettings.getFieldMappingList()) {
+
+			Set<String> matchingFields = new HashSet<>();
+			for (String fieldOrFieldPattern : fieldMapping.getFieldOrFieldPatternList()) {
+				matchingFields.addAll(getMatchingIndexFields(fieldOrFieldPattern, false));
+			}
+
+			if (fieldMapping.getIncludeSelf()) {
+				matchingFields.add(fieldMapping.getAlias());
+			}
+
+			fieldMappingToFields.put(fieldMapping.getAlias(), matchingFields);
+		}
+
 	}
 
 	private void populateAnalyzers() {
@@ -128,17 +148,22 @@ public class ServerIndexConfig {
 						.addFilter(Filter.STOPWORDS).addFilter(Filter.ENGLISH_MIN_STEM).build());
 
 		analyzerMap.put(DefaultAnalyzers.TWO_TWO_SHINGLE,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.TWO_TWO_SHINGLE).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.TWO_TWO_SHINGLE).build());
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.TWO_TWO_SHINGLE).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
+						.addFilter(Filter.TWO_TWO_SHINGLE).build());
 		analyzerMap.put(DefaultAnalyzers.THREE_THREE_SHINGLE,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.THREE_THREE_SHINGLE).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.THREE_THREE_SHINGLE).build());
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.THREE_THREE_SHINGLE).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
+						.addFilter(Filter.THREE_THREE_SHINGLE).build());
 
 		analyzerMap.put(DefaultAnalyzers.LC_CONCAT_ALL,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LC_CONCAT_ALL).setTokenizer(Tokenizer.KEYWORD).addFilter(Filter.LOWERCASE).addFilter(Filter.CONCAT_ALL).build());
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LC_CONCAT_ALL).setTokenizer(Tokenizer.KEYWORD).addFilter(Filter.LOWERCASE)
+						.addFilter(Filter.CONCAT_ALL).build());
 
 		analyzerMap.put(DefaultAnalyzers.KSTEMMED,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.KSTEMMED).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.STOPWORDS).addFilter(Filter.KSTEM).build());
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.KSTEMMED).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
+						.addFilter(Filter.STOPWORDS).addFilter(Filter.KSTEM).build());
 		analyzerMap.put(DefaultAnalyzers.LSH,
-				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LSH).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.ASCII_FOLDING).addFilter(Filter.KSTEM).addFilter(Filter.STOPWORDS).addFilter(Filter.FIVE_FIVE_SHINGLE)
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LSH).setTokenizer(Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
+						.addFilter(Filter.ASCII_FOLDING).addFilter(Filter.KSTEM).addFilter(Filter.STOPWORDS).addFilter(Filter.FIVE_FIVE_SHINGLE)
 						.addFilter(Filter.MINHASH).build());
 
 		for (AnalyzerSettings analyzerSettings : indexSettings.getAnalyzerSettingsList()) {
@@ -187,7 +212,10 @@ public class ServerIndexConfig {
 	}
 
 	public Set<String> getMatchingFields(String field) {
+		return getMatchingIndexFields(field, true);
+	}
 
+	private Set<String> getMatchingIndexFields(String field, boolean includeAliases) {
 		if (field.contains("*")) {
 
 			field = ("\\Q" + field + "\\E").replace("*", "\\E.*\\Q");
@@ -200,10 +228,23 @@ public class ServerIndexConfig {
 					matchingFieldNames.add(indexFieldName);
 				}
 			}
+
+			if (includeAliases) {
+				for (String alias : fieldMappingToFields.keySet()) {
+					if (pattern.matcher(alias).matches()) {
+						matchingFieldNames.addAll(fieldMappingToFields.get(alias));
+					}
+				}
+			}
+
 			return matchingFieldNames;
 		}
-		return Set.of(field);
 
+		if (includeAliases && fieldMappingToFields.containsKey(field)) {
+			return fieldMappingToFields.get(field);
+		}
+
+		return Set.of(field);
 	}
 
 	public List<ZuliaServiceOuterClass.QueryRequest> getWarmingSearches() {
