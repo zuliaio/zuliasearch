@@ -130,6 +130,9 @@ public class AliasTest {
 
 		GetFieldsResult getFields = zuliaWorkPool.getFields("someAlias");
 		Assertions.assertEquals(3, getFields.getFieldNames().size());
+		Assertions.assertTrue(getFields.getFieldNames().contains("id"));
+		Assertions.assertTrue(getFields.getFieldNames().contains("title"));
+		Assertions.assertTrue(getFields.getFieldNames().contains("rating"));
 
 		GetTermsResult getTermsResult = zuliaWorkPool.execute(new GetTerms("someAlias", "title"));
 		Assertions.assertEquals(6, getTermsResult.getTerms().size());

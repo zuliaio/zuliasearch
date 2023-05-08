@@ -95,7 +95,34 @@ public class ShardReader implements AutoCloseable {
 		for (LeafReaderContext subReaderContext : indexReader.leaves()) {
 			FieldInfos fieldInfos = subReaderContext.reader().getFieldInfos();
 			for (FieldInfo fi : fieldInfos) {
-				builder.addFieldName(fi.name);
+
+				if (fi.getPointDimensionCount() > 0) {
+
+					int matchedLength = 0;
+					if (fi.name.endsWith(ZuliaFieldConstants.NUMERIC_INT_SUFFIX)) {
+						matchedLength = ZuliaFieldConstants.NUMERIC_INT_SUFFIX.length();
+					}
+					else if (fi.name.endsWith(ZuliaFieldConstants.NUMERIC_LONG_SUFFIX)) {
+						matchedLength = ZuliaFieldConstants.NUMERIC_LONG_SUFFIX.length();
+					}
+					else if (fi.name.endsWith(ZuliaFieldConstants.NUMERIC_FLOAT_SUFFIX)) {
+						matchedLength = ZuliaFieldConstants.NUMERIC_FLOAT_SUFFIX.length();
+					}
+					else if (fi.name.endsWith(ZuliaFieldConstants.NUMERIC_DOUBLE_SUFFIX)) {
+						matchedLength = ZuliaFieldConstants.NUMERIC_DOUBLE_SUFFIX.length();
+					}
+					else if (fi.name.endsWith(ZuliaFieldConstants.BOOL_SUFFIX)) {
+						matchedLength = ZuliaFieldConstants.BOOL_SUFFIX.length();
+					}
+					else if (fi.name.endsWith(ZuliaFieldConstants.DATE_SUFFIX)) {
+						matchedLength = ZuliaFieldConstants.DATE_SUFFIX.length();
+					}
+					builder.addFieldName(fi.name.substring(0, fi.name.length() - matchedLength));
+
+				}
+				else {
+					builder.addFieldName(fi.name);
+				}
 			}
 		}
 
