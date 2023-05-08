@@ -1,5 +1,7 @@
 package io.zulia;
 
+import io.zulia.message.ZuliaIndex;
+
 public interface ZuliaFieldConstants {
 
 	String TIMESTAMP_FIELD = "_ztsf_";
@@ -26,5 +28,14 @@ public interface ZuliaFieldConstants {
 
 	String LIST_LENGTH_BARS = "|||";
 	String CHAR_LENGTH_BAR = "|";
+
+	String NUMERIC_INT_SUFFIX = "_" + ZuliaIndex.FieldConfig.FieldType.NUMERIC_INT;
+	String NUMERIC_LONG_SUFFIX = "_" + ZuliaIndex.FieldConfig.FieldType.NUMERIC_LONG;
+	String NUMERIC_FLOAT_SUFFIX = "_" + ZuliaIndex.FieldConfig.FieldType.NUMERIC_FLOAT;
+	String NUMERIC_DOUBLE_SUFFIX = "_" + ZuliaIndex.FieldConfig.FieldType.NUMERIC_DOUBLE;
+
+	String DATE_SUFFIX = "_" + ZuliaIndex.FieldConfig.FieldType.DATE;
+
+	String BOOL_SUFFIX = "_" + ZuliaIndex.FieldConfig.FieldType.BOOL;
 
 }
