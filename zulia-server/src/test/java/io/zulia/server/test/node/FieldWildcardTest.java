@@ -42,7 +42,7 @@ public class FieldWildcardTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("docLanguage").indexAs(DefaultAnalyzers.LC_KEYWORD).sort().facet());
 
 		indexConfig.addFieldMapping(new FieldMapping("title").addMappedFields("altTitle", "docTitle"));
-		indexConfig.addFieldMapping(new FieldMapping("title").addMappedFields("*title"));
+		indexConfig.addFieldMapping(new FieldMapping("title2").addMappedFields("*Title"));
 
 		indexConfig.setIndexName(WILDCARD_JSON_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
