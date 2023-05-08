@@ -2,11 +2,14 @@ package io.zulia.client.config;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.zulia.client.command.builder.FieldMappingBuilder;
 import io.zulia.client.command.builder.Search;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +41,8 @@ public class ClientIndexConfig {
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
 
+	private TreeMap<String, ZuliaIndex.FieldMapping> fieldMappingMap;
+
 	private Document meta;
 
 	private List<QueryRequest> warmingSearches;
@@ -45,7 +50,9 @@ public class ClientIndexConfig {
 	public ClientIndexConfig() {
 		this.fieldMap = new TreeMap<>();
 		this.analyzerSettingsMap = new TreeMap<>();
+		this.fieldMappingMap = new TreeMap<>();
 		this.warmingSearches = new ArrayList<>();
+
 	}
 
 	public ClientIndexConfig addDefaultSearchField(String defaultSearchField) {
@@ -99,8 +106,9 @@ public class ClientIndexConfig {
 		return ramBufferMB;
 	}
 
-	public void setRamBufferMB(Integer ramBufferMB) {
+	public ClientIndexConfig setRamBufferMB(Integer ramBufferMB) {
 		this.ramBufferMB = ramBufferMB;
+		return this;
 	}
 
 	public ClientIndexConfig setNumberOfShards(Integer numberOfShards) {
@@ -148,24 +156,28 @@ public class ClientIndexConfig {
 		return shardQueryCacheSize;
 	}
 
-	public void setShardQueryCacheSize(Integer shardQueryCacheSize) {
+	public ClientIndexConfig setShardQueryCacheSize(Integer shardQueryCacheSize) {
 		this.shardQueryCacheSize = shardQueryCacheSize;
+		return this;
 	}
 
 	public Integer getShardQueryCacheMaxAmount() {
 		return shardQueryCacheMaxAmount;
 	}
 
-	public void setShardQueryCacheMaxAmount(Integer shardQueryCacheMaxAmount) {
+	public ClientIndexConfig setShardQueryCacheMaxAmount(Integer shardQueryCacheMaxAmount) {
 		this.shardQueryCacheMaxAmount = shardQueryCacheMaxAmount;
+		return this;
 	}
 
-	public void addFieldConfig(FieldConfigBuilder FieldConfigBuilder) {
+	public ClientIndexConfig addFieldConfig(FieldConfigBuilder FieldConfigBuilder) {
 		addFieldConfig(FieldConfigBuilder.build());
+		return this;
 	}
 
-	public void addFieldConfig(FieldConfig fieldConfig) {
+	public ClientIndexConfig addFieldConfig(FieldConfig fieldConfig) {
 		this.fieldMap.put(fieldConfig.getStoredFieldName(), fieldConfig);
+		return this;
 	}
 
 	public FieldConfig getFieldConfig(String fieldName) {
@@ -176,27 +188,31 @@ public class ClientIndexConfig {
 		return indexWeight;
 	}
 
-	public void setIndexWeight(Integer indexWeight) {
+	public ClientIndexConfig setIndexWeight(Integer indexWeight) {
 		this.indexWeight = indexWeight;
+		return this;
 	}
 
 	public Integer getNumberOfReplicas() {
 		return numberOfReplicas;
 	}
 
-	public void setNumberOfReplicas(Integer numberOfReplicas) {
+	public ClientIndexConfig setNumberOfReplicas(Integer numberOfReplicas) {
 		this.numberOfReplicas = numberOfReplicas;
+		return this;
 	}
 
 	public List<QueryRequest> getWarmingSearches() {
 		return warmingSearches;
 	}
 
-	public void setWarmingSearches(List<QueryRequest> warmingSearches) {
+	public ClientIndexConfig setWarmingSearches(List<QueryRequest> warmingSearches) {
 		this.warmingSearches = warmingSearches;
+		return this;
 	}
 
-	public void addAnalyzerSetting(String name, AnalyzerSettings.Tokenizer tokenizer, Iterable<AnalyzerSettings.Filter> filterList, Similarity similarity) {
+	public ClientIndexConfig addAnalyzerSetting(String name, AnalyzerSettings.Tokenizer tokenizer, Iterable<AnalyzerSettings.Filter> filterList,
+			Similarity similarity) {
 
 		AnalyzerSettings.Builder analyzerSettings = AnalyzerSettings.newBuilder();
 		analyzerSettings.setName(name);
@@ -210,11 +226,12 @@ public class ClientIndexConfig {
 			analyzerSettings.setSimilarity(similarity);
 		}
 
-		addAnalyzerSetting(analyzerSettings.build());
+		return addAnalyzerSetting(analyzerSettings.build());
 	}
 
-	public void addAnalyzerSetting(AnalyzerSettings analyzerSettings) {
+	public ClientIndexConfig addAnalyzerSetting(AnalyzerSettings analyzerSettings) {
 		analyzerSettingsMap.put(analyzerSettings.getName(), analyzerSettings);
+		return this;
 	}
 
 	public AnalyzerSettings getAnalyzerSettings(String analyzerName) {
@@ -229,12 +246,31 @@ public class ClientIndexConfig {
 		return fieldMap;
 	}
 
-	public void setMeta(Document meta) {
+	public ClientIndexConfig setMeta(Document meta) {
 		this.meta = meta;
+		return this;
 	}
 
 	public Document getMeta() {
 		return meta;
+	}
+
+	public ClientIndexConfig addFieldMapping(String alias, Iterable<String> fieldOrFieldPattern, boolean includeSelf) {
+		ZuliaIndex.FieldMapping.Builder fieldMapping = ZuliaIndex.FieldMapping.newBuilder();
+		fieldMapping.setAlias(alias);
+		fieldMapping.addAllFieldOrFieldPattern(fieldOrFieldPattern);
+		fieldMapping.setIncludeSelf(includeSelf);
+		return addFieldMapping(fieldMapping.build());
+	}
+
+	public ClientIndexConfig addFieldMapping(FieldMappingBuilder fieldMappingBuilder) {
+		return addFieldMapping(fieldMappingBuilder.getFieldMapping());
+	}
+
+	@NotNull
+	private ClientIndexConfig addFieldMapping(ZuliaIndex.FieldMapping fieldMapping) {
+		fieldMappingMap.put(fieldMapping.getAlias(), fieldMapping);
+		return this;
 	}
 
 	public IndexSettings getIndexSettings() {
@@ -312,6 +348,13 @@ public class ClientIndexConfig {
 
 		}
 
+		if (fieldMappingMap != null) {
+			for (String alias : fieldMappingMap.keySet()) {
+				ZuliaIndex.FieldMapping fieldMapping = fieldMappingMap.get(alias);
+				isb.addFieldMapping(fieldMapping);
+			}
+		}
+
 		return isb.build();
 	}
 
@@ -363,6 +406,11 @@ public class ClientIndexConfig {
 			catch (InvalidProtocolBufferException e) {
 				throw new RuntimeException(e);
 			}
+		}
+
+		this.fieldMappingMap = new TreeMap<>();
+		for (ZuliaIndex.FieldMapping fieldMapping : indexSettings.getFieldMappingList()) {
+			fieldMappingMap.put(fieldMapping.getAlias(), fieldMapping);
 		}
 
 	}

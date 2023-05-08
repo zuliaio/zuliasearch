@@ -6,6 +6,7 @@ import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.FieldConfig;
+import io.zulia.message.ZuliaIndex.FieldMapping;
 import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.IndexShardMapping;
@@ -468,6 +469,13 @@ public class ZuliaIndexManager {
 						updateIndexSettings.getFieldConfigList(), FieldConfig::getStoredFieldName);
 				existingSettings.clearFieldConfig();
 				existingSettings.addAllFieldConfig(fieldConfigs);
+			}
+
+			if (updateIndexSettings.getFieldMappingOperation().getEnable()) {
+				List<FieldMapping> fieldMappingList = updateWithAction(updateIndexSettings.getFieldMappingOperation(), existingSettings.getFieldMappingList(),
+						updateIndexSettings.getFieldMappingList(), FieldMapping::getAlias);
+				existingSettings.clearFieldMapping();
+				existingSettings.addAllFieldMapping(fieldMappingList);
 			}
 
 			if (updateIndexSettings.getWarmingSearchesOperation().getEnable()) {

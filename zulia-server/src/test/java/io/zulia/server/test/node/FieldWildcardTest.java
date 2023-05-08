@@ -2,6 +2,7 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.FieldMapping;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
@@ -39,6 +40,9 @@ public class FieldWildcardTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("isParent").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("parentDocId").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("docLanguage").indexAs(DefaultAnalyzers.LC_KEYWORD).sort().facet());
+
+		indexConfig.addFieldMapping(new FieldMapping("title").addMappedFields("altTitle", "docTitle"));
+		indexConfig.addFieldMapping(new FieldMapping("title").addMappedFields("*title"));
 
 		indexConfig.setIndexName(WILDCARD_JSON_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
@@ -132,6 +136,16 @@ public class FieldWildcardTest {
 
 		search = new Search(WILDCARD_JSON_TEST_INDEX);
 		search.addQuery(new ScoredQuery("*Title:blog"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("title:blog"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("title2:blog"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(4, searchResult.getTotalHits());
 
