@@ -102,6 +102,12 @@ public class WikiExamples {
 		clientIndexConfig.setMeta(new Document("category", "special").append("otherKey", 10));
 	}
 
+	public void createIndexFieldMapping(ClientIndexConfig clientIndexConfig) {
+		clientIndexConfig.addFieldMapping(new FieldMapping("title").addMappedFields("longTitle", "shortTitle"));
+		clientIndexConfig.addFieldMapping(new FieldMapping("category").addMappedFields("category-*"));
+		clientIndexConfig.addFieldMapping(new FieldMapping("rating").addMappedFields("otherRating").includeSelf());
+	}
+
 	public void updateIndexBasicUsage(ZuliaWorkPool zuliaWorkPool) throws Exception {
 		UpdateIndex updateIndex = new UpdateIndex("someIndex");
 		// ... make changes
