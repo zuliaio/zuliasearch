@@ -25,6 +25,8 @@ public class ZuliaConfig {
 	private int servicePort = 32191;
 	private int restPort = 32192;
 
+	private boolean responseCompression;
+
 	public ZuliaConfig() {
 	}
 
@@ -116,10 +118,19 @@ public class ZuliaConfig {
 		this.restPort = restPort;
 	}
 
+	public boolean isResponseCompression() {
+		return responseCompression;
+	}
+
+	public void setResponseCompression(boolean responseCompression) {
+		this.responseCompression = responseCompression;
+	}
+
 	@Override
 	public String toString() {
 		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
-				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoAuth=" + mongoAuth + ", serverAddress='"
-				+ serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + '}';
+				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoConnection=" + mongoConnection + ", mongoAuth="
+				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", responseCompression="
+				+ responseCompression + '}';
 	}
 }
