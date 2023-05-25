@@ -25,6 +25,9 @@ mongoServers:
   - hostname: 127.0.0.1
     port: 27017
 
+# compress the services response to the client (grpc service port, not rest)
+responseCompression: false
+
 #mongoConnection:
 # protocol: "mongodb+srv"
 # connectionURL: example.com
