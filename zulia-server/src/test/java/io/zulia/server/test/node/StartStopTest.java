@@ -61,7 +61,7 @@ public class StartStopTest {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD));
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("issn").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("eissn").indexAs(DefaultAnalyzers.LC_KEYWORD));
@@ -373,7 +373,7 @@ public class StartStopTest {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort()); // make it sortable this time
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("issn").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("eissn").indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
@@ -383,6 +383,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(
 				FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).description("The very special data").sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("testBool").index().facet().sort());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 
@@ -725,6 +726,13 @@ public class StartStopTest {
 
 		}
 
+	}
+
+	@Test
+	@Order(57)
+	public void confirmTermInSet() throws Exception {
+		//try it again with id being sortable
+		termTestBuilder();
 	}
 
 }

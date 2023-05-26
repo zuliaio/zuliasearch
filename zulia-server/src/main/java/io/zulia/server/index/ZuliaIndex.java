@@ -63,6 +63,7 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
@@ -396,7 +397,7 @@ public class ZuliaIndex {
 			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
 			booleanQueryBuilder.setMinimumNumberShouldMatch(query.getMm());
 			for (String field : query.getQfList()) {
-				TermInSetQuery inSetQuery = getTermInSetQuery(query, field);
+				Query inSetQuery = getTermInSetQuery(query, field);
 				booleanQueryBuilder.add(inSetQuery, BooleanClause.Occur.SHOULD);
 			}
 			return booleanQueryBuilder.build();
@@ -404,11 +405,21 @@ public class ZuliaIndex {
 
 	}
 
-	private TermInSetQuery getTermInSetQuery(ZuliaQuery.Query query, String field) {
+	private Query getTermInSetQuery(ZuliaQuery.Query query, String field) {
 
 		List<BytesRef> termBytesRef = new ArrayList<>();
 		for (String term : query.getTermList()) {
 			termBytesRef.add(new BytesRef(term));
+		}
+
+		IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(field);
+
+		String sortField = indexFieldInfo.getInternalSortFieldName();
+
+		if (sortField != null) {
+			Query indexQuery = new TermInSetQuery(field, termBytesRef);
+			Query dvQuery = new TermInSetQuery(MultiTermQuery.DOC_VALUES_REWRITE, sortField, termBytesRef);
+			return new IndexOrDocValuesQuery(indexQuery, dvQuery);
 		}
 
 		return new TermInSetQuery(field, termBytesRef);
