@@ -653,8 +653,8 @@ public class ShardReader implements AutoCloseable {
 				if (fullDocValues != null) {
 					fullDocValues.advanceExact(docId);
 				}
-				BytesRef meta = metaDocValues != null ? metaDocValues.binaryValue() : new BytesRef(BytesRef.EMPTY_BYTES);
-				BytesRef fullDoc = fullDocValues != null ? fullDocValues.binaryValue() : new BytesRef(BytesRef.EMPTY_BYTES);
+				BytesRef meta = metaDocValues != null ? metaDocValues.binaryValue() : null;
+				BytesRef fullDoc = fullDocValues != null ? fullDocValues.binaryValue() : null;
 				documentConsumer.accept(new ReIndexContainer(idDocValues.binaryValue(), meta, fullDoc));
 			}
 
