@@ -39,6 +39,7 @@ import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
+import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -80,18 +81,21 @@ public class ShardDocumentIndexer {
 		luceneDocument.add(new SortedSetDocValuesField(idSortField, new BytesRef(uniqueId)));
 		luceneDocument.add(new LongPoint(ZuliaFieldConstants.TIMESTAMP_FIELD, timestamp));
 
+		boolean compressionEnabled = indexConfig.isCompressionEnabled();
 		ZuliaBase.IdInfo idInfo = ZuliaBase.IdInfo.newBuilder().setId(uniqueId).setTimestamp(timestamp).setMajorVersion(majorVersion)
-				.setMinorVersion(minorVersion).build();
+				.setMinorVersion(minorVersion).setCompressedDoc(compressionEnabled).build();
 
 		byte[] idInfoBytes = idInfo.toByteArray();
 
 		luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.STORED_ID_FIELD, new BytesRef(idInfoBytes)));
 
 		if (metadata.hasDocument()) {
-			luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.STORED_META_FIELD, new BytesRef(metadata.getByteArray())));
+			byte[] bytes = compressionEnabled ? Snappy.compress(metadata.getByteArray()) : metadata.getByteArray();
+			luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.STORED_META_FIELD, new BytesRef(bytes)));
 		}
 		if (mongoDocument.hasDocument()) {
-			luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.STORED_DOC_FIELD, new BytesRef(mongoDocument.getByteArray())));
+			byte[] bytes = compressionEnabled ? Snappy.compress(mongoDocument.getByteArray()) : mongoDocument.getByteArray();
+			luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.STORED_DOC_FIELD, new BytesRef(bytes)));
 			addUserFields(mongoDocument.getDocument(), luceneDocument, taxoWriter);
 		}
 

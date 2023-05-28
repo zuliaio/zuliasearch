@@ -74,6 +74,7 @@ public class StartStopTest {
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
+		indexConfig.setDisableCompression(true);
 
 		//optional meta
 		indexConfig.setMeta(new Document().append("createTime", new Date()).append("myLabel", "greatLabel"));
@@ -386,6 +387,7 @@ public class StartStopTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("testBool").index().facet().sort());
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
+		indexConfig.setDisableCompression(false); // default values, just for clarity
 
 		zuliaWorkPool.createIndex(indexConfig);
 

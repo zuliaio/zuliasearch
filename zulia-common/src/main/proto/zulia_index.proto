@@ -59,6 +59,8 @@ message IndexSettings {
 
     repeated FieldMapping fieldMapping = 21;
 
+    bool disableCompression = 22;
+
 }
 
 
@@ -117,6 +119,10 @@ message UpdateIndexSettings {
 
     repeated FieldMapping fieldMapping = 29;
     Operation fieldMappingOperation = 30; // keyed by alias
+
+    bool setDisableCompression = 31;
+    bool disableCompression = 32;
+
 }
 
 

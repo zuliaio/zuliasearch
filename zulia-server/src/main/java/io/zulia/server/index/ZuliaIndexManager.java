@@ -553,6 +553,10 @@ public class ZuliaIndexManager {
 				existingSettings.setIndexWeight(updateIndexSettings.getIndexWeight());
 			}
 
+			if (updateIndexSettings.getSetDisableCompression()) {
+				existingSettings.setDisableCompression(updateIndexSettings.getDisableCompression());
+			}
+
 			Operation metaUpdateOperation = updateIndexSettings.getMetaUpdateOperation();
 			if (metaUpdateOperation.getEnable()) {
 				Document existingMeta = ZuliaUtil.byteStringToMongoDocument(existingSettings.getMeta());

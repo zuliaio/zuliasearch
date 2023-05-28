@@ -46,6 +46,8 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private Integer ramBufferMB;
 	private Integer numberOfReplicas;
 
+	private Boolean disableCompression;
+
 	private final UpdateIndexSettings.Operation.Builder analyzerSettingsOperation = UpdateIndexSettings.Operation.newBuilder();
 	private List<ZuliaIndex.AnalyzerSettings> analyzerSettingsList = Collections.emptyList();
 
@@ -311,6 +313,15 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
+	public Boolean getDisableCompression() {
+		return disableCompression;
+	}
+
+	public UpdateIndex setDisableCompression(Boolean disableCompression) {
+		this.disableCompression = disableCompression;
+		return this;
+	}
+
 	public Integer getNumberOfReplicas() {
 		return numberOfReplicas;
 	}
@@ -480,6 +491,11 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		if (ramBufferMB != null) {
 			updateIndexSettings.setSetRamBufferMB(true);
 			updateIndexSettings.setRamBufferMB(ramBufferMB);
+		}
+
+		if (disableCompression != null) {
+			updateIndexSettings.setSetDisableCompression(true);
+			updateIndexSettings.setDisableCompression(disableCompression);
 		}
 
 		updateIndexSettings.setMetaUpdateOperation(metaDataOperation);
