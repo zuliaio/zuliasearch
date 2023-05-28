@@ -38,6 +38,8 @@ public class ClientIndexConfig {
 	private Integer ramBufferMB;
 	private Integer numberOfReplicas;
 
+	private Boolean disableCompression;
+
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
 
@@ -102,6 +104,11 @@ public class ClientIndexConfig {
 		return numberOfShards;
 	}
 
+	public ClientIndexConfig setNumberOfShards(Integer numberOfShards) {
+		this.numberOfShards = numberOfShards;
+		return this;
+	}
+
 	public Integer getRamBufferMB() {
 		return ramBufferMB;
 	}
@@ -111,8 +118,12 @@ public class ClientIndexConfig {
 		return this;
 	}
 
-	public ClientIndexConfig setNumberOfShards(Integer numberOfShards) {
-		this.numberOfShards = numberOfShards;
+	public Boolean getDisableCompression() {
+		return disableCompression;
+	}
+
+	public ClientIndexConfig setDisableCompression(Boolean disableCompression) {
+		this.disableCompression = disableCompression;
 		return this;
 	}
 
@@ -337,6 +348,10 @@ public class ClientIndexConfig {
 			isb.setRamBufferMB(ramBufferMB);
 		}
 
+		if (disableCompression != null) {
+			isb.setDisableCompression(disableCompression);
+		}
+
 		if (meta != null) {
 			isb.setMeta(ZuliaUtil.mongoDocumentToByteString(meta));
 		}
@@ -394,6 +409,7 @@ public class ClientIndexConfig {
 
 		this.indexWeight = indexSettings.getIndexWeight();
 		this.ramBufferMB = indexSettings.getRamBufferMB();
+		this.disableCompression = indexSettings.getDisableCompression();
 
 		this.meta = ZuliaUtil.byteStringToMongoDocument(indexSettings.getMeta());
 

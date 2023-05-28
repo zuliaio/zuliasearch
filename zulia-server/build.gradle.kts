@@ -47,7 +47,7 @@ dependencies {
     implementation("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
 
     implementation("org.apache.commons:commons-compress:1.22")
-    implementation("org.xerial.snappy:snappy-java:1.1.9.1")
+    implementation("org.xerial.snappy:snappy-java:1.1.10.0")
     implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
     implementation("software.amazon.awssdk:s3")
 
