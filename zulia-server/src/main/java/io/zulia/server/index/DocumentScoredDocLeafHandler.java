@@ -19,6 +19,7 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.util.BytesRef;
+import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -119,6 +120,9 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 			if (meta) {
 				if (metaDocValues != null && metaDocValues.advanceExact(localDocId)) {
 					byte[] metaBytes = BytesRefUtil.getByteArray(metaDocValues.binaryValue());
+					if (idInfo.getCompressedDoc()) {
+						metaBytes = Snappy.uncompress(metaBytes);
+					}
 					rdBuilder.setMetadata(ByteString.copyFrom(metaBytes));
 				}
 			}
@@ -126,6 +130,9 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 			if (full) {
 				if (fullDocValues != null && fullDocValues.advanceExact(localDocId)) {
 					byte[] docBytes = BytesRefUtil.getByteArray(fullDocValues.binaryValue());
+					if (idInfo.getCompressedDoc()) {
+						docBytes = Snappy.uncompress(docBytes);
+					}
 					rdBuilder.setDocument(ByteString.copyFrom(docBytes));
 
 					if (needsHighlight || needsAnalysis || needsDocFiltering) {

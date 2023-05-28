@@ -7,6 +7,7 @@ message IdInfo {
     uint64 timestamp = 2;
     uint32 majorVersion = 3;
     uint32 minorVersion = 4;
+    bool compressedDoc = 5;
 }
 
 enum MasterSlaveSettings {

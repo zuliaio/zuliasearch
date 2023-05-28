@@ -211,6 +211,10 @@ public class ServerIndexConfig {
 		return indexSettings.getRamBufferMB();
 	}
 
+	public boolean isCompressionEnabled() {
+		return !indexSettings.getDisableCompression();
+	}
+
 	public Set<String> getMatchingFields(String field) {
 		return getMatchingIndexFields(field, true);
 	}
