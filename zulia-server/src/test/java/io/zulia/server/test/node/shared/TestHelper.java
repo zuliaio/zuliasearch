@@ -123,6 +123,7 @@ public class TestHelper {
 			zuliaConfig.setCluster(true);
 			zuliaConfig.setClusterName(TEST_CLUSTER_NAME);
 			zuliaConfig.setResponseCompression(true);
+			//zuliaConfig.setRpcWorkers(44);
 
 			String mongoServerUrl = getMongoServer();
 			zuliaConfig.setMongoServers(Collections.singletonList(new MongoServer(mongoServerUrl, parseMongoPort(mongoServerUrl))));
