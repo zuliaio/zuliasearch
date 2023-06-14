@@ -414,6 +414,10 @@ public class ZuliaIndex {
 
 		IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(field);
 
+		if (indexFieldInfo == null) {
+			throw new RuntimeException("Field <" + field + "> is not indexed");
+		}
+
 		String sortField = indexFieldInfo.getInternalSortFieldName();
 
 		if (sortField != null) {
