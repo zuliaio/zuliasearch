@@ -27,6 +27,8 @@ public class ZuliaConfig {
 
 	private boolean responseCompression;
 
+	private int rpcWorkers;
+
 	public ZuliaConfig() {
 	}
 
@@ -126,11 +128,19 @@ public class ZuliaConfig {
 		this.responseCompression = responseCompression;
 	}
 
+	public int getRpcWorkers() {
+		return rpcWorkers;
+	}
+
+	public void setRpcWorkers(int rpcWorkers) {
+		this.rpcWorkers = rpcWorkers;
+	}
+
 	@Override
 	public String toString() {
 		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
 				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoConnection=" + mongoConnection + ", mongoAuth="
 				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", responseCompression="
-				+ responseCompression + '}';
+				+ responseCompression + ", rpcWorkers=" + rpcWorkers + '}';
 	}
 }
