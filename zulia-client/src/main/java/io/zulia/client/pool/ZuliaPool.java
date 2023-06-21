@@ -35,6 +35,7 @@ public class ZuliaPool {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaPool.class.getName());
 
+
 	protected class ZuliaNodeUpdateThread extends Thread {
 
 		ZuliaNodeUpdateThread() {
@@ -74,6 +75,7 @@ public class ZuliaPool {
 	private final ConcurrentHashMap<String, ZuliaRESTClient> zuliaRestPoolMap;
 	private final ConcurrentHashMap<String, Node> nodeKeyToNode;
 
+	private final ConnectionListener connectionListener;
 	private boolean isClosed;
 	private List<Node> nodes;
 	private IndexRouting indexRouting;
@@ -86,6 +88,8 @@ public class ZuliaPool {
 		routingEnabled = zuliaPoolConfig.isRoutingEnabled();
 		nodeUpdateInterval = zuliaPoolConfig.getNodeUpdateInterval();
 		compressedConnection = zuliaPoolConfig.isCompressedConnection();
+
+		connectionListener = zuliaPoolConfig.getConnectionListener();
 
 		zuliaConnectionPoolMap = new ConcurrentHashMap<>();
 		zuliaRestPoolMap = new ConcurrentHashMap<>();
@@ -212,7 +216,7 @@ public class ZuliaPool {
 						GenericObjectPoolConfig<ZuliaConnection> poolConfig = new GenericObjectPoolConfig<>(); //
 						poolConfig.setMaxIdle(maxIdle);
 						poolConfig.setMaxTotal(maxConnections);
-						return new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection), poolConfig);
+						return new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection, connectionListener), poolConfig);
 					});
 
 					boolean valid = true;

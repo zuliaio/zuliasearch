@@ -5,31 +5,31 @@ import io.grpc.ManagedChannelBuilder;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceGrpc;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ZuliaConnection {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaConnection.class.getName());
+	private final long connectionId;
+	private final long connectionNumberForNode;
+	private final boolean compressedConnection;
 
-	private Node node;
+	private final Node node;
 
 	private ManagedChannel channel;
 
 	private ZuliaServiceGrpc.ZuliaServiceBlockingStub blockingStub;
 	private ZuliaServiceGrpc.ZuliaServiceStub asyncStub;
 
-	private final long connectionNumber;
-
-	private static AtomicLong connectionNumberGen = new AtomicLong();
-
-	public ZuliaConnection(Node node) {
+	public ZuliaConnection(Node node, boolean compressedConnection, long connectionId, long connectionNumberForNode) {
 		this.node = node;
-		this.connectionNumber = connectionNumberGen.getAndIncrement();
+		this.connectionId = connectionId;
+		this.connectionNumberForNode = connectionNumberForNode;
+		this.compressedConnection = compressedConnection;
 	}
 
-	public void open(boolean compressedConnection) {
+	public void open() {
 
 		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(node.getServerAddress(), node.getServicePort())
 				.maxInboundMessageSize(256 * 1024 * 1024).usePlaintext();
@@ -45,8 +45,6 @@ public class ZuliaConnection {
 			asyncStub = asyncStub.withCompression("gzip");
 		}
 
-		LOG.info("Connecting to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
-
 	}
 
 	public ZuliaServiceGrpc.ZuliaServiceBlockingStub getService() {
@@ -57,12 +55,27 @@ public class ZuliaConnection {
 		return asyncStub;
 	}
 
+	public Node getNode() {
+		return node;
+	}
+
+	public boolean isCompressedConnection() {
+		return compressedConnection;
+	}
+
+	public long getConnectionId() {
+		return connectionId;
+	}
+
+	public long getConnectionNumberForNode() {
+		return connectionNumberForNode;
+	}
+
 	/**
 	 * closes the connection to the server if open, calling a method (index, query, ...) will open a new connection
 	 */
 	public void close() {
 
-		LOG.info("Closing connection to <" + node.getServerAddress() + ":" + node.getServicePort() + "> id: " + connectionNumber);
 		try {
 			if (channel != null) {
 				channel.shutdownNow();
