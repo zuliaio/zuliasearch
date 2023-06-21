@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
@@ -34,7 +33,6 @@ import static io.zulia.message.ZuliaIndex.IndexShardMapping;
 public class ZuliaPool {
 
 	private static final Logger LOG = Logger.getLogger(ZuliaPool.class.getName());
-
 
 	protected class ZuliaNodeUpdateThread extends Thread {
 
@@ -122,19 +120,11 @@ public class ZuliaPool {
 		removedNodes.addAll(zuliaRestPoolMap.keySet());
 		removedNodes.removeAll(newKeys);
 		for (String removedNode : removedNodes) {
-			try {
-
-				GenericObjectPool<ZuliaConnection> connection = zuliaConnectionPoolMap.remove(removedNode);
-				if (connection != null) {
-					connection.close();
-				}
-
-				zuliaRestPoolMap.remove(removedNode);
-
+			GenericObjectPool<ZuliaConnection> connection = zuliaConnectionPoolMap.remove(removedNode);
+			if (connection != null) {
+				connection.close();
 			}
-			catch (Exception e) {
-				LOG.log(Level.SEVERE, "Failed to remove node " + removedNode, e);
-			}
+			zuliaRestPoolMap.remove(removedNode);
 		}
 
 		this.nodes = nodes;
@@ -195,18 +185,17 @@ public class ZuliaPool {
 					if (selectedNode.getRestPort() == 0) {
 						Node fullSelectedNode = nodeKeyToNode.get(nodeKey);
 						if (fullSelectedNode != null) {
-
 							restPort = fullSelectedNode.getRestPort();
 						}
 						else {
-							LOG.warning("Failed to find rest port for <" + nodeKey + "> using default");
 							restPort = ZuliaRESTConstants.DEFAULT_REST_SERVICE_PORT;
 						}
 					}
 
 					int finalRestPort = restPort;
 					final String finalServer = selectedNode.getServerAddress();
-					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey, s -> new ZuliaRESTClient(finalServer, finalRestPort));
+					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey,
+							s -> new ZuliaRESTClient(finalServer, finalRestPort, connectionListener));
 					return ((RESTCommand<R>) command).execute(restClient);
 				}
 				else {

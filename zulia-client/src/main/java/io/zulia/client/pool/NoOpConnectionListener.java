@@ -20,4 +20,9 @@ public class NoOpConnectionListener implements ConnectionListener {
 	public void connectionClosed(ZuliaConnection zuliaConnection) {
 
 	}
+
+	@Override
+	public void exceptionClosing(ZuliaConnection zuliaConnection, Exception e) {
+
+	}
 }

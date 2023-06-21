@@ -2,6 +2,7 @@ package io.zulia.client.pool;
 
 import io.zulia.message.ZuliaBase;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class LoggingConnectionListener implements ConnectionListener {
@@ -33,5 +34,17 @@ public class LoggingConnectionListener implements ConnectionListener {
 		ZuliaBase.Node node = zuliaConnection.getNode();
 		LOG.info("Closed connection #" + zuliaConnection.getConnectionNumberForNode() + " to <" + node.getServerAddress() + ":" + node.getServicePort()
 				+ "> id: " + zuliaConnection.getConnectionId());
+	}
+
+	@Override
+	public void exceptionClosing(ZuliaConnection zuliaConnection, Exception e) {
+		ZuliaBase.Node node = zuliaConnection.getNode();
+		LOG.log(Level.SEVERE, "Exception closing connection #" + zuliaConnection.getConnectionNumberForNode() + " to <" + node.getServerAddress() + ":"
+				+ node.getServicePort() + "> id: " + zuliaConnection.getConnectionId(), e);
+	}
+
+	@Override
+	public void restClientCreated(String server, int restPort) {
+		LOG.info("Created OkHttp client for server <" + server + "> on port <" + restPort + ">");
 	}
 }

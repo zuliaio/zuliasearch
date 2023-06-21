@@ -5,7 +5,6 @@ import io.grpc.ManagedChannelBuilder;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceGrpc;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class ZuliaConnection {
@@ -81,12 +80,11 @@ public class ZuliaConnection {
 				channel.shutdownNow();
 			}
 		}
-		catch (Exception e) {
-			LOG.log(Level.SEVERE, "Exception closing: ", e);
+		finally {
+			channel = null;
+			blockingStub = null;
+			asyncStub = null;
 		}
-		channel = null;
-		blockingStub = null;
-		asyncStub = null;
 
 	}
 

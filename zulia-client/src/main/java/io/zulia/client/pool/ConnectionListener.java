@@ -9,4 +9,8 @@ public interface ConnectionListener {
 	void connectionBeforeClose(ZuliaConnection zuliaConnection);
 
 	void connectionClosed(ZuliaConnection zuliaConnection);
+
+	void exceptionClosing(ZuliaConnection zuliaConnection, Exception e);
+
+	void restClientCreated(String server, int restPort);
 }
