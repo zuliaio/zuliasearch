@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.zulia.ZuliaRESTConstants;
+import io.zulia.client.pool.ConnectionListener;
 import io.zulia.util.HttpHelper;
 import io.zulia.util.ZuliaUtil;
 import okhttp3.MediaType;
@@ -22,23 +23,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class ZuliaRESTClient {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaRESTClient.class.getName());
 	private final String url;
 	private final OkHttpClient client;
 
-	public ZuliaRESTClient(String server, int restPort) {
+	public ZuliaRESTClient(String server, int restPort, ConnectionListener connectionListener) {
 		url = "http://" + server + ":" + restPort;
 
 		client = new OkHttpClient().newBuilder().readTimeout(120, TimeUnit.SECONDS).connectTimeout(120, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS)
 				.build();
-		LOG.info("Created OkHttp client for url: " + url);
+		connectionListener.restClientCreated(server, restPort);
+
 	}
 
 	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, byte[] bytes) throws Exception {
@@ -51,11 +50,10 @@ public class ZuliaRESTClient {
 		}
 		catch (Exception e) {
 			if (e.getMessage().startsWith("Out of size:")) {
-				LOG.log(Level.WARNING, "Failed to store file <" + fileName + "> due to mismatch size.");
+				throw new Exception("Failed to store file <" + fileName + "> due to mismatch size", e);
 			}
 			else {
-				LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
-				throw e;
+				throw new Exception("Failed to store file <" + fileName + ">", e);
 			}
 		}
 
@@ -71,11 +69,10 @@ public class ZuliaRESTClient {
 		}
 		catch (Exception e) {
 			if (e.getMessage().startsWith("Out of size:")) {
-				LOG.log(Level.WARNING, "Failed to store file <" + fileName + "> due to mismatch size.");
+				throw new Exception("Failed to store file <" + fileName + "> due to mismatch size", e);
 			}
 			else {
-				LOG.log(Level.SEVERE, "Failed to store file <" + fileName + ">", e);
-				throw e;
+				throw new Exception("Failed to store file <" + fileName + ">", e);
 			}
 		}
 
@@ -101,7 +98,7 @@ public class ZuliaRESTClient {
 
 	}
 
-	public void fetchAssociatedMetadata(String uniqueId, String indexName, String fileName, OutputStream destination) {
+	public void fetchAssociatedMetadata(String uniqueId, String indexName, String fileName, OutputStream destination) throws Exception {
 
 		try {
 			Request request = new Request.Builder().url(
@@ -112,9 +109,9 @@ public class ZuliaRESTClient {
 			destination.write(Objects.requireNonNull(document.toJson().getBytes(StandardCharsets.UTF_8), "No body for file"));
 			response.close();
 		}
-		catch (Throwable t) {
-			LOG.log(Level.SEVERE,
-					"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + t.getMessage());
+		catch (Exception e) {
+			throw new Exception(
+					"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage(), e);
 		}
 
 	}
