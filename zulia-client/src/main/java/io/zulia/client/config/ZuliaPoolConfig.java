@@ -1,6 +1,8 @@
 package io.zulia.client.config;
 
 import io.zulia.ZuliaRESTConstants;
+import io.zulia.client.pool.ConnectionListener;
+import io.zulia.client.pool.LoggingConnectionListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,6 +21,8 @@ public class ZuliaPoolConfig {
 	private boolean routingEnabled;
 	private boolean nodeUpdateEnabled;
 	private int nodeUpdateInterval;
+
+	private ConnectionListener connectionListener = new LoggingConnectionListener();
 
 	public final static int DEFAULT_DEFAULT_RETRIES = 0;
 	public final static int DEFAULT_MEMBER_UPDATE_INTERVAL = 10000;
@@ -140,4 +144,11 @@ public class ZuliaPoolConfig {
 		return this;
 	}
 
+	public ConnectionListener getConnectionListener() {
+		return connectionListener;
+	}
+
+	public void setConnectionListener(ConnectionListener connectionListener) {
+		this.connectionListener = connectionListener;
+	}
 }

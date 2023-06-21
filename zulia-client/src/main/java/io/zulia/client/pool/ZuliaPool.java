@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
@@ -74,6 +73,7 @@ public class ZuliaPool {
 	private final ConcurrentHashMap<String, ZuliaRESTClient> zuliaRestPoolMap;
 	private final ConcurrentHashMap<String, Node> nodeKeyToNode;
 
+	private final ConnectionListener connectionListener;
 	private boolean isClosed;
 	private List<Node> nodes;
 	private IndexRouting indexRouting;
@@ -86,6 +86,8 @@ public class ZuliaPool {
 		routingEnabled = zuliaPoolConfig.isRoutingEnabled();
 		nodeUpdateInterval = zuliaPoolConfig.getNodeUpdateInterval();
 		compressedConnection = zuliaPoolConfig.isCompressedConnection();
+
+		connectionListener = zuliaPoolConfig.getConnectionListener();
 
 		zuliaConnectionPoolMap = new ConcurrentHashMap<>();
 		zuliaRestPoolMap = new ConcurrentHashMap<>();
@@ -118,19 +120,11 @@ public class ZuliaPool {
 		removedNodes.addAll(zuliaRestPoolMap.keySet());
 		removedNodes.removeAll(newKeys);
 		for (String removedNode : removedNodes) {
-			try {
-
-				GenericObjectPool<ZuliaConnection> connection = zuliaConnectionPoolMap.remove(removedNode);
-				if (connection != null) {
-					connection.close();
-				}
-
-				zuliaRestPoolMap.remove(removedNode);
-
+			GenericObjectPool<ZuliaConnection> connection = zuliaConnectionPoolMap.remove(removedNode);
+			if (connection != null) {
+				connection.close();
 			}
-			catch (Exception e) {
-				LOG.log(Level.SEVERE, "Failed to remove node " + removedNode, e);
-			}
+			zuliaRestPoolMap.remove(removedNode);
 		}
 
 		this.nodes = nodes;
@@ -191,18 +185,17 @@ public class ZuliaPool {
 					if (selectedNode.getRestPort() == 0) {
 						Node fullSelectedNode = nodeKeyToNode.get(nodeKey);
 						if (fullSelectedNode != null) {
-
 							restPort = fullSelectedNode.getRestPort();
 						}
 						else {
-							LOG.warning("Failed to find rest port for <" + nodeKey + "> using default");
 							restPort = ZuliaRESTConstants.DEFAULT_REST_SERVICE_PORT;
 						}
 					}
 
 					int finalRestPort = restPort;
 					final String finalServer = selectedNode.getServerAddress();
-					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey, s -> new ZuliaRESTClient(finalServer, finalRestPort));
+					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey,
+							s -> new ZuliaRESTClient(finalServer, finalRestPort, connectionListener));
 					return ((RESTCommand<R>) command).execute(restClient);
 				}
 				else {
@@ -212,7 +205,7 @@ public class ZuliaPool {
 						GenericObjectPoolConfig<ZuliaConnection> poolConfig = new GenericObjectPoolConfig<>(); //
 						poolConfig.setMaxIdle(maxIdle);
 						poolConfig.setMaxTotal(maxConnections);
-						return new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection), poolConfig);
+						return new GenericObjectPool<>(new ZuliaConnectionFactory(finalSelectedNode, compressedConnection, connectionListener), poolConfig);
 					});
 
 					boolean valid = true;

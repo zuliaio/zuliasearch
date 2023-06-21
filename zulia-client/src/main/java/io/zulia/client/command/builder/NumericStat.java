@@ -3,12 +3,10 @@ package io.zulia.client.command.builder;
 import io.zulia.message.ZuliaQuery.StatRequest;
 
 import java.util.List;
-import java.util.logging.Logger;
 
 public class NumericStat implements StatBuilder {
 
 	private final StatRequest.Builder statRequestBuilder;
-	private static final Logger LOG = Logger.getLogger(NumericStat.class.getName());
 
 	public NumericStat(String numericField) {
 		statRequestBuilder = StatRequest.newBuilder().setNumericField(numericField);
