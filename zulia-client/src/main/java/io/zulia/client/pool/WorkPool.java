@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import io.zulia.util.ZuliaThreadFactory;
 
+import java.io.Serial;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -15,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class WorkPool {
 
-	private ListeningExecutorService pool;
+	private final ListeningExecutorService pool;
 	private final static AtomicInteger threadNumber = new AtomicInteger(1);
 
 	public WorkPool(int threads) {
@@ -27,7 +28,8 @@ public class WorkPool {
 	}
 
 	public WorkPool(int threads, int maxQueued, String poolName) {
-		BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<Runnable>(maxQueued) {
+		BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(maxQueued) {
+			@Serial
 			private static final long serialVersionUID = 1L;
 
 			@Override
@@ -54,9 +56,6 @@ public class WorkPool {
 	public <T> T execute(Callable<T> task) throws Exception {
 		try {
 			return executeAsync(task).get();
-		}
-		catch (InterruptedException e) {
-			throw e;
 		}
 		catch (ExecutionException e) {
 			Throwable cause = e.getCause();
