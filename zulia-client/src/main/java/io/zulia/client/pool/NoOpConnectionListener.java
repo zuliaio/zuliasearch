@@ -25,4 +25,9 @@ public class NoOpConnectionListener implements ConnectionListener {
 	public void exceptionClosing(ZuliaConnection zuliaConnection, Exception e) {
 
 	}
+
+	@Override
+	public void restClientCreated(String server, int restPort) {
+
+	}
 }
