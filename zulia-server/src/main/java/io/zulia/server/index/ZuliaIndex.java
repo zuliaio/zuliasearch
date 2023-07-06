@@ -1,5 +1,6 @@
 package io.zulia.server.index;
 
+import com.google.protobuf.ProtocolStringList;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
@@ -35,6 +36,7 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
+import io.zulia.server.search.queryparser.SetQueryHelper;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ZuliaThreadFactory;
@@ -42,11 +44,6 @@ import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -60,15 +57,11 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldDoc;
-import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NumericUtils;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -406,42 +399,30 @@ public class ZuliaIndex {
 	}
 
 	private Query getTermInSetQuery(ZuliaQuery.Query query, String field) {
-
-		List<BytesRef> termBytesRef = new ArrayList<>();
-		for (String term : query.getTermList()) {
-			termBytesRef.add(new BytesRef(term));
-		}
-
 		IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(field);
 
 		if (indexFieldInfo == null) {
 			throw new RuntimeException("Field <" + field + "> is not indexed");
 		}
 
-		String sortField = indexFieldInfo.getInternalSortFieldName();
-
-		if (sortField != null) {
-			Query indexQuery = new TermInSetQuery(field, termBytesRef);
-			Query dvQuery = new TermInSetQuery(MultiTermQuery.DOC_VALUES_REWRITE, sortField, termBytesRef);
-			return new IndexOrDocValuesQuery(indexQuery, dvQuery);
-		}
-
-		return new TermInSetQuery(field, termBytesRef);
+		return SetQueryHelper.getTermInSetQuery(query.getTermList(), field, indexFieldInfo);
 	}
 
-	public Query handleNumericSetQuery(ZuliaQuery.Query query) {
 
-		if (query.getQfList().isEmpty()) {
+
+	public Query handleNumericSetQuery(ZuliaQuery.Query query) {
+		ProtocolStringList qfList = query.getQfList();
+		if (qfList.isEmpty()) {
 			throw new IllegalArgumentException("Numeric set query must give at least one query field (qf)");
 		}
-		else if (query.getQfList().size() == 1) {
-			return getNumericSetQuery(query, query.getQfList().get(0));
+		else if (qfList.size() == 1) {
+			return getNumericSetQuery(query.getNumericSet(), qfList.get(0));
 		}
 		else {
 			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
 			booleanQueryBuilder.setMinimumNumberShouldMatch(query.getMm());
-			for (String field : query.getQfList()) {
-				Query inSetQuery = getNumericSetQuery(query, field);
+			for (String field : qfList) {
+				Query inSetQuery = getNumericSetQuery(query.getNumericSet(), field);
 				booleanQueryBuilder.add(inSetQuery, BooleanClause.Occur.SHOULD);
 			}
 			return booleanQueryBuilder.build();
@@ -449,74 +430,10 @@ public class ZuliaIndex {
 
 	}
 
-	private Query getNumericSetQuery(ZuliaQuery.Query query, String field) {
+	private Query getNumericSetQuery(ZuliaQuery.NumericSet numericSet, String field) {
 		IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(field);
-
-		FieldConfig.FieldType fieldType = indexFieldInfo.getFieldType();
-		String searchField = indexFieldInfo.getInternalFieldName();
-		String sortField = indexFieldInfo.getInternalSortFieldName();
-
-		ZuliaQuery.NumericSet numericSet = query.getNumericSet();
-
-		if (fieldType == null) {
-			throw new IllegalArgumentException("Field <" + field + "> is not indexed");
-		}
-		else {
-			if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-				List<Integer> integerValueList = numericSet.getIntegerValueList();
-				if (integerValueList.isEmpty()) {
-					throw new IllegalArgumentException("No integer values for integer field <" + field + "> for numeric set query");
-				}
-
-				Query pointQuery = IntPoint.newSetQuery(searchField, integerValueList);
-				if (sortField == null) {
-					return pointQuery;
-				}
-				long[] pointsArray = integerValueList.stream().mapToLong(Integer::intValue).toArray();
-				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
-			}
-			else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-				List<Long> longValueList = numericSet.getLongValueList();
-				if (longValueList.isEmpty()) {
-					throw new IllegalArgumentException("No long values for long field <" + field + "> for numeric set query");
-				}
-
-				Query pointQuery = LongPoint.newSetQuery(searchField, longValueList);
-				if (sortField == null) {
-					return pointQuery;
-				}
-				long[] pointsArray = longValueList.stream().mapToLong(Long::longValue).toArray();
-				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
-			}
-			else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-				List<Float> floatValueList = numericSet.getFloatValueList();
-				if (floatValueList.isEmpty()) {
-					throw new IllegalArgumentException("No float values for float field <" + field + "> for numeric set query");
-				}
-
-				Query pointQuery = FloatPoint.newSetQuery(searchField, floatValueList);
-				if (sortField == null) {
-					return pointQuery;
-				}
-				long[] pointsArray = floatValueList.stream().mapToLong(NumericUtils::floatToSortableInt).toArray();
-				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
-			}
-			else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-				List<Double> doubleValueList = numericSet.getDoubleValueList();
-				if (doubleValueList.isEmpty()) {
-					throw new IllegalArgumentException("No double values for double field <" + field + "> for numeric set query");
-				}
-
-				Query pointQuery = DoublePoint.newSetQuery(searchField, doubleValueList);
-				if (sortField == null) {
-					return pointQuery;
-				}
-				long[] pointsArray = doubleValueList.stream().mapToLong(NumericUtils::doubleToSortableLong).toArray();
-				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
-			}
-		}
-		throw new IllegalArgumentException("No field type of <" + fieldType + "> is not supported for numeric set queries");
-
+		return SetQueryHelper.getNumericSetQuery(field, indexFieldInfo, numericSet::getIntegerValueList, numericSet::getLongValueList,
+				numericSet::getFloatValueList, numericSet::getDoubleValueList);
 	}
 
 	public Query handleVectorQuery(ZuliaQuery.Query query) throws Exception {
