@@ -1,21 +1,21 @@
 package io.zulia.server.test.mongo;
 
-import de.flapdoodle.embed.mongo.MongodExecutable;
-import de.flapdoodle.embed.mongo.MongodProcess;
-import de.flapdoodle.embed.mongo.MongodStarter;
-import de.flapdoodle.embed.mongo.config.MongodConfig;
 import de.flapdoodle.embed.mongo.config.Net;
 import de.flapdoodle.embed.mongo.distribution.Version;
+import de.flapdoodle.embed.mongo.transitions.Mongod;
+import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
 import de.flapdoodle.embed.process.runtime.Network;
+import de.flapdoodle.reverse.TransitionWalker;
+import de.flapdoodle.reverse.transitions.Start;
 
 public class MongoTestInstance {
 
 	private static final String LOCAL_INSTANCE_URL_HOST = "mongodb://127.0.0.1";
-	private static MongodStarter mongodStarter = MongodStarter.getDefaultInstance();
 
 	private Integer port;
 	private String testInstanceUrl;
-	private MongodProcess mongodProcess;
+
+	private TransitionWalker.ReachedState<RunningMongodProcess> running;
 
 	public MongoTestInstance() {
 	}
@@ -25,22 +25,16 @@ public class MongoTestInstance {
 	}
 
 	public void shutdown() {
-		if (mongodProcess != null) {
-			mongodProcess.stop();
+		if (running != null) {
+			running.close();
 		}
 	}
 
 	public void start() {
 
 		try {
-
-			port = Network.freeServerPort(Network.getLocalHost());
-
-			MongodConfig mongodConfig = MongodConfig.builder().version(Version.Main.PRODUCTION).net(new Net(port, Network.localhostIsIPv6())).build();
-
-			MongodExecutable mongodExecutable = mongodStarter.prepare(mongodConfig);
-			mongodProcess = mongodExecutable.start();
-
+			port = Network.freeServerPort(de.flapdoodle.net.Net.getLocalHost());
+			running = Mongod.builder().net(Start.to(Net.class).initializedWith(Net.defaults().withPort(port))).build().start(Version.Main.V6_0);
 			testInstanceUrl = buildTestInstanceUrl();
 
 		}
