@@ -5,8 +5,6 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldableNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNodeImpl;
 import org.apache.lucene.search.Query;
 
-import java.util.Objects;
-
 public abstract class ZuliaFieldableQueryNode extends QueryNodeImpl implements FieldableNode {
 	private CharSequence field;
 	private IndexFieldInfo indexFieldInfo;
@@ -18,7 +16,7 @@ public abstract class ZuliaFieldableQueryNode extends QueryNodeImpl implements F
 
 	@Override
 	public void setField(CharSequence fieldName) {
-		this.field = Objects.requireNonNull(fieldName.toString());
+		this.field = fieldName != null ? fieldName.toString() : null;
 	}
 
 	public abstract Query getQuery();
