@@ -2,6 +2,7 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.NumericSetQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
@@ -75,6 +76,7 @@ public class NumericSetTest {
 		mongoDocument.put("floatField", f);
 		mongoDocument.put("doubleField", d);
 
+
 		Store s = new Store(uniqueId, NUMERIC_SET_TEST);
 
 		ResultDocBuilder resultDocumentBuilder = ResultDocBuilder.newBuilder().setDocument(mongoDocument);
@@ -112,6 +114,60 @@ public class NumericSetTest {
 		Assertions.assertEquals("5", searchResult.getCompleteResults().get(2).getUniqueId());
 
 		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField:zl:ns(1 2)")).addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3, searchResult.getTotalHits());
+
+		Assertions.assertEquals("1", searchResult.getCompleteResults().get(0).getUniqueId());
+		Assertions.assertEquals("2", searchResult.getCompleteResults().get(1).getUniqueId());
+		Assertions.assertEquals("5", searchResult.getCompleteResults().get(2).getUniqueId());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("zl:ns(1 2)").addQueryField("intField")).addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3, searchResult.getTotalHits());
+
+		Assertions.assertEquals("1", searchResult.getCompleteResults().get(0).getUniqueId());
+		Assertions.assertEquals("2", searchResult.getCompleteResults().get(1).getUniqueId());
+		Assertions.assertEquals("5", searchResult.getCompleteResults().get(2).getUniqueId());
+
+		//IllegalArgumentException:Search: For input string: "abcd"
+		Assertions.assertThrows(Exception.class, () -> {
+			Search s = new Search(NUMERIC_SET_TEST);
+			s.addQuery(new FilterQuery("zl:ns(1 abcd)").addQueryField("intField")).addSort(new Sort("id"));
+			s.setAmount(10);
+			zuliaWorkPool.search(s);
+		});
+
+		//Exception:Search: Field <title> must be indexed for numeric set queries
+		Assertions.assertThrows(Exception.class, () -> {
+			Search s = new Search(NUMERIC_SET_TEST);
+			s.addQuery(new FilterQuery("zl:ns(1 2)").addQueryField("title")).addSort(new Sort("id"));
+			s.setAmount(10);
+			zuliaWorkPool.search(s);
+		});
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField,longField:zl:ns(1 2 5)")).addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(5, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField,longField:zl:ns(1 2 5) -id:1")).addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("zl:ns(1 2 5)").addQueryFields("intField", "longField")).addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(5, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
 		search.addQuery(new NumericSetQuery("longField").addValues(1L));
 		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
@@ -124,8 +180,20 @@ public class NumericSetTest {
 		Assertions.assertEquals(2, searchResult.getTotalHits());
 
 		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("zl:ns(565.0 2000)").addQueryField("floatField")).addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
 		search.addQuery(new NumericSetQuery("doubleField").addValues(2.01, 2.0));
 		search.setAmount(3);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("doubleField:zl:ns(2.01 2.0)")).addSort(new Sort("id"));
+		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(3, searchResult.getTotalHits());
 
