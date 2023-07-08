@@ -229,7 +229,7 @@ public class ZuliaPool {
 								throw new Exception(grpcCommand.getClass().getSimpleName() + ": " + errorMessage);
 							}
 							else {
-								throw new IllegalArgumentException(grpcCommand.getClass().getSimpleName() + ":" + errorMessage);
+								throw new IllegalArgumentException(grpcCommand.getClass().getSimpleName() + ": " + errorMessage);
 							}
 						}
 						else {
