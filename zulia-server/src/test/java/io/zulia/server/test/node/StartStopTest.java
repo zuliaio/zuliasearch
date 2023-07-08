@@ -396,6 +396,11 @@ public class StartStopTest {
 		s.addQuery(new FilterQuery("title:zl:tq(facet userguide)"));
 		searchResult = zuliaWorkPool.search(s);
 		Assertions.assertEquals(50, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("issn:zl:tq(\"1234-1234\" \"3333-1234\" \"1234-5555\")"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(30, searchResult.getTotalHits());
 	}
 
 	@Test
