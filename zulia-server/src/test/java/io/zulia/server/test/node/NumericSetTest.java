@@ -45,6 +45,8 @@ public class NumericSetTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createLong("longField").index());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createFloat("floatField").index());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("doubleField").index());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("fn").indexAs(DefaultAnalyzers.STANDARD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("zl").indexAs(DefaultAnalyzers.STANDARD));
 		indexConfig.setIndexName(NUMERIC_SET_TEST);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
@@ -76,6 +78,13 @@ public class NumericSetTest {
 		mongoDocument.put("floatField", f);
 		mongoDocument.put("doubleField", d);
 
+		if (id == 1) {
+			mongoDocument.put("fn", "ordered");
+		}
+
+		if (id == 2) {
+			mongoDocument.put("zl", "ns");
+		}
 
 		Store s = new Store(uniqueId, NUMERIC_SET_TEST);
 
@@ -196,6 +205,28 @@ public class NumericSetTest {
 		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(3, searchResult.getTotalHits());
+
+		// to query fn or zl, need to use multi-field syntax trick to query or use query fields
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("ordered").addQueryFields("fn"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("fn,:ordered"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("ns").addQueryFields("zl"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("zl,:ns"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
 
 	}
 
