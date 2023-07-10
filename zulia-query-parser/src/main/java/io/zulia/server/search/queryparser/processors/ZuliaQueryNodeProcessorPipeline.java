@@ -50,6 +50,8 @@ public class ZuliaQueryNodeProcessorPipeline extends QueryNodeProcessorPipeline 
 		add(new OpenRangeQueryNodeProcessor());
 		//zulia - add ZuliaPointQueryNodeProcessor comment PointRangeQueryNodeProcessor
 		add(new ZuliaPointQueryNodeProcessor());
+		add(new ZuliaFieldableQueryNodeProcessor());
+
 		//add(new PointRangeQueryNodeProcessor());
 		//zulia - remove term range query parser, replaced by ZuliaDateRangeQueryNodeProcessor above
 		//add(new TermRangeQueryNodeProcessor());

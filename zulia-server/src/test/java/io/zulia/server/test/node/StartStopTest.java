@@ -349,8 +349,18 @@ public class StartStopTest {
 		Assertions.assertEquals(4, searchResult.getTotalHits());
 
 		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("testBool:true AND id:zl:tq(1 2 3 4)"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
 		s.addQuery(new TermQuery("id").addTerm("1").addTerm("2").addTerm("3").addTerm("4"));
 		s.addQuery(new FilterQuery("country:US"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("id:zl:tq(1 2 3 4) AND country:US"));
 		searchResult = zuliaWorkPool.search(s);
 		Assertions.assertEquals(2, searchResult.getTotalHits());
 
@@ -361,11 +371,36 @@ public class StartStopTest {
 		Assertions.assertEquals(28, searchResult.getTotalHits());
 
 		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("-id:zl:tq(1 2 3 4) AND country:US"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(28, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
 		s.addQuery(new TermQuery("id").addTerm("1").addTerm("2").addTerm("3").addTerm("4").exclude());
 		s.addQuery(new FilterQuery("country:US").exclude());
 		s.addQuery(new MatchAllQuery()); //need to use match all because all other queries are negated
 		searchResult = zuliaWorkPool.search(s);
 		Assertions.assertEquals(28, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("-id:zl:tq(1 2 3 4) AND -country:US"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(28, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("title:zl:tq(facet)"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(25, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("title:zl:tq(facet userguide)"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(50, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("issn:zl:tq(\"1234-1234\" \"3333-1234\" \"1234-5555\")"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(30, searchResult.getTotalHits());
 	}
 
 	@Test

@@ -19,6 +19,9 @@ package io.zulia.server.search.queryparser.parser;
  * limitations under the License.
  */
 
+import io.zulia.server.search.queryparser.node.ZuliaFieldableQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaNumericSetQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaTermsInSetQueryNode;
 import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
@@ -112,6 +115,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 			switch ((jj_ntk == -1) ? jj_ntk_f() : jj_ntk) {
 				case NOT:
 				case FN_PREFIX:
+				case ZL_PREFIX:
 				case PLUS:
 				case MINUS:
 				case QUOTED:
@@ -262,6 +266,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		else {
 			switch ((jj_ntk == -1) ? jj_ntk_f() : jj_ntk) {
 				case FN_PREFIX:
+				case ZL_PREFIX:
 				case QUOTED:
 				case NUMBER:
 				case TERM:
@@ -303,6 +308,10 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 							case NUMBER:
 							case TERM: {
 								q = IntervalExpr(field);
+								break;
+							}
+							case ZL_PREFIX: {
+								q = ZuliaExpr(field);
 								break;
 							}
 							default:
@@ -353,14 +362,14 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		}
 		switch ((jj_ntk == -1) ? jj_ntk_f() : jj_ntk) {
 			case TILDE:
-			case 56: {
+			case 59: {
 				switch ((jj_ntk == -1) ? jj_ntk_f() : jj_ntk) {
 					case TILDE: {
 						jj_consume_token(TILDE);
 						break;
 					}
-					case 56: {
-						jj_consume_token(56);
+					case 59: {
+						jj_consume_token(59);
 						break;
 					}
 					default:
@@ -388,6 +397,129 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		throw new Error("Missing return statement in function");
 	}
 
+	final private ZuliaFieldableQueryNode ZuliaExpr(CharSequence field) throws ParseException {
+		ZuliaFieldableQueryNode source;
+		if (jj_2_4(2)) {
+			source = NumericsSetQuery(field);
+			{
+				if ("" != null)
+					return source;
+			}
+		}
+		else if (jj_2_5(2)) {
+			source = TermsInSetQuery(field);
+			{
+				if ("" != null)
+					return source;
+			}
+		}
+		else {
+			jj_consume_token(-1);
+			throw new ParseException();
+		}
+		throw new Error("Missing return statement in function");
+	}
+
+	final private ZuliaNumericSetQueryNode NumericsSetQuery(CharSequence field) throws ParseException {
+		CharSequence value;
+		ArrayList<CharSequence> values = new ArrayList<CharSequence>();
+		jj_consume_token(ZL_PREFIX);
+		jj_consume_token(NUMERIC_SET);
+		jj_consume_token(LPAREN);
+		label_4:
+		while (true) {
+			value = TermText();
+			values.add(value);
+			switch ((jj_ntk == -1) ? jj_ntk_f() : jj_ntk) {
+				case QUOTED:
+				case NUMBER:
+				case TERM: {
+					;
+					break;
+				}
+				default:
+					jj_la1[12] = jj_gen;
+					break label_4;
+			}
+		}
+		jj_consume_token(RPAREN);
+		{
+			if ("" != null)
+				return new ZuliaNumericSetQueryNode(field, values);
+		}
+		throw new Error("Missing return statement in function");
+	}
+
+	final private ZuliaTermsInSetQueryNode TermsInSetQuery(CharSequence field) throws ParseException {
+		CharSequence value;
+		ArrayList<CharSequence> values = new ArrayList<CharSequence>();
+		jj_consume_token(ZL_PREFIX);
+		jj_consume_token(TERM_SET);
+		jj_consume_token(LPAREN);
+		label_5:
+		while (true) {
+			value = TermText();
+			values.add(value);
+			switch ((jj_ntk == -1) ? jj_ntk_f() : jj_ntk) {
+				case QUOTED:
+				case NUMBER:
+				case TERM: {
+					;
+					break;
+				}
+				default:
+					jj_la1[13] = jj_gen;
+					break label_5;
+			}
+		}
+		jj_consume_token(RPAREN);
+		{
+			if ("" != null)
+				return new ZuliaTermsInSetQueryNode(field, values);
+		}
+		throw new Error("Missing return statement in function");
+	}
+
+	final private CharSequence TermText() throws ParseException {
+		switch ((jj_ntk == -1) ? jj_ntk_f() : jj_ntk) {
+			case QUOTED: {
+				jj_consume_token(QUOTED);
+				{
+					if ("" != null)
+						return token.image.substring(1, token.image.length() - 1);
+				}
+				break;
+			}
+			case NUMBER:
+			case TERM: {
+				switch ((jj_ntk == -1) ? jj_ntk_f() : jj_ntk) {
+					case TERM: {
+						jj_consume_token(TERM);
+						break;
+					}
+					case NUMBER: {
+						jj_consume_token(NUMBER);
+						break;
+					}
+					default:
+						jj_la1[14] = jj_gen;
+						jj_consume_token(-1);
+						throw new ParseException();
+				}
+				{
+					if ("" != null)
+						return token.image;
+				}
+				break;
+			}
+			default:
+				jj_la1[15] = jj_gen;
+				jj_consume_token(-1);
+				throw new ParseException();
+		}
+		throw new Error("Missing return statement in function");
+	}
+
 	final private IntervalQueryNode IntervalExpr(CharSequence field) throws ParseException {
 		IntervalFunction source;
 		source = IntervalFun();
@@ -400,154 +532,154 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 
 	final private IntervalFunction IntervalFun() throws ParseException {
 		IntervalFunction source;
-		if (jj_2_4(2)) {
+		if (jj_2_6(2)) {
 			source = IntervalAtLeast();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_5(2)) {
+		else if (jj_2_7(2)) {
 			source = IntervalMaxWidth();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_6(2)) {
+		else if (jj_2_8(2)) {
 			source = IntervalMaxGaps();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_7(2)) {
+		else if (jj_2_9(2)) {
 			source = IntervalOrdered();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_8(2)) {
+		else if (jj_2_10(2)) {
 			source = IntervalUnordered();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_9(2)) {
+		else if (jj_2_11(2)) {
 			source = IntervalUnorderedNoOverlaps();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_10(2)) {
+		else if (jj_2_12(2)) {
 			source = IntervalOr();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_11(2)) {
+		else if (jj_2_13(2)) {
 			source = IntervalWildcard();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_12(2)) {
+		else if (jj_2_14(2)) {
 			source = IntervalAfter();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_13(2)) {
+		else if (jj_2_15(2)) {
 			source = IntervalBefore();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_14(2)) {
+		else if (jj_2_16(2)) {
 			source = IntervalPhrase();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_15(2)) {
+		else if (jj_2_17(2)) {
 			source = IntervalContaining();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_16(2)) {
+		else if (jj_2_18(2)) {
 			source = IntervalNotContaining();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_17(2)) {
+		else if (jj_2_19(2)) {
 			source = IntervalContainedBy();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_18(2)) {
+		else if (jj_2_20(2)) {
 			source = IntervalNotContainedBy();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_19(2)) {
+		else if (jj_2_21(2)) {
 			source = IntervalWithin();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_20(2)) {
+		else if (jj_2_22(2)) {
 			source = IntervalNotWithin();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_21(2)) {
+		else if (jj_2_23(2)) {
 			source = IntervalOverlapping();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_22(2)) {
+		else if (jj_2_24(2)) {
 			source = IntervalNonOverlapping();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_23(2)) {
+		else if (jj_2_25(2)) {
 			source = IntervalExtend();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_24(2)) {
+		else if (jj_2_26(2)) {
 			source = IntervalFuzzyTerm();
 			{
 				if ("" != null)
 					return source;
 			}
 		}
-		else if (jj_2_25(2)) {
+		else if (jj_2_27(2)) {
 			source = IntervalText();
 			{
 				if ("" != null)
@@ -569,7 +701,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		jj_consume_token(ATLEAST);
 		jj_consume_token(LPAREN);
 		minShouldMatch = jj_consume_token(NUMBER);
-		label_4:
+		label_6:
 		while (true) {
 			source = IntervalFun();
 			sources.add(source);
@@ -582,8 +714,8 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 					break;
 				}
 				default:
-					jj_la1[12] = jj_gen;
-					break label_4;
+					jj_la1[16] = jj_gen;
+					break label_6;
 			}
 		}
 		jj_consume_token(RPAREN);
@@ -632,7 +764,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		jj_consume_token(FN_PREFIX);
 		jj_consume_token(UNORDERED);
 		jj_consume_token(LPAREN);
-		label_5:
+		label_7:
 		while (true) {
 			source = IntervalFun();
 			sources.add(source);
@@ -645,8 +777,8 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 					break;
 				}
 				default:
-					jj_la1[13] = jj_gen;
-					break label_5;
+					jj_la1[17] = jj_gen;
+					break label_7;
 			}
 		}
 		jj_consume_token(RPAREN);
@@ -678,7 +810,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		jj_consume_token(FN_PREFIX);
 		jj_consume_token(ORDERED);
 		jj_consume_token(LPAREN);
-		label_6:
+		label_8:
 		while (true) {
 			source = IntervalFun();
 			sources.add(source);
@@ -691,8 +823,8 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 					break;
 				}
 				default:
-					jj_la1[14] = jj_gen;
-					break label_6;
+					jj_la1[18] = jj_gen;
+					break label_8;
 			}
 		}
 		jj_consume_token(RPAREN);
@@ -709,7 +841,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		jj_consume_token(FN_PREFIX);
 		jj_consume_token(FN_OR);
 		jj_consume_token(LPAREN);
-		label_7:
+		label_9:
 		while (true) {
 			source = IntervalFun();
 			sources.add(source);
@@ -722,8 +854,8 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 					break;
 				}
 				default:
-					jj_la1[15] = jj_gen;
-					break label_7;
+					jj_la1[19] = jj_gen;
+					break label_9;
 			}
 		}
 		jj_consume_token(RPAREN);
@@ -740,7 +872,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		jj_consume_token(FN_PREFIX);
 		jj_consume_token(PHRASE);
 		jj_consume_token(LPAREN);
-		label_8:
+		label_10:
 		while (true) {
 			source = IntervalFun();
 			sources.add(source);
@@ -753,8 +885,8 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 					break;
 				}
 				default:
-					jj_la1[16] = jj_gen;
-					break label_8;
+					jj_la1[20] = jj_gen;
+					break label_10;
 			}
 		}
 		jj_consume_token(RPAREN);
@@ -961,7 +1093,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 						break;
 					}
 					default:
-						jj_la1[17] = jj_gen;
+						jj_la1[21] = jj_gen;
 						jj_consume_token(-1);
 						throw new ParseException();
 				}
@@ -974,7 +1106,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[18] = jj_gen;
+				jj_la1[22] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -984,7 +1116,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[19] = jj_gen;
+				jj_la1[23] = jj_gen;
 				;
 		}
 		jj_consume_token(RPAREN);
@@ -1015,7 +1147,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 						break;
 					}
 					default:
-						jj_la1[20] = jj_gen;
+						jj_la1[24] = jj_gen;
 						jj_consume_token(-1);
 						throw new ParseException();
 				}
@@ -1028,17 +1160,17 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[21] = jj_gen;
+				jj_la1[25] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
-		if (jj_2_26(2)) {
+		if (jj_2_28(2)) {
 			maxEdits = jj_consume_token(NUMBER);
 		}
 		else {
 			;
 		}
-		if (jj_2_27(2)) {
+		if (jj_2_29(2)) {
 			maxExpansions = jj_consume_token(NUMBER);
 		}
 		else {
@@ -1074,7 +1206,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 						break;
 					}
 					default:
-						jj_la1[22] = jj_gen;
+						jj_la1[26] = jj_gen;
 						jj_consume_token(-1);
 						throw new ParseException();
 				}
@@ -1085,7 +1217,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[23] = jj_gen;
+				jj_la1[27] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -1106,7 +1238,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	final private QueryNode FuzzyOp(CharSequence field, Token term, QueryNode node) throws ParseException {
 		Token similarity = null;
 		jj_consume_token(TILDE);
-		if (jj_2_28(2)) {
+		if (jj_2_30(2)) {
 			similarity = jj_consume_token(NUMBER);
 		}
 		else {
@@ -1158,7 +1290,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[24] = jj_gen;
+				jj_la1[28] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -1177,7 +1309,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[25] = jj_gen;
+				jj_la1[29] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -1244,7 +1376,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 						break;
 					}
 					default:
-						jj_la1[26] = jj_gen;
+						jj_la1[30] = jj_gen;
 						jj_consume_token(-1);
 						throw new ParseException();
 				}
@@ -1255,7 +1387,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 						break;
 					}
 					default:
-						jj_la1[27] = jj_gen;
+						jj_la1[31] = jj_gen;
 						;
 				}
 				break;
@@ -1270,7 +1402,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[28] = jj_gen;
+				jj_la1[32] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -1280,7 +1412,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[29] = jj_gen;
+				jj_la1[33] = jj_gen;
 				;
 		}
 		{
@@ -1304,7 +1436,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[30] = jj_gen;
+				jj_la1[34] = jj_gen;
 				;
 		}
 		{
@@ -1329,7 +1461,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[31] = jj_gen;
+				jj_la1[35] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -1347,7 +1479,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[32] = jj_gen;
+				jj_la1[36] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -1367,7 +1499,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[33] = jj_gen;
+				jj_la1[37] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -1383,7 +1515,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				break;
 			}
 			default:
-				jj_la1[34] = jj_gen;
+				jj_la1[38] = jj_gen;
 				jj_consume_token(-1);
 				throw new ParseException();
 		}
@@ -1796,10 +1928,38 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		}
 	}
 
-	private boolean jj_3R_17() {
+	private boolean jj_2_29(int xla) {
+		jj_la = xla;
+		jj_lastpos = jj_scanpos = token;
+		try {
+			return (!jj_3_29());
+		}
+		catch (LookaheadSuccess ls) {
+			return true;
+		}
+		finally {
+			jj_save(28, xla);
+		}
+	}
+
+	private boolean jj_2_30(int xla) {
+		jj_la = xla;
+		jj_lastpos = jj_scanpos = token;
+		try {
+			return (!jj_3_30());
+		}
+		catch (LookaheadSuccess ls) {
+			return true;
+		}
+		finally {
+			jj_save(29, xla);
+		}
+	}
+
+	private boolean jj_3R_32() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(UNORDERED_NO_OVERLAPS))
+		if (jj_scan_token(NOT_WITHIN))
 			return true;
 		return false;
 	}
@@ -1807,40 +1967,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private boolean jj_3R_25() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(CONTAINED_BY))
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_11() {
-		if (jj_3R_9())
-			return true;
-		Token xsp;
-		xsp = jj_scanpos;
-		if (jj_scan_token(17)) {
-			jj_scanpos = xsp;
-			if (jj_scan_token(18)) {
-				jj_scanpos = xsp;
-				if (jj_scan_token(19)) {
-					jj_scanpos = xsp;
-					if (jj_scan_token(20))
-						return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	private boolean jj_3R_19() {
-		if (jj_scan_token(FN_PREFIX))
-			return true;
-		if (jj_scan_token(WILDCARD))
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_47() {
-		if (jj_scan_token(TILDE))
+		if (jj_scan_token(BEFORE))
 			return true;
 		return false;
 	}
@@ -1848,15 +1975,114 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private boolean jj_3R_16() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(UNORDERED))
+		if (jj_scan_token(ATLEAST))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3R_24() {
+	private boolean jj_3R_12() {
+		Token xsp;
+		xsp = jj_scanpos;
+		if (jj_3R_38()) {
+			jj_scanpos = xsp;
+			if (jj_3R_39()) {
+				jj_scanpos = xsp;
+				if (jj_3R_40()) {
+					jj_scanpos = xsp;
+					if (jj_3R_41())
+						return true;
+				}
+			}
+		}
+		xsp = jj_scanpos;
+		if (jj_3R_42())
+			jj_scanpos = xsp;
+		return false;
+	}
+
+	private boolean jj_3R_48() {
+		if (jj_scan_token(CARAT))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_27() {
+		if (jj_3R_37())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_26() {
+		if (jj_3R_36())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_25() {
+		if (jj_3R_35())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_24() {
+		if (jj_3R_34())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_23() {
+		if (jj_3R_33())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_26() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(NOT_CONTAINING))
+		if (jj_scan_token(PHRASE))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_22() {
+		if (jj_3R_32())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_35() {
+		if (jj_scan_token(FN_PREFIX))
+			return true;
+		if (jj_scan_token(EXTEND))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_21() {
+		if (jj_3R_31())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_20() {
+		if (jj_3R_30())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_44() {
+		Token xsp;
+		xsp = jj_scanpos;
+		if (jj_scan_token(26)) {
+			jj_scanpos = xsp;
+			if (jj_scan_token(25))
+				return true;
+		}
+		return false;
+	}
+
+	private boolean jj_3_19() {
+		if (jj_3R_29())
 			return true;
 		return false;
 	}
@@ -1864,25 +2090,128 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private boolean jj_3R_43() {
 		if (jj_scan_token(QUOTED))
 			return true;
+		return false;
+	}
+
+	private boolean jj_3R_37() {
 		Token xsp;
 		xsp = jj_scanpos;
-		if (jj_3R_47())
+		if (jj_3R_43()) {
 			jj_scanpos = xsp;
+			if (jj_3R_44())
+				return true;
+		}
 		return false;
 	}
 
-	private boolean jj_3R_30() {
-		if (jj_scan_token(FN_PREFIX))
-			return true;
-		if (jj_scan_token(NON_OVERLAPPING))
+	private boolean jj_3_18() {
+		if (jj_3R_28())
 			return true;
 		return false;
 	}
 
-	private boolean jj_3R_14() {
+	private boolean jj_3_17() {
+		if (jj_3R_27())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_16() {
+		if (jj_3R_26())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_15() {
+		if (jj_3R_25())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_11() {
+		if (jj_scan_token(TERM))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_14() {
+		if (jj_3R_24())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_13() {
+		if (jj_3R_23())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_12() {
+		if (jj_3R_22())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_11() {
+		if (jj_3R_21())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_22() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(MAXGAPS))
+		if (jj_scan_token(FN_OR))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_10() {
+		if (jj_3R_20())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_9() {
+		if (jj_3R_19())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_8() {
+		if (jj_3R_18())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_7() {
+		if (jj_3R_17())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_6() {
+		if (jj_3R_16())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_29() {
+		if (jj_scan_token(NUMBER))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_31() {
+		if (jj_scan_token(FN_PREFIX))
+			return true;
+		if (jj_scan_token(WITHIN))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_2() {
+		if (jj_3R_12())
 			return true;
 		return false;
 	}
@@ -1893,123 +2222,71 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		return false;
 	}
 
-	private boolean jj_3R_23() {
-		if (jj_scan_token(FN_PREFIX))
-			return true;
-		if (jj_scan_token(CONTAINING))
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_9() {
-		if (jj_scan_token(TERM))
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_29() {
-		if (jj_scan_token(FN_PREFIX))
-			return true;
-		if (jj_scan_token(OVERLAPPING))
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_41() {
-		if (jj_3R_45())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_37() {
-		if (jj_3R_43())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_45() {
-		if (jj_scan_token(TILDE))
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_38() {
-		if (jj_3R_44())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_36() {
-		if (jj_3R_42())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_2() {
-		if (jj_3R_10())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_13() {
-		if (jj_scan_token(FN_PREFIX))
-			return true;
-		if (jj_scan_token(MAXWIDTH))
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_35() {
-		Token xsp;
-		xsp = jj_scanpos;
-		if (jj_scan_token(25)) {
-			jj_scanpos = xsp;
-			if (jj_scan_token(24))
-				return true;
-		}
-		xsp = jj_scanpos;
-		if (jj_3R_41())
-			jj_scanpos = xsp;
-		return false;
-	}
-
-	private boolean jj_3R_20() {
-		if (jj_scan_token(FN_PREFIX))
-			return true;
-		if (jj_scan_token(AFTER))
-			return true;
-		return false;
-	}
-
 	private boolean jj_3_1() {
-		if (jj_3R_9())
+		if (jj_3R_11())
 			return true;
 		Token xsp;
 		xsp = jj_scanpos;
-		if (jj_scan_token(15)) {
+		if (jj_scan_token(16)) {
 			jj_scanpos = xsp;
-			if (jj_scan_token(16))
+			if (jj_scan_token(17))
 				return true;
 		}
 		return false;
 	}
 
 	private boolean jj_3_3() {
-		if (jj_3R_11())
+		if (jj_3R_13())
 			return true;
 		return false;
 	}
 
-	private boolean jj_3R_34() {
-		if (jj_scan_token(REGEXPTERM))
+	private boolean jj_3R_50() {
+		if (jj_scan_token(RANGEIN_START))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3R_28() {
+	private boolean jj_3R_19() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(NOT_WITHIN))
+		if (jj_scan_token(ORDERED))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_36() {
+		if (jj_scan_token(FN_PREFIX))
+			return true;
+		if (jj_scan_token(FUZZYTERM))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_46() {
+		Token xsp;
+		xsp = jj_scanpos;
+		if (jj_3R_50()) {
+			jj_scanpos = xsp;
+			if (jj_scan_token(29))
+				return true;
+		}
+		xsp = jj_scanpos;
+		if (jj_scan_token(58)) {
+			jj_scanpos = xsp;
+			if (jj_scan_token(57)) {
+				jj_scanpos = xsp;
+				if (jj_scan_token(54))
+					return true;
+			}
+		}
+		return false;
+	}
+
+	private boolean jj_3R_30() {
+		if (jj_scan_token(FN_PREFIX))
+			return true;
+		if (jj_scan_token(NOT_CONTAINED_BY))
 			return true;
 		return false;
 	}
@@ -2017,187 +2294,90 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private boolean jj_3R_21() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(BEFORE))
+		if (jj_scan_token(UNORDERED_NO_OVERLAPS))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3R_10() {
+	private boolean jj_3R_29() {
+		if (jj_scan_token(FN_PREFIX))
+			return true;
+		if (jj_scan_token(CONTAINED_BY))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_13() {
+		if (jj_3R_11())
+			return true;
 		Token xsp;
 		xsp = jj_scanpos;
-		if (jj_3R_34()) {
+		if (jj_scan_token(18)) {
 			jj_scanpos = xsp;
-			if (jj_3R_35()) {
+			if (jj_scan_token(19)) {
 				jj_scanpos = xsp;
-				if (jj_3R_36()) {
+				if (jj_scan_token(20)) {
 					jj_scanpos = xsp;
-					if (jj_3R_37())
+					if (jj_scan_token(21))
 						return true;
 				}
 			}
 		}
-		xsp = jj_scanpos;
-		if (jj_3R_38())
-			jj_scanpos = xsp;
 		return false;
 	}
 
-	private boolean jj_3R_12() {
+	private boolean jj_3R_23() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(ATLEAST))
+		if (jj_scan_token(WILDCARD))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3R_44() {
-		if (jj_scan_token(CARAT))
+	private boolean jj_3R_51() {
+		if (jj_scan_token(TILDE))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3_25() {
-		if (jj_3R_33())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_24() {
-		if (jj_3R_32())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_23() {
-		if (jj_3R_31())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_22() {
-		if (jj_3R_30())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_21() {
-		if (jj_3R_29())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_22() {
+	private boolean jj_3R_20() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(PHRASE))
+		if (jj_scan_token(UNORDERED))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3_20() {
-		if (jj_3R_28())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_31() {
+	private boolean jj_3R_28() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(EXTEND))
+		if (jj_scan_token(NOT_CONTAINING))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3_19() {
-		if (jj_3R_27())
+	private boolean jj_3R_15() {
+		if (jj_scan_token(ZL_PREFIX))
+			return true;
+		if (jj_scan_token(TERM_SET))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3_18() {
-		if (jj_3R_26())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_40() {
-		Token xsp;
-		xsp = jj_scanpos;
-		if (jj_scan_token(25)) {
-			jj_scanpos = xsp;
-			if (jj_scan_token(24))
-				return true;
-		}
-		return false;
-	}
-
-	private boolean jj_3_17() {
-		if (jj_3R_25())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_39() {
+	private boolean jj_3R_47() {
 		if (jj_scan_token(QUOTED))
 			return true;
-		return false;
-	}
-
-	private boolean jj_3R_33() {
 		Token xsp;
 		xsp = jj_scanpos;
-		if (jj_3R_39()) {
+		if (jj_3R_51())
 			jj_scanpos = xsp;
-			if (jj_3R_40())
-				return true;
-		}
 		return false;
 	}
 
-	private boolean jj_3_16() {
-		if (jj_3R_24())
+	private boolean jj_3R_34() {
+		if (jj_scan_token(FN_PREFIX))
 			return true;
-		return false;
-	}
-
-	private boolean jj_3_15() {
-		if (jj_3R_23())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_14() {
-		if (jj_3R_22())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_13() {
-		if (jj_3R_21())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_12() {
-		if (jj_3R_20())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_11() {
-		if (jj_3R_19())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_10() {
-		if (jj_3R_18())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_9() {
-		if (jj_3R_17())
+		if (jj_scan_token(NON_OVERLAPPING))
 			return true;
 		return false;
 	}
@@ -2205,42 +2385,12 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private boolean jj_3R_18() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(FN_OR))
+		if (jj_scan_token(MAXGAPS))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3_8() {
-		if (jj_3R_16())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_7() {
-		if (jj_3R_15())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_6() {
-		if (jj_3R_14())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_5() {
-		if (jj_3R_13())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_4() {
-		if (jj_3R_12())
-			return true;
-		return false;
-	}
-
-	private boolean jj_3_27() {
+	private boolean jj_3_30() {
 		if (jj_scan_token(NUMBER))
 			return true;
 		return false;
@@ -2249,63 +2399,101 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private boolean jj_3R_27() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(WITHIN))
+		if (jj_scan_token(CONTAINING))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3_26() {
-		if (jj_scan_token(NUMBER))
+	private boolean jj_3R_14() {
+		if (jj_scan_token(ZL_PREFIX))
+			return true;
+		if (jj_scan_token(NUMERIC_SET))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3R_46() {
-		if (jj_scan_token(RANGEIN_START))
-			return true;
-		return false;
-	}
-
-	private boolean jj_3R_15() {
+	private boolean jj_3R_33() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(ORDERED))
+		if (jj_scan_token(OVERLAPPING))
 			return true;
 		return false;
 	}
 
-	private boolean jj_3R_32() {
-		if (jj_scan_token(FN_PREFIX))
+	private boolean jj_3R_45() {
+		if (jj_3R_49())
 			return true;
-		if (jj_scan_token(FUZZYTERM))
+		return false;
+	}
+
+	private boolean jj_3R_41() {
+		if (jj_3R_47())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_49() {
+		if (jj_scan_token(TILDE))
 			return true;
 		return false;
 	}
 
 	private boolean jj_3R_42() {
-		Token xsp;
-		xsp = jj_scanpos;
-		if (jj_3R_46()) {
-			jj_scanpos = xsp;
-			if (jj_scan_token(28))
-				return true;
-		}
-		xsp = jj_scanpos;
-		if (jj_scan_token(55)) {
-			jj_scanpos = xsp;
-			if (jj_scan_token(54)) {
-				jj_scanpos = xsp;
-				if (jj_scan_token(51))
-					return true;
-			}
-		}
+		if (jj_3R_48())
+			return true;
 		return false;
 	}
 
-	private boolean jj_3R_26() {
+	private boolean jj_3R_40() {
+		if (jj_3R_46())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_5() {
+		if (jj_3R_15())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_17() {
 		if (jj_scan_token(FN_PREFIX))
 			return true;
-		if (jj_scan_token(NOT_CONTAINED_BY))
+		if (jj_scan_token(MAXWIDTH))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3_4() {
+		if (jj_3R_14())
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_39() {
+		Token xsp;
+		xsp = jj_scanpos;
+		if (jj_scan_token(26)) {
+			jj_scanpos = xsp;
+			if (jj_scan_token(25))
+				return true;
+		}
+		xsp = jj_scanpos;
+		if (jj_3R_45())
+			jj_scanpos = xsp;
+		return false;
+	}
+
+	private boolean jj_3R_24() {
+		if (jj_scan_token(FN_PREFIX))
+			return true;
+		if (jj_scan_token(AFTER))
+			return true;
+		return false;
+	}
+
+	private boolean jj_3R_38() {
+		if (jj_scan_token(REGEXPTERM))
 			return true;
 		return false;
 	}
@@ -2326,7 +2514,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	private Token jj_scanpos, jj_lastpos;
 	private int jj_la;
 	private int jj_gen;
-	final private int[] jj_la1 = new int[35];
+	final private int[] jj_la1 = new int[39];
 	static private int[] jj_la1_0;
 	static private int[] jj_la1_1;
 
@@ -2336,17 +2524,17 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	}
 
 	private static void jj_la1_init_0() {
-		jj_la1_0 = new int[] { 0x3f803c00, 0x200, 0x100, 0x2400, 0x3400, 0x3400, 0x18000, 0x23800800, 0x3f800800, 0x200000, 0x400000, 0x400000, 0x3800800,
-				0x3800800, 0x3800800, 0x3800800, 0x3800800, 0x3000000, 0x3800000, 0x1000000, 0x3000000, 0x3800000, 0x3000000, 0x3800000, 0x1e0000, 0x3800000,
-				0x3000000, 0x400000, 0x1f800000, 0x200000, 0x400000, 0x18000000, 0x0, 0x0, 0x0, };
+		jj_la1_0 = new int[] { 0x7f007c00, 0x200, 0x100, 0x4400, 0x6400, 0x6400, 0x30000, 0x47001800, 0x7f001800, 0x400000, 0x800000, 0x800000, 0x7000000,
+				0x7000000, 0x6000000, 0x7000000, 0x7000800, 0x7000800, 0x7000800, 0x7000800, 0x7000800, 0x6000000, 0x7000000, 0x2000000, 0x6000000, 0x7000000,
+				0x6000000, 0x7000000, 0x3c0000, 0x7000000, 0x6000000, 0x800000, 0x3f000000, 0x400000, 0x800000, 0x30000000, 0x0, 0x0, 0x0, };
 	}
 
 	private static void jj_la1_init_1() {
-		jj_la1_1 = new int[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1000000, 0x1000000, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
-				0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xc80000, 0xc80000, 0x300000, };
+		jj_la1_1 = new int[] { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x8000000, 0x8000000, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+				0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x6400000, 0x6400000, 0x1800000, };
 	}
 
-	final private JJCalls[] jj_2_rtns = new JJCalls[28];
+	final private JJCalls[] jj_2_rtns = new JJCalls[30];
 	private boolean jj_rescan = false;
 	private int jj_gc = 0;
 
@@ -2358,7 +2546,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		token = new Token();
 		jj_ntk = -1;
 		jj_gen = 0;
-		for (int i = 0; i < 35; i++)
+		for (int i = 0; i < 39; i++)
 			jj_la1[i] = -1;
 		for (int i = 0; i < jj_2_rtns.length; i++)
 			jj_2_rtns[i] = new JJCalls();
@@ -2372,7 +2560,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		token = new Token();
 		jj_ntk = -1;
 		jj_gen = 0;
-		for (int i = 0; i < 35; i++)
+		for (int i = 0; i < 39; i++)
 			jj_la1[i] = -1;
 		for (int i = 0; i < jj_2_rtns.length; i++)
 			jj_2_rtns[i] = new JJCalls();
@@ -2386,7 +2574,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		token = new Token();
 		jj_ntk = -1;
 		jj_gen = 0;
-		for (int i = 0; i < 35; i++)
+		for (int i = 0; i < 39; i++)
 			jj_la1[i] = -1;
 		for (int i = 0; i < jj_2_rtns.length; i++)
 			jj_2_rtns[i] = new JJCalls();
@@ -2400,7 +2588,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 		token = new Token();
 		jj_ntk = -1;
 		jj_gen = 0;
-		for (int i = 0; i < 35; i++)
+		for (int i = 0; i < 39; i++)
 			jj_la1[i] = -1;
 		for (int i = 0; i < jj_2_rtns.length; i++)
 			jj_2_rtns[i] = new JJCalls();
@@ -2553,12 +2741,12 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 	 */
 	public ParseException generateParseException() {
 		jj_expentries.clear();
-		boolean[] la1tokens = new boolean[57];
+		boolean[] la1tokens = new boolean[60];
 		if (jj_kind >= 0) {
 			la1tokens[jj_kind] = true;
 			jj_kind = -1;
 		}
-		for (int i = 0; i < 35; i++) {
+		for (int i = 0; i < 39; i++) {
 			if (jj_la1[i] == jj_gen) {
 				for (int j = 0; j < 32; j++) {
 					if ((jj_la1_0[i] & (1 << j)) != 0) {
@@ -2570,7 +2758,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 				}
 			}
 		}
-		for (int i = 0; i < 57; i++) {
+		for (int i = 0; i < 60; i++) {
 			if (la1tokens[i]) {
 				jj_expentry = new int[1];
 				jj_expentry[0] = i;
@@ -2611,7 +2799,7 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 
 	private void jj_rescan_token() {
 		jj_rescan = true;
-		for (int i = 0; i < 28; i++) {
+		for (int i = 0; i < 30; i++) {
 			try {
 				JJCalls p = jj_2_rtns[i];
 
@@ -2703,6 +2891,12 @@ public class ZuliaSyntaxParser implements SyntaxParser, ZuliaSyntaxParserConstan
 								break;
 							case 27:
 								jj_3_28();
+								break;
+							case 28:
+								jj_3_29();
+								break;
+							case 29:
+								jj_3_30();
 								break;
 						}
 					}

@@ -80,6 +80,9 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaNumericSetQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaTermsInSetQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaFieldableQueryNode;
 
 import static io.zulia.server.search.queryparser.parser.EscapeQuerySyntaxImpl.discardEscapeChar;
 
@@ -137,7 +140,7 @@ PARSER_END(ZuliaSyntaxParser)
     | <#_QUOTED_CHAR: ( ~[ "\"", "\\" ] | <_ESCAPED_CHAR> ) >
 }
 
-<DEFAULT, Range, Function> SKIP : {
+<DEFAULT, Range, Function, Zulia> SKIP : {
     < <_WHITESPACE> >
 }
 
@@ -146,6 +149,7 @@ PARSER_END(ZuliaSyntaxParser)
     | <OR:            ("OR" | "||") >
     | <NOT:           ("NOT" | "!") >
     | <FN_PREFIX:     ("fn:") > : Function
+    | <ZL_PREFIX:     ("zl:") > : Zulia
     | <PLUS:          "+" >
     | <MINUS:         "-" >
     | <RPAREN:        ")" >
@@ -165,8 +169,13 @@ PARSER_END(ZuliaSyntaxParser)
     | <RANGEEX_START: "{" > : Range
 }
 
-<DEFAULT,Function> TOKEN : {
+<DEFAULT,Function,Zulia> TOKEN : {
       <LPAREN:        "(" > : DEFAULT
+}
+
+<Zulia> TOKEN : {
+      <NUMERIC_SET:       ("ns" | "numericSet") >
+    | <TERM_SET:         ("tq" | "termQuery") >
 }
 
 <Function> TOKEN : {
@@ -327,7 +336,7 @@ private QueryNode Clause(CharSequence field) : {
   (
       LOOKAHEAD(2) q = FieldRangeExpr(field)
     | (LOOKAHEAD(2) field = FieldName() ( <OP_COLON> | <OP_EQUAL> ))?
-      (LOOKAHEAD(2) q = Term(field) | q = GroupingExpr(field) | q = IntervalExpr(field))
+      (LOOKAHEAD(2) q = Term(field) | q = GroupingExpr(field) | q = IntervalExpr(field) | q = ZuliaExpr(field))
   )
   {
     return q;
@@ -365,6 +374,47 @@ private QueryNode GroupingExpr(CharSequence field) : {
     }
     return q;
   }
+}
+
+
+private ZuliaFieldableQueryNode ZuliaExpr(CharSequence field) : {
+ ZuliaFieldableQueryNode source;
+}
+ {
+   LOOKAHEAD(2) source = NumericsSetQuery(field)  { return source; } |
+   LOOKAHEAD(2) source = TermsInSetQuery(field)  { return source; }
+ }
+
+private ZuliaNumericSetQueryNode NumericsSetQuery(CharSequence field) : {
+  CharSequence value;
+  ArrayList<CharSequence> values = new ArrayList<CharSequence>();
+}
+{
+  <ZL_PREFIX> <NUMERIC_SET>
+  <LPAREN> (value = TermText() { values.add(value); })+  <RPAREN>
+  {
+  return new ZuliaNumericSetQueryNode(field, values);
+  }
+}
+
+
+private ZuliaTermsInSetQueryNode TermsInSetQuery(CharSequence field) : {
+  CharSequence value;
+  ArrayList<CharSequence> values = new ArrayList<CharSequence>();
+}
+{
+  <ZL_PREFIX> <TERM_SET>
+  <LPAREN> (value = TermText() { values.add(value); })+  <RPAREN>
+  {
+  return new ZuliaTermsInSetQueryNode(field, values);
+  }
+}
+
+private CharSequence TermText() : {
+}
+{
+    (<QUOTED>)          { return token.image.substring(1, token.image.length() - 1); }
+  | (<TERM> | <NUMBER>) { return token.image; }
 }
 
 
