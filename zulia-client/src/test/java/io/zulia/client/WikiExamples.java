@@ -87,7 +87,9 @@ public class WikiExamples {
 	}
 
 	public void createIndexCustomAnalyzer(ClientIndexConfig clientIndexConfig) {
+		// define a custom analyzer in for the index
 		clientIndexConfig.addAnalyzerSetting("myAnalyzer", Tokenizer.WHITESPACE, Arrays.asList(Filter.ASCII_FOLDING, Filter.LOWERCASE), Similarity.BM25);
+		// reference a custom analyzer for a field
 		clientIndexConfig.addFieldConfig(FieldConfigBuilder.create("abstract", FieldType.STRING).indexAs("myAnalyzer"));
 	}
 
