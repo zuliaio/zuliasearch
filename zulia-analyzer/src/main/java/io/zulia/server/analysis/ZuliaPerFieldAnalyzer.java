@@ -20,6 +20,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.UpperCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.de.GermanNormalizationFilter;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.en.EnglishMinimalStemFilter;
 import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
@@ -215,6 +216,9 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 					}
 					else if (AnalyzerSettings.Filter.CASE_PROTECTED_WORDS.equals(filter)) {
 						tok = new CaseProtectedWordsFilter(lastTok);
+					}
+					else if (AnalyzerSettings.Filter.GERMAN_NORMALIZATION.equals(filter)) {
+						tok = new GermanNormalizationFilter(lastTok);
 					}
 					else {
 						throw new RuntimeException("Unknown filter type <" + filter + ">");
