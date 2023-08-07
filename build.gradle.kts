@@ -1,17 +1,18 @@
-import org.ajoberstar.reckon.gradle.ReckonExtension
 
 plugins {
     java
     idea
     signing
     `maven-publish`
-    id("org.ajoberstar.reckon") version "0.16.1"
-    id("com.google.protobuf") version "0.9.2" apply false
+    id("org.ajoberstar.reckon") version "0.18.0"
+    id("com.google.protobuf") version "0.9.4" apply false
 }
 
-configure<ReckonExtension> {
-    scopeFromProp()
-    stageFromProp("rc", "final")
+reckon {
+    setDefaultInferredScope("patch")
+    setScopeCalc(calcScopeFromProp())
+    snapshots()
+    setStageCalc(calcStageFromProp())
 }
 
 allprojects {
