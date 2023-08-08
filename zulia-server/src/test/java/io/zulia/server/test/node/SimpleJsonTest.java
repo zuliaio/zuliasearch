@@ -142,6 +142,8 @@ public class SimpleJsonTest {
 		Assertions.assertEquals(2, searchResult.getTotalHits());
 
 		search = new Search(SIMPLE_JSON_TEST_INDEX);
+		//make sure accidental duplicates do not cause an issue
+		search.addCountFacet(new CountFacet("docLanguage").setTopN(10));
 		search.addCountFacet(new CountFacet("docLanguage").setTopN(10));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals("en", searchResult.getFacetCounts("docLanguage").get(0).getFacet());
