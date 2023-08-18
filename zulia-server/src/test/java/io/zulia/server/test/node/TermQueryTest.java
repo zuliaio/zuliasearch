@@ -12,6 +12,7 @@ import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.message.ZuliaIndex;
 import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -41,7 +42,8 @@ public class TermQueryTest {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.KEYWORD).sort());
+		indexConfig.addFieldConfig(
+				FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.KEYWORD, "id").sortAs(ZuliaIndex.SortAs.StringHandling.LOWERCASE_FOLDING, "id"));
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("field1").indexAs(DefaultAnalyzers.STANDARD));
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("field2").indexAs(DefaultAnalyzers.LC_KEYWORD));
 
@@ -72,7 +74,7 @@ public class TermQueryTest {
 
 	private void indexRecord(int id, String field1, String field2) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		String uniqueId = String.valueOf(id);
+		String uniqueId = String.valueOf(id) + "-i";
 
 		Document mongoDocument = new Document();
 		mongoDocument.put("id", uniqueId);
@@ -135,13 +137,31 @@ public class TermQueryTest {
 		Assertions.assertEquals(2 * REPEATS, searchResult.getTotalHits());
 
 		search = new Search(TERM_QUERY_TEST);
-		search.addQuery(new TermQuery("id").addTerms("def", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16"));
+		search.addQuery(
+				new TermQuery("id").addTerms("def", "1-i", "2-i", "3-i", "4-i", "5-i", "6-i", "7-i", "8-i", "9-i", "10-i", "11-i", "12-i", "13-i", "14-i",
+						"15-i", "16-i"));
 		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD));
+		search.setDebug(true);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(16, searchResult.getTotalHits());
 
 		search = new Search(TERM_QUERY_TEST);
-		search.addQuery(new FilterQuery("id:zl:tq(blah 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16)"));
+		search.addQuery(new TermQuery("id").addTerms("a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "16-i"));
+		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(TERM_QUERY_TEST);
+		search.addQuery(
+				new TermQuery("zuliaId").addTerms("a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8", "a9", "a10", "a11", "a12", "a13", "a14", "a15", "16-i"));
+		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(TERM_QUERY_TEST);
+		search.addQuery(new FilterQuery("""
+				id:zl:tq(blah "1-i" "2-i" "3-i" "4-i" "5-i" "6-i" "7-i" "8-i" "9-i" "10-i" "11-i" "12-i" "13-i" "14-i" "15-i" "16-i")
+				"""));
 		search.addSort(new Sort(ZuliaConstants.SCORE_FIELD));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(16, searchResult.getTotalHits());

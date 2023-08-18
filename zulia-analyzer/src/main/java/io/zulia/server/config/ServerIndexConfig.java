@@ -13,6 +13,7 @@ import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.message.ZuliaIndex.IndexAs;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.SortAs;
+import io.zulia.message.ZuliaIndex.SortAs.StringHandling;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.server.field.FieldTypeUtil;
 
@@ -57,12 +58,11 @@ public class ServerIndexConfig {
 			String storedFieldName = fc.getStoredFieldName();
 			FieldType fieldType = fc.getFieldType();
 
-			SortFieldInfo firstSortFieldInfo = null;
+			List<SortFieldInfo> sortFieldInfos = new ArrayList<>(fc.getSortAsCount());
 			for (SortAs sortAs : fc.getSortAsList()) {
-				SortFieldInfo sortFieldInfo = new SortFieldInfo(FieldTypeUtil.getSortField(sortAs.getSortFieldName(), fieldType), fieldType);
-				if (firstSortFieldInfo == null) {
-					firstSortFieldInfo = sortFieldInfo;
-				}
+				SortFieldInfo sortFieldInfo = new SortFieldInfo(FieldTypeUtil.getSortField(sortAs.getSortFieldName(), fieldType), fieldType,
+						sortAs.getStringHandling());
+				sortFieldInfos.add(sortFieldInfo);
 				sortFieldMapping.put(sortAs.getSortFieldName(), sortFieldInfo);
 			}
 
@@ -74,17 +74,45 @@ public class ServerIndexConfig {
 
 				indexFieldMapping.put(listLengthWrap,
 						new IndexFieldInfo(storedFieldName, listLengthIndexField, listLengthSortField, FieldType.NUMERIC_INT, indexAs));
-				sortFieldMapping.put(listLengthWrap, new SortFieldInfo(listLengthSortField, FieldType.NUMERIC_INT));
+				sortFieldMapping.put(listLengthWrap, new SortFieldInfo(listLengthSortField, FieldType.NUMERIC_INT, null));
+
+				String internalSortFieldName = null;
+
 				if (FieldTypeUtil.isStringFieldType(fieldType)) {
 					String charLengthWrap = FieldTypeUtil.getCharLengthWrap(indexFieldName);
 					String charLengthIndexField = FieldTypeUtil.getCharLengthIndexField(indexFieldName);
 					String charLengthSortField = FieldTypeUtil.getCharLengthSortField(indexFieldName);
 					indexFieldMapping.put(charLengthWrap,
 							new IndexFieldInfo(storedFieldName, charLengthIndexField, charLengthSortField, FieldType.NUMERIC_INT, indexAs));
-					sortFieldMapping.put(charLengthWrap, new SortFieldInfo(charLengthSortField, FieldType.NUMERIC_INT));
+					sortFieldMapping.put(charLengthWrap, new SortFieldInfo(charLengthSortField, FieldType.NUMERIC_INT, null));
+
+					//only optimize a keyword analyzer with a standard (no-op) string handling sort field
+					if (DefaultAnalyzers.KEYWORD.equals(indexAs.getAnalyzerName())) {
+						for (SortFieldInfo sortFieldInfo : sortFieldInfos) {
+							if (StringHandling.STANDARD.equals(sortFieldInfo.getStringHandling())) {
+								internalSortFieldName = sortFieldInfo.getInternalSortFieldName();
+								break;
+							}
+						}
+					}
+					//only optimize a lowercase keyword analyzer with a lowercase string handling sort field
+					else if (DefaultAnalyzers.LC_KEYWORD.equals(indexAs.getAnalyzerName())) {
+						for (SortFieldInfo sortFieldInfo : sortFieldInfos) {
+							if (StringHandling.LOWERCASE.equals(sortFieldInfo.getStringHandling())) {
+								internalSortFieldName = sortFieldInfo.getInternalSortFieldName();
+								break;
+							}
+						}
+					}
+
+				}
+				else {
+					//for numerics, we can just use the first sort field because they are all the same
+					if (!sortFieldInfos.isEmpty()) {
+						internalSortFieldName = sortFieldInfos.get(0).getInternalSortFieldName();
+					}
 				}
 
-				String internalSortFieldName = firstSortFieldInfo != null ? firstSortFieldInfo.getInternalSortFieldName() : null;
 				String indexField = FieldTypeUtil.getIndexField(indexFieldName, fieldType);
 				IndexFieldInfo indexFieldInfo = new IndexFieldInfo(storedFieldName, indexField, internalSortFieldName, fieldType, indexAs);
 				indexFieldMapping.put(indexFieldName, indexFieldInfo);
@@ -95,15 +123,16 @@ public class ServerIndexConfig {
 			}
 		}
 
-		indexFieldMapping.put(ZuliaFieldConstants.ID_FIELD,
-				new IndexFieldInfo(null, ZuliaFieldConstants.ID_FIELD, ZuliaFieldConstants.ID_SORT_FIELD, FieldType.STRING, null));
+		indexFieldMapping.put(ZuliaFieldConstants.ID_FIELD, new IndexFieldInfo(null, ZuliaFieldConstants.ID_FIELD,
+				FieldTypeUtil.getSortField(ZuliaFieldConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), FieldType.STRING, null));
 		indexFieldMapping.put(ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD,
 				new IndexFieldInfo(null, ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD, null, FieldType.STRING, null));
 		indexFieldMapping.put(ZuliaFieldConstants.FIELDS_LIST_FIELD,
 				new IndexFieldInfo(null, ZuliaFieldConstants.FIELDS_LIST_FIELD, null, FieldType.STRING, null));
-		sortFieldMapping.put(ZuliaFieldConstants.SCORE_FIELD, new SortFieldInfo(null, FieldType.NUMERIC_FLOAT));
+		sortFieldMapping.put(ZuliaFieldConstants.SCORE_FIELD, new SortFieldInfo(null, FieldType.NUMERIC_FLOAT, null));
 		sortFieldMapping.put(ZuliaFieldConstants.ID_SORT_FIELD,
-				new SortFieldInfo(FieldTypeUtil.getSortField(ZuliaFieldConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), FieldType.STRING));
+				new SortFieldInfo(FieldTypeUtil.getSortField(ZuliaFieldConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), FieldType.STRING,
+						StringHandling.STANDARD));
 
 		this.warmingSearches = new ArrayList<>();
 		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
