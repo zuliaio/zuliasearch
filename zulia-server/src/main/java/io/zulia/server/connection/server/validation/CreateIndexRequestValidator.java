@@ -132,6 +132,16 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 										+ builder.getStoredFieldName() + "> indexed as <" + indexAs.getIndexFieldName() + ">");
 					}
 				}
+
+			}
+
+			HashSet<String> sorts = new HashSet<>();
+			for (ZuliaIndex.SortAs sortAs : builder.getSortAsList()) {
+				if (sorts.contains(sortAs.getSortFieldName())) {
+					throw new IllegalArgumentException("Stored field <" + builder.getStoredFieldName() + "> is has duplicate sort <" + sortAs.getSortFieldName()
+							+ "> in the field config");
+				}
+				sorts.add(sortAs.getSortFieldName());
 			}
 
 		}
