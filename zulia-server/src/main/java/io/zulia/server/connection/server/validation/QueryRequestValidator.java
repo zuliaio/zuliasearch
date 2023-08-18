@@ -1,5 +1,6 @@
 package io.zulia.server.connection.server.validation;
 
+import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.HighlightRequest;
@@ -58,14 +59,21 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 
 		Map<String, CountRequest.Builder> uniqueRequests = new HashMap<>();
 		for (CountRequest.Builder builder : facetRequestBuilder.getCountRequestBuilderList()) {
-			String facet = builder.getFacetField().getLabel();
-			CountRequest.Builder otherRequest = uniqueRequests.get(facet);
+			ZuliaQuery.Facet facetField = builder.getFacetField();
+			StringBuilder facet = new StringBuilder(facetField.getLabel());
+			if (facetField.getPathCount() > 0) {
+				for (String pathPiece : facetField.getPathList()) {
+					facet.append(ZuliaConstants.FACET_PATH_DELIMITER).append(pathPiece);
+				}
+			}
+			String facetString = facet.toString();
+			CountRequest.Builder otherRequest = uniqueRequests.get(facetString);
 			if (otherRequest != null) {
 				otherRequest.setShardFacets(Math.max(builder.getShardFacets(), otherRequest.getShardFacets()));
 				otherRequest.setMaxFacets(Math.max(builder.getMaxFacets(), otherRequest.getMaxFacets()));
 			}
 			else {
-				uniqueRequests.put(facet, builder);
+				uniqueRequests.put(facetString, builder);
 			}
 		}
 		facetRequestBuilder.clearCountRequest();
