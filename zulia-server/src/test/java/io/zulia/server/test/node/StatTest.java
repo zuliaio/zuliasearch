@@ -375,7 +375,7 @@ public class StatTest {
 		search = new Search(STAT_TEST_INDEX);
 		search.addStat(new StatFacet("rating", "pathFacet"));
 		search.addQuery(new FilterQuery("\"something really special\"").addQueryField("title"));
-		search.addQuery(new FilterQuery("authorCount:[4 TO 4.1]"));
+		search.addQuery(new FilterQuery("authorCount:4"));
 		search.addQuery(new FilterQuery("rating:[2 TO 3]").exclude());
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
