@@ -17,7 +17,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 
 import java.text.NumberFormat;
-import java.text.ParseException;
+import java.text.ParsePosition;
 import java.util.List;
 import java.util.Locale;
 
@@ -104,11 +104,12 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 
 	private static Number parseNumber(String text, NumberFormat numberFormat, FieldType fieldType) {
 		Number number = null;
-		if (text.length() > 0) {
+		if (!text.isEmpty()) {
 			if (FieldTypeUtil.isNumericFieldType(fieldType)) {
 
-				try {
-					number = numberFormat.parse(text);
+				ParsePosition parsePosition = new ParsePosition(0);
+				number = numberFormat.parse(text, parsePosition);
+				if (parsePosition.getIndex() == text.length()) {
 
 					if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 						number = number.intValue();
@@ -123,9 +124,10 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 						number = number.doubleValue();
 					}
 				}
-				catch (ParseException e) {
-
+				else {
+					number = null;
 				}
+
 			}
 			else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
 				number = BooleanUtil.getStringAsBooleanInt(text);
