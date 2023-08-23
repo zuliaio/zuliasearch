@@ -20,7 +20,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.text.NumberFormat;
 import java.util.Arrays;
+import java.util.Locale;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class NumericSetTest {
@@ -228,6 +230,69 @@ public class NumericSetTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(1, searchResult.getTotalHits());
 
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField:[1 TO 10]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField:[1a TO 10]")); // turns in a match no document query if invalid integer given
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField:[1 TO 10a]")); // turns in a match no document query if invalid integer given
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField:[1.0 TO 10]")); // turns in a match no document query if floating point number given to int field
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField:[1 TO 10.0]")); // turns in a match no document query if floating point number given to int field
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("floatField:[1 TO 132]")); // integer searches are allowed against floating point numbers
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("floatField:[1.1 TO 131.9]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("floatField:[1.1a TO 131.9]")); // turns in a match no document query if invalid floating point given
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("floatField:[1.1 TO 131.9a]")); // turns in a match no document query if invalid floating point given
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		NumberFormat integerFormat = NumberFormat.getIntegerInstance(Locale.ROOT);
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("intField:[" + integerFormat.format(52) + " TO " + integerFormat.format(12332) + "]")); // gives 12,232 in US locale
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(
+				new FilterQuery("longField:[" + integerFormat.format(5) + " TO " + integerFormat.format(23232323L) + "]")); // gives 23,232,323L in US locale
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3, searchResult.getTotalHits());
+
+		NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.ROOT);
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery("doubleField:[" + numberFormat.format(2.01) + " TO " + numberFormat.format(2444.0) + "]")); // gives 2,444 in US locale
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
 	}
 
 	@Test
