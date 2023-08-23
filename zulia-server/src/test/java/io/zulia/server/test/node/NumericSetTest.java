@@ -293,6 +293,12 @@ public class NumericSetTest {
 		search.addQuery(new FilterQuery("doubleField:[" + numberFormat.format(2.01) + " TO " + numberFormat.format(2444.0) + "]")); // gives 2,444 in US locale
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new FilterQuery(
+				"intField,doubleField:[" + numberFormat.format(2.01) + " TO " + numberFormat.format(2444.0) + "]")); // intField is ignored for the double value
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
 	}
 
 	@Test
