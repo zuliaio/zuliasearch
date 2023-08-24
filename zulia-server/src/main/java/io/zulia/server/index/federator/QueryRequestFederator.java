@@ -71,7 +71,14 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		long start = System.currentTimeMillis();
 
 		String queryJson = JsonFormat.printer().print(request);
-		LOG.info("Running id <" + queryId + "> query <" + queryJson + ">");
+
+		String searchLabel = request.getSearchLabel();
+		if (searchLabel.isEmpty()) {
+			LOG.info("Running id <" + queryId + "> query <" + queryJson + ">");
+		}
+		else {
+			LOG.info("Running id <" + queryId + "> with label <" + searchLabel + "> query <" + queryJson + ">");
+		}
 
 		List<InternalQueryResponse> results = send(request);
 
@@ -80,7 +87,7 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		QueryResponse qr = queryCombiner.getQueryResponse();
 
 		long end = System.currentTimeMillis();
-		handleLog(queryId, qr, end - start);
+		handleLog(queryId, searchLabel, qr, end - start);
 		if (!queryCombiner.isShort()) {
 			return qr;
 		}
@@ -94,7 +101,7 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 	}
 
-	private static void handleLog(long queryId, QueryResponse qr, long time) {
+	private static void handleLog(long queryId, String searchLabel, QueryResponse qr, long time) {
 		String prefix = "Finished query";
 		if (qr.getShardsQueried() == qr.getShardsPinned()) {
 			prefix = "Finished query from pinned cache";
@@ -103,6 +110,13 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 			prefix = "Finished query from cache";
 		}
 
-		LOG.info(prefix + " id <" + queryId + "> with result size " + String.format("%.2f", (qr.getSerializedSize() / 1024.0)) + "KB in " + time + "ms");
+		String resultSize = String.format("%.2f", (qr.getSerializedSize() / 1024.0));
+
+		if (searchLabel.isEmpty()) {
+			LOG.info(prefix + " id <" + queryId + "> with result size " + resultSize + "KB in " + time + "ms");
+		}
+		else {
+			LOG.info(prefix + " id <" + queryId + "> with label <" + searchLabel + "> with result size " + resultSize + "KB in " + time + "ms");
+		}
 	}
 }
