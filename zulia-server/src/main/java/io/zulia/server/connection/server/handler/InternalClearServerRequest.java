@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.ClearRequest;
 import io.zulia.message.ZuliaServiceOuterClass.ClearResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InternalClearServerRequest extends ServerRequestHandler<ClearResponse, ClearRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalClearServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalClearServerRequest.class.getSimpleName());
 
 	public InternalClearServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class InternalClearServerRequest extends ServerRequestHandler<ClearRespon
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal clear", e);
+		LOG.error("Failed to handle internal clear", e);
 	}
 }

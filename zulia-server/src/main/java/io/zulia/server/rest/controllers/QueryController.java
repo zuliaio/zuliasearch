@@ -19,6 +19,8 @@ import io.zulia.util.CursorHelper;
 import io.zulia.util.ResultHelper;
 import org.bson.Document;
 import org.bson.json.JsonWriterSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Writer;
 import java.time.LocalDateTime;
@@ -29,8 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Similarity;
 import static io.zulia.message.ZuliaBase.TermOrBuilder;
@@ -46,7 +46,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 @Controller(ZuliaRESTConstants.QUERY_URL)
 public class QueryController {
 
-	private final static Logger LOG = Logger.getLogger(QueryController.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(QueryController.class.getSimpleName());
 
 	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8", MediaType.TEXT_PLAIN + ";charset=utf-8" })
@@ -397,7 +397,7 @@ public class QueryController {
 			}
 		}
 		catch (Exception e) {
-			LOG.log(Level.SEVERE, e.getMessage(), e);
+			LOG.error(e.getMessage(), e);
 			return HttpResponse.serverError(e.getClass().getSimpleName() + ":" + e.getMessage()).status(ZuliaRESTConstants.INTERNAL_ERROR);
 		}
 
@@ -656,7 +656,7 @@ public class QueryController {
 				appendDocument(fields, responseBuilder, null, document);
 			}
 			catch (Exception e) {
-				LOG.log(Level.SEVERE, e.getMessage(), e);
+				LOG.error(e.getMessage(), e);
 			}
 		});
 

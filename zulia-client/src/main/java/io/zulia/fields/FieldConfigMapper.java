@@ -24,11 +24,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class FieldConfigMapper<T> {
-
-	private static Logger LOG = Logger.getLogger(FieldConfigMapper.class.getSimpleName());
 
 	private final String prefix;
 
@@ -197,7 +194,6 @@ public class FieldConfigMapper<T> {
 		for (FieldConfigMapper fcm : embeddedFieldConfigMappers) {
 			configs.addAll(fcm.getFieldConfigs());
 		}
-		LOG.info(configs.toString());
 		return configs;
 	}
 

@@ -9,18 +9,18 @@ import io.zulia.server.connection.server.ZuliaServiceServer;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.rest.ZuliaRESTService;
 import io.zulia.util.ZuliaVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.Timer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
 
 public class ZuliaNode {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaNode.class.getName());
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaNode.class);
 	private final ZuliaIndexManager indexManager;
 	private final ZuliaServiceServer zuliaServiceServer;
 	private final Timer membershipTimer;
@@ -105,7 +105,7 @@ public class ZuliaNode {
 				thread.start();
 			}
 			catch (Exception e) {
-				LOG.log(Level.SEVERE, "Failed to stop Micronaut", e);
+				LOG.error("Failed to stop Micronaut", e);
 			}
 		}
 

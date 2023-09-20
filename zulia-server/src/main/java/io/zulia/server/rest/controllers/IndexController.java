@@ -15,8 +15,8 @@ import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.GetIndexSettingsResponse;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
-
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by Payam Meyer on 8/7/17.
@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  */
 @Controller(ZuliaRESTConstants.INDEX_URL)
 public class IndexController {
-	private final static Logger LOG = Logger.getLogger(IndexController.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(IndexController.class.getSimpleName());
 
 	@Get
 	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
@@ -51,7 +51,7 @@ public class IndexController {
 					restIndexSettings.addWarmingSearch(queryRequest);
 				}
 				catch (Exception e) {
-					LOG.severe("Failed to parse warming search: " + e.getMessage());
+					LOG.error("Failed to parse warming search: " + e.getMessage());
 				}
 			}
 

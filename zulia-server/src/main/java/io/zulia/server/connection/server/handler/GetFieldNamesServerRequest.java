@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GetFieldNamesServerRequest extends ServerRequestHandler<GetFieldNamesResponse, GetFieldNamesRequest> {
 
-	private final static Logger LOG = Logger.getLogger(GetFieldNamesServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(GetFieldNamesServerRequest.class.getSimpleName());
 
 	public GetFieldNamesServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class GetFieldNamesServerRequest extends ServerRequestHandler<GetFieldNam
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle get field names", e);
+		LOG.error("Failed to handle get field names", e);
 	}
 }

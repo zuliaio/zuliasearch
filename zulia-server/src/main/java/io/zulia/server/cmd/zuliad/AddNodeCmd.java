@@ -5,14 +5,15 @@ import io.zulia.server.cmd.ZuliaD;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.util.ZuliaVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.util.concurrent.Callable;
-import java.util.logging.Logger;
 
 @CommandLine.Command(name = "addNode", description = "Add node to the cluster based on the zulia config given")
 public class AddNodeCmd implements Callable<Integer> {
-    public static final Logger LOG = Logger.getLogger(RemoveNodeCmd.class.getSimpleName());
+    public static final Logger LOG = LoggerFactory.getLogger(RemoveNodeCmd.class.getSimpleName());
     @CommandLine.ParentCommand
     private ZuliaD zuliadCmd;
 

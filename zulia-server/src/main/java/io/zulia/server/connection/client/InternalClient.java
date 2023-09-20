@@ -17,14 +17,14 @@ import io.zulia.server.connection.client.handler.InternalQueryHandler;
 import io.zulia.server.connection.client.handler.InternalReindexHandler;
 import io.zulia.server.connection.client.handler.InternalStoreHandler;
 import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class InternalClient {
-	private final static Logger LOG = Logger.getLogger(InternalClient.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalClient.class.getSimpleName());
 
 	private ConcurrentHashMap<String, GenericObjectPool<InternalRpcConnection>> internalConnectionPoolMap;
 
@@ -132,12 +132,12 @@ public class InternalClient {
 				}
 			}
 			catch (Exception e) {
-				LOG.log(Level.SEVERE, "Failed to return blocking connection to node <" + nodeKey + "> pool", e);
+				LOG.error("Failed to return blocking connection to node <" + nodeKey + "> pool", e);
 			}
 		}
 		else {
-			LOG.severe("Failed to return blocking connection to node <" + nodeKey + "> pool. Pool does not exist.");
-			LOG.severe("Current pool members <" + internalConnectionPoolMap.keySet() + ">");
+			LOG.error("Failed to return blocking connection to node <" + nodeKey + "> pool. Pool does not exist.");
+			LOG.error("Current pool members <" + internalConnectionPoolMap.keySet() + ">");
 			if (rpcConnection != null) {
 				rpcConnection.close();
 			}

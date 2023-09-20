@@ -50,6 +50,8 @@ import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.search.Query;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -71,13 +73,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public class ZuliaIndexManager {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaIndexManager.class.getName());
+	private final static Logger LOG = LoggerFactory.getLogger(ZuliaIndexManager.class);
 
 	private final IndexService indexService;
 	private final InternalClient internalClient;
@@ -150,7 +150,7 @@ public class ZuliaIndexManager {
 				zuliaIndex.unload(false);
 			}
 			catch (IOException e) {
-				LOG.log(Level.SEVERE, "Failed to unload index: " + zuliaIndex.getIndexName(), e);
+				LOG.error("Failed to unload index: " + zuliaIndex.getIndexName(), e);
 			}
 		});
 
@@ -164,7 +164,7 @@ public class ZuliaIndexManager {
 					loadIndex(indexSettings);
 				}
 				catch (Exception e) {
-					LOG.log(Level.SEVERE, e.getClass().getSimpleName() + ":", e);
+					LOG.error(e.getClass().getSimpleName() + ":", e);
 					throw new RuntimeException(e);
 				}
 			});
@@ -414,7 +414,7 @@ public class ZuliaIndexManager {
 		}
 		catch (Exception e) {
 			if (existingIndex != null) {
-				LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexSettings().getIndexName() + ">: ", e);
+				LOG.error("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: ", e);
 				throw new Exception("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
 			}
 			else {
@@ -446,7 +446,7 @@ public class ZuliaIndexManager {
 
 			IndexSettings indexSettings = indexService.getIndex(indexName);
 			if (indexSettings == null) {
-				LOG.log(Level.SEVERE, "Failed to update index <" + indexName + "> that does not exist");
+				LOG.error("Failed to update index <" + indexName + "> that does not exist");
 
 				throw new Exception("Failed to update index <" + indexName + "> that does not exist");
 			}
@@ -488,7 +488,7 @@ public class ZuliaIndexManager {
 						existingWarmingSearch.add(queryRequest);
 					}
 					catch (Exception e) {
-						LOG.severe("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
+						LOG.error("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
 					}
 				}
 
@@ -829,7 +829,7 @@ public class ZuliaIndexManager {
 		}
 		catch (Exception e) {
 			if (existingAlias == null) {
-				LOG.log(Level.SEVERE, "Failed to update index alias <" + aliasName + ">: ", e);
+				LOG.error("Failed to update index alias <" + aliasName + ">: ", e);
 				throw new Exception("Failed to update index alias <" + aliasName + ">: " + e.getMessage());
 			}
 			else {

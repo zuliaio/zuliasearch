@@ -1,6 +1,7 @@
 plugins {
     application
     `java-library`
+    id("io.micronaut.application") version ("4.0.2")
 }
 
 description = "Zulia Server"
@@ -13,6 +14,18 @@ val snakeYamlVersion: String by project
 val kolobokeVersion: String by project
 
 defaultTasks("build", "installDist")
+
+
+micronaut {
+    version(micronautVersion)
+    runtime("netty")
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("io.zulia.*")
+    }
+}
+
 
 tasks.withType<Test> {
     maxParallelForks = 1
@@ -31,47 +44,51 @@ dependencies {
     implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
     implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
 
-    //caffiene 3.1.2 cause issues with the cache test
-    implementation("com.github.ben-manes.caffeine:caffeine:3.1.1")
+    implementation("com.github.ben-manes.caffeine:caffeine")
 
-    api("com.koloboke:koloboke-api-jdk8:$kolobokeVersion")
-    api("com.koloboke:koloboke-impl-jdk8:$kolobokeVersion")
-
-    implementation("info.picocli:picocli:4.7.5")
-    annotationProcessor("info.picocli:picocli-codegen:4.7.5")
+    implementation("com.koloboke:koloboke-api-jdk8:$kolobokeVersion")
+    implementation("com.koloboke:koloboke-impl-jdk8:$kolobokeVersion")
 
     implementation("com.datadoghq:sketches-java:0.8.2")
-
     implementation("com.cedarsoftware:json-io:4.14.0")
-
     implementation("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
-
     implementation("org.apache.commons:commons-compress:1.22")
     implementation("org.xerial.snappy:snappy-java:1.1.10.0")
     implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
     implementation("software.amazon.awssdk:s3")
 
-    annotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    annotationProcessor("io.micronaut:micronaut-inject-java")
-    annotationProcessor("io.micronaut:micronaut-validation")
-    implementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    implementation("io.micronaut:micronaut-inject")
-    implementation("io.micronaut:micronaut-validation")
-    implementation("io.micronaut.reactor:micronaut-reactor")
-    implementation("io.micronaut:micronaut-runtime")
-    implementation("io.micronaut:micronaut-http-server-netty")
-    implementation("io.micronaut:micronaut-http-client")
+    implementation("org.yaml:snakeyaml:$snakeYamlVersion")
+
     runtimeOnly("ch.qos.logback:logback-classic")
-    testAnnotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+    implementation("org.fusesource.jansi:jansi:2.4.0")
+
+
+    implementation("info.picocli:picocli:4.7.5")
+    annotationProcessor("info.picocli:picocli-codegen:4.7.5")
+
+    annotationProcessor("io.micronaut:micronaut-http-validation")
+    annotationProcessor("io.micronaut.serde:micronaut-serde-processor")
+    annotationProcessor("io.micronaut.openapi:micronaut-openapi")
+    annotationProcessor("io.micronaut.validation:micronaut-validation-processor")
+    implementation("io.micronaut:micronaut-http-server")
+    implementation("io.micronaut:micronaut-http")
+    implementation("io.micronaut:micronaut-inject-java")
+    implementation("io.micronaut:micronaut-management")
+    implementation("io.micronaut.openapi:micronaut-openapi")
+    implementation("io.micronaut.reactor:micronaut-reactor")
+    implementation("io.micronaut.serde:micronaut-serde-jackson")
+    implementation("io.micronaut.security:micronaut-security-jwt")
+    implementation("io.micronaut.validation:micronaut-validation")
+    implementation("io.swagger.core.v3:swagger-annotations")
+    implementation("jakarta.validation:jakarta.validation-api")
+
     testAnnotationProcessor("io.micronaut:micronaut-inject-java")
-    testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+    testImplementation("io.micronaut:micronaut-http-client")
+
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("io.micronaut.test:micronaut-test-junit5")
     testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.9.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
-
-    api("org.yaml:snakeyaml:$snakeYamlVersion")
-    annotationProcessor("io.micronaut.openapi:micronaut-openapi")
 
 
     //implementation("org.graalvm.js:js:21.3.1")

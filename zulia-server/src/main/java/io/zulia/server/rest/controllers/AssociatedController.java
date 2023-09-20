@@ -20,6 +20,8 @@ import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -30,8 +32,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Created by Payam Meyer on 8/7/17.
@@ -41,7 +41,7 @@ import java.util.logging.Logger;
 @Controller(ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL)
 public class AssociatedController {
 
-	private final static Logger LOG = Logger.getLogger(AssociatedController.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(AssociatedController.class);
 
 	@Get("/metadata")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
@@ -150,7 +150,7 @@ public class AssociatedController {
 							associatedDocumentOutputStream.close();
 						}
 						catch (IOException e) {
-							LOG.log(Level.SEVERE, "Failed to close stream: " + e.getMessage(), e);
+							LOG.error("Failed to close stream: " + e.getMessage(), e);
 						}
 						return HttpResponse.ok("Stored associated document with uniqueId <" + id + "> and fileName <" + fileName + ">")
 								.status(ZuliaRESTConstants.SUCCESS);
@@ -161,7 +161,7 @@ public class AssociatedController {
 							associatedDocumentOutputStream.close();
 						}
 						catch (IOException e) {
-							LOG.log(Level.SEVERE, "Failed to close stream: " + e.getMessage(), e);
+							LOG.error("Failed to close stream: " + e.getMessage(), e);
 						}
 						return HttpResponse.serverError("Failed to store associated document with uniqueId <" + id + "> and filename <" + fileName + ">");
 					}
@@ -170,7 +170,7 @@ public class AssociatedController {
 
 			}
 			catch (Exception e) {
-				LOG.log(Level.SEVERE, e.getMessage(), e);
+				LOG.error(e.getMessage(), e);
 				return Mono.just(HttpResponse.serverError("Failed to store <" + id + "> in index <" + indexName + "> for file <" + fileName + ">"));
 			}
 
@@ -199,7 +199,7 @@ public class AssociatedController {
 				indexManager.getAssociatedFilenames(indexName, out, filter);
 			}
 			catch (Exception e) {
-				LOG.log(Level.SEVERE, e.getMessage(), e);
+				LOG.error(e.getMessage(), e);
 				HttpResponse.serverError(e.getMessage());
 			}
 		};

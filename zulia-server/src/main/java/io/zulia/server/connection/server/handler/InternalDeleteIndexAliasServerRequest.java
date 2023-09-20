@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteIndexAliasRequest;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteIndexAliasResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InternalDeleteIndexAliasServerRequest extends ServerRequestHandler<DeleteIndexAliasResponse, DeleteIndexAliasRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalDeleteIndexAliasServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalDeleteIndexAliasServerRequest.class.getSimpleName());
 
 	public InternalDeleteIndexAliasServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class InternalDeleteIndexAliasServerRequest extends ServerRequestHandler<
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal delete index alias", e);
+		LOG.error("Failed to handle internal delete index alias", e);
 	}
 }

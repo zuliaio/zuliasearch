@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.OptimizeRequest;
 import io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InternalOptimizeServerRequest extends ServerRequestHandler<OptimizeResponse, OptimizeRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalOptimizeServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalOptimizeServerRequest.class.getSimpleName());
 
 	public InternalOptimizeServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class InternalOptimizeServerRequest extends ServerRequestHandler<Optimize
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal optimize", e);
+		LOG.error("Failed to handle internal optimize", e);
 	}
 }

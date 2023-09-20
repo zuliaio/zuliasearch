@@ -3,12 +3,10 @@ package io.zulia.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 public class ZuliaVersion {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaVersion.class.getSimpleName());
 	private static final ZuliaVersion VERSION = new ZuliaVersion();
 	private String version;
 
@@ -25,7 +23,7 @@ public class ZuliaVersion {
 			minor = Integer.parseInt(next.substring(0, next.indexOf('.')));
 		}
 		catch (IOException e) {
-			LOG.log(Level.SEVERE, "Failed to get the version.", e);
+			System.err.println();
 		}
 
 	}

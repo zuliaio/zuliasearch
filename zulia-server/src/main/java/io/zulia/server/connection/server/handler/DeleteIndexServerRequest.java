@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteIndexResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DeleteIndexServerRequest extends ServerRequestHandler<DeleteIndexResponse, DeleteIndexRequest> {
 
-	private final static Logger LOG = Logger.getLogger(DeleteIndexServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(DeleteIndexServerRequest.class.getSimpleName());
 
 	public DeleteIndexServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class DeleteIndexServerRequest extends ServerRequestHandler<DeleteIndexRe
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle delete index", e);
+		LOG.error("Failed to handle delete index", e);
 	}
 }

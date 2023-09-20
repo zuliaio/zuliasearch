@@ -15,15 +15,16 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Logger;
 
 public class ShardWriteManager {
 
-	private final static Logger LOG = Logger.getLogger(ShardWriteManager.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ShardWriteManager.class);
 
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 

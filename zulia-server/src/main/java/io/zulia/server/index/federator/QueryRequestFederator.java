@@ -12,6 +12,8 @@ import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.index.ZuliaIndex;
 import io.zulia.server.search.QueryCombiner;
 import org.apache.lucene.search.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -19,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Logger;
 
 public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<QueryRequest, InternalQueryResponse> {
 	private final InternalClient internalClient;
@@ -27,7 +28,7 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 	private final Map<String, Query> queryMap;
 
-	private static final Logger LOG = Logger.getLogger(QueryRequestFederator.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(QueryRequestFederator.class);
 
 	private static AtomicLong queryNumber = new AtomicLong();
 

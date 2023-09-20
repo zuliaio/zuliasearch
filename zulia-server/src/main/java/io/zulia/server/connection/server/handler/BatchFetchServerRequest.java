@@ -5,13 +5,12 @@ import io.zulia.message.ZuliaServiceOuterClass.BatchFetchRequest;
 import io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BatchFetchServerRequest {
 
-	private final static Logger LOG = Logger.getLogger(BatchFetchServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(BatchFetchServerRequest.class.getSimpleName());
 	private final ZuliaIndexManager indexManager;
 
 	public BatchFetchServerRequest(ZuliaIndexManager indexManager) {
@@ -34,6 +33,6 @@ public class BatchFetchServerRequest {
 	}
 
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle batch fetch", e);
+		LOG.error("Failed to handle batch fetch", e);
 	}
 }

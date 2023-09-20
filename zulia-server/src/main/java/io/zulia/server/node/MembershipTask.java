@@ -4,6 +4,8 @@ import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,8 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimerTask;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 public abstract class MembershipTask extends TimerTask {
@@ -29,7 +29,7 @@ public abstract class MembershipTask extends TimerTask {
 
 	private Map<String, Node> otherNodeMap;
 
-	private static final Logger LOG = Logger.getLogger(ZuliaIndexManager.class.getName());
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaIndexManager.class);
 
 	public MembershipTask(ZuliaConfig zuliaConfig, NodeService nodeService) {
 		this.nodeService = nodeService;
@@ -99,7 +99,7 @@ public abstract class MembershipTask extends TimerTask {
 
 		}
 		catch (Throwable t) {
-			LOG.log(Level.SEVERE, "Update membership failed: ", t);
+			LOG.error("Update membership failed: ", t);
 		}
 	}
 

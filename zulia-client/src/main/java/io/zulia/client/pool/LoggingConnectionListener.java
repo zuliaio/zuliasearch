@@ -1,5 +1,7 @@
 package io.zulia.client.pool;
 
+import io.zulia.client.command.base.BaseCommand;
+import io.zulia.client.result.Result;
 import io.zulia.message.ZuliaBase;
 
 import java.util.logging.Level;
@@ -47,4 +49,19 @@ public class LoggingConnectionListener implements ConnectionListener {
 	public void restClientCreated(String server, int restPort) {
 		LOG.info("Created OkHttp client for server <" + server + "> on port <" + restPort + ">");
 	}
+
+	@Override
+	public <R extends Result> void exceptionWithRetry(ZuliaBase.Node selectedNode, BaseCommand<R> command, Exception exception, int tries) {
+		LOG.log(Level.SEVERE,
+				"Failed to run " + command.getClass().getSimpleName() + " on " + selectedNode.getServerAddress() + ":" + selectedNode.getServicePort()
+						+ " with exception: " + exception.getMessage() + ".  Retrying (" + tries + ")");
+	}
+
+	@Override
+	public <R extends Result> void exception(ZuliaBase.Node selectedNode, BaseCommand<R> command, Exception exception) {
+		LOG.log(Level.SEVERE,
+				"Failed to run " + command.getClass().getSimpleName() + " on " + selectedNode.getServerAddress() + ":" + selectedNode.getServicePort()
+						+ " with exception: " + exception.getMessage());
+	}
+
 }

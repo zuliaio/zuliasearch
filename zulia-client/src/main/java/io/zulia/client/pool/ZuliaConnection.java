@@ -5,11 +5,8 @@ import io.grpc.ManagedChannelBuilder;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceGrpc;
 
-import java.util.logging.Logger;
-
 public class ZuliaConnection {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaConnection.class.getName());
 	private final long connectionId;
 	private final long connectionNumberForNode;
 	private final boolean compressedConnection;

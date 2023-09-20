@@ -25,14 +25,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
 import static io.zulia.message.ZuliaIndex.IndexShardMapping;
 
 public class ZuliaPool {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaPool.class.getName());
 
 	protected class ZuliaNodeUpdateThread extends Thread {
 
@@ -151,7 +149,6 @@ public class ZuliaPool {
 			ZuliaConnection zuliaConnection;
 			Node selectedNode = null;
 			try {
-
 				if (routingEnabled && (indexRouting != null)) {
 					if (command instanceof ShardRoutableCommand) {
 						ShardRoutableCommand rc = (ShardRoutableCommand) command;
@@ -248,11 +245,12 @@ public class ZuliaPool {
 
 			}
 			catch (Exception e) {
-				System.err.println(e.getClass().getSimpleName() + ":" + e.getMessage());
 				if (tries >= retries) {
+					connectionListener.exception(selectedNode, command, e);
 					throw e;
 				}
 				tries++;
+				connectionListener.exceptionWithRetry(selectedNode, command, e, tries);
 			}
 		}
 

@@ -16,6 +16,8 @@ import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -27,11 +29,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 public class MongoDocumentStorage implements DocumentStorage {
 	@SuppressWarnings("unused")
-	private final static Logger log = Logger.getLogger(MongoDocumentStorage.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(MongoDocumentStorage.class.getSimpleName());
 
 	private static final String ASSOCIATED_FILES = "associatedFiles";
 	private static final String FILES = "files";

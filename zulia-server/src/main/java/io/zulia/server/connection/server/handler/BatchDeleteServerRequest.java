@@ -5,13 +5,12 @@ import io.zulia.message.ZuliaServiceOuterClass.BatchDeleteRequest;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BatchDeleteServerRequest {
 
-	private final static Logger LOG = Logger.getLogger(BatchDeleteServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(BatchDeleteServerRequest.class.getSimpleName());
 	private final ZuliaIndexManager indexManager;
 
 	public BatchDeleteServerRequest(ZuliaIndexManager indexManager) {
@@ -34,6 +33,6 @@ public class BatchDeleteServerRequest {
 	}
 
 	protected void onError(Exception e) {
-		LOG.log(Level.SEVERE, "Failed to handle batch delete", e);
+		LOG.error("Failed to handle batch delete", e);
 	}
 }

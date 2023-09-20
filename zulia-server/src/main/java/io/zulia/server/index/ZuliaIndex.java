@@ -63,6 +63,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -86,12 +88,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class ZuliaIndex {
 
-	private final static Logger LOG = Logger.getLogger(ZuliaIndex.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ZuliaIndex.class);
 
 	private final ServerIndexConfig indexConfig;
 	private final GenericObjectPool<ZuliaFlexibleQueryParser> parsers;
@@ -202,7 +202,7 @@ public class ZuliaIndex {
 				}
 			}
 			catch (Exception e) {
-				LOG.log(Level.SEVERE, "Failed to flush shard <" + shard.getShardNumber() + "> for index <" + indexName + ">", e);
+				LOG.error("Failed to flush shard <" + shard.getShardNumber() + "> for index <" + indexName + ">", e);
 			}
 		}
 
@@ -782,8 +782,9 @@ public class ZuliaIndex {
 
 						String sortField = fs.getSortField();
 						SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
-						FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 
+						//TODO fix this
+						FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 						if (sortFieldInfo == null) {
 							throw new Exception(sortField + " is not defined as a sortable field");
 						}

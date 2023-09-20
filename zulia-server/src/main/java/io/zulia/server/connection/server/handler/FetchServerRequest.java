@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FetchServerRequest extends ServerRequestHandler<FetchResponse, FetchRequest> {
 
-	private final static Logger LOG = Logger.getLogger(FetchServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(FetchServerRequest.class.getSimpleName());
 
 	public FetchServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class FetchServerRequest extends ServerRequestHandler<FetchResponse, Fetc
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle fetch", e);
+		LOG.error("Failed to handle fetch", e);
 	}
 }

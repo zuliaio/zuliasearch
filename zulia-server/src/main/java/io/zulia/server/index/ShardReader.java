@@ -43,6 +43,8 @@ import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,11 +52,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 public class ShardReader implements AutoCloseable {
 
-	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ShardReader.class.getSimpleName());
 
 	private final DirectoryReader indexReader;
 	private final DirectoryTaxonomyReader taxoReader;

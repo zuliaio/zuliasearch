@@ -10,6 +10,8 @@ import io.zulia.server.cmd.common.ThreadedArgs;
 import io.zulia.server.cmd.common.ZuliaCmdUtil;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -19,13 +21,12 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 @CommandLine.Command(name = "zuliarestore", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaRestore implements Callable<Integer> {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaRestore.class.getSimpleName());
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaRestore.class);
 	@CommandLine.Mixin
 	private ConnectionInfo connectionInfo;
 

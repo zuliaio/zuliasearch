@@ -3,7 +3,6 @@ package io.zulia.server.test.node.shared;
 import com.mongodb.client.MongoClients;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.log.LogUtil;
 import io.zulia.message.ZuliaBase;
 import io.zulia.server.cmd.zuliad.ZuliaDConfig;
 import io.zulia.server.config.ZuliaConfig;
@@ -13,6 +12,8 @@ import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.test.mongo.MongoTestInstance;
 import io.zulia.server.util.MongoProvider;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -27,7 +28,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class TestHelper {
-
+	private final static Logger LOG = LoggerFactory.getLogger(TestHelper.class);
 	public static final String MONGO_TEST_CONNECTION = "mongoTestConnection";
 	public static final String TEST_CLUSTER_NAME = "zuliaTest";
 
@@ -40,7 +41,6 @@ public class TestHelper {
 
 	static {
 
-		LogUtil.init();
 		ZuliaDConfig.setLuceneStatic();
 
 		mongoTestInstance = new MongoTestInstance();
@@ -98,8 +98,6 @@ public class TestHelper {
 			}
 		}
 
-		System.out.println(mongoServer);
-
 		return mongoServer;
 	}
 
@@ -115,7 +113,7 @@ public class TestHelper {
 	}
 
 	public static void startNodes() throws Exception {
-		System.out.println("Starting <" + nodeService.getNodes().size() + "> Nodes");
+		LOG.info("Starting <" + nodeService.getNodes().size() + "> Nodes");
 		int i = 0;
 		for (ZuliaBase.Node node : nodeService.getNodes()) {
 			ZuliaConfig zuliaConfig = new ZuliaConfig();
@@ -138,13 +136,13 @@ public class TestHelper {
 
 			zuliaNodes.add(zuliaNode);
 		}
-		System.out.println("Started <" + zuliaNodes.size() + "> Nodes");
+		LOG.info("Started <" + zuliaNodes.size() + "> Nodes");
 
 	}
 
 	public static void createNodes(int nodeCount) {
 		clearData();
-		System.out.println("Creating <" + nodeCount + "> Nodes");
+		LOG.info("Creating <" + nodeCount + "> Nodes");
 		int port = 20000;
 
 		//drop nodes and index configs
@@ -158,7 +156,7 @@ public class TestHelper {
 
 	public static void stopNodes() {
 
-		System.out.println("Stopping <" + zuliaNodes.size() + "> Nodes");
+		LOG.info("Stopping <" + zuliaNodes.size() + "> Nodes");
 		for (ZuliaNode zuliaNode : zuliaNodes) {
 			zuliaNode.shutdown();
 		}

@@ -7,6 +7,8 @@ import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -25,7 +27,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,7 +34,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	private static final String TIMESTAMP = "_tstamp_";
 
 	@SuppressWarnings("unused")
-	private final static Logger log = Logger.getLogger(FileDocumentStorage.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(FileDocumentStorage.class.getSimpleName());
 	private final String indexName;
 	private final String filesPath;
 
