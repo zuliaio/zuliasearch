@@ -53,7 +53,7 @@ dependencies {
     implementation("com.cedarsoftware:json-io:4.14.0")
     implementation("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
     implementation("org.apache.commons:commons-compress:1.22")
-    implementation("org.xerial.snappy:snappy-java:1.1.10.0")
+    implementation("org.xerial.snappy:snappy-java:1.1.10.3")
     implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
     implementation("software.amazon.awssdk:s3")
 
