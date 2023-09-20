@@ -188,7 +188,7 @@ val zuliaImportScriptTask = tasks.register<CreateStartScripts>("createZuliaImpor
 
 tasks.register("autocompleteDir") {
     doLast {
-        mkdir("$buildDir/autocomplete")
+        mkdir("${layout.buildDirectory.get()}/autocomplete")
     }
 }
 
@@ -196,14 +196,14 @@ task("picoCliZuliaAutoComplete", JavaExec::class) {
     dependsOn("autocompleteDir")
     mainClass.set("picocli.AutoComplete")
     classpath = sourceSets["main"].runtimeClasspath
-    args = listOf("--force", "--completionScript", "$buildDir/autocomplete/zulia.sh", "io.zulia.server.cmd.Zulia")
+    args = listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zulia.sh", "io.zulia.server.cmd.Zulia")
 }
 
 task("picoCliZuliaDAutoComplete", JavaExec::class) {
     dependsOn("autocompleteDir")
     mainClass.set("picocli.AutoComplete")
     classpath = sourceSets["main"].runtimeClasspath
-    args = listOf("--force", "--completionScript", "$buildDir/autocomplete/zuliad.sh", "io.zulia.server.cmd.ZuliaD")
+    args = listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zuliad.sh", "io.zulia.server.cmd.ZuliaD")
 }
 
 task("picoCliZuliaAdminAutoComplete", JavaExec::class) {
@@ -213,7 +213,7 @@ task("picoCliZuliaAdminAutoComplete", JavaExec::class) {
     args = listOf(
         "--force",
         "--completionScript",
-        "$buildDir/autocomplete/zuliaadmin.sh",
+        "${layout.buildDirectory.get()}/autocomplete/zuliaadmin.sh",
         "io.zulia.server.cmd.ZuliaAdmin"
     )
 }
@@ -223,7 +223,7 @@ task("picoCliZuliaDumpAutoComplete", JavaExec::class) {
     mainClass.set("picocli.AutoComplete")
     classpath = sourceSets["main"].runtimeClasspath
     args =
-        listOf("--force", "--completionScript", "$buildDir/autocomplete/zuliadump.sh", "io.zulia.server.cmd.ZuliaDump")
+        listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zuliadump.sh", "io.zulia.server.cmd.ZuliaDump")
 }
 
 task("picoCliZuliaRestoreAutoComplete", JavaExec::class) {
@@ -233,7 +233,7 @@ task("picoCliZuliaRestoreAutoComplete", JavaExec::class) {
     args = listOf(
         "--force",
         "--completionScript",
-        "$buildDir/autocomplete/zuliarestore.sh",
+        "${layout.buildDirectory.get()}/autocomplete/zuliarestore.sh",
         "io.zulia.server.cmd.ZuliaRestore"
     )
 }
@@ -246,7 +246,7 @@ task("picoCliZuliaImportAutoComplete", JavaExec::class) {
     args = listOf(
         "--force",
         "--completionScript",
-        "$buildDir/autocomplete/zuliaimport.sh",
+        "${layout.buildDirectory.get()}/autocomplete/zuliaimport.sh",
         "io.zulia.server.cmd.ZuliaImport"
     )
 }
@@ -258,7 +258,7 @@ task("picoCliZuliaExportAutoComplete", JavaExec::class) {
     args = listOf(
         "--force",
         "--completionScript",
-        "$buildDir/autocomplete/zuliaexport.sh",
+        "${layout.buildDirectory.get()}/autocomplete/zuliaexport.sh",
         "io.zulia.server.cmd.ZuliaExport"
     )
 }
@@ -297,7 +297,7 @@ distributions {
             from(zuliaImportScriptTask) {
                 into("bin")
             }
-            from("$buildDir/autocomplete/") {
+            from("${layout.buildDirectory.get()}/autocomplete/") {
                 into("bin/autocomplete")
             }
 
