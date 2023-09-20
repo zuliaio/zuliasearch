@@ -77,7 +77,6 @@ dependencies {
     implementation("io.micronaut.openapi:micronaut-openapi")
     implementation("io.micronaut.reactor:micronaut-reactor")
     implementation("io.micronaut.serde:micronaut-serde-jackson")
-    implementation("io.micronaut.security:micronaut-security-jwt")
     implementation("io.micronaut.validation:micronaut-validation")
     implementation("io.swagger.core.v3:swagger-annotations")
     implementation("jakarta.validation:jakarta.validation-api")
