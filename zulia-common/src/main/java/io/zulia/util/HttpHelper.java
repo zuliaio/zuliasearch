@@ -14,7 +14,7 @@ public class HttpHelper {
 
 			Object value = parameters.get(key);
 			if (value instanceof String) {
-				if (sb.length() > 0) {
+				if (!sb.isEmpty()) {
 					sb.append('&');
 				}
 
@@ -24,18 +24,17 @@ public class HttpHelper {
 				sb.append(URLEncoder.encode((String) value, StandardCharsets.UTF_8));
 
 			}
-			else if (value instanceof List) {
-				List<String> stringList = (List<String>) value;
-				for (String item : stringList) {
+			else if (value instanceof List<?> stringList) {
+				for (Object item : stringList) {
 
-					if (sb.length() > 0) {
+					if (!sb.isEmpty()) {
 						sb.append('&');
 					}
 
 					sb.append(key);
 					sb.append('=');
 
-					sb.append(URLEncoder.encode(item, StandardCharsets.UTF_8));
+					sb.append(URLEncoder.encode(item.toString(), StandardCharsets.UTF_8));
 
 				}
 			}
@@ -43,13 +42,5 @@ public class HttpHelper {
 		return sb.toString();
 	}
 
-	public static String createRequestUrl(String server, int restPort, String url, Map<String, Object> parameters) {
-		String fullUrl = ("http://" + server + ":" + restPort + url);
-		if (parameters == null || parameters.isEmpty()) {
-			return fullUrl;
-		}
 
-		return (fullUrl + "?" + createQuery(parameters));
-
-	}
 }
