@@ -48,24 +48,16 @@ protobuf {
         ofSourceSet("main").forEach {
             it.plugins {
                 id("grpc")
-                //"enable_deprecated=false"
             }
         }
     }
 
-    generatedFilesBaseDir = "$projectDir/gen"
 }
 
-tasks {
-    clean {
-        delete("$projectDir/gen")
-    }
-
-}
 tasks.register("version") {
     doLast {
-        File("${project.buildDir}/classes/java/main/").mkdirs()
-        File("${project.buildDir}/classes/java/main/version").writeText(project.version.toString())
+        File("${project.layout.buildDirectory.get()}/classes/java/main/").mkdirs()
+        File("${project.layout.buildDirectory.get()}/classes/java/main/version").writeText(project.version.toString())
     }
 }
 
