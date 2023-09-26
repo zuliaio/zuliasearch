@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.client.pool.ConnectionListener;
-import io.zulia.util.HttpHelper;
 import io.zulia.util.ZuliaUtil;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
@@ -19,8 +18,11 @@ import org.bson.Document;
 
 import java.io.File;
 import java.io.OutputStream;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
@@ -82,8 +84,8 @@ public class ZuliaRESTClient {
 
 		try {
 			Request request = new Request.Builder().url(
-							url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
-					.method("GET", null).build();
+							url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL + "?" + createQuery(createParameters(uniqueId, indexName, fileName))).method("GET", null)
+					.build();
 			Response response = client.newCall(request).execute();
 			BufferedSink sink = Okio.buffer(Okio.sink(destination));
 			sink.writeAll(Objects.requireNonNull(response.body(), "No body for file '" + fileName + "'.").source());
@@ -102,8 +104,8 @@ public class ZuliaRESTClient {
 
 		try {
 			Request request = new Request.Builder().url(
-							url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName, fileName)))
-					.method("GET", null).build();
+							url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL + "?" + createQuery(createParameters(uniqueId, indexName, fileName))).method("GET", null)
+					.build();
 			Response response = client.newCall(request).execute();
 			Document document = ZuliaUtil.byteArrayToMongoDocument(Objects.requireNonNull(response.body()).bytes());
 			destination.write(Objects.requireNonNull(document.toJson().getBytes(StandardCharsets.UTF_8), "No body for file"));
@@ -119,8 +121,8 @@ public class ZuliaRESTClient {
 	public void fetchAssociated(String uniqueId, String indexName, OutputStream destination, boolean closeStream) throws Exception {
 
 		Request request = new Request.Builder().url(
-						url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + HttpHelper.createQuery(createParameters(uniqueId, indexName)))
-				.method("GET", null).build();
+						url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + createQuery(createParameters(uniqueId, indexName))).method("GET", null)
+				.build();
 		Response response = client.newCall(request).execute();
 
 		String allIdsJson = Objects.requireNonNull(response.body()).string();
@@ -151,6 +153,42 @@ public class ZuliaRESTClient {
 			response.close();
 		}
 
+	}
+
+	public static String createQuery(Map<String, Object> parameters) {
+
+		StringBuilder sb = new StringBuilder();
+
+		for (String key : parameters.keySet()) {
+
+			Object value = parameters.get(key);
+			if (value instanceof String) {
+				if (!sb.isEmpty()) {
+					sb.append('&');
+				}
+
+				sb.append(key);
+				sb.append('=');
+
+				sb.append(URLEncoder.encode((String) value, StandardCharsets.UTF_8));
+
+			}
+			else if (value instanceof List<?> stringList) {
+				for (Object item : stringList) {
+
+					if (!sb.isEmpty()) {
+						sb.append('&');
+					}
+
+					sb.append(key);
+					sb.append('=');
+
+					sb.append(URLEncoder.encode(item.toString(), StandardCharsets.UTF_8));
+
+				}
+			}
+		}
+		return sb.toString();
 	}
 
 	private HashMap<String, Object> createParameters(String uniqueId, String indexName) {
