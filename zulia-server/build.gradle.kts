@@ -58,7 +58,7 @@ dependencies {
 
     implementation("org.yaml:snakeyaml:$snakeYamlVersion")
 
-    runtimeOnly("ch.qos.logback:logback-classic")
+    runtimeOnly("ch.qos.logback:logback-classic:1.4.7")
     implementation("org.fusesource.jansi:jansi:2.4.0")
 
 
@@ -91,17 +91,16 @@ dependencies {
 
     //implementation("org.graalvm.js:js:21.3.1")
 }
-
 tasks.withType<JavaCompile> {
     options.isFork = true
     options.forkOptions.jvmArgs?.addAll(listOf("-Dmicronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.theme=flattop"))
 }
 
-
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
+
+
 zuliaScriptTask.applicationName = "zulia"
 zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
-
 val zuliaAdminScriptTask = tasks.register<CreateStartScripts>("createZuliaAdminScript") {
     applicationName = "zuliaadmin"
     mainClass.set("io.zulia.server.cmd.ZuliaAdmin")
@@ -225,6 +224,8 @@ task("picoCliZuliaDumpAutoComplete", JavaExec::class) {
     args =
         listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zuliadump.sh", "io.zulia.server.cmd.ZuliaDump")
 }
+
+
 
 task("picoCliZuliaRestoreAutoComplete", JavaExec::class) {
     dependsOn("autocompleteDir")
