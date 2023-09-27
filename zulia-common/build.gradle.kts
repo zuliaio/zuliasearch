@@ -12,7 +12,6 @@ defaultTasks("generateProto", "version", "build")
 
 description = "Zulia Common"
 
-
 val grpcVersion: String by project
 val mongoDriverVersion: String by project
 val protobufVersion: String by project
@@ -24,7 +23,7 @@ dependencies {
     api("io.grpc:grpc-stub:$grpcVersion")
     api("org.mongodb:bson:$mongoDriverVersion")
     api("com.google.protobuf:protobuf-java-util:$protobufVersion")
-    implementation("org.mongodb:mongodb-driver-core:$mongoDriverVersion")
+    api("org.mongodb:mongodb-driver-core:$mongoDriverVersion")
     api("org.apache.commons:commons-pool2:2.11.1")
     api("javax.annotation:javax.annotation-api:1.3.2")
     api("com.google.guava:guava:32.0.1-jre")
