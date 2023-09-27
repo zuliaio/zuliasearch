@@ -58,7 +58,7 @@ dependencies {
 
     implementation("org.yaml:snakeyaml:$snakeYamlVersion")
 
-    runtimeOnly("ch.qos.logback:logback-classic:1.4.7")
+    runtimeOnly("ch.qos.logback:logback-classic:1.4.11")
     implementation("org.fusesource.jansi:jansi:2.4.0")
 
 
