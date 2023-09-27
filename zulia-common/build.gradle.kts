@@ -16,7 +16,7 @@ description = "Zulia Common"
 val grpcVersion: String by project
 val mongoDriverVersion: String by project
 val protobufVersion: String by project
-
+val gsonVersion: String by project
 
 dependencies {
     api("io.grpc:grpc-netty-shaded:$grpcVersion")
@@ -29,6 +29,7 @@ dependencies {
     api("javax.annotation:javax.annotation-api:1.3.2")
     api("com.google.guava:guava:32.0.1-jre")
     api("com.j256.simplemagic:simplemagic:1.17")
+    api("com.google.code.gson:gson:$gsonVersion")
     protobuf("com.datadoghq:sketches-java:0.8.2")
 }
 
