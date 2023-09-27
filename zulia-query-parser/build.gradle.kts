@@ -11,7 +11,6 @@ defaultTasks("build", "installDist")
 dependencies {
     api(project(":zulia-analyzer"))
     api("org.apache.lucene:lucene-queryparser:$luceneVersion")
-
 }
 
 
