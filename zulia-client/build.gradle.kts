@@ -9,6 +9,6 @@ val gsonVersion: String by project
 
 dependencies {
     api(project(":zulia-common"))
-    implementation("com.squareup.okhttp3:okhttp:$okHttpVersion")
+    implementation(libs.okhttp)
 }
 

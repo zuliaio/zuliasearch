@@ -1,11 +1,9 @@
-
 plugins {
     java
     idea
     signing
     `maven-publish`
-    id("org.ajoberstar.reckon") version "0.18.0"
-    id("com.google.protobuf") version "0.9.4" apply false
+    alias(libs.plugins.reckon)
 }
 
 reckon {
@@ -20,6 +18,10 @@ allprojects {
 }
 apply {
     from("javacc.gradle")
+}
+
+val Project.libs by lazy {
+    the<org.gradle.accessors.dm.LibrariesForLibs>()
 }
 
 defaultTasks("build")
@@ -98,11 +100,12 @@ subprojects {
         mavenCentral()
     }
 
+
     dependencies {
-        testImplementation(platform("org.junit:junit-bom:5.9.3"))
-        testImplementation("org.junit.jupiter:junit-jupiter-api")
-        testImplementation("org.junit.jupiter:junit-jupiter-params")
-        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+        testImplementation(platform(libs.junit.bom))
+        testImplementation(libs.jupiter.api)
+        testImplementation(libs.jupiter.params)
+        testRuntimeOnly(libs.jupiter.engine)
     }
 
     tasks.withType<Test> {
