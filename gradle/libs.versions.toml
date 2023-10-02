@@ -58,6 +58,7 @@ picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "pico
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 simplemagic = { module = "com.j256.simplemagic:simplemagic", version = "1.17" }
 sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.2" }
+slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.7" }
 snake-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
 snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.3" }
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }

@@ -11,17 +11,18 @@ defaultTasks("generateProto", "version", "build")
 description = "Zulia Common"
 
 dependencies {
+    api(libs.bson)
+    api(libs.commons.pool2)
     api(libs.grpc.netty.shaded)
     api(libs.grpc.protobuf)
     api(libs.grpc.stub)
-    api(libs.bson)
-    api(libs.protobuf.java.util)
-    api(libs.mongodb.driver.core)
-    api(libs.commons.pool2)
-    api(libs.javax.annotation)
-    api(libs.guava)
-    api(libs.simplemagic)
     api(libs.gson)
+    api(libs.guava)
+    api(libs.javax.annotation)
+    api(libs.mongodb.driver.core)
+    api(libs.protobuf.java.util)
+    api(libs.simplemagic)
+    api(libs.slf4j.api)
     protobuf(libs.sketches.java)
 }
 

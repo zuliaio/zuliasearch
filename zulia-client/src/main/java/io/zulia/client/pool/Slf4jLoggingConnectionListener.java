@@ -3,12 +3,11 @@ package io.zulia.client.pool;
 import io.zulia.client.command.base.BaseCommand;
 import io.zulia.client.result.Result;
 import io.zulia.message.ZuliaBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-public class LoggingConnectionListener implements ConnectionListener {
-	private static final Logger LOG = Logger.getLogger(LoggingConnectionListener.class.getName());
+public class Slf4jLoggingConnectionListener implements ConnectionListener {
+	private static final Logger LOG = LoggerFactory.getLogger(Slf4jLoggingConnectionListener.class);
 
 	@Override
 	public void connectionBeforeOpen(ZuliaConnection zuliaConnection) {
@@ -41,7 +40,7 @@ public class LoggingConnectionListener implements ConnectionListener {
 	@Override
 	public void exceptionClosing(ZuliaConnection zuliaConnection, Exception e) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.log(Level.SEVERE, "Exception closing connection #" + zuliaConnection.getConnectionNumberForNode() + " to <" + node.getServerAddress() + ":"
+		LOG.error("Exception closing connection #" + zuliaConnection.getConnectionNumberForNode() + " to <" + node.getServerAddress() + ":"
 				+ node.getServicePort() + "> id: " + zuliaConnection.getConnectionId(), e);
 	}
 
@@ -52,16 +51,14 @@ public class LoggingConnectionListener implements ConnectionListener {
 
 	@Override
 	public <R extends Result> void exceptionWithRetry(ZuliaBase.Node selectedNode, BaseCommand<R> command, Exception exception, int tries) {
-		LOG.log(Level.SEVERE,
-				"Failed to run " + command.getClass().getSimpleName() + " on " + selectedNode.getServerAddress() + ":" + selectedNode.getServicePort()
-						+ " with exception: " + exception.getMessage() + ".  Retrying (" + tries + ")");
+		LOG.error("Failed to run " + command.getClass().getSimpleName() + " on " + selectedNode.getServerAddress() + ":" + selectedNode.getServicePort()
+				+ " with exception: " + exception.getMessage() + ".  Retrying (" + tries + ")");
 	}
 
 	@Override
 	public <R extends Result> void exception(ZuliaBase.Node selectedNode, BaseCommand<R> command, Exception exception) {
-		LOG.log(Level.SEVERE,
-				"Failed to run " + command.getClass().getSimpleName() + " on " + selectedNode.getServerAddress() + ":" + selectedNode.getServicePort()
-						+ " with exception: " + exception.getMessage());
+		LOG.error("Failed to run " + command.getClass().getSimpleName() + " on " + selectedNode.getServerAddress() + ":" + selectedNode.getServicePort()
+				+ " with exception: " + exception.getMessage());
 	}
 
 }
