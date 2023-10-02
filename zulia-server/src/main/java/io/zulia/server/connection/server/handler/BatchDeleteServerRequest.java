@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 public class BatchDeleteServerRequest {
 
-	private final static Logger LOG = LoggerFactory.getLogger(BatchDeleteServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(BatchDeleteServerRequest.class);
 	private final ZuliaIndexManager indexManager;
 
 	public BatchDeleteServerRequest(ZuliaIndexManager indexManager) {

@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 public class InternalRpcConnection {
 
-	private final static Logger LOG = LoggerFactory.getLogger(InternalRpcConnection.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalRpcConnection.class);
 	private final String memberAddress;
 	private final int internalServicePort;
 

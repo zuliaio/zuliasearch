@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class ClearServerRequest extends ServerRequestHandler<ClearResponse, ClearRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(ClearServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ClearServerRequest.class);
 
 	public ClearServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

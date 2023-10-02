@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class InternalGetFieldNamesServerRequest extends ServerRequestHandler<GetFieldNamesResponse, InternalGetFieldNamesRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(InternalGetFieldNamesServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalGetFieldNamesServerRequest.class);
 
 	public InternalGetFieldNamesServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 public class BatchFetchServerRequest {
 
-	private final static Logger LOG = LoggerFactory.getLogger(BatchFetchServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(BatchFetchServerRequest.class);
 	private final ZuliaIndexManager indexManager;
 
 	public BatchFetchServerRequest(ZuliaIndexManager indexManager) {

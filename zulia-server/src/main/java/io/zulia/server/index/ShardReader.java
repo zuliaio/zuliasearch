@@ -55,7 +55,7 @@ import java.util.function.Consumer;
 
 public class ShardReader implements AutoCloseable {
 
-	private final static Logger LOG = LoggerFactory.getLogger(ShardReader.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ShardReader.class);
 
 	private final DirectoryReader indexReader;
 	private final DirectoryTaxonomyReader taxoReader;

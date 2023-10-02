@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class GetIndexSettingsServerRequest extends ServerRequestHandler<GetIndexSettingsResponse, GetIndexSettingsRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(GetIndexSettingsServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(GetIndexSettingsServerRequest.class);
 
 	public GetIndexSettingsServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

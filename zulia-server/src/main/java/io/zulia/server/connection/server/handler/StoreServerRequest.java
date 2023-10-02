@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class StoreServerRequest extends ServerRequestHandler<StoreResponse, StoreRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(StoreServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(StoreServerRequest.class);
 
 	public StoreServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

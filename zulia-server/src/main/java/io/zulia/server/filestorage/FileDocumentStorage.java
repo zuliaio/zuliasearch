@@ -34,7 +34,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	private static final String TIMESTAMP = "_tstamp_";
 
 	@SuppressWarnings("unused")
-	private final static Logger LOG = LoggerFactory.getLogger(FileDocumentStorage.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(FileDocumentStorage.class);
 	private final String indexName;
 	private final String filesPath;
 

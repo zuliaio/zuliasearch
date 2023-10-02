@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class GetNodesServerRequest extends ServerRequestHandler<GetNodesResponse, GetNodesRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(GetNodesServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(GetNodesServerRequest.class);
 
 	public GetNodesServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

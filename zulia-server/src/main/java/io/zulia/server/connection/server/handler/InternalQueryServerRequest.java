@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class InternalQueryServerRequest extends ServerRequestHandler<InternalQueryResponse, InternalQueryRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(InternalQueryServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalQueryServerRequest.class);
 
 	public InternalQueryServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

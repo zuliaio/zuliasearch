@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class OptimizeServerRequest extends ServerRequestHandler<OptimizeResponse, OptimizeRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(OptimizeServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(OptimizeServerRequest.class);
 
 	public OptimizeServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

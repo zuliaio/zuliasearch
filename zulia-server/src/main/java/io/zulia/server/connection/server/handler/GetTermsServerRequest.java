@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class GetTermsServerRequest extends ServerRequestHandler<GetTermsResponse, GetTermsRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(GetTermsServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(GetTermsServerRequest.class);
 
 	public GetTermsServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

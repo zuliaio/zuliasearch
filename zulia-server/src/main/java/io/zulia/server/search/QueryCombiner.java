@@ -38,7 +38,7 @@ import java.util.Map;
 
 public class QueryCombiner {
 
-	private final static Logger LOG = LoggerFactory.getLogger(QueryCombiner.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(QueryCombiner.class);
 
 	private final List<InternalQueryResponse> responses;
 	private final Map<String, Map<Integer, ShardQueryResponse>> indexToShardQueryResponseMap;

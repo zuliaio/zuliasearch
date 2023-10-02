@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class DeleteServerRequest extends ServerRequestHandler<DeleteResponse, DeleteRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(DeleteServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(DeleteServerRequest.class);
 
 	public DeleteServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

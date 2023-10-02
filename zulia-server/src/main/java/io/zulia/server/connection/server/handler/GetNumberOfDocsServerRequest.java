@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class GetNumberOfDocsServerRequest extends ServerRequestHandler<GetNumberOfDocsResponse, GetNumberOfDocsRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(GetNumberOfDocsServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(GetNumberOfDocsServerRequest.class);
 
 	public GetNumberOfDocsServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

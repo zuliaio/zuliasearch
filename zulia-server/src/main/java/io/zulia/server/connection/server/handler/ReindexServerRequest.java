@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class ReindexServerRequest extends ServerRequestHandler<ReindexResponse, ReindexRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(ReindexServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ReindexServerRequest.class);
 
 	public ReindexServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

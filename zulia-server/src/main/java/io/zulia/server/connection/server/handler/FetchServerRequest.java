@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class FetchServerRequest extends ServerRequestHandler<FetchResponse, FetchRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(FetchServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(FetchServerRequest.class);
 
 	public FetchServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

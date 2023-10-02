@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * @author mdavis
  */
 public class ZuliaServiceServer {
-	private final static Logger LOG = LoggerFactory.getLogger(ZuliaServiceServer.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ZuliaServiceServer.class);
 
 	public static class ResponseCompressionIntercept implements ServerInterceptor {
 

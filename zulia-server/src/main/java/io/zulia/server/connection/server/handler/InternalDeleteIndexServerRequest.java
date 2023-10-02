@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 public class InternalDeleteIndexServerRequest extends ServerRequestHandler<DeleteIndexResponse, DeleteIndexRequest> {
 
-	private final static Logger LOG = LoggerFactory.getLogger(InternalDeleteIndexServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalDeleteIndexServerRequest.class);
 
 	public InternalDeleteIndexServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);

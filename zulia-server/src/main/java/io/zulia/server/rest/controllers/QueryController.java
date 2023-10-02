@@ -46,7 +46,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 @Controller(ZuliaRESTConstants.QUERY_URL)
 public class QueryController {
 
-	private final static Logger LOG = LoggerFactory.getLogger(QueryController.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(QueryController.class);
 
 	@Get
 	@Produces({ MediaType.APPLICATION_JSON + ";charset=utf-8", MediaType.TEXT_PLAIN + ";charset=utf-8" })

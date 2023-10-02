@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 
 public class MongoDocumentStorage implements DocumentStorage {
 	@SuppressWarnings("unused")
-	private final static Logger LOG = LoggerFactory.getLogger(MongoDocumentStorage.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(MongoDocumentStorage.class);
 
 	private static final String ASSOCIATED_FILES = "associatedFiles";
 	private static final String FILES = "files";

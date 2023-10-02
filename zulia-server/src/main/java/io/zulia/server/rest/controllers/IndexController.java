@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
  */
 @Controller(ZuliaRESTConstants.INDEX_URL)
 public class IndexController {
-	private final static Logger LOG = LoggerFactory.getLogger(IndexController.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(IndexController.class);
 
 	@Get
 	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")

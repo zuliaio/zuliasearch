@@ -24,9 +24,9 @@ import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class InternalClient {
-	private final static Logger LOG = LoggerFactory.getLogger(InternalClient.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalClient.class);
 
-	private ConcurrentHashMap<String, GenericObjectPool<InternalRpcConnection>> internalConnectionPoolMap;
+	private final ConcurrentHashMap<String, GenericObjectPool<InternalRpcConnection>> internalConnectionPoolMap;
 
 	private final InternalQueryHandler internalQueryHandler;
 	private final InternalStoreHandler internalStoreHandler;
