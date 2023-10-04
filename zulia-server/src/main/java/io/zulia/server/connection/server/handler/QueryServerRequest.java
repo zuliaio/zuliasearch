@@ -2,6 +2,7 @@ package io.zulia.server.connection.server.handler;
 
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
+import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.index.ZuliaIndexManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,11 @@ public class QueryServerRequest extends ServerRequestHandler<QueryResponse, Quer
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.error("Failed to handle query", e);
+		if (e instanceof IndexDoesNotExistException) {
+			LOG.error(e.getMessage());
+		}
+		else {
+			LOG.error("Failed to handle query", e);
+		}
 	}
 }
