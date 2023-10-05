@@ -1,7 +1,6 @@
 package io.zulia.server.node;
 
 import io.micronaut.context.ApplicationContext;
-import io.micronaut.core.util.CollectionUtils;
 import io.micronaut.runtime.Micronaut;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
@@ -83,7 +82,7 @@ public class ZuliaNode {
 		indexManager.init();
 		zuliaServiceServer.start();
 		if (startREST) {
-			Map<String, Object> properties = CollectionUtils.mapOf("micronaut.server.host", zuliaConfig.getServerAddress(), "micronaut.server.port",
+			Map<String, Object> properties = Map.of("micronaut.server.host", zuliaConfig.getServerAddress(), "micronaut.server.port",
 					zuliaConfig.getRestPort());
 			micronautService = Micronaut.build((String) null).mainClass(ZuliaRESTService.class).properties(properties).start();
 		}
