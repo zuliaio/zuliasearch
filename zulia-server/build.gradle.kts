@@ -6,10 +6,7 @@ plugins {
 
 description = "Zulia Server"
 
-val micronautVersion: String by project
-
 defaultTasks("build", "installDist")
-
 
 micronaut {
     version(libs.versions.micronaut.get())
@@ -20,6 +17,15 @@ micronaut {
         annotations("io.zulia.*")
     }
 }
+
+
+tasks.register<Copy>("copySwagger") {
+    from(layout.buildDirectory.dir("classes/java/main/META-INF/swagger/swagger.yml"))
+    into(project.rootProject.file("api/"))
+    rename("swagger.yml", project.name + "_swagger.yml")
+    dependsOn("buildLayers")
+}
+
 
 
 tasks.withType<Test> {
