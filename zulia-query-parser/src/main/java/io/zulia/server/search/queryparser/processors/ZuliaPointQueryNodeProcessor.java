@@ -106,8 +106,18 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 							return new MatchNoDocsQueryNode();
 						}
 
-						PointQueryNode lowerNode = new PointQueryNode(field, lowerBounds != null ? lowerBounds.begin() : null, numberFormat);
-						PointQueryNode upperNode = new PointQueryNode(field, upperBounds != null ? upperBounds.end() : null, numberFormat);
+						Long lowerLong = null;
+						if (lowerBounds != null) {
+							lowerLong = termRangeNode.isLowerInclusive() ? lowerBounds.begin() : lowerBounds.end();
+						}
+
+						Long upperLong = null;
+						if (upperBounds != null) {
+							upperLong = termRangeNode.isUpperInclusive() ? upperBounds.end() : upperBounds.begin();
+						}
+
+						PointQueryNode lowerNode = new PointQueryNode(field, lowerLong, numberFormat);
+						PointQueryNode upperNode = new PointQueryNode(field, upperLong, numberFormat);
 
 						return new ZuliaPointRangeQueryNode(lowerNode, upperNode, termRangeNode.isLowerInclusive(), termRangeNode.isUpperInclusive(),
 								indexFieldInfo);

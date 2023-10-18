@@ -431,6 +431,11 @@ public class StartStopTest {
 		Assertions.assertEquals(totalRecords, searchResult.getTotalHits());
 
 		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012-8-4 TO 2014}"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(9L * totalRecords / 10, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
 		s.addQuery(new FilterQuery("date:2012"));
 		searchResult = zuliaWorkPool.search(s);
 		Assertions.assertEquals(totalRecords / 2, searchResult.getTotalHits());
@@ -474,6 +479,11 @@ public class StartStopTest {
 		s.addQuery(new FilterQuery("date:[2014-10 TO 2014-11-01]"));
 		searchResult = zuliaWorkPool.search(s);
 		Assertions.assertEquals(totalRecords / 10, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:{2014-10 TO 2014-11-01]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
 
 		s = new Search(FACET_TEST_INDEX);
 		s.addQuery(new FilterQuery("date:2014-10"));
