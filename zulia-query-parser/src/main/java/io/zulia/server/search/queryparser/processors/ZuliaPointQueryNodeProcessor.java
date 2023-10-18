@@ -46,19 +46,34 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 
 					String text = fieldNode.getTextAsString();
 
-					NumberFormat numberFormat = FieldTypeUtil.isNumericFloatingPointFieldType(fieldType) ?
-							NumberFormat.getNumberInstance(Locale.ROOT) :
-							NumberFormat.getIntegerInstance(Locale.ROOT);
+					if (FieldTypeUtil.isDateFieldType(fieldType)) {
 
-					Number number = parseNumber(text, numberFormat, fieldType);
-					if (number == null) {
-						return new MatchNoDocsQueryNode();
+						ZuliaDateUtil.DateBounds dateBounds = ZuliaDateUtil.getParseDate(text);
+						if (dateBounds == null) {
+							return new MatchNoDocsQueryNode();
+						}
+
+						NumberFormat numberFormat = NumberFormat.getIntegerInstance(Locale.ROOT);
+						PointQueryNode lowerNode = new PointQueryNode(field, dateBounds.begin(), numberFormat);
+						PointQueryNode upperNode = new PointQueryNode(field, dateBounds.end(), numberFormat);
+
+						return new ZuliaPointRangeQueryNode(lowerNode, upperNode, true, true, indexFieldInfo);
 					}
+					else {
+						NumberFormat numberFormat = FieldTypeUtil.isNumericFloatingPointFieldType(fieldType) ?
+								NumberFormat.getNumberInstance(Locale.ROOT) :
+								NumberFormat.getIntegerInstance(Locale.ROOT);
 
-					PointQueryNode lowerNode = new PointQueryNode(field, number, numberFormat);
-					PointQueryNode upperNode = new PointQueryNode(field, number, numberFormat);
+						Number number = parseNumber(text, numberFormat, fieldType);
+						if (number == null) {
+							return new MatchNoDocsQueryNode();
+						}
 
-					return new ZuliaPointRangeQueryNode(lowerNode, upperNode, true, true, indexFieldInfo);
+						PointQueryNode lowerNode = new PointQueryNode(field, number, numberFormat);
+						PointQueryNode upperNode = new PointQueryNode(field, number, numberFormat);
+
+						return new ZuliaPointRangeQueryNode(lowerNode, upperNode, true, true, indexFieldInfo);
+					}
 
 				}
 			}
@@ -73,28 +88,55 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 				FieldType fieldType = indexFieldInfo.getFieldType();
 				if (FieldTypeUtil.isHandledAsNumericFieldType(fieldType)) {
 
-					FieldQueryNode upper = termRangeNode.getUpperBound();
-					FieldQueryNode lower = termRangeNode.getLowerBound();
+					if (FieldTypeUtil.isDateFieldType(fieldType)) {
+						FieldQueryNode upper = termRangeNode.getUpperBound();
+						FieldQueryNode lower = termRangeNode.getLowerBound();
 
-					NumberFormat numberFormat = FieldTypeUtil.isNumericFloatingPointFieldType(fieldType) ?
-							NumberFormat.getNumberInstance(Locale.ROOT) :
-							NumberFormat.getIntegerInstance(Locale.ROOT);
+						NumberFormat numberFormat = FieldTypeUtil.isNumericFloatingPointFieldType(fieldType) ?
+								NumberFormat.getNumberInstance(Locale.ROOT) :
+								NumberFormat.getIntegerInstance(Locale.ROOT);
 
-					Number lowerNumber = parseNumber(lower.getTextAsString(), numberFormat, fieldType);
-					if (lowerNumber == null && !lower.getTextAsString().isEmpty()) {
-						return new MatchNoDocsQueryNode();
+						ZuliaDateUtil.DateBounds lowerBounds = ZuliaDateUtil.getParseDate(lower.getTextAsString());
+						if (lowerBounds == null && !lower.getTextAsString().isEmpty()) {
+							return new MatchNoDocsQueryNode();
+						}
+
+						ZuliaDateUtil.DateBounds upperBounds = ZuliaDateUtil.getParseDate(upper.getTextAsString());
+						if (upperBounds == null && !upper.getTextAsString().isEmpty()) {
+							return new MatchNoDocsQueryNode();
+						}
+
+						PointQueryNode lowerNode = new PointQueryNode(field, lowerBounds != null ? lowerBounds.begin() : null, numberFormat);
+						PointQueryNode upperNode = new PointQueryNode(field, upperBounds != null ? upperBounds.end() : null, numberFormat);
+
+						return new ZuliaPointRangeQueryNode(lowerNode, upperNode, termRangeNode.isLowerInclusive(), termRangeNode.isUpperInclusive(),
+								indexFieldInfo);
 					}
+					else {
 
-					Number upperNumber = parseNumber(upper.getTextAsString(), numberFormat, fieldType);
-					if (upperNumber == null && !upper.getTextAsString().isEmpty()) {
-						return new MatchNoDocsQueryNode();
+						FieldQueryNode upper = termRangeNode.getUpperBound();
+						FieldQueryNode lower = termRangeNode.getLowerBound();
+
+						NumberFormat numberFormat = FieldTypeUtil.isNumericFloatingPointFieldType(fieldType) ?
+								NumberFormat.getNumberInstance(Locale.ROOT) :
+								NumberFormat.getIntegerInstance(Locale.ROOT);
+
+						Number lowerNumber = parseNumber(lower.getTextAsString(), numberFormat, fieldType);
+						if (lowerNumber == null && !lower.getTextAsString().isEmpty()) {
+							return new MatchNoDocsQueryNode();
+						}
+
+						Number upperNumber = parseNumber(upper.getTextAsString(), numberFormat, fieldType);
+						if (upperNumber == null && !upper.getTextAsString().isEmpty()) {
+							return new MatchNoDocsQueryNode();
+						}
+
+						PointQueryNode lowerNode = new PointQueryNode(field, lowerNumber, numberFormat);
+						PointQueryNode upperNode = new PointQueryNode(field, upperNumber, numberFormat);
+
+						return new ZuliaPointRangeQueryNode(lowerNode, upperNode, termRangeNode.isLowerInclusive(), termRangeNode.isUpperInclusive(),
+								indexFieldInfo);
 					}
-
-					PointQueryNode lowerNode = new PointQueryNode(field, lowerNumber, numberFormat);
-					PointQueryNode upperNode = new PointQueryNode(field, upperNumber, numberFormat);
-
-					return new ZuliaPointRangeQueryNode(lowerNode, upperNode, termRangeNode.isLowerInclusive(), termRangeNode.isUpperInclusive(),
-							indexFieldInfo);
 
 				}
 			}
@@ -131,9 +173,6 @@ public class ZuliaPointQueryNodeProcessor extends QueryNodeProcessorImpl {
 			}
 			else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
 				number = BooleanUtil.getStringAsBooleanInt(text);
-			}
-			else if (FieldTypeUtil.isDateFieldType(fieldType)) {
-				number = ZuliaDateUtil.getDateAsLong(text);
 			}
 		}
 		return number;
