@@ -404,6 +404,120 @@ public class StartStopTest {
 	}
 
 	@Test
+	@Order(3)
+	public void testDates() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+		Search s;
+		SearchResult searchResult;
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012 TO 2014]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012-08-04 TO 2014]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012-08-04 TO 2014-10-04]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012-8-4 TO 2014/10/4]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012-8-4 TO 2014}"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(9L * totalRecords / 10, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:2012"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012 TO 2012-08-04]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012 TO 2012-8-4]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012 TO 2012/08/04]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012 TO 2012-08-03]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:2012-08-04"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:\"2012/08/04\"")); // must be quoted or escaped
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:2012\\/08\\/04")); // must be quoted or escaped
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 2, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2014-10 TO 2014-11-01]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 10, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:{2014-10 TO 2014-11-01]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:2014-10"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 10, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2014-10-04 TO 2014-10-05]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(totalRecords / 10, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012-08-03T11:59:00.000Z TO 2012-08-04T00:00:00.000Z]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(30, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012/08/03T11:59:00.000Z TO 2012-08-04T00:00:00.000Z]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(30, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012-08-03T00:00:00.000Z TO 2012-08-03T11:59:99.999Z]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		s = new Search(FACET_TEST_INDEX);
+		s.addQuery(new FilterQuery("date:[2012-08-03T00:00:00.000Z TO 2012/08/03T11:59:99.999Z]"));
+		searchResult = zuliaWorkPool.search(s);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+	}
+
+	@Test
 	@Order(4)
 	public void reindex() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
