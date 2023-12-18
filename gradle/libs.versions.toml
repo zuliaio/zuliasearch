@@ -1,5 +1,5 @@
 [versions]
-grpc = "1.58.0"
+grpc = "1.60.0"
 lucene = "9.8.0"
 koloboke = "1.0.0"
 micronaut = "4.1.2" # used by the micronaut plugin configuration
