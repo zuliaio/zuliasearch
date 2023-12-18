@@ -58,7 +58,7 @@ picocli-base = { module = "info.picocli:picocli", version.ref = "picocli" }
 picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 simplemagic = { module = "com.j256.simplemagic:simplemagic", version = "1.17" }
-sketches-java = { module = "c", version = "0.8.2" }
+sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.2" }
 slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.9" }
 snake-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
 snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.3" }
