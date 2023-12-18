@@ -3,14 +3,14 @@ grpc = "1.58.0"
 lucene = "9.8.0"
 koloboke = "1.0.0"
 micronaut = "4.1.2" # used by the micronaut plugin configuration
-mongodb = "4.10.1"
+mongodb = "4.11.1"
 picocli = "4.7.5"
 protobuf = "3.24.0"
 
 
 [libraries]
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }
-bson = { module = "org.mongodb:bson", version = "4.10.1" }
+bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
 commons-compress = { module = "org.apache.commons:commons-compress", version = "1.24.0" }
 commons-pool2 = { module = "org.apache.commons:commons-pool2", version = "2.11.1" }
@@ -62,6 +62,9 @@ slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.7" }
 snake-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
 snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.3" }
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
+unirest-core = { module = "com.konghq:unirest-java-core", version = "4.0.12" }
+unirest-gson = { module = "com.konghq:unirest-object-mappers-gson", version = "4.0.12" }
+unirest-java-bom = { module = "com.konghq:unirest-java-bom", version = "4.0.12" }
 
 [bundles]
 # bundleName = ["lib1", "lib2"]
