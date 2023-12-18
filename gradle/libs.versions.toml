@@ -2,10 +2,11 @@
 grpc = "1.60.0"
 lucene = "9.8.0"
 koloboke = "1.0.0"
-micronaut = "4.1.2" # used by the micronaut plugin configuration
+micronaut = "4.2.2" # used by the micronaut plugin configuration
 mongodb = "4.11.1"
 picocli = "4.7.5"
 protobuf = "3.24.0"
+unirest = '4.2.1'
 
 
 [libraries]
@@ -62,9 +63,9 @@ slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.7" }
 snake-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
 snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.3" }
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
-unirest-core = { module = "com.konghq:unirest-java-core", version = "4.0.12" }
-unirest-gson = { module = "com.konghq:unirest-object-mappers-gson", version = "4.0.12" }
-unirest-java-bom = { module = "com.konghq:unirest-java-bom", version = "4.0.12" }
+unirest-core = { module = "com.konghq:unirest-java-core", version.ref = "unirest" }
+unirest-gson = { module = "com.konghq:unirest-object-mappers-gson", version.ref = "unirest" }
+unirest-java-bom = { module = "com.konghq:unirest-java-bom", version.ref = "unirest" }
 
 [bundles]
 # bundleName = ["lib1", "lib2"]
