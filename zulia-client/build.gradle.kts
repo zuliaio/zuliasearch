@@ -10,5 +10,8 @@ val gsonVersion: String by project
 dependencies {
     api(project(":zulia-common"))
     implementation(libs.okhttp)
+    implementation(libs.unirest.java.bom)
+    implementation(libs.unirest.core)
+    implementation(libs.unirest.gson)
 }
 

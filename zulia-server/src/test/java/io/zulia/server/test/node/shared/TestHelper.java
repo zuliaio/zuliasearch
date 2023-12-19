@@ -3,6 +3,7 @@ package io.zulia.server.test.node.shared;
 import com.mongodb.client.MongoClients;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.rest.ZuliaNewRESTClient;
 import io.zulia.message.ZuliaBase;
 import io.zulia.server.cmd.zuliad.ZuliaDConfig;
 import io.zulia.server.config.ZuliaConfig;
@@ -11,6 +12,7 @@ import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.test.mongo.MongoTestInstance;
 import io.zulia.server.util.MongoProvider;
+import io.zulia.server.util.ZuliaNodeProvider;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +103,14 @@ public class TestHelper {
 		return mongoServer;
 	}
 
+	public static ZuliaNewRESTClient createRESTClient() {
+		for (ZuliaNode zuliaNode : zuliaNodes) {
+			ZuliaNodeProvider.setZuliaNode(zuliaNode);
+			return new ZuliaNewRESTClient("http://" + zuliaNode.getZuliaConfig().getServerAddress() + ":" + zuliaNode.getZuliaConfig().getRestPort());
+		}
+		throw new RuntimeException("No nodes are defined, ");
+	}
+
 	public static ZuliaWorkPool createClient() throws Exception {
 
 		ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
@@ -112,7 +122,7 @@ public class TestHelper {
 
 	}
 
-	public static void startNodes() throws Exception {
+	public static void startNodes(boolean startRest) throws Exception {
 		LOG.info("Starting <" + nodeService.getNodes().size() + "> Nodes");
 		int i = 0;
 		for (ZuliaBase.Node node : nodeService.getNodes()) {
@@ -132,7 +142,7 @@ public class TestHelper {
 			i++;
 
 			ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
-			zuliaNode.start(false);
+			zuliaNode.start(startRest);
 
 			zuliaNodes.add(zuliaNode);
 		}
@@ -165,6 +175,7 @@ public class TestHelper {
 	}
 
 	protected static void shutdownTestMongoInstance() {
+		MongoProvider.getMongoClient().close();
 		mongoTestInstance.shutdown();
 	}
 

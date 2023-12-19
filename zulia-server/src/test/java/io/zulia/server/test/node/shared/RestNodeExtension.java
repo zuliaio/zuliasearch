@@ -1,6 +1,7 @@
 package io.zulia.server.test.node.shared;
 
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.rest.ZuliaNewRESTClient;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -9,18 +10,23 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NodeExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
-	private final static Logger LOG = LoggerFactory.getLogger(NodeExtension.class);
+public class RestNodeExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
+	private final static Logger LOG = LoggerFactory.getLogger(RestNodeExtension.class);
 	private final int nodeCount;
 
-	public NodeExtension(int nodeCount) {
+	private ZuliaWorkPool zuliaWorkPool;
+	private ZuliaNewRESTClient zuliaRestClient;
+
+	public RestNodeExtension(int nodeCount) {
 		this.nodeCount = nodeCount;
 	}
 
-	private ZuliaWorkPool zuliaWorkPool;
-
-	public ZuliaWorkPool getClient() {
+	public ZuliaWorkPool getGrpcClient() {
 		return zuliaWorkPool;
+	}
+
+	public ZuliaNewRESTClient getRESTClient() {
+		return zuliaRestClient;
 	}
 
 	@Override
@@ -29,9 +35,11 @@ public class NodeExtension implements BeforeAllCallback, AfterAllCallback, Befor
 			LOG.info("Suite started: " + context.getTestClass().get());
 		}
 		TestHelper.createNodes(nodeCount);
-		TestHelper.startNodes(false);
+		TestHelper.startNodes(true);
 		Thread.sleep(2000);
 		zuliaWorkPool = TestHelper.createClient();
+		zuliaRestClient = TestHelper.createRESTClient();
+
 	}
 
 	public void afterAll(ExtensionContext context) throws Exception {
@@ -40,9 +48,11 @@ public class NodeExtension implements BeforeAllCallback, AfterAllCallback, Befor
 		}
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
+		zuliaRestClient.close();
 		if (context.getTestClass().isPresent()) {
 			LOG.info("Suite finished: " + context.getTestClass().get());
 		}
+
 	}
 
 	@Override
@@ -56,10 +66,4 @@ public class NodeExtension implements BeforeAllCallback, AfterAllCallback, Befor
 		LOG.info("Test finished: " + context.getDisplayName());
 	}
 
-	public void restartNodes() throws Exception {
-		TestHelper.stopNodes();
-		Thread.sleep(2000);
-		TestHelper.startNodes(false); // micronaut does not like starting again on the same port
-		Thread.sleep(2000);
-	}
 }

@@ -23,13 +23,13 @@ public interface ZuliaRESTConstants {
 	String ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL = "/associatedDocs/allForId";
 	String ASSOCIATED_DOCUMENTS_METADATA_URL = "/associatedDocs/metadata";
 	String QUERY_URL = "query";
-	String FETCH_URL = "fetch";
-	String FIELDS_URL = "fields";
-	String TERMS_URL = "terms";
-	String INDEX_URL = "index";
+	String FETCH_URL = "/fetch";
+	String FIELDS_URL = "/fields";
+	String TERMS_URL = "/terms";
+	String INDEX_URL = "/index";
 	String INDEXES_URL = "/indexes";
-	String NODES_URL = "nodes";
-	String STATS_URL = "stats";
+	String NODES_URL = "/nodes";
+	String STATS_URL = "/stats";
 
 	String QUERY = "q";
 	String QUERY_FIELD = "qf";
@@ -78,4 +78,7 @@ public interface ZuliaRESTConstants {
 	String CURSOR = "cursor";
 	String TRUNCATE = "truncate";
 
+	String UTF8_CSV = "text/csv;charset=utf-8";
+
+	String UTF8_JSON = "application/json;charset=utf-8";
 }
