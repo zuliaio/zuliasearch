@@ -198,7 +198,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 		Document metadata = file.getMetadata();
 
 		long timestamp = (long) metadata.remove(TIMESTAMP);
-
+		metadata.remove(FILE_UNIQUE_ID_KEY);
 		aBuilder.setTimestamp(timestamp);
 
 		aBuilder.setDocumentUniqueId((String) metadata.remove(DOCUMENT_UNIQUE_ID_KEY));

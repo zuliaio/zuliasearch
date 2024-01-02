@@ -242,7 +242,8 @@ public class ZuliaIndexManager {
 		ZuliaBase.AssociatedDocument associatedDocument = i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.META);
 		if (associatedDocument != null) {
 			byte[] metadataBSONBytes = associatedDocument.getMetadata().toByteArray();
-			return ZuliaUtil.byteArrayToMongoDocument(metadataBSONBytes);
+			Document document = ZuliaUtil.byteArrayToMongoDocument(metadataBSONBytes);
+			return document;
 		}
 		return null;
 	}

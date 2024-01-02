@@ -1,7 +1,6 @@
 package io.zulia.server.rest.controllers;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
+
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -76,20 +75,18 @@ public class AssociatedController {
 		return new StreamedFile(is, MediaType.of(MediaType.ALL_TYPE)).attach(fileName);
 	}
 
+	public record Filenames(List<String> filenames) {
+
+	}
+
 	@Get("/{indexName}/{uniqueId}/filenames")
 	@ExecuteOn(TaskExecutors.BLOCKING)
-	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public HttpResponse<?> getAssociatedFileNamesForId(final String uniqueId, String indexName) throws Exception {
+	@Produces(MediaType.TEXT_JSON)
+	public Filenames getAssociatedFileNamesForId(final String uniqueId, String indexName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		List<String> associatedDocuments = indexManager.getAssociatedFilenames(indexName, uniqueId);
-		JsonObject jsonObject = new JsonObject();
-		JsonArray jsonArray = new JsonArray();
-		for (String filename : associatedDocuments) {
-			jsonArray.add(filename);
-		}
-		jsonObject.add("filenames", jsonArray);
-		return HttpResponse.ok(jsonObject);
+		return new Filenames(associatedDocuments);
 	}
 
 	@Get("/{indexName}/{uniqueId}/bundle")
@@ -154,7 +151,7 @@ public class AssociatedController {
 	@Post("/{indexName}/{uniqueId}/{fileName}")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.TEXT_PLAIN)
-	public Publisher<HttpResponse<?>> storeAssociated(StreamingFileUpload file, String uniqueId, String fileName, String indexName, String metaJson)
+	public Publisher<HttpResponse<?>> storeAssociated(StreamingFileUpload file, String uniqueId, String fileName, String indexName, @Nullable String metaJson)
 			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();

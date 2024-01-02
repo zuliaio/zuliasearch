@@ -133,7 +133,8 @@ public class ZuliaRESTClient implements AutoCloseable {
 
 	public void fetchAssociated(String indexName, String uniqueId, String fileName, OutputStream destination, boolean closeStream) throws Exception {
 		try {
-			GetRequest request = Unirest.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}/file").routeParam("indexName", indexName)
+			GetRequest request = unirestInstance.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}/file")
+					.routeParam("indexName", indexName)
 					.routeParam("uniqueId", uniqueId).routeParam("fileName", fileName);
 
 			request.thenConsume(rawResponse -> {
@@ -154,13 +155,13 @@ public class ZuliaRESTClient implements AutoCloseable {
 	}
 
 	public Document fetchAssociatedMetadata(String indexName, String uniqueId, String fileName) {
-		String json = Unirest.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}/metadata").routeParam("indexName", indexName)
+		String json = unirestInstance.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}/metadata").routeParam("indexName", indexName)
 				.routeParam("uniqueId", uniqueId).routeParam("fileName", fileName).asString().ifFailure(new FailureHandler<>()).getBody();
 		return Document.parse(json);
 	}
 
 	public List<String> fetchAssociatedFilenames(String indexName, String uniqueId) {
-		JSONArray json = Unirest.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/filenames").routeParam("indexName", indexName)
+		JSONArray json = unirestInstance.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/filenames").routeParam("indexName", indexName)
 				.routeParam("uniqueId", uniqueId).asJson().getBody().getObject().getJSONArray("filenames");
 		List<String> filenames = new ArrayList<>();
 		for (int i = 0; i < json.length(); i++) {
@@ -179,7 +180,7 @@ public class ZuliaRESTClient implements AutoCloseable {
 
 	public void fetchAssociatedBundle(String indexName, String uniqueId, OutputStream destination, boolean closeStream) throws IOException {
 		try {
-			GetRequest request = Unirest.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/bundle").routeParam("indexName", indexName)
+			GetRequest request = unirestInstance.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/bundle").routeParam("indexName", indexName)
 					.routeParam("uniqueId", uniqueId);
 
 			request.thenConsume(rawResponse -> {

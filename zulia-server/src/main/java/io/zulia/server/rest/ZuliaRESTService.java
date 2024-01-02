@@ -9,6 +9,7 @@ import io.zulia.rest.dto.NodesResponseDTO;
 import io.zulia.rest.dto.StatsDTO;
 import io.zulia.rest.dto.TermDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
+import io.zulia.server.rest.controllers.AssociatedController;
 import jakarta.inject.Singleton;
 
 @Singleton
@@ -20,6 +21,7 @@ import jakarta.inject.Singleton;
 @SerdeImport(StatsDTO.class)
 @SerdeImport(TermDTO.class)
 @SerdeImport(TermsResponseDTO.class)
+@SerdeImport(AssociatedController.Filenames.class)
 public class ZuliaRESTService {
 
 }

@@ -25,7 +25,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class RestTest {
@@ -166,6 +171,92 @@ public class RestTest {
 		Assertions.assertEquals(2, termsResponseDTO.getTerms().size());
 		Assertions.assertEquals("some", termsResponseDTO.getTerms().getFirst().getTerm());
 		Assertions.assertEquals("value", termsResponseDTO.getTerms().getLast().getTerm());
+
+	}
+
+	@Test
+	@Order(6)
+	public void filesTest() throws Exception {
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
+
+		byte[] fileBytes = "some text".getBytes(StandardCharsets.UTF_8);
+		byte[] fileBytes2 = "some other longer text".getBytes(StandardCharsets.UTF_8);
+		byte[] fileBytes3 = "even better text".getBytes(StandardCharsets.UTF_8);
+		restClient.storeAssociated("index1", "123", "test.txt", null, fileBytes);
+		restClient.storeAssociated("index1", "123", "test2.txt", new Document("aKey", "aValue"), fileBytes2);
+		restClient.storeAssociated("index1", "456", "t.txt", null, fileBytes3);
+
+		List<String> filenames;
+		filenames = restClient.fetchAssociatedFilenames("index1", "123");
+		Assertions.assertEquals(2, filenames.size());
+		Assertions.assertTrue(filenames.contains("test.txt"));
+		Assertions.assertTrue(filenames.contains("test2.txt"));
+
+		filenames = restClient.fetchAssociatedFilenames("index1", "456");
+		Assertions.assertEquals(1, filenames.size());
+		Assertions.assertTrue(filenames.contains("t.txt"));
+
+		{
+			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			restClient.fetchAssociated("index1", "123", "test.txt", byteArrayOutputStream);
+			byteArrayOutputStream.close();
+
+			Assertions.assertArrayEquals(fileBytes, byteArrayOutputStream.toByteArray());
+		}
+
+		{
+			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			restClient.fetchAssociated("index1", "123", "test2.txt", byteArrayOutputStream);
+			byteArrayOutputStream.close();
+
+			Assertions.assertArrayEquals(fileBytes2, byteArrayOutputStream.toByteArray());
+		}
+
+		Document metadata = restClient.fetchAssociatedMetadata("index1", "123", "test.txt");
+		Assertions.assertEquals(0, metadata.size());
+
+		Document metadata2 = restClient.fetchAssociatedMetadata("index1", "123", "test2.txt");
+		Assertions.assertEquals(1, metadata2.size());
+		Assertions.assertEquals("aValue", metadata2.getString("aKey"));
+
+		ByteArrayOutputStream zipBytes = new ByteArrayOutputStream();
+		restClient.fetchAssociatedBundle("index1", "123", zipBytes);
+
+		boolean[] piecesFound = new boolean[5];
+		try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes.toByteArray()))) {
+			ZipEntry ze;
+			while ((ze = zis.getNextEntry()) != null) {
+				var b = zis.readAllBytes();
+
+				if (ze.getName().equals("test.txt/")) {
+					piecesFound[0] = true;
+					// dir
+				}
+				else if (ze.getName().equals("test2.txt/")) {
+					piecesFound[1] = true;
+					// dir
+				}
+				else if (ze.getName().equals("test.txt/test.txt")) {
+					piecesFound[2] = true;
+					Assertions.assertArrayEquals(fileBytes, b);
+				}
+				else if (ze.getName().equals("test2.txt/test2.txt")) {
+					piecesFound[3] = true;
+					Assertions.assertArrayEquals(fileBytes2, b);
+				}
+				else if (ze.getName().equals("test2.txt/test2.txt_metadata.json")) {
+					piecesFound[4] = true;
+					Assertions.assertEquals(Document.parse(new String(b)), new Document("aKey", "aValue"));
+				}
+				else {
+					throw new Exception("Unexpected file <" + ze.getName());
+				}
+			}
+		}
+
+		for (boolean b : piecesFound) {
+			Assertions.assertTrue(b);
+		}
 
 	}
 
