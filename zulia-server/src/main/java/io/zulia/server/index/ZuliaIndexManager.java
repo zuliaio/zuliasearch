@@ -237,6 +237,16 @@ public class ZuliaIndexManager {
 		return i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.FULL);
 	}
 
+	public Document getAssociatedDocumentMeta(String indexName, String uniqueId, String fileName) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		ZuliaBase.AssociatedDocument associatedDocument = i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.META);
+		if (associatedDocument != null) {
+			byte[] metadataBSONBytes = associatedDocument.getMetadata().toByteArray();
+			return ZuliaUtil.byteArrayToMongoDocument(metadataBSONBytes);
+		}
+		return null;
+	}
+
 	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
 		return i.getAssociatedDocumentStream(uniqueId, fileName);
@@ -255,7 +265,7 @@ public class ZuliaIndexManager {
 
 	public void getAssociatedFilenames(String indexName, Writer writer, Document filter) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
-		i.getAssociatedDocuments(writer, filter);
+		i.getAssociatedMetadata(writer, filter);
 	}
 
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {

@@ -68,7 +68,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType fetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadata(String uniqueId, FetchType fetchType) throws Exception {
 
 		if (!FetchType.NONE.equals(fetchType)) {
 			List<AssociatedDocument> associatedDocuments = new ArrayList<>();
@@ -111,7 +111,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void getAssociatedDocuments(Writer writer, Document filter) {
+	public void getAssociatedMetadata(Writer writer, Document filter) {
 		throw new RuntimeException("Not implemented");
 	}
 

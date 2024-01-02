@@ -150,7 +150,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType fetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadata(String uniqueId, FetchType fetchType) throws Exception {
 		GridFSBucket gridFS = createGridFSConnection();
 		List<AssociatedDocument> assocDocs = new ArrayList<>();
 		if (!FetchType.NONE.equals(fetchType)) {
@@ -217,12 +217,12 @@ public class MongoDocumentStorage implements DocumentStorage {
 		return aBuilder.build();
 	}
 
-	public void getAssociatedDocuments(Writer outputstream, Document filter) throws IOException {
+	public void getAssociatedMetadata(Writer writer, Document filter) throws IOException {
 
 		GridFSBucket gridFS = createGridFSConnection();
 		GridFSFindIterable gridFSFiles = gridFS.find(filter);
-		outputstream.write("{\n");
-		outputstream.write(" \"associatedDocs\": [\n");
+		writer.write("{\n");
+		writer.write(" \"associatedDocs\": [\n");
 
 		boolean first = true;
 		for (GridFSFile gridFSFile : gridFSFiles) {
@@ -230,22 +230,22 @@ public class MongoDocumentStorage implements DocumentStorage {
 				first = false;
 			}
 			else {
-				outputstream.write(",\n");
+				writer.write(",\n");
 			}
 
 			Document metadata = gridFSFile.getMetadata();
 
 			String uniqueId = metadata.getString(DOCUMENT_UNIQUE_ID_KEY);
 			String uniquieIdKeyValue = "  { \"uniqueId\": \"" + uniqueId + "\", ";
-			outputstream.write(uniquieIdKeyValue);
+			writer.write(uniquieIdKeyValue);
 
 			String filename = gridFSFile.getFilename();
 			String filenameKeyValue = "\"filename\": \"" + filename + "\", ";
-			outputstream.write(filenameKeyValue);
+			writer.write(filenameKeyValue);
 
 			Date uploadDate = gridFSFile.getUploadDate();
 			String uploadDateKeyValue = "\"uploadDate\": {\"$date\":" + uploadDate.getTime() + "}";
-			outputstream.write(uploadDateKeyValue);
+			writer.write(uploadDateKeyValue);
 
 			metadata.remove(TIMESTAMP);
 			metadata.remove(DOCUMENT_UNIQUE_ID_KEY);
@@ -254,13 +254,13 @@ public class MongoDocumentStorage implements DocumentStorage {
 			if (!metadata.isEmpty()) {
 				String metaJson = metadata.toJson();
 				String metaString = ", \"meta\": " + metaJson;
-				outputstream.write(metaString);
+				writer.write(metaString);
 			}
 
-			outputstream.write(" }");
+			writer.write(" }");
 
 		}
-		outputstream.write("\n ]\n}");
+		writer.write("\n ]\n}");
 	}
 
 	@Override

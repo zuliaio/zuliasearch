@@ -14,11 +14,11 @@ public interface DocumentStorage {
 
 	void storeAssociatedDocument(AssociatedDocument docs) throws Exception;
 
-	List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType fetchType) throws Exception;
+	List<AssociatedDocument> getAssociatedMetadata(String uniqueId, FetchType fetchType) throws Exception;
 
 	AssociatedDocument getAssociatedDocument(String uniqueId, String filename, FetchType fetchType) throws Exception;
 
-	void getAssociatedDocuments(Writer writer, Document filter) throws Exception;
+	void getAssociatedMetadata(Writer writer, Document filter) throws Exception;
 
 	OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) throws Exception;
 

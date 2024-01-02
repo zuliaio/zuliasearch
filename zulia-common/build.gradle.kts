@@ -4,6 +4,7 @@ import com.google.protobuf.gradle.protobuf
 plugins {
     `java-library`
     alias(libs.plugins.protobuf)
+
 }
 
 defaultTasks("generateProto", "version", "build")
@@ -11,6 +12,7 @@ defaultTasks("generateProto", "version", "build")
 description = "Zulia Common"
 
 dependencies {
+    api(libs.annontations)
     api(libs.bson)
     api(libs.commons.pool2)
     api(libs.grpc.netty.shaded)
@@ -23,6 +25,7 @@ dependencies {
     api(libs.protobuf.java.util)
     api(libs.simplemagic)
     api(libs.slf4j.api)
+
     protobuf(libs.sketches.java)
 }
 

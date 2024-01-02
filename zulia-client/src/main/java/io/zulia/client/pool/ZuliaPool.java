@@ -191,8 +191,7 @@ public class ZuliaPool {
 
 					int finalRestPort = restPort;
 					final String finalServer = selectedNode.getServerAddress();
-					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey,
-							s -> new ZuliaRESTClient(finalServer, finalRestPort, connectionListener));
+					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey, s -> new ZuliaRESTClient(finalServer, finalRestPort));
 					return ((RESTCommand<R>) command).execute(restClient);
 				}
 				else {

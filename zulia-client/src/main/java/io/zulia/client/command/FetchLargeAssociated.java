@@ -10,13 +10,15 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 
 public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult> implements ShardRoutableCommand {
+	private final String uniqueId;
 
-	private boolean closeStream;
-	private String uniqueId;
+	private final String indexName;
+
 	private String fileName;
 	private File outputFile;
 	private OutputStream destination;
-	private String indexName;
+
+	private boolean closeStream;
 
 	public FetchLargeAssociated(String uniqueId, String indexName, String fileName, File outputFile) {
 		this.uniqueId = uniqueId;
@@ -48,6 +50,7 @@ public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult
 		this.uniqueId = uniqueId;
 		this.indexName = indexName;
 		this.destination = destination;
+		this.closeStream = closeStream;
 	}
 
 	public FetchLargeAssociated(String uniqueId, String indexName, File outputFile) {
@@ -70,18 +73,18 @@ public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult
 	public FetchLargeAssociatedResult execute(ZuliaRESTClient zuliaRESTClient) throws Exception {
 		if (outputFile != null) {
 			if (fileName != null) {
-				zuliaRESTClient.fetchAssociated(uniqueId, indexName, fileName, new FileOutputStream(outputFile), true);
+				zuliaRESTClient.fetchAssociated(indexName, uniqueId, fileName, new FileOutputStream(outputFile), true);
 			}
 			else {
-				zuliaRESTClient.fetchAssociated(uniqueId, indexName, new FileOutputStream(outputFile), true);
+				zuliaRESTClient.fetchAssociatedBundle(indexName, uniqueId, new FileOutputStream(outputFile), true);
 			}
 		}
 		else if (destination != null) {
 			if (fileName != null) {
-				zuliaRESTClient.fetchAssociated(uniqueId, indexName, fileName, destination, closeStream);
+				zuliaRESTClient.fetchAssociated(indexName, uniqueId, fileName, destination, closeStream);
 			}
 			else {
-				zuliaRESTClient.fetchAssociated(uniqueId, indexName, destination, closeStream);
+				zuliaRESTClient.fetchAssociatedBundle(indexName, uniqueId, destination, closeStream);
 			}
 		}
 		else {

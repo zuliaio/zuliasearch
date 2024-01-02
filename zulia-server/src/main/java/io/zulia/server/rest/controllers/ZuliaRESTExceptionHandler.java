@@ -6,9 +6,7 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.hateoas.JsonError;
 import io.micronaut.http.server.exceptions.ExceptionHandler;
-import io.zulia.server.exceptions.IndexDoesNotExistException;
-import io.zulia.server.exceptions.ShardDoesNotExistException;
-import io.zulia.server.exceptions.ShardOfflineException;
+import io.zulia.server.exceptions.NotFoundException;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,13 +20,7 @@ public class ZuliaRESTExceptionHandler implements ExceptionHandler<Throwable, Ht
 	@Override
 	public HttpResponse<?> handle(HttpRequest request, Throwable throwable) {
 
-		if (throwable instanceof IndexDoesNotExistException) {
-			return HttpResponse.notFound(new JsonError(throwable.getMessage()));
-		}
-		else if (throwable instanceof ShardDoesNotExistException) {
-			return HttpResponse.notFound(new JsonError(throwable.getMessage()));
-		}
-		else if (throwable instanceof ShardOfflineException) {
+		if (throwable instanceof NotFoundException) {
 			return HttpResponse.notFound(new JsonError(throwable.getMessage()));
 		}
 		else if (throwable instanceof IllegalArgumentException) {

@@ -10,18 +10,8 @@ public interface ZuliaRESTConstants {
 	int DEFAULT_SERVICE_SERVICE_PORT = 32191;
 	int DEFAULT_REST_SERVICE_PORT = 32192;
 
-	//HTTP constants
-	int SUCCESS = 200;
-	int BAD_REQUEST = 400;
-	int NOT_FOUND = 404;
-	int INTERNAL_ERROR = 500;
+	String ASSOCIATED_URL = "/associated";
 
-	String GET = "GET";
-	String POST = "POST";
-
-	String ASSOCIATED_DOCUMENTS_URL = "/associatedDocs";
-	String ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL = "/associatedDocs/allForId";
-	String ASSOCIATED_DOCUMENTS_METADATA_URL = "/associatedDocs/metadata";
 	String QUERY_URL = "query";
 	String FETCH_URL = "/fetch";
 	String FIELDS_URL = "/fields";
@@ -35,7 +25,9 @@ public interface ZuliaRESTConstants {
 	String QUERY_FIELD = "qf";
 	String FILTER_QUERY = "fq";
 	String QUERY_JSON = "qJson";
+
 	String ROWS = "rows";
+
 	String ID = "id";
 	String FILE_NAME = "fileName";
 	String INDEX = "index";

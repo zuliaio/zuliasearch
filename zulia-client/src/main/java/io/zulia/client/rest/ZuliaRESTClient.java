@@ -1,96 +1,149 @@
 package io.zulia.client.rest;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.protobuf.util.JsonFormat;
 import io.zulia.ZuliaRESTConstants;
-import io.zulia.client.pool.ConnectionListener;
-import io.zulia.util.ZuliaUtil;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okio.BufferedSink;
-import okio.Okio;
+import io.zulia.client.rest.options.TermsRestOptions;
+import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
+import io.zulia.rest.dto.FieldsDTO;
+import io.zulia.rest.dto.IndexesResponseDTO;
+import io.zulia.rest.dto.NodesResponseDTO;
+import io.zulia.rest.dto.StatsDTO;
+import io.zulia.rest.dto.TermsResponseDTO;
+import kong.unirest.core.GetRequest;
+import kong.unirest.core.HttpResponse;
+import kong.unirest.core.MultipartBody;
+import kong.unirest.core.Unirest;
+import kong.unirest.core.UnirestInstance;
+import kong.unirest.core.json.JSONArray;
 import org.bson.Document;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
-public class ZuliaRESTClient {
+public class ZuliaRESTClient implements AutoCloseable {
 
-	private final String url;
-	private final OkHttpClient client;
+	private final UnirestInstance unirestInstance;
 
-	public ZuliaRESTClient(String server, int restPort, ConnectionListener connectionListener) {
-		url = "http://" + server + ":" + restPort;
+	public ZuliaRESTClient(String server, int restPort) {
+		this("http://" + server + ":" + restPort);
+	}
 
-		client = new OkHttpClient().newBuilder().readTimeout(120, TimeUnit.SECONDS).connectTimeout(120, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS)
-				.build();
-		connectionListener.restClientCreated(server, restPort);
+	public ZuliaRESTClient(String url) {
+		unirestInstance = Unirest.spawnInstance();
+		unirestInstance.config().defaultBaseUrl(url);
+	}
+
+	public IndexesResponseDTO getIndexes() {
+		return unirestInstance.get(ZuliaRESTConstants.INDEXES_URL).asObject(IndexesResponseDTO.class).ifFailure(new FailureHandler<>()).getBody();
+	}
+
+	public RestIndexSettingsResponse getIndex(String indexName) throws Exception {
+		String json = unirestInstance.get(ZuliaRESTConstants.INDEXES_URL + "/{indexName}").routeParam("indexName", indexName).asString()
+				.ifFailure(new FailureHandler<>()).getBody();
+		RestIndexSettingsResponse.Builder builder = RestIndexSettingsResponse.newBuilder();
+		JsonFormat.parser().merge(json, builder);
+		return builder.build();
+	}
+
+	public NodesResponseDTO getNodes(boolean active) throws Exception {
+		return unirestInstance.get(ZuliaRESTConstants.NODES_URL).queryString("active", active).asObject(NodesResponseDTO.class)
+				.ifFailure(new FailureHandler<>()).getBody();
+	}
+
+	public FieldsDTO getFields(String indexName) {
+		return unirestInstance.get(ZuliaRESTConstants.FIELDS_URL).queryString(ZuliaRESTConstants.INDEX, indexName).asObject(FieldsDTO.class)
+				.ifFailure(new FailureHandler<>()).getBody();
+	}
+
+	@Override
+	public void close() throws Exception {
+		unirestInstance.close();
+	}
+
+	public Document fetchRecord(String indexName, String uniqueId) {
+		String json = unirestInstance.get(ZuliaRESTConstants.FETCH_URL + "/{indexName}/{uniqueId}").routeParam("indexName", indexName)
+				.routeParam("uniqueId", uniqueId).asString().ifFailure(new FailureHandler<>()).getBody();
+		return Document.parse(json);
+	}
+
+	public StatsDTO getStats() {
+		return unirestInstance.get(ZuliaRESTConstants.STATS_URL).asObject(StatsDTO.class).ifFailure(new FailureHandler<>()).getBody();
+	}
+
+	public TermsResponseDTO getTerms(String indexName, String fieldName) {
+		return getTerms(indexName, fieldName, null);
+	}
+
+	public TermsResponseDTO getTerms(String indexName, String fieldName, TermsRestOptions termsOptions) {
+		return unirestInstance.get(ZuliaRESTConstants.TERMS_URL).queryString(ZuliaRESTConstants.INDEX, indexName)
+				.queryString(ZuliaRESTConstants.FIELDS, fieldName).queryString(termsOptions != null ? termsOptions.getParameters() : null)
+				.asObject(TermsResponseDTO.class).ifFailure(new FailureHandler<>()).getBody();
+	}
+
+	public void storeAssociated(String indexName, String uniqueId, String fileName, Document metadata, byte[] bytes) throws Exception {
+		storeAssociated(indexName, uniqueId, fileName, metadata, new ByteArrayInputStream(bytes));
+	}
+
+	public void storeAssociated(String indexName, String uniqueId, String fileName, Document metadata, File file) throws Exception {
+		storeAssociated(indexName, uniqueId, fileName, metadata, new FileInputStream(file));
+	}
+
+	public void storeAssociated(String indexName, String uniqueId, String fileName, Document metadata, InputStream inputStream) throws Exception {
+		storeAssociated(indexName, uniqueId, fileName, metadata, inputStream, true);
+	}
+
+	public void storeAssociated(String indexName, String uniqueId, String fileName, Document metadata, InputStream inputStream, boolean closeStream)
+			throws Exception {
+
+		try {
+			MultipartBody multipartBody = unirestInstance.post(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}")
+					.routeParam("indexName", indexName).routeParam("uniqueId", uniqueId).routeParam("fileName", fileName).multiPartContent();
+
+			if (metadata != null) {
+				multipartBody.field("metaJson", metadata.toJson());
+			}
+			multipartBody.field("file", inputStream, fileName);
+			HttpResponse<String> response = multipartBody.asString();
+			if (!response.isSuccess()) {
+				throw new Exception(response.getBody());
+			}
+		}
+		finally {
+			if (closeStream) {
+				inputStream.close();
+			}
+		}
 
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, byte[] bytes) throws Exception {
-
-		try {
-			RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, null, bytes);
-			Request request = new Request.Builder().url(url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
-			Response response = client.newCall(request).execute();
-			response.close();
-		}
-		catch (Exception e) {
-			if (e.getMessage().startsWith("Out of size:")) {
-				throw new Exception("Failed to store file <" + fileName + "> due to mismatch size", e);
-			}
-			else {
-				throw new Exception("Failed to store file <" + fileName + ">", e);
-			}
-		}
-
+	public void fetchAssociated(String indexName, String uniqueId, String fileName, File destination) throws Exception {
+		fetchAssociated(indexName, uniqueId, fileName, new FileOutputStream(destination));
 	}
 
-	public void storeAssociated(String uniqueId, String indexName, String fileName, Document metadata, File file) throws Exception {
-
-		try {
-			RequestBody body = getRequestBody(uniqueId, indexName, fileName, metadata, file, null);
-			Request request = new Request.Builder().url(url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL).method("POST", body).build();
-			Response response = client.newCall(request).execute();
-			response.close();
-		}
-		catch (Exception e) {
-			if (e.getMessage().startsWith("Out of size:")) {
-				throw new Exception("Failed to store file <" + fileName + "> due to mismatch size", e);
-			}
-			else {
-				throw new Exception("Failed to store file <" + fileName + ">", e);
-			}
-		}
-
+	public void fetchAssociated(String indexName, String uniqueId, String fileName, OutputStream destination) throws Exception {
+		fetchAssociated(indexName, uniqueId, fileName, destination, true);
 	}
 
-	public void fetchAssociated(String uniqueId, String indexName, String fileName, OutputStream destination, boolean closeStream) throws Exception {
-
+	public void fetchAssociated(String indexName, String uniqueId, String fileName, OutputStream destination, boolean closeStream) throws Exception {
 		try {
-			Request request = new Request.Builder().url(
-							url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL + "?" + createQuery(createParameters(uniqueId, indexName, fileName))).method("GET", null)
-					.build();
-			Response response = client.newCall(request).execute();
-			BufferedSink sink = Okio.buffer(Okio.sink(destination));
-			sink.writeAll(Objects.requireNonNull(response.body(), "No body for file '" + fileName + "'.").source());
-			sink.close();
-			response.close();
+			GetRequest request = Unirest.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}/file").routeParam("indexName", indexName)
+					.routeParam("uniqueId", uniqueId).routeParam("fileName", fileName);
+
+			request.thenConsume(rawResponse -> {
+				try {
+					rawResponse.getContent().transferTo(destination);
+				}
+				catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
 		}
 		finally {
 			if (closeStream) {
@@ -100,136 +153,49 @@ public class ZuliaRESTClient {
 
 	}
 
-	public void fetchAssociatedMetadata(String uniqueId, String indexName, String fileName, OutputStream destination) throws Exception {
-
-		try {
-			Request request = new Request.Builder().url(
-							url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_URL + "?" + createQuery(createParameters(uniqueId, indexName, fileName))).method("GET", null)
-					.build();
-			Response response = client.newCall(request).execute();
-			Document document = ZuliaUtil.byteArrayToMongoDocument(Objects.requireNonNull(response.body()).bytes());
-			destination.write(Objects.requireNonNull(document.toJson().getBytes(StandardCharsets.UTF_8), "No body for file"));
-			response.close();
-		}
-		catch (Exception e) {
-			throw new Exception(
-					"Failed to fetch metadata for file <" + fileName + "> for id <" + uniqueId + "> for index <" + indexName + ">: " + e.getMessage(), e);
-		}
-
+	public Document fetchAssociatedMetadata(String indexName, String uniqueId, String fileName) {
+		String json = Unirest.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}/metadata").routeParam("indexName", indexName)
+				.routeParam("uniqueId", uniqueId).routeParam("fileName", fileName).asString().ifFailure(new FailureHandler<>()).getBody();
+		return Document.parse(json);
 	}
 
-	public void fetchAssociated(String uniqueId, String indexName, OutputStream destination, boolean closeStream) throws Exception {
+	public List<String> fetchAssociatedFilenames(String indexName, String uniqueId) {
+		JSONArray json = Unirest.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/filenames").routeParam("indexName", indexName)
+				.routeParam("uniqueId", uniqueId).asJson().getBody().getObject().getJSONArray("filenames");
+		List<String> filenames = new ArrayList<>();
+		for (int i = 0; i < json.length(); i++) {
+			filenames.add(json.getString(i));
+		}
+		return filenames;
+	}
 
-		Request request = new Request.Builder().url(
-						url + ZuliaRESTConstants.ASSOCIATED_DOCUMENTS_ALL_FOR_ID_URL + "?" + createQuery(createParameters(uniqueId, indexName))).method("GET", null)
-				.build();
-		Response response = client.newCall(request).execute();
+	public void fetchAssociatedBundle(String indexName, String uniqueId, File destination) throws Exception {
+		fetchAssociatedBundle(indexName, uniqueId, new FileOutputStream(destination));
+	}
 
-		String allIdsJson = Objects.requireNonNull(response.body()).string();
-		JsonObject result = JsonParser.parseString(allIdsJson).getAsJsonObject();
-		JsonArray filenames = result.getAsJsonArray("filenames");
+	public void fetchAssociatedBundle(String indexName, String uniqueId, OutputStream destination) throws Exception {
+		fetchAssociatedBundle(indexName, uniqueId, destination, true);
+	}
 
-		ZipOutputStream zipOutputStream = null;
+	public void fetchAssociatedBundle(String indexName, String uniqueId, OutputStream destination, boolean closeStream) throws IOException {
 		try {
-			zipOutputStream = new ZipOutputStream(destination);
+			GetRequest request = Unirest.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/bundle").routeParam("indexName", indexName)
+					.routeParam("uniqueId", uniqueId);
 
-			for (int i = 0; i < filenames.size(); i++) {
-				String filename = filenames.get(i).getAsString();
-				String fileDir = filename + File.separator;
-				zipOutputStream.putNextEntry(new ZipEntry(fileDir));
-				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename));
-				fetchAssociated(uniqueId, indexName, filename, zipOutputStream, false);
-				zipOutputStream.putNextEntry(new ZipEntry(fileDir + filename + "_metadata.json"));
-				fetchAssociatedMetadata(uniqueId, indexName, filename, zipOutputStream);
-			}
-
+			request.thenConsume(rawResponse -> {
+				try {
+					rawResponse.getContent().transferTo(destination);
+				}
+				catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			});
 		}
 		finally {
 			if (closeStream) {
-				if (zipOutputStream != null) {
-					zipOutputStream.close();
-				}
-			}
-			response.close();
-		}
-
-	}
-
-	public static String createQuery(Map<String, Object> parameters) {
-
-		StringBuilder sb = new StringBuilder();
-
-		for (String key : parameters.keySet()) {
-
-			Object value = parameters.get(key);
-			if (value instanceof String) {
-				if (!sb.isEmpty()) {
-					sb.append('&');
-				}
-
-				sb.append(key);
-				sb.append('=');
-
-				sb.append(URLEncoder.encode((String) value, StandardCharsets.UTF_8));
-
-			}
-			else if (value instanceof List<?> stringList) {
-				for (Object item : stringList) {
-
-					if (!sb.isEmpty()) {
-						sb.append('&');
-					}
-
-					sb.append(key);
-					sb.append('=');
-
-					sb.append(URLEncoder.encode(item.toString(), StandardCharsets.UTF_8));
-
-				}
+				destination.close();
 			}
 		}
-		return sb.toString();
-	}
-
-	private HashMap<String, Object> createParameters(String uniqueId, String indexName) {
-		HashMap<String, Object> parameters = new HashMap<>();
-		parameters.put(ZuliaRESTConstants.ID, uniqueId);
-		parameters.put(ZuliaRESTConstants.INDEX, indexName);
-		return parameters;
-	}
-
-	private HashMap<String, Object> createParameters(String uniqueId, String indexName, String fileName) {
-		HashMap<String, Object> parameters = new HashMap<>();
-		parameters.put(ZuliaRESTConstants.ID, uniqueId);
-		parameters.put(ZuliaRESTConstants.FILE_NAME, fileName);
-		parameters.put(ZuliaRESTConstants.INDEX, indexName);
-		return parameters;
-	}
-
-	private RequestBody getRequestBody(String uniqueId, String indexName, String fileName, Document metadata, File file, byte[] bytes) {
-
-		RequestBody body;
-		RequestBody uploadFileRequest;
-
-		if (file != null) {
-			uploadFileRequest = RequestBody.create(file, MediaType.parse(ZuliaUtil.guessExtension(file)));
-		}
-		else {
-			uploadFileRequest = RequestBody.create(bytes, MediaType.parse(ZuliaUtil.guessExtension(bytes)));
-		}
-
-		if (metadata != null) {
-			body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
-					.addFormDataPart("indexName", indexName).addFormDataPart("metaJson", metadata.toJson()).addFormDataPart("file", fileName, uploadFileRequest)
-					.build();
-		}
-		else {
-			body = new MultipartBody.Builder().setType(MultipartBody.FORM).addFormDataPart("id", uniqueId).addFormDataPart("fileName", fileName)
-					.addFormDataPart("indexName", indexName).addFormDataPart("file", fileName, uploadFileRequest).build();
-		}
-
-		return body;
-
 	}
 
 }

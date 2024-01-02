@@ -7,6 +7,7 @@ import io.micronaut.context.annotation.Parameter;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.io.Writable;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
@@ -88,7 +89,7 @@ public class QueryController {
 				outputCursor = true;
 				if (sort == null || sort.isEmpty()) {
 					return HttpResponse.created("Sort on unique value or value combination is required to use a cursor (i.e. id or title,id)")
-							.status(ZuliaRESTConstants.INTERNAL_ERROR);
+							.status(HttpStatus.BAD_REQUEST);
 				}
 			}
 
@@ -122,7 +123,7 @@ public class QueryController {
 					mainQueryBuilder.setDefaultOp(Query.Operator.OR);
 				}
 				else {
-					HttpResponse.created("Invalid default operator <" + defaultOperator + ">").status(ZuliaRESTConstants.INTERNAL_ERROR);
+					HttpResponse.created("Invalid default operator <" + defaultOperator + ">").status(HttpStatus.BAD_REQUEST);
 				}
 			}
 			mainQueryBuilder.setQueryType(Query.QueryType.SCORE_MUST);
@@ -152,13 +153,13 @@ public class QueryController {
 							fieldSimilarity.setSimilarity(Similarity.TFIDF);
 						}
 						else {
-							HttpResponse.created("Unknown similarity type <" + simType + ">").status(ZuliaRESTConstants.INTERNAL_ERROR);
+							HttpResponse.created("Unknown similarity type <" + simType + ">").status(HttpStatus.BAD_REQUEST);
 						}
 
 						qrBuilder.addFieldSimilarity(fieldSimilarity);
 					}
 					else {
-						HttpResponse.created("Similarity <" + sim + "> should be in the form field:simType").status(ZuliaRESTConstants.INTERNAL_ERROR);
+						HttpResponse.created("Similarity <" + sim + "> should be in the form field:simType").status(HttpStatus.BAD_REQUEST);
 					}
 				}
 			}
@@ -179,7 +180,7 @@ public class QueryController {
 					}
 					catch (InvalidProtocolBufferException e) {
 						return HttpResponse.created("Failed to parse query json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-								.status(ZuliaRESTConstants.INTERNAL_ERROR);
+								.status(HttpStatus.BAD_REQUEST);
 					}
 				}
 			}
@@ -200,7 +201,7 @@ public class QueryController {
 					}
 					catch (InvalidProtocolBufferException e) {
 						return HttpResponse.created("Failed to parse highlight json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-								.status(ZuliaRESTConstants.INTERNAL_ERROR);
+								.status(HttpStatus.BAD_REQUEST);
 					}
 				}
 			}
@@ -214,7 +215,7 @@ public class QueryController {
 					}
 					catch (InvalidProtocolBufferException e) {
 						return HttpResponse.created("Failed to parse analyzer json: " + e.getClass().getSimpleName() + ":" + e.getMessage())
-								.status(ZuliaRESTConstants.INTERNAL_ERROR);
+								.status(HttpStatus.BAD_REQUEST);
 					}
 				}
 			}
@@ -246,8 +247,7 @@ public class QueryController {
 							count = Integer.parseInt(countString);
 						}
 						catch (Exception e) {
-							return HttpResponse.created("Invalid facet count <" + countString + "> for facet <" + f + ">")
-									.status(ZuliaRESTConstants.INTERNAL_ERROR);
+							return HttpResponse.created("Invalid facet count <" + countString + "> for facet <" + f + ">").status(HttpStatus.BAD_REQUEST);
 						}
 					}
 
@@ -301,7 +301,7 @@ public class QueryController {
 						}
 						else {
 							return HttpResponse.created("Invalid sort direction <" + sortDir + "> for field <" + sortField + ">.  Expecting -1/1 or DESC/ASC")
-									.status(ZuliaRESTConstants.INTERNAL_ERROR);
+									.status(HttpStatus.BAD_REQUEST);
 						}
 					}
 					fieldSort.setSortField(sortField);
@@ -319,7 +319,7 @@ public class QueryController {
 					response = JsonWriter.formatJson(response);
 				}
 
-				return HttpResponse.ok(response).status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.APPLICATION_JSON_TYPE);
+				return HttpResponse.ok(response).contentType(MediaType.APPLICATION_JSON_TYPE);
 			}
 			else {
 				if (fields != null && !fields.isEmpty()) {
@@ -360,14 +360,14 @@ public class QueryController {
 						LocalDateTime now = LocalDateTime.now();
 						DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
 
-						return HttpResponse.ok(writable).status(ZuliaRESTConstants.SUCCESS)
+						return HttpResponse.ok(writable)
 								.header("content-disposition", "attachment; filename = " + "zuliaDownload_" + now.format(formatter) + ".csv")
 								.contentType(MediaType.APPLICATION_OCTET_STREAM);
 					}
 					else {
 						QueryResponse qr = indexManager.query(qrBuilder.build());
 						String response = getCSVDocumentResponse(fields, qr);
-						return HttpResponse.ok(response).status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
+						return HttpResponse.ok(response).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 					}
 				}
 				else if (facet != null && !facet.isEmpty() && rows == 0) {
@@ -387,18 +387,18 @@ public class QueryController {
 						}
 
 					}
-					return HttpResponse.ok(response.toString()).status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
+					return HttpResponse.ok(response.toString()).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 				}
 				else {
 					return HttpResponse.ok(
 									"Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0")
-							.status(ZuliaRESTConstants.SUCCESS).contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
+							.contentType(MediaType.TEXT_PLAIN + ";charset=utf-8");
 				}
 			}
 		}
 		catch (Exception e) {
 			LOG.error(e.getMessage(), e);
-			return HttpResponse.serverError(e.getClass().getSimpleName() + ":" + e.getMessage()).status(ZuliaRESTConstants.INTERNAL_ERROR);
+			return HttpResponse.serverError(e.getClass().getSimpleName() + ":" + e.getMessage()).status(HttpStatus.BAD_REQUEST);
 		}
 
 	}

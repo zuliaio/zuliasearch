@@ -3,7 +3,7 @@ package io.zulia.server.test.node.shared;
 import com.mongodb.client.MongoClients;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.client.rest.ZuliaNewRESTClient;
+import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.message.ZuliaBase;
 import io.zulia.server.cmd.zuliad.ZuliaDConfig;
 import io.zulia.server.config.ZuliaConfig;
@@ -103,10 +103,10 @@ public class TestHelper {
 		return mongoServer;
 	}
 
-	public static ZuliaNewRESTClient createRESTClient() {
+	public static ZuliaRESTClient createRESTClient() {
 		for (ZuliaNode zuliaNode : zuliaNodes) {
 			ZuliaNodeProvider.setZuliaNode(zuliaNode);
-			return new ZuliaNewRESTClient("http://" + zuliaNode.getZuliaConfig().getServerAddress() + ":" + zuliaNode.getZuliaConfig().getRestPort());
+			return new ZuliaRESTClient("http://" + zuliaNode.getZuliaConfig().getServerAddress() + ":" + zuliaNode.getZuliaConfig().getRestPort());
 		}
 		throw new RuntimeException("No nodes are defined, ");
 	}

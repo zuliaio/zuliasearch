@@ -1,7 +1,7 @@
 package io.zulia.server.test.node.shared;
 
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.client.rest.ZuliaNewRESTClient;
+import io.zulia.client.rest.ZuliaRESTClient;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -15,7 +15,7 @@ public class RestNodeExtension implements BeforeAllCallback, AfterAllCallback, B
 	private final int nodeCount;
 
 	private ZuliaWorkPool zuliaWorkPool;
-	private ZuliaNewRESTClient zuliaRestClient;
+	private ZuliaRESTClient zuliaRestClient;
 
 	public RestNodeExtension(int nodeCount) {
 		this.nodeCount = nodeCount;
@@ -25,7 +25,7 @@ public class RestNodeExtension implements BeforeAllCallback, AfterAllCallback, B
 		return zuliaWorkPool;
 	}
 
-	public ZuliaNewRESTClient getRESTClient() {
+	public ZuliaRESTClient getRESTClient() {
 		return zuliaRestClient;
 	}
 

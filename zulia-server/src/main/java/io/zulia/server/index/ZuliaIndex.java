@@ -1122,9 +1122,9 @@ public class ZuliaIndex {
 		return documentStorage.getAssociatedFilenames(uniqueId);
 	}
 
-	public void getAssociatedDocuments(Writer writer, Document filter) throws Exception {
+	public void getAssociatedMetadata(Writer writer, Document filter) throws Exception {
 
-		documentStorage.getAssociatedDocuments(writer, filter);
+		documentStorage.getAssociatedMetadata(writer, filter);
 
 	}
 
@@ -1142,9 +1142,9 @@ public class ZuliaIndex {
 
 	}
 
-	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType associatedFetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadata(String uniqueId, FetchType associatedFetchType) throws Exception {
 
-		return documentStorage.getAssociatedDocuments(uniqueId, associatedFetchType);
+		return documentStorage.getAssociatedMetadata(uniqueId, associatedFetchType);
 
 	}
 
@@ -1198,7 +1198,7 @@ public class ZuliaIndex {
 				}
 			}
 			else {
-				for (AssociatedDocument ad : getAssociatedDocuments(uniqueId, associatedFetchType)) {
+				for (AssociatedDocument ad : getAssociatedMetadata(uniqueId, associatedFetchType)) {
 					frBuilder.addAssociatedDocument(ad);
 				}
 			}

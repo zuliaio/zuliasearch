@@ -118,7 +118,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType fetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadata(String uniqueId, FetchType fetchType) throws Exception {
 		if (FetchType.NONE.equals(fetchType))
 			return Collections.emptyList();
 
@@ -157,7 +157,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void getAssociatedDocuments(Writer outputstream, Document filter) throws Exception {
+	public void getAssociatedMetadata(Writer outputstream, Document filter) throws IOException {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(filter);
 		outputstream.write("{\n");
 		outputstream.write(" \"associatedDocs\": [\n");

@@ -2,9 +2,7 @@ package io.zulia.server.exceptions;
 
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 
-import java.io.IOException;
-
-public class ShardOfflineException extends IOException {
+public class ShardOfflineException extends NotFoundException {
 
 	private static final long serialVersionUID = 1L;
 	private final int shardNumber;

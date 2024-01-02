@@ -4,7 +4,7 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.client.rest.ZuliaNewRESTClient;
+import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.rest.options.TermsRestOptions;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
@@ -78,7 +78,7 @@ public class RestTest {
 	@Test
 	@Order(2)
 	public void indexesTest() {
-		ZuliaNewRESTClient restClient = restNodeExtension.getRESTClient();
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		IndexesResponseDTO indexes = restClient.getIndexes();
 		Assertions.assertEquals(2, indexes.getIndexes().size());
 	}
@@ -86,7 +86,7 @@ public class RestTest {
 	@Test
 	@Order(3)
 	public void indexTest() throws Exception {
-		ZuliaNewRESTClient restClient = restNodeExtension.getRESTClient();
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		RestIndexSettingsResponse restIndexSettingsResponse = restClient.getIndex("index1");
 		Assertions.assertEquals(2, restIndexSettingsResponse.getIndexSettings().getFieldConfigList().size());
 		Assertions.assertEquals("id", restIndexSettingsResponse.getIndexSettings().getFieldConfigList().get(0).getStoredFieldName());
@@ -96,7 +96,7 @@ public class RestTest {
 	@Test
 	@Order(4)
 	public void nodesTest() throws Exception {
-		ZuliaNewRESTClient restClient = restNodeExtension.getRESTClient();
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		NodesResponseDTO nodesResponseDTO = restClient.getNodes(true);
 		List<NodeDTO> members = nodesResponseDTO.getMembers();
 		Assertions.assertEquals(1, members.size());
@@ -114,7 +114,7 @@ public class RestTest {
 	@Test
 	@Order(5)
 	public void fieldsTest() {
-		ZuliaNewRESTClient restClient = restNodeExtension.getRESTClient();
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		FieldsDTO fields = restClient.getFields("index1");
 
 		Assertions.assertEquals(2, fields.getFields().size());
@@ -130,7 +130,7 @@ public class RestTest {
 	@Test
 	@Order(5)
 	public void fetchTest() {
-		ZuliaNewRESTClient restClient = restNodeExtension.getRESTClient();
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		Document document = restClient.fetchRecord("index1", "123");
 		Assertions.assertEquals("test", document.getString("title"));
 		Assertions.assertEquals("some value", document.getString("notIndexed"));
@@ -139,7 +139,7 @@ public class RestTest {
 	@Test
 	@Order(5)
 	public void statTest() {
-		ZuliaNewRESTClient restClient = restNodeExtension.getRESTClient();
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		StatsDTO statsDTO = restClient.getStats();
 		Assertions.assertEquals(statsDTO.getZuliaVersion(), ZuliaVersion.getVersion());
 	}
@@ -147,7 +147,7 @@ public class RestTest {
 	@Test
 	@Order(6)
 	public void termTest() {
-		ZuliaNewRESTClient restClient = restNodeExtension.getRESTClient();
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		TermsResponseDTO termsResponseDTO = restClient.getTerms("index1", "title");
 		Assertions.assertEquals(3, termsResponseDTO.getTerms().size());
 		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(0).getTerm());

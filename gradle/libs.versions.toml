@@ -5,17 +5,18 @@ koloboke = "1.0.0"
 micronaut = "4.2.2" # used by the micronaut plugin configuration
 mongodb = "4.11.1"
 picocli = "4.7.5"
-protobuf = "3.24.0"
+protobuf = "3.25.1"
 unirest = '4.2.1'
 
 
 [libraries]
+annontations = { module = "org.jetbrains:annotations", version = "24.0.0" }
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
 commons-compress = { module = "org.apache.commons:commons-compress", version = "1.25.0" }
 commons-pool2 = { module = "org.apache.commons:commons-pool2", version = "2.11.1" }
-flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.9.2" }
+flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.11.1" }
 guava = { module = "com.google.guava:guava", version = "32.0.1-jre" }
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
@@ -26,7 +27,7 @@ jakarta-validation = { module = "jakarta.validation:jakarta.validation-api" }
 jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.0" }
 javax-annotation = { module = "javax.annotation:javax.annotation-api", version = "1.3.2" }
 json-io = { module = "com.cedarsoftware:json-io", version = "4.14.0" }
-junit-bom = { module = "org.junit:junit-bom", version = "5.9.3" }
+junit-bom = { module = "org.junit:junit-bom", version = "5.10.1" }
 jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
 jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
@@ -53,7 +54,6 @@ micronaut-test-junit5 = { module = "io.micronaut.test:micronaut-test-junit5" }
 micronaut-validation-processor = { module = "io.micronaut.validation:micronaut-validation-processor" }
 mongodb-driver-core = { module = "org.mongodb:mongodb-driver-core", version.ref = "mongodb" }
 mongodb-driver-sync = { module = "org.mongodb:mongodb-driver-sync", version.ref = "mongodb" }
-okhttp = { module = "com.squareup.okhttp3:okhttp", version = "4.11.0" }
 picocli-base = { module = "info.picocli:picocli", version.ref = "picocli" }
 picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
