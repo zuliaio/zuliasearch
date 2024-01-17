@@ -24,6 +24,7 @@ import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.*;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.config.IndexService;
@@ -69,7 +70,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,6 +88,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class ZuliaIndex {
 
@@ -407,8 +408,6 @@ public class ZuliaIndex {
 
 		return SetQueryHelper.getTermInSetQuery(query.getTermList(), field, indexFieldInfo);
 	}
-
-
 
 	public Query handleNumericSetQuery(ZuliaQuery.Query query) {
 		ProtocolStringList qfList = query.getQfList();
@@ -1122,10 +1121,8 @@ public class ZuliaIndex {
 		return documentStorage.getAssociatedFilenames(uniqueId);
 	}
 
-	public void getAssociatedMetadata(Writer writer, Document filter) throws Exception {
-
-		documentStorage.getAssociatedMetadata(writer, filter);
-
+	public Stream<AssociatedMetadataDTO> getAssociatedMetadataForQuery(Document query) {
+		return documentStorage.getAssociatedMetadataForQuery(query);
 	}
 
 	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
@@ -1142,9 +1139,9 @@ public class ZuliaIndex {
 
 	}
 
-	public List<AssociatedDocument> getAssociatedMetadata(String uniqueId, FetchType associatedFetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadataForUniqueId(String uniqueId, FetchType associatedFetchType) throws Exception {
 
-		return documentStorage.getAssociatedMetadata(uniqueId, associatedFetchType);
+		return documentStorage.getAssociatedMetadataForUniqueId(uniqueId, associatedFetchType);
 
 	}
 
@@ -1198,7 +1195,7 @@ public class ZuliaIndex {
 				}
 			}
 			else {
-				for (AssociatedDocument ad : getAssociatedMetadata(uniqueId, associatedFetchType)) {
+				for (AssociatedDocument ad : getAssociatedMetadataForUniqueId(uniqueId, associatedFetchType)) {
 					frBuilder.addAssociatedDocument(ad);
 				}
 			}

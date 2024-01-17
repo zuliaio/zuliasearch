@@ -14,6 +14,7 @@ import com.mongodb.client.model.IndexOptions;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -21,14 +22,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class MongoDocumentStorage implements DocumentStorage {
 	@SuppressWarnings("unused")
@@ -40,9 +41,6 @@ public class MongoDocumentStorage implements DocumentStorage {
 	private static final String ASSOCIATED_METADATA = "metadata";
 
 	private static final String TIMESTAMP = "_tstamp_";
-
-	private static final String DOCUMENT_UNIQUE_ID_KEY = "_uid_";
-	private static final String FILE_UNIQUE_ID_KEY = "_fid_";
 
 	private static final String ENABLESHARDING = "enablesharding";
 	private static final String ADMIN = "admin";
@@ -150,7 +148,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<AssociatedDocument> getAssociatedMetadata(String uniqueId, FetchType fetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadataForUniqueId(String uniqueId, FetchType fetchType) throws Exception {
 		GridFSBucket gridFS = createGridFSConnection();
 		List<AssociatedDocument> assocDocs = new ArrayList<>();
 		if (!FetchType.NONE.equals(fetchType)) {
@@ -217,50 +215,24 @@ public class MongoDocumentStorage implements DocumentStorage {
 		return aBuilder.build();
 	}
 
-	public void getAssociatedMetadata(Writer writer, Document filter) throws IOException {
+	public Stream<AssociatedMetadataDTO> getAssociatedMetadataForQuery(Document query) {
 
 		GridFSBucket gridFS = createGridFSConnection();
-		GridFSFindIterable gridFSFiles = gridFS.find(filter);
-		writer.write("{\n");
-		writer.write(" \"associatedDocs\": [\n");
+		GridFSFindIterable gridFSFiles = gridFS.find(query);
 
-		boolean first = true;
-		for (GridFSFile gridFSFile : gridFSFiles) {
-			if (first) {
-				first = false;
-			}
-			else {
-				writer.write(",\n");
-			}
-
+		return StreamSupport.stream(gridFSFiles.map(gridFSFile -> {
 			Document metadata = gridFSFile.getMetadata();
-
 			String uniqueId = metadata.getString(DOCUMENT_UNIQUE_ID_KEY);
-			String uniquieIdKeyValue = "  { \"uniqueId\": \"" + uniqueId + "\", ";
-			writer.write(uniquieIdKeyValue);
-
 			String filename = gridFSFile.getFilename();
-			String filenameKeyValue = "\"filename\": \"" + filename + "\", ";
-			writer.write(filenameKeyValue);
-
 			Date uploadDate = gridFSFile.getUploadDate();
-			String uploadDateKeyValue = "\"uploadDate\": {\"$date\":" + uploadDate.getTime() + "}";
-			writer.write(uploadDateKeyValue);
 
 			metadata.remove(TIMESTAMP);
 			metadata.remove(DOCUMENT_UNIQUE_ID_KEY);
 			metadata.remove(FILE_UNIQUE_ID_KEY);
 
-			if (!metadata.isEmpty()) {
-				String metaJson = metadata.toJson();
-				String metaString = ", \"meta\": " + metaJson;
-				writer.write(metaString);
-			}
+			return new AssociatedMetadataDTO(uniqueId, filename, uploadDate, metadata);
+		}).spliterator(), false);
 
-			writer.write(" }");
-
-		}
-		writer.write("\n ]\n}");
 	}
 
 	@Override

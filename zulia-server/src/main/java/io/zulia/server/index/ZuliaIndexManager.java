@@ -16,6 +16,7 @@ import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation.OperationType;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.*;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ServerIndexConfig;
@@ -50,13 +51,13 @@ import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.search.Query;
 import org.bson.Document;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -74,6 +75,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ZuliaIndexManager {
 
@@ -190,6 +192,17 @@ public class ZuliaIndexManager {
 
 		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
 
+		DocumentStorage documentStorage = getDocumentStorage(serverIndexConfig);
+
+		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
+
+		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
+
+		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
+	}
+
+	@NotNull
+	private DocumentStorage getDocumentStorage(ServerIndexConfig serverIndexConfig) {
 		String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
 
 		DocumentStorage documentStorage;
@@ -203,12 +216,7 @@ public class ZuliaIndexManager {
 		else {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
 		}
-
-		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
-
-		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
-
-		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
+		return documentStorage;
 	}
 
 	public GetIndexesResponse getIndexes(@SuppressWarnings("unused") GetIndexesRequest request) throws Exception {
@@ -264,9 +272,9 @@ public class ZuliaIndexManager {
 		return i.getAssociatedFilenames(uniqueId);
 	}
 
-	public void getAssociatedFilenames(String indexName, Writer writer, Document filter) throws Exception {
+	public Stream<AssociatedMetadataDTO> getAssociatedFilenames(String indexName, Document query) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
-		i.getAssociatedMetadata(writer, filter);
+		return i.getAssociatedMetadataForQuery(query);
 	}
 
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {

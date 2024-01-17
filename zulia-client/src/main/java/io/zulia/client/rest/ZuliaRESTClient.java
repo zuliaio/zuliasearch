@@ -4,11 +4,13 @@ import com.google.protobuf.util.JsonFormat;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.client.rest.options.TermsRestOptions;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.rest.dto.FieldsDTO;
 import io.zulia.rest.dto.IndexesResponseDTO;
 import io.zulia.rest.dto.NodesResponseDTO;
 import io.zulia.rest.dto.StatsDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
+import kong.unirest.core.GenericType;
 import kong.unirest.core.GetRequest;
 import kong.unirest.core.HttpResponse;
 import kong.unirest.core.MultipartBody;
@@ -134,8 +136,7 @@ public class ZuliaRESTClient implements AutoCloseable {
 	public void fetchAssociated(String indexName, String uniqueId, String fileName, OutputStream destination, boolean closeStream) throws Exception {
 		try {
 			GetRequest request = unirestInstance.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}/file")
-					.routeParam("indexName", indexName)
-					.routeParam("uniqueId", uniqueId).routeParam("fileName", fileName);
+					.routeParam("indexName", indexName).routeParam("uniqueId", uniqueId).routeParam("fileName", fileName);
 
 			request.thenConsume(rawResponse -> {
 				try {
@@ -160,7 +161,7 @@ public class ZuliaRESTClient implements AutoCloseable {
 		return Document.parse(json);
 	}
 
-	public List<String> fetchAssociatedFilenames(String indexName, String uniqueId) {
+	public List<String> fetchAssociatedFilenamesForId(String indexName, String uniqueId) {
 		JSONArray json = unirestInstance.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/filenames").routeParam("indexName", indexName)
 				.routeParam("uniqueId", uniqueId).asJson().getBody().getObject().getJSONArray("filenames");
 		List<String> filenames = new ArrayList<>();
@@ -197,6 +198,21 @@ public class ZuliaRESTClient implements AutoCloseable {
 				destination.close();
 			}
 		}
+	}
+
+	public List<AssociatedMetadataDTO> fetchAssociatedForIndex(String indexName) {
+		return fetchAssociatedForIndex(indexName, null);
+	}
+
+	public List<AssociatedMetadataDTO> fetchAssociatedForIndex(String indexName, Document query) {
+		GetRequest request = unirestInstance.get(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/all").routeParam("indexName", indexName);
+
+		if (query != null) {
+			request = request.queryString(ZuliaRESTConstants.QUERY, query.toJson());
+		}
+		return request.asObject(new GenericType<List<AssociatedMetadataDTO>>() {
+		}).getBody();
+
 	}
 
 }

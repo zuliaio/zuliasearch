@@ -8,6 +8,7 @@ import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.rest.options.TermsRestOptions;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.rest.dto.FieldsDTO;
 import io.zulia.rest.dto.IndexMappingDTO;
 import io.zulia.rest.dto.IndexesResponseDTO;
@@ -187,12 +188,12 @@ public class RestTest {
 		restClient.storeAssociated("index1", "456", "t.txt", null, fileBytes3);
 
 		List<String> filenames;
-		filenames = restClient.fetchAssociatedFilenames("index1", "123");
+		filenames = restClient.fetchAssociatedFilenamesForId("index1", "123");
 		Assertions.assertEquals(2, filenames.size());
 		Assertions.assertTrue(filenames.contains("test.txt"));
 		Assertions.assertTrue(filenames.contains("test2.txt"));
 
-		filenames = restClient.fetchAssociatedFilenames("index1", "456");
+		filenames = restClient.fetchAssociatedFilenamesForId("index1", "456");
 		Assertions.assertEquals(1, filenames.size());
 		Assertions.assertTrue(filenames.contains("t.txt"));
 
@@ -258,6 +259,19 @@ public class RestTest {
 			Assertions.assertTrue(b);
 		}
 
+		List<AssociatedMetadataDTO> associatedMetadataDTOs = restClient.fetchAssociatedForIndex("index1");
+		Assertions.assertEquals(3, associatedMetadataDTOs.size());
+
+		associatedMetadataDTOs = restClient.fetchAssociatedForIndex("index1", new Document("filename", "t.txt"));
+		Assertions.assertEquals(1, associatedMetadataDTOs.size());
+
+		//table scan in mongo
+		associatedMetadataDTOs = restClient.fetchAssociatedForIndex("index1", new Document("metadata.aKey", "aValue"));
+		Assertions.assertEquals(1, associatedMetadataDTOs.size());
+		Assertions.assertEquals("test2.txt", associatedMetadataDTOs.getFirst().filename());
+		Assertions.assertEquals("123", associatedMetadataDTOs.getFirst().uniqueId());
+		Assertions.assertEquals(1, associatedMetadataDTOs.getFirst().meta().size());
+		Assertions.assertEquals("aValue", associatedMetadataDTOs.getFirst().meta().getString("aKey"));
 	}
 
 }

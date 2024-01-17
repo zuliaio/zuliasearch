@@ -1,6 +1,5 @@
 package io.zulia.server.rest.controllers;
 
-
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
@@ -15,6 +14,7 @@ import io.micronaut.http.server.types.files.StreamedFile;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.zulia.ZuliaRESTConstants;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.exceptions.AssociatedDocumentDoesNotExistException;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
@@ -23,13 +23,12 @@ import org.bson.Document;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -128,24 +127,11 @@ public class AssociatedController {
 
 	@Get("/{indexName}/all")
 	@Produces(MediaType.APPLICATION_JSON)
-	public StreamedFile getAllAssociatedForIndex(String indexName, @Nullable @QueryValue(ZuliaRESTConstants.QUERY) String query) throws IOException {
-
-		PipedOutputStream output = new PipedOutputStream();
-		PipedInputStream input = new PipedInputStream(output);
-
-		Thread.startVirtualThread(() -> {
-			ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
-			Document filter = (query != null) ? Document.parse(query) : new Document();
-			try (output; OutputStreamWriter outputStreamWriter = new OutputStreamWriter(output)) {
-				indexManager.getAssociatedFilenames(indexName, outputStreamWriter, filter);
-			}
-			catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-		});
-
-		return new StreamedFile(input, MediaType.of(ZuliaRESTConstants.UTF8_JSON));
-
+	public Flux<AssociatedMetadataDTO> getAllAssociatedForIndex(String indexName, @Nullable @QueryValue(ZuliaRESTConstants.QUERY) String query)
+			throws Exception {
+		Document queryDoc = (query != null) ? Document.parse(query) : new Document();
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		return Flux.fromStream(indexManager.getAssociatedFilenames(indexName, queryDoc));
 	}
 
 	@Post("/{indexName}/{uniqueId}/{fileName}")

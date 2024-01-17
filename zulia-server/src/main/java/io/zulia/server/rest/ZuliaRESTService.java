@@ -1,6 +1,7 @@
 package io.zulia.server.rest;
 
 import io.micronaut.serde.annotation.SerdeImport;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.rest.dto.FieldsDTO;
 import io.zulia.rest.dto.IndexMappingDTO;
 import io.zulia.rest.dto.IndexesResponseDTO;
@@ -22,6 +23,7 @@ import jakarta.inject.Singleton;
 @SerdeImport(TermDTO.class)
 @SerdeImport(TermsResponseDTO.class)
 @SerdeImport(AssociatedController.Filenames.class)
+@SerdeImport(AssociatedMetadataDTO.class)
 public class ZuliaRESTService {
 
 }

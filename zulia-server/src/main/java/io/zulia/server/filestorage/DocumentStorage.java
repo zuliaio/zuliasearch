@@ -3,22 +3,26 @@ package io.zulia.server.filestorage;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaBase.ExternalDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import org.bson.Document;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface DocumentStorage {
 
+	String DOCUMENT_UNIQUE_ID_KEY = "_uid_";
+	String FILE_UNIQUE_ID_KEY = "_fid_";
+
 	void storeAssociatedDocument(AssociatedDocument docs) throws Exception;
 
-	List<AssociatedDocument> getAssociatedMetadata(String uniqueId, FetchType fetchType) throws Exception;
+	List<AssociatedDocument> getAssociatedMetadataForUniqueId(String uniqueId, FetchType fetchType) throws Exception;
 
 	AssociatedDocument getAssociatedDocument(String uniqueId, String filename, FetchType fetchType) throws Exception;
 
-	void getAssociatedMetadata(Writer writer, Document filter) throws Exception;
+	Stream<AssociatedMetadataDTO> getAssociatedMetadataForQuery(Document query);
 
 	OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) throws Exception;
 
