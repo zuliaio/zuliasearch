@@ -85,7 +85,7 @@ public class QueryController {
 
 	}
 
-	@Get
+	@Get("/csv")
 	@Produces(ZuliaRESTConstants.UTF8_CSV)
 	public HttpResponse<?> getCSV(@QueryValue(ZuliaRESTConstants.INDEX) List<String> indexName,
 			@QueryValue(value = ZuliaRESTConstants.QUERY, defaultValue = "*:*") String query,

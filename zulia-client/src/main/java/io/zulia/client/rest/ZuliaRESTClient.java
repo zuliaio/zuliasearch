@@ -8,6 +8,7 @@ import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.rest.dto.FieldsDTO;
 import io.zulia.rest.dto.IndexesResponseDTO;
 import io.zulia.rest.dto.NodesResponseDTO;
+import io.zulia.rest.dto.SearchResultsDTO;
 import io.zulia.rest.dto.StatsDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
 import kong.unirest.core.GenericType;
@@ -213,6 +214,11 @@ public class ZuliaRESTClient implements AutoCloseable {
 		return request.asObject(new GenericType<List<AssociatedMetadataDTO>>() {
 		}).getBody();
 
+	}
+
+	public SearchResultsDTO search(String indexName, String query) {
+		return unirestInstance.get(ZuliaRESTConstants.QUERY_URL).queryString(ZuliaRESTConstants.INDEX, indexName).queryString(ZuliaRESTConstants.QUERY, query)
+				.asObject(SearchResultsDTO.class).ifFailure(new FailureHandler<>()).getBody();
 	}
 
 }

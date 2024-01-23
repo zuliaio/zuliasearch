@@ -12,7 +12,7 @@ public interface ZuliaRESTConstants {
 
 	String ASSOCIATED_URL = "/associated";
 
-	String QUERY_URL = "query";
+	String QUERY_URL = "/query";
 	String FETCH_URL = "/fetch";
 	String FIELDS_URL = "/fields";
 	String TERMS_URL = "/terms";

@@ -14,6 +14,7 @@ import io.zulia.rest.dto.IndexMappingDTO;
 import io.zulia.rest.dto.IndexesResponseDTO;
 import io.zulia.rest.dto.NodeDTO;
 import io.zulia.rest.dto.NodesResponseDTO;
+import io.zulia.rest.dto.SearchResultsDTO;
 import io.zulia.rest.dto.StatsDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
 import io.zulia.server.test.node.shared.RestNodeExtension;
@@ -272,6 +273,15 @@ public class RestTest {
 		Assertions.assertEquals("123", associatedMetadataDTOs.getFirst().uniqueId());
 		Assertions.assertEquals(1, associatedMetadataDTOs.getFirst().meta().size());
 		Assertions.assertEquals("aValue", associatedMetadataDTOs.getFirst().meta().getString("aKey"));
+
+	}
+
+	@Test
+	@Order(6)
+	public void searchTest() throws Exception {
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
+		SearchResultsDTO searchResultsDTO = restClient.search("index1", "*:*");
+		Assertions.assertEquals(2, searchResultsDTO.getTotalHits());
 	}
 
 }
