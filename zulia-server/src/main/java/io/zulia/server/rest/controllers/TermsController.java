@@ -15,8 +15,8 @@ import io.zulia.rest.dto.TermsResponseDTO;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.zulia.message.ZuliaBase.FuzzyTerm;
 import static io.zulia.message.ZuliaBase.Term;
@@ -55,16 +55,7 @@ public class TermsController {
 		termsResponseDTO.setIndex(indexName);
 		termsResponseDTO.setField(field);
 
-		List<TermDTO> termsDTOs = new ArrayList<>();
-		for (Term term : terms.getTermList()) {
-			TermDTO termDoc = new TermDTO();
-			termDoc.setTerm(term.getValue());
-			termDoc.setDocFreq(term.getDocFreq());
-			termDoc.setTermFreq(term.getTermFreq());
-			termDoc.setScore(term.getScore());
-			termsDTOs.add(termDoc);
-		}
-
+		List<TermDTO> termsDTOs = terms.getTermList().stream().map(TermDTO::fromTerm).collect(Collectors.toList());
 		termsResponseDTO.setTerms(termsDTOs);
 		return termsResponseDTO;
 
@@ -104,15 +95,7 @@ public class TermsController {
 		csvString.append("\n");
 
 		for (Term term : terms.getTermList()) {
-			String value = term.getValue();
-			if (value.contains(",") || value.contains(" ") || value.contains("\"") || value.contains("\n")) {
-				csvString.append("\"");
-				csvString.append(value.replace("\"", "\"\""));
-				csvString.append("\"");
-			}
-			else {
-				csvString.append(value);
-			}
+			csvString.append(CSVUtil.quoteForCSV(term.getValue()));
 			csvString.append(",");
 			csvString.append(term.getTermFreq());
 			csvString.append(",");

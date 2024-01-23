@@ -26,7 +26,7 @@ gson = { module = "com.google.code.gson:gson", version = "2.10.1" }
 jakarta-validation = { module = "jakarta.validation:jakarta.validation-api" }
 jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.0" }
 javax-annotation = { module = "javax.annotation:javax.annotation-api", version = "1.3.2" }
-json-io = { module = "com.cedarsoftware:json-io", version = "4.14.0" }
+json-io = { module = "com.cedarsoftware:json-io", version = "4.19.1" }
 junit-bom = { module = "org.junit:junit-bom", version = "5.10.1" }
 jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
 jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }

@@ -1,47 +1,11 @@
 package io.zulia.rest.dto;
 
-public class TermDTO {
+import io.zulia.message.ZuliaBase;
 
-	private String term;
-	private long docFreq;
-	private long termFreq;
+public record TermDTO(String term, long docFreq, long termFreq, double score) {
 
-	private double score;
-
-	public String getTerm() {
-		return term;
+	public static TermDTO fromTerm(ZuliaBase.Term term) {
+		return new TermDTO(term.getValue(), term.getDocFreq(), term.getTermFreq(), term.getScore());
 	}
 
-	public void setTerm(String term) {
-		this.term = term;
-	}
-
-	public long getDocFreq() {
-		return docFreq;
-	}
-
-	public void setDocFreq(long docFreq) {
-		this.docFreq = docFreq;
-	}
-
-	public long getTermFreq() {
-		return termFreq;
-	}
-
-	public void setTermFreq(long termFreq) {
-		this.termFreq = termFreq;
-	}
-
-	public double getScore() {
-		return score;
-	}
-
-	public void setScore(double score) {
-		this.score = score;
-	}
-
-	@Override
-	public String toString() {
-		return "TermDTO{" + "term='" + term + '\'' + ", docFreq=" + docFreq + ", termFreq=" + termFreq + ", score=" + score + '}';
-	}
 }
