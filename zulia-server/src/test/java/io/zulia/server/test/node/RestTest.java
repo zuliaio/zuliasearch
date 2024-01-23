@@ -156,22 +156,22 @@ public class RestTest {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		TermsResponseDTO termsResponseDTO = restClient.getTerms("index1", "title");
 		Assertions.assertEquals(3, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(0).getTerm());
-		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(1).getTerm());
-		Assertions.assertEquals("value", termsResponseDTO.getTerms().get(2).getTerm());
+		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(0).term());
+		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(1).term());
+		Assertions.assertEquals("value", termsResponseDTO.getTerms().get(2).term());
 
 		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setAmount(1));
 		Assertions.assertEquals(1, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(0).getTerm());
+		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(0).term());
 
 		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setAmount(1).setStartTerm("t"));
 		Assertions.assertEquals(1, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(0).getTerm());
+		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(0).term());
 
 		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setTermFilter("test"));
 		Assertions.assertEquals(2, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("some", termsResponseDTO.getTerms().getFirst().getTerm());
-		Assertions.assertEquals("value", termsResponseDTO.getTerms().getLast().getTerm());
+		Assertions.assertEquals("some", termsResponseDTO.getTerms().getFirst().term());
+		Assertions.assertEquals("value", termsResponseDTO.getTerms().getLast().term());
 
 	}
 
