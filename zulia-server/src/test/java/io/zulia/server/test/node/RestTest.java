@@ -11,11 +11,15 @@ import io.zulia.client.rest.options.TermsRestOptions;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
+import io.zulia.rest.dto.FacetDTO;
+import io.zulia.rest.dto.FacetsDTO;
 import io.zulia.rest.dto.FieldsDTO;
+import io.zulia.rest.dto.HighlightDTO;
 import io.zulia.rest.dto.IndexMappingDTO;
 import io.zulia.rest.dto.IndexesResponseDTO;
 import io.zulia.rest.dto.NodeDTO;
 import io.zulia.rest.dto.NodesResponseDTO;
+import io.zulia.rest.dto.ScoredResultDTO;
 import io.zulia.rest.dto.SearchResultsDTO;
 import io.zulia.rest.dto.StatsDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
@@ -51,6 +55,7 @@ public class RestTest {
 			indexConfig.addDefaultSearchField("title");
 			indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
 			indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+			indexConfig.addFieldConfig(FieldConfigBuilder.createInt("year").facet().sort());
 			indexConfig.setIndexName("index1");
 			indexConfig.setDisableCompression(true);
 			indexConfig.setNumberOfShards(1);
@@ -72,13 +77,20 @@ public class RestTest {
 
 		{
 			Store store = new Store("123", "index1");
-			store.setResultDocument(new Document("id", "123").append("title", "test").append("notIndexed", "some value"));
+			store.setResultDocument(new Document("id", "123").append("title", "test").append("notIndexed", "some value").append("year", 2022));
 			zuliaWorkPool.store(store);
 		}
 
 		{
 			Store store = new Store("456", "index1");
-			store.setResultDocument(new Document("id", "456").append("title", "some value").append("notIndexed", "the best value"));
+			store.setResultDocument(new Document("id", "456").append("title", "some value").append("notIndexed", "the best value").append("year", 2022));
+			zuliaWorkPool.store(store);
+		}
+
+		{
+			Store store = new Store("789", "index1");
+			store.setResultDocument(
+					new Document("id", "789").append("title", "a totally different place and time").append("notIndexed", "random stuff").append("year", 2021));
 			zuliaWorkPool.store(store);
 		}
 
@@ -97,9 +109,10 @@ public class RestTest {
 	public void indexTest() throws Exception {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		RestIndexSettingsResponse restIndexSettingsResponse = restClient.getIndex("index1");
-		Assertions.assertEquals(2, restIndexSettingsResponse.getIndexSettings().getFieldConfigList().size());
+		Assertions.assertEquals(3, restIndexSettingsResponse.getIndexSettings().getFieldConfigList().size());
 		Assertions.assertEquals("id", restIndexSettingsResponse.getIndexSettings().getFieldConfigList().get(0).getStoredFieldName());
 		Assertions.assertEquals("title", restIndexSettingsResponse.getIndexSettings().getFieldConfigList().get(1).getStoredFieldName());
+		Assertions.assertEquals("year", restIndexSettingsResponse.getIndexSettings().getFieldConfigList().get(2).getStoredFieldName());
 	}
 
 	@Test
@@ -158,23 +171,31 @@ public class RestTest {
 	public void termTest() {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		TermsResponseDTO termsResponseDTO = restClient.getTerms("index1", "title");
-		Assertions.assertEquals(3, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(0).term());
-		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(1).term());
-		Assertions.assertEquals("value", termsResponseDTO.getTerms().get(2).term());
+		Assertions.assertEquals(7, termsResponseDTO.getTerms().size());
+		Assertions.assertEquals("different", termsResponseDTO.getTerms().get(0).term());
+		Assertions.assertEquals("place", termsResponseDTO.getTerms().get(1).term());
+		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(2).term());
+		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(3).term());
+		Assertions.assertEquals("time", termsResponseDTO.getTerms().get(4).term());
+		Assertions.assertEquals("totally", termsResponseDTO.getTerms().get(5).term());
+		Assertions.assertEquals("value", termsResponseDTO.getTerms().get(6).term());
 
 		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setAmount(1));
 		Assertions.assertEquals(1, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(0).term());
+		Assertions.assertEquals("different", termsResponseDTO.getTerms().get(0).term());
 
 		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setAmount(1).setStartTerm("t"));
 		Assertions.assertEquals(1, termsResponseDTO.getTerms().size());
 		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(0).term());
 
 		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setTermFilter("test"));
-		Assertions.assertEquals(2, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("some", termsResponseDTO.getTerms().getFirst().term());
-		Assertions.assertEquals("value", termsResponseDTO.getTerms().getLast().term());
+		Assertions.assertEquals(6, termsResponseDTO.getTerms().size());
+		Assertions.assertEquals("different", termsResponseDTO.getTerms().get(0).term());
+		Assertions.assertEquals("place", termsResponseDTO.getTerms().get(1).term());
+		Assertions.assertEquals("some", termsResponseDTO.getTerms().get(2).term());
+		Assertions.assertEquals("time", termsResponseDTO.getTerms().get(3).term());
+		Assertions.assertEquals("totally", termsResponseDTO.getTerms().get(4).term());
+		Assertions.assertEquals("value", termsResponseDTO.getTerms().get(5).term());
 
 	}
 
@@ -286,16 +307,16 @@ public class RestTest {
 		SearchResultsDTO searchResultsDTO;
 
 		searchResultsDTO = restClient.search(new SearchRest("index1"));
-		Assertions.assertEquals(2, searchResultsDTO.getTotalHits());
+		Assertions.assertEquals(3, searchResultsDTO.getTotalHits());
 
 		searchResultsDTO = restClient.search(new SearchRest("index1"));
 		Assertions.assertNull(searchResultsDTO.getResults());
 
 		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:1").setRows(1));
-		Assertions.assertEquals("456", searchResultsDTO.getResults().getFirst().getId());
+		Assertions.assertEquals("789", searchResultsDTO.getResults().getFirst().getId());
 
 		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:" + ZuliaRESTConstants.ASC).setRows(1));
-		Assertions.assertEquals("456", searchResultsDTO.getResults().getFirst().getId());
+		Assertions.assertEquals("789", searchResultsDTO.getResults().getFirst().getId());
 
 		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:-1").setRows(1));
 		Assertions.assertEquals("123", searchResultsDTO.getResults().getFirst().getId());
@@ -308,7 +329,7 @@ public class RestTest {
 		Assertions.assertEquals(1.0, searchResultsDTO.getResults().getFirst().getScore(), 0.001);
 
 		searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("*:*"));
-		Assertions.assertEquals(2, searchResultsDTO.getTotalHits());
+		Assertions.assertEquals(3, searchResultsDTO.getTotalHits());
 
 		{
 			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setRows(1));
@@ -353,6 +374,33 @@ public class RestTest {
 			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
 			Assertions.assertEquals("some value", doc.getString("title"));
 			Assertions.assertNull(doc.getString("notIndexed"));
+		}
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setFacet("year"));
+			Assertions.assertEquals(3, searchResultsDTO.getTotalHits());
+			FacetsDTO firstFacetField = searchResultsDTO.getFacets().getFirst();
+			FacetDTO topFacet = firstFacetField.values().getFirst();
+			Assertions.assertEquals("2022", topFacet.facet());
+			Assertions.assertEquals(2L, topFacet.count());
+		}
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setFacet("year").setDrillDowns("year:2021"));
+			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
+			FacetsDTO firstFacetField = searchResultsDTO.getFacets().getFirst();
+			FacetDTO topFacet = firstFacetField.values().getFirst();
+			Assertions.assertEquals("2021", topFacet.facet());
+			Assertions.assertEquals(1L, topFacet.count());
+		}
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setHighlights("title").setRows(1));
+			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
+			ScoredResultDTO scoredResultDTO = searchResultsDTO.getResults().getFirst();
+			HighlightDTO highlightDTO = scoredResultDTO.getHighlights().getFirst();
+			Assertions.assertEquals("title", highlightDTO.field());
+			Assertions.assertEquals("some <em>value</em>", highlightDTO.fragments().getFirst());
 		}
 
 		searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:madeupthings"));
