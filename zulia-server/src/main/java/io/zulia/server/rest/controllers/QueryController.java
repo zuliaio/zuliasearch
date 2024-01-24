@@ -81,7 +81,7 @@ public class QueryController {
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
 				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor);
 		QueryResponse qr = indexManager.query(qrBuilder.build());
-		return getStandardResponse(qr, !pretty, cursor != null, truncate);
+		return getJsonResponse(qr, cursor != null, truncate);
 
 	}
 
@@ -234,10 +234,10 @@ public class QueryController {
 			mainQueryBuilder.addAllQf(queryFields);
 		}
 		if (defaultOperator != null) {
-			if (defaultOperator.equalsIgnoreCase("AND")) {
+			if (defaultOperator.equalsIgnoreCase(ZuliaRESTConstants.AND)) {
 				mainQueryBuilder.setDefaultOp(Query.Operator.AND);
 			}
-			else if (defaultOperator.equalsIgnoreCase("OR")) {
+			else if (defaultOperator.equalsIgnoreCase(ZuliaRESTConstants.OR)) {
 				mainQueryBuilder.setDefaultOp(Query.Operator.OR);
 			}
 			else {
@@ -408,10 +408,10 @@ public class QueryController {
 					String sortDir = sortField.substring(sortField.indexOf(":") + 1);
 					sortField = sortField.substring(0, sortField.indexOf(":"));
 
-					if ("-1".equals(sortDir) || "DESC".equalsIgnoreCase(sortDir)) {
+					if ("-1".equals(sortDir) || ZuliaRESTConstants.DESC.equalsIgnoreCase(sortDir)) {
 						fieldSort.setDirection(FieldSort.Direction.DESCENDING);
 					}
-					else if ("1".equals(sortDir) || "ASC".equalsIgnoreCase(sortDir)) {
+					else if ("1".equals(sortDir) || ZuliaRESTConstants.ASC.equalsIgnoreCase(sortDir)) {
 						fieldSort.setDirection(FieldSort.Direction.ASCENDING);
 					}
 					else {
@@ -437,7 +437,7 @@ public class QueryController {
 
 	}
 
-	private SearchResultsDTO getStandardResponse(QueryResponse qr, boolean strict, boolean cursor, boolean truncate) throws InvalidProtocolBufferException {
+	private SearchResultsDTO getJsonResponse(QueryResponse qr, boolean cursor, boolean truncate) {
 
 		SearchResultsDTO searchResultsDTO = new SearchResultsDTO();
 		searchResultsDTO.setTotalHits(qr.getTotalHits());

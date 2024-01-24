@@ -73,4 +73,10 @@ public interface ZuliaRESTConstants {
 	String UTF8_CSV = "text/csv;charset=utf-8";
 
 	String UTF8_JSON = "application/json;charset=utf-8";
+
+	String AND = "AND";
+	String OR = "OR";
+
+	String DESC = "DESC";
+	String ASC = "ASC";
 }

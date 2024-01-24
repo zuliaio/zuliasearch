@@ -7,6 +7,7 @@ import io.zulia.rest.dto.IndexMappingDTO;
 import io.zulia.rest.dto.IndexesResponseDTO;
 import io.zulia.rest.dto.NodeDTO;
 import io.zulia.rest.dto.NodesResponseDTO;
+import io.zulia.rest.dto.ScoredResultDTO;
 import io.zulia.rest.dto.SearchResultsDTO;
 import io.zulia.rest.dto.StatsDTO;
 import io.zulia.rest.dto.TermDTO;
@@ -26,6 +27,7 @@ import jakarta.inject.Singleton;
 @SerdeImport(AssociatedController.Filenames.class)
 @SerdeImport(AssociatedMetadataDTO.class)
 @SerdeImport(SearchResultsDTO.class)
+@SerdeImport(ScoredResultDTO.class)
 public class ZuliaRESTService {
 
 }

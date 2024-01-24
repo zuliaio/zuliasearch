@@ -1,10 +1,12 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
+import io.zulia.ZuliaRESTConstants;
 import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.rest.ZuliaRESTClient;
+import io.zulia.client.rest.options.SearchRest;
 import io.zulia.client.rest.options.TermsRestOptions;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
@@ -48,7 +50,7 @@ public class RestTest {
 			ClientIndexConfig indexConfig = new ClientIndexConfig();
 			indexConfig.addDefaultSearchField("title");
 			indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
-			indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD));
+			indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
 			indexConfig.setIndexName("index1");
 			indexConfig.setDisableCompression(true);
 			indexConfig.setNumberOfShards(1);
@@ -277,11 +279,85 @@ public class RestTest {
 	}
 
 	@Test
-	@Order(6)
+	@Order(7)
 	public void searchTest() throws Exception {
+
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
-		SearchResultsDTO searchResultsDTO = restClient.search("index1", "*:*");
+		SearchResultsDTO searchResultsDTO;
+
+		searchResultsDTO = restClient.search(new SearchRest("index1"));
 		Assertions.assertEquals(2, searchResultsDTO.getTotalHits());
+
+		searchResultsDTO = restClient.search(new SearchRest("index1"));
+		Assertions.assertNull(searchResultsDTO.getResults());
+
+		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:1").setRows(1));
+		Assertions.assertEquals("456", searchResultsDTO.getResults().getFirst().getId());
+
+		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:" + ZuliaRESTConstants.ASC).setRows(1));
+		Assertions.assertEquals("456", searchResultsDTO.getResults().getFirst().getId());
+
+		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:-1").setRows(1));
+		Assertions.assertEquals("123", searchResultsDTO.getResults().getFirst().getId());
+
+		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:" + ZuliaRESTConstants.DESC).setRows(1));
+		Assertions.assertEquals("123", searchResultsDTO.getResults().getFirst().getId());
+
+		searchResultsDTO = restClient.search(new SearchRest("index1").setRows(1));
+		Assertions.assertEquals(1, searchResultsDTO.getResults().size());
+		Assertions.assertEquals(1.0, searchResultsDTO.getResults().getFirst().getScore(), 0.001);
+
+		searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("*:*"));
+		Assertions.assertEquals(2, searchResultsDTO.getTotalHits());
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setRows(1));
+			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
+			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
+			Assertions.assertEquals("some value", doc.getString("title"));
+			Assertions.assertEquals("the best value", doc.getString("notIndexed"));
+		}
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setFields("title", "notIndexed").setRows(1));
+			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
+			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
+			Assertions.assertEquals("some value", doc.getString("title"));
+			Assertions.assertEquals("the best value", doc.getString("notIndexed"));
+		}
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("value").setQueryFields("title").setRows(1));
+			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
+			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
+			Assertions.assertEquals("some value", doc.getString("title"));
+			Assertions.assertEquals("the best value", doc.getString("notIndexed"));
+		}
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setFilterQueries("title:some", "title:value").setRows(1));
+			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
+			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
+			Assertions.assertEquals("some value", doc.getString("title"));
+			Assertions.assertEquals("the best value", doc.getString("notIndexed"));
+		}
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setFilterQueries("title:some", "title:other").setRows(1));
+			Assertions.assertEquals(0, searchResultsDTO.getTotalHits());
+		}
+
+		{
+			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setFields("title").setRows(1));
+			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
+			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
+			Assertions.assertEquals("some value", doc.getString("title"));
+			Assertions.assertNull(doc.getString("notIndexed"));
+		}
+
+		searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:madeupthings"));
+		Assertions.assertEquals(0, searchResultsDTO.getTotalHits());
+
 	}
 
 }

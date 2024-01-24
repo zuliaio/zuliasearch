@@ -2,7 +2,9 @@ package io.zulia.client.rest;
 
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.ZuliaRESTConstants;
+import io.zulia.client.rest.options.SearchRest;
 import io.zulia.client.rest.options.TermsRestOptions;
+import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.rest.dto.FieldsDTO;
@@ -216,9 +218,48 @@ public class ZuliaRESTClient implements AutoCloseable {
 
 	}
 
-	public SearchResultsDTO search(String indexName, String query) {
-		return unirestInstance.get(ZuliaRESTConstants.QUERY_URL).queryString(ZuliaRESTConstants.INDEX, indexName).queryString(ZuliaRESTConstants.QUERY, query)
-				.asObject(SearchResultsDTO.class).ifFailure(new FailureHandler<>()).getBody();
+	public SearchResultsDTO search(SearchRest searchRest) {
+		GetRequest request = unirestInstance.get(ZuliaRESTConstants.QUERY_URL).queryString(ZuliaRESTConstants.INDEX, searchRest.getIndexNames());
+		if (searchRest.getRows() > 0) {
+			request = request.queryString(ZuliaRESTConstants.ROWS, searchRest.getRows());
+		}
+		if (searchRest.getQuery() != null) {
+			request = request.queryString(ZuliaRESTConstants.QUERY, searchRest.getQuery());
+		}
+		if (searchRest.getMm() != null) {
+			request = request.queryString(ZuliaRESTConstants.MIN_MATCH, searchRest.getMm());
+		}
+		if (searchRest.getCursor() != null) {
+			request = request.queryString(ZuliaRESTConstants.CURSOR, searchRest.getCursor());
+		}
+		if (searchRest.getDefaultOperator() != null) {
+			request = request.queryString(ZuliaRESTConstants.DEFAULT_OP,
+					searchRest.getDefaultOperator().equals(ZuliaQuery.Query.Operator.AND) ? ZuliaRESTConstants.AND : ZuliaRESTConstants.OR);
+		}
+
+		if (searchRest.getFacet() != null && !searchRest.getFacet().isEmpty()) {
+			request = request.queryString(ZuliaRESTConstants.FACET, searchRest.getFacet());
+		}
+		if (searchRest.getFields() != null && !searchRest.getFields().isEmpty()) {
+			request = request.queryString(ZuliaRESTConstants.FIELDS, searchRest.getFields());
+		}
+		if (searchRest.getDrillDowns() != null && !searchRest.getDrillDowns().isEmpty()) {
+			request = request.queryString(ZuliaRESTConstants.DRILL_DOWN, searchRest.getDrillDowns());
+		}
+		if (searchRest.getFilterQueries() != null && !searchRest.getFilterQueries().isEmpty()) {
+			request = request.queryString(ZuliaRESTConstants.FILTER_QUERY, searchRest.getFilterQueries());
+		}
+		if (searchRest.getQueryFields() != null && !searchRest.getQueryFields().isEmpty()) {
+			request = request.queryString(ZuliaRESTConstants.QUERY_FIELD, searchRest.getQueryFields());
+		}
+		if (searchRest.getSort() != null && !searchRest.getSort().isEmpty()) {
+			request = request.queryString(ZuliaRESTConstants.SORT, searchRest.getSort());
+		}
+		if (searchRest.getHighlights() != null && !searchRest.getHighlights().isEmpty()) {
+			request = request.queryString(ZuliaRESTConstants.HIGHLIGHT, searchRest.getHighlights());
+		}
+
+		return request.asObject(SearchResultsDTO.class).ifFailure(new FailureHandler<>()).getBody();
 	}
 
 }
