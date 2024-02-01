@@ -55,8 +55,7 @@ public class FieldConfigMapper<T> {
 
 		if (List.class.isAssignableFrom(fieldType)) {
 			Type genericType = f.getGenericType();
-			if (genericType instanceof ParameterizedType) {
-				ParameterizedType pType = (ParameterizedType) genericType;
+			if (genericType instanceof ParameterizedType pType) {
 				fieldType = (Class<?>) pType.getActualTypeArguments()[0];
 			}
 		}
@@ -69,7 +68,7 @@ public class FieldConfigMapper<T> {
 								+ ">");
 			}
 
-			FieldConfigMapper fieldConfigMapper = new FieldConfigMapper<>(fieldType, fieldName);
+			FieldConfigMapper<?> fieldConfigMapper = new FieldConfigMapper<>(fieldType, fieldName);
 
 			List<Field> allFields = AnnotationUtil.getNonStaticFields(fieldType, true);
 
@@ -188,7 +187,7 @@ public class FieldConfigMapper<T> {
 			FieldConfig fieldConfig = fieldConfigMap.get(fieldName);
 			configs.add(fieldConfig);
 		}
-		for (FieldConfigMapper fcm : embeddedFieldConfigMappers) {
+		for (FieldConfigMapper<?> fcm : embeddedFieldConfigMappers) {
 			configs.addAll(fcm.getFieldConfigs());
 		}
 		return configs;
