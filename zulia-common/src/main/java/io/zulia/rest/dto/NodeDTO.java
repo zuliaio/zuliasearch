@@ -5,13 +5,9 @@ import java.util.List;
 public class NodeDTO {
 
 	private String serverAddress;
-
 	private int servicePort;
-
 	private int restPort;
-
 	private long heartbeat;
-
 	private List<IndexMappingDTO> indexMappings;
 
 	public NodeDTO() {

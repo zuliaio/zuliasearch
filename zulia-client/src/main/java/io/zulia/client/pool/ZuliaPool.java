@@ -31,7 +31,6 @@ import static io.zulia.message.ZuliaIndex.IndexShardMapping;
 
 public class ZuliaPool {
 
-
 	protected class ZuliaNodeUpdateThread extends Thread {
 
 		ZuliaNodeUpdateThread() {
@@ -70,7 +69,6 @@ public class ZuliaPool {
 	private final ConcurrentHashMap<String, GenericObjectPool<ZuliaConnection>> zuliaConnectionPoolMap;
 	private final ConcurrentHashMap<String, ZuliaRESTClient> zuliaRestPoolMap;
 	private final ConcurrentHashMap<String, Node> nodeKeyToNode;
-
 	private final ConnectionListener connectionListener;
 	private boolean isClosed;
 	private List<Node> nodes;

@@ -25,20 +25,15 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ShardWriteManager {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ShardWriteManager.class);
-
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
-
 	private final ShardDocumentIndexer shardDocumentIndexer;
 	private final ServerIndexConfig indexConfig;
 	private final int shardNumber;
 	private final String indexName;
 	private final AtomicLong counter;
-
 	private Long lastCommit;
 	private Long lastChange;
-
 	private Long lastWarm;
-
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 

@@ -6,7 +6,6 @@ public class TermsResponseDTO {
 
 	private String index;
 	private String field;
-
 	private List<TermDTO> terms;
 
 	public TermsResponseDTO() {

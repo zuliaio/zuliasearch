@@ -56,14 +56,12 @@ import java.util.function.Consumer;
 public class ShardReader implements AutoCloseable {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ShardReader.class);
-
 	private final DirectoryReader indexReader;
 	private final DirectoryTaxonomyReader taxoReader;
 	private final ServerIndexConfig indexConfig;
 	private final String indexName;
 	private final int shardNumber;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
-
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> pinnedQueryResultCache;
 

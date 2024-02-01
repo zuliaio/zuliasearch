@@ -42,9 +42,7 @@ import java.util.List;
 public class ZuliaDConfig {
 
 	private static final Gson GSON = new GsonBuilder().create();
-
 	private static final Logger LOG = LoggerFactory.getLogger(ZuliaDConfig.class);
-
 	private NodeService nodeService;
 	private ZuliaConfig zuliaConfig;
 

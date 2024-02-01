@@ -11,13 +11,10 @@ import java.io.OutputStream;
 
 public class FetchLargeAssociated extends RESTCommand<FetchLargeAssociatedResult> implements ShardRoutableCommand {
 	private final String uniqueId;
-
 	private final String indexName;
-
 	private String fileName;
 	private File outputFile;
 	private OutputStream destination;
-
 	private boolean closeStream;
 
 	public FetchLargeAssociated(String uniqueId, String indexName, String fileName, File outputFile) {

@@ -28,11 +28,8 @@ import java.util.List;
 public class FieldConfigMapper<T> {
 
 	private final String prefix;
-
 	private final Class<T> clazz;
-
 	private final HashMap<String, FieldConfig> fieldConfigMap;
-
 	private final List<FieldConfigMapper<?>> embeddedFieldConfigMappers;
 
 	public FieldConfigMapper(Class<T> clazz, String prefix) {

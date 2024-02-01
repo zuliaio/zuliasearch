@@ -80,20 +80,15 @@ import java.util.stream.Stream;
 public class ZuliaIndexManager {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ZuliaIndexManager.class);
-
 	private final IndexService indexService;
 	private final InternalClient internalClient;
 	private final ExecutorService pool;
 	private final ConcurrentHashMap<String, ZuliaIndex> indexMap;
-
 	private final ZuliaConfig zuliaConfig;
 	private final NodeService nodeService;
-
 	private final Node thisNode;
 	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
-
 	private ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
-
 	private final ConcurrentHashMap<String, String> indexAliasMap;
 
 	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {

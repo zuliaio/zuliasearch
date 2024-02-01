@@ -6,8 +6,8 @@ import io.zulia.client.command.Store;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.rest.ZuliaRESTClient;
-import io.zulia.client.rest.options.SearchRest;
-import io.zulia.client.rest.options.TermsRestOptions;
+import io.zulia.client.rest.options.SearchREST;
+import io.zulia.client.rest.options.TermsRESTOptions;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
@@ -180,15 +180,15 @@ public class RestTest {
 		Assertions.assertEquals("totally", termsResponseDTO.getTerms().get(5).term());
 		Assertions.assertEquals("value", termsResponseDTO.getTerms().get(6).term());
 
-		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setAmount(1));
+		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setAmount(1));
 		Assertions.assertEquals(1, termsResponseDTO.getTerms().size());
 		Assertions.assertEquals("different", termsResponseDTO.getTerms().get(0).term());
 
-		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setAmount(1).setStartTerm("t"));
+		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setAmount(1).setStartTerm("t"));
 		Assertions.assertEquals(1, termsResponseDTO.getTerms().size());
 		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(0).term());
 
-		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRestOptions().setTermFilter("test"));
+		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setTermFilter("test"));
 		Assertions.assertEquals(6, termsResponseDTO.getTerms().size());
 		Assertions.assertEquals("different", termsResponseDTO.getTerms().get(0).term());
 		Assertions.assertEquals("place", termsResponseDTO.getTerms().get(1).term());
@@ -306,33 +306,33 @@ public class RestTest {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		SearchResultsDTO searchResultsDTO;
 
-		searchResultsDTO = restClient.search(new SearchRest("index1"));
+		searchResultsDTO = restClient.search(new SearchREST("index1"));
 		Assertions.assertEquals(3, searchResultsDTO.getTotalHits());
 
-		searchResultsDTO = restClient.search(new SearchRest("index1"));
+		searchResultsDTO = restClient.search(new SearchREST("index1"));
 		Assertions.assertNull(searchResultsDTO.getResults());
 
-		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:1").setRows(1));
+		searchResultsDTO = restClient.search(new SearchREST("index1").setSort("title:1").setRows(1));
 		Assertions.assertEquals("789", searchResultsDTO.getResults().getFirst().getId());
 
-		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:" + ZuliaRESTConstants.ASC).setRows(1));
+		searchResultsDTO = restClient.search(new SearchREST("index1").setSort("title:" + ZuliaRESTConstants.ASC).setRows(1));
 		Assertions.assertEquals("789", searchResultsDTO.getResults().getFirst().getId());
 
-		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:-1").setRows(1));
+		searchResultsDTO = restClient.search(new SearchREST("index1").setSort("title:-1").setRows(1));
 		Assertions.assertEquals("123", searchResultsDTO.getResults().getFirst().getId());
 
-		searchResultsDTO = restClient.search(new SearchRest("index1").setSort("title:" + ZuliaRESTConstants.DESC).setRows(1));
+		searchResultsDTO = restClient.search(new SearchREST("index1").setSort("title:" + ZuliaRESTConstants.DESC).setRows(1));
 		Assertions.assertEquals("123", searchResultsDTO.getResults().getFirst().getId());
 
-		searchResultsDTO = restClient.search(new SearchRest("index1").setRows(1));
+		searchResultsDTO = restClient.search(new SearchREST("index1").setRows(1));
 		Assertions.assertEquals(1, searchResultsDTO.getResults().size());
 		Assertions.assertEquals(1.0, searchResultsDTO.getResults().getFirst().getScore(), 0.001);
 
-		searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("*:*"));
+		searchResultsDTO = restClient.search(new SearchREST("index1").setQuery("*:*"));
 		Assertions.assertEquals(3, searchResultsDTO.getTotalHits());
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setRows(1));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setQuery("title:value").setRows(1));
 			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
 			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
 			Assertions.assertEquals("some value", doc.getString("title"));
@@ -340,7 +340,7 @@ public class RestTest {
 		}
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setFields("title", "notIndexed").setRows(1));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setQuery("title:value").setFields("title", "notIndexed").setRows(1));
 			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
 			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
 			Assertions.assertEquals("some value", doc.getString("title"));
@@ -348,7 +348,7 @@ public class RestTest {
 		}
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("value").setQueryFields("title").setRows(1));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setQuery("value").setQueryFields("title").setRows(1));
 			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
 			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
 			Assertions.assertEquals("some value", doc.getString("title"));
@@ -356,7 +356,7 @@ public class RestTest {
 		}
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setFilterQueries("title:some", "title:value").setRows(1));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setFilterQueries("title:some", "title:value").setRows(1));
 			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
 			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
 			Assertions.assertEquals("some value", doc.getString("title"));
@@ -364,12 +364,12 @@ public class RestTest {
 		}
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setFilterQueries("title:some", "title:other").setRows(1));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setFilterQueries("title:some", "title:other").setRows(1));
 			Assertions.assertEquals(0, searchResultsDTO.getTotalHits());
 		}
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setFields("title").setRows(1));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setQuery("title:value").setFields("title").setRows(1));
 			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
 			Document doc = searchResultsDTO.getResults().getFirst().getDocument();
 			Assertions.assertEquals("some value", doc.getString("title"));
@@ -377,7 +377,7 @@ public class RestTest {
 		}
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setFacet("year"));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setFacet("year"));
 			Assertions.assertEquals(3, searchResultsDTO.getTotalHits());
 			FacetsDTO firstFacetField = searchResultsDTO.getFacets().getFirst();
 			FacetDTO topFacet = firstFacetField.values().getFirst();
@@ -386,7 +386,7 @@ public class RestTest {
 		}
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setFacet("year").setDrillDowns("year:2021"));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setFacet("year").setDrillDowns("year:2021"));
 			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
 			FacetsDTO firstFacetField = searchResultsDTO.getFacets().getFirst();
 			FacetDTO topFacet = firstFacetField.values().getFirst();
@@ -395,7 +395,7 @@ public class RestTest {
 		}
 
 		{
-			searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:value").setHighlights("title").setRows(1));
+			searchResultsDTO = restClient.search(new SearchREST("index1").setQuery("title:value").setHighlights("title").setRows(1));
 			Assertions.assertEquals(1, searchResultsDTO.getTotalHits());
 			ScoredResultDTO scoredResultDTO = searchResultsDTO.getResults().getFirst();
 			HighlightDTO highlightDTO = scoredResultDTO.getHighlights().getFirst();
@@ -403,7 +403,7 @@ public class RestTest {
 			Assertions.assertEquals("some <em>value</em>", highlightDTO.fragments().getFirst());
 		}
 
-		searchResultsDTO = restClient.search(new SearchRest("index1").setQuery("title:madeupthings"));
+		searchResultsDTO = restClient.search(new SearchREST("index1").setQuery("title:madeupthings"));
 		Assertions.assertEquals(0, searchResultsDTO.getTotalHits());
 
 	}

@@ -26,7 +26,6 @@ public class ZuliaNode {
 	private final NodeService nodeService;
 	private final ZuliaConfig zuliaConfig;
 	private ApplicationContext micronautService;
-
 	private boolean started;
 
 	public ZuliaNode(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {

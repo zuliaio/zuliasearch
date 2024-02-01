@@ -17,8 +17,6 @@ import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -32,21 +30,16 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public class MongoDocumentStorage implements DocumentStorage {
-	@SuppressWarnings("unused")
-	private final static Logger LOG = LoggerFactory.getLogger(MongoDocumentStorage.class);
 
 	private static final String ASSOCIATED_FILES = "associatedFiles";
 	private static final String FILES = "files";
 	private static final String CHUNKS = "chunks";
 	private static final String ASSOCIATED_METADATA = "metadata";
-
 	private static final String TIMESTAMP = "_tstamp_";
-
 	private static final String ENABLESHARDING = "enablesharding";
 	private static final String ADMIN = "admin";
 	public static final String SHARDCOLLECTION = "shardcollection";
 	private final boolean sharded;
-
 	private final MongoClient mongoClient;
 	private final String database;
 	private final String indexName;

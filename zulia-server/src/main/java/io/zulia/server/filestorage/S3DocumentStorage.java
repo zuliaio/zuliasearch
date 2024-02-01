@@ -51,15 +51,12 @@ import java.util.stream.StreamSupport;
 
 public class S3DocumentStorage implements DocumentStorage {
 	private static final String TIMESTAMP = "_tstamp_";
-
 	private static final String FILE_EXTERNAL = "_external_";
 	private static final String COLLECTION = "associatedFiles.info";
 	public static final String FILENAME = "filename";
-
 	private final MongoClient client;
 	private final String indexName;
 	private final String dbName;
-
 	private final String bucket;
 	private final S3Client s3;
 	private final String region;

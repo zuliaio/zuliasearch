@@ -4,13 +4,9 @@ import java.util.List;
 
 public class SearchResultsDTO {
 	private long totalHits;
-
 	private String cursor;
-
 	private List<AnalysisDTO> analysis;
-
 	private List<ScoredResultDTO> results;
-
 	private List<FacetsDTO> facets;
 
 	public SearchResultsDTO() {

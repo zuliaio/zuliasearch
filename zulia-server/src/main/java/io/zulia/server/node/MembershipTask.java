@@ -21,15 +21,12 @@ import java.util.stream.Collectors;
 
 public abstract class MembershipTask extends TimerTask {
 
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaIndexManager.class);
 	//a node is no longer considered alive if it has not updated its heartbeat for this number of seconds
 	public static final int MAX_HEARTBEAT_LAG_SECONDS = 30;
-
 	private final NodeService nodeService;
 	private final ZuliaConfig zuliaConfig;
-
 	private Map<String, Node> otherNodeMap;
-
-	private static final Logger LOG = LoggerFactory.getLogger(ZuliaIndexManager.class);
 
 	public MembershipTask(ZuliaConfig zuliaConfig, NodeService nodeService) {
 		this.nodeService = nodeService;

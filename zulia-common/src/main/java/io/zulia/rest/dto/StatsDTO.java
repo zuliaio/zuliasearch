@@ -5,7 +5,6 @@ public class StatsDTO {
 	private long jvmUsedMemoryMB;
 	private long jvmFreeMemoryMB;
 	private long jvmTotalMemoryMB;
-
 	private long jvmMaxMemoryMB;
 	private double freeDataDirSpaceGB;
 	private double totalDataDirSpaceGB;

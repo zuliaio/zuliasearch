@@ -17,7 +17,6 @@ public class StoreLargeAssociated extends RESTCommand<StoreLargeAssociatedResult
 	private Document meta;
 	private byte[] bytes;
 	private File file;
-
 	private InputStream inputStream;
 	private boolean closeStream;
 

@@ -2,8 +2,8 @@ package io.zulia.client.rest;
 
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.ZuliaRESTConstants;
-import io.zulia.client.rest.options.SearchRest;
-import io.zulia.client.rest.options.TermsRestOptions;
+import io.zulia.client.rest.options.SearchREST;
+import io.zulia.client.rest.options.TermsRESTOptions;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
@@ -86,7 +86,7 @@ public class ZuliaRESTClient implements AutoCloseable {
 		return getTerms(indexName, fieldName, null);
 	}
 
-	public TermsResponseDTO getTerms(String indexName, String fieldName, TermsRestOptions termsOptions) {
+	public TermsResponseDTO getTerms(String indexName, String fieldName, TermsRESTOptions termsOptions) {
 		return unirestInstance.get(ZuliaRESTConstants.TERMS_URL).queryString(ZuliaRESTConstants.INDEX, indexName)
 				.queryString(ZuliaRESTConstants.FIELDS, fieldName).queryString(termsOptions != null ? termsOptions.getParameters() : null)
 				.asObject(TermsResponseDTO.class).ifFailure(new FailureHandler<>()).getBody();
@@ -218,7 +218,7 @@ public class ZuliaRESTClient implements AutoCloseable {
 
 	}
 
-	public SearchResultsDTO search(SearchRest searchRest) {
+	public SearchResultsDTO search(SearchREST searchRest) {
 		GetRequest request = unirestInstance.get(ZuliaRESTConstants.QUERY_URL).queryString(ZuliaRESTConstants.INDEX, searchRest.getIndexNames());
 		if (searchRest.getRows() > 0) {
 			request = request.queryString(ZuliaRESTConstants.ROWS, searchRest.getRows());

@@ -7,17 +7,12 @@ import java.util.List;
 public class ScoredResultDTO {
 	private String id;
 	private Float score;
-
 	private String indexName;
-
 	private Document document;
-
 	private List<HighlightDTO> highlights;
-
 	private List<AnalysisResultDTO> analysis;
 
 	public ScoredResultDTO() {
-
 	}
 
 	public String getId() {

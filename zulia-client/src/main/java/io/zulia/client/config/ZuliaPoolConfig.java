@@ -11,8 +11,6 @@ import static io.zulia.message.ZuliaBase.Node;
 
 public class ZuliaPoolConfig {
 
-	private List<Node> nodes;
-
 	private int maxConnections;
 	private int maxIdle;
 	private int defaultRetries;
@@ -21,9 +19,8 @@ public class ZuliaPoolConfig {
 	private boolean routingEnabled;
 	private boolean nodeUpdateEnabled;
 	private int nodeUpdateInterval;
-
 	private ConnectionListener connectionListener = new Slf4jLoggingConnectionListener();
-
+	private final List<Node> nodes;
 	public final static int DEFAULT_DEFAULT_RETRIES = 0;
 	public final static int DEFAULT_MEMBER_UPDATE_INTERVAL = 10000;
 

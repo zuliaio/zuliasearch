@@ -93,28 +93,21 @@ import java.util.stream.Stream;
 public class ZuliaIndex {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ZuliaIndex.class);
-
 	private final ServerIndexConfig indexConfig;
 	private final GenericObjectPool<ZuliaFlexibleQueryParser> parsers;
 	private final ConcurrentHashMap<Integer, ZuliaShard> primaryShardMap;
 	private final ConcurrentHashMap<Integer, ZuliaShard> replicaShardMap;
-
 	private final ExecutorService shardPool;
 	private final int numberOfShards;
 	private final String indexName;
-
 	private final DocumentStorage documentStorage;
 	private final ZuliaConfig zuliaConfig;
-
 	private final Timer commitTimer;
 	private final TimerTask commitTask;
-
 	private final Timer warmTimer;
-
 	private final TimerTask warmTask;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
-
 	private final IndexShardMapping indexShardMapping;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService,

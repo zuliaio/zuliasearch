@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ZuliaServiceServer {
 	private final static Logger LOG = LoggerFactory.getLogger(ZuliaServiceServer.class);
+	private final Server server;
 
 	public static class ResponseCompressionIntercept implements ServerInterceptor {
 
@@ -31,8 +32,6 @@ public class ZuliaServiceServer {
 			return next.startCall(call, headers);
 		}
 	}
-
-	private final Server server;
 
 	public ZuliaServiceServer(ZuliaConfig zuliaConfig, ZuliaIndexManager indexManager) {
 

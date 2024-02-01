@@ -28,9 +28,7 @@ public class FSIndexService implements IndexService {
 	private static final String INDEX_EXTENSION = "_index.json";
 	private static final String MAPPING_EXTENSION = "_mapping.json";
 	private static final String ALIAS_EXTENSION = "_alias.json";
-
 	private static final String SETTINGS_DIR = "settings";
-
 	private final String baseDir;
 
 	public FSIndexService(ZuliaConfig zuliaConfig) {

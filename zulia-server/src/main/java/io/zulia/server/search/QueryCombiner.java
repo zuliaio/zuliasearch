@@ -39,7 +39,6 @@ import java.util.Map;
 public class QueryCombiner {
 
 	private final static Logger LOG = LoggerFactory.getLogger(QueryCombiner.class);
-
 	private final List<InternalQueryResponse> responses;
 	private final Map<String, Map<Integer, ShardQueryResponse>> indexToShardQueryResponseMap;
 	private final List<ShardQueryResponse> shardResponses;
@@ -50,7 +49,6 @@ public class QueryCombiner {
 	private final SortRequest sortRequest;
 	private final Collection<ZuliaIndex> indexes;
 	private final Map<String, Integer> indexToShardCount;
-
 	private boolean isShort;
 
 	public QueryCombiner(Collection<ZuliaIndex> indexes, QueryRequest request, List<InternalQueryResponse> responses) {

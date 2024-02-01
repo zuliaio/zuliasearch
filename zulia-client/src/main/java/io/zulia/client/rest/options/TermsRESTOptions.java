@@ -6,31 +6,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class TermsRestOptions {
+public class TermsRESTOptions {
 
-	public TermsRestOptions() {
+	public TermsRESTOptions() {
 
 	}
 
 	private Integer amount;
 	private Integer minDocFreq;
 	private Integer minTermFreq;
-
 	private String startTerm;
-
 	private String endTerm;
-
 	private String termFilter;
-
 	private String termMatch;
-
 	private List<String> includeTerm;
 
 	public Integer getAmount() {
 		return amount;
 	}
 
-	public TermsRestOptions setAmount(Integer amount) {
+	public TermsRESTOptions setAmount(Integer amount) {
 		this.amount = amount;
 		return this;
 	}
@@ -39,7 +34,7 @@ public class TermsRestOptions {
 		return minDocFreq;
 	}
 
-	public TermsRestOptions setMinDocFreq(Integer minDocFreq) {
+	public TermsRESTOptions setMinDocFreq(Integer minDocFreq) {
 		this.minDocFreq = minDocFreq;
 		return this;
 	}
@@ -48,7 +43,7 @@ public class TermsRestOptions {
 		return minTermFreq;
 	}
 
-	public TermsRestOptions setMinTermFreq(Integer minTermFreq) {
+	public TermsRESTOptions setMinTermFreq(Integer minTermFreq) {
 		this.minTermFreq = minTermFreq;
 		return this;
 	}
@@ -57,7 +52,7 @@ public class TermsRestOptions {
 		return startTerm;
 	}
 
-	public TermsRestOptions setStartTerm(String startTerm) {
+	public TermsRESTOptions setStartTerm(String startTerm) {
 		this.startTerm = startTerm;
 		return this;
 	}
@@ -66,7 +61,7 @@ public class TermsRestOptions {
 		return endTerm;
 	}
 
-	public TermsRestOptions setEndTerm(String endTerm) {
+	public TermsRESTOptions setEndTerm(String endTerm) {
 		this.endTerm = endTerm;
 		return this;
 	}
@@ -75,7 +70,7 @@ public class TermsRestOptions {
 		return termFilter;
 	}
 
-	public TermsRestOptions setTermFilter(String termFilter) {
+	public TermsRESTOptions setTermFilter(String termFilter) {
 		this.termFilter = termFilter;
 		return this;
 	}
@@ -84,7 +79,7 @@ public class TermsRestOptions {
 		return termMatch;
 	}
 
-	public TermsRestOptions setTermMatch(String termMatch) {
+	public TermsRESTOptions setTermMatch(String termMatch) {
 		this.termMatch = termMatch;
 		return this;
 	}
@@ -93,7 +88,7 @@ public class TermsRestOptions {
 		return includeTerm;
 	}
 
-	public TermsRestOptions setIncludeTerm(List<String> includeTerm) {
+	public TermsRESTOptions setIncludeTerm(List<String> includeTerm) {
 		this.includeTerm = includeTerm;
 		return this;
 	}

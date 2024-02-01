@@ -10,11 +10,8 @@ public class ZuliaConnection {
 	private final long connectionId;
 	private final long connectionNumberForNode;
 	private final boolean compressedConnection;
-
 	private final Node node;
-
 	private ManagedChannel channel;
-
 	private ZuliaServiceGrpc.ZuliaServiceBlockingStub blockingStub;
 	private ZuliaServiceGrpc.ZuliaServiceStub asyncStub;
 

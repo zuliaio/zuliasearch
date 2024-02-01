@@ -26,15 +26,11 @@ public class CacheTest {
 
 	@RegisterExtension
 	static final NodeExtension nodeExtension = new NodeExtension(1);
-
 	public static final String CACHE_TEST = "cacheTest";
-
 	public static final String CACHE_TEST_2 = "cacheTest2";
 	public static final String ALIAS_1 = "alias1";
 	public static final String ALIAS_2 = "alias2";
-
 	public static final String ALIAS_3 = "alias3";
-
 	private static final int repeatCount = 50;
 	private static final int uniqueDocs = 7;
 
