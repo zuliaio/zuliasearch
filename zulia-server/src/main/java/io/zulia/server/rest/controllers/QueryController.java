@@ -128,13 +128,35 @@ public class QueryController {
 						.contentType(MediaType.APPLICATION_OCTET_STREAM);
 			}
 		}
-		else if (facet != null && !facet.isEmpty() && rows == 0) {
+		else {
+			throw new IllegalArgumentException("Please specify fields to be exported i.e. fl=title&fl=abstract");
+		}
+	}
+
+	@Get("/facet")
+	@Produces(ZuliaRESTConstants.UTF8_CSV)
+	public HttpResponse<?> getFacets(@QueryValue(ZuliaRESTConstants.INDEX) List<String> indexName,
+			@QueryValue(value = ZuliaRESTConstants.QUERY, defaultValue = "*:*") String query,
+			@Nullable @QueryValue(ZuliaRESTConstants.QUERY_FIELD) List<String> queryFields,
+			@Nullable @QueryValue(ZuliaRESTConstants.FILTER_QUERY) List<String> filterQueries,
+			@Nullable @QueryValue(ZuliaRESTConstants.QUERY_JSON) List<String> queryJsonList,
+			@Nullable @QueryValue(ZuliaRESTConstants.FIELDS) List<String> fields, @Nullable @QueryValue(ZuliaRESTConstants.FACET) List<String> facet,
+			@Nullable @QueryValue(ZuliaRESTConstants.DRILL_DOWN) List<String> drillDowns,
+			@Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator, @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
+			@Nullable @QueryValue(ZuliaRESTConstants.MIN_MATCH) Integer mm, @QueryValue(value = ZuliaRESTConstants.DEBUG, defaultValue = "false") Boolean debug,
+			@Nullable @QueryValue(ZuliaRESTConstants.START) Integer start, @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor) throws Exception {
+
+		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+
+		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, null, 0, facet, drillDowns,
+				defaultOperator, sort, mm, null, debug, null, start, null, null, null, cursor);
+
+		if (facet != null && !facet.isEmpty()) {
 			String response = getFacetCSV(indexManager, qrBuilder);
-			return HttpResponse.ok(response).header("Content-Disposition", "attachment; filename=" + fileName).contentType(MediaType.APPLICATION_OCTET_STREAM);
+			return HttpResponse.ok(response);
 		}
 		else {
-			throw new IllegalArgumentException(
-					"Please specify fields to be exported i.e. fl=title&fl=abstract or the facets to be exported i.e. facet=issn&facet=pubYear&rows=0");
+			throw new IllegalArgumentException("Please specify fields to be exported i.e. facet=issn&facet=pubYear");
 		}
 	}
 
