@@ -156,7 +156,7 @@ public class QueryController {
 			return HttpResponse.ok(response);
 		}
 		else {
-			throw new IllegalArgumentException("Please specify fields to be exported i.e. facet=issn&facet=pubYear");
+			throw new IllegalArgumentException("Please specify facets to be exported i.e. facet=issn&facet=pubYear");
 		}
 	}
 
