@@ -68,7 +68,6 @@ dependencies {
     implementation(libs.snake.yaml)
     implementation(libs.snappy.java)
     implementation(libs.swagger.annotations)
-    runtimeOnly(libs.logback.classic)
     testImplementation(libs.flapdoodle.mongo)
     testImplementation(libs.micronaut.http.client)
     testImplementation(libs.micronaut.test.junit5)
