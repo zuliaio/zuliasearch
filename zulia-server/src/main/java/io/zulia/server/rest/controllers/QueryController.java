@@ -1,5 +1,6 @@
 package io.zulia.server.rest.controllers;
 
+import com.google.common.base.Joiner;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.micronaut.context.annotation.Parameter;
@@ -113,19 +114,23 @@ public class QueryController {
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
 				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor);
 
+		LocalDateTime now = LocalDateTime.now();
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
+		String fileName = "ZuliaDownload_" + Joiner.on("-").join(indexName) + "_" + now.format(formatter) + ".csv";
 		if (fields != null && !fields.isEmpty()) {
 			if (batch) {
-				return getBatchStream(fields, batchSize, qrBuilder, indexManager);
+				return getBatchStream(fields, batchSize, qrBuilder, indexManager, fileName);
 			}
 			else {
 				QueryResponse qr = indexManager.query(qrBuilder.build());
 				String response = getCSVDocumentResponse(fields, qr);
-				return HttpResponse.ok(response);
+				return HttpResponse.ok(response).header("Content-Disposition", "attachment; filename=" + fileName)
+						.contentType(MediaType.APPLICATION_OCTET_STREAM);
 			}
 		}
 		else if (facet != null && !facet.isEmpty() && rows == 0) {
 			String response = getFacetCSV(indexManager, qrBuilder);
-			return HttpResponse.ok(response);
+			return HttpResponse.ok(response).header("Content-Disposition", "attachment; filename=" + fileName).contentType(MediaType.APPLICATION_OCTET_STREAM);
 		}
 		else {
 			throw new IllegalArgumentException(
@@ -133,8 +138,8 @@ public class QueryController {
 		}
 	}
 
-	private MutableHttpResponse<Writable> getBatchStream(List<String> fields, Integer batchSize, QueryRequest.Builder qrBuilder,
-			ZuliaIndexManager indexManager) {
+	private MutableHttpResponse<Writable> getBatchStream(List<String> fields, Integer batchSize, QueryRequest.Builder qrBuilder, ZuliaIndexManager indexManager,
+			String fileName) {
 		qrBuilder.setAmount(batchSize);
 
 		Writable writable = output -> {
@@ -168,11 +173,7 @@ public class QueryController {
 			}
 		};
 
-		LocalDateTime now = LocalDateTime.now();
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
-
-		return HttpResponse.ok(writable).header("content-disposition", "attachment; filename = " + "zuliaDownload_" + now.format(formatter) + ".csv")
-				.contentType(MediaType.APPLICATION_OCTET_STREAM);
+		return HttpResponse.ok(writable).header("Content-Disposition", "attachment; filename=" + fileName).contentType(MediaType.APPLICATION_OCTET_STREAM);
 	}
 
 	@NotNull

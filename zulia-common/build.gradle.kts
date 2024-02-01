@@ -24,6 +24,7 @@ dependencies {
     api(libs.mongodb.driver.core)
     api(libs.protobuf.java.util)
     api(libs.simplemagic)
+    api(libs.logback.classic)
     api(libs.slf4j.api)
 
     protobuf(libs.sketches.java)
