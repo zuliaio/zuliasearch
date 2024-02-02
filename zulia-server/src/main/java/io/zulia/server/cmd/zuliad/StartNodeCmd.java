@@ -9,15 +9,16 @@ import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.ZuliaVersion;
 import org.apache.lucene.util.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.util.Collection;
 import java.util.concurrent.Callable;
-import java.util.logging.Logger;
 
 @CommandLine.Command(name = "start", description = "Start Zulia Node")
 public class StartNodeCmd implements Callable<Integer> {
-	public static final Logger LOG = Logger.getLogger(StartNodeCmd.class.getSimpleName());
+	public static final Logger LOG = LoggerFactory.getLogger(StartNodeCmd.class);
 
 	@CommandLine.ParentCommand
 	private ZuliaD zuliadCmd;
@@ -35,12 +36,12 @@ public class StartNodeCmd implements Callable<Integer> {
 
 		if (zuliaConfig.isCluster()) {
 			if (nodes.isEmpty()) {
-				LOG.severe("No nodes added to the cluster");
+				LOG.error("No nodes added to the cluster");
 				return 3;
 			}
 		}
 		else {
-			LOG.warning("Running in single node mode");
+			LOG.error("Running in single node mode");
 		}
 
 		ZuliaDConfig.displayNodes(nodeService, "Registered nodes:");

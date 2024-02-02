@@ -18,7 +18,7 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 
 	private String uniqueId;
 	private String indexName;
-	private String filename;
+	private String fileName;
 	private FetchType resultFetchType;
 	private FetchType associatedFetchType;
 
@@ -39,13 +39,13 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 		return indexName;
 	}
 
-	public Fetch setFilename(String filename) {
-		this.filename = filename;
+	public Fetch setFileName(String fileName) {
+		this.fileName = fileName;
 		return this;
 	}
 
 	public String getFileFame() {
-		return filename;
+		return fileName;
 	}
 
 	public FetchType getResultFetchType() {
@@ -100,8 +100,8 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 		if (indexName != null) {
 			fetchRequestBuilder.setIndexName(indexName);
 		}
-		if (filename != null) {
-			fetchRequestBuilder.setFilename(filename);
+		if (fileName != null) {
+			fetchRequestBuilder.setFilename(fileName);
 		}
 		if (resultFetchType != null) {
 			fetchRequestBuilder.setResultFetchType(resultFetchType);

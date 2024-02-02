@@ -1,16 +1,20 @@
 package io.zulia.server.rest.controllers;
 
-import com.cedarsoftware.util.io.JsonWriter;
-import io.micronaut.http.HttpResponse;
-import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.hateoas.JsonError;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.zulia.ZuliaRESTConstants;
+import io.zulia.rest.dto.FieldsDTO;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
-import org.bson.Document;
 
 import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
@@ -20,40 +24,26 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
  *
  * @author pmeyer
  */
-@Controller(ZuliaRESTConstants.FIELDS_URL)
+
+@Controller
+@ApiResponses({ @ApiResponse(responseCode = "400", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
+		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
+		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
+		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
 public class FieldsController {
 
-	@Get
-	@Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-	public HttpResponse<?> get(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName,
-			@QueryValue(value = ZuliaRESTConstants.PRETTY, defaultValue = "true") Boolean pretty) {
-
+	@ExecuteOn(TaskExecutors.BLOCKING)
+	@Get(ZuliaRESTConstants.FIELDS_URL)
+	@Produces(ZuliaRESTConstants.UTF8_JSON)
+	public FieldsDTO getFields(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
-
 		GetFieldNamesRequest fieldNamesRequest = GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
+		GetFieldNamesResponse fieldNamesResponse = indexManager.getFieldNames(fieldNamesRequest);
 
-		GetFieldNamesResponse fieldNamesResponse;
-
-		try {
-			fieldNamesResponse = indexManager.getFieldNames(fieldNamesRequest);
-
-			Document mongoDocument = new Document();
-			mongoDocument.put("index", indexName);
-			mongoDocument.put("fields", fieldNamesResponse.getFieldNameList());
-
-			String docString = mongoDocument.toJson();
-
-			if (pretty) {
-				docString = JsonWriter.formatJson(docString);
-			}
-
-			return HttpResponse.ok(docString).status(ZuliaRESTConstants.SUCCESS);
-
-		}
-		catch (Exception e) {
-			return HttpResponse.ok("Failed to fetch fields for index <" + indexName + ">: " + e.getMessage()).status(ZuliaRESTConstants.INTERNAL_ERROR);
-		}
-
+		FieldsDTO fieldsDTO = new FieldsDTO();
+		fieldsDTO.setIndex(indexName);
+		fieldsDTO.setFields(fieldNamesResponse.getFieldNameList());
+		return fieldsDTO;
 	}
 
 }

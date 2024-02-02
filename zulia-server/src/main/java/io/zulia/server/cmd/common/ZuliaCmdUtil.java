@@ -17,6 +17,8 @@ import io.zulia.doc.ResultDocBuilder;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,8 +37,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
@@ -49,7 +49,7 @@ public class ZuliaCmdUtil {
 		overwrite
 	}
 
-	private static final Logger LOG = Logger.getLogger(ZuliaCmdUtil.class.getSimpleName());
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaCmdUtil.class);
 
 	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, Set<String> uniqueIds)
 			throws Exception {
@@ -78,22 +78,22 @@ public class ZuliaCmdUtil {
 
 						}
 						catch (IOException e) {
-							LOG.log(Level.SEVERE, "Could not write record <" + completeResult.getUniqueId() + "> for index <" + index + ">", e);
+							LOG.error("Could not write record <" + completeResult.getUniqueId() + "> for index <" + index + ">", e);
 						}
 						catch (Throwable e) {
-							LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
+							LOG.error("Could not write output for index <" + index + ">", e);
 						}
 
 					});
 				});
 			}
 			catch (Throwable t) {
-				LOG.log(Level.SEVERE, "Query failed for index <" + index + ">", t);
+				LOG.error("Query failed for index <" + index + ">", t);
 			}
 
 		}
 		catch (Throwable e) {
-			LOG.log(Level.SEVERE, "Could not write output for index <" + index + ">", e);
+			LOG.error("Could not write output for index <" + index + ">", e);
 			throw e;
 		}
 	}
@@ -171,7 +171,7 @@ public class ZuliaCmdUtil {
 													}
 												}
 												catch (Throwable t) {
-													LOG.log(Level.SEVERE, "Could not restore associated file <" + filename + ">", t);
+													LOG.error("Could not restore associated file <" + filename + ">", t);
 												}
 											}
 
@@ -185,11 +185,11 @@ public class ZuliaCmdUtil {
 											}
 										}
 										catch (Throwable t) {
-											LOG.log(Level.SEVERE, "Could not list the individual files for dir <" + path.getFileName() + ">", t);
+											LOG.error("Could not list the individual files for dir <" + path.getFileName() + ">", t);
 										}
 									}
 									else {
-										LOG.log(Level.SEVERE, "Top level file that shouldn't exist: " + path.getFileName());
+										LOG.error("Top level file that shouldn't exist: " + path.getFileName());
 									}
 								}
 
@@ -201,7 +201,7 @@ public class ZuliaCmdUtil {
 
 							}
 							else {
-								//LOG.log(Level.SEVERE, "Could not extract file <" + fullPathToFile + ">");
+								//LOG.error( "Could not extract file <" + fullPathToFile + ">");
 							}
 
 						}
@@ -213,7 +213,7 @@ public class ZuliaCmdUtil {
 						return null;
 					}
 					catch (Exception e) {
-						LOG.log(Level.SEVERE, e.getMessage(), e);
+						LOG.error(e.getMessage(), e);
 						return null;
 					}
 				});

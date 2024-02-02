@@ -16,6 +16,8 @@ import io.zulia.message.ZuliaIndex.SortAs;
 import io.zulia.message.ZuliaIndex.SortAs.StringHandling;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.server.field.FieldTypeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,21 +26,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class ServerIndexConfig {
-	private final static Logger LOG = Logger.getLogger(ServerIndexConfig.class.getSimpleName());
-	private IndexSettings indexSettings;
 
+	private static final Logger LOG = LoggerFactory.getLogger(ServerIndexConfig.class);
+	private IndexSettings indexSettings;
 	private ConcurrentHashMap<String, IndexFieldInfo> indexFieldMapping;
 	private ConcurrentHashMap<String, SortFieldInfo> sortFieldMapping;
 	private ConcurrentHashMap<String, AnalyzerSettings> analyzerMap;
-
 	private ConcurrentHashMap<String, FacetAs> facetAsMap;
-
 	private List<ZuliaServiceOuterClass.QueryRequest> warmingSearches;
-
 	private ConcurrentHashMap<String, Set<String>> fieldMappingToFields;
 
 	public ServerIndexConfig(IndexSettings indexSettings) {
@@ -142,7 +140,7 @@ public class ServerIndexConfig {
 			}
 			catch (Exception e) {
 				//Allow index to load vs throwing an exception and making this harder to fix with the index not loaded
-				LOG.severe("Failed to load warming search: " + e.getMessage() + ".  Please store warming searches again in proper format.");
+				LOG.error("Failed to load warming search: " + e.getMessage() + ".  Please store warming searches again in proper format.", e);
 			}
 		}
 

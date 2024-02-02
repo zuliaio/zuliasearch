@@ -16,6 +16,7 @@ import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation.OperationType;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.*;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ServerIndexConfig;
@@ -50,11 +51,13 @@ import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.search.Query;
 import org.bson.Document;
+import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -71,27 +74,21 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ZuliaIndexManager {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaIndexManager.class.getName());
-
+	private final static Logger LOG = LoggerFactory.getLogger(ZuliaIndexManager.class);
 	private final IndexService indexService;
 	private final InternalClient internalClient;
 	private final ExecutorService pool;
 	private final ConcurrentHashMap<String, ZuliaIndex> indexMap;
-
 	private final ZuliaConfig zuliaConfig;
 	private final NodeService nodeService;
-
 	private final Node thisNode;
 	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
-
 	private ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
-
 	private final ConcurrentHashMap<String, String> indexAliasMap;
 
 	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
@@ -150,7 +147,7 @@ public class ZuliaIndexManager {
 				zuliaIndex.unload(false);
 			}
 			catch (IOException e) {
-				LOG.log(Level.SEVERE, "Failed to unload index: " + zuliaIndex.getIndexName(), e);
+				LOG.error("Failed to unload index: " + zuliaIndex.getIndexName(), e);
 			}
 		});
 
@@ -164,7 +161,7 @@ public class ZuliaIndexManager {
 					loadIndex(indexSettings);
 				}
 				catch (Exception e) {
-					LOG.log(Level.SEVERE, e.getClass().getSimpleName() + ":", e);
+					LOG.error(e.getClass().getSimpleName() + ":", e);
 					throw new RuntimeException(e);
 				}
 			});
@@ -190,6 +187,17 @@ public class ZuliaIndexManager {
 
 		ServerIndexConfig serverIndexConfig = new ServerIndexConfig(indexSettings);
 
+		DocumentStorage documentStorage = getDocumentStorage(serverIndexConfig);
+
+		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
+
+		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
+
+		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
+	}
+
+	@NotNull
+	private DocumentStorage getDocumentStorage(ServerIndexConfig serverIndexConfig) {
 		String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
 
 		DocumentStorage documentStorage;
@@ -203,12 +211,7 @@ public class ZuliaIndexManager {
 		else {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
 		}
-
-		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
-
-		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
-
-		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
+		return documentStorage;
 	}
 
 	public GetIndexesResponse getIndexes(@SuppressWarnings("unused") GetIndexesRequest request) throws Exception {
@@ -237,6 +240,17 @@ public class ZuliaIndexManager {
 		return i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.FULL);
 	}
 
+	public Document getAssociatedDocumentMeta(String indexName, String uniqueId, String fileName) throws Exception {
+		ZuliaIndex i = getIndexFromName(indexName);
+		ZuliaBase.AssociatedDocument associatedDocument = i.getAssociatedDocument(uniqueId, fileName, ZuliaQuery.FetchType.META);
+		if (associatedDocument != null) {
+			byte[] metadataBSONBytes = associatedDocument.getMetadata().toByteArray();
+			Document document = ZuliaUtil.byteArrayToMongoDocument(metadataBSONBytes);
+			return document;
+		}
+		return null;
+	}
+
 	public InputStream getAssociatedDocumentStream(String indexName, String uniqueId, String fileName) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
 		return i.getAssociatedDocumentStream(uniqueId, fileName);
@@ -253,9 +267,9 @@ public class ZuliaIndexManager {
 		return i.getAssociatedFilenames(uniqueId);
 	}
 
-	public void getAssociatedFilenames(String indexName, Writer writer, Document filter) throws Exception {
+	public Stream<AssociatedMetadataDTO> getAssociatedFilenames(String indexName, Document query) throws Exception {
 		ZuliaIndex i = getIndexFromName(indexName);
-		i.getAssociatedDocuments(writer, filter);
+		return i.getAssociatedMetadataForQuery(query);
 	}
 
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
@@ -414,7 +428,7 @@ public class ZuliaIndexManager {
 		}
 		catch (Exception e) {
 			if (existingIndex != null) {
-				LOG.log(Level.SEVERE, "Failed to update index <" + request.getIndexSettings().getIndexName() + ">: ", e);
+				LOG.error("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: ", e);
 				throw new Exception("Failed to update index <" + request.getIndexSettings().getIndexName() + ">: " + e.getMessage());
 			}
 			else {
@@ -446,7 +460,7 @@ public class ZuliaIndexManager {
 
 			IndexSettings indexSettings = indexService.getIndex(indexName);
 			if (indexSettings == null) {
-				LOG.log(Level.SEVERE, "Failed to update index <" + indexName + "> that does not exist");
+				LOG.error("Failed to update index <" + indexName + "> that does not exist");
 
 				throw new Exception("Failed to update index <" + indexName + "> that does not exist");
 			}
@@ -488,7 +502,7 @@ public class ZuliaIndexManager {
 						existingWarmingSearch.add(queryRequest);
 					}
 					catch (Exception e) {
-						LOG.severe("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
+						LOG.error("Failed to parse existing warming search.  Removing from list: " + e.getMessage());
 					}
 				}
 
@@ -829,7 +843,7 @@ public class ZuliaIndexManager {
 		}
 		catch (Exception e) {
 			if (existingAlias == null) {
-				LOG.log(Level.SEVERE, "Failed to update index alias <" + aliasName + ">: ", e);
+				LOG.error("Failed to update index alias <" + aliasName + ">: ", e);
 				throw new Exception("Failed to update index alias <" + aliasName + ">: " + e.getMessage());
 			}
 			else {

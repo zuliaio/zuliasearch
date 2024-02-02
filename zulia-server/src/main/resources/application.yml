@@ -27,11 +27,12 @@ micronaut:
         enabled: true
         mapping: "/**"
         paths: classpath:static
+  serde:
+    serialization:
+      inclusion: NON_NULL
 endpoints:
   routes:
     enabled: true
   stop:
     enabled: true
     sensitive: true
-
-

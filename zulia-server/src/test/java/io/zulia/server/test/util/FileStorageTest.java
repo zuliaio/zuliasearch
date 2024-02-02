@@ -130,11 +130,11 @@ public class FileStorageTest {
 		zuliaWorkPool.createIndex(createOrUpdateIndex);
 	}
 
-	private void storeFile(String documentId, String filename, Document meta, File content) throws Exception {
+	private void storeFile(String documentId, String fileName, Document meta, File content) throws Exception {
 
-		zuliaWorkPool.delete(new DeleteAssociated(documentId, TEST_INDEX, filename));
+		zuliaWorkPool.delete(new DeleteAssociated(documentId, TEST_INDEX, fileName));
 
-		StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(documentId, TEST_INDEX, filename, content);
+		StoreLargeAssociated storeLargeAssociated = new StoreLargeAssociated(documentId, TEST_INDEX, fileName, content);
 		storeLargeAssociated.setMeta(meta);
 		zuliaWorkPool.storeLargeAssociated(storeLargeAssociated);
 

@@ -1,7 +1,6 @@
 package io.zulia.client.command.builder;
 
 import io.zulia.message.ZuliaQuery;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -49,7 +48,7 @@ public abstract class StandardQuery<T extends StandardQuery> implements QueryBui
 		return getSelf();
 	}
 
-	public T setQueryFields(@NotNull List<String> queryFields) {
+	public T setQueryFields(List<String> queryFields) {
 		if (queryFields == null) {
 			throw new IllegalArgumentException("Query Fields cannot be null");
 		}

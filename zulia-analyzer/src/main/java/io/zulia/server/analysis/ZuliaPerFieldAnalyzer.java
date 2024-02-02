@@ -39,14 +39,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.CATENATE_ALL;
 
 public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
-	private static final Logger LOG = Logger.getLogger(ZuliaPerFieldAnalyzer.class.getName());
 
 	private final ServerIndexConfig indexConfig;
 	private final Analyzer defaultAnalyzer;

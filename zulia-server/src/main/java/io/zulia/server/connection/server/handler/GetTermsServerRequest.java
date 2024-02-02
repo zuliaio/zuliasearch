@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GetTermsServerRequest extends ServerRequestHandler<GetTermsResponse, GetTermsRequest> {
 
-	private final static Logger LOG = Logger.getLogger(GetTermsServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(GetTermsServerRequest.class);
 
 	public GetTermsServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class GetTermsServerRequest extends ServerRequestHandler<GetTermsResponse
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle get terms request", e);
+		LOG.error("Failed to handle get terms request", e);
 	}
 }

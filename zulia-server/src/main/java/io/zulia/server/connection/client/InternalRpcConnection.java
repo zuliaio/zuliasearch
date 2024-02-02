@@ -4,14 +4,14 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.zulia.message.ZuliaServiceGrpc;
 import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class InternalRpcConnection {
 
-	private final static Logger log = Logger.getLogger(InternalRpcConnection.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalRpcConnection.class);
 	private final String memberAddress;
 	private final int internalServicePort;
 
@@ -28,7 +28,7 @@ public class InternalRpcConnection {
 
 		blockingStub = ZuliaServiceGrpc.newBlockingStub(channel);
 
-		log.info("Connecting to <" + memberAddress + ":" + servicePort + ">");
+		LOG.info("Connecting to <" + memberAddress + ":" + servicePort + ">");
 	}
 
 	public ZuliaServiceBlockingStub getService() {
@@ -38,19 +38,19 @@ public class InternalRpcConnection {
 	public void close() {
 		try {
 			if (channel != null) {
-				log.info("Closing connection to <" + memberAddress + ":" + internalServicePort + ">");
+				LOG.info("Closing connection to <" + memberAddress + ":" + internalServicePort + ">");
 				channel.shutdown();
 				try {
 					channel.awaitTermination(15, TimeUnit.SECONDS);
 				}
 				catch (InterruptedException ex) {
-					log.warning("connection to <" + memberAddress + ":" + internalServicePort + "> timed out on close");
+					LOG.warn("connection to <" + memberAddress + ":" + internalServicePort + "> timed out on close");
 				}
 
 			}
 		}
 		catch (Exception e) {
-			log.log(Level.SEVERE, "Close Failed", e);
+			LOG.error("Close Failed", e);
 		}
 
 		channel = null;

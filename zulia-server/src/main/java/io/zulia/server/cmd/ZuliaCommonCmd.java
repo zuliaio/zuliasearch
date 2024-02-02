@@ -1,6 +1,5 @@
 package io.zulia.server.cmd;
 
-import io.zulia.log.LogUtil;
 import io.zulia.server.cmd.common.SelectiveStackTraceHandler;
 import picocli.CommandLine;
 import picocli.CommandLine.Help.Ansi.Style;
@@ -31,7 +30,6 @@ public class ZuliaCommonCmd {
 	}
 
 	public static void runCommandLine(Object object, String[] args) {
-		LogUtil.init();
 
 		int exitCode = new CommandLine(object).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
 				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).setTrimQuotes(true).setColorScheme(COLOR_SCHEME).execute(args);

@@ -7,6 +7,8 @@ import io.zulia.server.cmd.common.ThreadedArgs;
 import io.zulia.server.cmd.common.ZuliaCmdUtil;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -14,12 +16,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 @CommandLine.Command(name = "zuliaimport", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaImport implements Callable<Integer> {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaImport.class.getSimpleName());
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaImport.class);
 	@CommandLine.Mixin
 	private ConnectionInfo connectionInfo;
 

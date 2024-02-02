@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InternalFetchServerRequest extends ServerRequestHandler<FetchResponse, FetchRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalFetchServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalFetchServerRequest.class);
 
 	public InternalFetchServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class InternalFetchServerRequest extends ServerRequestHandler<FetchRespon
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal fetch", e);
+		LOG.error("Failed to handle internal fetch", e);
 	}
 }

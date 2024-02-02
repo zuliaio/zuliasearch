@@ -24,6 +24,8 @@ import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.IndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -36,14 +38,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class ZuliaDConfig {
 
 	private static final Gson GSON = new GsonBuilder().create();
-
-	private static final Logger LOG = Logger.getLogger(ZuliaDConfig.class.getSimpleName());
-
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaDConfig.class);
 	private NodeService nodeService;
 	private ZuliaConfig zuliaConfig;
 
@@ -87,7 +86,7 @@ public class ZuliaDConfig {
 
 		if (zuliaConfig.getServerAddress() == null) {
 			zuliaConfig.setServerAddress(ServerNameHelper.getLocalServer());
-			LOG.warning("Server address is not defined.  Autodetected server name <" + zuliaConfig.getServerAddress() + ">");
+			LOG.warn("Server address is not defined.  Autodetected server name <" + zuliaConfig.getServerAddress() + ">");
 		}
 
 		if (zuliaConfig.isCluster()) {

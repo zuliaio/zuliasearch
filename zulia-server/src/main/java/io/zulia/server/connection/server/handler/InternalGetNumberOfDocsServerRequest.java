@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.GetNumberOfDocsResponse;
 import io.zulia.message.ZuliaServiceOuterClass.InternalGetNumberOfDocsRequest;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InternalGetNumberOfDocsServerRequest extends ServerRequestHandler<GetNumberOfDocsResponse, InternalGetNumberOfDocsRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalGetNumberOfDocsServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalGetNumberOfDocsServerRequest.class);
 
 	public InternalGetNumberOfDocsServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class InternalGetNumberOfDocsServerRequest extends ServerRequestHandler<G
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal get number of docs", e);
+		LOG.error("Failed to handle internal get number of docs", e);
 	}
 }

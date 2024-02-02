@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.GetNodesRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GetNodesServerRequest extends ServerRequestHandler<GetNodesResponse, GetNodesRequest> {
 
-	private final static Logger LOG = Logger.getLogger(GetNodesServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(GetNodesServerRequest.class);
 
 	public GetNodesServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class GetNodesServerRequest extends ServerRequestHandler<GetNodesResponse
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle get nodes", e);
+		LOG.error("Failed to handle get nodes", e);
 	}
 }

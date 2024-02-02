@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
 import io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StoreServerRequest extends ServerRequestHandler<StoreResponse, StoreRequest> {
 
-	private final static Logger LOG = Logger.getLogger(StoreServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(StoreServerRequest.class);
 
 	public StoreServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class StoreServerRequest extends ServerRequestHandler<StoreResponse, Stor
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle store", e);
+		LOG.error("Failed to handle store", e);
 	}
 }

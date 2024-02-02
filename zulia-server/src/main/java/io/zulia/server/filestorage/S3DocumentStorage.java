@@ -12,6 +12,7 @@ import com.mongodb.internal.HexUtils;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.config.cluster.S3Config;
 import io.zulia.server.filestorage.io.S3OutputStream;
 import io.zulia.util.ZuliaUtil;
@@ -39,28 +40,23 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class S3DocumentStorage implements DocumentStorage {
 	private static final String TIMESTAMP = "_tstamp_";
-	private static final String DOCUMENT_UNIQUE_ID_KEY = "_uid_";
-	private static final String FILE_UNIQUE_ID_KEY = "_fid_";
 	private static final String FILE_EXTERNAL = "_external_";
 	private static final String COLLECTION = "associatedFiles.info";
 	public static final String FILENAME = "filename";
-
 	private final MongoClient client;
 	private final String indexName;
 	private final String dbName;
-	private final boolean sharded;
 	private final String bucket;
 	private final S3Client s3;
 	private final String region;
@@ -79,7 +75,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		this.client = mongoClient;
 		this.indexName = indexName;
 		this.dbName = dbName;
-		this.sharded = sharded;
+
 		AwsCredentialsProviderChain credentialsProvider = AwsCredentialsProviderChain.builder()
 				.credentialsProviders(InstanceProfileCredentialsProvider.builder().build(), ContainerCredentialsProvider.builder().build(),
 						EnvironmentVariableCredentialsProvider.create(), SystemPropertyCredentialsProvider.create(),
@@ -87,7 +83,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		this.s3 = S3Client.builder().region(Region.of(this.region)).credentialsProvider(credentialsProvider).build();
 
-		ForkJoinPool.commonPool().execute(() -> {
+		Thread.startVirtualThread(() -> {
 			MongoDatabase db = client.getDatabase(dbName);
 			MongoCollection<Document> coll = db.getCollection(COLLECTION);
 			coll.createIndex(new Document("metadata." + DOCUMENT_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
@@ -118,7 +114,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType fetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadataForUniqueId(String uniqueId, FetchType fetchType) throws Exception {
 		if (FetchType.NONE.equals(fetchType))
 			return Collections.emptyList();
 
@@ -157,43 +153,24 @@ public class S3DocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void getAssociatedDocuments(Writer outputstream, Document filter) throws Exception {
-		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(filter);
-		outputstream.write("{\n");
-		outputstream.write(" \"associatedDocs\": [\n");
+	public Stream<AssociatedMetadataDTO> getAssociatedMetadataForQuery(Document query) {
+		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(query);
 
-		boolean first = true;
-		for (Document doc : found) {
-			if (first) {
-				first = false;
-			}
-			else {
-				outputstream.write(",\n");
-			}
-
+		return StreamSupport.stream(found.map(doc -> {
 			Document metadata = doc.get("metadata", Document.class);
-
 			String uniqueId = metadata.getString(DOCUMENT_UNIQUE_ID_KEY);
-			outputstream.write("  { \"uniqueId\": \"" + uniqueId + "\", ");
 
 			String filename = doc.getString("filename");
-			outputstream.write("\"filename\": \"" + filename + "\", ");
 
 			Date uploadDate = doc.getDate("uploadDate");
-			outputstream.write("\"uploadDate\": {\"$date\":" + uploadDate.getTime() + "}");
 
 			metadata.remove(TIMESTAMP);
 			metadata.remove(DOCUMENT_UNIQUE_ID_KEY);
 			metadata.remove(FILE_UNIQUE_ID_KEY);
 
-			if (!metadata.isEmpty()) {
-				String metaJson = metadata.toJson();
-				String metaString = ", \"meta\": " + metaJson;
-				outputstream.write(metaString);
-			}
-			outputstream.write(" }");
-		}
-		outputstream.write("\n ]\n}");
+			return new AssociatedMetadataDTO(uniqueId, filename, uploadDate, metadata);
+		}).spliterator(), false);
+
 	}
 
 	@Override
@@ -260,9 +237,10 @@ public class S3DocumentStorage implements DocumentStorage {
 
 	@Override
 	public void deleteAssociatedDocuments(String uniqueId) {
-		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.eq("metadata." + DOCUMENT_UNIQUE_ID_KEY, uniqueId));
+		MongoCollection<Document> collection = client.getDatabase(dbName).getCollection(COLLECTION);
+		FindIterable<Document> found = collection.find(Filters.eq("metadata." + DOCUMENT_UNIQUE_ID_KEY, uniqueId));
 		for (Document doc : found) {
-			client.getDatabase(dbName).getCollection(COLLECTION).deleteOne(Filters.eq("_id", doc.getObjectId("_id")));
+			collection.deleteOne(Filters.eq("_id", doc.getObjectId("_id")));
 			if (!doc.getBoolean("metadata." + FILE_EXTERNAL, false)) {
 				Document s3Info = doc.get("s3", Document.class);
 				DeleteObjectRequest dor = DeleteObjectRequest.builder().bucket(s3Info.getString("bucket")).key(s3Info.getString("key")).build();
@@ -289,9 +267,9 @@ public class S3DocumentStorage implements DocumentStorage {
 		metadata.put(FILE_EXTERNAL, true);
 
 		Document s3Location = reg.get("location", Document.class);
-		assert(s3Location.containsKey("bucket"));
-		assert(s3Location.containsKey("region"));
-		assert(s3Location.containsKey("key"));
+		assert (s3Location.containsKey("bucket"));
+		assert (s3Location.containsKey("region"));
+		assert (s3Location.containsKey("key"));
 
 		Document TOC = new Document();
 		TOC.put("filename", registration.getFilename());
@@ -337,27 +315,6 @@ public class S3DocumentStorage implements DocumentStorage {
 				.delete(Delete.builder().objects(keyBatch.stream().map(s -> ObjectIdentifier.builder().key(s).build()).collect(Collectors.toList())).build())
 				.build();
 		s3.deleteObjects(dor);
-	}
-
-	private Document parseAssociated(AssociatedDocument doc, Long length) {
-		Document metadata;
-		if (!doc.getMetadata().isEmpty()) {
-			metadata = ZuliaUtil.byteArrayToMongoDocument(doc.getMetadata().toByteArray());
-		}
-		else {
-			metadata = new Document();
-		}
-
-		metadata.put(TIMESTAMP, doc.getTimestamp());
-		metadata.put(FILE_UNIQUE_ID_KEY, String.join("-", doc.getDocumentUniqueId(), doc.getFilename()));
-		metadata.put(DOCUMENT_UNIQUE_ID_KEY, doc.getDocumentUniqueId());
-
-		Document TOC = new Document();
-		TOC.put("metadata", metadata);
-		TOC.put(FILENAME, doc.getFilename());
-		TOC.put("length", length);
-		TOC.put("uploadDate", Instant.now());
-		return TOC;
 	}
 
 	private AssociatedDocument.Builder parseMongo(Document doc) {

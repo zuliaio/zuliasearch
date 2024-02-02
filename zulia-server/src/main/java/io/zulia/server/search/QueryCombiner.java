@@ -24,6 +24,8 @@ import io.zulia.server.index.ZuliaIndex;
 import io.zulia.server.search.aggregation.facets.FacetCombiner;
 import io.zulia.server.search.aggregation.stats.StatCombiner;
 import io.zulia.server.search.score.ZuliaPostSortingComparator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,12 +35,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class QueryCombiner {
 
-	private final static Logger log = Logger.getLogger(QueryCombiner.class.getSimpleName());
-
+	private final static Logger LOG = LoggerFactory.getLogger(QueryCombiner.class);
 	private final List<InternalQueryResponse> responses;
 	private final Map<String, Map<Integer, ShardQueryResponse>> indexToShardQueryResponseMap;
 	private final List<ShardQueryResponse> shardResponses;
@@ -49,7 +49,6 @@ public class QueryCombiner {
 	private final SortRequest sortRequest;
 	private final Collection<ZuliaIndex> indexes;
 	private final Map<String, Integer> indexToShardCount;
-
 	private boolean isShort;
 
 	public QueryCombiner(Collection<ZuliaIndex> indexes, QueryRequest request, List<InternalQueryResponse> responses) {
@@ -319,7 +318,7 @@ public class QueryCombiner {
 								msg += "      " + results + "\n";
 								msg += "    If this happens frequently increase requestFactor or minShardRequest\n";
 								msg += "    Retrying with full request.\n";
-								log.severe(msg);
+								LOG.error(msg);
 
 								isShort = true;
 								break outside;
@@ -337,7 +336,7 @@ public class QueryCombiner {
 								msg += "      " + results + "\n";
 								msg += "    If this happens frequently increase requestFactor, minShardRequest, or shardTolerance\n";
 								msg += "    Retrying with full request.\n";
-								log.severe(msg);
+								LOG.error(msg);
 
 								isShort = true;
 								break outside;
@@ -368,9 +367,9 @@ public class QueryCombiner {
 				}
 				else {
 					if (!currentSortType.equals(indexSortType)) {
-						log.severe("Sort fields must be defined the same in all indexes searched in a single query");
+						LOG.error("Sort fields must be defined the same in all indexes searched in a single query");
 						String message = "Cannot sort on field <" + sortField + ">: found type: <" + currentSortType + "> then type: <" + indexSortType + ">";
-						log.severe(message);
+						LOG.error(message);
 
 						throw new Exception(message);
 					}
