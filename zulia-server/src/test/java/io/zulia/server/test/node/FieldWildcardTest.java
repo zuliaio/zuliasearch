@@ -36,6 +36,7 @@ public class FieldWildcardTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("docType").indexAs(DefaultAnalyzers.LC_KEYWORD).sort().facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("docTitle").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("altTitle").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("altTitle2").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("docAuthor").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("isParent").index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("parentDocId").index().sort());
@@ -43,6 +44,7 @@ public class FieldWildcardTest {
 
 		indexConfig.addFieldMapping(new FieldMapping("title").addMappedFields("altTitle", "docTitle"));
 		indexConfig.addFieldMapping(new FieldMapping("title2").addMappedFields("*Title"));
+		indexConfig.addFieldMapping(new FieldMapping("altTitle").addMappedFields("altTitle2").includeSelf());
 
 		indexConfig.setIndexName(WILDCARD_JSON_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
@@ -61,6 +63,7 @@ public class FieldWildcardTest {
 				    "docAuthor": "Java Developer Zone",
 				    "docTitle": "Search Blog",
 				    "altTitle": "Discover Blog",
+				    "altTitle2": "Something else totally",
 				    "isParent": true,
 				    "docLanguage": [
 				      "en",
@@ -153,6 +156,21 @@ public class FieldWildcardTest {
 		search.addQuery(new ScoredQuery("*:slovak"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("altTitle2:something"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("altTitle:something"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("altTitle:(something OR solr)"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
 	}
 
 }

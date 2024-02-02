@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.ReindexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.ReindexResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReindexServerRequest extends ServerRequestHandler<ReindexResponse, ReindexRequest> {
 
-	private final static Logger LOG = Logger.getLogger(ReindexServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ReindexServerRequest.class);
 
 	public ReindexServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class ReindexServerRequest extends ServerRequestHandler<ReindexResponse, 
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle reindex", e);
+		LOG.error("Failed to handle reindex", e);
 	}
 }

@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class WorkPool {
+public class WorkPool implements AutoCloseable {
 
 	private final ListeningExecutorService pool;
 	private final static AtomicInteger threadNumber = new AtomicInteger(1);
@@ -80,5 +80,10 @@ public class WorkPool {
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public void close() throws Exception {
+		shutdown();
 	}
 }

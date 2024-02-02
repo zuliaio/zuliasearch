@@ -1,8 +1,6 @@
 package io.zulia.server.exceptions;
 
-import java.io.IOException;
-
-public class ShardDoesNotExistException extends IOException {
+public class ShardDoesNotExistException extends NotFoundException {
 
 	private static final long serialVersionUID = 1L;
 	private final String indexName;

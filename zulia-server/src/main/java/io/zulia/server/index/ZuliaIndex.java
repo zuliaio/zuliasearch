@@ -24,6 +24,7 @@ import io.zulia.message.ZuliaQuery.ShardQueryResponse;
 import io.zulia.message.ZuliaQuery.SortRequest;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.message.ZuliaServiceOuterClass.*;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.config.IndexService;
@@ -63,11 +64,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -86,34 +88,26 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 public class ZuliaIndex {
 
-	private final static Logger LOG = Logger.getLogger(ZuliaIndex.class.getSimpleName());
-
+	private final static Logger LOG = LoggerFactory.getLogger(ZuliaIndex.class);
 	private final ServerIndexConfig indexConfig;
 	private final GenericObjectPool<ZuliaFlexibleQueryParser> parsers;
 	private final ConcurrentHashMap<Integer, ZuliaShard> primaryShardMap;
 	private final ConcurrentHashMap<Integer, ZuliaShard> replicaShardMap;
-
 	private final ExecutorService shardPool;
 	private final int numberOfShards;
 	private final String indexName;
-
 	private final DocumentStorage documentStorage;
 	private final ZuliaConfig zuliaConfig;
-
 	private final Timer commitTimer;
 	private final TimerTask commitTask;
-
 	private final Timer warmTimer;
-
 	private final TimerTask warmTask;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
-
 	private final IndexShardMapping indexShardMapping;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService,
@@ -202,7 +196,7 @@ public class ZuliaIndex {
 				}
 			}
 			catch (Exception e) {
-				LOG.log(Level.SEVERE, "Failed to flush shard <" + shard.getShardNumber() + "> for index <" + indexName + ">", e);
+				LOG.error("Failed to flush shard <" + shard.getShardNumber() + "> for index <" + indexName + ">", e);
 			}
 		}
 
@@ -407,8 +401,6 @@ public class ZuliaIndex {
 
 		return SetQueryHelper.getTermInSetQuery(query.getTermList(), field, indexFieldInfo);
 	}
-
-
 
 	public Query handleNumericSetQuery(ZuliaQuery.Query query) {
 		ProtocolStringList qfList = query.getQfList();
@@ -782,8 +774,9 @@ public class ZuliaIndex {
 
 						String sortField = fs.getSortField();
 						SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
-						FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 
+						//TODO fix this
+						FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 						if (sortFieldInfo == null) {
 							throw new Exception(sortField + " is not defined as a sortable field");
 						}
@@ -1121,10 +1114,8 @@ public class ZuliaIndex {
 		return documentStorage.getAssociatedFilenames(uniqueId);
 	}
 
-	public void getAssociatedDocuments(Writer writer, Document filter) throws Exception {
-
-		documentStorage.getAssociatedDocuments(writer, filter);
-
+	public Stream<AssociatedMetadataDTO> getAssociatedMetadataForQuery(Document query) {
+		return documentStorage.getAssociatedMetadataForQuery(query);
 	}
 
 	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
@@ -1141,9 +1132,9 @@ public class ZuliaIndex {
 
 	}
 
-	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType associatedFetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadataForUniqueId(String uniqueId, FetchType associatedFetchType) throws Exception {
 
-		return documentStorage.getAssociatedDocuments(uniqueId, associatedFetchType);
+		return documentStorage.getAssociatedMetadataForUniqueId(uniqueId, associatedFetchType);
 
 	}
 
@@ -1197,7 +1188,7 @@ public class ZuliaIndex {
 				}
 			}
 			else {
-				for (AssociatedDocument ad : getAssociatedDocuments(uniqueId, associatedFetchType)) {
+				for (AssociatedDocument ad : getAssociatedMetadataForUniqueId(uniqueId, associatedFetchType)) {
 					frBuilder.addAssociatedDocument(ad);
 				}
 			}

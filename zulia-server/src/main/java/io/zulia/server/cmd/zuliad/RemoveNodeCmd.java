@@ -2,15 +2,16 @@ package io.zulia.server.cmd.zuliad;
 
 import io.zulia.server.cmd.ZuliaD;
 import io.zulia.server.config.NodeService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.util.concurrent.Callable;
-import java.util.logging.Logger;
 
 @CommandLine.Command(name = "removeNode", description = "Remove the node given by the command line params")
 public class RemoveNodeCmd implements Callable<Integer> {
 
-	public static final Logger LOG = Logger.getLogger(RemoveNodeCmd.class.getSimpleName());
+	public static final Logger LOG = LoggerFactory.getLogger(RemoveNodeCmd.class);
 
 	@CommandLine.ParentCommand
 	private ZuliaD zuliadCmd;

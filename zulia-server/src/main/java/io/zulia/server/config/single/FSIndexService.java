@@ -7,6 +7,8 @@ import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.exceptions.IndexConfigDoesNotExistException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
@@ -19,18 +21,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class FSIndexService implements IndexService {
 
-	private static final Logger LOG = Logger.getLogger(FSIndexService.class.getName());
+	private static final Logger LOG = LoggerFactory.getLogger(FSIndexService.class);
 	private static final String INDEX_EXTENSION = "_index.json";
 	private static final String MAPPING_EXTENSION = "_mapping.json";
 	private static final String ALIAS_EXTENSION = "_alias.json";
-
 	private static final String SETTINGS_DIR = "settings";
-
 	private final String baseDir;
 
 	public FSIndexService(ZuliaConfig zuliaConfig) {
@@ -43,7 +41,7 @@ public class FSIndexService implements IndexService {
 			// skip if the base dir exists.
 		}
 		catch (IOException e) {
-			LOG.log(Level.SEVERE, e.getMessage(), e);
+			LOG.error(e.getMessage(), e);
 			throw new RuntimeException("Failed to create the base directory to store index settings.");
 		}
 

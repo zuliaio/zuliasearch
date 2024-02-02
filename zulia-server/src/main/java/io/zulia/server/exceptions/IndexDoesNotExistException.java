@@ -1,8 +1,6 @@
 package io.zulia.server.exceptions;
 
-import java.io.IOException;
-
-public class IndexDoesNotExistException extends IOException {
+public class IndexDoesNotExistException extends NotFoundException {
 
 	private static final long serialVersionUID = 1L;
 	private String indexName;

@@ -43,6 +43,8 @@ import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,19 +52,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
 
 public class ShardReader implements AutoCloseable {
 
-	private final static Logger LOG = Logger.getLogger(ShardReader.class.getSimpleName());
-
+	private final static Logger LOG = LoggerFactory.getLogger(ShardReader.class);
 	private final DirectoryReader indexReader;
 	private final DirectoryTaxonomyReader taxoReader;
 	private final ServerIndexConfig indexConfig;
 	private final String indexName;
 	private final int shardNumber;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
-
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> pinnedQueryResultCache;
 
@@ -487,7 +486,7 @@ public class ShardReader implements AutoCloseable {
 			SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
 
 			if (sortFieldInfo == null) {
-				throw new Exception("Field  <" + sortField + "> must be sortable");
+				throw new IllegalArgumentException("Field <" + sortField + "> must be sortable");
 			}
 
 			FieldType sortFieldType = sortFieldInfo.getFieldType();

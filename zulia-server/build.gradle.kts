@@ -1,18 +1,32 @@
 plugins {
     application
     `java-library`
+    alias(libs.plugins.micronaut.application)
 }
 
 description = "Zulia Server"
 
-val luceneVersion: String by project
-val mongoDriverVersion: String by project
-val micronautVersion: String by project
-val amazonVersion: String by project
-val snakeYamlVersion: String by project
-val kolobokeVersion: String by project
-
 defaultTasks("build", "installDist")
+
+micronaut {
+    version(libs.versions.micronaut.get())
+    runtime("netty")
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("io.zulia.*")
+    }
+}
+
+
+tasks.register<Copy>("copySwagger") {
+    from(layout.buildDirectory.dir("classes/java/main/META-INF/swagger/swagger.yml"))
+    into(project.rootProject.file("api/"))
+    rename("swagger.yml", project.name + "_swagger.yml")
+    dependsOn("buildLayers")
+}
+
+
 
 tasks.withType<Test> {
     maxParallelForks = 1
@@ -23,70 +37,51 @@ tasks.withType<Test> {
 }
 
 dependencies {
-    implementation(project(":zulia-query-parser"))
     implementation(project(":zulia-client")) //needed for admin tools
-
-    implementation("org.apache.lucene:lucene-backward-codecs:$luceneVersion")
-    implementation("org.apache.lucene:lucene-facet:$luceneVersion")
-    implementation("org.apache.lucene:lucene-expressions:$luceneVersion")
-    implementation("org.apache.lucene:lucene-highlighter:$luceneVersion")
-
-    //caffiene 3.1.2 cause issues with the cache test
-    implementation("com.github.ben-manes.caffeine:caffeine:3.1.1")
-
-    api("com.koloboke:koloboke-api-jdk8:$kolobokeVersion")
-    api("com.koloboke:koloboke-impl-jdk8:$kolobokeVersion")
-
-    implementation("info.picocli:picocli:4.7.5")
-    annotationProcessor("info.picocli:picocli-codegen:4.7.5")
-
-    implementation("com.datadoghq:sketches-java:0.8.2")
-
-    implementation("com.cedarsoftware:json-io:4.14.0")
-
-    implementation("org.mongodb:mongodb-driver-sync:$mongoDriverVersion")
-
-    implementation("org.apache.commons:commons-compress:1.22")
-    implementation("org.xerial.snappy:snappy-java:1.1.10.0")
-    implementation(platform("software.amazon.awssdk:bom:$amazonVersion"))
-    implementation("software.amazon.awssdk:s3")
-
-    annotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    annotationProcessor("io.micronaut:micronaut-inject-java")
-    annotationProcessor("io.micronaut:micronaut-validation")
-    implementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    implementation("io.micronaut:micronaut-inject")
-    implementation("io.micronaut:micronaut-validation")
-    implementation("io.micronaut.reactor:micronaut-reactor")
-    implementation("io.micronaut:micronaut-runtime")
-    implementation("io.micronaut:micronaut-http-server-netty")
-    implementation("io.micronaut:micronaut-http-client")
-    runtimeOnly("ch.qos.logback:logback-classic")
-    testAnnotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    testAnnotationProcessor("io.micronaut:micronaut-inject-java")
-    testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api")
-    testImplementation("io.micronaut.test:micronaut-test-junit5")
-    testImplementation("de.flapdoodle.embed:de.flapdoodle.embed.mongo:4.9.2")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
-
-    api("org.yaml:snakeyaml:$snakeYamlVersion")
-    annotationProcessor("io.micronaut.openapi:micronaut-openapi")
-
-
-    //implementation("org.graalvm.js:js:21.3.1")
+    implementation(project(":zulia-query-parser"))
+    annotationProcessor(libs.micronaut.http.validation)
+    annotationProcessor(libs.micronaut.openapi)
+    annotationProcessor(libs.micronaut.serde.processor)
+    annotationProcessor(libs.micronaut.validation.processor)
+    annotationProcessor(libs.picocli.codegen)
+    api(libs.lucene.backward.codecs)
+    api(libs.lucene.expressions)
+    api(libs.lucene.facet)
+    api(libs.lucene.highlighter)
+    api(libs.mongodb.driver.sync)
+    implementation(libs.awssdk.s3)
+    implementation(libs.caffeine)
+    implementation(libs.commons.compress)
+    implementation(libs.jakarta.validation)
+    implementation(libs.jansi)
+    implementation(libs.json.io)
+    implementation(libs.koloboke.api)
+    implementation(libs.koloboke.impl)
+    implementation(libs.micronaut.http.base)
+    implementation(libs.micronaut.http.server)
+    implementation(libs.micronaut.inject.java)
+    implementation(libs.micronaut.management)
+    implementation(libs.micronaut.reactor)
+    implementation(libs.micronaut.serde.jackson)
+    implementation(libs.picocli.base)
+    implementation(libs.sketches.java)
+    implementation(libs.snake.yaml)
+    implementation(libs.snappy.java)
+    implementation(libs.swagger.annotations)
+    testImplementation(libs.flapdoodle.mongo)
+    testImplementation(libs.micronaut.http.client)
+    testImplementation(libs.micronaut.test.junit5)
 }
-
 tasks.withType<JavaCompile> {
     options.isFork = true
     options.forkOptions.jvmArgs?.addAll(listOf("-Dmicronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.theme=flattop"))
 }
 
-
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
+
+
 zuliaScriptTask.applicationName = "zulia"
 zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
-
 val zuliaAdminScriptTask = tasks.register<CreateStartScripts>("createZuliaAdminScript") {
     applicationName = "zuliaadmin"
     mainClass.set("io.zulia.server.cmd.ZuliaAdmin")
@@ -173,7 +168,7 @@ val zuliaImportScriptTask = tasks.register<CreateStartScripts>("createZuliaImpor
 
 tasks.register("autocompleteDir") {
     doLast {
-        mkdir("$buildDir/autocomplete")
+        mkdir("${layout.buildDirectory.get()}/autocomplete")
     }
 }
 
@@ -181,14 +176,14 @@ task("picoCliZuliaAutoComplete", JavaExec::class) {
     dependsOn("autocompleteDir")
     mainClass.set("picocli.AutoComplete")
     classpath = sourceSets["main"].runtimeClasspath
-    args = listOf("--force", "--completionScript", "$buildDir/autocomplete/zulia.sh", "io.zulia.server.cmd.Zulia")
+    args = listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zulia.sh", "io.zulia.server.cmd.Zulia")
 }
 
 task("picoCliZuliaDAutoComplete", JavaExec::class) {
     dependsOn("autocompleteDir")
     mainClass.set("picocli.AutoComplete")
     classpath = sourceSets["main"].runtimeClasspath
-    args = listOf("--force", "--completionScript", "$buildDir/autocomplete/zuliad.sh", "io.zulia.server.cmd.ZuliaD")
+    args = listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zuliad.sh", "io.zulia.server.cmd.ZuliaD")
 }
 
 task("picoCliZuliaAdminAutoComplete", JavaExec::class) {
@@ -198,7 +193,7 @@ task("picoCliZuliaAdminAutoComplete", JavaExec::class) {
     args = listOf(
         "--force",
         "--completionScript",
-        "$buildDir/autocomplete/zuliaadmin.sh",
+        "${layout.buildDirectory.get()}/autocomplete/zuliaadmin.sh",
         "io.zulia.server.cmd.ZuliaAdmin"
     )
 }
@@ -208,8 +203,10 @@ task("picoCliZuliaDumpAutoComplete", JavaExec::class) {
     mainClass.set("picocli.AutoComplete")
     classpath = sourceSets["main"].runtimeClasspath
     args =
-        listOf("--force", "--completionScript", "$buildDir/autocomplete/zuliadump.sh", "io.zulia.server.cmd.ZuliaDump")
+        listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zuliadump.sh", "io.zulia.server.cmd.ZuliaDump")
 }
+
+
 
 task("picoCliZuliaRestoreAutoComplete", JavaExec::class) {
     dependsOn("autocompleteDir")
@@ -218,7 +215,7 @@ task("picoCliZuliaRestoreAutoComplete", JavaExec::class) {
     args = listOf(
         "--force",
         "--completionScript",
-        "$buildDir/autocomplete/zuliarestore.sh",
+        "${layout.buildDirectory.get()}/autocomplete/zuliarestore.sh",
         "io.zulia.server.cmd.ZuliaRestore"
     )
 }
@@ -231,7 +228,7 @@ task("picoCliZuliaImportAutoComplete", JavaExec::class) {
     args = listOf(
         "--force",
         "--completionScript",
-        "$buildDir/autocomplete/zuliaimport.sh",
+        "${layout.buildDirectory.get()}/autocomplete/zuliaimport.sh",
         "io.zulia.server.cmd.ZuliaImport"
     )
 }
@@ -243,7 +240,7 @@ task("picoCliZuliaExportAutoComplete", JavaExec::class) {
     args = listOf(
         "--force",
         "--completionScript",
-        "$buildDir/autocomplete/zuliaexport.sh",
+        "${layout.buildDirectory.get()}/autocomplete/zuliaexport.sh",
         "io.zulia.server.cmd.ZuliaExport"
     )
 }
@@ -282,7 +279,7 @@ distributions {
             from(zuliaImportScriptTask) {
                 into("bin")
             }
-            from("$buildDir/autocomplete/") {
+            from("${layout.buildDirectory.get()}/autocomplete/") {
                 into("bin/autocomplete")
             }
 

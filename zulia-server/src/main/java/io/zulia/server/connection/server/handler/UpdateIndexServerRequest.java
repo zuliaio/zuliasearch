@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.UpdateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.UpdateIndexResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class UpdateIndexServerRequest extends ServerRequestHandler<UpdateIndexResponse, UpdateIndexRequest> {
 
-	private final static Logger LOG = Logger.getLogger(UpdateIndexServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(UpdateIndexServerRequest.class);
 
 	public UpdateIndexServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class UpdateIndexServerRequest extends ServerRequestHandler<UpdateIndexRe
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle create index", e);
+		LOG.error("Failed to handle create index", e);
 	}
 }

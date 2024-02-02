@@ -14,40 +14,32 @@ import com.mongodb.client.model.IndexOptions;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.logging.Logger;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class MongoDocumentStorage implements DocumentStorage {
-	@SuppressWarnings("unused")
-	private final static Logger log = Logger.getLogger(MongoDocumentStorage.class.getSimpleName());
 
 	private static final String ASSOCIATED_FILES = "associatedFiles";
 	private static final String FILES = "files";
 	private static final String CHUNKS = "chunks";
 	private static final String ASSOCIATED_METADATA = "metadata";
-
 	private static final String TIMESTAMP = "_tstamp_";
-
-	private static final String DOCUMENT_UNIQUE_ID_KEY = "_uid_";
-	private static final String FILE_UNIQUE_ID_KEY = "_fid_";
-
 	private static final String ENABLESHARDING = "enablesharding";
 	private static final String ADMIN = "admin";
 	public static final String SHARDCOLLECTION = "shardcollection";
 	private final boolean sharded;
-
 	private final MongoClient mongoClient;
 	private final String database;
 	private final String indexName;
@@ -149,7 +141,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType fetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadataForUniqueId(String uniqueId, FetchType fetchType) throws Exception {
 		GridFSBucket gridFS = createGridFSConnection();
 		List<AssociatedDocument> assocDocs = new ArrayList<>();
 		if (!FetchType.NONE.equals(fetchType)) {
@@ -197,7 +189,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 		Document metadata = file.getMetadata();
 
 		long timestamp = (long) metadata.remove(TIMESTAMP);
-
+		metadata.remove(FILE_UNIQUE_ID_KEY);
 		aBuilder.setTimestamp(timestamp);
 
 		aBuilder.setDocumentUniqueId((String) metadata.remove(DOCUMENT_UNIQUE_ID_KEY));
@@ -216,50 +208,24 @@ public class MongoDocumentStorage implements DocumentStorage {
 		return aBuilder.build();
 	}
 
-	public void getAssociatedDocuments(Writer outputstream, Document filter) throws IOException {
+	public Stream<AssociatedMetadataDTO> getAssociatedMetadataForQuery(Document query) {
 
 		GridFSBucket gridFS = createGridFSConnection();
-		GridFSFindIterable gridFSFiles = gridFS.find(filter);
-		outputstream.write("{\n");
-		outputstream.write(" \"associatedDocs\": [\n");
+		GridFSFindIterable gridFSFiles = gridFS.find(query);
 
-		boolean first = true;
-		for (GridFSFile gridFSFile : gridFSFiles) {
-			if (first) {
-				first = false;
-			}
-			else {
-				outputstream.write(",\n");
-			}
-
+		return StreamSupport.stream(gridFSFiles.map(gridFSFile -> {
 			Document metadata = gridFSFile.getMetadata();
-
 			String uniqueId = metadata.getString(DOCUMENT_UNIQUE_ID_KEY);
-			String uniquieIdKeyValue = "  { \"uniqueId\": \"" + uniqueId + "\", ";
-			outputstream.write(uniquieIdKeyValue);
-
 			String filename = gridFSFile.getFilename();
-			String filenameKeyValue = "\"filename\": \"" + filename + "\", ";
-			outputstream.write(filenameKeyValue);
-
 			Date uploadDate = gridFSFile.getUploadDate();
-			String uploadDateKeyValue = "\"uploadDate\": {\"$date\":" + uploadDate.getTime() + "}";
-			outputstream.write(uploadDateKeyValue);
 
 			metadata.remove(TIMESTAMP);
 			metadata.remove(DOCUMENT_UNIQUE_ID_KEY);
 			metadata.remove(FILE_UNIQUE_ID_KEY);
 
-			if (!metadata.isEmpty()) {
-				String metaJson = metadata.toJson();
-				String metaString = ", \"meta\": " + metaJson;
-				outputstream.write(metaString);
-			}
+			return new AssociatedMetadataDTO(uniqueId, filename, uploadDate, metadata);
+		}).spliterator(), false);
 
-			outputstream.write(" }");
-
-		}
-		outputstream.write("\n ]\n}");
 	}
 
 	@Override

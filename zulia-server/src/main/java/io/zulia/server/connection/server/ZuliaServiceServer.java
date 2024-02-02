@@ -9,10 +9,11 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.util.NettyRuntime;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 /**
  * Created by Matt Davis on 6/28/17.
@@ -20,7 +21,8 @@ import java.util.logging.Logger;
  * @author mdavis
  */
 public class ZuliaServiceServer {
-	private final static Logger LOG = Logger.getLogger(ZuliaServiceServer.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ZuliaServiceServer.class);
+	private final Server server;
 
 	public static class ResponseCompressionIntercept implements ServerInterceptor {
 
@@ -30,8 +32,6 @@ public class ZuliaServiceServer {
 			return next.startCall(call, headers);
 		}
 	}
-
-	private final Server server;
 
 	public ZuliaServiceServer(ZuliaConfig zuliaConfig, ZuliaIndexManager indexManager) {
 

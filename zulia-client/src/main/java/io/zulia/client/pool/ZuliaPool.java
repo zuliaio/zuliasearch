@@ -25,14 +25,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
 import static io.zulia.message.ZuliaIndex.IndexShardMapping;
 
 public class ZuliaPool {
-
-	private static final Logger LOG = Logger.getLogger(ZuliaPool.class.getName());
 
 	protected class ZuliaNodeUpdateThread extends Thread {
 
@@ -72,7 +69,6 @@ public class ZuliaPool {
 	private final ConcurrentHashMap<String, GenericObjectPool<ZuliaConnection>> zuliaConnectionPoolMap;
 	private final ConcurrentHashMap<String, ZuliaRESTClient> zuliaRestPoolMap;
 	private final ConcurrentHashMap<String, Node> nodeKeyToNode;
-
 	private final ConnectionListener connectionListener;
 	private boolean isClosed;
 	private List<Node> nodes;
@@ -151,7 +147,6 @@ public class ZuliaPool {
 			ZuliaConnection zuliaConnection;
 			Node selectedNode = null;
 			try {
-
 				if (routingEnabled && (indexRouting != null)) {
 					if (command instanceof ShardRoutableCommand) {
 						ShardRoutableCommand rc = (ShardRoutableCommand) command;
@@ -194,8 +189,7 @@ public class ZuliaPool {
 
 					int finalRestPort = restPort;
 					final String finalServer = selectedNode.getServerAddress();
-					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey,
-							s -> new ZuliaRESTClient(finalServer, finalRestPort, connectionListener));
+					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey, s -> new ZuliaRESTClient(finalServer, finalRestPort));
 					return ((RESTCommand<R>) command).execute(restClient);
 				}
 				else {
@@ -248,11 +242,12 @@ public class ZuliaPool {
 
 			}
 			catch (Exception e) {
-				System.err.println(e.getClass().getSimpleName() + ":" + e.getMessage());
 				if (tries >= retries) {
+					connectionListener.exception(selectedNode, command, e);
 					throw e;
 				}
 				tries++;
+				connectionListener.exceptionWithRetry(selectedNode, command, e, tries);
 			}
 		}
 

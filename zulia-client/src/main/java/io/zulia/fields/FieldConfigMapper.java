@@ -24,18 +24,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class FieldConfigMapper<T> {
 
-	private static Logger LOG = Logger.getLogger(FieldConfigMapper.class.getSimpleName());
-
 	private final String prefix;
-
 	private final Class<T> clazz;
-
 	private final HashMap<String, FieldConfig> fieldConfigMap;
-
 	private final List<FieldConfigMapper<?>> embeddedFieldConfigMappers;
 
 	public FieldConfigMapper(Class<T> clazz, String prefix) {
@@ -61,8 +55,7 @@ public class FieldConfigMapper<T> {
 
 		if (List.class.isAssignableFrom(fieldType)) {
 			Type genericType = f.getGenericType();
-			if (genericType instanceof ParameterizedType) {
-				ParameterizedType pType = (ParameterizedType) genericType;
+			if (genericType instanceof ParameterizedType pType) {
 				fieldType = (Class<?>) pType.getActualTypeArguments()[0];
 			}
 		}
@@ -75,7 +68,7 @@ public class FieldConfigMapper<T> {
 								+ ">");
 			}
 
-			FieldConfigMapper fieldConfigMapper = new FieldConfigMapper<>(fieldType, fieldName);
+			FieldConfigMapper<?> fieldConfigMapper = new FieldConfigMapper<>(fieldType, fieldName);
 
 			List<Field> allFields = AnnotationUtil.getNonStaticFields(fieldType, true);
 
@@ -194,10 +187,9 @@ public class FieldConfigMapper<T> {
 			FieldConfig fieldConfig = fieldConfigMap.get(fieldName);
 			configs.add(fieldConfig);
 		}
-		for (FieldConfigMapper fcm : embeddedFieldConfigMappers) {
+		for (FieldConfigMapper<?> fcm : embeddedFieldConfigMappers) {
 			configs.addAll(fcm.getFieldConfigs());
 		}
-		LOG.info(configs.toString());
 		return configs;
 	}
 

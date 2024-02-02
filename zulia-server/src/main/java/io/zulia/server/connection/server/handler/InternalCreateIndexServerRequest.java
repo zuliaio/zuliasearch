@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.InternalCreateOrUpdateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalCreateOrUpdateIndexResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InternalCreateIndexServerRequest extends ServerRequestHandler<InternalCreateOrUpdateIndexResponse, InternalCreateOrUpdateIndexRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalCreateIndexServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalCreateIndexServerRequest.class);
 
 	public InternalCreateIndexServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class InternalCreateIndexServerRequest extends ServerRequestHandler<Inter
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal create index", e);
+		LOG.error("Failed to handle internal create index", e);
 	}
 }

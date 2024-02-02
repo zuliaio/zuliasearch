@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
 import io.zulia.message.ZuliaQuery.FetchType;
+import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
@@ -16,7 +17,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,15 +25,11 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FileDocumentStorage implements DocumentStorage {
 	private static final String TIMESTAMP = "_tstamp_";
-
-	@SuppressWarnings("unused")
-	private final static Logger log = Logger.getLogger(FileDocumentStorage.class.getSimpleName());
 	private final String indexName;
 	private final String filesPath;
 
@@ -67,7 +63,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public List<AssociatedDocument> getAssociatedDocuments(String uniqueId, FetchType fetchType) throws Exception {
+	public List<AssociatedDocument> getAssociatedMetadataForUniqueId(String uniqueId, FetchType fetchType) throws Exception {
 
 		if (!FetchType.NONE.equals(fetchType)) {
 			List<AssociatedDocument> associatedDocuments = new ArrayList<>();
@@ -110,7 +106,7 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	@Override
-	public void getAssociatedDocuments(Writer writer, Document filter) {
+	public Stream<AssociatedMetadataDTO> getAssociatedMetadataForQuery(Document query) {
 		throw new RuntimeException("Not implemented");
 	}
 

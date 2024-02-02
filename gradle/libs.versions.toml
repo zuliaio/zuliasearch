@@ -1,0 +1,77 @@
+[versions]
+grpc = "1.61.0"
+lucene = "9.9.1"
+koloboke = "1.0.0"
+micronaut = "4.2.3" # used by the micronaut plugin configuration
+mongodb = "4.11.1"
+picocli = "4.7.5"
+protobuf = "3.25.1"
+unirest = '4.2.1'
+
+
+[libraries]
+annontations = { module = "org.jetbrains:annotations", version = "24.0.0" }
+awssdk-s3 = { module = "software.amazon.awssdk:s3" }
+bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
+caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
+commons-compress = { module = "org.apache.commons:commons-compress", version = "1.25.0" }
+commons-pool2 = { module = "org.apache.commons:commons-pool2", version = "2.11.1" }
+flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.11.1" }
+guava = { module = "com.google.guava:guava", version = "32.1.3-jre" }
+grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
+grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
+#graalvm-js = {module = "org.graalvm.js:js", version = "23.0.3"}
+gson = { module = "com.google.code.gson:gson", version = "2.10.1" }
+jakarta-validation = { module = "jakarta.validation:jakarta.validation-api" }
+jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.0" }
+javax-annotation = { module = "javax.annotation:javax.annotation-api", version = "1.3.2" }
+json-io = { module = "com.cedarsoftware:json-io", version = "4.19.1" }
+junit-bom = { module = "org.junit:junit-bom", version = "5.10.1" }
+jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api" }
+jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
+jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+koloboke-api = { module = "com.koloboke:koloboke-api-jdk8", version.ref = "koloboke" }
+koloboke-impl = { module = "com.koloboke:koloboke-impl-jdk8", version.ref = "koloboke" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.4.11" }
+lucene-analysis-common = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "lucene" }
+lucene-backward-codecs = { module = "org.apache.lucene:lucene-backward-codecs", version.ref = "lucene" }
+lucene-expressions = { module = "org.apache.lucene:lucene-expressions", version.ref = "lucene" }
+lucene-facet = { module = "org.apache.lucene:lucene-facet", version.ref = "lucene" }
+lucene-highlighter = { module = "org.apache.lucene:lucene-highlighter", version.ref = "lucene" }
+lucene-queryparser = { module = "org.apache.lucene:lucene-queryparser", version.ref = "lucene" }
+micronaut-http-base = { module = "io.micronaut:micronaut-http" }
+micronaut-http-client = { module = "io.micronaut:micronaut-http-client" }
+micronaut-http-server = { module = "io.micronaut:micronaut-http-server" }
+micronaut-http-validation = { module = "io.micronaut:micronaut-http-validation" }
+micronaut-inject-java = { module = "io.micronaut:micronaut-inject-java" }
+micronaut-management = { module = "io.micronaut:micronaut-management" }
+micronaut-openapi = { module = "io.micronaut.openapi:micronaut-openapi" }
+micronaut-reactor = { module = "io.micronaut.reactor:micronaut-reactor" }
+micronaut-serde-jackson = { module = "io.micronaut.serde:micronaut-serde-jackson" }
+micronaut-serde-processor = { module = "io.micronaut.serde:micronaut-serde-processor" }
+micronaut-test-junit5 = { module = "io.micronaut.test:micronaut-test-junit5" }
+micronaut-validation-processor = { module = "io.micronaut.validation:micronaut-validation-processor" }
+mongodb-driver-core = { module = "org.mongodb:mongodb-driver-core", version.ref = "mongodb" }
+mongodb-driver-sync = { module = "org.mongodb:mongodb-driver-sync", version.ref = "mongodb" }
+picocli-base = { module = "info.picocli:picocli", version.ref = "picocli" }
+picocli-codegen = { module = "info.picocli:picocli-codegen", version.ref = "picocli" }
+protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
+simplemagic = { module = "com.j256.simplemagic:simplemagic", version = "1.17" }
+sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.2" }
+slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.9" }
+snake-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
+snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.3" }
+swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
+unirest-core = { module = "com.konghq:unirest-java-core", version.ref = "unirest" }
+unirest-gson = { module = "com.konghq:unirest-object-mappers-gson", version.ref = "unirest" }
+unirest-java-bom = { module = "com.konghq:unirest-java-bom", version.ref = "unirest" }
+
+[bundles]
+# bundleName = ["lib1", "lib2"]
+
+
+[plugins]
+reckon = { id = "org.ajoberstar.reckon", version = "0.18.0" }
+micronaut-application = { id = "io.micronaut.application", version = "4.1.1" }
+protobuf = { id = "com.google.protobuf", version = "0.9.4" }

@@ -12,6 +12,8 @@ import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.util.BytesRefUtil;
 import org.apache.lucene.search.Query;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
@@ -20,11 +22,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 public class ZuliaShard {
 
-	private final static Logger LOG = Logger.getLogger(ZuliaShard.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(ZuliaShard.class);
 
 	private final int shardNumber;
 
@@ -118,7 +119,7 @@ public class ZuliaShard {
 						queryShard(shardQuery);
 					}
 					catch (Exception e) {
-						LOG.severe("Failed to warm search with label <" + warmingSearch.getSearchLabel() + ">: " + e.getMessage());
+						LOG.error("Failed to warm search with label <" + warmingSearch.getSearchLabel() + ">: ", e.getMessage());
 					}
 				}
 

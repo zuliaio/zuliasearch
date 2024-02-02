@@ -6,9 +6,11 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NodeExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
-
+	private final static Logger LOG = LoggerFactory.getLogger(NodeExtension.class);
 	private final int nodeCount;
 
 	public NodeExtension(int nodeCount) {
@@ -24,40 +26,40 @@ public class NodeExtension implements BeforeAllCallback, AfterAllCallback, Befor
 	@Override
 	public void beforeAll(ExtensionContext context) throws Exception {
 		if (context.getTestClass().isPresent()) {
-			System.out.println("Suite started: " + context.getTestClass().get());
+			LOG.info("Suite started: " + context.getTestClass().get());
 		}
 		TestHelper.createNodes(nodeCount);
-		TestHelper.startNodes();
+		TestHelper.startNodes(false);
 		Thread.sleep(2000);
 		zuliaWorkPool = TestHelper.createClient();
 	}
 
 	public void afterAll(ExtensionContext context) throws Exception {
 		if (context.getTestClass().isPresent()) {
-			System.out.println("Suite finishing: " + context.getTestClass().get());
+			LOG.info("Suite finishing: " + context.getTestClass().get());
 		}
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
 		if (context.getTestClass().isPresent()) {
-			System.out.println("Suite finished: " + context.getTestClass().get());
+			LOG.info("Suite finished: " + context.getTestClass().get());
 		}
 	}
 
 	@Override
 	public void beforeEach(ExtensionContext context) throws Exception {
-		System.out.println("Test started: " + context.getDisplayName());
+		LOG.info("Test started: " + context.getDisplayName());
 
 	}
 
 	@Override
 	public void afterEach(ExtensionContext context) throws Exception {
-		System.out.println("Test finished: " + context.getDisplayName());
+		LOG.info("Test finished: " + context.getDisplayName());
 	}
 
 	public void restartNodes() throws Exception {
 		TestHelper.stopNodes();
 		Thread.sleep(2000);
-		TestHelper.startNodes();
+		TestHelper.startNodes(false); // micronaut does not like starting again on the same port
 		Thread.sleep(2000);
 	}
 }

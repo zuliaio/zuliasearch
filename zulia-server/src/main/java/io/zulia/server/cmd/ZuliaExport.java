@@ -6,20 +6,22 @@ import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ZuliaCmdUtil;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 @CommandLine.Command(name = "zuliaexport", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaExport implements Callable<Integer> {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaExport.class.getSimpleName());
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaExport.class);
 	@CommandLine.Mixin
 	private ConnectionInfo connectionInfo;
 
@@ -63,14 +65,16 @@ public class ZuliaExport implements Callable<Integer> {
 
 		// create zuliaexport dir first
 		String zuliaExportDir = out + File.separator + "zuliaexport";
-		if (!Files.exists(Paths.get(zuliaExportDir))) {
-			Files.createDirectory(Paths.get(zuliaExportDir));
+		Path zuliaExportPath = Paths.get(zuliaExportDir);
+		if (!Files.exists(zuliaExportPath)) {
+			Files.createDirectory(zuliaExportPath);
 		}
 
 		// create index dir
 		String indOutputDir = zuliaExportDir + File.separator + index;
-		if (!Files.exists(Paths.get(indOutputDir))) {
-			Files.createDirectory(Paths.get(indOutputDir));
+		Path indOutputPath = Paths.get(indOutputDir);
+		if (!Files.exists(indOutputPath)) {
+			Files.createDirectory(indOutputPath);
 		}
 
 		String recordsFilename = indOutputDir + File.separator + index + ".json";

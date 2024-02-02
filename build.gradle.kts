@@ -1,11 +1,9 @@
-
 plugins {
     java
     idea
     signing
     `maven-publish`
-    id("org.ajoberstar.reckon") version "0.18.0"
-    id("com.google.protobuf") version "0.9.4" apply false
+    alias(libs.plugins.reckon)
 }
 
 reckon {
@@ -22,6 +20,10 @@ apply {
     from("javacc.gradle")
 }
 
+val Project.libs by lazy {
+    the<org.gradle.accessors.dm.LibrariesForLibs>()
+}
+
 defaultTasks("build")
 subprojects {
 
@@ -31,8 +33,8 @@ subprojects {
     apply(plugin = "maven-publish")
 
     java {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 
     val sourcesJar = tasks.register<Jar>("sourcesJar") {
@@ -98,9 +100,12 @@ subprojects {
         mavenCentral()
     }
 
+
     dependencies {
-        //testImplementation("org.testng:testng:6.14.3")
-        testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+        testImplementation(platform(libs.junit.bom))
+        testImplementation(libs.jupiter.api)
+        testImplementation(libs.jupiter.params)
+        testRuntimeOnly(libs.jupiter.engine)
     }
 
     tasks.withType<Test> {

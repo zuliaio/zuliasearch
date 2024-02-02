@@ -25,16 +25,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class CacheTest {
 
 	@RegisterExtension
-	private static NodeExtension nodeExtension = new NodeExtension(1);
-
+	static final NodeExtension nodeExtension = new NodeExtension(1);
 	public static final String CACHE_TEST = "cacheTest";
-
 	public static final String CACHE_TEST_2 = "cacheTest2";
 	public static final String ALIAS_1 = "alias1";
 	public static final String ALIAS_2 = "alias2";
-
 	public static final String ALIAS_3 = "alias3";
-
 	private static final int repeatCount = 50;
 	private static final int uniqueDocs = 7;
 
@@ -51,7 +47,7 @@ public class CacheTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").facet().index().sort());
 		indexConfig.setIndexName(CACHE_TEST);
 		indexConfig.setNumberOfShards(1);
-		indexConfig.setShardQueryCacheSize(3);
+		indexConfig.setShardQueryCacheSize(4);
 		indexConfig.addWarmingSearch(
 				new Search(CACHE_TEST).setPinToCache(true).setSearchLabel("important search").addQuery(new FilterQuery("rating:[1.0 TO 3.5]"))
 						.addCountFacet(new CountFacet("rating")));
@@ -67,7 +63,7 @@ public class CacheTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.setIndexName(CACHE_TEST_2);
 		indexConfig.setNumberOfShards(1);
-		indexConfig.setShardQueryCacheSize(3);
+		indexConfig.setShardQueryCacheSize(16);
 		zuliaWorkPool.createIndex(indexConfig);
 
 		zuliaWorkPool.createIndexAlias(ALIAS_3, CACHE_TEST_2);
@@ -195,9 +191,9 @@ public class CacheTest {
 		search = new Search(CACHE_TEST);
 		search.addQuery(new ScoredQuery("rating:[4.0 TO *]"));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals(0, searchResult.getShardsCached());
+		Assertions.assertEquals(1, searchResult.getShardsCached());
 		Assertions.assertEquals(0, searchResult.getShardsPinned());
-		Assertions.assertFalse(searchResult.getFullyCached());
+		Assertions.assertTrue(searchResult.getFullyCached());
 
 		search = new Search(CACHE_TEST);
 		search.addQuery(new ScoredQuery("rating:[4.0 TO *] AND title:blue"));
@@ -235,6 +231,19 @@ public class CacheTest {
 		Assertions.assertEquals(1, searchResult.getShardsCached());
 		Assertions.assertEquals(0, searchResult.getShardsPinned());
 		Assertions.assertTrue(searchResult.getFullyCached());
+
+		for (int i = 0; i < 128; i++) {
+			search = new Search(ALIAS_1);
+			search.addQuery(new ScoredQuery(i + ""));
+			searchResult = zuliaWorkPool.search(search);
+		}
+
+		search = new Search(ALIAS_1);
+		search.addQuery(new ScoredQuery("rating:[1.0 TO 2.0]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getShardsCached());
+		Assertions.assertEquals(0, searchResult.getShardsPinned());
+		Assertions.assertFalse(searchResult.getFullyCached());
 
 		search = new Search(ALIAS_1);
 		search.addQuery(new ScoredQuery("title:pink"));

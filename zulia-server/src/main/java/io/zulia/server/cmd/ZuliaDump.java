@@ -11,6 +11,8 @@ import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ZuliaCmdUtil;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
@@ -21,12 +23,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 @CommandLine.Command(name = "zuliadump", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaDump implements Callable<Integer> {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaDump.class.getSimpleName());
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaDump.class);
 	@CommandLine.Mixin
 	private ConnectionInfo connectionInfo;
 

@@ -3,13 +3,12 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.InternalGetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalGetTermsResponse;
 import io.zulia.server.index.ZuliaIndexManager;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InternalGetTermsServerRequest extends ServerRequestHandler<InternalGetTermsResponse, InternalGetTermsRequest> {
 
-	private final static Logger LOG = Logger.getLogger(InternalGetTermsServerRequest.class.getSimpleName());
+	private final static Logger LOG = LoggerFactory.getLogger(InternalGetTermsServerRequest.class);
 
 	public InternalGetTermsServerRequest(ZuliaIndexManager indexManager) {
 		super(indexManager);
@@ -22,6 +21,6 @@ public class InternalGetTermsServerRequest extends ServerRequestHandler<Internal
 
 	@Override
 	protected void onError(Throwable e) {
-		LOG.log(Level.SEVERE, "Failed to handle internal get terms", e);
+		LOG.error("Failed to handle internal get terms", e);
 	}
 }

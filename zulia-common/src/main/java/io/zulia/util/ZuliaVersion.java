@@ -1,23 +1,24 @@
 package io.zulia.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Objects;
 
 public class ZuliaVersion {
 
-	private static final Logger LOG = Logger.getLogger(ZuliaVersion.class.getSimpleName());
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaVersion.class);
 	private static final ZuliaVersion VERSION = new ZuliaVersion();
 	private String version;
-
 	private int major;
 	private int minor;
 
 	public ZuliaVersion() {
 		try (InputStream versionStream = ZuliaVersion.class.getResourceAsStream("/version")) {
-			version = new String(versionStream.readAllBytes(), StandardCharsets.UTF_8);
+			version = new String(Objects.requireNonNull(versionStream).readAllBytes(), StandardCharsets.UTF_8);
 
 			String next = version;
 			major = Integer.parseInt(next.substring(0, next.indexOf('.')));
@@ -25,7 +26,7 @@ public class ZuliaVersion {
 			minor = Integer.parseInt(next.substring(0, next.indexOf('.')));
 		}
 		catch (IOException e) {
-			LOG.log(Level.SEVERE, "Failed to get the version.", e);
+			LOG.error("Failed to fetch the version.", e);
 		}
 
 	}
