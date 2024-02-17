@@ -33,7 +33,7 @@ jupiter-params = { module = "org.junit.jupiter:junit-jupiter-params" }
 jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 koloboke-api = { module = "com.koloboke:koloboke-api-jdk8", version.ref = "koloboke" }
 koloboke-impl = { module = "com.koloboke:koloboke-impl-jdk8", version.ref = "koloboke" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.4.11" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.4.14" }
 lucene-analysis-common = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "lucene" }
 lucene-backward-codecs = { module = "org.apache.lucene:lucene-backward-codecs", version.ref = "lucene" }
 lucene-expressions = { module = "org.apache.lucene:lucene-expressions", version.ref = "lucene" }
@@ -61,7 +61,7 @@ simplemagic = { module = "com.j256.simplemagic:simplemagic", version = "1.17" }
 sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.2" }
 slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.9" }
 snake-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
-snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.3" }
+snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.5" }
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
 unirest-core = { module = "com.konghq:unirest-java-core", version.ref = "unirest" }
 unirest-gson = { module = "com.konghq:unirest-object-mappers-gson", version.ref = "unirest" }
