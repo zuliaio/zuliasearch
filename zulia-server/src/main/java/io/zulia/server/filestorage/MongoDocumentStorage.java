@@ -200,9 +200,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 			gridFS.downloadToStream(file.getObjectId(), byteArrayOutputStream);
 			byte[] bytes = byteArrayOutputStream.toByteArray();
-			if (null != bytes) {
-				aBuilder.setDocument(ByteString.copyFrom(bytes));
-			}
+			aBuilder.setDocument(ByteString.copyFrom(bytes));
 		}
 		aBuilder.setIndexName(indexName);
 		return aBuilder.build();

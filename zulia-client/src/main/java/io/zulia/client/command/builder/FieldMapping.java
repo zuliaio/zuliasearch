@@ -2,6 +2,7 @@ package io.zulia.client.command.builder;
 
 import io.zulia.message.ZuliaIndex;
 
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -17,9 +18,7 @@ public class FieldMapping implements FieldMappingBuilder {
 	}
 
 	public FieldMapping addMappedFields(String... fieldOrFieldPatterns) {
-		for (String fieldOrFieldPattern : fieldOrFieldPatterns) {
-			fields.add(fieldOrFieldPattern);
-		}
+		fields.addAll(Arrays.asList(fieldOrFieldPatterns));
 		return this;
 	}
 

@@ -363,7 +363,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 
 		this.metaDataOperation.setEnable(true);
 		this.metaDataOperation.setOperationType(OperationType.MERGE);
-		this.metadata = Objects.requireNonNullElse(metadata, new Document());
+		this.metadata = metadata;
 		return this;
 	}
 
