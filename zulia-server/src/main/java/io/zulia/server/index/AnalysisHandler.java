@@ -62,7 +62,7 @@ public class AnalysisHandler {
 		this.minWordLength = analysisRequest.getMinWordLen();
 		this.maxWordLength = analysisRequest.getMaxWordLen();
 
-		boolean needDocFreq = (analysisRequest.getMinShardFreqPerc() > 0 || analysisRequest.getMinShardFreqPerc() > 0 || analysisRequest.getMinShardFreq() > 0
+		boolean needDocFreq = (analysisRequest.getMinShardFreqPerc() > 0 || analysisRequest.getMaxShardFreqPerc() > 0 || analysisRequest.getMinShardFreq() > 0
 				|| analysisRequest.getMaxShardFreq() > 0 || AnalysisRequest.TermSort.TFIDF.equals(analysisRequest.getTermSort()));
 
 		if (needDocFreq) {
