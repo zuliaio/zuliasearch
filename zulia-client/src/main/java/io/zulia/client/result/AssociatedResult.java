@@ -7,7 +7,7 @@ import static io.zulia.message.ZuliaBase.AssociatedDocument;
 
 public class AssociatedResult {
 
-	private AssociatedDocument associatedDocument;
+	private final AssociatedDocument associatedDocument;
 
 	public AssociatedResult(AssociatedDocument associatedDocument) {
 		this.associatedDocument = associatedDocument;
@@ -40,7 +40,7 @@ public class AssociatedResult {
 	}
 
 	public boolean hasDocument() {
-		return associatedDocument.getDocument() != null;
+		return !associatedDocument.getDocument().isEmpty();
 	}
 
 	public long getTimestamp() {
