@@ -25,27 +25,11 @@ public class ZuliaPointRangeQueryNode extends AbstractRangeQueryNode<PointQueryN
 
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append("<zuliaPointRange lowerInclusive='");
-		sb.append(isLowerInclusive());
-		sb.append("' upperInclusive='");
-		sb.append(isUpperInclusive());
-		sb.append("' indexFieldInfo.storedFieldName='");
-		sb.append(indexFieldInfo.getStoredFieldName());
-		sb.append("' indexFieldInfo.internalFieldName='");
-		sb.append(indexFieldInfo.getInternalFieldName());
-		sb.append("' indexFieldInfo.internalSortFieldName='");
-		sb.append(indexFieldInfo.getInternalSortFieldName());
-		sb.append("' indexFieldInfo.fieldType='");
-		sb.append(indexFieldInfo.getFieldType());
-		sb.append("' indexFieldInfo.indexAs.analyzerName='");
-		sb.append(indexFieldInfo.getIndexAs().getAnalyzerName());
-		sb.append("' indexFieldInfo.indexAs.indexFieldName='");
-		sb.append(indexFieldInfo.getIndexAs().getIndexFieldName());
-		sb.append("'>\n");
-		sb.append(getLowerBound()).append('\n');
-		sb.append(getUpperBound()).append('\n');
-		sb.append("</zuliaPointRange>");
-		return sb.toString();
+		return "<zuliaPointRange lowerInclusive='" + isLowerInclusive() + "' upperInclusive='" + isUpperInclusive() + "' indexFieldInfo.storedFieldName='"
+				+ indexFieldInfo.getStoredFieldName() + "' indexFieldInfo.internalFieldName='" + indexFieldInfo.getInternalFieldName()
+				+ "' indexFieldInfo.internalSortFieldName='" + indexFieldInfo.getInternalSortFieldName() + "' indexFieldInfo.fieldType='"
+				+ indexFieldInfo.getFieldType() + "' indexFieldInfo.indexAs.analyzerName='" + indexFieldInfo.getIndexAs().getAnalyzerName()
+				+ "' indexFieldInfo.indexAs.indexFieldName='" + indexFieldInfo.getIndexAs().getIndexFieldName() + "'>\n" + getLowerBound() + '\n'
+				+ getUpperBound() + '\n' + "</zuliaPointRange>";
 	}
 }
