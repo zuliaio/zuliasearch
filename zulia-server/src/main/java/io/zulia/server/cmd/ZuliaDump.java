@@ -4,13 +4,14 @@ import com.google.common.base.Charsets;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.client.command.FetchLargeAssociated;
 import io.zulia.client.command.GetIndexConfig;
-import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.server.cmd.common.MultipleIndexArgs;
 import io.zulia.server.cmd.common.ShowStackArgs;
 import io.zulia.server.cmd.common.ZuliaCmdUtil;
 import io.zulia.server.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliaadmin.ConnectionInfo;
+import io.zulia.util.pool.TaskExecutor;
+import io.zulia.util.pool.WorkPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -18,6 +19,7 @@ import picocli.CommandLine;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
@@ -70,14 +72,16 @@ public class ZuliaDump implements Callable<Integer> {
 
 		// create zuliadump dir first
 		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
-		if (!Files.exists(Paths.get(zuliaDumpDir))) {
-			Files.createDirectories(Paths.get(zuliaDumpDir));
+		Path zuliaDumpDirPath = Paths.get(zuliaDumpDir);
+		if (!Files.exists(zuliaDumpDirPath)) {
+			Files.createDirectories(zuliaDumpDirPath);
 		}
 
 		// create index dir
 		String indOutputDir = zuliaDumpDir + File.separator + index;
-		if (!Files.exists(Paths.get(indOutputDir))) {
-			Files.createDirectory(Paths.get(indOutputDir));
+		Path indOutputDirPath = Paths.get(indOutputDir);
+		if (!Files.exists(indOutputDirPath)) {
+			Files.createDirectory(indOutputDirPath);
 		}
 
 		String recordsFilename = indOutputDir + File.separator + index + ".json";
@@ -104,21 +108,21 @@ public class ZuliaDump implements Callable<Integer> {
 
 		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + "> documents");
 		AtomicInteger count = new AtomicInteger(0);
-		WorkPool threadPool = new WorkPool(4);
-		for (String uniqueId : uniqueIds) {
-			threadPool.executeAsync(() -> {
+		try (TaskExecutor threadPool = WorkPool.nativePool(4)) {
+			for (String uniqueId : uniqueIds) {
+				threadPool.executeAsync(() -> {
 
-				workPool.fetchLargeAssociated(
-						new FetchLargeAssociated(uniqueId, index, Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()));
-				if (count.incrementAndGet() % 1000 == 0) {
-					LOG.info("Associated docs dumped so far: " + count);
-				}
+					workPool.fetchLargeAssociated(new FetchLargeAssociated(uniqueId, index,
+							Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()));
+					if (count.incrementAndGet() % 1000 == 0) {
+						LOG.info("Associated docs dumped so far: " + count);
+					}
 
-				return null;
-			});
+					return null;
+				});
+			}
+			LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents");
 		}
-		LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents");
-		threadPool.shutdown();
 	}
 
 	public static void main(String[] args) {
