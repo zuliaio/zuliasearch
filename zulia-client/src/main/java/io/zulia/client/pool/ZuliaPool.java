@@ -120,7 +120,8 @@ public class ZuliaPool {
 			if (connection != null) {
 				connection.close();
 			}
-			zuliaRestPoolMap.remove(removedNode);
+			ZuliaRESTClient restClient = zuliaRestPoolMap.remove(removedNode);
+			restClient.close();
 		}
 
 		this.nodes = nodes;
