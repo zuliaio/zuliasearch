@@ -112,7 +112,7 @@ public class FetchResult extends Result {
 	}
 
 	public boolean hasResultDocument() {
-		return fetchResponse.hasResultDocument() && fetchResponse.getResultDocument().getDocument() != null;
+		return fetchResponse.hasResultDocument() && !fetchResponse.getResultDocument().getDocument().isEmpty();
 	}
 
 	public Long getDocumentTimestamp() {
