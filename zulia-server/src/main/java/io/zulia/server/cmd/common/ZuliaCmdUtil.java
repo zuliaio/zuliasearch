@@ -9,11 +9,12 @@ import io.zulia.client.command.StoreLargeAssociated;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
-import io.zulia.client.pool.WorkPool;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.AssociatedResult;
 import io.zulia.client.result.FetchResult;
 import io.zulia.doc.ResultDocBuilder;
+import io.zulia.util.pool.TaskExecutor;
+import io.zulia.util.pool.WorkPool;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.bson.Document;
@@ -100,127 +101,125 @@ public class ZuliaCmdUtil {
 
 	public static void index(String inputDir, String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count,
 			Integer threads, AssociatedFilesHandling associatedFilesHandling) throws Exception {
-		WorkPool threadPool = new WorkPool(threads);
-		try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
-			String line;
-			while ((line = b.readLine()) != null) {
-				final String record = line;
-				threadPool.executeAsync((Callable<Void>) () -> {
-					try {
-						Document document = Document.parse(record);
-						String id = null;
-						if (idField != null) {
-							id = document.getString(idField);
-						}
-						if (id == null) {
-							// fall through to just "id"
-							id = document.getString("id");
-						}
-
-						if (id == null) {
-							// if still null, throw exception
-							throw new RuntimeException("No id for record: " + document.toJson());
-						}
-
-						document.put("indexTime", new Date());
-
-						Store store = new Store(id, index);
-						store.setResultDocument(new ResultDocBuilder().setDocument(document));
-						workPool.store(store);
-
-						String fullPathToFile = inputDir + File.separator + id.replaceAll("/", "_") + ".zip";
-						if (Files.exists(Paths.get(fullPathToFile))) {
-
-							File destDir = new File(inputDir + File.separator + UUID.randomUUID() + "_tempWork");
-							byte[] buffer = new byte[1024];
-							try (ZipArchiveInputStream inputStream = new ZipArchiveInputStream(new FileInputStream(Paths.get(fullPathToFile).toFile()))) {
-								ZipArchiveEntry zipEntry;
-								while ((zipEntry = inputStream.getNextZipEntry()) != null) {
-									decompressZipEntryToDisk(destDir, buffer, inputStream, zipEntry);
-								}
+		try (TaskExecutor threadPool = WorkPool.nativePool(threads)) {
+			try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
+				String line;
+				while ((line = b.readLine()) != null) {
+					final String record = line;
+					threadPool.executeAsync((Callable<Void>) () -> {
+						try {
+							Document document = Document.parse(record);
+							String id = null;
+							if (idField != null) {
+								id = document.getString(idField);
+							}
+							if (id == null) {
+								// fall through to just "id"
+								id = document.getString("id");
 							}
 
-							// ensure the file was extractable
-							if (!AssociatedFilesHandling.skip.equals(associatedFilesHandling) && Files.exists(destDir.toPath())) {
+							if (id == null) {
+								// if still null, throw exception
+								throw new RuntimeException("No id for record: " + document.toJson());
+							}
 
-								List<Path> tempFiles;
-								try (Stream<Path> sp = Files.list(destDir.toPath())) {
-									tempFiles = sp.toList();
+							document.put("indexTime", new Date());
+
+							Store store = new Store(id, index);
+							store.setResultDocument(new ResultDocBuilder().setDocument(document));
+							workPool.store(store);
+
+							String fullPathToFile = inputDir + File.separator + id.replaceAll("/", "_") + ".zip";
+							if (Files.exists(Paths.get(fullPathToFile))) {
+
+								File destDir = new File(inputDir + File.separator + UUID.randomUUID() + "_tempWork");
+								byte[] buffer = new byte[1024];
+								try (ZipArchiveInputStream inputStream = new ZipArchiveInputStream(new FileInputStream(Paths.get(fullPathToFile).toFile()))) {
+									ZipArchiveEntry zipEntry;
+									while ((zipEntry = inputStream.getNextZipEntry()) != null) {
+										decompressZipEntryToDisk(destDir, buffer, inputStream, zipEntry);
+									}
 								}
-								for (Path path : tempFiles) {
-									if (path.toFile().isDirectory()) {
-										try {
 
-											List<Path> filesPaths;
-											try (Stream<Path> sp = Files.list(path)) {
-												filesPaths = sp.toList();
-											}
+								// ensure the file was extractable
+								if (!AssociatedFilesHandling.skip.equals(associatedFilesHandling) && Files.exists(destDir.toPath())) {
 
-											Document meta = null;
+									List<Path> tempFiles;
+									try (Stream<Path> sp = Files.list(destDir.toPath())) {
+										tempFiles = sp.toList();
+									}
+									for (Path path : tempFiles) {
+										if (path.toFile().isDirectory()) {
+											try {
 
-											String filename = null;
-											File file = null;
-											for (Path filePath : filesPaths) {
-												try {
-													if (filePath.toFile().getName().endsWith("_metadata.json")) {
-														meta = Document.parse(Files.readString(filePath));
+												List<Path> filesPaths;
+												try (Stream<Path> sp = Files.list(path)) {
+													filesPaths = sp.toList();
+												}
+
+												Document meta = null;
+
+												String filename = null;
+												File file = null;
+												for (Path filePath : filesPaths) {
+													try {
+														if (filePath.toFile().getName().endsWith("_metadata.json")) {
+															meta = Document.parse(Files.readString(filePath));
+														}
+														else {
+															file = filePath.toFile();
+															filename = filePath.toFile().getName();
+														}
 													}
-													else {
-														file = filePath.toFile();
-														filename = filePath.toFile().getName();
+													catch (Throwable t) {
+														LOG.error("Could not restore associated file <" + filename + ">", t);
 													}
 												}
-												catch (Throwable t) {
-													LOG.error("Could not restore associated file <" + filename + ">", t);
-												}
-											}
 
-											if (AssociatedFilesHandling.skipExisting.equals(associatedFilesHandling)) {
-												if (!fileExists(workPool, id, filename, index)) {
+												if (AssociatedFilesHandling.skipExisting.equals(associatedFilesHandling)) {
+													if (!fileExists(workPool, id, filename, index)) {
+														storeAssociatedDoc(index, workPool, id, filename, meta, file);
+													}
+												}
+												else {
 													storeAssociatedDoc(index, workPool, id, filename, meta, file);
 												}
 											}
-											else {
-												storeAssociatedDoc(index, workPool, id, filename, meta, file);
+											catch (Throwable t) {
+												LOG.error("Could not list the individual files for dir <" + path.getFileName() + ">", t);
 											}
 										}
-										catch (Throwable t) {
-											LOG.error("Could not list the individual files for dir <" + path.getFileName() + ">", t);
+										else {
+											LOG.error("Top level file that shouldn't exist: " + path.getFileName());
 										}
 									}
-									else {
-										LOG.error("Top level file that shouldn't exist: " + path.getFileName());
+
+									// clean up temp work
+									try (Stream<Path> walk = Files.walk(destDir.toPath())) {
+										walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+										destDir.delete();
 									}
-								}
 
-								// clean up temp work
-								try (Stream<Path> walk = Files.walk(destDir.toPath())) {
-									walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-									destDir.delete();
+								}
+								else {
+									//LOG.error( "Could not extract file <" + fullPathToFile + ">");
 								}
 
 							}
-							else {
-								//LOG.error( "Could not extract file <" + fullPathToFile + ">");
+
+							int i = count.incrementAndGet();
+							if (i % 10000 == 0) {
+								LOG.info("So far indexed <" + i + "> for index <" + index + ">");
 							}
-
+							return null;
 						}
-
-						int i = count.incrementAndGet();
-						if (i % 10000 == 0) {
-							LOG.info("So far indexed <" + i + "> for index <" + index + ">");
+						catch (Exception e) {
+							LOG.error(e.getMessage(), e);
+							return null;
 						}
-						return null;
-					}
-					catch (Exception e) {
-						LOG.error(e.getMessage(), e);
-						return null;
-					}
-				});
+					});
+				}
 			}
-		}
-		finally {
-			threadPool.shutdown();
 		}
 
 	}
