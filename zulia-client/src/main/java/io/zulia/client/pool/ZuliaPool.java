@@ -120,7 +120,10 @@ public class ZuliaPool {
 			if (connection != null) {
 				connection.close();
 			}
-			zuliaRestPoolMap.remove(removedNode);
+			ZuliaRESTClient restClient = zuliaRestPoolMap.remove(removedNode);
+			if (restClient != null) {
+				restClient.close();
+			}
 		}
 
 		this.nodes = nodes;
@@ -256,6 +259,10 @@ public class ZuliaPool {
 	public void close() {
 		for (GenericObjectPool<ZuliaConnection> pool : zuliaConnectionPoolMap.values()) {
 			pool.close();
+		}
+
+		for (ZuliaRESTClient restClient : zuliaRestPoolMap.values()) {
+			restClient.close();
 		}
 
 		isClosed = true;

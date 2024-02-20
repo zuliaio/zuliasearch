@@ -775,11 +775,11 @@ public class ZuliaIndex {
 						String sortField = fs.getSortField();
 						SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
 
-						//TODO fix this
-						FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 						if (sortFieldInfo == null) {
 							throw new Exception(sortField + " is not defined as a sortable field");
 						}
+
+						FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 
 						ZuliaQuery.SortValue sortValue = sortValues.getSortValue(sortTermsIndex);
 
