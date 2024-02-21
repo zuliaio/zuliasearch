@@ -2,7 +2,7 @@
 grpc = "1.61.0"
 lucene = "9.9.2"
 koloboke = "1.0.0"
-micronaut = "4.2.3" # used by the micronaut plugin configuration
+micronaut = "4.3.2" # used by the micronaut plugin configuration
 mongodb = "4.11.1"
 picocli = "4.7.5"
 protobuf = "3.25.1"
@@ -73,5 +73,5 @@ unirest-java-bom = { module = "com.konghq:unirest-java-bom", version.ref = "unir
 
 [plugins]
 reckon = { id = "org.ajoberstar.reckon", version = "0.18.0" }
-micronaut-application = { id = "io.micronaut.application", version = "4.1.1" }
+micronaut-application = { id = "io.micronaut.application", version = "4.3.2" }
 protobuf = { id = "com.google.protobuf", version = "0.9.4" }
