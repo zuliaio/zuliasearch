@@ -277,9 +277,8 @@ public class IndexTest {
 			FieldConfigBuilder myField = FieldConfigBuilder.createString("myField").indexAs("custom").sort();
 			updateIndex.mergeFieldConfig(myField);
 
-			Assertions.assertThrows(Exception.class, () -> {
-				zuliaWorkPool.updateIndex(updateIndex);
-			}, "Analyzer <custom> is not a default analyzer and is not given as a custom analyzer for field <myField> indexed as <myField>");
+			Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.updateIndex(updateIndex),
+					"Analyzer <custom> is not a default analyzer and is not given as a custom analyzer for field <myField> indexed as <myField>");
 
 			ZuliaIndex.AnalyzerSettings custom = ZuliaIndex.AnalyzerSettings.newBuilder().setName("custom").addFilter(Filter.LOWERCASE).build();
 			ZuliaIndex.AnalyzerSettings mine = ZuliaIndex.AnalyzerSettings.newBuilder().setName("mine").addFilter(Filter.LOWERCASE).addFilter(Filter.BRITISH_US)
@@ -344,9 +343,8 @@ public class IndexTest {
 			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
 			updateIndex.removeAnalyzerSettingsByName("custom");
 
-			Assertions.assertThrows(Exception.class, () -> {
-				zuliaWorkPool.updateIndex(updateIndex);
-			}, "Analyzer <custom> is not a default analyzer and is not given as a custom analyzer for field <myField> indexed as <myField>");
+			Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.updateIndex(updateIndex),
+					"Analyzer <custom> is not a default analyzer and is not given as a custom analyzer for field <myField> indexed as <myField>");
 		}
 
 		{

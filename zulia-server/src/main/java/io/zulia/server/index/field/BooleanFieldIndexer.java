@@ -19,40 +19,36 @@ public class BooleanFieldIndexer extends FieldIndexer {
 		if (value != null) {
 
 			boolean boolVal;
-			if (value instanceof Boolean val) {
-				boolVal = val;
-			}
-			else if (value instanceof String s) {
-				int booleanInt = BooleanUtil.getStringAsBooleanInt(s);
-				if (booleanInt == 1) {
-					boolVal = true;
+			switch (value) {
+				case Boolean val -> boolVal = val;
+				case String s -> {
+					int booleanInt = BooleanUtil.getStringAsBooleanInt(s);
+					if (booleanInt == 1) {
+						boolVal = true;
+					}
+					else if (booleanInt == 0) {
+						boolVal = false;
+					}
+					else {
+						throw new Exception("String for Boolean field be 'Yes', 'No', 'Y', 'N', '1', '0', 'True', 'False', 'T', 'F' (case insensitive) for <"
+								+ storedFieldName + "> and found <" + s + ">");
+					}
 				}
-				else if (booleanInt == 0) {
-					boolVal = false;
+				case Number number -> {
+					int v = number.intValue();
+					if (v == 0) {
+						boolVal = false;
+					}
+					else if (v == 1) {
+						boolVal = true;
+					}
+					else {
+						throw new Exception("Number for Boolean field must be 0 or 1 for <" + storedFieldName + "> and found <" + v + ">");
+					}
 				}
-				else {
-					throw new Exception(
-							"String for Boolean field be 'Yes', 'No', 'Y', 'N', '1', '0', 'True', 'False', 'T', 'F' (case insensitive) for <" + storedFieldName
-									+ "> and found <" + s + ">");
-				}
-			}
-			else if (value instanceof Number number) {
-				int v = number.intValue();
-				if (v == 0) {
-					boolVal = false;
-				}
-				else if (v == 1) {
-					boolVal = true;
-				}
-				else {
-					throw new Exception("Number for Boolean field must be 0 or 1 for <" + storedFieldName + "> and found <" + v + ">");
-				}
-			}
-			else {
-				throw new Exception(
+				default -> throw new Exception(
 						"Expecting collection of data type of Boolean, String, or Number for field <" + storedFieldName + "> and found <" + value.getClass()
 								.getSimpleName() + ">");
-
 			}
 			d.add(new IntPoint(FieldTypeUtil.getIndexField(indexedFieldName, FieldType.BOOL), boolVal ? 1 : 0));
 		}
