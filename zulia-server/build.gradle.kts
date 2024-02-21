@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.json.io)
     implementation(libs.koloboke.api)
     implementation(libs.koloboke.impl)
+    implementation(libs.logback.classic)
     implementation(libs.micronaut.http.base)
     implementation(libs.micronaut.http.server)
     implementation(libs.micronaut.inject.java)
@@ -68,6 +69,7 @@ dependencies {
     implementation(libs.snake.yaml)
     implementation(libs.snappy.java)
     implementation(libs.swagger.annotations)
+
     testImplementation(libs.flapdoodle.mongo)
     testImplementation(libs.micronaut.http.client)
     testImplementation(libs.micronaut.test.junit5)
