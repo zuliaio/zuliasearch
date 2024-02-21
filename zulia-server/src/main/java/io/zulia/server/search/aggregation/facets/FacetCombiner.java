@@ -38,7 +38,7 @@ public class FacetCombiner {
 
 	public FacetGroup getCombinedFacetGroup() {
 		if (facetGroups.size() == 1) {
-			return facetGroups.get(0).facetGroup();
+			return facetGroups.getFirst().facetGroup();
 		}
 		else {
 

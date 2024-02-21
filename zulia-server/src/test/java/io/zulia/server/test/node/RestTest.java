@@ -253,28 +253,26 @@ public class RestTest {
 			while ((ze = zis.getNextEntry()) != null) {
 				var b = zis.readAllBytes();
 
-				if (ze.getName().equals("test.txt/")) {
-					piecesFound[0] = true;
+				switch (ze.getName()) {
+					case "test.txt/" -> piecesFound[0] = true;
+
 					// dir
-				}
-				else if (ze.getName().equals("test2.txt/")) {
-					piecesFound[1] = true;
+					case "test2.txt/" -> piecesFound[1] = true;
+
 					// dir
-				}
-				else if (ze.getName().equals("test.txt/test.txt")) {
-					piecesFound[2] = true;
-					Assertions.assertArrayEquals(fileBytes, b);
-				}
-				else if (ze.getName().equals("test2.txt/test2.txt")) {
-					piecesFound[3] = true;
-					Assertions.assertArrayEquals(fileBytes2, b);
-				}
-				else if (ze.getName().equals("test2.txt/test2.txt_metadata.json")) {
-					piecesFound[4] = true;
-					Assertions.assertEquals(Document.parse(new String(b)), new Document("aKey", "aValue"));
-				}
-				else {
-					throw new Exception("Unexpected file <" + ze.getName());
+					case "test.txt/test.txt" -> {
+						piecesFound[2] = true;
+						Assertions.assertArrayEquals(fileBytes, b);
+					}
+					case "test2.txt/test2.txt" -> {
+						piecesFound[3] = true;
+						Assertions.assertArrayEquals(fileBytes2, b);
+					}
+					case "test2.txt/test2.txt_metadata.json" -> {
+						piecesFound[4] = true;
+						Assertions.assertEquals(Document.parse(new String(b)), new Document("aKey", "aValue"));
+					}
+					default -> throw new Exception("Unexpected file <" + ze.getName());
 				}
 			}
 		}

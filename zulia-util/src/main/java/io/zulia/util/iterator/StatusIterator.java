@@ -15,11 +15,11 @@ public class StatusIterator<T> implements Iterable<T> {
 	private int counter;
 
 	public static <T> StatusIterator<T> infoLogIterator(Iterable<T> iterable, Logger logger, String messagePrefix, int everyN) {
-		return new StatusIterator<T>(iterable, logger::info, messagePrefix, everyN);
+		return new StatusIterator<>(iterable, logger::info, messagePrefix, everyN);
 	}
 
 	public static <T> StatusIterator<T> soutIterator(Iterable<T> iterable, String messagePrefix, int everyN) {
-		return new StatusIterator<T>(iterable, System.out::println, messagePrefix, everyN);
+		return new StatusIterator<>(iterable, System.out::println, messagePrefix, everyN);
 	}
 
 	public StatusIterator(Iterable<T> iterable, Consumer<String> log, String messagePrefix, int everyN) {
@@ -35,7 +35,7 @@ public class StatusIterator<T> implements Iterable<T> {
 
 	@Override
 	public Iterator<T> iterator() {
-		return new Iterator<T>() {
+		return new Iterator<>() {
 			@Override
 			public boolean hasNext() {
 				return iterator.hasNext();

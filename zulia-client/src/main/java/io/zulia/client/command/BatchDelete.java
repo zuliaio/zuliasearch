@@ -20,7 +20,7 @@ public class BatchDelete extends SimpleCommand<ZuliaServiceOuterClass.BatchDelet
     private List<Delete> deletes;
 
     public BatchDelete() {
-        deletes = new ArrayList<Delete>();
+        deletes = new ArrayList<>();
     }
 
     public BatchDelete addDelete(Delete delete) {

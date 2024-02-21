@@ -28,25 +28,9 @@ public class StreamHelper {
 	}
 
 	public static void copyStream(final InputStream source, final OutputStream destination) throws IOException {
-		final ReadableByteChannel inputChannel = Channels.newChannel(source);
-		final WritableByteChannel outputChannel = Channels.newChannel(destination);
 
-		try {
+		try (ReadableByteChannel inputChannel = Channels.newChannel(source); WritableByteChannel outputChannel = Channels.newChannel(destination)) {
 			copyChannel(inputChannel, outputChannel);
-		}
-		finally {
-			try {
-				inputChannel.close();
-			}
-			catch (Exception e) {
-
-			}
-			try {
-				outputChannel.close();
-			}
-			catch (Exception e) {
-
-			}
 		}
 	}
 
