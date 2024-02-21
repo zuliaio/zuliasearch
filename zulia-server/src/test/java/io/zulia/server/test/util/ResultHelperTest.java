@@ -1,8 +1,8 @@
 package io.zulia.server.test.util;
 
 import com.google.protobuf.ByteString;
-import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.document.DocumentHelper;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -46,22 +46,22 @@ public class ResultHelperTest {
 		docs.add(embeddedDocumentFive);
 		testMongoDocument.put("thisfield", docs);
 
-		Assertions.assertEquals(List.of("val1", "someval"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key1"));
-		Assertions.assertEquals(List.of("val2"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key2"));
+		Assertions.assertEquals(List.of("val1", "someval"), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key1"));
+		Assertions.assertEquals(List.of("val2"), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.key2"));
 		Assertions.assertEquals(List.of(List.of("one", "two"), List.of("three")),
-				ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.listKey"));
-		Assertions.assertEquals(List.of("some text B", "some text"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.subDoc.subKeyA"));
-		Assertions.assertEquals(List.of(List.of(3), List.of(1, 2)), ResultHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.subDoc.subListKey"));
-		Assertions.assertEquals(List.of(1, 2, 3), ResultHelper.getValueFromMongoDocument(testMongoDocument, "listField"));
+				DocumentHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.listKey"));
+		Assertions.assertEquals(List.of("some text B", "some text"), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.subDoc.subKeyA"));
+		Assertions.assertEquals(List.of(List.of(3), List.of(1, 2)), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "thisfield.subDoc.subListKey"));
+		Assertions.assertEquals(List.of(1, 2, 3), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "listField"));
 
-		Assertions.assertEquals("1", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield"));
-		Assertions.assertEquals(List.of("1", "2", "3"), ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield2"));
-		Assertions.assertNull(ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield1"));
-		Assertions.assertNull(ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1.otherfield"));
-		Assertions.assertNull(ResultHelper.getValueFromMongoDocument(testMongoDocument, "thing"));
-		Assertions.assertEquals("someVal", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field1"));
-		Assertions.assertEquals("val2", ResultHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1"));
-		Assertions.assertEquals(40, ResultHelper.getValueFromMongoDocument(testMongoDocument, "myfield"));
+		Assertions.assertEquals("1", DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield"));
+		Assertions.assertEquals(List.of("1", "2", "3"), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield2"));
+		Assertions.assertNull(DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield1"));
+		Assertions.assertNull(DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1.otherfield"));
+		Assertions.assertNull(DocumentHelper.getValueFromMongoDocument(testMongoDocument, "thing"));
+		Assertions.assertEquals("someVal", DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field1"));
+		Assertions.assertEquals("val2", DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1"));
+		Assertions.assertEquals(40, DocumentHelper.getValueFromMongoDocument(testMongoDocument, "myfield"));
 
 	}
 

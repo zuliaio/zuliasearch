@@ -11,6 +11,7 @@ import io.zulia.server.util.BytesRefUtil;
 import io.zulia.server.util.FieldAndSubFields;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.document.DocumentHelper;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReader;
@@ -307,7 +308,7 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 
 				highLightResult.setField(storedFieldName);
 
-				Object storeFieldValues = ResultHelper.getValueFromMongoDocument(doc, storedFieldName);
+				Object storeFieldValues = DocumentHelper.getValueFromMongoDocument(doc, storedFieldName);
 
 				ZuliaUtil.handleLists(storeFieldValues, (value) -> {
 					String content = value.toString();

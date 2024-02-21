@@ -25,6 +25,7 @@ import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.CursorHelper;
 import io.zulia.util.ResultHelper;
+import io.zulia.util.document.DocumentHelper;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -594,7 +595,7 @@ public class QueryController {
 			responseBuilder = new StringBuilder();
 		}
 		for (String field : fields) {
-			Object obj = ResultHelper.getValueFromMongoDocument(document, field);
+			Object obj = DocumentHelper.getValueFromMongoDocument(document, field);
 			if (obj != null) {
 				switch (obj) {
 					case List<?> list -> {
