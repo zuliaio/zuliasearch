@@ -8,8 +8,8 @@ import io.zulia.server.analysis.frequency.DocFreq;
 import io.zulia.server.analysis.frequency.TermFreq;
 import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.config.ServerIndexConfig;
-import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.document.DocumentHelper;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -102,7 +102,7 @@ public class AnalysisHandler {
 
 		if (storedFieldName != null && enabled) {
 
-			Object storeFieldValues = ResultHelper.getValueFromMongoDocument(document, storedFieldName);
+			Object storeFieldValues = DocumentHelper.getValueFromMongoDocument(document, storedFieldName);
 
 			AnalysisResult.Builder analysisResult = AnalysisResult.newBuilder();
 			analysisResult.setAnalysisRequest(analysisRequest);

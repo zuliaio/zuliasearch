@@ -13,21 +13,17 @@ description = "Zulia Common"
 
 dependencies {
     api(libs.annontations)
-    api(libs.bson)
     api(libs.commons.pool2)
     api(libs.grpc.netty.shaded)
     api(libs.grpc.protobuf)
     api(libs.grpc.stub)
-    api(libs.gson)
-    api(libs.guava)
     api(libs.javax.annotation)
-    api(libs.mongodb.driver.core)
     api(libs.protobuf.java.util)
     api(libs.simplemagic)
-    api(libs.logback.classic)
-    api(libs.slf4j.api)
 
     protobuf(libs.sketches.java)
+
+    api(project(":zulia-util"))
 }
 
 

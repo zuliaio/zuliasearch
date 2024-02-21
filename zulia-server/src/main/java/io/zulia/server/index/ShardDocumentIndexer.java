@@ -21,9 +21,9 @@ import io.zulia.server.index.field.IntFieldIndexer;
 import io.zulia.server.index.field.LongFieldIndexer;
 import io.zulia.server.index.field.StringFieldIndexer;
 import io.zulia.util.BooleanUtil;
-import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
 import io.zulia.util.ZuliaVersion;
+import io.zulia.util.document.DocumentHelper;
 import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -110,7 +110,7 @@ public class ShardDocumentIndexer {
 			String storedFieldName = fc.getStoredFieldName();
 			FieldConfig.FieldType fieldType = fc.getFieldType();
 
-			Object o = ResultHelper.getValueFromMongoDocument(mongoDocument, storedFieldName);
+			Object o = DocumentHelper.getValueFromMongoDocument(mongoDocument, storedFieldName);
 			if (o != null) {
 				generateFacetLabels(fc, o, facetFieldToFacetLabels);
 				addSortForStoredField(luceneDocument, storedFieldName, fc, o);
