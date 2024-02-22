@@ -77,6 +77,6 @@ poi = ["poi", "poi-ooxml"]
 
 
 [plugins]
-reckon = { id = "org.ajoberstar.reckon", version = "0.18.0" }
+reckon = { id = "org.ajoberstar.reckon", version = "0.18.2" }
 micronaut-application = { id = "io.micronaut.application", version = "4.3.2" }
 protobuf = { id = "com.google.protobuf", version = "0.9.4" }
