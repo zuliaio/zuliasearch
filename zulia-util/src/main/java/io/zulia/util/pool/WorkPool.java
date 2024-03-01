@@ -53,7 +53,7 @@ public class WorkPool {
 	/**
 	 * creates a TaskExecutor using virtual threads that will not allow more than maxThreads to run at the same time
 	 * and blocks when more than maxThreads*10 tasks are waiting
-	 *
+	 * prefer {@link #virtualBounded(int)}
 	 * @param maxThreads - tasks to run at the same time
 	 */
 	public static TaskExecutor virtualPool(int maxThreads) {
@@ -63,7 +63,7 @@ public class WorkPool {
 	/**
 	 * creates a TaskExecutor using virtual threads that will not allow more than maxThreads to run at the same time
 	 * and blocks when more than maxQueued tasks are waiting
-	 *
+	 * prefer {@link #virtualBounded(int)}
 	 * @param maxThreads - tasks to run at the same time
 	 * @param maxQueued  - max tasks to be queued
 	 */
