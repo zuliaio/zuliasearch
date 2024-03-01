@@ -16,14 +16,19 @@ public class SemaphoreLimitedVirtualPool extends VirtualThreadPerTaskTaskExecuto
 	public <T> ListenableFuture<T> executeAsync(Callable<T> task) {
 		try {
 			pool.acquire();
-			return super.executeAsync(task);
+			return super.executeAsync(() -> {
+				try {
+					return task.call();
+				}
+				finally {
+					pool.release();
+				}
+			});
 		}
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-		finally {
-			pool.release();
-		}
+
 	}
 
 }
