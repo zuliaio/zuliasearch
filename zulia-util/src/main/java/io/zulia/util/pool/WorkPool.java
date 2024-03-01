@@ -78,4 +78,12 @@ public class WorkPool {
 		return new VirtualThreadPerTaskTaskExecutor();
 	}
 
+	/**
+	 * Creates a TaskExecutor that starts a virtual thread per task but limits concurrent threads using a semaphore
+	 * As per <a href="https://inside.java/2024/02/04/sip094/">Managing Throughput with Virtual Threads - Sip of Java</a>
+	 */
+	public static TaskExecutor virtualBounded(int maxThreads) {
+		return new SemaphoreLimitedVirtualPool(maxThreads);
+	}
+
 }
