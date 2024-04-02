@@ -10,5 +10,7 @@ dependencies {
     api(project(":zulia-client"))
     implementation(libs.snake.yaml)
     implementation(libs.graalvm.js)
+    implementation(libs.logback.classic)
+    implementation(libs.jansi)
 }
 

@@ -1,10 +1,14 @@
 package io.zulia.testing;
 
+import java.util.List;
+
 public final class QueryConfig {
 	private String index;
 	private String query;
 
 	private int amount;
+
+	private List<FacetConfig> facets;
 
 	public QueryConfig() {
 
@@ -26,9 +30,24 @@ public final class QueryConfig {
 		this.query = query;
 	}
 
-	@Override
-	public String toString() {
-		return "QueryConfig[" + "index=" + index + ", " + "query=" + query + ']';
+	public int getAmount() {
+		return amount;
 	}
 
+	public void setAmount(int amount) {
+		this.amount = amount;
+	}
+
+	public List<FacetConfig> getFacets() {
+		return facets;
+	}
+
+	public void setFacets(List<FacetConfig> facets) {
+		this.facets = facets;
+	}
+
+	@Override
+	public String toString() {
+		return "QueryConfig{" + "index='" + index + '\'' + ", query='" + query + '\'' + ", amount=" + amount + ", facets=" + facets + '}';
+	}
 }
