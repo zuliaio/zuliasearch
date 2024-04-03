@@ -4,9 +4,9 @@ import org.graalvm.polyglot.proxy.ProxyObject;
 
 import java.util.List;
 
-public class QueryResult {
+public class QueryResultObject {
 
-	public QueryResult() {
+	public QueryResultObject() {
 
 	}
 
