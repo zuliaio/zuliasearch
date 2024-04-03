@@ -1,4 +1,4 @@
-package io.zulia.testing;
+package io.zulia.testing.config;
 
 public final class TestConfig {
 	private String expr;

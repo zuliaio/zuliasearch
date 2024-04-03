@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Map;
 
 public class FacetProxyObject implements ProxyObject {
-	private final Map<String, List<FacetValue>> keyToFacets;
+	private final Map<String, List<FacetValueObject>> keyToFacets;
 
-	public FacetProxyObject(Map<String, List<FacetValue>> keyToFacets) {
+	public FacetProxyObject(Map<String, List<FacetValueObject>> keyToFacets) {
 		this.keyToFacets = keyToFacets;
 	}
 
@@ -47,7 +47,7 @@ public class FacetProxyObject implements ProxyObject {
 	}
 
 	@Override
-	public List<FacetValue> getMember(String key) {
+	public List<FacetValueObject> getMember(String key) {
 		return keyToFacets.get(key);
 	}
 

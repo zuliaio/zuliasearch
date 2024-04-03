@@ -1,4 +1,6 @@
-package io.zulia.testing;
+package io.zulia.testing.result;
+
+import io.zulia.testing.config.TestConfig;
 
 public class TestResult {
 

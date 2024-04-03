@@ -1,4 +1,4 @@
-package io.zulia.testing;
+package io.zulia.testing.config;
 
 import java.util.List;
 
@@ -9,6 +9,8 @@ public final class QueryConfig {
 	private int amount;
 
 	private List<FacetConfig> facets;
+
+	private List<StatFacetConfig> statFacets;
 
 	public QueryConfig() {
 
@@ -46,8 +48,17 @@ public final class QueryConfig {
 		this.facets = facets;
 	}
 
+	public List<StatFacetConfig> getStatFacets() {
+		return statFacets;
+	}
+
+	public void setStatFacets(List<StatFacetConfig> statFacets) {
+		this.statFacets = statFacets;
+	}
+
 	@Override
 	public String toString() {
-		return "QueryConfig{" + "index='" + index + '\'' + ", query='" + query + '\'' + ", amount=" + amount + ", facets=" + facets + '}';
+		return "QueryConfig{" + "index='" + index + '\'' + ", query='" + query + '\'' + ", amount=" + amount + ", facets=" + facets + ", statFacets="
+				+ statFacets + '}';
 	}
 }
