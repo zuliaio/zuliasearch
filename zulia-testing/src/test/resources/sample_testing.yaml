@@ -1,0 +1,51 @@
+logSearches: true
+logSearchResults: true
+connections:
+  testConnection:
+    serverAddress: localhost
+    port: 32191
+indexes:
+  publications:
+    indexName: publications
+    connection: testConnection
+searches:
+  pubsStar:
+    index: publications
+    query: "*:*"
+  pubsWithoutTitle:
+    index: publications
+    query: "-title:*"
+  pubsComplex:
+    index: publications
+    query: "title:*"
+    facets:
+      - field: pubYear
+        topN: 10
+      - field: journalNameIso
+        topN: 10
+    statFacets:
+      - facetField: pubYear
+        numericField: authorCount
+        topN: 10
+  pubsWithDocument:
+    index: publications
+    query: "title:\"Understanding PCSK9 and anti-PCSK9 therapies\""
+    amount: 1
+tests:
+  pubsCount:
+    expr: pubsStar.count > 30000000
+  mostPubsHaveTitle:
+    expr: pubsWithoutTitle.count < pubsStar.count * 0.01
+  oneResult:
+    expr: pubsWithDocument.count == 1
+  resultHasCorrectAuthor:
+    expr: pubsWithDocument.doc[0]["authors"][0]["lastName"] == "McKenney"
+  topYearFacet:
+    expr: pubsComplex.facet["pubYear"][0].label == "2022" && pubsComplex.facet["pubYear"][0].count > 1000000
+  topJournalFacet:
+    expr: pubsComplex.facet["journalNameIso"][0].label = "PLoS One" && pubsComplex.facet["journalNameIso"][0].count > 1000
+  statFacetCheck:
+    expr: pubsComplex.statFacet["pubYear-authorCount"][0].label = "2022" && pubsComplex.statFacet["pubYear-authorCount"][0].docCount > 1000000 && pubsComplex.statFacet["pubYear-authorCount"][0].sum > 5000000 
+
+
+

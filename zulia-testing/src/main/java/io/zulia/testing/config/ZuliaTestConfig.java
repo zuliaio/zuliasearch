@@ -6,8 +6,11 @@ public class ZuliaTestConfig {
 
 	private Map<String, ConnectionConfig> connections;
 	private Map<String, IndexConfig> indexes;
-	private Map<String, QueryConfig> queries;
+	private Map<String, QueryConfig> searches;
 	private Map<String, TestConfig> tests;
+
+	private boolean logSearches;
+	private boolean logSearchResults;
 
 	public ZuliaTestConfig() {
 
@@ -29,12 +32,12 @@ public class ZuliaTestConfig {
 		this.indexes = indexes;
 	}
 
-	public Map<String, QueryConfig> getQueries() {
-		return queries;
+	public Map<String, QueryConfig> getSearches() {
+		return searches;
 	}
 
-	public void setQueries(Map<String, QueryConfig> queries) {
-		this.queries = queries;
+	public void setSearches(Map<String, QueryConfig> searches) {
+		this.searches = searches;
 	}
 
 	public Map<String, TestConfig> getTests() {
@@ -45,8 +48,25 @@ public class ZuliaTestConfig {
 		this.tests = tests;
 	}
 
+	public boolean isLogSearches() {
+		return logSearches;
+	}
+
+	public void setLogSearches(boolean logSearches) {
+		this.logSearches = logSearches;
+	}
+
+	public boolean isLogSearchResults() {
+		return logSearchResults;
+	}
+
+	public void setLogSearchResults(boolean logSearchResults) {
+		this.logSearchResults = logSearchResults;
+	}
+
 	@Override
 	public String toString() {
-		return "DataQualityConfig{" + "connections=" + connections + ", indexes=" + indexes + ", queries=" + queries + ", tests=" + tests + '}';
+		return "ZuliaTestConfig{" + "connections=" + connections + ", indexes=" + indexes + ", searches=" + searches + ", tests=" + tests + ", logSearches="
+				+ logSearches + ", logSearchResults=" + logSearchResults + '}';
 	}
 }

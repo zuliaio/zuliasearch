@@ -1,7 +1,8 @@
 package io.zulia.server.cmd;
 
-import io.zulia.server.cmd.common.ShowStackArgs;
-import io.zulia.server.cmd.common.ZuliaVersionProvider;
+import io.zulia.cmd.common.ShowStackArgs;
+import io.zulia.cmd.common.ZuliaCommonCmd;
+import io.zulia.cmd.common.ZuliaVersionProvider;
 import io.zulia.server.cmd.zuliad.AddNodeCmd;
 import io.zulia.server.cmd.zuliad.ListNodesCmd;
 import io.zulia.server.cmd.zuliad.RemoveNodeCmd;
@@ -32,7 +33,7 @@ public class ZuliaD {
 	}
 
 	public static void main(String[] args) {
-
+		System.out.println("APP_HOME is set to " + System.getenv("APP_HOME"));
 		ZuliaCommonCmd.runCommandLine(new ZuliaD(), args);
 
 	}

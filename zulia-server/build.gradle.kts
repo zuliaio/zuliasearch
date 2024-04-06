@@ -37,8 +37,8 @@ tasks.withType<Test> {
 }
 
 dependencies {
-    implementation(project(":zulia-client")) //needed for admin tools
     implementation(project(":zulia-query-parser"))
+    implementation(project(":zulia-cmd-shared"))
     annotationProcessor(libs.micronaut.http.validation)
     annotationProcessor(libs.micronaut.openapi)
     annotationProcessor(libs.micronaut.serde.processor)
@@ -73,100 +73,26 @@ dependencies {
     testImplementation(libs.flapdoodle.mongo)
     testImplementation(libs.micronaut.http.client)
     testImplementation(libs.micronaut.test.junit5)
+    testImplementation(project(":zulia-client"))
 }
 tasks.withType<JavaCompile> {
     options.isFork = true
     options.forkOptions.jvmArgs?.addAll(listOf("-Dmicronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.theme=flattop"))
 }
 
-val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
 
-
-zuliaScriptTask.applicationName = "zulia"
-zuliaScriptTask.mainClass.set("io.zulia.server.cmd.Zulia")
-val zuliaAdminScriptTask = tasks.register<CreateStartScripts>("createZuliaAdminScript") {
-    applicationName = "zuliaadmin"
-    mainClass.set("io.zulia.server.cmd.ZuliaAdmin")
-    outputDir = zuliaScriptTask.outputDir
-    classpath = zuliaScriptTask.classpath
-
-    doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
-    }
-}
-
-val zuliaDScriptTask = tasks.register<CreateStartScripts>("createZuliaDScript") {
+val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts") {
     applicationName = "zuliad"
     mainClass.set("io.zulia.server.cmd.ZuliaD")
-    outputDir = zuliaScriptTask.outputDir
-    classpath = zuliaScriptTask.classpath
-
     doLast {
         val unixScriptFile = file(unixScript)
         val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
+        val newText = text.replace("exec ", "export APP_HOME\nexec ")
         unixScriptFile.writeText(newText, Charsets.UTF_8)
     }
 }
 
-val zuliaDumpScriptTask = tasks.register<CreateStartScripts>("createZuliaDumpScript") {
-    applicationName = "zuliadump"
-    mainClass.set("io.zulia.server.cmd.ZuliaDump")
-    outputDir = zuliaScriptTask.outputDir
-    classpath = zuliaScriptTask.classpath
 
-    doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
-    }
-}
-
-val zuliaRestoreScriptTask = tasks.register<CreateStartScripts>("createZuliaRestoreScript") {
-    applicationName = "zuliarestore"
-    mainClass.set("io.zulia.server.cmd.ZuliaRestore")
-    outputDir = zuliaScriptTask.outputDir
-    classpath = zuliaScriptTask.classpath
-
-    doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
-    }
-}
-
-val zuliaExportScriptTask = tasks.register<CreateStartScripts>("createZuliaExportScript") {
-    applicationName = "zuliaexport"
-    mainClass.set("io.zulia.server.cmd.ZuliaExport")
-    outputDir = zuliaScriptTask.outputDir
-    classpath = zuliaScriptTask.classpath
-
-    doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
-    }
-}
-
-val zuliaImportScriptTask = tasks.register<CreateStartScripts>("createZuliaImportScript") {
-    applicationName = "zuliaimport"
-    mainClass.set("io.zulia.server.cmd.ZuliaImport")
-    outputDir = zuliaScriptTask.outputDir
-    classpath = zuliaScriptTask.classpath
-
-    doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("APP_HOME=\"`pwd -P`\"", "export APP_HOME=\"`pwd -P`\"")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
-    }
-}
 
 tasks.register("autocompleteDir") {
     doLast {
@@ -174,88 +100,22 @@ tasks.register("autocompleteDir") {
     }
 }
 
-task("picoCliZuliaAutoComplete", JavaExec::class) {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zulia.sh", "io.zulia.server.cmd.Zulia")
-}
-
 task("picoCliZuliaDAutoComplete", JavaExec::class) {
     dependsOn("autocompleteDir")
     mainClass.set("picocli.AutoComplete")
     classpath = sourceSets["main"].runtimeClasspath
-    args = listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zuliad.sh", "io.zulia.server.cmd.ZuliaD")
-}
-
-task("picoCliZuliaAdminAutoComplete", JavaExec::class) {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
     args = listOf(
         "--force",
         "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliaadmin.sh",
-        "io.zulia.server.cmd.ZuliaAdmin"
+        "${layout.buildDirectory.get()}/autocomplete/zuliad.sh",
+        "io.zulia.server.cmd.ZuliaD"
     )
 }
 
-task("picoCliZuliaDumpAutoComplete", JavaExec::class) {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args =
-        listOf("--force", "--completionScript", "${layout.buildDirectory.get()}/autocomplete/zuliadump.sh", "io.zulia.server.cmd.ZuliaDump")
-}
-
-
-
-task("picoCliZuliaRestoreAutoComplete", JavaExec::class) {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliarestore.sh",
-        "io.zulia.server.cmd.ZuliaRestore"
-    )
-}
-
-
-task("picoCliZuliaImportAutoComplete", JavaExec::class) {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliaimport.sh",
-        "io.zulia.server.cmd.ZuliaImport"
-    )
-}
-
-task("picoCliZuliaExportAutoComplete", JavaExec::class) {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliaexport.sh",
-        "io.zulia.server.cmd.ZuliaExport"
-    )
-}
 
 tasks.withType<AbstractArchiveTask> {
     dependsOn(
-        "picoCliZuliaAutoComplete",
         "picoCliZuliaDAutoComplete",
-        "picoCliZuliaAdminAutoComplete",
-        "picoCliZuliaDumpAutoComplete",
-        "picoCliZuliaRestoreAutoComplete",
-        "picoCliZuliaImportAutoComplete",
-        "picoCliZuliaExportAutoComplete"
     )
 }
 
@@ -263,24 +123,6 @@ tasks.withType<AbstractArchiveTask> {
 distributions {
     main {
         contents {
-            from(zuliaAdminScriptTask) {
-                into("bin")
-            }
-            from(zuliaDScriptTask) {
-                into("bin")
-            }
-            from(zuliaDumpScriptTask) {
-                into("bin")
-            }
-            from(zuliaRestoreScriptTask) {
-                into("bin")
-            }
-            from(zuliaExportScriptTask) {
-                into("bin")
-            }
-            from(zuliaImportScriptTask) {
-                into("bin")
-            }
             from("${layout.buildDirectory.get()}/autocomplete/") {
                 into("bin/autocomplete")
             }
