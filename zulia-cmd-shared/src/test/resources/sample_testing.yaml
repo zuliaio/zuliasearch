@@ -1,0 +1,42 @@
+connections:
+  testConnection:
+    serverAddress: 192.168.1.30
+    port: 32191
+indexes:
+  publications:
+    indexName: publications
+    connection: testConnection
+queries:
+  pubsStar:
+    index: publications
+    query: "*:*"
+  pubsWithoutTitle:
+    index: publications
+    query: "-title:*"
+  pubsTest:
+    index: publications
+    query: "title:*"
+    amount: 1
+    facets:
+      - field: pubYear
+        topN: 10
+      - field: journalName
+        topN: 10
+    statFacets:
+      - facetField: pubYear
+        numericField: rcr
+        topN: 10
+tests:
+  pubsCount:
+    expr: pubsStar.count > 200000
+  pubsWithTitleCount:
+    expr: pubsWithoutTitle.count < pubsStar.count * 0.01
+  test1:
+    expr: pubsTest.count > 1
+  test2:
+    expr: pubsTest.doc[0]["authors"][0]["lastName"] == "Abumere"
+  test3:
+    expr: pubsTest.facet["pubYear"][0].label == "2022" && pubsTest.facet["pubYear"][0].count > 1000000
+
+
+

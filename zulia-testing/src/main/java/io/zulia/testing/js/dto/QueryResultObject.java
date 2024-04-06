@@ -14,5 +14,8 @@ public class QueryResultObject {
 
 	public List<ProxyObject> doc;
 
-	public FacetProxyObject facet;
+	public KeyedListProxyObject<FacetValueObject> facet;
+
+	public KeyedListProxyObject<StatFacetValueObject> statFacet;
+
 }

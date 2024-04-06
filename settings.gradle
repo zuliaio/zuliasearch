@@ -1,5 +1,5 @@
 rootProject.name = "ZuliaSearch"
 
-include 'zulia-analyzer', 'zulia-common', 'zulia-client', 'zulia-data', 'zulia-query-parser', 'zulia-server', 'zulia-testing', 'zulia-util'
+include 'zulia-analyzer', 'zulia-common', 'zulia-cmd-shared', 'zulia-client', 'zulia-data', 'zulia-query-parser', 'zulia-server', 'zulia-testing', 'zulia-tools', 'zulia-util'
 
 
