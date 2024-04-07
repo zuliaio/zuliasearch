@@ -5,6 +5,7 @@ import com.google.common.base.Suppliers;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.NumericStat;
+import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.StatFacet;
 import io.zulia.client.config.ZuliaPoolConfig;
@@ -17,6 +18,7 @@ import io.zulia.testing.config.FacetConfig;
 import io.zulia.testing.config.IndexConfig;
 import io.zulia.testing.config.NumStatConfig;
 import io.zulia.testing.config.QueryConfig;
+import io.zulia.testing.config.SearchConfig;
 import io.zulia.testing.config.StatFacetConfig;
 import io.zulia.testing.config.TestConfig;
 import io.zulia.testing.config.ZuliaTestConfig;
@@ -42,6 +44,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static io.zulia.message.ZuliaQuery.Query.QueryType.FILTER;
+import static io.zulia.message.ZuliaQuery.Query.QueryType.FILTER_NOT;
+import static io.zulia.message.ZuliaQuery.Query.QueryType.SCORE_MUST;
+import static io.zulia.message.ZuliaQuery.Query.QueryType.SCORE_SHOULD;
 
 public class ZuliaTestRunner {
 	private static final Logger LOG = LoggerFactory.getLogger(ZuliaTestRunner.class);
@@ -88,12 +95,12 @@ public class ZuliaTestRunner {
 
 	@NotNull
 	protected Map<String, QueryResultObject> buildAndRunQueries() throws Exception {
-		Map<String, QueryConfig> queries = zuliaTestConfig.getSearches();
+		Map<String, SearchConfig> searches = zuliaTestConfig.getSearches();
 		Map<String, IndexConfig> indexNameToIndexConfig = zuliaTestConfig.getIndexes();
 
 		Map<String, QueryResultObject> resultMap = new HashMap<>();
-		for (Map.Entry<String, QueryConfig> queryConfigEntry : queries.entrySet()) {
-			QueryConfig queryConfig = queryConfigEntry.getValue();
+		for (Map.Entry<String, SearchConfig> queryConfigEntry : searches.entrySet()) {
+			SearchConfig queryConfig = queryConfigEntry.getValue();
 			IndexConfig indexConfig = indexNameToIndexConfig.get(queryConfig.getIndex());
 			ZuliaWorkPool zuliaWorkPool = connectionToConnectionConfig.get(indexConfig.getConnection()).get();
 			Search s = buildSearch(indexConfig.getIndexName(), queryConfig);
@@ -108,9 +115,45 @@ public class ZuliaTestRunner {
 	}
 
 	@NotNull
-	protected Search buildSearch(String indexName, QueryConfig queryConfig) {
+	protected Search buildSearch(String indexName, SearchConfig queryConfig) {
 		Search s = new Search(indexName);
-		s.addQuery(new FilterQuery(queryConfig.getQuery()));
+		List<QueryConfig> queries = queryConfig.getQueries();
+		if (queries != null) {
+			for (QueryConfig query : queries) {
+				if (FILTER == query.getQueryType() || FILTER_NOT == query.getQueryType()) {
+					FilterQuery queryBuilder = new FilterQuery(query.getQ());
+					if (FILTER_NOT == query.getQueryType()) {
+						queryBuilder.exclude();
+					}
+					if (query.getQf() != null) {
+						queryBuilder.addQueryFields(query.getQf());
+					}
+					if (query.getMm() > 0) {
+						queryBuilder.setMinShouldMatch(query.getMm());
+					}
+					s.addQuery(queryBuilder);
+				}
+				else if (SCORE_MUST == query.getQueryType() || SCORE_SHOULD == query.getQueryType()) {
+					ScoredQuery queryBuilder = new ScoredQuery(query.getQ());
+					queryBuilder.setMust((SCORE_MUST == query.getQueryType()));
+					if (query.getQf() != null) {
+						queryBuilder.addQueryFields(query.getQf());
+					}
+					if (query.getMm() > 0) {
+						queryBuilder.setMinShouldMatch(query.getMm());
+					}
+					s.addQuery(queryBuilder);
+				}
+				else {
+					throw new IllegalArgumentException("Unsupported query type <" + query.getQueryType() + ">");
+				}
+			}
+		}
+
+		if (queryConfig.getDocumentFields() != null) {
+			s.addDocumentFields(queryConfig.getDocumentFields());
+		}
+
 		s.setAmount(queryConfig.getAmount());
 
 		if (queryConfig.getFacets() != null) {
@@ -149,7 +192,7 @@ public class ZuliaTestRunner {
 	}
 
 	@NotNull
-	protected QueryResultObject buildQueryResultObject(SearchResult searchResult, QueryConfig queryConfig) {
+	protected QueryResultObject buildQueryResultObject(SearchResult searchResult, SearchConfig queryConfig) {
 		QueryResultObject result = new QueryResultObject();
 		result.count = searchResult.getTotalHits();
 
@@ -233,7 +276,6 @@ public class ZuliaTestRunner {
 		}
 		return statFacetValueObject;
 	}
-
 
 	@NotNull
 	protected List<TestResult> evaluateTestsWithQueryResults(Map<String, QueryResultObject> resultMap) {

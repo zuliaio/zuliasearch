@@ -48,12 +48,20 @@ public class ZuliaTest implements Callable<Integer> {
 
 				LOG.info("Writing results to <" + testOutput + ">");
 				FileDataOutputStream dataOutputStream = FileDataOutputStream.from(testOutput, true);
+
+				boolean anyFailed = false;
 				try (CSVDataTarget csvDataTarget = CSVDataTarget.withDefaults(dataOutputStream)) {
 					for (TestResult testResult : testResults) {
 						csvDataTarget.writeRow(testResult.getTestId(), testResult.isPassed() ? "PASS" : "FAIL");
+						if (!testResult.isPassed()) {
+							anyFailed = true;
+						}
 					}
 				}
 
+				if (anyFailed) {
+					System.exit(1);
+				}
 			}
 
 		}

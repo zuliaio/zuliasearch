@@ -1,74 +1,53 @@
 package io.zulia.testing.config;
 
+import io.zulia.message.ZuliaQuery.Query.QueryType;
+
 import java.util.List;
 
-public final class QueryConfig {
-	private String index;
-	private String query;
-
-	private int amount;
-
-	private List<FacetConfig> facets;
-
-	private List<StatFacetConfig> statFacets;
-
-	private List<NumStatConfig> numStats;
+public class QueryConfig {
+	private String q;
+	private List<String> qf;
+	private int mm;
+	private QueryType queryType = QueryType.SCORE_MUST;
 
 	public QueryConfig() {
 
 	}
 
-	public String getIndex() {
-		return index;
+	public String getQ() {
+		return q;
 	}
 
-	public void setIndex(String index) {
-		this.index = index;
+	public void setQ(String q) {
+		this.q = q;
 	}
 
-	public String getQuery() {
-		return query;
+	public List<String> getQf() {
+		return qf;
 	}
 
-	public void setQuery(String query) {
-		this.query = query;
+	public void setQf(List<String> qf) {
+		this.qf = qf;
 	}
 
-	public int getAmount() {
-		return amount;
+	public int getMm() {
+		return mm;
 	}
 
-	public void setAmount(int amount) {
-		this.amount = amount;
+	public void setMm(int mm) {
+		this.mm = mm;
 	}
 
-	public List<FacetConfig> getFacets() {
-		return facets;
+	public QueryType getQueryType() {
+		return queryType;
 	}
 
-	public void setFacets(List<FacetConfig> facets) {
-		this.facets = facets;
-	}
-
-	public List<StatFacetConfig> getStatFacets() {
-		return statFacets;
-	}
-
-	public void setStatFacets(List<StatFacetConfig> statFacets) {
-		this.statFacets = statFacets;
-	}
-
-	public List<NumStatConfig> getNumStats() {
-		return numStats;
-	}
-
-	public void setNumStats(List<NumStatConfig> numStats) {
-		this.numStats = numStats;
+	public void setQueryType(QueryType queryType) {
+		this.queryType = queryType;
 	}
 
 	@Override
 	public String toString() {
-		return "QueryConfig{" + "index='" + index + '\'' + ", query='" + query + '\'' + ", amount=" + amount + ", facets=" + facets + ", statFacets="
-				+ statFacets + ", numStats=" + numStats + '}';
+		return "QueryConfig{" + "q='" + q + '\'' + ", qf=" + qf + ", mm=" + mm + ", queryType=" + queryType + '}';
 	}
 }

@@ -6,7 +6,7 @@ public class ZuliaTestConfig {
 
 	private Map<String, ConnectionConfig> connections;
 	private Map<String, IndexConfig> indexes;
-	private Map<String, QueryConfig> searches;
+	private Map<String, SearchConfig> searches;
 	private Map<String, TestConfig> tests;
 
 	private boolean logSearches;
@@ -32,11 +32,11 @@ public class ZuliaTestConfig {
 		this.indexes = indexes;
 	}
 
-	public Map<String, QueryConfig> getSearches() {
+	public Map<String, SearchConfig> getSearches() {
 		return searches;
 	}
 
-	public void setSearches(Map<String, QueryConfig> searches) {
+	public void setSearches(Map<String, SearchConfig> searches) {
 		this.searches = searches;
 	}
 
