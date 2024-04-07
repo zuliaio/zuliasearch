@@ -1,5 +1,6 @@
 package io.zulia.tools.cmd;
 
+import io.zulia.cmd.common.ShowStackArgs;
 import io.zulia.cmd.common.ZuliaCommonCmd;
 import io.zulia.cmd.common.ZuliaVersionProvider;
 import io.zulia.data.output.FileDataOutputStream;
@@ -29,6 +30,9 @@ public class ZuliaTest implements Callable<Integer> {
 
 	@CommandLine.Option(names = "--testOutput", description = "Full path to the test output csv file", required = true)
 	private String testOutput;
+
+	@CommandLine.Mixin
+	private ShowStackArgs showStackArgs;
 
 	@Override
 	public Integer call() throws Exception {
