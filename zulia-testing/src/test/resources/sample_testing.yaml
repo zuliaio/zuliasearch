@@ -11,13 +11,17 @@ indexes:
 searches:
   pubsStar:
     index: publications
-    query: "*:*"
+    queries:
+      - q: "*:*"
+        queryType: "FILTER"
   pubsWithoutTitle:
     index: publications
-    query: "-title:*"
+    queries:
+      - q: "-title:*"
   pubsComplex:
     index: publications
-    query: "title:*"
+    queries:
+      - q: "title:*"
     facets:
       - field: pubYear
         topN: 10
@@ -29,14 +33,18 @@ searches:
         topN: 10
   pubsComplex2:
     index: publications
-    query: "title:cancer"
+    queries:
+      - q: "cancer"
+        qf: [ "title","abstract" ]
     numStats:
       - numericField: pubYear
         percentiles: [ 0.1, 0.5, 0.9 ]
   pubsWithDocument:
     index: publications
-    query: "title:\"Understanding PCSK9 and anti-PCSK9 therapies\""
+    queries:
+      - q: "title:\"Understanding PCSK9 and anti-PCSK9 therapies\""
     amount: 1
+    documentFields: [ "authors" ]
 tests:
   pubsCount:
     expr: pubsStar.count > 30000000
@@ -55,5 +63,5 @@ tests:
   numStatCheck:
     expr: (pubsComplex2.numStat["pubYear"].sum/pubsComplex2.numStat["pubYear"].docCount) > 2008
   numStatCheck2:
-    expr: (pubsComplex2.numStat["pubYear"].percentiles[0].value < 1990) && (pubsComplex2.numStat["pubYear"].percentiles[2].value > 2021)
+    expr: (pubsComplex2.numStat["pubYear"].percentiles[0].value < 1996) && (pubsComplex2.numStat["pubYear"].percentiles[2].value > 2021)
 
