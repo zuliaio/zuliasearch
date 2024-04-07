@@ -18,4 +18,6 @@ public class QueryResultObject {
 
 	public KeyedListProxyObject<StatFacetValueObject> statFacet;
 
+	public KeyedProxyObject<StatFacetValueObject> numStat;
+
 }

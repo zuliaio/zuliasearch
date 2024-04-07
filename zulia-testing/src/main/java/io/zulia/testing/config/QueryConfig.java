@@ -12,6 +12,8 @@ public final class QueryConfig {
 
 	private List<StatFacetConfig> statFacets;
 
+	private List<NumStatConfig> numStats;
+
 	public QueryConfig() {
 
 	}
@@ -56,9 +58,17 @@ public final class QueryConfig {
 		this.statFacets = statFacets;
 	}
 
+	public List<NumStatConfig> getNumStats() {
+		return numStats;
+	}
+
+	public void setNumStats(List<NumStatConfig> numStats) {
+		this.numStats = numStats;
+	}
+
 	@Override
 	public String toString() {
 		return "QueryConfig{" + "index='" + index + '\'' + ", query='" + query + '\'' + ", amount=" + amount + ", facets=" + facets + ", statFacets="
-				+ statFacets + '}';
+				+ statFacets + ", numStats=" + numStats + '}';
 	}
 }

@@ -27,6 +27,12 @@ searches:
       - facetField: pubYear
         numericField: authorCount
         topN: 10
+  pubsComplex2:
+    index: publications
+    query: "title:cancer"
+    numStats:
+      - numericField: pubYear
+        percentiles: [ 0.1, 0.5, 0.9 ]
   pubsWithDocument:
     index: publications
     query: "title:\"Understanding PCSK9 and anti-PCSK9 therapies\""
@@ -45,7 +51,9 @@ tests:
   topJournalFacet:
     expr: pubsComplex.facet["journalNameIso"][0].label = "PLoS One" && pubsComplex.facet["journalNameIso"][0].count > 1000
   statFacetCheck:
-    expr: pubsComplex.statFacet["pubYear-authorCount"][0].label = "2022" && pubsComplex.statFacet["pubYear-authorCount"][0].docCount > 1000000 && pubsComplex.statFacet["pubYear-authorCount"][0].sum > 5000000 
-
-
+    expr: pubsComplex.statFacet["pubYear-authorCount"][0].label = "2022" && pubsComplex.statFacet["pubYear-authorCount"][0].docCount > 1000000 && pubsComplex.statFacet["pubYear-authorCount"][0].sum > 5000000
+  numStatCheck:
+    expr: (pubsComplex2.numStat["pubYear"].sum/pubsComplex2.numStat["pubYear"].docCount) > 2008
+  numStatCheck2:
+    expr: (pubsComplex2.numStat["pubYear"].percentiles[0].value < 1990) && (pubsComplex2.numStat["pubYear"].percentiles[2].value > 2021)
 
