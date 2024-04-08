@@ -7,10 +7,10 @@ description = "Zulia Tools"
 
 dependencies {
     annotationProcessor(libs.picocli.codegen)
-    implementation(project(":zulia-client"))
-    implementation(project(":zulia-cmd-shared"))
-    implementation(project(":zulia-testing"))
-    implementation(project(":zulia-data"))
+    implementation(projects.zuliaClient)
+    implementation(projects.zuliaCmdShared)
+    implementation(projects.zuliaTesting)
+    implementation(projects.zuliaData)
     implementation(libs.snake.yaml)
     implementation(libs.picocli.base)
     implementation(libs.commons.compress)

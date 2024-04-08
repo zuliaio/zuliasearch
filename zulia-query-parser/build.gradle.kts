@@ -9,7 +9,7 @@ val luceneVersion: String by project
 defaultTasks("build", "installDist")
 
 dependencies {
-    api(project(":zulia-analyzer"))
+    api(projects.zuliaAnalyzer)
     api(libs.lucene.queryparser)
 }
 
