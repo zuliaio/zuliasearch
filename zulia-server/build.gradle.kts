@@ -37,8 +37,8 @@ tasks.withType<Test> {
 }
 
 dependencies {
-    implementation(project(":zulia-query-parser"))
-    implementation(project(":zulia-cmd-shared"))
+    implementation(projects.zuliaQueryParser)
+    implementation(projects.zuliaCmdShared)
     annotationProcessor(libs.micronaut.http.validation)
     annotationProcessor(libs.micronaut.openapi)
     annotationProcessor(libs.micronaut.serde.processor)

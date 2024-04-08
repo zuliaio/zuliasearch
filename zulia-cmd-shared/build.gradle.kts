@@ -6,7 +6,7 @@ description = "Zulia CMD Shared"
 
 dependencies {
     annotationProcessor(libs.picocli.codegen)
-    api(project(":zulia-common"))
+    api(projects.zuliaCommon)
     implementation(libs.picocli.base)
 }
 
