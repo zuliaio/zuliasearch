@@ -1,13 +1,13 @@
 package io.zulia.testing.config;
 
-import java.util.Map;
+import java.util.List;
 
 public class ZuliaTestConfig {
 
-	private Map<String, ConnectionConfig> connections;
-	private Map<String, IndexConfig> indexes;
-	private Map<String, SearchConfig> searches;
-	private Map<String, TestConfig> tests;
+	private List<ConnectionConfig> connections;
+	private List<IndexConfig> indexes;
+	private List<SearchConfig> searches;
+	private List<TestConfig> tests;
 
 	private boolean logSearches;
 	private boolean logSearchResults;
@@ -16,35 +16,35 @@ public class ZuliaTestConfig {
 
 	}
 
-	public Map<String, ConnectionConfig> getConnections() {
+	public List<ConnectionConfig> getConnections() {
 		return connections;
 	}
 
-	public void setConnections(Map<String, ConnectionConfig> connections) {
+	public void setConnections(List<ConnectionConfig> connections) {
 		this.connections = connections;
 	}
 
-	public Map<String, IndexConfig> getIndexes() {
+	public List<IndexConfig> getIndexes() {
 		return indexes;
 	}
 
-	public void setIndexes(Map<String, IndexConfig> indexes) {
+	public void setIndexes(List<IndexConfig> indexes) {
 		this.indexes = indexes;
 	}
 
-	public Map<String, SearchConfig> getSearches() {
+	public List<SearchConfig> getSearches() {
 		return searches;
 	}
 
-	public void setSearches(Map<String, SearchConfig> searches) {
+	public void setSearches(List<SearchConfig> searches) {
 		this.searches = searches;
 	}
 
-	public Map<String, TestConfig> getTests() {
+	public List<TestConfig> getTests() {
 		return tests;
 	}
 
-	public void setTests(Map<String, TestConfig> tests) {
+	public void setTests(List<TestConfig> tests) {
 		this.tests = tests;
 	}
 

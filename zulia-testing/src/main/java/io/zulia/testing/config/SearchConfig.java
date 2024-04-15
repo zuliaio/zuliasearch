@@ -3,6 +3,8 @@ package io.zulia.testing.config;
 import java.util.List;
 
 public final class SearchConfig {
+	private String name;
+
 	private String index;
 	private List<QueryConfig> queries;
 
@@ -18,6 +20,14 @@ public final class SearchConfig {
 
 	public SearchConfig() {
 
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getIndex() {
@@ -78,7 +88,7 @@ public final class SearchConfig {
 
 	@Override
 	public String toString() {
-		return "SearchConfig{" + "index='" + index + '\'' + ", queries=" + queries + ", amount=" + amount + ", documentFields=" + documentFields + ", facets="
-				+ facets + ", statFacets=" + statFacets + ", numStats=" + numStats + '}';
+		return "SearchConfig{" + "name='" + name + '\'' + ", index='" + index + '\'' + ", queries=" + queries + ", amount=" + amount + ", documentFields="
+				+ documentFields + ", facets=" + facets + ", statFacets=" + statFacets + ", numStats=" + numStats + '}';
 	}
 }

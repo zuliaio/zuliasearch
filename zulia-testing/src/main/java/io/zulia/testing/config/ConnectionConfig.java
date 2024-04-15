@@ -2,12 +2,22 @@ package io.zulia.testing.config;
 
 public class ConnectionConfig {
 
+	private String name;
+
 	private String serverAddress;
 
 	private int port;
 
 	public ConnectionConfig() {
 
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getServerAddress() {
@@ -28,7 +38,7 @@ public class ConnectionConfig {
 
 	@Override
 	public String toString() {
-		return "ConnectionConfig{" + "serverAddress='" + serverAddress + '\'' + ", port=" + port + '}';
+		return "ConnectionConfig{" + "name='" + name + '\'' + ", serverAddress='" + serverAddress + '\'' + ", port=" + port + '}';
 	}
 }
 

@@ -5,6 +5,7 @@ import io.zulia.message.ZuliaQuery.Query.QueryType;
 import java.util.List;
 
 public class QueryConfig {
+
 	private String q;
 	private List<String> qf;
 	private int mm;

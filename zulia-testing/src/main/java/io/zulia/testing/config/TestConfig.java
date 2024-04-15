@@ -1,10 +1,21 @@
 package io.zulia.testing.config;
 
 public final class TestConfig {
+
+	private String name;
+
 	private String expr;
 
 	public TestConfig() {
 
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getExpr() {
@@ -17,6 +28,6 @@ public final class TestConfig {
 
 	@Override
 	public String toString() {
-		return "TestConfig{" + "expr='" + expr + '\'' + '}';
+		return "TestConfig{" + "name='" + name + '\'' + ", expr='" + expr + '\'' + '}';
 	}
 }
