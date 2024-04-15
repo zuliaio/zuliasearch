@@ -44,6 +44,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static io.zulia.message.ZuliaQuery.Query.QueryType.FILTER;
 import static io.zulia.message.ZuliaQuery.Query.QueryType.FILTER_NOT;
@@ -68,26 +70,23 @@ public class ZuliaTestRunner {
 
 	@NotNull
 	protected Map<String, Supplier<ZuliaWorkPool>> buildConnectionSupplier() {
-		Map<String, ConnectionConfig> connectionIdToConnectionConfig = zuliaTestConfig.getConnections();
-		Map<String, IndexConfig> indexNameToIndexConfig = zuliaTestConfig.getIndexes();
+		List<ConnectionConfig> connections = zuliaTestConfig.getConnections();
+		List<IndexConfig> indexConfigs = zuliaTestConfig.getIndexes();
 		Map<String, Supplier<ZuliaWorkPool>> connectionToConnectionConfig = new HashMap<>();
-		for (Map.Entry<String, ConnectionConfig> indexConfigEntry : connectionIdToConnectionConfig.entrySet()) {
-			ConnectionConfig connectionConfig = indexConfigEntry.getValue();
-
+		for (ConnectionConfig connectionConfig : connections) {
 			ThrowingSupplier<ZuliaWorkPool> throwingSupplier = () -> {
 				ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(connectionConfig.getServerAddress(), connectionConfig.getPort());
 				return new ZuliaWorkPool(zuliaPoolConfig);
 			};
 
-			connectionToConnectionConfig.put(indexConfigEntry.getKey(), Suppliers.memoize(throwingSupplier));
+			connectionToConnectionConfig.put(connectionConfig.getName(), Suppliers.memoize(throwingSupplier));
 		}
 
-		for (Map.Entry<String, IndexConfig> indexConfigEntry : indexNameToIndexConfig.entrySet()) {
-			IndexConfig indexConfig = indexConfigEntry.getValue();
+		for (IndexConfig indexConfig : indexConfigs) {
 			Supplier<ZuliaWorkPool> zuliaWorkPoolSupplier = connectionToConnectionConfig.get(indexConfig.getConnection());
 			if (zuliaWorkPoolSupplier == null) {
 				throw new IllegalArgumentException(
-						"Failed to find connection config <" + indexConfig.getConnection() + "> for query <" + indexConfigEntry.getKey() + ">");
+						"Failed to find connection config <" + indexConfig.getConnection() + "> for index config <" + indexConfig.getName() + ">");
 			}
 		}
 		return connectionToConnectionConfig;
@@ -95,29 +94,29 @@ public class ZuliaTestRunner {
 
 	@NotNull
 	protected Map<String, QueryResultObject> buildAndRunQueries() throws Exception {
-		Map<String, SearchConfig> searches = zuliaTestConfig.getSearches();
-		Map<String, IndexConfig> indexNameToIndexConfig = zuliaTestConfig.getIndexes();
+		List<SearchConfig> searches = zuliaTestConfig.getSearches();
+		Map<String, IndexConfig> indexNameToIndexConfig = zuliaTestConfig.getIndexes().stream()
+				.collect(Collectors.toMap(IndexConfig::getName, Function.identity()));
 
 		Map<String, QueryResultObject> resultMap = new HashMap<>();
-		for (Map.Entry<String, SearchConfig> queryConfigEntry : searches.entrySet()) {
-			SearchConfig queryConfig = queryConfigEntry.getValue();
-			IndexConfig indexConfig = indexNameToIndexConfig.get(queryConfig.getIndex());
+		for (SearchConfig searchConfig : searches) {
+			IndexConfig indexConfig = indexNameToIndexConfig.get(searchConfig.getIndex());
 			ZuliaWorkPool zuliaWorkPool = connectionToConnectionConfig.get(indexConfig.getConnection()).get();
-			Search s = buildSearch(indexConfig.getIndexName(), queryConfig);
+			Search s = buildSearch(indexConfig.getIndexName(), searchConfig);
 			if (zuliaTestConfig.isLogSearches()) {
-				LOG.info("Running search <" + queryConfigEntry.getKey() + ">:\n" + s);
+				LOG.info("Running search <" + searchConfig.getName() + ">:\n" + s);
 			}
 			SearchResult searchResult = zuliaWorkPool.search(s);
-			QueryResultObject result = buildQueryResultObject(searchResult, queryConfig);
-			resultMap.put(queryConfigEntry.getKey(), result);
+			QueryResultObject result = buildQueryResultObject(searchResult, searchConfig);
+			resultMap.put(searchConfig.getName(), result);
 		}
 		return resultMap;
 	}
 
 	@NotNull
-	protected Search buildSearch(String indexName, SearchConfig queryConfig) {
+	protected Search buildSearch(String indexName, SearchConfig searchConfig) {
 		Search s = new Search(indexName);
-		List<QueryConfig> queries = queryConfig.getQueries();
+		List<QueryConfig> queries = searchConfig.getQueries();
 		if (queries != null) {
 			for (QueryConfig query : queries) {
 				if (FILTER == query.getQueryType() || FILTER_NOT == query.getQueryType()) {
@@ -150,14 +149,14 @@ public class ZuliaTestRunner {
 			}
 		}
 
-		if (queryConfig.getDocumentFields() != null) {
-			s.addDocumentFields(queryConfig.getDocumentFields());
+		if (searchConfig.getDocumentFields() != null) {
+			s.addDocumentFields(searchConfig.getDocumentFields());
 		}
 
-		s.setAmount(queryConfig.getAmount());
+		s.setAmount(searchConfig.getAmount());
 
-		if (queryConfig.getFacets() != null) {
-			for (FacetConfig facet : queryConfig.getFacets()) {
+		if (searchConfig.getFacets() != null) {
+			for (FacetConfig facet : searchConfig.getFacets()) {
 				CountFacet countFacet = new CountFacet(facet.getField());
 				if (facet.getTopN() != 0) {
 					countFacet.setTopN(facet.getTopN());
@@ -166,8 +165,8 @@ public class ZuliaTestRunner {
 			}
 		}
 
-		if (queryConfig.getStatFacets() != null) {
-			for (StatFacetConfig statFacetConfig : queryConfig.getStatFacets()) {
+		if (searchConfig.getStatFacets() != null) {
+			for (StatFacetConfig statFacetConfig : searchConfig.getStatFacets()) {
 				StatFacet statFacet = new StatFacet(statFacetConfig.getNumericField(), statFacetConfig.getFacetField());
 				if (statFacetConfig.getTopN() != 0) {
 					statFacet.setTopN(statFacetConfig.getTopN());
@@ -175,8 +174,8 @@ public class ZuliaTestRunner {
 				s.addStat(statFacet);
 			}
 		}
-		if (queryConfig.getNumStats() != null) {
-			for (NumStatConfig numStatConfig : queryConfig.getNumStats()) {
+		if (searchConfig.getNumStats() != null) {
+			for (NumStatConfig numStatConfig : searchConfig.getNumStats()) {
 				NumericStat numericStat = new NumericStat(numStatConfig.getNumericField());
 				if (numStatConfig.getPercentilePrecision() > 0) {
 					numericStat.setPercentilePrecision(numStatConfig.getPercentilePrecision());
@@ -290,16 +289,15 @@ public class ZuliaTestRunner {
 				}
 			}
 
-			for (Map.Entry<String, TestConfig> testConfigEntry : zuliaTestConfig.getTests().entrySet()) {
-				LOG.info("Running Test <" + testConfigEntry.getKey() + ">");
-				TestConfig testConfig = testConfigEntry.getValue();
+			for (TestConfig testConfig : zuliaTestConfig.getTests()) {
+				LOG.info("Running Test <" + testConfig.getName() + ">");
 
 				TestResult testResult = new TestResult();
-				testResult.setTestId(testConfigEntry.getKey());
+				testResult.setTestId(testConfig.getName());
 				testResult.setTestConfig(testConfig);
 				Value js = context.eval("js", testConfig.getExpr());
 				testResult.setPassed(js.asBoolean());
-				LOG.info("Test <" + testConfigEntry.getKey() + "> " + (js.asBoolean() ? "Passed" : "Failed"));
+				LOG.info("Test <" + testConfig.getName() + "> " + (js.asBoolean() ? "Passed" : "Failed"));
 				testResults.add(testResult);
 			}
 

@@ -2,11 +2,21 @@ package io.zulia.testing.config;
 
 public final class IndexConfig {
 
+	private String name;
+
 	private String indexName;
 
 	private String connection;
 
 	public IndexConfig() {
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public String getIndexName() {
@@ -27,6 +37,6 @@ public final class IndexConfig {
 
 	@Override
 	public String toString() {
-		return "IndexConfig{" + "indexName='" + indexName + '\'' + ", connection='" + connection + '\'' + '}';
+		return "IndexConfig{" + "name='" + name + '\'' + ", indexName='" + indexName + '\'' + ", connection='" + connection + '\'' + '}';
 	}
 }
