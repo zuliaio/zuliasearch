@@ -5,6 +5,8 @@ plugins {
 
 description = "Zulia Tools"
 
+defaultTasks("build", "installDist")
+
 dependencies {
     annotationProcessor(libs.picocli.codegen)
     implementation(projects.zuliaClient)
