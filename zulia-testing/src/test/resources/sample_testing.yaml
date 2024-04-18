@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://maven.zulia.io/schema/zulia_testing_schema-1.0.json
+# yaml-language-server: $schema=https://maven.zulia.io/schema/zulia_testing_schema-1.1.json
 logSearches: true
 logSearchResults: true
 connections:
