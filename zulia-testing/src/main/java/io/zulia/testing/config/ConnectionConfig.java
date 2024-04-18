@@ -6,7 +6,7 @@ public class ConnectionConfig {
 
 	private String serverAddress;
 
-	private int port;
+	private int port = 32191;
 
 	public ConnectionConfig() {
 
