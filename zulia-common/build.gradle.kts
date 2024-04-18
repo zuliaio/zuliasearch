@@ -23,7 +23,7 @@ dependencies {
 
     protobuf(libs.sketches.java)
 
-    api(project(":zulia-util"))
+    api(projects.zuliaUtil)
 }
 
 

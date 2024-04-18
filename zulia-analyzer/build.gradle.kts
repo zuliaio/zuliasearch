@@ -9,7 +9,7 @@ val luceneVersion: String by project
 defaultTasks("build", "installDist")
 
 dependencies {
-    api(project(":zulia-common"))
+    api(projects.zuliaCommon)
     api(libs.lucene.analysis.common)
 }
 

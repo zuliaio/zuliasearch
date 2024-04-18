@@ -1,0 +1,250 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "$ref": "#/definitions/ZuliaTesting",
+  "definitions": {
+    "ZuliaTesting": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "logSearches": {
+          "type": "boolean"
+        },
+        "logSearchResults": {
+          "type": "boolean"
+        },
+        "connections": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Connection"
+          }
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Index"
+          }
+        },
+        "searches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Search"
+          }
+        },
+        "tests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Test"
+          }
+        }
+      },
+      "required": [
+        "connections",
+        "indexes",
+        "logSearchResults",
+        "logSearches",
+        "searches",
+        "tests"
+      ],
+      "title": "ZuliaTesting"
+    },
+    "Connection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "serverAddress": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "serverAddress"
+      ],
+      "title": "Connection"
+    },
+    "Index": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "indexName": {
+          "type": "string"
+        },
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "indexName",
+        "name"
+      ],
+      "title": "Index"
+    },
+    "Search": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "index": {
+          "type": "string"
+        },
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Query"
+          }
+        },
+        "facets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Facet"
+          }
+        },
+        "statFacets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/StatFacet"
+          }
+        },
+        "numStats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/NumStat"
+          }
+        },
+        "amount": {
+          "type": "integer"
+        },
+        "documentFields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "index",
+        "name",
+        "queries"
+      ],
+      "title": "Search"
+    },
+    "Facet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "topN": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "field",
+        "topN"
+      ],
+      "title": "Facet"
+    },
+    "NumStat": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numericField": {
+          "type": "string"
+        },
+        "percentilePrecision": {
+          "type": "number"
+        },
+        "percentiles": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        }
+      },
+      "required": [
+        "numericField"
+      ],
+      "title": "NumStat"
+    },
+    "Query": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "q": {
+          "type": "string"
+        },
+        "queryType": {
+          "enum": [
+            "FILTER",
+            "FILTER_NOT",
+            "SCORE_MUST",
+            "SCORE_SHOULD"
+          ]
+        },
+        "qf": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mm": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "q"
+      ],
+      "title": "Query"
+    },
+    "StatFacet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "facetField": {
+          "type": "string"
+        },
+        "numericField": {
+          "type": "string"
+        },
+        "topN": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "facetField",
+        "numericField",
+        "topN"
+      ],
+      "title": "StatFacet"
+    },
+    "Test": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "expr": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "expr",
+        "name"
+      ],
+      "title": "Test"
+    }
+  }
+}
