@@ -1,7 +1,7 @@
 package io.zulia.server.cmd.zuliad;
 
+import io.zulia.cmd.common.ZuliaCommonCmd;
 import io.zulia.message.ZuliaBase;
-import io.zulia.server.cmd.ZuliaCommonCmd;
 import io.zulia.server.cmd.ZuliaD;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
