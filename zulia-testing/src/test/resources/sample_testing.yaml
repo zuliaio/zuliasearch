@@ -1,10 +1,9 @@
-# yaml-language-server: $schema=https://maven.zulia.io/schema/zulia-test.json
+# yaml-language-server: $schema=https://maven.zulia.io/schema/zulia_testing_schema-1.0.json
 logSearches: true
 logSearchResults: true
 connections:
   - name: testConnection
     serverAddress: localhost
-    port: 32191
   - name: connection2
     port: 32191
     serverAddress: somewhere
