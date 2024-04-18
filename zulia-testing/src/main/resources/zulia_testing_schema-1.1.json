@@ -186,13 +186,21 @@
           "type": "string"
         },
         "queryType": {
-          "type": "string"
+          "enum": [
+            "FILTER",
+            "FILTER_NOT",
+            "SCORE_MUST",
+            "SCORE_SHOULD"
+          ]
         },
         "qf": {
           "type": "array",
           "items": {
             "type": "string"
           }
+        },
+        "mm": {
+          "type": "number"
         }
       },
       "required": [
