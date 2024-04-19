@@ -230,7 +230,7 @@ public class ShardDocumentIndexer {
 
 			if (FieldTypeUtil.isStringFieldType(fieldType)) {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-					String text = o.toString();
+					String text = obj.toString();
 
 					ZuliaIndex.SortAs.StringHandling stringHandling = sortAs.getStringHandling();
 					switch (stringHandling) {
