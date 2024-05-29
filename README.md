@@ -15,11 +15,12 @@ across servers.
 
 ## Zulia supports:
 
-* Searching multiple indexes with a single query
-* Storing associated files with the documents (images, pdfs, ...)
-* Sorting
-* Faceting
-* Vector Search
+* [Searching multiple indexes with a single query](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#search-multiple-indexes)
+* [Storing associated files with the documents (images, pdfs, ...)](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#storing-associated-documents)
+* [Sorting](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#sorting)
+* [Facet Counts](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#count-facets)
+* [Statistics](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#numeric-stat) and [Facet Statistics](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#stat-facet)
+* [Vector Search](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#Vector-Queries)
 * [Rich Query Syntax](https://github.com/zuliaio/zuliasearch/wiki/Query-Syntax)
 
 To learn more see the [wiki](https://github.com/zuliaio/zuliasearch/wiki):
