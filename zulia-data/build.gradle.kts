@@ -11,6 +11,8 @@ dependencies {
     api(libs.univocity.parsers)
     api(libs.jackson.databind)
     api(projects.zuliaUtil)
+    testRuntimeClasspath(libs.logback.classic)
+    testRuntimeClasspath(libs.jansi)
 }
 
 

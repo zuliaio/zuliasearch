@@ -8,23 +8,25 @@ import org.apache.poi.ss.usermodel.Row;
 
 import java.util.Date;
 import java.util.List;
+import java.util.SequencedSet;
 
 public class ExcelDataSourceRecord implements IndexedDataSourceRecord {
 
 	private final Row row;
-	private final HeaderMapping headerMapping;
 
 	private final DelimitedListHandler delimitedListHandler;
 	private final ExcelCellHandler excelCellHandler;
+	private final SheetInfo sheetInfo;
 
-	public ExcelDataSourceRecord(Row row, HeaderMapping headerMapping, ExcelDataSourceConfig excelDataSourceConfig) {
+	public ExcelDataSourceRecord(Row row, SheetInfo sheetInfo, ExcelDataSourceConfig excelDataSourceConfig) {
 		this.row = row;
-		this.headerMapping = headerMapping;
+		this.sheetInfo = sheetInfo;
 		this.delimitedListHandler = excelDataSourceConfig.getDelimitedListHandler();
 		this.excelCellHandler = excelDataSourceConfig.getExcelCellHandler();
 	}
 
 	public int getIndexFromField(String field) {
+		HeaderMapping headerMapping = sheetInfo.headerMapping();
 		if (headerMapping == null) {
 			throw new IllegalStateException("Use excelDataSourceConfig.withHeaders() use field names");
 		}
@@ -34,8 +36,12 @@ public class ExcelDataSourceRecord implements IndexedDataSourceRecord {
 		throw new IllegalStateException("Field <" + field + "> does not exist in header");
 	}
 
-	public Row getRow() {
-		return row;
+	public SequencedSet<String> getHeaders() {
+		return sheetInfo.headerMapping() != null ? sheetInfo.headerMapping().getHeaderKeys() : null;
+	}
+
+	public List<String> getRawHeaders() {
+		return sheetInfo.headerMapping() != null ? sheetInfo.headerMapping().getRawHeaders() : null;
 	}
 
 	public Cell getCell(int i) {
@@ -127,6 +133,19 @@ public class ExcelDataSourceRecord implements IndexedDataSourceRecord {
 	@Override
 	public Date getDate(int index) {
 		return excelCellHandler.cellToDate(row.getCell(index));
+	}
+
+	public String[] getRow() {
+		String[] values = new String[sheetInfo.numberOfColumns()];
+		for (int i = 0; i < sheetInfo.numberOfColumns(); i++) {
+			Cell cell = row.getCell(i);
+			values[i] = excelCellHandler.cellToString(cell);
+		}
+		return values;
+	}
+
+	public Row getNativeRow() {
+		return row;
 	}
 
 }
