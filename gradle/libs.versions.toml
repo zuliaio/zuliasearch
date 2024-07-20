@@ -36,6 +36,7 @@ jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 koloboke-api = { module = "com.koloboke:koloboke-api-jdk8", version.ref = "koloboke" }
 koloboke-impl = { module = "com.koloboke:koloboke-impl-jdk8", version.ref = "koloboke" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.3" }
+log4j-to-slf4j = { module = "org.apache.logging.log4j:log4j-to-slf4j", version = "2.23.1" }
 lucene-analysis-common = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "lucene" }
 lucene-backward-codecs = { module = "org.apache.lucene:lucene-backward-codecs", version.ref = "lucene" }
 lucene-expressions = { module = "org.apache.lucene:lucene-expressions", version.ref = "lucene" }
@@ -73,7 +74,7 @@ unirest-java-bom = { module = "com.konghq:unirest-java-bom", version.ref = "unir
 univocity-parsers = { module = "com.univocity:univocity-parsers", version = "2.9.1" }
 
 [bundles]
-poi = ["poi", "poi-ooxml"]
+poi = ["poi", "poi-ooxml", "log4j-to-slf4j"]
 
 
 [plugins]
