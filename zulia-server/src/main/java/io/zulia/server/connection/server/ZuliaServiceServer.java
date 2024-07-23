@@ -37,10 +37,10 @@ public class ZuliaServiceServer {
 
 		if (zuliaConfig.getRpcWorkers() != 0) {
 			System.setProperty("io.grpc.netty.shaded.io.netty.eventLoopThreads", String.valueOf(zuliaConfig.getRpcWorkers()));
-			LOG.info("Using <" + zuliaConfig.getRpcWorkers() + "> event loop threads");
+			LOG.info("Using <{}> event loop threads", zuliaConfig.getRpcWorkers());
 		}
 		else {
-			LOG.info("Using netty default of <" + NettyRuntime.availableProcessors() + "> processors");
+			LOG.info("Using netty default of <{}> processors", NettyRuntime.availableProcessors());
 		}
 
 		int externalServicePort = zuliaConfig.getServicePort();

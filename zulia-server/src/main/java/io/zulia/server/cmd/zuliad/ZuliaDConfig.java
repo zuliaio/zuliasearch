@@ -81,12 +81,12 @@ public class ZuliaDConfig {
 			throw new FileNotFoundException("Data dir <" + dataDir + "> does not exist");
 		}
 		else {
-			LOG.info("Using data directory <" + dataFile.getAbsolutePath() + ">");
+			LOG.info("Using data directory <{}>", dataFile.getAbsolutePath());
 		}
 
 		if (zuliaConfig.getServerAddress() == null) {
 			zuliaConfig.setServerAddress(ServerNameHelper.getLocalServer());
-			LOG.warn("Server address is not defined.  Autodetected server name <" + zuliaConfig.getServerAddress() + ">");
+			LOG.warn("Server address is not defined.  Autodetected server name <{}>", zuliaConfig.getServerAddress());
 		}
 
 		if (zuliaConfig.isCluster()) {
@@ -114,7 +114,7 @@ public class ZuliaDConfig {
 				List<MongoServer> mongoServers = zuliaConfig.getMongoServers();
 				List<ServerAddress> serverAddressList = new ArrayList<>();
 				for (MongoServer mongoServer : mongoServers) {
-					LOG.info("Using Mongo Server: " + mongoServer);
+					LOG.info("Using Mongo Server: {}", mongoServer);
 					serverAddressList.add(new ServerAddress(mongoServer.getHostname(), mongoServer.getPort()));
 				}
 

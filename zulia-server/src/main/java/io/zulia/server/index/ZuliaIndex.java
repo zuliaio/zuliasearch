@@ -196,7 +196,7 @@ public class ZuliaIndex {
 				}
 			}
 			catch (Exception e) {
-				LOG.error("Failed to flush shard <" + shard.getShardNumber() + "> for index <" + indexName + ">", e);
+				LOG.error("Failed to flush shard <{}> for index <{}>", shard.getShardNumber(), indexName, e);
 			}
 		}
 
@@ -227,7 +227,7 @@ public class ZuliaIndex {
 				LOG.info("Deleting primary shard <{}> for <{}>", shardNumber, indexName);
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
-				LOG.info("Deleted primary shard <" + shardNumber + "> for <" + indexName + ">");
+				LOG.info("Deleted primary shard <{}> for <{}>", shardNumber, indexName);
 			}
 		}
 
@@ -278,9 +278,9 @@ public class ZuliaIndex {
 		{
 			ZuliaShard s = primaryShardMap.remove(shardNumber);
 			if (s != null) {
-				LOG.info(getLogPrefix() + "Closing primary shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info("{}Closing primary shard <{}> for index <{}>", getLogPrefix(), shardNumber, indexName);
 				s.close();
-				LOG.info(getLogPrefix() + "Removed primary shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info("{}Removed primary shard <{}> for index <{}>", getLogPrefix(), shardNumber, indexName);
 
 			}
 		}
@@ -288,9 +288,9 @@ public class ZuliaIndex {
 		{
 			ZuliaShard s = replicaShardMap.remove(shardNumber);
 			if (s != null) {
-				LOG.info(getLogPrefix() + "Closing replica shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info("{}Closing replica shard <{}> for index <{}>", getLogPrefix(), shardNumber, indexName);
 				s.close();
-				LOG.info(getLogPrefix() + "Removed replica shard <" + shardNumber + "> for index <" + indexName + ">");
+				LOG.info("{}Removed replica shard <{}> for index <{}>", getLogPrefix(), shardNumber, indexName);
 			}
 		}
 

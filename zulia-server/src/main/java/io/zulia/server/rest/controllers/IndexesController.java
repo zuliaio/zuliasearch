@@ -92,7 +92,7 @@ public class IndexesController {
 				restIndexSettings.addWarmingSearch(queryRequest);
 			}
 			catch (Exception e) {
-				LOG.warn("Failed to parse warming search: " + e.getMessage());
+				LOG.warn("Failed to parse warming search: {}", e.getMessage());
 			}
 		}
 

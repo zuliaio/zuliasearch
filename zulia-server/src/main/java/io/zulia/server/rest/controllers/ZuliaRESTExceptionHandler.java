@@ -27,7 +27,7 @@ public class ZuliaRESTExceptionHandler implements ExceptionHandler<Throwable, Ht
 			return HttpResponse.badRequest(new JsonError(throwable.getMessage()));
 		}
 
-		LOG.error(throwable.getClass().getSimpleName() + ": ", throwable.getMessage(), throwable);
+		LOG.error("{}: {}", throwable.getClass().getSimpleName(), throwable.getMessage(), throwable);
 		return HttpResponse.serverError(new JsonError(throwable.getMessage()));
 	}
 

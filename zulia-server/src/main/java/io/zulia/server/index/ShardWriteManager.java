@@ -120,7 +120,7 @@ public class ShardWriteManager {
 	}
 
 	public void commit() throws IOException {
-		LOG.info("Committing shard <" + shardNumber + "> for index <" + indexName + ">");
+		LOG.info("Committing shard <{}> for index <{}>", shardNumber, indexName);
 
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();

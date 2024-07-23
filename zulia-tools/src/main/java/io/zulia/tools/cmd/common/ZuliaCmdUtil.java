@@ -94,7 +94,7 @@ public class ZuliaCmdUtil {
 
 		}
 		catch (Throwable e) {
-			LOG.error("Could not write output for index <" + index + ">", e);
+			LOG.error("Could not write output for index <{}>", index, e);
 			throw e;
 		}
 	}
@@ -172,7 +172,7 @@ public class ZuliaCmdUtil {
 														}
 													}
 													catch (Throwable t) {
-														LOG.error("Could not restore associated file <" + filename + ">", t);
+														LOG.error("Could not restore associated file <{}>", filename, t);
 													}
 												}
 
@@ -186,11 +186,11 @@ public class ZuliaCmdUtil {
 												}
 											}
 											catch (Throwable t) {
-												LOG.error("Could not list the individual files for dir <" + path.getFileName() + ">", t);
+												LOG.error("Could not list the individual files for dir <{}>", path.getFileName(), t);
 											}
 										}
 										else {
-											LOG.error("Top level file that shouldn't exist: " + path.getFileName());
+											LOG.error("Top level file that shouldn't exist: {}", path.getFileName());
 										}
 									}
 
@@ -202,7 +202,7 @@ public class ZuliaCmdUtil {
 
 								}
 								else {
-									//LOG.error( "Could not extract file <" + fullPathToFile + ">");
+									//LOG.error("Could not extract file <{}>", fullPathToFile);
 								}
 
 							}

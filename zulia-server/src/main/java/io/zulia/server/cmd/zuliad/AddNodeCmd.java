@@ -28,7 +28,7 @@ public class AddNodeCmd implements Callable<Integer> {
         ZuliaBase.Node node = ZuliaBase.Node.newBuilder().setServerAddress(zuliaConfig.getServerAddress()).setServicePort(zuliaConfig.getServicePort())
                 .setRestPort(zuliaConfig.getRestPort()).setVersion(ZuliaVersion.getVersion()).build();
 
-        LOG.info("Adding node: " + ZuliaDConfig.formatNode(node));
+        LOG.info("Adding node: {}", ZuliaDConfig.formatNode(node));
 
         nodeService.addNode(node);
 
