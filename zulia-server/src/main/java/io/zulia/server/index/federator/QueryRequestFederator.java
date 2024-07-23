@@ -112,10 +112,10 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		String resultSize = String.format("%.2f", (qr.getSerializedSize() / 1024.0));
 
 		if (searchLabel.isEmpty()) {
-			LOG.info(prefix + " id <" + queryId + "> with result size " + resultSize + "KB in " + time + "ms");
+			LOG.info("{} id <{}> with result size {}KB in {}ms", prefix, queryId, resultSize, time);
 		}
 		else {
-			LOG.info(prefix + " id <" + queryId + "> with label <" + searchLabel + "> with result size " + resultSize + "KB in " + time + "ms");
+			LOG.info("{} id <{}> with label <{}> with result size {}KB in {}ms", prefix, queryId, searchLabel, resultSize, time);
 		}
 	}
 }

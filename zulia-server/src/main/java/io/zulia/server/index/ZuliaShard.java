@@ -119,7 +119,7 @@ public class ZuliaShard {
 						queryShard(shardQuery);
 					}
 					catch (Exception e) {
-						LOG.error("Failed to warm search with label <{}>: ", warmingSearch.getSearchLabel(), e.getMessage());
+						LOG.error("Failed to warm search with label <{}>: {}", warmingSearch.getSearchLabel(), e.getMessage());
 					}
 				}
 
@@ -185,7 +185,7 @@ public class ZuliaShard {
 					trackedIds = new HashSet<>();
 				}
 			}
-			LOG.info("Reindexed <" + count.get() + "> documents for shard <" + shardNumber + "> for index <" + indexName + ">");
+			LOG.info("Re-indexed <{}> documents for shard <{}> for index <{}>", count.get(), shardNumber, indexName);
 			forceCommit();
 		}
 		finally {

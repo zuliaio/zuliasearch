@@ -46,7 +46,7 @@ public class Slf4jLoggingConnectionListener implements ConnectionListener {
 
 	@Override
 	public void restClientCreated(String server, int restPort) {
-		LOG.info("Created OkHttp client for server <" + server + "> on port <" + restPort + ">");
+		LOG.info("Created OkHttp client for server <{}> on port <{}>", server, restPort);
 	}
 
 	@Override

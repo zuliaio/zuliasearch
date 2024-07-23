@@ -32,7 +32,7 @@ public class RestNodeExtension implements BeforeAllCallback, AfterAllCallback, B
 	@Override
 	public void beforeAll(ExtensionContext context) throws Exception {
 		if (context.getTestClass().isPresent()) {
-			LOG.info("Suite started: " + context.getTestClass().get());
+			LOG.info("Suite started: {}", context.getTestClass().get());
 		}
 		TestHelper.createNodes(nodeCount);
 		TestHelper.startNodes(true);
@@ -44,26 +44,26 @@ public class RestNodeExtension implements BeforeAllCallback, AfterAllCallback, B
 
 	public void afterAll(ExtensionContext context) throws Exception {
 		if (context.getTestClass().isPresent()) {
-			LOG.info("Suite finishing: " + context.getTestClass().get());
+			LOG.info("Suite finishing: {}", context.getTestClass().get());
 		}
 		TestHelper.stopNodes();
 		zuliaWorkPool.shutdown();
 		zuliaRestClient.close();
 		if (context.getTestClass().isPresent()) {
-			LOG.info("Suite finished: " + context.getTestClass().get());
+			LOG.info("Suite finished: {}", context.getTestClass().get());
 		}
 
 	}
 
 	@Override
 	public void beforeEach(ExtensionContext context) throws Exception {
-		LOG.info("Test started: " + context.getDisplayName());
+		LOG.info("Test started: {}", context.getDisplayName());
 
 	}
 
 	@Override
 	public void afterEach(ExtensionContext context) throws Exception {
-		LOG.info("Test finished: " + context.getDisplayName());
+		LOG.info("Test finished: {}", context.getDisplayName());
 	}
 
 }

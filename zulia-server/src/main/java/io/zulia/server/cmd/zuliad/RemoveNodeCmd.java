@@ -27,7 +27,7 @@ public class RemoveNodeCmd implements Callable<Integer> {
 
 		ZuliaDConfig zuliaDConfig = new ZuliaDConfig(zuliadCmd.getConfigPath());
 		NodeService nodeService = zuliaDConfig.getNodeService();
-		LOG.info("Removing node: " + server + ":" + servicePort);
+		LOG.info("Removing node: {}:{}", server, servicePort);
 		nodeService.removeNode(server, servicePort);
 
 		ZuliaDConfig.displayNodes(nodeService, "Registered Nodes:");

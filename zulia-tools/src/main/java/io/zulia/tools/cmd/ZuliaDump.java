@@ -89,15 +89,15 @@ public class ZuliaDump implements Callable<Integer> {
 		String settingsFilename = indOutputDir + File.separator + index + "_settings.json";
 
 		AtomicInteger count = new AtomicInteger();
-		LOG.info("Dumping index <" + index + ">");
+		LOG.info("Dumping index <{}>", index);
 		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, uniqueIds);
-		LOG.info("Finished dumping index <" + index + ">, total: " + count);
+		LOG.info("Finished dumping index <{}>, total: {}", index, count);
 
 		try (FileWriter fileWriter = new FileWriter(settingsFilename, Charsets.UTF_8)) {
-			LOG.info("Writing settings for index <" + index + ">");
+			LOG.info("Writing settings for index <{}>", index);
 			JsonFormat.Printer printer = JsonFormat.printer();
 			fileWriter.write(printer.print(workPool.getIndexConfig(new GetIndexConfig(index)).getIndexConfig().getIndexSettings()));
-			LOG.info("Finished writing settings for index <" + index + ">");
+			LOG.info("Finished writing settings for index <{}>", index);
 		}
 
 	}
@@ -107,7 +107,7 @@ public class ZuliaDump implements Callable<Integer> {
 		String zuliaDumpDir = outputDir + File.separator + "zuliadump";
 		String indOutputDir = zuliaDumpDir + File.separator + index;
 
-		LOG.info("Starting to dump associated docs for <" + uniqueIds.size() + "> documents");
+		LOG.info("Starting to dump associated docs for <{}> documents", uniqueIds.size());
 		AtomicInteger count = new AtomicInteger(0);
 		try (TaskExecutor threadPool = WorkPool.nativePool(4)) {
 			for (String uniqueId : uniqueIds) {
@@ -116,13 +116,13 @@ public class ZuliaDump implements Callable<Integer> {
 					workPool.fetchLargeAssociated(new FetchLargeAssociated(uniqueId, index,
 							Paths.get(indOutputDir + File.separator + uniqueId.replaceAll("/", "_") + ".zip").toFile()));
 					if (count.incrementAndGet() % 1000 == 0) {
-						LOG.info("Associated docs dumped so far: " + count);
+						LOG.info("Associated docs dumped so far: {}", count);
 					}
 
 					return null;
 				});
 			}
-			LOG.info("Finished dumping associated docs for <" + uniqueIds.size() + "> documents");
+			LOG.info("Finished dumping associated docs for <{}> documents", uniqueIds.size());
 		}
 	}
 

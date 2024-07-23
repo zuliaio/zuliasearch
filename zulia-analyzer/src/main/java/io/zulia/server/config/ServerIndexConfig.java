@@ -140,7 +140,7 @@ public class ServerIndexConfig {
 			}
 			catch (Exception e) {
 				//Allow index to load vs throwing an exception and making this harder to fix with the index not loaded
-				LOG.error("Failed to load warming search: " + e.getMessage() + ".  Please store warming searches again in proper format.", e);
+				LOG.error("Failed to load warming search: {}.  Please store warming searches again in proper format.", e.getMessage(), e);
 			}
 		}
 
