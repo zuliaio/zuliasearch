@@ -5,7 +5,7 @@ import io.zulia.data.source.DataSourceRecord;
 import java.util.Date;
 import java.util.List;
 
-public interface IndexedDataSourceRecord extends DataSourceRecord {
+public interface SpreadsheetRecord extends DataSourceRecord {
 	<T> List<T> getList(int index, final Class<T> clazz);
 
 	String getString(int index);
@@ -61,9 +61,6 @@ public interface IndexedDataSourceRecord extends DataSourceRecord {
 	}
 
 	String[] getRow();
-
-	int getIndexFromField(String field);
-
 
 
 }

@@ -5,15 +5,15 @@ import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.input.DataInputStream;
-import io.zulia.data.source.DataSource;
+import io.zulia.data.source.spreadsheet.SpreadsheetDataSource;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
+import java.util.SequencedSet;
 
-public class CSVDataSource implements DataSource<CSVDataSourceRecord>, AutoCloseable {
+public class CSVDataSource implements SpreadsheetDataSource<CSVDataSourceRecord>, AutoCloseable {
 
 	private final CSVDataSourceConfig csvDataSourceConfig;
 	private final CsvParser csvParser;
@@ -67,7 +67,7 @@ public class CSVDataSource implements DataSource<CSVDataSourceRecord>, AutoClose
 		return headerMapping.hasHeader(field);
 	}
 
-	public Collection<String> getHeaders() {
+	public SequencedSet<String> getHeaders() {
 		if (headerMapping == null) {
 			throw new IllegalStateException("Cannot get headers when headers where not read");
 		}

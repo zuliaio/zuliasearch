@@ -2,7 +2,7 @@ package io.zulia.data.source.spreadsheet.excel;
 
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
-import io.zulia.data.source.spreadsheet.IndexedDataSourceRecord;
+import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
@@ -10,7 +10,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.SequencedSet;
 
-public class ExcelDataSourceRecord implements IndexedDataSourceRecord {
+public class ExcelDataSourceRecord implements SpreadsheetRecord {
 
 	private final Row row;
 

@@ -2,7 +2,7 @@ package io.zulia.data.source.spreadsheet.excel;
 
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.input.DataInputStream;
-import io.zulia.data.source.DataSource;
+import io.zulia.data.source.spreadsheet.SpreadsheetDataSource;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -12,12 +12,12 @@ import org.apache.poi.util.LocaleUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.SequencedSet;
 
-public class ExcelDataSource implements DataSource<ExcelDataSourceRecord>, AutoCloseable {
+public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRecord>, AutoCloseable {
 
 	static {
 		LocaleUtil.setUserTimeZone(LocaleUtil.TIMEZONE_UTC);
@@ -88,7 +88,7 @@ public class ExcelDataSource implements DataSource<ExcelDataSourceRecord>, AutoC
 		return sheetInfo.headerMapping().hasHeader(field);
 	}
 
-	public Collection<String> getHeaders() {
+	public SequencedSet<String> getHeaders() {
 		if (sheetInfo.headerMapping() == null) {
 			throw new IllegalStateException("Cannot get headers when headers where not read");
 		}

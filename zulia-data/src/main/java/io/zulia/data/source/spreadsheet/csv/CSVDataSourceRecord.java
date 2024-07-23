@@ -2,13 +2,13 @@ package io.zulia.data.source.spreadsheet.csv;
 
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
-import io.zulia.data.source.spreadsheet.IndexedDataSourceRecord;
+import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
 
 import java.util.Date;
 import java.util.List;
 import java.util.SequencedSet;
 
-public class CSVDataSourceRecord implements IndexedDataSourceRecord {
+public class CSVDataSourceRecord implements SpreadsheetRecord {
 
 	private final String[] row;
 	private final HeaderMapping headerMapping;
