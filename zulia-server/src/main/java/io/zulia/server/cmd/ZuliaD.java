@@ -15,8 +15,8 @@ import java.io.File;
 		StartNodeCmd.class }, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaD {
 
-	@CommandLine.Option(names = "--config", description = "Full path to the config (defaults to $APP_HOME/config/zulia.properties)", scope = CommandLine.ScopeType.INHERIT)
-	private String configPath = "config" + File.separator + "zulia.properties";
+	@CommandLine.Option(names = "--config", description = "Full path to the config (defaults to $APP_HOME/config/zulia.yaml)", scope = CommandLine.ScopeType.INHERIT)
+	private String configPath = "config" + File.separator + "zulia.yaml";
 
 	@CommandLine.Mixin
 	private ShowStackArgs showStackArgs;
