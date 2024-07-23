@@ -1,8 +1,8 @@
 package io.zulia.data.common;
 
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.SequencedSet;
 
 public class HeaderMapping {
 
@@ -45,8 +45,8 @@ public class HeaderMapping {
 		return headersMap.containsKey(field);
 	}
 
-	public Collection<String> getHeaderKeys() {
-		return headersMap.keySet();
+	public SequencedSet<String> getHeaderKeys() {
+		return headersMap.sequencedKeySet();
 	}
 
 	public List<String> getRawHeaders() {

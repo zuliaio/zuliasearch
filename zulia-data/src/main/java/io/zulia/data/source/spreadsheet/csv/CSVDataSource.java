@@ -71,7 +71,7 @@ public class CSVDataSource implements DataSource<CSVDataSourceRecord>, AutoClose
 		if (headerMapping == null) {
 			throw new IllegalStateException("Cannot get headers when headers where not read");
 		}
-		return getHeaders();
+		return headerMapping.getHeaderKeys();
 	}
 
 	@Override

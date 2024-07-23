@@ -6,6 +6,7 @@ import io.zulia.data.source.spreadsheet.IndexedDataSourceRecord;
 
 import java.util.Date;
 import java.util.List;
+import java.util.SequencedSet;
 
 public class CSVDataSourceRecord implements IndexedDataSourceRecord {
 
@@ -31,7 +32,6 @@ public class CSVDataSourceRecord implements IndexedDataSourceRecord {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
 	public <T> List<T> getList(String key, Class<T> clazz) {
 		String cellValue = getString(key);
 		return delimitedListHandler.cellValueToList(clazz, cellValue);
@@ -112,4 +112,17 @@ public class CSVDataSourceRecord implements IndexedDataSourceRecord {
 	public Date getDate(int index) {
 		return null;
 	}
+
+	public String[] getRow() {
+		return row;
+	}
+
+	public SequencedSet<String> getHeaders() {
+		return headerMapping != null ? headerMapping.getHeaderKeys() : null;
+	}
+
+	public List<String> getRawHeaders() {
+		return headerMapping != null ? headerMapping.getRawHeaders() : null;
+	}
+
 }

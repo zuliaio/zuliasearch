@@ -59,4 +59,11 @@ public interface IndexedDataSourceRecord extends DataSourceRecord {
 		Date val = getDate(index);
 		return val != null ? val : defaultValue;
 	}
+
+	String[] getRow();
+
+	int getIndexFromField(String field);
+
+
+
 }

@@ -4,7 +4,7 @@ import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 
-import java.util.List;
+import java.util.Collection;
 
 public class CSVDataTargetConfig {
 
@@ -16,7 +16,7 @@ public class CSVDataTargetConfig {
 
 	private char delimiter = ',';
 
-	private List<String> headers;
+	private Collection<String> headers;
 
 	private DelimitedListHandler delimitedListHandler = new DefaultDelimitedListHandler(';');
 
@@ -43,12 +43,12 @@ public class CSVDataTargetConfig {
 		return this;
 	}
 
-	public CSVDataTargetConfig withHeader(List<String> headers) {
+	public CSVDataTargetConfig withHeader(Collection<String> headers) {
 		this.headers = headers;
 		return this;
 	}
 
-	public List<String> getHeaders() {
+	public Collection<String> getHeaders() {
 		return headers;
 	}
 

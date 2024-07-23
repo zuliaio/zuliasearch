@@ -3,6 +3,7 @@ package io.zulia.data.target.spreadsheet.csv;
 import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
 import io.zulia.data.output.DataOutputStream;
+import io.zulia.data.output.FileDataOutputStream;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,6 +23,14 @@ public class CSVDataTarget implements AutoCloseable {
 
 	public static CSVDataTarget withDefaults(DataOutputStream dataOutputStream) throws IOException {
 		return withConfig(CSVDataTargetConfig.from(dataOutputStream));
+	}
+
+	public static CSVDataTarget withDefaultsFromFile(String path, boolean overwrite) throws IOException {
+		return withDefaults(FileDataOutputStream.from(path, overwrite));
+	}
+
+	public static CSVDataTarget withDefaultsFromFile(String path, boolean overwrite, Collection<String> headers) throws IOException {
+		return withConfig(CSVDataTargetConfig.from(FileDataOutputStream.from(path, overwrite)).withHeader(headers));
 	}
 
 	protected CSVDataTarget(CSVDataTargetConfig csvDataTargetConfig) throws IOException {
@@ -61,6 +70,18 @@ public class CSVDataTarget implements AutoCloseable {
 
 	public void writeRow(Object... values) {
 		csvWriter.writeRow(Arrays.stream(values).map(o -> {
+			if (o instanceof Collection<?> c) {
+				if (c.isEmpty()) {
+					return null;
+				}
+				return csvDataTargetConfig.getDelimitedListHandler().collectionToCellValue(c);
+			}
+			return o.toString();
+		}).collect(Collectors.toList()));
+	}
+
+	public void writeRow(Collection<?> values) {
+		csvWriter.writeRow(values.stream().map(o -> {
 			if (o instanceof Collection<?> c) {
 				if (c.isEmpty()) {
 					return null;
