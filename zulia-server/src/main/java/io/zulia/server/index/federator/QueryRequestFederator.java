@@ -73,10 +73,10 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 		String searchLabel = request.getSearchLabel();
 		if (searchLabel.isEmpty()) {
-			LOG.info("Running id <" + queryId + "> query <" + queryJson + ">");
+			LOG.info("Running id <{}> query <{}>", queryId, queryJson);
 		}
 		else {
-			LOG.info("Running id <" + queryId + "> with label <" + searchLabel + "> query <" + queryJson + ">");
+			LOG.info("Running id <{}> with label <{}> query <{}>", queryId, searchLabel, queryJson);
 		}
 
 		List<InternalQueryResponse> results = send(request);

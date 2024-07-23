@@ -60,7 +60,7 @@ public class ZuliaNode {
 	}
 
 	public void start(boolean startREST) throws Exception {
-		LOG.info(getLogPrefix() + "starting");
+		LOG.info("{}:{} starting", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		MembershipTask membershipTask = new MembershipTask(zuliaConfig, nodeService) {
 
 			@Override
@@ -85,13 +85,13 @@ public class ZuliaNode {
 					zuliaConfig.getRestPort());
 			micronautService = Micronaut.build((String) null).mainClass(ZuliaRESTService.class).properties(properties).start();
 		}
-		LOG.info(getLogPrefix() + "started");
+		LOG.info("{}:{} started", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 
 		started = true;
 	}
 
 	public void shutdown() {
-		LOG.info(getLogPrefix() + "stopping");
+		LOG.info("{}:{} stopping", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		membershipTimer.cancel();
 		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		zuliaServiceServer.shutdown();
@@ -107,7 +107,7 @@ public class ZuliaNode {
 			}
 		}
 
-		LOG.info(getLogPrefix() + "stopped");
+		LOG.info("{}:{} stopped", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 
 		started = false;
 	}
@@ -120,10 +120,6 @@ public class ZuliaNode {
 			Thread.currentThread().interrupt();
 		}
 		this.micronautService.stop();
-	}
-
-	private String getLogPrefix() {
-		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
 	}
 
 	public ZuliaIndexManager getIndexManager() {

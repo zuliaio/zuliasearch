@@ -53,7 +53,9 @@ public class ZuliaConnectionFactory extends BasePooledObjectFactory<ZuliaConnect
 			zuliaConnection.close();
 		}
 		catch (Exception e) {
-			connectionListener.exceptionClosing(zuliaConnection, e);
+			if (connectionListener != null) {
+				connectionListener.exceptionClosing(zuliaConnection, e);
+			}
 		}
 		if (connectionListener != null) {
 			connectionListener.connectionClosed(zuliaConnection);
