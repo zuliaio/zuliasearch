@@ -74,22 +74,22 @@ public class ZuliaCmdUtil {
 
 							int c = count.incrementAndGet();
 							if (c % 1000 == 0) {
-								LOG.info("So far written <" + c + "> of <" + totalHits + "> for index <" + index + ">");
+								LOG.info("So far written <{}> of <{}> for index <{}>", c, totalHits, index);
 							}
 
 						}
 						catch (IOException e) {
-							LOG.error("Could not write record <" + completeResult.getUniqueId() + "> for index <" + index + ">", e);
+							LOG.error("Could not write record <{}> for index <{}>", completeResult.getUniqueId(), index, e);
 						}
 						catch (Throwable e) {
-							LOG.error("Could not write output for index <" + index + ">", e);
+							LOG.error("Could not write output for index <{}>", index, e);
 						}
 
 					});
 				});
 			}
 			catch (Throwable t) {
-				LOG.error("Query failed for index <" + index + ">", t);
+				LOG.error("Query failed for index <{}>", index, t);
 			}
 
 		}
@@ -209,7 +209,7 @@ public class ZuliaCmdUtil {
 
 							int i = count.incrementAndGet();
 							if (i % 10000 == 0) {
-								LOG.info("So far indexed <" + i + "> for index <" + index + ">");
+								LOG.info("So far indexed <{}> for index <{}>", i, index);
 							}
 							return null;
 						}

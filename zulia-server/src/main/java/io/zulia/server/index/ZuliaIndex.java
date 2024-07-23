@@ -204,7 +204,7 @@ public class ZuliaIndex {
 
 	public void unload(boolean terminate) throws IOException {
 
-		LOG.info("Canceling timers for <" + indexName + ">");
+		LOG.info("Canceling timers for <{}>", indexName);
 		commitTask.cancel();
 		commitTimer.cancel();
 
@@ -212,19 +212,19 @@ public class ZuliaIndex {
 		warmTimer.cancel();
 
 		if (!terminate) {
-			LOG.info("Committing <" + indexName + ">");
+			LOG.info("Committing <{}>", indexName);
 			doCommit(true);
 		}
 
-		LOG.info("Shutting down shard pool for <" + indexName + ">");
+		LOG.info("Shutting down shard pool for <{}>", indexName);
 		shardPool.shutdownNow();
 
 		for (Integer shardNumber : primaryShardMap.keySet()) {
-			LOG.info("Unloading primary shard <" + shardNumber + "> for <" + indexName + ">");
+			LOG.info("Unloading primary shard <{}> for <{}>", shardNumber, indexName);
 			unloadShard(shardNumber);
-			LOG.info("Unloaded primary shard <" + shardNumber + "> for <" + indexName + ">");
+			LOG.info("Unloaded primary shard <{}> for <{}>", shardNumber, indexName);
 			if (terminate) {
-				LOG.info("Deleting primary shard <" + shardNumber + "> for <" + indexName + ">");
+				LOG.info("Deleting primary shard <{}> for <{}>", shardNumber, indexName);
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
 				LOG.info("Deleted primary shard <" + shardNumber + "> for <" + indexName + ">");
@@ -233,17 +233,17 @@ public class ZuliaIndex {
 
 		LOG.info("Deleting replicas");
 		for (Integer shardNumber : replicaShardMap.keySet()) {
-			LOG.info("Unloading replica shard <" + shardNumber + "> for <" + indexName + ">");
+			LOG.info("Unloading replica shard <{}> for <{}>", shardNumber, indexName);
 			unloadShard(shardNumber);
-			LOG.info("Unloaded replica shard <" + shardNumber + "> for <" + indexName + ">");
+			LOG.info("Unloaded replica shard <{}> for <{}>", shardNumber, indexName);
 			if (terminate) {
-				LOG.info("Deleting replica shard <" + shardNumber + "> for <" + indexName + ">");
+				LOG.info("Deleting replica shard <{}> for <{}>", shardNumber, indexName);
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
-				LOG.info("Deleted replica shard <" + shardNumber + "> for <" + indexName + ">");
+				LOG.info("Deleted replica shard <{}> for <{}>", shardNumber, indexName);
 			}
 		}
-		LOG.info("Shut down shard pool for <" + indexName + ">");
+		LOG.info("Shut down shard pool for <{}>", indexName);
 
 	}
 
@@ -255,11 +255,11 @@ public class ZuliaIndex {
 		ZuliaShard s = new ZuliaShard(shardWriteManager, primary);
 
 		if (primary) {
-			LOG.info("Loaded primary shard <" + shardNumber + "> for index <" + indexName + ">");
+			LOG.info("Loaded primary shard <{}> for index <{}>", shardNumber, indexName);
 			primaryShardMap.put(shardNumber, s);
 		}
 		else {
-			LOG.info("Loaded replica shard <" + shardNumber + "> for index <" + indexName + ">");
+			LOG.info("Loaded replica shard <{}> for index <{}>", shardNumber, indexName);
 			replicaShardMap.put(shardNumber, s);
 		}
 
@@ -378,7 +378,7 @@ public class ZuliaIndex {
 			throw new IllegalArgumentException("Term query must give at least one query field (qf)");
 		}
 		else if (query.getQfList().size() == 1) {
-			return getTermInSetQuery(query, query.getQfList().get(0));
+			return getTermInSetQuery(query, query.getQfList().getFirst());
 		}
 		else {
 			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
@@ -408,7 +408,7 @@ public class ZuliaIndex {
 			throw new IllegalArgumentException("Numeric set query must give at least one query field (qf)");
 		}
 		else if (qfList.size() == 1) {
-			return getNumericSetQuery(query.getNumericSet(), qfList.get(0));
+			return getNumericSetQuery(query.getNumericSet(), qfList.getFirst());
 		}
 		else {
 			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
@@ -443,7 +443,7 @@ public class ZuliaIndex {
 			throw new IllegalArgumentException("Cosine sim query must give at least one query field (qf)");
 		}
 		else if (query.getQfList().size() == 1) {
-			return new KnnFloatVectorQuery(query.getQfList().get(0), vector, query.getVectorTopN(), getPreFilter(query.getVectorPreQueryList()));
+			return new KnnFloatVectorQuery(query.getQfList().getFirst(), vector, query.getVectorTopN(), getPreFilter(query.getVectorPreQueryList()));
 		}
 		else {
 			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
@@ -541,7 +541,7 @@ public class ZuliaIndex {
 		}
 
 		if (clauses.size() == 1) {
-			return clauses.get(0).getQuery();
+			return clauses.getFirst().getQuery();
 		}
 
 		BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();

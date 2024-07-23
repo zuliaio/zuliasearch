@@ -182,7 +182,7 @@ public class QueryController {
 
 						count++;
 						if (count % 1000 == 0) {
-							LOG.info("Docs processed so far: " + count);
+							LOG.info("Docs processed so far: {}", count);
 						}
 					}
 

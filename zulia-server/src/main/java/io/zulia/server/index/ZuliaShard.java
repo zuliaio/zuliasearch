@@ -113,13 +113,13 @@ public class ZuliaShard {
 
 				if (shardNeedsWarmForSearch) {
 					try {
-						LOG.info("Warming search with label <" + warmingSearch.getSearchLabel() + ">");
+						LOG.info("Warming search with label <{}>", warmingSearch.getSearchLabel());
 						Query query = zuliaIndex.getQuery(warmingSearch);
 						ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
 						queryShard(shardQuery);
 					}
 					catch (Exception e) {
-						LOG.error("Failed to warm search with label <" + warmingSearch.getSearchLabel() + ">: ", e.getMessage());
+						LOG.error("Failed to warm search with label <{}>: ", warmingSearch.getSearchLabel(), e.getMessage());
 					}
 				}
 

@@ -43,8 +43,8 @@ public class ZuliaDConfig {
 
 	private static final Gson GSON = new GsonBuilder().create();
 	private static final Logger LOG = LoggerFactory.getLogger(ZuliaDConfig.class);
-	private NodeService nodeService;
-	private ZuliaConfig zuliaConfig;
+	private final NodeService nodeService;
+	private final ZuliaConfig zuliaConfig;
 
 	public ZuliaDConfig(String config) throws IOException {
 		String prefix = System.getenv("APP_HOME");
@@ -53,7 +53,7 @@ public class ZuliaDConfig {
 			config = prefix + File.separator + config;
 		}
 
-		LOG.info("Loading config <" + config + ">");
+		LOG.info("Loading config <{}>", config);
 
 		try (FileReader fr = new FileReader(config)) {
 

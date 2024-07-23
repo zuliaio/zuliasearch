@@ -12,36 +12,36 @@ public class Slf4jLoggingConnectionListener implements ConnectionListener {
 	@Override
 	public void connectionBeforeOpen(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Opening connection #" + zuliaConnection.getConnectionNumberForNode() + " to " + node.getServerAddress() + ":" + node.getServicePort()
-				+ " connection id: " + zuliaConnection.getConnectionId());
+		LOG.info("Opening connection #{} to {}:{} connection id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(),
+				node.getServicePort(), zuliaConnection.getConnectionId());
 	}
 
 	@Override
 	public void connectionOpened(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Opened connection #" + zuliaConnection.getConnectionNumberForNode() + " to " + node.getServerAddress() + ":" + node.getServicePort()
-				+ " connection id: " + zuliaConnection.getConnectionId());
+		LOG.info("Opened connection #{} to {}:{} connection id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(),
+				node.getServicePort(), zuliaConnection.getConnectionId());
 	}
 
 	@Override
 	public void connectionBeforeClose(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Closing connection #" + zuliaConnection.getConnectionNumberForNode() + " to <" + node.getServerAddress() + ":" + node.getServicePort()
-				+ "> id: " + zuliaConnection.getConnectionId());
+		LOG.info("Closing connection #{} to <{}:{}> id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(), node.getServicePort(),
+				zuliaConnection.getConnectionId());
 	}
 
 	@Override
 	public void connectionClosed(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Closed connection #" + zuliaConnection.getConnectionNumberForNode() + " to <" + node.getServerAddress() + ":" + node.getServicePort()
-				+ "> id: " + zuliaConnection.getConnectionId());
+		LOG.info("Closed connection #{} to <{}:{}> id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(), node.getServicePort(),
+				zuliaConnection.getConnectionId());
 	}
 
 	@Override
 	public void exceptionClosing(ZuliaConnection zuliaConnection, Exception e) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.error("Exception closing connection #" + zuliaConnection.getConnectionNumberForNode() + " to <" + node.getServerAddress() + ":"
-				+ node.getServicePort() + "> id: " + zuliaConnection.getConnectionId(), e);
+		LOG.error("Exception closing connection #{} to <{}:{}> id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(),
+				node.getServicePort(), zuliaConnection.getConnectionId(), e);
 	}
 
 	@Override
@@ -51,14 +51,14 @@ public class Slf4jLoggingConnectionListener implements ConnectionListener {
 
 	@Override
 	public <R extends Result> void exceptionWithRetry(ZuliaBase.Node selectedNode, BaseCommand<R> command, Exception exception, int tries) {
-		LOG.error("Failed to run " + command.getClass().getSimpleName() + " on " + selectedNode.getServerAddress() + ":" + selectedNode.getServicePort()
-				+ " with exception: " + exception.getMessage() + ".  Retrying (" + tries + ")");
+		LOG.error("Failed to run {} on {}:{} with exception: {}.  Retrying ({})", command.getClass().getSimpleName(), selectedNode.getServerAddress(),
+				selectedNode.getServicePort(), exception.getMessage(), tries);
 	}
 
 	@Override
 	public <R extends Result> void exception(ZuliaBase.Node selectedNode, BaseCommand<R> command, Exception exception) {
-		LOG.error("Failed to run " + command.getClass().getSimpleName() + " on " + selectedNode.getServerAddress() + ":" + selectedNode.getServicePort()
-				+ " with exception: " + exception.getMessage());
+		LOG.error("Failed to run {} on {}:{} with exception: {}", command.getClass().getSimpleName(), selectedNode.getServerAddress(),
+				selectedNode.getServicePort(), exception.getMessage());
 	}
 
 }

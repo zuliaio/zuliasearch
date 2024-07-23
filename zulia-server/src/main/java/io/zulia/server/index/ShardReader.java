@@ -193,8 +193,8 @@ public class ShardReader implements AutoCloseable {
 		indexSearcher.setSimilarity(similarity);
 
 		if (shardQuery.isDebug()) {
-			LOG.info("Lucene Query for index <" + indexName + "> segment <" + shardNumber + ">: " + shardQuery.getQuery());
-			LOG.info("Rewritten Query for index <" + indexName + "> segment <" + shardNumber + ">: " + indexSearcher.rewrite(shardQuery.getQuery()));
+			LOG.info("Lucene Query for index <{}> segment <{}>: {}", indexName, shardNumber, shardQuery.getQuery());
+			LOG.info("Rewritten Query for index <{}> segment <{}>: {}", indexName, shardNumber, indexSearcher.rewrite(shardQuery.getQuery()));
 		}
 
 		int hasMoreAmount = shardQuery.getAmount() + 1;
