@@ -6,19 +6,21 @@ import java.net.URLConnection;
 public record DataStreamMeta(String contentType, String fileName) {
 
 	public static DataStreamMeta fromFileName(String fileName) {
-		if (isGzipExtension(fileName)) {
-			fileName = fileName.substring(0, fileName.length() - 3);
-		}
-		String contentType = URLConnection.guessContentTypeFromName(fileName);
-		return new DataStreamMeta(contentType, fileName);
+		return new DataStreamMeta(getContentTypeFromFilename(fileName), fileName);
 	}
 
 	public static DataStreamMeta fromFullPath(String filePath) {
 		File file = new File(filePath);
-		String name = file.getName();
+		String fileName = file.getName();
+		return new DataStreamMeta(getContentTypeFromFilename(fileName), fileName);
+	}
 
-		String contentType = URLConnection.guessContentTypeFromName(name);
-		return new DataStreamMeta(contentType, name);
+	public static String getContentTypeFromFilename(String fileName) {
+		if (isGzipExtension(fileName)) {
+			fileName = fileName.substring(0, fileName.length() - 3);
+		}
+
+		return URLConnection.guessContentTypeFromName(fileName);
 	}
 
 	public static boolean isGzipExtension(String fileName) {
