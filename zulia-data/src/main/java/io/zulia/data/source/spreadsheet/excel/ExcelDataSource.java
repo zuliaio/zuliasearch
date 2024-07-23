@@ -12,6 +12,7 @@ import org.apache.poi.util.LocaleUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -29,7 +30,7 @@ public class ExcelDataSource implements DataSource<ExcelDataSourceRecord>, AutoC
 	private Workbook reader;
 	private Sheet sheet;
 
-	private HeaderMapping headerMapping;
+	private SheetInfo sheetInfo;
 
 	public static ExcelDataSource withConfig(ExcelDataSourceConfig excelDataSourceConfig) throws IOException {
 		return new ExcelDataSource(excelDataSourceConfig);
@@ -80,11 +81,26 @@ public class ExcelDataSource implements DataSource<ExcelDataSourceRecord>, AutoC
 		return this;
 	}
 
+	public boolean hasHeader(String field) {
+		if (sheetInfo.headerMapping() == null) {
+			throw new IllegalStateException("Cannot get field by name when headers where not read");
+		}
+		return sheetInfo.headerMapping().hasHeader(field);
+	}
+
+	public Collection<String> getHeaders() {
+		if (sheetInfo.headerMapping() == null) {
+			throw new IllegalStateException("Cannot get headers when headers where not read");
+		}
+		return sheetInfo.headerMapping().getHeaderKeys();
+	}
+
 	private void initializeSheet() {
 		numberOfRowsForSheet = sheet.getLastRowNum() + 1;
 		Row row = sheet.getRow(0);
 
 		currentRow = 0;
+		int numberOfColumns = row.getLastCellNum();
 
 		if (excelDataSourceConfig.hasHeaders()) {
 			ExcelCellHandler excelCellHandler = excelDataSourceConfig.getExcelCellHandler();
@@ -97,11 +113,11 @@ public class ExcelDataSource implements DataSource<ExcelDataSourceRecord>, AutoC
 					headerRow.add(excelCellHandler.cellToString(cell));
 				}
 			}
-			headerMapping = new HeaderMapping(excelDataSourceConfig.getHeaderConfig(), headerRow);
+			sheetInfo = new SheetInfo(numberOfColumns, numberOfRowsForSheet, new HeaderMapping(excelDataSourceConfig.getHeaderConfig(), headerRow));
 
 		}
 		else {
-			headerMapping = null;
+			sheetInfo = new SheetInfo(numberOfColumns, numberOfRowsForSheet, null);
 		}
 
 	}
@@ -129,7 +145,8 @@ public class ExcelDataSource implements DataSource<ExcelDataSourceRecord>, AutoC
 			@Override
 			public ExcelDataSourceRecord next() {
 				Row next = sheet.getRow(currentRow);
-				return new ExcelDataSourceRecord(next, headerMapping, excelDataSourceConfig);
+				currentRow++;
+				return new ExcelDataSourceRecord(next, sheetInfo, excelDataSourceConfig);
 			}
 
 			@Override

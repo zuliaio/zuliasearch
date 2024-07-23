@@ -18,4 +18,18 @@ public interface ExcelCellHandler {
 	Double cellToDouble(Cell cell);
 
 	Date cellToDate(Cell cell);
+
+	boolean isCellNumeric(Cell cell);
+
+	boolean isCellString(Cell cell);
+
+	boolean isCellBoolean(Cell cell);
+
+	boolean isCellFormula(Cell cell);
+
+	boolean isCellDateFormatted(Cell cell);
+
+	String formatNumericCellAsString(Cell cell);
+
+	String formatDateCellAsString(Cell cell);
 }
