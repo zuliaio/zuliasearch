@@ -68,6 +68,7 @@ val zuliaTestScriptTask = tasks.register<CreateStartScripts>("createZuliaTestScr
 }
 
 tasks.register("autocompleteDir") {
+    dependsOn(":zulia-common:version")
     doLast {
         mkdir("${layout.buildDirectory.get()}/autocomplete")
     }
