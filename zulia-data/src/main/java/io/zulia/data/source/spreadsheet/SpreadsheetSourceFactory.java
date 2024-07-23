@@ -2,14 +2,12 @@ package io.zulia.data.source.spreadsheet;
 
 import io.zulia.data.DataStreamMeta;
 import io.zulia.data.input.DataInputStream;
-import io.zulia.data.input.FileDataInputStream;
 import io.zulia.data.source.spreadsheet.csv.CSVDataSource;
 import io.zulia.data.source.spreadsheet.csv.CSVDataSourceConfig;
 import io.zulia.data.source.spreadsheet.excel.ExcelDataSource;
 import io.zulia.data.source.spreadsheet.excel.ExcelDataSourceConfig;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import static io.zulia.data.DataStreamMeta.isGzipExtension;
 
@@ -78,14 +76,5 @@ public class SpreadsheetSourceFactory {
 		}
 	}
 
-	public static void main(String[] args) throws Exception {
-		FileDataInputStream from = FileDataInputStream.from("/data/sdn/2023-R01-random100.csv");
 
-		try (SpreadsheetDataSource<?> spreadsheetSource = SpreadsheetSourceFactory.getSpreadsheetSource(from, true)) {
-			for (SpreadsheetRecord record : spreadsheetSource) {
-				System.out.println(Arrays.toString(record.getRow()));
-			}
-		}
-
-	}
 }
