@@ -8,6 +8,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.util.IOUtils;
 import org.apache.poi.util.LocaleUtil;
 
 import java.io.IOException;
@@ -21,6 +22,7 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 
 	static {
 		LocaleUtil.setUserTimeZone(LocaleUtil.TIMEZONE_UTC);
+		IOUtils.setByteArrayMaxOverride(256_000_000);
 	}
 
 	private final ExcelDataSourceConfig excelDataSourceConfig;
