@@ -3,6 +3,7 @@ package io.zulia.data.source.spreadsheet.excel;
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.input.DataInputStream;
 import io.zulia.data.source.spreadsheet.SpreadsheetDataSource;
+import org.apache.poi.openxml4j.util.ZipInputStreamZipEntrySource;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -23,6 +24,7 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 	static {
 		LocaleUtil.setUserTimeZone(LocaleUtil.TIMEZONE_UTC);
 		IOUtils.setByteArrayMaxOverride(256_000_000);
+		ZipInputStreamZipEntrySource.setThresholdBytesForTempFiles(256_000_000);
 	}
 
 	private final ExcelDataSourceConfig excelDataSourceConfig;
