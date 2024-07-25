@@ -58,7 +58,7 @@ public class SpreadsheetSourceFactory {
 				csvDataSourceConfig.withHeaders();
 			}
 			if (SpreadsheetType.TSV.equals(spreadsheetType)) {
-				csvDataSourceConfig.withDelimiter(',');
+				csvDataSourceConfig.withDelimiter('\t');
 			}
 			return CSVDataSource.withConfig(csvDataSourceConfig);
 		}
