@@ -118,7 +118,7 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 				}
 			}
 			sheetInfo = new SheetInfo(numberOfColumns, numberOfRowsForSheet, new HeaderMapping(excelDataSourceConfig.getHeaderConfig(), headerRow));
-
+			currentRow++;
 		}
 		else {
 			sheetInfo = new SheetInfo(numberOfColumns, numberOfRowsForSheet, null);
