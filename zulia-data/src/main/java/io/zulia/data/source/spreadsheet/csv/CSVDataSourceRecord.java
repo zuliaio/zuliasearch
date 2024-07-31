@@ -44,27 +44,27 @@ public class CSVDataSourceRecord implements SpreadsheetRecord {
 
 	@Override
 	public Boolean getBoolean(String field) {
-		return Boolean.parseBoolean(getString(field));
+		return parseFromString(field, Boolean::valueOf, null);
 	}
 
 	@Override
 	public Float getFloat(String field) {
-		return Float.parseFloat(getString(field));
+		return parseFromString(field, Float::parseFloat, null);
 	}
 
 	@Override
 	public Double getDouble(String field) {
-		return Double.parseDouble(getString(field));
+		return parseFromString(field, Double::parseDouble, null);
 	}
 
 	@Override
 	public Integer getInt(String field) {
-		return Integer.parseInt(getString(field));
+		return parseFromString(field, Integer::parseInt, null);
 	}
 
 	@Override
 	public Long getLong(String field) {
-		return Long.parseLong(getString(field));
+		return parseFromString(field, Long::parseLong, null);
 	}
 
 	@Override
@@ -85,27 +85,27 @@ public class CSVDataSourceRecord implements SpreadsheetRecord {
 
 	@Override
 	public Boolean getBoolean(int index) {
-		return Boolean.parseBoolean(getString(index));
+		return parseFromString(index, Boolean::valueOf, null);
 	}
 
 	@Override
 	public Float getFloat(int index) {
-		return Float.parseFloat(getString(index));
+		return parseFromString(index, Float::parseFloat, null);
 	}
 
 	@Override
 	public Double getDouble(int index) {
-		return Double.parseDouble(getString(index));
+		return parseFromString(index, Double::parseDouble, null);
 	}
 
 	@Override
 	public Integer getInt(int index) {
-		return Integer.parseInt(getString(index));
+		return parseFromString(index, Integer::parseInt, null);
 	}
 
 	@Override
 	public Long getLong(int index) {
-		return Long.parseLong(getString(index));
+		return parseFromString(index, Long::parseLong, null);
 	}
 
 	@Override

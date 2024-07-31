@@ -4,6 +4,7 @@ import io.zulia.data.source.DataSourceRecord;
 
 import java.util.Date;
 import java.util.List;
+import java.util.function.Function;
 
 public interface SpreadsheetRecord extends DataSourceRecord {
 	<T> List<T> getList(int index, final Class<T> clazz);
@@ -13,6 +14,22 @@ public interface SpreadsheetRecord extends DataSourceRecord {
 	default String getString(int index, String defaultValue) {
 		String val = getString(index);
 		return val != null ? val : defaultValue;
+	}
+
+	default <T> T parseFromString(String field, Function<String, T> parser, T defaultValue) {
+		String strVal = getString(field);
+		if (strVal == null) {
+			return defaultValue;
+		}
+		return parser.apply(strVal);
+	}
+
+	default <T> T parseFromString(int index, Function<String, T> parser, T defaultValue) {
+		String strVal = getString(index);
+		if (strVal == null) {
+			return defaultValue;
+		}
+		return parser.apply(strVal);
 	}
 
 	Boolean getBoolean(int index);
