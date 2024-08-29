@@ -1,6 +1,5 @@
 package io.zulia.data.target.spreadsheet.excel;
 
-import io.zulia.data.target.spreadsheet.csv.ExcelDataTargetConfig;
 import org.apache.poi.common.usermodel.HyperlinkType;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;

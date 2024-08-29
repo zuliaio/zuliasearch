@@ -1,4 +1,4 @@
-package io.zulia.data.target.spreadsheet.csv;
+package io.zulia.data.target.spreadsheet.excel;
 
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
