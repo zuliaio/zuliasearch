@@ -2,7 +2,6 @@ package io.zulia.data.target.spreadsheet.excel;
 
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.FileDataOutputStream;
-import io.zulia.data.target.spreadsheet.csv.ExcelDataTargetConfig;
 import io.zulia.data.target.spreadsheet.excel.cell.CellHandler;
 import io.zulia.data.target.spreadsheet.excel.cell.Link;
 import org.apache.poi.xssf.streaming.SXSSFCell;
