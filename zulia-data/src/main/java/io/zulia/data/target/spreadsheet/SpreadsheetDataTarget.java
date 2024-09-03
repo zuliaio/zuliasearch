@@ -2,6 +2,7 @@ package io.zulia.data.target.spreadsheet;
 
 import io.zulia.data.target.spreadsheet.excel.cell.Link;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
 
@@ -95,4 +96,6 @@ public abstract class SpreadsheetDataTarget<R, C extends SpreadsheetDataTargetCo
 	}
 	
 	public abstract void finishRow();
+	
+	public abstract void close() throws IOException;
 }
