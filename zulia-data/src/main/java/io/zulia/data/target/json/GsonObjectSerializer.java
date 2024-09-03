@@ -1,4 +1,4 @@
-package io.zulia.data.target.spreadsheet.json;
+package io.zulia.data.target.json;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

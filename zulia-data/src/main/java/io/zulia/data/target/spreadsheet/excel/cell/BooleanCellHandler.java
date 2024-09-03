@@ -1,18 +1,16 @@
 package io.zulia.data.target.spreadsheet.excel.cell;
 
-import io.zulia.data.target.spreadsheet.excel.WorkbookHelper;
-import org.apache.poi.xssf.streaming.SXSSFCell;
+import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
 
-public class BooleanCellHandler implements CellHandler<Boolean> {
-
+public class BooleanCellHandler implements SpreadsheetTypeHandler<CellReference, Boolean> {
+	
 	@Override
-	public void handleCell(WorkbookHelper workbookHelper, SXSSFCell cell, Boolean bool) {
-		if (bool != null) {
-			cell.setCellValue(bool);
+	public void writeType(CellReference reference, Boolean value) {
+		if (value != null) {
+			reference.cell().setCellValue(value);
 		}
 		else {
-			cell.setBlank();
+			reference.cell().setBlank();
 		}
 	}
-
 }

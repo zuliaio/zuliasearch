@@ -1,4 +1,4 @@
-package io.zulia.data.target.spreadsheet.json;
+package io.zulia.data.target.json;
 
 import io.zulia.data.output.DataOutputStream;
 
