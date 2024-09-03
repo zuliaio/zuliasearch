@@ -1,4 +1,4 @@
-package io.zulia.data;
+package io.zulia.data.common;
 
 import java.io.File;
 import java.net.URLConnection;
