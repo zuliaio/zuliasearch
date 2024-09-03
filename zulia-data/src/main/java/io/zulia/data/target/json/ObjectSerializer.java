@@ -1,4 +1,4 @@
-package io.zulia.data.target.spreadsheet.json;
+package io.zulia.data.target.json;
 
 public interface ObjectSerializer {
 

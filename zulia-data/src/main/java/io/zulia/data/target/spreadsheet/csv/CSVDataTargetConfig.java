@@ -1,63 +1,42 @@
 package io.zulia.data.target.spreadsheet.csv;
 
+import com.univocity.parsers.csv.CsvWriter;
 import io.zulia.data.output.DataOutputStream;
-import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
-import io.zulia.data.source.spreadsheet.DelimitedListHandler;
+import io.zulia.data.target.spreadsheet.SpreadsheetDataTargetConfig;
+import io.zulia.data.target.spreadsheet.csv.formatter.*;
 
-import java.util.Collection;
-
-public class CSVDataTargetConfig {
-
+public class CSVDataTargetConfig extends SpreadsheetDataTargetConfig<CsvWriter, CSVDataTargetConfig> {
+	
 	public static CSVDataTargetConfig from(DataOutputStream dataStream) {
 		return new CSVDataTargetConfig(dataStream);
 	}
-
-	private final DataOutputStream dataStream;
-
+	
 	private char delimiter = ',';
-
-	private Collection<String> headers;
-
-	private DelimitedListHandler delimitedListHandler = new DefaultDelimitedListHandler(';');
-
-	private CSVDataTargetConfig(DataOutputStream dataStream) {
-		this.dataStream = dataStream;
+	
+	public CSVDataTargetConfig(DataOutputStream dataStream) {
+		super(dataStream);
+		withStringHandler(new StringCSVWriter());
+		withDateTypeHandler(new DateCSVWriter());
+		withNumberTypeHandler(new NumberCSVWriter());
+		withLinkTypeHandler(new LinkCSVWriter());
+		withDefaultTypeHandler(new DefaultCSVWriter());
+		withBooleanTypeHandler(new BooleanCSVWriter());
+		withCollectionHandler(new CollectionCSVWriter(this));
+		withHeaderHandler(new StringCSVWriter()); // csv headers are just strings
 	}
-
-	public DataOutputStream getDataStream() {
-		return dataStream;
+	
+	@Override
+	protected CSVDataTargetConfig getSelf() {
+		return this;
 	}
-
+	
 	public CSVDataTargetConfig withDelimiter(char delimiter) {
 		this.delimiter = delimiter;
 		return this;
 	}
-
-	public CSVDataTargetConfig withListDelimiter(char listDelimiter) {
-		this.delimitedListHandler = new DefaultDelimitedListHandler(listDelimiter);
-		return this;
-	}
-
-	public CSVDataTargetConfig withDelimitedListHandler(DelimitedListHandler delimitedListHandler) {
-		this.delimitedListHandler = delimitedListHandler;
-		return this;
-	}
-
-	public CSVDataTargetConfig withHeader(Collection<String> headers) {
-		this.headers = headers;
-		return this;
-	}
-
-	public Collection<String> getHeaders() {
-		return headers;
-	}
-
+	
 	public char getDelimiter() {
 		return delimiter;
 	}
-
-	public DelimitedListHandler getDelimitedListHandler() {
-		return delimitedListHandler;
-	}
-
+	
 }

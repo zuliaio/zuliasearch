@@ -1,13 +1,8 @@
 package io.zulia.data.output;
 
-import io.zulia.data.DataStreamMeta;
+import io.zulia.data.common.DataStreamMeta;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.zip.GZIPOutputStream;
 
 public class FileDataOutputStream implements DataOutputStream {
