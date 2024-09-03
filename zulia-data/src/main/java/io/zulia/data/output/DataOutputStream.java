@@ -1,6 +1,6 @@
 package io.zulia.data.output;
 
-import io.zulia.data.DataStreamMeta;
+import io.zulia.data.common.DataStreamMeta;
 
 import java.io.IOException;
 import java.io.OutputStream;
