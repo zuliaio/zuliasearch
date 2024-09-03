@@ -1,6 +1,7 @@
 package io.zulia.data.test;
 
 import io.zulia.data.target.spreadsheet.SpreadsheetDataTarget;
+import io.zulia.data.target.spreadsheet.SpreadsheetTargetFactory;
 import io.zulia.data.target.spreadsheet.csv.CSVDataTarget;
 import io.zulia.data.target.spreadsheet.excel.ExcelDataTarget;
 import io.zulia.data.target.spreadsheet.excel.cell.Link;
@@ -20,6 +21,14 @@ public class DataTargetExamples {
 		}
 		try (ExcelDataTarget excelDataTarget = ExcelDataTarget.withDefaultsFromFile("/data/test.xlsx", true, headers)) {
 			writeSampleRecords(excelDataTarget);
+		}
+		
+		try (SpreadsheetDataTarget<?, ?> dataTarget = SpreadsheetTargetFactory.fromFile("/data/test2.xlsx", true)) {
+			writeSampleRecords(dataTarget);
+		}
+		
+		try (SpreadsheetDataTarget<?, ?> dataTarget = SpreadsheetTargetFactory.fromFileWithHeaders("/data/test3.xlsx", true, List.of("header1", "header2"))) {
+			writeSampleRecords(dataTarget);
 		}
 		
 	}
