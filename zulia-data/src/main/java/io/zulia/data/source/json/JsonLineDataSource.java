@@ -41,7 +41,16 @@ public class JsonLineDataSource implements DataSource<JsonDataSourceRecord>, Aut
 
 	@Override
 	public Iterator<JsonDataSourceRecord> iterator() {
-
+		
+		if (next == null) {
+			try {
+				reset();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
 		return new Iterator<>() {
 
 			@Override
