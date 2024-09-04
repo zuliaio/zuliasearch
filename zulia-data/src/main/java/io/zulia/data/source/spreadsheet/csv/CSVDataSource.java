@@ -76,7 +76,17 @@ public class CSVDataSource implements SpreadsheetDataSource<CSVDataSourceRecord>
 
 	@Override
 	public Iterator<CSVDataSourceRecord> iterator() {
-
+		
+		//handles multiple iterations with the same DataSources
+		if (nextRow == null) {
+			try {
+				reset();
+			}
+			catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
 		return new Iterator<>() {
 
 			@Override

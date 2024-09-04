@@ -49,7 +49,17 @@ public class JsonArrayDataSource implements DataSource<JsonDataSourceRecord>, Au
 
 	@Override
 	public Iterator<JsonDataSourceRecord> iterator() {
-
+		
+		if (next == null) {
+			try {
+				reset();
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+		
+		
 		return new Iterator<>() {
 
 			@Override

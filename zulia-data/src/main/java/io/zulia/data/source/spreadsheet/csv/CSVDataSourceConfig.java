@@ -5,8 +5,17 @@ import io.zulia.data.input.DataInputStream;
 import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 
-public class CSVDataSourceConfig {
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.function.Function;
 
+public class CSVDataSourceConfig {
+	
+	private Function<String, Boolean> booleanParser;
+	private Function<String, Date> dateParser;
+	
 	public static CSVDataSourceConfig from(DataInputStream dataStream) {
 		return new CSVDataSourceConfig(dataStream);
 	}
@@ -20,6 +29,17 @@ public class CSVDataSourceConfig {
 
 	private CSVDataSourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
+		this.booleanParser = (s) -> {
+			String lowerCase = s.toLowerCase();
+			return switch (lowerCase) {
+				case "true", "t", "yes", "y", "1" -> true;
+				case "false", "f", "no", "n", "0" -> false;
+				default -> null;
+			};
+		};
+		
+		DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+		this.dateParser = (s) -> Date.from(LocalDate.from(formatter.parse(s)).atStartOfDay().atOffset(ZoneOffset.UTC).toInstant());
 	}
 
 	public CSVDataSourceConfig withDelimiter(char delimiter) {
@@ -50,7 +70,7 @@ public class CSVDataSourceConfig {
 		this.headerConfig = null;
 		return this;
 	}
-
+	
 	public DataInputStream getDataInputStream() {
 		return dataInputStream;
 	}
@@ -69,5 +89,23 @@ public class CSVDataSourceConfig {
 
 	public HeaderConfig getHeaderConfig() {
 		return headerConfig;
+	}
+	
+	public Function<String, Boolean> getBooleanParser() {
+		return booleanParser;
+	}
+	
+	public CSVDataSourceConfig withBooleanParser(Function<String, Boolean> booleanParser) {
+		this.booleanParser = booleanParser;
+		return this;
+	}
+	
+	public Function<String, Date> getDateParser() {
+		return dateParser;
+	}
+	
+	public CSVDataSourceConfig withDateParser(Function<String, Date> dateParser) {
+		this.dateParser = dateParser;
+		return this;
 	}
 }
