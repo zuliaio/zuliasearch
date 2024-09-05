@@ -7,23 +7,23 @@ import java.util.Date;
 import java.util.List;
 import java.util.SequencedSet;
 
-public class CSVDataSourceRecord implements SpreadsheetRecord {
+public class CSVRecord implements SpreadsheetRecord {
 	
 	private final String[] row;
 	private final HeaderMapping headerMapping;
 	
-	private final CSVDataSourceConfig csvDataSourceConfig;
+	private final CSVSourceConfig csvSourceConfig;
 	
-	public CSVDataSourceRecord(String[] row, HeaderMapping headerMapping, CSVDataSourceConfig csvDataSourceConfig) {
+	public CSVRecord(String[] row, HeaderMapping headerMapping, CSVSourceConfig csvSourceConfig) {
 		this.row = row;
 		this.headerMapping = headerMapping;
-		this.csvDataSourceConfig = csvDataSourceConfig;
+		this.csvSourceConfig = csvSourceConfig;
 
 	}
 	
 	public int getIndexFromField(String field) {
 		if (headerMapping == null) {
-			throw new IllegalStateException("Use csvDataSourceConfig.withHeaders() use field names");
+			throw new IllegalStateException("Use csvSourceConfig.withHeaders() use field names");
 		}
 		if (headerMapping.hasHeader(field)) {
 			return headerMapping.getHeaderIndex(field);
@@ -34,7 +34,7 @@ public class CSVDataSourceRecord implements SpreadsheetRecord {
 	@Override
 	public <T> List<T> getList(String key, Class<T> clazz) {
 		String cellValue = getString(key);
-		return csvDataSourceConfig.getDelimitedListHandler().cellValueToList(clazz, cellValue);
+		return csvSourceConfig.getDelimitedListHandler().cellValueToList(clazz, cellValue);
 	}
 	
 	@Override
@@ -44,7 +44,7 @@ public class CSVDataSourceRecord implements SpreadsheetRecord {
 	
 	@Override
 	public Boolean getBoolean(String field) {
-		return parseFromString(field, csvDataSourceConfig.getBooleanParser(), null);
+		return parseFromString(field, csvSourceConfig.getBooleanParser(), null);
 	}
 	
 	@Override
@@ -69,13 +69,13 @@ public class CSVDataSourceRecord implements SpreadsheetRecord {
 	
 	@Override
 	public Date getDate(String field) {
-		return parseFromString(field, csvDataSourceConfig.getDateParser(), null);
+		return parseFromString(field, csvSourceConfig.getDateParser(), null);
 	}
 	
 	@Override
 	public <T> List<T> getList(int index, Class<T> clazz) {
 		String cellValue = getString(index);
-		return csvDataSourceConfig.getDelimitedListHandler().cellValueToList(clazz, cellValue);
+		return csvSourceConfig.getDelimitedListHandler().cellValueToList(clazz, cellValue);
 	}
 	
 	@Override
@@ -85,7 +85,7 @@ public class CSVDataSourceRecord implements SpreadsheetRecord {
 	
 	@Override
 	public Boolean getBoolean(int index) {
-		return parseFromString(index, csvDataSourceConfig.getBooleanParser(), null);
+		return parseFromString(index, csvSourceConfig.getBooleanParser(), null);
 	}
 	
 	@Override
@@ -110,7 +110,7 @@ public class CSVDataSourceRecord implements SpreadsheetRecord {
 	
 	@Override
 	public Date getDate(int index) {
-		return parseFromString(index, csvDataSourceConfig.getDateParser(), null);
+		return parseFromString(index, csvSourceConfig.getDateParser(), null);
 	}
 	
 	public String[] getRow() {

@@ -2,18 +2,18 @@ package io.zulia.data.target.spreadsheet.csv;
 
 import com.univocity.parsers.csv.CsvWriter;
 import io.zulia.data.output.DataOutputStream;
-import io.zulia.data.target.spreadsheet.SpreadsheetDataTargetConfig;
+import io.zulia.data.target.spreadsheet.SpreadsheetTargetConfig;
 import io.zulia.data.target.spreadsheet.csv.formatter.*;
 
-public class CSVDataTargetConfig extends SpreadsheetDataTargetConfig<CsvWriter, CSVDataTargetConfig> {
+public class CSVTargetConfig extends SpreadsheetTargetConfig<CsvWriter, CSVTargetConfig> {
 	
-	public static CSVDataTargetConfig from(DataOutputStream dataStream) {
-		return new CSVDataTargetConfig(dataStream);
+	public static CSVTargetConfig from(DataOutputStream dataStream) {
+		return new CSVTargetConfig(dataStream);
 	}
 	
 	private char delimiter = ',';
 	
-	public CSVDataTargetConfig(DataOutputStream dataStream) {
+	public CSVTargetConfig(DataOutputStream dataStream) {
 		super(dataStream);
 		withStringHandler(new StringCSVWriter());
 		withDateTypeHandler(new DateCSVWriter());
@@ -26,11 +26,11 @@ public class CSVDataTargetConfig extends SpreadsheetDataTargetConfig<CsvWriter, 
 	}
 	
 	@Override
-	protected CSVDataTargetConfig getSelf() {
+	protected CSVTargetConfig getSelf() {
 		return this;
 	}
 	
-	public CSVDataTargetConfig withDelimiter(char delimiter) {
+	public CSVTargetConfig withDelimiter(char delimiter) {
 		this.delimiter = delimiter;
 		return this;
 	}

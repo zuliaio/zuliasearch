@@ -3,54 +3,54 @@ package io.zulia.data.source.spreadsheet;
 import io.zulia.data.common.SpreadsheetType;
 import io.zulia.data.input.DataInputStream;
 import io.zulia.data.input.FileDataInputStream;
-import io.zulia.data.source.spreadsheet.csv.CSVDataSource;
-import io.zulia.data.source.spreadsheet.csv.CSVDataSourceConfig;
-import io.zulia.data.source.spreadsheet.excel.ExcelDataSource;
-import io.zulia.data.source.spreadsheet.excel.ExcelDataSourceConfig;
+import io.zulia.data.source.spreadsheet.csv.CSVSource;
+import io.zulia.data.source.spreadsheet.csv.CSVSourceConfig;
+import io.zulia.data.source.spreadsheet.excel.ExcelSource;
+import io.zulia.data.source.spreadsheet.excel.ExcelSourceConfig;
 
 import java.io.IOException;
 
 public class SpreadsheetSourceFactory {
 	
-	public static SpreadsheetDataSource<?> fromFileWithoutHeaders(String filePath) throws IOException {
+	public static SpreadsheetSource<?> fromFileWithoutHeaders(String filePath) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), false);
 	}
 	
-	public static SpreadsheetDataSource<?> fromFileWithHeaders(String filePath) throws IOException {
+	public static SpreadsheetSource<?> fromFileWithHeaders(String filePath) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), true);
 	}
 	
-	public static SpreadsheetDataSource<?> fromFile(String filePath, boolean hasHeaders) throws IOException {
+	public static SpreadsheetSource<?> fromFile(String filePath, boolean hasHeaders) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), hasHeaders);
 	}
 	
-	public static SpreadsheetDataSource<?> fromStreamWithoutHeaders(DataInputStream dataInputStream) throws IOException {
+	public static SpreadsheetSource<?> fromStreamWithoutHeaders(DataInputStream dataInputStream) throws IOException {
 		return fromStream(dataInputStream, false);
 	}
 	
-	public static SpreadsheetDataSource<?> fromStreamWithHeaders(DataInputStream dataInputStream) throws IOException {
+	public static SpreadsheetSource<?> fromStreamWithHeaders(DataInputStream dataInputStream) throws IOException {
 		return fromStream(dataInputStream, true);
 	}
 	
-	public static SpreadsheetDataSource<?> fromStream(DataInputStream dataInputStream, boolean hasHeaders) throws IOException {
+	public static SpreadsheetSource<?> fromStream(DataInputStream dataInputStream, boolean hasHeaders) throws IOException {
 		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataInputStream.getMeta());
 		
 		if (SpreadsheetType.CSV.equals(spreadsheetType) || SpreadsheetType.TSV.equals(spreadsheetType)) {
-			CSVDataSourceConfig csvDataSourceConfig = CSVDataSourceConfig.from(dataInputStream);
+			CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream);
 			if (hasHeaders) {
-				csvDataSourceConfig.withHeaders();
+				csvSourceConfig.withHeaders();
 			}
 			if (SpreadsheetType.TSV.equals(spreadsheetType)) {
-				csvDataSourceConfig.withDelimiter('\t');
+				csvSourceConfig.withDelimiter('\t');
 			}
-			return CSVDataSource.withConfig(csvDataSourceConfig);
+			return CSVSource.withConfig(csvSourceConfig);
 		}
 		else if (SpreadsheetType.XLSX.equals(spreadsheetType) || SpreadsheetType.XLS.equals(spreadsheetType)) {
-			ExcelDataSourceConfig excelDataSourceConfig = ExcelDataSourceConfig.from(dataInputStream);
+			ExcelSourceConfig excelSourceConfig = ExcelSourceConfig.from(dataInputStream);
 			if (hasHeaders) {
-				excelDataSourceConfig.withHeaders();
+				excelSourceConfig.withHeaders();
 			}
-			return ExcelDataSource.withConfig(excelDataSourceConfig);
+			return ExcelSource.withConfig(excelSourceConfig);
 		}
 		else {
 			throw new IllegalArgumentException("Failed to determine file type from content type <" + dataInputStream.getMeta()

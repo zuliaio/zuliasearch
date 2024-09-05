@@ -5,10 +5,10 @@ import io.zulia.data.input.DataInputStream;
 import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 
-public class ExcelDataSourceConfig {
-
-	public static ExcelDataSourceConfig from(DataInputStream dataStream) {
-		return new ExcelDataSourceConfig(dataStream);
+public class ExcelSourceConfig {
+	
+	public static ExcelSourceConfig from(DataInputStream dataStream) {
+		return new ExcelSourceConfig(dataStream);
 	}
 
 	private DelimitedListHandler delimitedListHandler = new DefaultDelimitedListHandler(';');
@@ -24,36 +24,36 @@ public class ExcelDataSourceConfig {
 		ACTIVE_SHEET,
 		FIRST_SHEET
 	}
-
-	private ExcelDataSourceConfig(DataInputStream dataInputStream) {
+	
+	private ExcelSourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
 	}
-
-	public ExcelDataSourceConfig withHeaders() {
+	
+	public ExcelSourceConfig withHeaders() {
 		return withHeaders(new HeaderConfig());
 	}
-
-	public ExcelDataSourceConfig withHeaders(HeaderConfig headerConfig) {
+	
+	public ExcelSourceConfig withHeaders(HeaderConfig headerConfig) {
 		this.headerConfig = headerConfig;
 		return this;
 	}
-
-	public ExcelDataSourceConfig withoutHeaders() {
+	
+	public ExcelSourceConfig withoutHeaders() {
 		this.headerConfig = null;
 		return this;
 	}
-
-	public ExcelDataSourceConfig withListDelimiter(char listDelimiter) {
+	
+	public ExcelSourceConfig withListDelimiter(char listDelimiter) {
 		this.delimitedListHandler = new DefaultDelimitedListHandler(listDelimiter);
 		return this;
 	}
-
-	public ExcelDataSourceConfig withDelimitedListHandler(DelimitedListHandler delimitedListHandler) {
+	
+	public ExcelSourceConfig withDelimitedListHandler(DelimitedListHandler delimitedListHandler) {
 		this.delimitedListHandler = delimitedListHandler;
 		return this;
 	}
-
-	public ExcelDataSourceConfig withExcelCellHandler(ExcelCellHandler excelCellHandler) {
+	
+	public ExcelSourceConfig withExcelCellHandler(ExcelCellHandler excelCellHandler) {
 		this.excelCellHandler = excelCellHandler;
 		return this;
 	}
@@ -61,8 +61,8 @@ public class ExcelDataSourceConfig {
 	public final OpenHandling getOpenHandling() {
 		return openHandling;
 	}
-
-	public final ExcelDataSourceConfig setOpenHandling(OpenHandling openHandling) {
+	
+	public final ExcelSourceConfig setOpenHandling(OpenHandling openHandling) {
 		this.openHandling = openHandling;
 		return this;
 	}

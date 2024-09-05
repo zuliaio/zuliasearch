@@ -8,7 +8,7 @@ import io.zulia.data.target.spreadsheet.excel.cell.Link;
 import java.util.Collection;
 import java.util.Date;
 
-public abstract class SpreadsheetDataTargetConfig<T, S extends SpreadsheetDataTargetConfig<?, ?>> {
+public abstract class SpreadsheetTargetConfig<T, S extends SpreadsheetTargetConfig<?, ?>> {
 	
 	private final DataOutputStream dataStream;
 	
@@ -25,7 +25,7 @@ public abstract class SpreadsheetDataTargetConfig<T, S extends SpreadsheetDataTa
 	private SpreadsheetTypeHandler<T, Object> defaultTypeHandler;
 	private SpreadsheetTypeHandler<T, String> headerHandler;
 	
-	public SpreadsheetDataTargetConfig(DataOutputStream dataStream) {
+	public SpreadsheetTargetConfig(DataOutputStream dataStream) {
 		this.dataStream = dataStream;
 		withListDelimiter(';');
 	}

@@ -1,18 +1,18 @@
 package io.zulia.data.target.spreadsheet.excel;
 
 import io.zulia.data.output.DataOutputStream;
-import io.zulia.data.target.spreadsheet.SpreadsheetDataTargetConfig;
+import io.zulia.data.target.spreadsheet.SpreadsheetTargetConfig;
 import io.zulia.data.target.spreadsheet.excel.cell.*;
 
-public class ExcelDataTargetConfig extends SpreadsheetDataTargetConfig<CellReference, ExcelDataTargetConfig> {
+public class ExcelTargetConfig extends SpreadsheetTargetConfig<CellReference, ExcelTargetConfig> {
 	
-	public static ExcelDataTargetConfig from(DataOutputStream dataStream) {
-		return new ExcelDataTargetConfig(dataStream);
+	public static ExcelTargetConfig from(DataOutputStream dataStream) {
+		return new ExcelTargetConfig(dataStream);
 	}
 	
 	private String primarySheetName;
 	
-	private ExcelDataTargetConfig(DataOutputStream dataStream) {
+	private ExcelTargetConfig(DataOutputStream dataStream) {
 		super(dataStream);
 		withStringHandler(new StringCellHandler());
 		withDateTypeHandler(new DateCellHandler());
@@ -25,7 +25,7 @@ public class ExcelDataTargetConfig extends SpreadsheetDataTargetConfig<CellRefer
 		
 	}
 	
-	public ExcelDataTargetConfig getSelf() {
+	public ExcelTargetConfig getSelf() {
 		return this;
 	}
 	
@@ -33,7 +33,7 @@ public class ExcelDataTargetConfig extends SpreadsheetDataTargetConfig<CellRefer
 		return primarySheetName;
 	}
 	
-	public ExcelDataTargetConfig withPrimarySheetName(String primarySheetName) {
+	public ExcelTargetConfig withPrimarySheetName(String primarySheetName) {
 		this.primarySheetName = primarySheetName;
 		return this;
 	}

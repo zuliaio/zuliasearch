@@ -5,19 +5,19 @@ import io.zulia.data.input.DataInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-public class JsonLineDataSourceConfig {
+public class JsonLineSourceConfig {
 
 	private final DataInputStream dataInputStream;
 
 	private Charset charset = StandardCharsets.UTF_8;
 
 	private JsonLineParseExceptionHandler exceptionHandler = new ThrowingJsonLineParseExceptionHandler();
-
-	public static JsonLineDataSourceConfig from(DataInputStream dataInputStream) {
-		return new JsonLineDataSourceConfig(dataInputStream);
+	
+	public static JsonLineSourceConfig from(DataInputStream dataInputStream) {
+		return new JsonLineSourceConfig(dataInputStream);
 	}
-
-	private JsonLineDataSourceConfig(DataInputStream dataInputStream) {
+	
+	private JsonLineSourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
 	}
 

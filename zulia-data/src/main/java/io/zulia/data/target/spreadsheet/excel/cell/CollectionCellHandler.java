@@ -2,15 +2,15 @@ package io.zulia.data.target.spreadsheet.excel.cell;
 
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
-import io.zulia.data.target.spreadsheet.excel.ExcelDataTargetConfig;
+import io.zulia.data.target.spreadsheet.excel.ExcelTargetConfig;
 
 import java.util.Collection;
 
 public class CollectionCellHandler implements SpreadsheetTypeHandler<CellReference, Collection<?>> {
 	
-	private final ExcelDataTargetConfig excelDataTargetConfig;
+	private final ExcelTargetConfig excelDataTargetConfig;
 	
-	public CollectionCellHandler(ExcelDataTargetConfig excelDataTargetConfig) {
+	public CollectionCellHandler(ExcelTargetConfig excelDataTargetConfig) {
 		this.excelDataTargetConfig = excelDataTargetConfig;
 	}
 	

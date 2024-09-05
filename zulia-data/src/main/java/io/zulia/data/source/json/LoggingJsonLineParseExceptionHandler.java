@@ -11,7 +11,7 @@ public class LoggingJsonLineParseExceptionHandler implements JsonLineParseExcept
 	}
 
 	@Override
-	public JsonDataSourceRecord handleException(Exception e) {
+	public JsonSourceRecord handleException(Exception e) {
 		log.error(e.getMessage(), e);
 		return null;
 	}

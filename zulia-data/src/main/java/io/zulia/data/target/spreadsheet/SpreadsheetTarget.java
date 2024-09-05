@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
 
-public abstract class SpreadsheetDataTarget<R, C extends SpreadsheetDataTargetConfig<?, ?>> implements AutoCloseable {
+public abstract class SpreadsheetTarget<R, C extends SpreadsheetTargetConfig<?, ?>> implements AutoCloseable {
 	
-	private final SpreadsheetDataTargetConfig<R, C> dataConfig;
+	private final SpreadsheetTargetConfig<R, C> dataConfig;
 	
-	public SpreadsheetDataTarget(SpreadsheetDataTargetConfig<R, C> dataConfig) {
+	public SpreadsheetTarget(SpreadsheetTargetConfig<R, C> dataConfig) {
 		this.dataConfig = dataConfig;
 	}
 	

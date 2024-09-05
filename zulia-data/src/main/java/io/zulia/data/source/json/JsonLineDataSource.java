@@ -9,28 +9,28 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Iterator;
 
-public class JsonLineDataSource implements DataSource<JsonDataSourceRecord>, AutoCloseable {
-	private final JsonLineDataSourceConfig jsonLineDataSourceConfig;
+public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoCloseable {
+	private final JsonLineSourceConfig jsonLineSourceConfig;
 	private BufferedReader reader;
 
 	private String next;
-
-	public static JsonLineDataSource withConfig(JsonLineDataSourceConfig jsonLineDataSourceConfig) throws IOException {
-		return new JsonLineDataSource(jsonLineDataSourceConfig);
+	
+	public static JsonLineDataSource withConfig(JsonLineSourceConfig jsonLineSourceConfig) throws IOException {
+		return new JsonLineDataSource(jsonLineSourceConfig);
 	}
 
 	public static JsonLineDataSource withDefaults(DataInputStream dataInputStream) throws IOException {
-		return withConfig(JsonLineDataSourceConfig.from(dataInputStream));
+		return withConfig(JsonLineSourceConfig.from(dataInputStream));
 	}
-
-	protected JsonLineDataSource(JsonLineDataSourceConfig jsonLineDataSourceConfig) throws IOException {
-		this.jsonLineDataSourceConfig = jsonLineDataSourceConfig;
+	
+	protected JsonLineDataSource(JsonLineSourceConfig jsonLineSourceConfig) throws IOException {
+		this.jsonLineSourceConfig = jsonLineSourceConfig;
 		open();
 	}
 
 	protected void open() throws IOException {
-		InputStream inputStream = jsonLineDataSourceConfig.getDataInputStream().openInputStream();
-		reader = new BufferedReader(new InputStreamReader(inputStream, jsonLineDataSourceConfig.getCharset().newDecoder()));
+		InputStream inputStream = jsonLineSourceConfig.getDataInputStream().openInputStream();
+		reader = new BufferedReader(new InputStreamReader(inputStream, jsonLineSourceConfig.getCharset().newDecoder()));
 		next = reader.readLine();
 	}
 
@@ -40,7 +40,7 @@ public class JsonLineDataSource implements DataSource<JsonDataSourceRecord>, Aut
 	}
 
 	@Override
-	public Iterator<JsonDataSourceRecord> iterator() {
+	public Iterator<JsonSourceRecord> iterator() {
 		
 		if (next == null) {
 			try {
@@ -59,14 +59,14 @@ public class JsonLineDataSource implements DataSource<JsonDataSourceRecord>, Aut
 			}
 
 			@Override
-			public JsonDataSourceRecord next() {
+			public JsonSourceRecord next() {
 				try {
-					JsonDataSourceRecord jsonDataSourceRecord = new JsonDataSourceRecord(next);
+					JsonSourceRecord jsonSourceRecord = new JsonSourceRecord(next);
 					next = reader.readLine();
-					return jsonDataSourceRecord;
+					return jsonSourceRecord;
 				}
 				catch (Exception e) {
-					return jsonLineDataSourceConfig.getExceptionHandler().handleException(e);
+					return jsonLineSourceConfig.getExceptionHandler().handleException(e);
 				}
 			}
 

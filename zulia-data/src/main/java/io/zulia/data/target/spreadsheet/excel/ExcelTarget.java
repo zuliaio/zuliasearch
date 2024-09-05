@@ -2,7 +2,7 @@ package io.zulia.data.target.spreadsheet.excel;
 
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.FileDataOutputStream;
-import io.zulia.data.target.spreadsheet.SpreadsheetDataTarget;
+import io.zulia.data.target.spreadsheet.SpreadsheetTarget;
 import io.zulia.data.target.spreadsheet.excel.cell.CellReference;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
@@ -14,9 +14,9 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
 
-public class ExcelDataTarget extends SpreadsheetDataTarget<CellReference, ExcelDataTargetConfig> {
+public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetConfig> {
 	
-	private final ExcelDataTargetConfig excelDataTargetConfig;
+	private final ExcelTargetConfig excelDataTargetConfig;
 	private final SXSSFWorkbook workbook;
 	private final WorkbookHelper workbookHelper;
 	
@@ -25,23 +25,23 @@ public class ExcelDataTarget extends SpreadsheetDataTarget<CellReference, ExcelD
 	private int rowIdx = 0;
 	private int colIdx = 0;
 	
-	public static ExcelDataTarget withConfig(ExcelDataTargetConfig excelDataTargetConfig) throws IOException {
-		return new ExcelDataTarget(excelDataTargetConfig);
+	public static ExcelTarget withConfig(ExcelTargetConfig excelDataTargetConfig) throws IOException {
+		return new ExcelTarget(excelDataTargetConfig);
 	}
 	
-	public static ExcelDataTarget withDefaults(DataOutputStream dataOutputStream) throws IOException {
-		return withConfig(ExcelDataTargetConfig.from(dataOutputStream));
+	public static ExcelTarget withDefaults(DataOutputStream dataOutputStream) throws IOException {
+		return withConfig(ExcelTargetConfig.from(dataOutputStream));
 	}
 	
-	public static ExcelDataTarget withDefaultsFromFile(String path, boolean overwrite) throws IOException {
+	public static ExcelTarget withDefaultsFromFile(String path, boolean overwrite) throws IOException {
 		return withDefaults(FileDataOutputStream.from(path, overwrite));
 	}
 	
-	public static ExcelDataTarget withDefaultsFromFile(String path, boolean overwrite, Collection<String> headers) throws IOException {
-		return withConfig(ExcelDataTargetConfig.from(FileDataOutputStream.from(path, overwrite)).withHeaders(headers));
+	public static ExcelTarget withDefaultsFromFile(String path, boolean overwrite, Collection<String> headers) throws IOException {
+		return withConfig(ExcelTargetConfig.from(FileDataOutputStream.from(path, overwrite)).withHeaders(headers));
 	}
 	
-	protected ExcelDataTarget(ExcelDataTargetConfig excelDataTargetConfig) throws IOException {
+	protected ExcelTarget(ExcelTargetConfig excelDataTargetConfig) throws IOException {
 		super(excelDataTargetConfig);
 		this.excelDataTargetConfig = excelDataTargetConfig;
 		this.workbook = new SXSSFWorkbook();

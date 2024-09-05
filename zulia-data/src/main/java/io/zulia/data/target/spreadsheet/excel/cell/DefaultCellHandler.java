@@ -1,13 +1,13 @@
 package io.zulia.data.target.spreadsheet.excel.cell;
 
 import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
-import io.zulia.data.target.spreadsheet.excel.ExcelDataTargetConfig;
+import io.zulia.data.target.spreadsheet.excel.ExcelTargetConfig;
 
 public class DefaultCellHandler implements SpreadsheetTypeHandler<CellReference, Object> {
 	
-	private final ExcelDataTargetConfig excelDataTargetConfig;
+	private final ExcelTargetConfig excelDataTargetConfig;
 	
-	public DefaultCellHandler(ExcelDataTargetConfig excelDataTargetConfig) {
+	public DefaultCellHandler(ExcelTargetConfig excelDataTargetConfig) {
 		this.excelDataTargetConfig = excelDataTargetConfig;
 	}
 	

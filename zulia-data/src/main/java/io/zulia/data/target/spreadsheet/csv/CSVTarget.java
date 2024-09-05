@@ -4,35 +4,35 @@ import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.FileDataOutputStream;
-import io.zulia.data.target.spreadsheet.SpreadsheetDataTarget;
+import io.zulia.data.target.spreadsheet.SpreadsheetTarget;
 
 import java.io.IOException;
 import java.util.Collection;
 
-public class CSVDataTarget extends SpreadsheetDataTarget<CsvWriter, CSVDataTargetConfig> {
+public class CSVTarget extends SpreadsheetTarget<CsvWriter, CSVTargetConfig> {
 	
 	private final CsvWriterSettings settings;
-	private final CSVDataTargetConfig csvDataTargetConfig;
+	private final CSVTargetConfig csvDataTargetConfig;
 	
 	private CsvWriter csvWriter;
 	
-	public static CSVDataTarget withConfig(CSVDataTargetConfig csvDataTargetConfig) throws IOException {
-		return new CSVDataTarget(csvDataTargetConfig);
+	public static CSVTarget withConfig(CSVTargetConfig csvDataTargetConfig) throws IOException {
+		return new CSVTarget(csvDataTargetConfig);
 	}
 	
-	public static CSVDataTarget withDefaults(DataOutputStream dataOutputStream) throws IOException {
-		return withConfig(CSVDataTargetConfig.from(dataOutputStream));
+	public static CSVTarget withDefaults(DataOutputStream dataOutputStream) throws IOException {
+		return withConfig(CSVTargetConfig.from(dataOutputStream));
 	}
 	
-	public static CSVDataTarget withDefaultsFromFile(String path, boolean overwrite) throws IOException {
+	public static CSVTarget withDefaultsFromFile(String path, boolean overwrite) throws IOException {
 		return withDefaults(FileDataOutputStream.from(path, overwrite));
 	}
 	
-	public static CSVDataTarget withDefaultsFromFile(String path, boolean overwrite, Collection<String> headers) throws IOException {
-		return withConfig(CSVDataTargetConfig.from(FileDataOutputStream.from(path, overwrite)).withHeaders(headers));
+	public static CSVTarget withDefaultsFromFile(String path, boolean overwrite, Collection<String> headers) throws IOException {
+		return withConfig(CSVTargetConfig.from(FileDataOutputStream.from(path, overwrite)).withHeaders(headers));
 	}
 	
-	protected CSVDataTarget(CSVDataTargetConfig csvDataTargetConfig) throws IOException {
+	protected CSVTarget(CSVTargetConfig csvDataTargetConfig) throws IOException {
 		super(csvDataTargetConfig);
 		this.csvDataTargetConfig = csvDataTargetConfig;
 		settings = new CsvWriterSettings();
