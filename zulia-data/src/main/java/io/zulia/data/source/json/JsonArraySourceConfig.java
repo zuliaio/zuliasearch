@@ -5,17 +5,17 @@ import io.zulia.data.input.DataInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-public class JsonArrayDataSourceConfig {
+public class JsonArraySourceConfig {
 
 	private final DataInputStream dataInputStream;
 
 	private Charset charset = StandardCharsets.UTF_8;
-
-	public static JsonArrayDataSourceConfig from(DataInputStream dataInputStream) {
-		return new JsonArrayDataSourceConfig(dataInputStream);
+	
+	public static JsonArraySourceConfig from(DataInputStream dataInputStream) {
+		return new JsonArraySourceConfig(dataInputStream);
 	}
-
-	private JsonArrayDataSourceConfig(DataInputStream dataInputStream) {
+	
+	private JsonArraySourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
 	}
 

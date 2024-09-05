@@ -1,9 +1,9 @@
 package io.zulia.data.test;
 
-import io.zulia.data.target.spreadsheet.SpreadsheetDataTarget;
+import io.zulia.data.target.spreadsheet.SpreadsheetTarget;
 import io.zulia.data.target.spreadsheet.SpreadsheetTargetFactory;
-import io.zulia.data.target.spreadsheet.csv.CSVDataTarget;
-import io.zulia.data.target.spreadsheet.excel.ExcelDataTarget;
+import io.zulia.data.target.spreadsheet.csv.CSVTarget;
+import io.zulia.data.target.spreadsheet.excel.ExcelTarget;
 import io.zulia.data.target.spreadsheet.excel.cell.Link;
 
 import java.io.IOException;
@@ -16,40 +16,41 @@ public class DataTargetExamples {
 	public static void main(String[] args) throws IOException {
 		
 		List<String> headers = List.of("string column", "number", "decimal number", "boolean column", "list column", "link column", "some date");
-		try (CSVDataTarget csvDataTarget = CSVDataTarget.withDefaultsFromFile("/data/test.csv", true, headers)) {
-			writeSampleRecords(csvDataTarget);
+		try (CSVTarget csvTarget = CSVTarget.withDefaultsFromFile("/data/test.csv", true, headers)) {
+			writeSampleRecords(csvTarget);
 		}
-		try (ExcelDataTarget excelDataTarget = ExcelDataTarget.withDefaultsFromFile("/data/test.xlsx", true, headers)) {
-			writeSampleRecords(excelDataTarget);
-		}
-		
-		try (SpreadsheetDataTarget<?, ?> dataTarget = SpreadsheetTargetFactory.fromFile("/data/test2.xlsx", true)) {
-			writeSampleRecords(dataTarget);
+		try (ExcelTarget excelTarget = ExcelTarget.withDefaultsFromFile("/data/test.xlsx", true, headers)) {
+			writeSampleRecords(excelTarget);
 		}
 		
-		try (SpreadsheetDataTarget<?, ?> dataTarget = SpreadsheetTargetFactory.fromFileWithHeaders("/data/test3.xlsx", true, List.of("header1", "header2"))) {
-			writeSampleRecords(dataTarget);
+		try (SpreadsheetTarget<?, ?> spreadsheetTarget = SpreadsheetTargetFactory.fromFile("/data/test2.xlsx", true)) {
+			writeSampleRecords(spreadsheetTarget);
+		}
+		
+		try (SpreadsheetTarget<?, ?> spreadsheetTarget = SpreadsheetTargetFactory.fromFileWithHeaders("/data/test3.xlsx", true,
+						List.of("header1", "header2"))) {
+			writeSampleRecords(spreadsheetTarget);
 		}
 		
 	}
 	
-	private static void writeSampleRecords(SpreadsheetDataTarget<?, ?> spreadsheetDataTarget) {
-		spreadsheetDataTarget.appendValue("some string");
-		spreadsheetDataTarget.appendValue(132);
-		spreadsheetDataTarget.appendValue(10.332443f);
-		spreadsheetDataTarget.appendValue(true);
-		spreadsheetDataTarget.appendValue(List.of("a", "b", "c"));
-		spreadsheetDataTarget.appendValue(new Link("google", "https://www.google.com")); //label is ignored by CSV by default
-		spreadsheetDataTarget.appendValue(new Date());
-		spreadsheetDataTarget.finishRow();
+	private static void writeSampleRecords(SpreadsheetTarget<?, ?> spreadsheetTarget) {
+		spreadsheetTarget.appendValue("some string");
+		spreadsheetTarget.appendValue(132);
+		spreadsheetTarget.appendValue(10.332443f);
+		spreadsheetTarget.appendValue(true);
+		spreadsheetTarget.appendValue(List.of("a", "b", "c"));
+		spreadsheetTarget.appendValue(new Link("google", "https://www.google.com")); //label is ignored by CSV by default
+		spreadsheetTarget.appendValue(new Date());
+		spreadsheetTarget.finishRow();
 		
-		spreadsheetDataTarget.appendValue("another string");
-		spreadsheetDataTarget.appendValue(4443232333L);
-		spreadsheetDataTarget.appendValue(10.33343432);
-		spreadsheetDataTarget.appendValue(false);
-		spreadsheetDataTarget.appendValue(Set.of("x", "y", "z"));
-		spreadsheetDataTarget.appendValue(new Link("yahoo", "https://www.yahoo.com")); //label is ignored by CSV by default
-		spreadsheetDataTarget.appendValue(new Date());
-		spreadsheetDataTarget.finishRow();
+		spreadsheetTarget.appendValue("another string");
+		spreadsheetTarget.appendValue(4443232333L);
+		spreadsheetTarget.appendValue(10.33343432);
+		spreadsheetTarget.appendValue(false);
+		spreadsheetTarget.appendValue(Set.of("x", "y", "z"));
+		spreadsheetTarget.appendValue(new Link("yahoo", "https://www.yahoo.com")); //label is ignored by CSV by default
+		spreadsheetTarget.appendValue(new Date());
+		spreadsheetTarget.finishRow();
 	}
 }

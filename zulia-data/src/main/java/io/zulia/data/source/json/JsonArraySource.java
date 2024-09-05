@@ -9,30 +9,30 @@ import io.zulia.data.source.DataSource;
 import java.io.IOException;
 import java.util.Iterator;
 
-public class JsonArrayDataSource implements DataSource<JsonDataSourceRecord>, AutoCloseable {
-	private final JsonArrayDataSourceConfig jsonArrayDataSourceConfig;
+public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoCloseable {
+	private final JsonArraySourceConfig jsonArraySourceConfig;
 
 	private String next;
 	private JsonParser parser;
 
 	private final ObjectMapper mapper = new ObjectMapper();
-
-	public static JsonArrayDataSource withConfig(JsonArrayDataSourceConfig jsonArrayDataSourceConfig) throws IOException {
-		return new JsonArrayDataSource(jsonArrayDataSourceConfig);
+	
+	public static JsonArraySource withConfig(JsonArraySourceConfig jsonArraySourceConfig) throws IOException {
+		return new JsonArraySource(jsonArraySourceConfig);
 	}
-
-	public static JsonArrayDataSource withDefaults(DataInputStream dataInputStream) throws IOException {
-		return withConfig(JsonArrayDataSourceConfig.from(dataInputStream));
+	
+	public static JsonArraySource withDefaults(DataInputStream dataInputStream) throws IOException {
+		return withConfig(JsonArraySourceConfig.from(dataInputStream));
 	}
-
-	protected JsonArrayDataSource(JsonArrayDataSourceConfig jsonArrayDataSourceConfig) throws IOException {
-		this.jsonArrayDataSourceConfig = jsonArrayDataSourceConfig;
+	
+	protected JsonArraySource(JsonArraySourceConfig jsonArraySourceConfig) throws IOException {
+		this.jsonArraySourceConfig = jsonArraySourceConfig;
 		open();
 	}
 
 	protected void open() throws IOException {
-
-		parser = mapper.getFactory().createParser(jsonArrayDataSourceConfig.getDataInputStream().openInputStream());
+		
+		parser = mapper.getFactory().createParser(jsonArraySourceConfig.getDataInputStream().openInputStream());
 		if (parser.nextToken() != JsonToken.START_ARRAY) {
 			throw new IllegalStateException("Expected an array");
 		}
@@ -48,7 +48,7 @@ public class JsonArrayDataSource implements DataSource<JsonDataSourceRecord>, Au
 	}
 
 	@Override
-	public Iterator<JsonDataSourceRecord> iterator() {
+	public Iterator<JsonSourceRecord> iterator() {
 		
 		if (next == null) {
 			try {
@@ -68,8 +68,8 @@ public class JsonArrayDataSource implements DataSource<JsonDataSourceRecord>, Au
 			}
 
 			@Override
-			public JsonDataSourceRecord next() {
-				JsonDataSourceRecord jsonDataSourceRecord = new JsonDataSourceRecord(next);
+			public JsonSourceRecord next() {
+				JsonSourceRecord jsonSourceRecord = new JsonSourceRecord(next);
 				try {
 					if (parser.nextToken() == JsonToken.START_OBJECT) {
 						next = mapper.readTree(parser).toString();
@@ -82,7 +82,7 @@ public class JsonArrayDataSource implements DataSource<JsonDataSourceRecord>, Au
 					System.out.println(e.getMessage());
 					//throw new RuntimeException(e);
 				}
-				return jsonDataSourceRecord;
+				return jsonSourceRecord;
 			}
 
 			@Override

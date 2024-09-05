@@ -10,19 +10,19 @@ import java.util.Date;
 import java.util.List;
 import java.util.SequencedSet;
 
-public class ExcelDataSourceRecord implements SpreadsheetRecord {
+public class ExcelRecord implements SpreadsheetRecord {
 
 	private final Row row;
 
 	private final DelimitedListHandler delimitedListHandler;
 	private final ExcelCellHandler excelCellHandler;
 	private final SheetInfo sheetInfo;
-
-	public ExcelDataSourceRecord(Row row, SheetInfo sheetInfo, ExcelDataSourceConfig excelDataSourceConfig) {
+	
+	public ExcelRecord(Row row, SheetInfo sheetInfo, ExcelSourceConfig excelSourceConfig) {
 		this.row = row;
 		this.sheetInfo = sheetInfo;
-		this.delimitedListHandler = excelDataSourceConfig.getDelimitedListHandler();
-		this.excelCellHandler = excelDataSourceConfig.getExcelCellHandler();
+		this.delimitedListHandler = excelSourceConfig.getDelimitedListHandler();
+		this.excelCellHandler = excelSourceConfig.getExcelCellHandler();
 	}
 
 	public int getIndexFromField(String field) {

@@ -7,11 +7,11 @@ import org.bson.Document;
 import java.util.Date;
 import java.util.List;
 
-public class JsonDataSourceRecord implements DataSourceRecord {
+public class JsonSourceRecord implements DataSourceRecord {
 
 	private final Document document;
-
-	public JsonDataSourceRecord(String json) {
+	
+	public JsonSourceRecord(String json) {
 		document = Document.parse(json);
 	}
 

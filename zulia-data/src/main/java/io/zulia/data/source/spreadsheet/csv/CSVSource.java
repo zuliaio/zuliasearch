@@ -5,7 +5,7 @@ import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.input.DataInputStream;
-import io.zulia.data.source.spreadsheet.SpreadsheetDataSource;
+import io.zulia.data.source.spreadsheet.SpreadsheetSource;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -13,28 +13,28 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.SequencedSet;
 
-public class CSVDataSource implements SpreadsheetDataSource<CSVDataSourceRecord>, AutoCloseable {
-
-	private final CSVDataSourceConfig csvDataSourceConfig;
+public class CSVSource implements SpreadsheetSource<CSVRecord>, AutoCloseable {
+	
+	private final CSVSourceConfig csvSourceConfig;
 	private final CsvParser csvParser;
 
 	private String[] nextRow;
 	private HeaderMapping headerMapping;
-
-	public static CSVDataSource withConfig(CSVDataSourceConfig csvDataSourceConfig) throws IOException {
-		return new CSVDataSource(csvDataSourceConfig);
+	
+	public static CSVSource withConfig(CSVSourceConfig csvSourceConfig) throws IOException {
+		return new CSVSource(csvSourceConfig);
 	}
-
-	public static CSVDataSource withDefaults(DataInputStream dataInputStream) throws IOException {
-		return withConfig(CSVDataSourceConfig.from(dataInputStream));
+	
+	public static CSVSource withDefaults(DataInputStream dataInputStream) throws IOException {
+		return withConfig(CSVSourceConfig.from(dataInputStream));
 	}
-
-	protected CSVDataSource(CSVDataSourceConfig csvDataSourceConfig) throws IOException {
-		this.csvDataSourceConfig = csvDataSourceConfig;
+	
+	protected CSVSource(CSVSourceConfig csvSourceConfig) throws IOException {
+		this.csvSourceConfig = csvSourceConfig;
 		CsvParserSettings parserSettings = new CsvParserSettings();
 		parserSettings.setLineSeparatorDetectionEnabled(true);
 		CsvFormat csvFormat = new CsvFormat();
-		csvFormat.setDelimiter(csvDataSourceConfig.getDelimiter());
+		csvFormat.setDelimiter(csvSourceConfig.getDelimiter());
 		parserSettings.setFormat(csvFormat);
 		parserSettings.setMaxCharsPerColumn(100_000_000);
 		parserSettings.setMaxColumns(10_000);
@@ -48,12 +48,12 @@ public class CSVDataSource implements SpreadsheetDataSource<CSVDataSourceRecord>
 	}
 
 	protected void open() throws IOException {
-		csvParser.beginParsing(new BufferedInputStream(csvDataSourceConfig.getDataInputStream().openInputStream()));
-
-		if (csvDataSourceConfig.hasHeaders()) {
+		csvParser.beginParsing(new BufferedInputStream(csvSourceConfig.getDataInputStream().openInputStream()));
+		
+		if (csvSourceConfig.hasHeaders()) {
 
 			String[] headerRow = csvParser.parseNext();
-			headerMapping = new HeaderMapping(csvDataSourceConfig.getHeaderConfig(), Arrays.stream(headerRow).toList());
+			headerMapping = new HeaderMapping(csvSourceConfig.getHeaderConfig(), Arrays.stream(headerRow).toList());
 
 		}
 
@@ -75,7 +75,7 @@ public class CSVDataSource implements SpreadsheetDataSource<CSVDataSourceRecord>
 	}
 
 	@Override
-	public Iterator<CSVDataSourceRecord> iterator() {
+	public Iterator<CSVRecord> iterator() {
 		
 		//handles multiple iterations with the same DataSources
 		if (nextRow == null) {
@@ -95,8 +95,8 @@ public class CSVDataSource implements SpreadsheetDataSource<CSVDataSourceRecord>
 			}
 
 			@Override
-			public CSVDataSourceRecord next() {
-				CSVDataSourceRecord csvDataSourceRecord = new CSVDataSourceRecord(nextRow, headerMapping, csvDataSourceConfig);
+			public CSVRecord next() {
+				CSVRecord csvDataSourceRecord = new CSVRecord(nextRow, headerMapping, csvSourceConfig);
 				nextRow = csvParser.parseNext();
 				return csvDataSourceRecord;
 			}

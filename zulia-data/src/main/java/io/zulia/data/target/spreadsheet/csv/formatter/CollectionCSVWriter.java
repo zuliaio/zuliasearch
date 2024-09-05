@@ -3,15 +3,15 @@ package io.zulia.data.target.spreadsheet.csv.formatter;
 import com.univocity.parsers.csv.CsvWriter;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
-import io.zulia.data.target.spreadsheet.csv.CSVDataTargetConfig;
+import io.zulia.data.target.spreadsheet.csv.CSVTargetConfig;
 
 import java.util.Collection;
 
 public class CollectionCSVWriter implements SpreadsheetTypeHandler<CsvWriter, Collection<?>> {
 	
-	private final CSVDataTargetConfig csvDataTargetConfig;
+	private final CSVTargetConfig csvDataTargetConfig;
 	
-	public CollectionCSVWriter(CSVDataTargetConfig csvDataTargetConfig) {
+	public CollectionCSVWriter(CSVTargetConfig csvDataTargetConfig) {
 		this.csvDataTargetConfig = csvDataTargetConfig;
 	}
 	

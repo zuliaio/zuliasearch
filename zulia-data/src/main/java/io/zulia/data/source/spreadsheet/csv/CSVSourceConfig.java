@@ -11,13 +11,13 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.function.Function;
 
-public class CSVDataSourceConfig {
+public class CSVSourceConfig {
 	
 	private Function<String, Boolean> booleanParser;
 	private Function<String, Date> dateParser;
 	
-	public static CSVDataSourceConfig from(DataInputStream dataStream) {
-		return new CSVDataSourceConfig(dataStream);
+	public static CSVSourceConfig from(DataInputStream dataStream) {
+		return new CSVSourceConfig(dataStream);
 	}
 
 	private final DataInputStream dataInputStream;
@@ -26,8 +26,8 @@ public class CSVDataSourceConfig {
 	private HeaderConfig headerConfig;
 
 	private DelimitedListHandler delimitedListHandler = new DefaultDelimitedListHandler(';');
-
-	private CSVDataSourceConfig(DataInputStream dataInputStream) {
+	
+	private CSVSourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
 		this.booleanParser = (s) -> {
 			String lowerCase = s.toLowerCase();
@@ -41,32 +41,32 @@ public class CSVDataSourceConfig {
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 		this.dateParser = (s) -> Date.from(LocalDate.from(formatter.parse(s)).atStartOfDay().atOffset(ZoneOffset.UTC).toInstant());
 	}
-
-	public CSVDataSourceConfig withDelimiter(char delimiter) {
+	
+	public CSVSourceConfig withDelimiter(char delimiter) {
 		this.delimiter = delimiter;
 		return this;
 	}
-
-	public CSVDataSourceConfig withListDelimiter(char listDelimiter) {
+	
+	public CSVSourceConfig withListDelimiter(char listDelimiter) {
 		this.delimitedListHandler = new DefaultDelimitedListHandler(listDelimiter);
 		return this;
 	}
-
-	public CSVDataSourceConfig withDelimitedListHandler(DelimitedListHandler delimitedListHandler) {
+	
+	public CSVSourceConfig withDelimitedListHandler(DelimitedListHandler delimitedListHandler) {
 		this.delimitedListHandler = delimitedListHandler;
 		return this;
 	}
-
-	public CSVDataSourceConfig withHeaders() {
+	
+	public CSVSourceConfig withHeaders() {
 		return withHeaders(new HeaderConfig());
 	}
-
-	public CSVDataSourceConfig withHeaders(HeaderConfig headerConfig) {
+	
+	public CSVSourceConfig withHeaders(HeaderConfig headerConfig) {
 		this.headerConfig = headerConfig;
 		return this;
 	}
-
-	public CSVDataSourceConfig withoutHeaders() {
+	
+	public CSVSourceConfig withoutHeaders() {
 		this.headerConfig = null;
 		return this;
 	}
@@ -95,7 +95,7 @@ public class CSVDataSourceConfig {
 		return booleanParser;
 	}
 	
-	public CSVDataSourceConfig withBooleanParser(Function<String, Boolean> booleanParser) {
+	public CSVSourceConfig withBooleanParser(Function<String, Boolean> booleanParser) {
 		this.booleanParser = booleanParser;
 		return this;
 	}
@@ -104,7 +104,7 @@ public class CSVDataSourceConfig {
 		return dateParser;
 	}
 	
-	public CSVDataSourceConfig withDateParser(Function<String, Date> dateParser) {
+	public CSVSourceConfig withDateParser(Function<String, Date> dateParser) {
 		this.dateParser = dateParser;
 		return this;
 	}

@@ -4,7 +4,7 @@ import io.zulia.cmd.common.ShowStackArgs;
 import io.zulia.cmd.common.ZuliaCommonCmd;
 import io.zulia.cmd.common.ZuliaVersionProvider;
 import io.zulia.data.output.FileDataOutputStream;
-import io.zulia.data.target.spreadsheet.csv.CSVDataTarget;
+import io.zulia.data.target.spreadsheet.csv.CSVTarget;
 import io.zulia.testing.ZuliaTestRunner;
 import io.zulia.testing.config.ZuliaTestConfig;
 import io.zulia.testing.result.TestResult;
@@ -50,7 +50,7 @@ public class ZuliaTest implements Callable<Integer> {
 				FileDataOutputStream dataOutputStream = FileDataOutputStream.from(testOutput, true);
 
 				boolean anyFailed = false;
-				try (CSVDataTarget csvDataTarget = CSVDataTarget.withDefaults(dataOutputStream)) {
+				try (CSVTarget csvDataTarget = CSVTarget.withDefaults(dataOutputStream)) {
 					for (TestResult testResult : testResults) {
 						csvDataTarget.writeRow(testResult.getTestId(), testResult.isPassed() ? "PASS" : "FAIL");
 						if (!testResult.isPassed()) {

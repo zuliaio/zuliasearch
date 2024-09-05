@@ -1,16 +1,16 @@
 package io.zulia.data.test;
 
 import io.zulia.data.input.FileDataInputStream;
-import io.zulia.data.source.spreadsheet.SpreadsheetDataSource;
 import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
+import io.zulia.data.source.spreadsheet.SpreadsheetSource;
 import io.zulia.data.source.spreadsheet.SpreadsheetSourceFactory;
-import io.zulia.data.source.spreadsheet.csv.CSVDataSource;
-import io.zulia.data.source.spreadsheet.csv.CSVDataSourceConfig;
-import io.zulia.data.source.spreadsheet.csv.CSVDataSourceRecord;
+import io.zulia.data.source.spreadsheet.csv.CSVRecord;
+import io.zulia.data.source.spreadsheet.csv.CSVSource;
+import io.zulia.data.source.spreadsheet.csv.CSVSourceConfig;
 import io.zulia.data.source.spreadsheet.excel.DefaultExcelCellHandler;
-import io.zulia.data.source.spreadsheet.excel.ExcelDataSource;
-import io.zulia.data.source.spreadsheet.excel.ExcelDataSourceConfig;
-import io.zulia.data.source.spreadsheet.excel.ExcelDataSourceRecord;
+import io.zulia.data.source.spreadsheet.excel.ExcelRecord;
+import io.zulia.data.source.spreadsheet.excel.ExcelSource;
+import io.zulia.data.source.spreadsheet.excel.ExcelSourceConfig;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
@@ -24,7 +24,7 @@ public class DataSourceExamples {
 	public void genericSpreadsheetHandling() throws IOException {
 		
 		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.csv"); // xls, csv and tsv also supported by SpreadsheetSourceFactory
-		try (SpreadsheetDataSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) { //reads first line as headers
+		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) { //reads first line as headers
 			// optionally do something with the headers but not required to use headers below
 			SequencedSet<String> headers = dataSource.getHeaders();
 			
@@ -39,7 +39,7 @@ public class DataSourceExamples {
 			}
 		}
 		
-		try (SpreadsheetDataSource<?> dataSource = SpreadsheetSourceFactory.fromFileWithHeaders("/data/test.csv")) {  // concise version of above
+		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromFileWithHeaders("/data/test.csv")) {  // concise version of above
 			
 			// two (or more) passes are supported by the iterator
 			
@@ -60,32 +60,32 @@ public class DataSourceExamples {
 		// manual configuration allows more flexibility than generic by more verbose
 		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.tsv");
 		
-		CSVDataSourceConfig csvDataSourceConfig = CSVDataSourceConfig.from(dataInputStream).withHeaders();
+		CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream).withHeaders();
 		
 		//optionally configure these below
-		csvDataSourceConfig.withDelimiter('\t'); // set delimiter
-		csvDataSourceConfig.withListDelimiter(';'); // if reading a cell as a list, split on this, defaults to ;
-		csvDataSourceConfig.withDateParser(s -> {
+		csvSourceConfig.withDelimiter('\t'); // set delimiter
+		csvSourceConfig.withListDelimiter(';'); // if reading a cell as a list, split on this, defaults to ;
+		csvSourceConfig.withDateParser(s -> {
 			// by default dates in format yyyy-mm-dd are supported;
 			// implement specialized date parsing here
 			return null;
 		});
-		csvDataSourceConfig.withBooleanParser(s -> {
+		csvSourceConfig.withBooleanParser(s -> {
 			// by default true,t,1,yes,y,false,f,0,no,n are supported
 			// implement specialized boolean parsing here
 			return null;
 		});
 		
-		try (CSVDataSource csvDataSource = CSVDataSource.withConfig(csvDataSourceConfig)) {
-			for (CSVDataSourceRecord csvDataSourceRecord : csvDataSource) {
+		try (CSVSource csvSource = CSVSource.withConfig(csvSourceConfig)) {
+			for (CSVRecord csvRecord : csvSource) {
 				// Standard handling
-				String firstColumn = csvDataSourceRecord.getString(0); // access value in first column not relying on headers
-				String title = csvDataSourceRecord.getString("title"); // can access by header name because headers were read on open
-				Integer year = csvDataSourceRecord.getInt("year");
-				Float rating = csvDataSourceRecord.getFloat("rating");
-				Boolean recommended = csvDataSourceRecord.getBoolean("recommended");
-				Date dateAdded = csvDataSourceRecord.getDate("dateAdded");
-				List<String> labels = csvDataSourceRecord.getList("labels", String.class);
+				String firstColumn = csvRecord.getString(0); // access value in first column not relying on headers
+				String title = csvRecord.getString("title"); // can access by header name because headers were read on open
+				Integer year = csvRecord.getInt("year");
+				Float rating = csvRecord.getFloat("rating");
+				Boolean recommended = csvRecord.getBoolean("recommended");
+				Date dateAdded = csvRecord.getDate("dateAdded");
+				List<String> labels = csvRecord.getList("labels", String.class);
 				
 				// no special handling for CSV
 			}
@@ -94,12 +94,12 @@ public class DataSourceExamples {
 	
 	public void manualConfigurationWithExcel() throws IOException {
 		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.xlsx"); // xlsx and xls are supported;
-		ExcelDataSourceConfig excelDataSourceConfig = ExcelDataSourceConfig.from(dataInputStream).withHeaders();
+		ExcelSourceConfig excelSourceConfig = ExcelSourceConfig.from(dataInputStream).withHeaders();
 		
-		excelDataSourceConfig.withListDelimiter(';');
+		excelSourceConfig.withListDelimiter(';');
 		
 		// default is DefaultExcelCellHandler but a complete custom implementation can be given or can override individual methods
-		excelDataSourceConfig.withExcelCellHandler(new DefaultExcelCellHandler() {
+		excelSourceConfig.withExcelCellHandler(new DefaultExcelCellHandler() {
 			@Override
 			public Boolean cellToBoolean(Cell cell) {
 				// override boolean handling
@@ -113,22 +113,22 @@ public class DataSourceExamples {
 			}
 		});
 		
-		try (ExcelDataSource dataSource = ExcelDataSource.withConfig(excelDataSourceConfig)) {
+		try (ExcelSource excelSource = ExcelSource.withConfig(excelSourceConfig)) {
 			
-			for (ExcelDataSourceRecord excelDataSourceRecord : dataSource) {
+			for (ExcelRecord excelRecord : excelSource) {
 				
 				// Standard handling
-				String firstColumn = excelDataSourceRecord.getString(0); // access value in first column not relying on headers
-				String title = excelDataSourceRecord.getString("title"); // can access by header name because headers were read on open
-				Integer year = excelDataSourceRecord.getInt("year");
-				Float rating = excelDataSourceRecord.getFloat("rating");
-				Boolean recommended = excelDataSourceRecord.getBoolean("recommended");
-				Date dateAdded = excelDataSourceRecord.getDate("dateAdded");
-				List<String> labels = excelDataSourceRecord.getList("labels", String.class);
+				String firstColumn = excelRecord.getString(0); // access value in first column not relying on headers
+				String title = excelRecord.getString("title"); // can access by header name because headers were read on open
+				Integer year = excelRecord.getInt("year");
+				Float rating = excelRecord.getFloat("rating");
+				Boolean recommended = excelRecord.getBoolean("recommended");
+				Date dateAdded = excelRecord.getDate("dateAdded");
+				List<String> labels = excelRecord.getList("labels", String.class);
 				
 				//Excel specific
-				Row nativeRow = excelDataSourceRecord.getNativeRow();
-				Cell titleCell = excelDataSourceRecord.getCell("title");
+				Row nativeRow = excelRecord.getNativeRow();
+				Cell titleCell = excelRecord.getCell("title");
 			}
 			
 		}

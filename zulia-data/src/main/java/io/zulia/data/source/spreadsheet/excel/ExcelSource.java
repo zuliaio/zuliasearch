@@ -2,7 +2,7 @@ package io.zulia.data.source.spreadsheet.excel;
 
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.input.DataInputStream;
-import io.zulia.data.source.spreadsheet.SpreadsheetDataSource;
+import io.zulia.data.source.spreadsheet.SpreadsheetSource;
 import org.apache.poi.openxml4j.util.ZipInputStreamZipEntrySource;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.util.IOUtils;
@@ -11,7 +11,7 @@ import org.apache.poi.util.LocaleUtil;
 import java.io.IOException;
 import java.util.*;
 
-public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRecord>, AutoCloseable {
+public class ExcelSource implements SpreadsheetSource<ExcelRecord>, AutoCloseable {
 	
 	static {
 		LocaleUtil.setUserTimeZone(LocaleUtil.TIMEZONE_UTC);
@@ -19,7 +19,7 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 		ZipInputStreamZipEntrySource.setThresholdBytesForTempFiles(256_000_000);
 	}
 	
-	private final ExcelDataSourceConfig excelDataSourceConfig;
+	private final ExcelSourceConfig excelSourceConfig;
 	private int numberOfRowsForSheet;
 	
 	private int currentRow;
@@ -28,19 +28,19 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 	
 	private SheetInfo sheetInfo;
 	
-	public static ExcelDataSource withConfig(ExcelDataSourceConfig excelDataSourceConfig) throws IOException {
-		return new ExcelDataSource(excelDataSourceConfig);
+	public static ExcelSource withConfig(ExcelSourceConfig excelSourceConfig) throws IOException {
+		return new ExcelSource(excelSourceConfig);
 	}
 	
-	public static ExcelDataSource withDefaults(DataInputStream dataInputStream) throws IOException {
-		return withConfig(ExcelDataSourceConfig.from(dataInputStream));
+	public static ExcelSource withDefaults(DataInputStream dataInputStream) throws IOException {
+		return withConfig(ExcelSourceConfig.from(dataInputStream));
 	}
 	
-	protected ExcelDataSource(ExcelDataSourceConfig excelDataSourceConfig) throws IOException {
-		this.excelDataSourceConfig = excelDataSourceConfig;
+	protected ExcelSource(ExcelSourceConfig excelSourceConfig) throws IOException {
+		this.excelSourceConfig = excelSourceConfig;
 		open();
 		
-		if (Objects.equals(ExcelDataSourceConfig.OpenHandling.ACTIVE_SHEET, excelDataSourceConfig.getOpenHandling())) {
+		if (Objects.equals(ExcelSourceConfig.OpenHandling.ACTIVE_SHEET, excelSourceConfig.getOpenHandling())) {
 			switchSheet(reader.getActiveSheetIndex());
 		}
 		else {
@@ -50,7 +50,7 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 	}
 	
 	public void open() throws IOException {
-		reader = WorkbookFactory.create(excelDataSourceConfig.getDataInputStream().openInputStream());
+		reader = WorkbookFactory.create(excelSourceConfig.getDataInputStream().openInputStream());
 	}
 	
 	public String getActiveSheetName() {
@@ -65,13 +65,13 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 		return reader.getNumberOfSheets();
 	}
 	
-	public ExcelDataSource switchSheet(int index) {
+	public ExcelSource switchSheet(int index) {
 		sheet = reader.getSheetAt(index);
 		initializeSheet();
 		return this;
 	}
 	
-	public ExcelDataSource switchSheet(String name) {
+	public ExcelSource switchSheet(String name) {
 		sheet = reader.getSheet(name);
 		initializeSheet();
 		return this;
@@ -97,8 +97,8 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 		
 		int numberOfColumns = row.getLastCellNum();
 		
-		if (excelDataSourceConfig.hasHeaders()) {
-			ExcelCellHandler excelCellHandler = excelDataSourceConfig.getExcelCellHandler();
+		if (excelSourceConfig.hasHeaders()) {
+			ExcelCellHandler excelCellHandler = excelSourceConfig.getExcelCellHandler();
 			
 			List<String> headerRow = new ArrayList<>();
 			Row header = sheet.getRow(0);
@@ -108,7 +108,7 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 					headerRow.add(excelCellHandler.cellToString(cell));
 				}
 			}
-			sheetInfo = new SheetInfo(numberOfColumns, numberOfRowsForSheet, new HeaderMapping(excelDataSourceConfig.getHeaderConfig(), headerRow));
+			sheetInfo = new SheetInfo(numberOfColumns, numberOfRowsForSheet, new HeaderMapping(excelSourceConfig.getHeaderConfig(), headerRow));
 		}
 		else {
 			sheetInfo = new SheetInfo(numberOfColumns, numberOfRowsForSheet, null);
@@ -123,16 +123,16 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 	}
 	
 	private int getStartRow() {
-		return excelDataSourceConfig.hasHeaders() ? 1 : 0;
+		return excelSourceConfig.hasHeaders() ? 1 : 0;
 	}
 	
-	public ExcelDataSource setRow(int newRow) {
+	public ExcelSource setRow(int newRow) {
 		currentRow = newRow;
 		return this;
 	}
 	
 	@Override
-	public Iterator<ExcelDataSourceRecord> iterator() {
+	public Iterator<ExcelRecord> iterator() {
 		
 		if (currentRow != getStartRow()) {
 			reset();
@@ -146,10 +146,10 @@ public class ExcelDataSource implements SpreadsheetDataSource<ExcelDataSourceRec
 			}
 			
 			@Override
-			public ExcelDataSourceRecord next() {
+			public ExcelRecord next() {
 				Row next = sheet.getRow(currentRow);
 				currentRow++;
-				return new ExcelDataSourceRecord(next, sheetInfo, excelDataSourceConfig);
+				return new ExcelRecord(next, sheetInfo, excelSourceConfig);
 			}
 			
 			@Override
