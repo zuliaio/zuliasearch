@@ -42,6 +42,6 @@ public class DefaultDelimitedListHandler implements DelimitedListHandler {
 
 	@Override
 	public String collectionToCellValue(Collection<?> collection) {
-		return Joiner.on(listDelimiter).join(collection);
+		return Joiner.on(listDelimiter).useForNull("").join(collection);
 	}
 }
