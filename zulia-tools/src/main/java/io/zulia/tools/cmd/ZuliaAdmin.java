@@ -19,7 +19,7 @@ public class ZuliaAdmin {
 	@CommandLine.Mixin
 	private ShowStackArgs showStackArgs;
 
-	public ZuliaWorkPool getConnection() throws Exception {
+	public ZuliaWorkPool getConnection() {
 		return connectionInfo.getConnection();
 	}
 
