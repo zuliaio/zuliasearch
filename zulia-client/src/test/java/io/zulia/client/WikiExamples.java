@@ -48,11 +48,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class WikiExamples {
-	public void simpleClient() throws Exception {
+	public void simpleClient() {
 		ZuliaWorkPool zuliaWorkPool = new ZuliaWorkPool(new ZuliaPoolConfig().addNode("someIp"));
 	}
 
-	public void fullClient() throws Exception {
+	public void fullClient() {
 		ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
 		zuliaPoolConfig.addNode("someIp");
 		//optionally give ports if not default values

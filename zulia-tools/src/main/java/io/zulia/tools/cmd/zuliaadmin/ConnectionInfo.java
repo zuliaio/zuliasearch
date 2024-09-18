@@ -15,7 +15,7 @@ public class ConnectionInfo {
 	@CommandLine.Option(names = "--routing", description = "Use smart routing to route request to the correct node (do not use with ssh port forwarding)")
 	public boolean routingEnabled;
 
-	public ZuliaWorkPool getConnection() throws Exception {
+	public ZuliaWorkPool getConnection() {
 		ZuliaPoolConfig config = new ZuliaPoolConfig().addNode(address, port).setRoutingEnabled(routingEnabled).setNodeUpdateEnabled(routingEnabled);
 		return new ZuliaWorkPool(config);
 	}

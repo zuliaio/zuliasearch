@@ -107,7 +107,7 @@ public class TestHelper {
 		throw new RuntimeException("No nodes are defined, ");
 	}
 
-	public static ZuliaWorkPool createClient() throws Exception {
+	public static ZuliaWorkPool createClient() {
 
 		ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
 		for (ZuliaBase.Node node : NODE_SERVICE.getNodes()) {

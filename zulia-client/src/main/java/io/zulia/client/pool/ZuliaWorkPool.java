@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 
 public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 
-	public ZuliaWorkPool(ZuliaPoolConfig zuliaPoolConfig) throws Exception {
+	public ZuliaWorkPool(ZuliaPoolConfig zuliaPoolConfig) {
 		super(zuliaPoolConfig);
 	}
 
