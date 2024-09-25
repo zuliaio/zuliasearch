@@ -64,7 +64,7 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 		SXSSFCell cell = getNextCell();
 		return new CellReference(workbookHelper, cell);
 	}
-	
+
 	public SXSSFCell getNextCell() {
 		if (this.row == null) {
 			this.row = this.sheet.createRow(this.rowIdx);
@@ -79,7 +79,7 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 		colIdx = 0;
 		row = null;
 	}
-	
+
 	public void newSheet(String sheetName) {
 		newSheet(sheetName, null);
 	}

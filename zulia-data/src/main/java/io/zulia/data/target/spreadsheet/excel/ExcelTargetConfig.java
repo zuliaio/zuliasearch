@@ -2,7 +2,16 @@ package io.zulia.data.target.spreadsheet.excel;
 
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.target.spreadsheet.SpreadsheetTargetConfig;
-import io.zulia.data.target.spreadsheet.excel.cell.*;
+import io.zulia.data.target.spreadsheet.excel.cell.BoldCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.BooleanCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.CellReference;
+import io.zulia.data.target.spreadsheet.excel.cell.CollectionCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.DateCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.DefaultCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.HeaderCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.LinkCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.NumberCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.StringCellHandler;
 
 public class ExcelTargetConfig extends SpreadsheetTargetConfig<CellReference, ExcelTargetConfig> {
 	
@@ -22,7 +31,7 @@ public class ExcelTargetConfig extends SpreadsheetTargetConfig<CellReference, Ex
 		withBooleanTypeHandler(new BooleanCellHandler());
 		withCollectionHandler(new CollectionCellHandler(this));
 		withHeaderHandler(new HeaderCellHandler());
-		
+		withBoldHandler(new BoldCellHandler());
 	}
 	
 	public ExcelTargetConfig getSelf() {
