@@ -48,7 +48,7 @@ public class DataTargetExamples {
 			excelTarget.finishRow();
 			
 			excelTarget.appendValue(2);
-			excelTarget.appendValue("Tigers");
+			excelTarget.appendValue(excelTargetConfig.getBoldHandler(), "Tigers");
 			excelTarget.finishRow();
 			
 			excelTarget.appendValue(3);
@@ -86,5 +86,9 @@ public class DataTargetExamples {
 		spreadsheetTarget.appendValue(new Link("yahoo", "https://www.yahoo.com")); //label is ignored by CSV by default
 		spreadsheetTarget.appendValue(new Date());
 		spreadsheetTarget.finishRow();
+	}
+
+	public static void main(String[] args) throws IOException {
+		new DataTargetExamples().excelTarget();
 	}
 }
