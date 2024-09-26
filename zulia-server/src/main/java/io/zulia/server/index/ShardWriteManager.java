@@ -37,7 +37,7 @@ public class ShardWriteManager {
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 
-	record WarmInfo(boolean needsWarming, Long lastChanged) {
+	record WarmInfo(boolean needsWarming, Long lastChanged, Long lastCommit) {
 
 	}
 
@@ -164,7 +164,7 @@ public class ShardWriteManager {
 
 		if (lastWarm == null) {
 			// never warmed so needs warmed
-			return new WarmInfo(true, lastChange);
+			return new WarmInfo(true, lastChange, lastCommit);
 		}
 
 		if (lastCommit != null && lastChange != null) { // if there has been a change to the index and a commit
@@ -173,15 +173,19 @@ public class ShardWriteManager {
 				if (timeSinceLastCommit > msAfterCommitToWarm) {
 					//if the last commit is after the last warming
 					boolean needsWarm = lastCommit > lastWarm;
-					return new WarmInfo(needsWarm, lastChange);
+					return new WarmInfo(needsWarm, lastChange, lastCommit);
 				}
 			}
 		}
 
-		return new WarmInfo(false, lastChange);
+		return new WarmInfo(false, lastChange, lastCommit);
 	}
 
-	public Long lastChanged() {
+	public Long getLastChanged() {
+		return lastChange;
+	}
+
+	public Long getLastCommit() {
 		return lastChange;
 	}
 
