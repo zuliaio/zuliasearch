@@ -37,6 +37,10 @@ public class ShardWriteManager {
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 
+	record WarmInfo(boolean needsWarming, Long lastChanged) {
+
+	}
+
 	public ShardWriteManager(int shardNumber, Path pathToIndex, Path pathToTaxoIndex, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
 
@@ -148,7 +152,7 @@ public class ShardWriteManager {
 		return false;
 	}
 
-	public boolean needsSearchWarming() {
+	public WarmInfo needsSearchWarming() {
 		long currentTime = System.currentTimeMillis();
 
 		long msAfterCommitToWarm = indexConfig.getIndexSettings().getIdleTimeWithoutCommit() * 1000L;
@@ -159,7 +163,8 @@ public class ShardWriteManager {
 		Long lastWarm = this.lastWarm;
 
 		if (lastWarm == null) {
-			return true;
+			// never warmed so needs warmed
+			return new WarmInfo(true, lastChange);
 		}
 
 		if (lastCommit != null && lastChange != null) { // if there has been a change to the index and a commit
@@ -167,12 +172,17 @@ public class ShardWriteManager {
 				long timeSinceLastCommit = currentTime - lastCommit;
 				if (timeSinceLastCommit > msAfterCommitToWarm) {
 					//if the last commit is after the last warming
-					return lastCommit > lastWarm;
+					boolean needsWarm = lastCommit > lastWarm;
+					return new WarmInfo(needsWarm, lastChange);
 				}
 			}
 		}
 
-		return false;
+		return new WarmInfo(false, lastChange);
+	}
+
+	public Long lastChanged() {
+		return lastChange;
 	}
 
 	public void searchesWarmed() {
