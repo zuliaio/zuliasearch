@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -94,20 +95,29 @@ public class ZuliaShard {
 
 	public void tryWarmSearches(ZuliaIndex zuliaIndex, boolean primary) {
 
-
 		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 
-		if (shardWriteManager.needsSearchWarming()) {
-
+		WarmInfo warmInfo = shardWriteManager.needsSearchWarming();
+		if (warmInfo.needsWarming()) {
+			LOG.info("Started warming searching for index {}", indexName);
 			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
 
-			//TODO detect if searches change while warming and make sure we A) stop warming the old searches, B) make sure not to mark the searches warmed so the new searches get warmed
 			for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
 				MasterSlaveSettings primaryReplicaSettings = warmingSearch.getMasterSlaveSettings();
 				boolean shardNeedsWarmForSearch = (primary ? usesPrimary : usesReplica).contains(primaryReplicaSettings);
 
 				if (unloaded) {
+					return;
+				}
+
+				// has the index changed since we made the decision to start warming ?
+				if (!Objects.equals(warmInfo.lastChanged(), shardWriteManager.getLastChanged())) {
+					LOG.info("Index {} changed: canceling warming", indexName);
+					return;
+				}
+				if (!Objects.equals(warmInfo.lastCommit(), shardWriteManager.getLastCommit())) {
+					LOG.info("Index {} commited: canceling warming", indexName);
 					return;
 				}
 
@@ -123,12 +133,11 @@ public class ZuliaShard {
 					}
 				}
 
-				if (!shardWriteManager.needsSearchWarming()) {
-					break;
-				}
+
 			}
 
 			shardWriteManager.searchesWarmed();
+			LOG.info("Finished warming searching for index {}", indexName);
 		}
 	}
 

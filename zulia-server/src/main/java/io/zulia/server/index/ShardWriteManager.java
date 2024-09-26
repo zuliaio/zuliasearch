@@ -148,7 +148,7 @@ public class ShardWriteManager {
 		return false;
 	}
 
-	public boolean needsSearchWarming() {
+	public WarmInfo needsSearchWarming() {
 		long currentTime = System.currentTimeMillis();
 
 		long msAfterCommitToWarm = indexConfig.getIndexSettings().getIdleTimeWithoutCommit() * 1000L;
@@ -159,7 +159,8 @@ public class ShardWriteManager {
 		Long lastWarm = this.lastWarm;
 
 		if (lastWarm == null) {
-			return true;
+			// never warmed so needs warmed
+			return new WarmInfo(true, lastChange, lastCommit);
 		}
 
 		if (lastCommit != null && lastChange != null) { // if there has been a change to the index and a commit
@@ -167,12 +168,21 @@ public class ShardWriteManager {
 				long timeSinceLastCommit = currentTime - lastCommit;
 				if (timeSinceLastCommit > msAfterCommitToWarm) {
 					//if the last commit is after the last warming
-					return lastCommit > lastWarm;
+					boolean needsWarm = lastCommit > lastWarm;
+					return new WarmInfo(needsWarm, lastChange, lastCommit);
 				}
 			}
 		}
 
-		return false;
+		return new WarmInfo(false, lastChange, lastCommit);
+	}
+
+	public Long getLastChanged() {
+		return lastChange;
+	}
+
+	public Long getLastCommit() {
+		return lastCommit;
 	}
 
 	public void searchesWarmed() {
