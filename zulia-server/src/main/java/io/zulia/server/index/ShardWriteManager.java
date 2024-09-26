@@ -37,10 +37,6 @@ public class ShardWriteManager {
 	private IndexWriter indexWriter;
 	private DirectoryTaxonomyWriter taxoWriter;
 
-	record WarmInfo(boolean needsWarming, Long lastChanged, Long lastCommit) {
-
-	}
-
 	public ShardWriteManager(int shardNumber, Path pathToIndex, Path pathToTaxoIndex, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
 

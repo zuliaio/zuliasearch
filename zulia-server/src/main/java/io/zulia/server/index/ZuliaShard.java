@@ -98,7 +98,7 @@ public class ZuliaShard {
 		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 
-		ShardWriteManager.WarmInfo warmInfo = shardWriteManager.needsSearchWarming();
+		WarmInfo warmInfo = shardWriteManager.needsSearchWarming();
 		if (warmInfo.needsWarming()) {
 			LOG.info("Started warming searching for index {}", indexName);
 			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
