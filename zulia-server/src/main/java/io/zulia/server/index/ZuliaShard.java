@@ -112,7 +112,7 @@ public class ZuliaShard {
 				}
 
 				// has the index changed since we made the decision to start warming ?
-				if (Objects.equals(warmInfo.lastChanged(), shardWriteManager.lastChanged())) {
+				if (!Objects.equals(warmInfo.lastChanged(), shardWriteManager.lastChanged())) {
 					LOG.info("Index {} changed: canceling warming", indexName);
 					return;
 				}
