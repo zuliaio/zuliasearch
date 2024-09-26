@@ -128,7 +128,9 @@ distributions {
                 into("bin/autocomplete")
             }
 
-            fileMode = 777
+            filePermissions {
+                unix(777)
+            }
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
 
