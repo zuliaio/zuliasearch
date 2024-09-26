@@ -186,7 +186,7 @@ public class ShardWriteManager {
 	}
 
 	public Long getLastCommit() {
-		return lastChange;
+		return lastCommit;
 	}
 
 	public void searchesWarmed() {
