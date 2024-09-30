@@ -13,7 +13,7 @@ import java.util.concurrent.Callable;
 
 @CommandLine.Command(name = "addNode", description = "Add node to the cluster based on the zulia config given")
 public class AddNodeCmd implements Callable<Integer> {
-    public static final Logger LOG = LoggerFactory.getLogger(RemoveNodeCmd.class);
+	public static final Logger LOG = LoggerFactory.getLogger(AddNodeCmd.class);
     @CommandLine.ParentCommand
     private ZuliaD zuliadCmd;
 
