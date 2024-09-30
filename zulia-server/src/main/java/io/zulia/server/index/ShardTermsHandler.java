@@ -127,11 +127,10 @@ public class ShardTermsHandler {
 
 						BytesRef text = termsEnum.term();
 
-						handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
-
-						while ((text = termsEnum.next()) != null) {
+						do {
 							handleTerm(termsMap, termsEnum, text, termFilter, termMatch);
 						}
+						while ((text = termsEnum.next()) != null);
 
 					}
 					else {
