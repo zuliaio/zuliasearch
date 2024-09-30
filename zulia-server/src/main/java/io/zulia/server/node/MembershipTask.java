@@ -3,7 +3,6 @@ package io.zulia.server.node;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
-import io.zulia.server.index.ZuliaIndexManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +20,7 @@ import java.util.stream.Collectors;
 
 public abstract class MembershipTask extends TimerTask {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ZuliaIndexManager.class);
+	private static final Logger LOG = LoggerFactory.getLogger(MembershipTask.class);
 	//a node is no longer considered alive if it has not updated its heartbeat for this number of seconds
 	public static final int MAX_HEARTBEAT_LAG_SECONDS = 30;
 	private final NodeService nodeService;

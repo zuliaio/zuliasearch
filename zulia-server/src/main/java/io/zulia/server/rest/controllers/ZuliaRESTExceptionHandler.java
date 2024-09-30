@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 @Requires(classes = { Throwable.class, ExceptionHandler.class })
 public class ZuliaRESTExceptionHandler implements ExceptionHandler<Throwable, HttpResponse<?>> {
-	private static final Logger LOG = LoggerFactory.getLogger(Throwable.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ZuliaRESTExceptionHandler.class);
 
 	@Override
 	public HttpResponse<?> handle(HttpRequest request, Throwable throwable) {
