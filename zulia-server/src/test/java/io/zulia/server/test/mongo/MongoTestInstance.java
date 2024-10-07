@@ -46,7 +46,7 @@ public class MongoTestInstance {
 
 			port = de.flapdoodle.net.Net.freeServerPort(de.flapdoodle.net.Net.getLocalHost());
 			running = Mongod.builder().processOutput(Start.to(ProcessOutput.class).initializedWith(processOutput))
-					.net(Start.to(Net.class).initializedWith(Net.defaults().withPort(port))).build().start(Version.Main.V6_0);
+					.net(Start.to(Net.class).initializedWith(Net.defaults().withPort(port))).build().start(Version.Main.V7_0);
 			testInstanceUrl = buildTestInstanceUrl();
 
 		}

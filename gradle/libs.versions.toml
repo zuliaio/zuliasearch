@@ -3,7 +3,7 @@ grpc = "1.62.2"
 lucene = "9.12.0"
 koloboke = "1.0.0"
 micronaut = "4.5.1" # used by the micronaut plugin configuration
-mongodb = "4.11.1"
+mongodb = "5.2.0"
 picocli = "4.7.5"
 poi = "5.2.5"
 protobuf = "3.25.3"
@@ -17,7 +17,7 @@ bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
 commons-compress = { module = "org.apache.commons:commons-compress", version = "1.26.1" }
 commons-pool2 = { module = "org.apache.commons:commons-pool2", version = "2.11.1" }
-flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.12.2" }
+flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.17.0" }
 guava = { module = "com.google.guava:guava", version = "32.1.3-jre" }
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
