@@ -1,5 +1,5 @@
 [versions]
-grpc = "1.62.2"
+grpc = "1.67.1"
 lucene = "9.12.0"
 koloboke = "1.0.0"
 micronaut = "4.5.1" # used by the micronaut plugin configuration
@@ -62,7 +62,7 @@ poi = { module = "org.apache.poi:poi", version.ref = "poi" }
 poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 simplemagic = { module = "com.j256.simplemagic:simplemagic", version = "1.17" }
-sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.2" }
+sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.3" }
 slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.9" }
 snake-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
 snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.5" }
