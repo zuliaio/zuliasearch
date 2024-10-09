@@ -9,8 +9,8 @@ import picocli.CommandLine;
 
 @CommandLine.Command(name = "zuliaadmin", subcommands = { DisplayNodesCmd.class, DisplayIndexesCmd.class, DocCountCmd.class, ClearIndexCmd.class,
 		DeleteIndexCmd.class, OptimizeIndexCmd.class, ReindexCmd.class, CreateAliasCmd.class, DeleteAliasCmd.class, DisplayAliasesCmd.class,
-		ExportAliasesCmd.class, ImportAliasesCmd.class, StoreAssociatedFileCmd.class,
-		FetchAssociatedFileCmd.class }, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
+		ExportAliasesCmd.class, ImportAliasesCmd.class, StoreAssociatedFileCmd.class, FetchAssociatedFileCmd.class,
+		DisplayIndexCmd.class }, mixinStandardHelpOptions = true, versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaAdmin {
 
 	@CommandLine.Mixin
