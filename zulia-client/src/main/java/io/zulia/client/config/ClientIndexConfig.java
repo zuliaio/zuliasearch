@@ -284,6 +284,10 @@ public class ClientIndexConfig {
 		return this;
 	}
 
+	public TreeMap<String, ZuliaIndex.FieldMapping> getFieldMappingMap() {
+		return fieldMappingMap;
+	}
+
 	public IndexSettings getIndexSettings() {
 		IndexSettings.Builder isb = IndexSettings.newBuilder();
 
