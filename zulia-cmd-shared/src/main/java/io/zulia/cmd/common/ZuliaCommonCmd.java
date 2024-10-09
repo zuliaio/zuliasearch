@@ -31,6 +31,7 @@ public class ZuliaCommonCmd {
 	public static void runCommandLine(Object object, String[] args) {
 
 		int exitCode = new CommandLine(object).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
+				.setCaseInsensitiveEnumValuesAllowed(true)
 				.setExecutionExceptionHandler(new SelectiveStackTraceHandler()).setTrimQuotes(true).setColorScheme(COLOR_SCHEME).execute(args);
 
 		if (exitCode != 0) { // don't close daemon on success, java will close in other cases
