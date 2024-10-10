@@ -519,6 +519,7 @@ public class ZuliaIndexManager {
 					}
 				}
 
+				//TODO(Ian): Check if there was a change before resetting the warming (not compatible w/
 				List<QueryRequest> warmingSearches = updateWithAction(updateIndexSettings.getWarmingSearchesOperation(), existingWarmingSearch, warmingSearch,
 						QueryRequest::getSearchLabel);
 				existingSettings.clearWarmingSearches();

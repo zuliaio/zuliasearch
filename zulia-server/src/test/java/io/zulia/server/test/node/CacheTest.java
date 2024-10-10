@@ -112,7 +112,8 @@ public class CacheTest {
 	@Order(3)
 	public void searchTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		Thread.sleep(2000);
+		// Sleep needed because post-update warming takes a long time now since it can (and does) reset after writes based on file io
+		Thread.sleep(10000);
 
 		Search search;
 		SearchResult searchResult;
@@ -272,7 +273,8 @@ public class CacheTest {
 				.addCountFacet(new CountFacet("rating").setTopN(3)));
 		zuliaWorkPool.updateIndex(updateIndex);
 
-		Thread.sleep(2000);
+		// Sleep needed because post-update warming takes a long time now since it can (and does) reset after writes based on file io
+		Thread.sleep(10000);
 
 		search = new Search(CACHE_TEST);
 		search.addQuery(new FilterQuery("rating:[2.0 TO 3.5]"));
@@ -294,6 +296,8 @@ public class CacheTest {
 	@Test
 	@Order(6)
 	public void confirm() throws Exception {
+		// Sleep needed because post-update warming takes a long time now since it can (and does) reset after writes based on file io
+		Thread.sleep(10000);
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search;
 		SearchResult searchResult;
