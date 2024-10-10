@@ -158,8 +158,7 @@ public class ShardWriteManager {
 
 		if (lastWarm == null) {
 			// never warmed so needs warmed and the index is idle
-			boolean idle = lastChange == null ||
-					(Math.abs(currentTime - lastChange) > 1000L && (lastCommit == null || (lastCommit > lastChange)));
+			boolean idle = lastChange == null || (Math.abs(currentTime - lastChange) > 1000L && (lastCommit == null || (lastCommit > lastChange)));
 			return new WarmInfo(idle, lastChange, lastCommit);
 		}
 
