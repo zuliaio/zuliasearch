@@ -20,12 +20,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class CacheTest {
-	private final static Logger LOG = LoggerFactory.getLogger(CacheTest.class);
 
 	@RegisterExtension
 	static final NodeExtension nodeExtension = new NodeExtension(1);
