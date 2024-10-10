@@ -146,7 +146,6 @@ public class ZuliaShard {
 					}
 				}
 
-
 			}
 
 			// has the index changed since we made the decision to start warming ?
