@@ -148,10 +148,8 @@ public class ShardWriteManager {
 		return false;
 	}
 
-	public WarmInfo needsSearchWarming() {
+	public WarmInfo needsSearchWarming(long lastestShardTime) {
 		long currentTime = System.currentTimeMillis();
-
-		long msAfterCommitToWarm = indexConfig.getIndexSettings().getIdleTimeWithoutCommit() * 1000L;
 
 		//reassign so it can't change in the middle of the logic
 		Long lastChange = this.lastChange;
@@ -159,17 +157,15 @@ public class ShardWriteManager {
 		Long lastWarm = this.lastWarm;
 
 		if (lastWarm == null) {
-			// never warmed so needs warmed
-			return new WarmInfo(true, lastChange, lastCommit);
+			// never warmed so needs warmed and the index is idle
+			boolean idle = lastChange == null || (Math.abs(currentTime - lastChange) > 1000L && (lastCommit == null || (lastCommit > lastChange)));
+			return new WarmInfo(idle, lastChange, lastCommit);
 		}
 
 		if (lastCommit != null && lastChange != null) { // if there has been a change to the index and a commit
 			if (lastChange < lastCommit) { // no changes since last commit
-				long timeSinceLastCommit = currentTime - lastCommit;
-				if (timeSinceLastCommit > msAfterCommitToWarm) {
-					//if the last commit is after the last warming
-					boolean needsWarm = lastCommit > lastWarm;
-					return new WarmInfo(needsWarm, lastChange, lastCommit);
+				if (lastWarm < lastestShardTime) { // Change is committed AND shard reader has been reopened
+					return new WarmInfo(true, lastChange, lastCommit);
 				}
 			}
 		}
@@ -185,8 +181,12 @@ public class ShardWriteManager {
 		return lastCommit;
 	}
 
-	public void searchesWarmed() {
-		lastWarm = System.currentTimeMillis();
+	public Long getLastWarm() {
+		return lastWarm;
+	}
+
+	public void searchesWarmed(long time) {
+		lastWarm = time;
 	}
 
 	public boolean markedChangedCheckIfCommitNeeded() {

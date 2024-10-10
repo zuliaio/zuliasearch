@@ -82,8 +82,7 @@ public class ZuliaShard {
 		}
 
 		shardWriteManager.commit();
-		shardReaderManager.maybeRefresh();
-
+		shardReaderManager.maybeRefreshBlocking();
 	}
 
 	public void tryIdleCommit() throws IOException {
@@ -98,8 +97,18 @@ public class ZuliaShard {
 		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 
-		WarmInfo warmInfo = shardWriteManager.needsSearchWarming();
+		long lastestShardTime = shardReaderManager.getLatestShardTime();
+		WarmInfo warmInfo = shardWriteManager.needsSearchWarming(lastestShardTime);
 		if (warmInfo.needsWarming()) {
+
+			try {
+				shardReaderManager.maybeRefreshBlocking();
+			}
+			catch (Exception e) {
+				LOG.error("Failed to refresh shard reader: ", e);
+				throw new RuntimeException(e);
+			}
+
 			LOG.info("Started warming searching for index {}", indexName);
 			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
 
@@ -120,6 +129,10 @@ public class ZuliaShard {
 					LOG.info("Index {} commited: canceling warming", indexName);
 					return;
 				}
+				if (lastestShardTime != shardReaderManager.getLatestShardTime()) {
+					LOG.info("Index {} reloaded: canceling warming", indexName);
+					return;
+				}
 
 				if (shardNeedsWarmForSearch) {
 					try {
@@ -133,10 +146,25 @@ public class ZuliaShard {
 					}
 				}
 
-
 			}
 
-			shardWriteManager.searchesWarmed();
+			// has the index changed since we made the decision to start warming ?
+			if (!Objects.equals(warmInfo.lastChanged(), shardWriteManager.getLastChanged())) {
+				LOG.info("Index {} changed: canceling warming", indexName);
+				return;
+			}
+			if (!Objects.equals(warmInfo.lastCommit(), shardWriteManager.getLastCommit())) {
+				LOG.info("Index {} commited: canceling warming", indexName);
+				return;
+			}
+
+			long warmTime = System.currentTimeMillis();
+			if (lastestShardTime != shardReaderManager.getLatestShardTime()) {
+				LOG.info("Index {} reloaded: canceling warming", indexName);
+				return;
+			}
+
+			shardWriteManager.searchesWarmed(warmTime);
 			LOG.info("Finished warming searching for index {}", indexName);
 		}
 	}

@@ -6,8 +6,11 @@ import java.io.IOException;
 
 public class ShardReaderManager extends ReferenceManager<ShardReader> {
 
+	private long latestShardTime;
+
 	public ShardReaderManager(ShardReader initial) {
 		this.current = initial;
+		this.latestShardTime = initial.getCreationTime();
 	}
 
 	@Override
@@ -17,7 +20,12 @@ public class ShardReaderManager extends ReferenceManager<ShardReader> {
 
 	@Override
 	protected ShardReader refreshIfNeeded(ShardReader referenceToRefresh) throws IOException {
-		return referenceToRefresh.refreshIfNeeded();
+		// Evaluate last build time for outside decision making
+		ShardReader next = referenceToRefresh.refreshIfNeeded();
+		if (next != null) {
+			latestShardTime = next.getCreationTime();
+		}
+		return next;
 	}
 
 	@Override
@@ -30,4 +38,7 @@ public class ShardReaderManager extends ReferenceManager<ShardReader> {
 		return reference.getRefCount();
 	}
 
+	public long getLatestShardTime() {
+		return latestShardTime;
+	}
 }

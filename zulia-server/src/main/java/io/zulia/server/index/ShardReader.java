@@ -61,12 +61,14 @@ public class ShardReader implements AutoCloseable {
 	private final ServerIndexConfig indexConfig;
 	private final String indexName;
 	private final int shardNumber;
+	private final long creationTime;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> pinnedQueryResultCache;
 
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
+		this.creationTime = System.currentTimeMillis();
 		this.shardNumber = shardNumber;
 		this.indexReader = indexReader;
 		this.taxoReader = taxoReader;
@@ -81,6 +83,10 @@ public class ShardReader implements AutoCloseable {
 	public void close() throws Exception {
 		indexReader.close();
 		taxoReader.close();
+	}
+
+	public long getCreationTime() {
+		return creationTime;
 	}
 
 	public int getTotalFacets() {
