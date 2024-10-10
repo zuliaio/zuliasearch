@@ -48,11 +48,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 public class ShardReader implements AutoCloseable {
@@ -78,7 +76,8 @@ public class ShardReader implements AutoCloseable {
 		this.indexName = indexConfig.getIndexName();
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).recordStats().build();
-		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().build();	}
+		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().build();
+	}
 
 	@Override
 	public void close() throws Exception {
