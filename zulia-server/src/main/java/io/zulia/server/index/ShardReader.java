@@ -48,9 +48,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.function.Consumer;
 
 public class ShardReader implements AutoCloseable {
@@ -61,12 +63,14 @@ public class ShardReader implements AutoCloseable {
 	private final ServerIndexConfig indexConfig;
 	private final String indexName;
 	private final int shardNumber;
+	private final long creationTime;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> pinnedQueryResultCache;
 
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
+		this.creationTime = System.currentTimeMillis();
 		this.shardNumber = shardNumber;
 		this.indexReader = indexReader;
 		this.taxoReader = taxoReader;
@@ -74,13 +78,16 @@ public class ShardReader implements AutoCloseable {
 		this.indexName = indexConfig.getIndexName();
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).recordStats().build();
-		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().build();
-	}
+		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().build();	}
 
 	@Override
 	public void close() throws Exception {
 		indexReader.close();
 		taxoReader.close();
+	}
+
+	public long getCreationTime() {
+		return creationTime;
 	}
 
 	public int getTotalFacets() {
