@@ -541,7 +541,7 @@ public class ZuliaIndex {
 		}
 
 		if (clauses.size() == 1) {
-			return clauses.getFirst().getQuery();
+			return clauses.getFirst().query();
 		}
 
 		BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
