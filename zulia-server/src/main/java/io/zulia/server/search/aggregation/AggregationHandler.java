@@ -120,12 +120,12 @@ public class AggregationHandler {
 
 		for (MatchingDocs hits : matchingDocs) {
 
-			LeafReader reader = hits.context.reader();
+			LeafReader reader = hits.context().reader();
 			for (NumericFieldStatInfo field : fields) {
 				field.setReader(reader);
 			}
 
-			DocIdSetIterator docs = hits.bits.iterator();
+			DocIdSetIterator docs = hits.bits().iterator();
 
 			FacetsReader facetReader = null;
 
@@ -192,19 +192,19 @@ public class AggregationHandler {
 		int bottomValue = Integer.MIN_VALUE;
 		int bottomOrd = Integer.MAX_VALUE;
 		int child;
-		TopOrdAndIntQueue.OrdAndValue reuse = null;
+		TopOrdAndIntQueue.OrdAndInt reuse = null;
 		while ((child = childrenIterator.next()) != TaxonomyReader.INVALID_ORDINAL) {
 			int count = globalFacetInfo.getOrdinalCount(child);
 			if (count != 0) {
 				if (count > bottomValue || (count == bottomValue && child < bottomOrd)) {
 					if (reuse == null) {
-						reuse = new TopOrdAndIntQueue.OrdAndValue();
+						reuse = new TopOrdAndIntQueue.OrdAndInt();
 					}
 					reuse.ord = child;
 					reuse.value = count;
-					reuse = q.insertWithOverflow(reuse);
+					reuse = (TopOrdAndIntQueue.OrdAndInt) q.insertWithOverflow(reuse);
 					if (q.size() == topN) {
-						bottomValue = q.top().value;
+						bottomValue = q.top().getValue().intValue();
 						bottomOrd = q.top().ord;
 					}
 				}
@@ -217,7 +217,7 @@ public class AggregationHandler {
 			TopOrdAndIntQueue.OrdAndValue ordValue = q.pop();
 			FacetLabel c = taxoReader.getPath(ordValue.ord);
 			String label = c.components[countPath.length];
-			facetCounts[i] = ZuliaQuery.FacetCount.newBuilder().setFacet(label).setCount(ordValue.value).build();
+			facetCounts[i] = ZuliaQuery.FacetCount.newBuilder().setFacet(label).setCount(ordValue.getValue().longValue()).build();
 		}
 
 		return ZuliaQuery.FacetGroup.newBuilder().addAllFacetCount(Arrays.stream(facetCounts).toList());
