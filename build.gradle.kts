@@ -10,6 +10,7 @@ reckon {
     setDefaultInferredScope("patch")
     setScopeCalc(calcScopeFromProp())
     snapshots()
+    stages("beta", "final")
     setStageCalc(calcStageFromProp())
 }
 
