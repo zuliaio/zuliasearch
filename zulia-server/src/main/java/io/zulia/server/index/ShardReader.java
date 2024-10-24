@@ -24,6 +24,7 @@ import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.aggregation.AggregationHandler;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsCollectorManager;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.index.BinaryDocValues;
@@ -43,6 +44,7 @@ import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -205,22 +207,27 @@ public class ShardReader implements AutoCloseable {
 
 		int hasMoreAmount = shardQuery.getAmount() + 1;
 
-		TopDocsCollector<?> collector;
+		CollectorManager<?, ? extends TopDocs> collectorManager;
 
 		boolean sorting = (shardQuery.getSortRequest() != null) && !shardQuery.getSortRequest().getFieldSortList().isEmpty();
 
 		List<SortMeta> sortMetas = new ArrayList<>();
 
+		boolean sortingWithScores = false;
+
 		FieldDoc after = shardQuery.getAfter(shardNumber);
 		if (sorting) {
-			collector = getSortingCollector(shardQuery.getSortRequest(), hasMoreAmount, after);
+			Sort sort = buildSortFromSortRequest(shardQuery.getSortRequest());
+			sortingWithScores = sort.needsScores();
+			collectorManager = new TopFieldCollectorManager(sort, hasMoreAmount, after, Integer.MAX_VALUE);
+
 			for (ZuliaQuery.FieldSort fieldSort : shardQuery.getSortRequest().getFieldSortList()) {
 				SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(fieldSort.getSortField());
 				sortMetas.add(new SortMeta(fieldSort.getSortField(), sortFieldInfo != null ? sortFieldInfo.getFieldType() : null));
 			}
 		}
 		else {
-			collector = new TopScoreDocCollectorManager(hasMoreAmount, after, Integer.MAX_VALUE).newCollector();
+			collectorManager = new TopScoreDocCollectorManager(hasMoreAmount, after, Integer.MAX_VALUE);
 		}
 
 		ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder = ZuliaQuery.ShardQueryResponse.newBuilder();
@@ -233,22 +240,25 @@ public class ShardReader implements AutoCloseable {
 		boolean hasFacetRequests = !countRequestList.isEmpty();
 		boolean hasStatRequests = !statRequestList.isEmpty();
 
+		TopDocs topDocs;
 		if (hasFacetRequests || hasStatRequests) {
-			FacetsCollector facetsCollector = new FacetsCollector();
-			indexSearcher.search(shardQuery.getQuery(), MultiCollector.wrap(collector, facetsCollector));
+			FacetsCollectorManager facetsCollectorManager = new FacetsCollectorManager();
+			Object[] results = indexSearcher.search(shardQuery.getQuery(), new MultiCollectorManager(collectorManager, facetsCollectorManager));
+			topDocs = (TopDocs) results[0];
+			FacetsCollector facetsCollector = (FacetsCollector) results[1];
 			handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector);
 		}
 		else {
-			indexSearcher.search(shardQuery.getQuery(), collector);
+			topDocs = indexSearcher.search(shardQuery.getQuery(), collectorManager);
 		}
 
-		TopDocs topDocs = collector.topDocs();
 		ScoreDoc[] results = topDocs.scoreDocs;
-		if (sorting && (collector.scoreMode() != ScoreMode.COMPLETE_NO_SCORES)) {
+		if (sortingWithScores) {
 			TopFieldCollector.populateScores(topDocs.scoreDocs, indexSearcher, shardQuery.getQuery());
 		}
 
-		int totalHits = collector.getTotalHits();
+		//TODO is there a way to avoid this cast?  should we support more total hits than an int
+		int totalHits = (int) topDocs.totalHits.value();
 
 		shardQueryReponseBuilder.setTotalHits(totalHits);
 
@@ -477,9 +487,9 @@ public class ShardReader implements AutoCloseable {
 		return numOfFacets;
 	}
 
-	private TopDocsCollector<?> getSortingCollector(ZuliaQuery.SortRequest sortRequest, int hasMoreAmount, FieldDoc after) throws Exception {
+	private @NotNull Sort buildSortFromSortRequest(ZuliaQuery.SortRequest sortRequest) throws Exception {
 		List<SortField> sortFields = new ArrayList<>();
-		TopDocsCollector<?> collector;
+
 		for (ZuliaQuery.FieldSort fs : sortRequest.getFieldSortList()) {
 			boolean reverse = ZuliaQuery.FieldSort.Direction.DESCENDING.equals(fs.getDirection());
 
@@ -554,9 +564,7 @@ public class ShardReader implements AutoCloseable {
 		}
 
 		Sort sort = new Sort(sortFields.toArray(new SortField[0]));
-
-		collector = new TopFieldCollectorManager(sort, hasMoreAmount, after, Integer.MAX_VALUE).newCollector();
-		return collector;
+		return sort;
 	}
 
 	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,
