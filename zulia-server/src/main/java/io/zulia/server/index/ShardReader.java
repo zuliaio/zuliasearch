@@ -53,6 +53,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 public class ShardReader implements AutoCloseable {
@@ -67,6 +69,7 @@ public class ShardReader implements AutoCloseable {
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> pinnedQueryResultCache;
+	private final ExecutorService searchExecutor;
 
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
@@ -79,12 +82,14 @@ public class ShardReader implements AutoCloseable {
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).recordStats().build();
 		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().build();
+		this.searchExecutor = Executors.newVirtualThreadPerTaskExecutor();
 	}
 
 	@Override
 	public void close() throws Exception {
 		indexReader.close();
 		taxoReader.close();
+		searchExecutor.shutdown();
 	}
 
 	public long getCreationTime() {
@@ -195,7 +200,7 @@ public class ShardReader implements AutoCloseable {
 	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery) throws Exception {
 		PerFieldSimilarityWrapper similarity = getSimilarity(shardQuery.getSimilarityOverrideMap());
 
-		IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+		IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
 
 		//similarity is only set query time, indexing time all these similarities are the same
 		indexSearcher.setSimilarity(similarity);
