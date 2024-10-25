@@ -24,11 +24,13 @@ public abstract class MapStatOrdinalStorage<T extends Stats<T>> implements StatO
 	}
 
 	public T getOrCreateStat(int ordinal) {
-		return ordinalToStat.computeIfAbsent(ordinal, i -> {
-			T t = statConstructor.get();
-			t.setOrdinal(ordinal);
-			return t;
-		});
+		synchronized (ordinalToStat) {
+			return ordinalToStat.computeIfAbsent(ordinal, i -> {
+				T t = statConstructor.get();
+				t.setOrdinal(ordinal);
+				return t;
+			});
+		}
 
 	}
 
