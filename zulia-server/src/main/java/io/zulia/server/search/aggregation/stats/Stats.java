@@ -5,14 +5,16 @@ import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
 import com.datadoghq.sketch.ddsketch.DDSketches;
 import io.zulia.message.ZuliaQuery;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 
 	protected int ordinal;
-	private long docCount;
-	private long allDocCount;
-	private long valueCount;
+	private final AtomicLong docCount;
+	private final AtomicLong allDocCount;
+	private final AtomicLong valueCount;
 
-	private DDSketch sketch;
+	private final DDSketch sketch;
 
 	// overload constructor for building w/ precision
 	public Stats(double precision) {
@@ -21,21 +23,29 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 		if (precision > 0.0) {
 			this.sketch = DDSketches.unboundedDense(precision);
 		}
+		else {
+			this.sketch = null;
+		}
+		this.docCount = new AtomicLong();
+		this.allDocCount = new AtomicLong();
+		this.valueCount = new AtomicLong();
 	}
 
 	public abstract void handleDocValue(long docValue);
 
 	public void newDoc(boolean hasValues) {
-		allDocCount++;
+		allDocCount.getAndIncrement();
 		if (hasValues) {
-			docCount++;
+			docCount.getAndIncrement();
 		}
 	}
 
 	public void tallyValue(double newValue) {
-		this.valueCount++;
+		this.valueCount.getAndIncrement();
 		if (this.sketch != null) {
-			this.sketch.accept(newValue);
+			synchronized (this.sketch) {
+				this.sketch.accept(newValue);
+			}
 		}
 	}
 
@@ -48,8 +58,8 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 	}
 
 	public ZuliaQuery.FacetStatsInternal.Builder buildResponse() {
-		ZuliaQuery.FacetStatsInternal.Builder builder = ZuliaQuery.FacetStatsInternal.newBuilder().setDocCount(docCount).setAllDocCount(allDocCount)
-				.setValueCount(valueCount);
+		ZuliaQuery.FacetStatsInternal.Builder builder = ZuliaQuery.FacetStatsInternal.newBuilder().setDocCount(docCount.get()).setAllDocCount(allDocCount.get())
+				.setValueCount(valueCount.get());
 		if (sketch != null) {
 			builder.setStatSketch(DDSketchProtoBinding.toProto(sketch));
 		}

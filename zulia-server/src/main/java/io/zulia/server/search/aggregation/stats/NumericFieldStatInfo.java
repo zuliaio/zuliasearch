@@ -6,18 +6,9 @@ import io.zulia.server.search.aggregation.facets.FacetInfo;
 import io.zulia.server.search.aggregation.ordinal.DoubleMapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.ordinal.LongMapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
-import io.zulia.server.search.aggregation.ordinal.OrdinalConsumer;
-import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.SortedNumericDocValues;
 
-import java.io.IOException;
+public class NumericFieldStatInfo extends FacetInfo {
 
-public class NumericFieldStatInfo extends FacetInfo implements OrdinalConsumer {
-
-	private long[] numericValues;
-
-	private int numericValueCount;
 	private String numericFieldName;
 	private String sortFieldName;
 
@@ -27,10 +18,7 @@ public class NumericFieldStatInfo extends FacetInfo implements OrdinalConsumer {
 	private Stats<?> globalStats;
 	private MapStatOrdinalStorage<?> facetStatStorage;
 
-	private SortedNumericDocValues numericDocValues;
-
 	public NumericFieldStatInfo(String numericFieldName) {
-		this.numericValues = new long[1];
 		this.numericFieldName = numericFieldName;
 	}
 
@@ -88,29 +76,8 @@ public class NumericFieldStatInfo extends FacetInfo implements OrdinalConsumer {
 		this.sortFieldName = sortFieldName;
 	}
 
-	public void setReader(LeafReader reader) throws IOException {
-		numericDocValues = DocValues.getSortedNumeric(reader, sortFieldName);
-	}
-
-	public void advanceNumericValues(int doc) throws IOException {
-		numericValueCount = -1;
-		if (numericDocValues.advanceExact(doc)) {
-			numericValueCount = numericDocValues.docValueCount();
-			if (numericValueCount > numericValues.length) {
-				numericValues = new long[numericValueCount];
-			}
-			for (int j = 0; j < numericValueCount; j++) {
-				numericValues[j] = numericDocValues.nextValue();
-			}
-		}
-	}
-
-	public long[] getNumericValues() {
-		return numericValues;
-	}
-
-	public int getNumericValueCount() {
-		return numericValueCount;
+	public String getSortFieldName() {
+		return sortFieldName;
 	}
 
 	public Stats<?> getGlobalStats() {
@@ -125,9 +92,4 @@ public class NumericFieldStatInfo extends FacetInfo implements OrdinalConsumer {
 		return numericFieldName;
 	}
 
-	@Override
-	public void handleOrdinal(int ordinal) {
-		Stats<?> stats = facetStatStorage.getOrCreateStat(ordinal);
-		stats.handleNumericValues(numericValues, numericValueCount);
-	}
 }
