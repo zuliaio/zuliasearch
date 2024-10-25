@@ -1,13 +1,15 @@
 package io.zulia.server.search.aggregation.facets;
 
+import com.koloboke.collect.map.hash.HashIntIntMap;
+import com.koloboke.collect.map.hash.HashIntIntMaps;
 import io.zulia.server.search.aggregation.ordinal.OrdinalConsumer;
 
 public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 
-	private final SegmentedIntIntMap countFacetInfo;
+	private final HashIntIntMap countFacetInfo;
 
 	public CountFacetInfo() {
-		countFacetInfo = new SegmentedIntIntMap(32);
+		countFacetInfo = HashIntIntMaps.newMutableMap();
 	}
 
 	public int getOrdinalCount(int child) {
@@ -16,6 +18,8 @@ public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 
 	@Override
 	public void handleOrdinal(int ordinal) {
-		countFacetInfo.increment(ordinal);
+		synchronized (countFacetInfo) {
+			countFacetInfo.addValue(ordinal, 1);
+		}
 	}
 }
