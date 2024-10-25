@@ -18,6 +18,8 @@ public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 
 	@Override
 	public void handleOrdinal(int ordinal) {
-		countFacetInfo.addValue(ordinal, 1);
+		synchronized (countFacetInfo) {
+			countFacetInfo.addValue(ordinal, 1);
+		}
 	}
 }
