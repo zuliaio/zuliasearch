@@ -58,12 +58,13 @@ public class DataSourceExamples {
 	
 	public void manualConfigurationOfCSV() throws IOException {
 		// manual configuration allows more flexibility than generic by more verbose
-		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.tsv");
+		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.csv");
 		
-		CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream).withHeaders();
+		CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream);
+		csvSourceConfig.withHeaders();
 		
 		//optionally configure these below
-		csvSourceConfig.withDelimiter('\t'); // set delimiter
+		csvSourceConfig.withDelimiter('|'); // set alternate delimiter
 		csvSourceConfig.withListDelimiter(';'); // if reading a cell as a list, split on this, defaults to ;
 		csvSourceConfig.withDateParser(s -> {
 			// by default dates in format yyyy-mm-dd are supported;
