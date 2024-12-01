@@ -1,9 +1,9 @@
-package io.zulia.data.target.spreadsheet.csv.formatter;
+package io.zulia.data.target.spreadsheet.delimited.formatter;
 
-import com.univocity.parsers.csv.CsvWriter;
+import com.univocity.parsers.common.AbstractWriter;
 import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
 
-public class NumberCSVWriter implements SpreadsheetTypeHandler<CsvWriter, Number> {
+public class NumberCSVWriter<T extends AbstractWriter<?>> implements SpreadsheetTypeHandler<T, Number> {
 	
 	private int decimalPlaces;
 	private String doubleFormatter;
@@ -16,7 +16,7 @@ public class NumberCSVWriter implements SpreadsheetTypeHandler<CsvWriter, Number
 		withDecimalPlaces(decimalPlaces);
 	}
 	
-	public NumberCSVWriter withDecimalPlaces(int decimalPlaces) {
+	public NumberCSVWriter<T> withDecimalPlaces(int decimalPlaces) {
 		this.doubleFormatter = "%." + decimalPlaces + "f";
 		this.decimalPlaces = decimalPlaces;
 		return this;
@@ -27,7 +27,7 @@ public class NumberCSVWriter implements SpreadsheetTypeHandler<CsvWriter, Number
 	}
 	
 	@Override
-	public void writeType(CsvWriter reference, Number value) {
+	public void writeType(T reference, Number value) {
 		switch (value) {
 			case Integer i -> reference.addValue(String.valueOf(i));
 			case Long l -> reference.addValue(String.valueOf(l));

@@ -2,10 +2,9 @@ package io.zulia.data.target.spreadsheet.csv;
 
 import com.univocity.parsers.csv.CsvWriter;
 import io.zulia.data.output.DataOutputStream;
-import io.zulia.data.target.spreadsheet.SpreadsheetTargetConfig;
-import io.zulia.data.target.spreadsheet.csv.formatter.*;
+import io.zulia.data.target.spreadsheet.delimited.DelimitedTargetConfig;
 
-public class CSVTargetConfig extends SpreadsheetTargetConfig<CsvWriter, CSVTargetConfig> {
+public class CSVTargetConfig extends DelimitedTargetConfig<CsvWriter, CSVTargetConfig> {
 	
 	public static CSVTargetConfig from(DataOutputStream dataStream) {
 		return new CSVTargetConfig(dataStream);
@@ -15,14 +14,7 @@ public class CSVTargetConfig extends SpreadsheetTargetConfig<CsvWriter, CSVTarge
 	
 	public CSVTargetConfig(DataOutputStream dataStream) {
 		super(dataStream);
-		withStringHandler(new StringCSVWriter());
-		withDateTypeHandler(new DateCSVWriter());
-		withNumberTypeHandler(new NumberCSVWriter());
-		withLinkTypeHandler(new LinkCSVWriter());
-		withDefaultTypeHandler(new DefaultCSVWriter());
-		withBooleanTypeHandler(new BooleanCSVWriter());
-		withCollectionHandler(new CollectionCSVWriter(this));
-		withHeaderHandler(new StringCSVWriter()); // csv headers are just strings
+		
 	}
 	
 	@Override
