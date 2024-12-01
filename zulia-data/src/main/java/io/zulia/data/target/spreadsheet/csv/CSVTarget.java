@@ -4,17 +4,16 @@ import com.univocity.parsers.csv.CsvWriter;
 import com.univocity.parsers.csv.CsvWriterSettings;
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.FileDataOutputStream;
-import io.zulia.data.target.spreadsheet.SpreadsheetTarget;
+import io.zulia.data.target.spreadsheet.delimited.DelimitedTarget;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collection;
 
-public class CSVTarget extends SpreadsheetTarget<CsvWriter, CSVTargetConfig> {
+public class CSVTarget extends DelimitedTarget<CsvWriter, CSVTargetConfig> {
 	
-	private final CsvWriterSettings settings;
 	private final CSVTargetConfig csvDataTargetConfig;
-	
-	private CsvWriter csvWriter;
+	private CsvWriterSettings settings;
 	
 	public static CSVTarget withConfig(CSVTargetConfig csvDataTargetConfig) throws IOException {
 		return new CSVTarget(csvDataTargetConfig);
@@ -35,30 +34,18 @@ public class CSVTarget extends SpreadsheetTarget<CsvWriter, CSVTargetConfig> {
 	protected CSVTarget(CSVTargetConfig csvDataTargetConfig) throws IOException {
 		super(csvDataTargetConfig);
 		this.csvDataTargetConfig = csvDataTargetConfig;
-		settings = new CsvWriterSettings();
-		settings.setMaxColumns(2048);
-		open();
-		
-	}
-	
-	protected void open() throws IOException {
-		csvWriter = new CsvWriter(csvDataTargetConfig.getDataStream().openOutputStream(), settings);
-		if (csvDataTargetConfig.getHeaders() != null) {
-			csvWriter.writeRow(csvDataTargetConfig.getHeaders());
-		}
 	}
 	
 	@Override
-	protected CsvWriter generateReference() {
-		return csvWriter;
+	protected void init(CSVTargetConfig delimitedTargetConfig) {
+		settings = new CsvWriterSettings();
+		settings.setMaxColumns(2048);
+		settings.getFormat().setDelimiter(csvDataTargetConfig.getDelimiter());
 	}
 	
-	public void finishRow() {
-		csvWriter.writeValuesToRow();
-	}
-	
-	public void close() {
-		csvWriter.close();
+	@Override
+	protected CsvWriter createWriter(OutputStream outputStream) throws IOException {
+		return new CsvWriter(outputStream, settings);
 	}
 	
 }
