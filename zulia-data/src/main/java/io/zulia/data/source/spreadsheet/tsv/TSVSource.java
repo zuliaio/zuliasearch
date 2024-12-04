@@ -11,24 +11,22 @@ import io.zulia.data.source.spreadsheet.delimited.DelimitedSource;
 
 import java.io.IOException;
 
-public class TSVSource extends DelimitedSource<TSVRecord> {
-	private final TSVSourceConfig tsvSourceConfig;
-	
+public class TSVSource extends DelimitedSource<TSVRecord, TSVSourceConfig> {
+
 	public static TSVSource withConfig(TSVSourceConfig tsvSourceConfig) throws IOException {
 		return new TSVSource(tsvSourceConfig);
 	}
-	
+
 	public static CSVSource withDefaults(DataInputStream dataInputStream) throws IOException {
 		return CSVSource.withConfig(CSVSourceConfig.from(dataInputStream));
 	}
-	
+
 	protected TSVSource(TSVSourceConfig tsvSourceConfig) throws IOException {
 		super(tsvSourceConfig);
-		this.tsvSourceConfig = tsvSourceConfig;
 	}
-	
+
 	@Override
-	protected AbstractParser<?> createParser() {
+	protected AbstractParser<?> createParser(TSVSourceConfig tsvSourceConfig) {
 		TsvParserSettings parserSettings = new TsvParserSettings();
 		parserSettings.setLineSeparatorDetectionEnabled(true);
 		TsvFormat tsvFormat = new TsvFormat();
@@ -37,10 +35,10 @@ public class TSVSource extends DelimitedSource<TSVRecord> {
 		parserSettings.setMaxColumns(10_000);
 		return new TsvParser(parserSettings);
 	}
-	
+
 	@Override
-	protected TSVRecord createRecord(String[] nextRow) {
+	protected TSVRecord createRecord(TSVSourceConfig tsvSourceConfig, String[] nextRow) {
 		return new TSVRecord(nextRow, getHeaderMapping(), tsvSourceConfig);
 	}
-	
+
 }

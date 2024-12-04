@@ -5,8 +5,8 @@ import io.zulia.data.input.DataInputStream;
 import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.function.Function;
@@ -32,9 +32,9 @@ public class DelimitedSourceConfig {
 				default -> null;
 			};
 		};
-		
-		DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
-		this.dateParser = (s) -> Date.from(LocalDate.from(formatter.parse(s)).atStartOfDay().atOffset(ZoneOffset.UTC).toInstant());
+
+		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneId.systemDefault());
+		this.dateParser = (s) -> Date.from(Instant.from(formatter.parse(s)));
 	}
 	
 	public DelimitedSourceConfig withListDelimiter(char listDelimiter) {

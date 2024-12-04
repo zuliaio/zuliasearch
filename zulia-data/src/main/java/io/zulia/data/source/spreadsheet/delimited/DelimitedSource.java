@@ -10,19 +10,19 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.SequencedSet;
 
-public abstract class DelimitedSource<T extends DelimitedRecord> implements SpreadsheetSource<T>, AutoCloseable {
-	private final DelimitedSourceConfig delimitedSourceConfig;
+public abstract class DelimitedSource<T extends DelimitedRecord, S extends DelimitedSourceConfig> implements SpreadsheetSource<T>, AutoCloseable {
+	private final S delimitedSourceConfig;
 	private final AbstractParser<?> abstractParser;
 	private String[] nextRow;
 	private HeaderMapping headerMapping;
-	
-	public DelimitedSource(DelimitedSourceConfig delimitedSourceConfig) throws IOException {
+
+	public DelimitedSource(S delimitedSourceConfig) throws IOException {
 		this.delimitedSourceConfig = delimitedSourceConfig;
-		this.abstractParser = createParser();
+		this.abstractParser = createParser(delimitedSourceConfig);
 		open();
 	}
-	
-	protected abstract AbstractParser<?> createParser();
+
+	protected abstract AbstractParser<?> createParser(S delimitedSourceConfig);
 	
 	public void reset() throws IOException {
 		abstractParser.stopParsing();
@@ -78,7 +78,7 @@ public abstract class DelimitedSource<T extends DelimitedRecord> implements Spre
 			
 			@Override
 			public T next() {
-				T t = createRecord(nextRow);
+				T t = createRecord(delimitedSourceConfig, nextRow);
 				nextRow = abstractParser.parseNext();
 				return t;
 			}
@@ -93,8 +93,8 @@ public abstract class DelimitedSource<T extends DelimitedRecord> implements Spre
 	protected HeaderMapping getHeaderMapping() {
 		return headerMapping;
 	}
-	
-	protected abstract T createRecord(String[] nextRow);
+
+	protected abstract T createRecord(S delimitedSourceConfig, String[] nextRow);
 	
 	@Override
 	public void close() {
