@@ -15,33 +15,33 @@ import java.util.Collection;
 import java.util.List;
 
 public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetConfig> {
-	
+
 	private final ExcelTargetConfig excelDataTargetConfig;
 	private final SXSSFWorkbook workbook;
 	private final WorkbookHelper workbookHelper;
-	
+
 	private SXSSFSheet sheet;
 	private SXSSFRow row;
 	private int rowIdx = 0;
 	private int colIdx = 0;
-	
+
 	public static ExcelTarget withConfig(ExcelTargetConfig excelDataTargetConfig) throws IOException {
 		return new ExcelTarget(excelDataTargetConfig);
 	}
-	
+
 	public static ExcelTarget withDefaults(DataOutputStream dataOutputStream) throws IOException {
 		return withConfig(ExcelTargetConfig.from(dataOutputStream));
 	}
-	
+
 	public static ExcelTarget withDefaultsFromFile(String path, boolean overwrite) throws IOException {
 		return withDefaults(FileDataOutputStream.from(path, overwrite));
 	}
-	
+
 	public static ExcelTarget withDefaultsFromFile(String path, boolean overwrite, Collection<String> headers) throws IOException {
 		return withConfig(ExcelTargetConfig.from(FileDataOutputStream.from(path, overwrite)).withHeaders(headers));
 	}
-	
-	protected ExcelTarget(ExcelTargetConfig excelDataTargetConfig) throws IOException {
+
+	protected ExcelTarget(ExcelTargetConfig excelDataTargetConfig) {
 		super(excelDataTargetConfig);
 		this.excelDataTargetConfig = excelDataTargetConfig;
 		this.workbook = new SXSSFWorkbook();
@@ -51,15 +51,15 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 		else {
 			this.sheet = this.workbook.createSheet();
 		}
-		
+
 		this.workbookHelper = new WorkbookHelper(workbook);
-		
+
 		Collection<String> headers = excelDataTargetConfig.getHeaders();
 		if (headers != null) {
 			writeHeaders(headers);
 		}
 	}
-	
+
 	protected CellReference generateReference() {
 		SXSSFCell cell = getNextCell();
 		return new CellReference(workbookHelper, cell);
@@ -69,10 +69,10 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 		if (this.row == null) {
 			this.row = this.sheet.createRow(this.rowIdx);
 		}
-		
+
 		return this.row.createCell(this.colIdx++);
 	}
-	
+
 	@Override
 	public void finishRow() {
 		rowIdx++;
@@ -83,7 +83,7 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 	public void newSheet(String sheetName) {
 		newSheet(sheetName, null);
 	}
-	
+
 	public void newSheet(String sheetName, List<String> headers) {
 		this.sheet = this.workbook.createSheet(sheetName);
 		this.row = null;
@@ -92,13 +92,13 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 		if (headers != null) {
 			writeHeaders(headers);
 		}
-		
+
 	}
-	
+
 	public void close() throws IOException {
 		try (OutputStream stream = excelDataTargetConfig.getDataStream().openOutputStream()) {
 			this.workbook.write(stream);
 		}
 	}
-	
+
 }

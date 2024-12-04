@@ -20,10 +20,10 @@ import java.util.List;
 import java.util.SequencedSet;
 
 public class DataSourceExamples {
-	
-	public void genericSpreadsheetHandling() throws IOException {
-		
-		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.csv"); // xls, csv and tsv also supported by SpreadsheetSourceFactory
+
+	public static void genericSpreadsheetHandling() throws IOException {
+
+		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.csv"); // xls, xlsx and tsv also supported by SpreadsheetSourceFactory
 		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) { //reads first line as headers
 			// optionally do something with the headers but not required to use headers below
 			SequencedSet<String> headers = dataSource.getHeaders();
@@ -36,6 +36,23 @@ public class DataSourceExamples {
 				Boolean recommended = spreadsheetRecord.getBoolean("recommended");
 				Date dateAdded = spreadsheetRecord.getDate("dateAdded");
 				List<String> labels = spreadsheetRecord.getList("labels", String.class);
+			}
+		}
+
+		dataInputStream = FileDataInputStream.from("/data/test.tsv"); // xls, xlsx and csv also supported by SpreadsheetSourceFactory
+		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) { //reads first line as headers
+			// optionally do something with the headers but not required to use headers below
+			SequencedSet<String> headers = dataSource.getHeaders();
+
+			for (SpreadsheetRecord spreadsheetRecord : dataSource) {
+				String firstColumn = spreadsheetRecord.getString(0); // access value in first column not relying on headers
+				String title = spreadsheetRecord.getString("title"); // can access by header name because headers were read on open
+				Integer year = spreadsheetRecord.getInt("year");
+				Float rating = spreadsheetRecord.getFloat("rating");
+				Boolean recommended = spreadsheetRecord.getBoolean("recommended");
+				Date dateAdded = spreadsheetRecord.getDate("dateAdded");
+				List<String> labels = spreadsheetRecord.getList("labels", String.class);
+
 			}
 		}
 		
@@ -55,8 +72,8 @@ public class DataSourceExamples {
 		}
 		
 	}
-	
-	public void manualConfigurationOfCSV() throws IOException {
+
+	public static void manualConfigurationOfCSV() throws IOException {
 		// manual configuration allows more flexibility than generic by more verbose
 		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.csv");
 		
@@ -92,8 +109,8 @@ public class DataSourceExamples {
 			}
 		}
 	}
-	
-	public void manualConfigurationWithExcel() throws IOException {
+
+	public static void manualConfigurationWithExcel() throws IOException {
 		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.xlsx"); // xlsx and xls are supported;
 		ExcelSourceConfig excelSourceConfig = ExcelSourceConfig.from(dataInputStream).withHeaders();
 		
@@ -133,6 +150,10 @@ public class DataSourceExamples {
 			}
 			
 		}
+	}
+
+	public static void main(String[] args) throws IOException {
+
 	}
 	
 }
