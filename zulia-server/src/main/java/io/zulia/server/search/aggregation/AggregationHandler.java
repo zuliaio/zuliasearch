@@ -16,6 +16,7 @@
  */
 package io.zulia.server.search.aggregation;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.koloboke.collect.map.ObjObjMap;
 import com.koloboke.collect.map.hash.HashObjObjMaps;
 import io.zulia.message.ZuliaQuery;
@@ -27,8 +28,11 @@ import io.zulia.server.search.aggregation.facets.CountFacetInfo;
 import io.zulia.server.search.aggregation.facets.FacetsReader;
 import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
+import io.zulia.server.search.aggregation.stats.NumericFieldStatContext;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatInfo;
 import io.zulia.server.search.aggregation.stats.Stats;
+import io.zulia.util.pool.TaskExecutor;
+import io.zulia.util.pool.WorkPool;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.TopOrdAndIntQueue;
@@ -38,8 +42,10 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.DocIdSetIterator;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class AggregationHandler {
 
@@ -48,11 +54,13 @@ public class AggregationHandler {
 	private final boolean needsFacets;
 
 	private final CountFacetInfo globalFacetInfo;
+	private final int concurrency;
 
 	public AggregationHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests,
-			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig) throws IOException {
+			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int concurrency) throws IOException {
 
 		this.taxoReader = taxoReader;
+		this.concurrency = concurrency;
 
 		ObjObjMap<String, NumericFieldStatInfo> fieldToDimensions = HashObjObjMaps.newMutableMap();
 
@@ -118,48 +126,74 @@ public class AggregationHandler {
 
 	private void sumValues(List<MatchingDocs> matchingDocs) throws IOException {
 
-		for (MatchingDocs hits : matchingDocs) {
-
-			LeafReader reader = hits.context().reader();
-			for (NumericFieldStatInfo field : fields) {
-				field.setReader(reader);
+		List<ListenableFuture<Object>> futures = new ArrayList<>();
+		try (TaskExecutor taskExecutor = WorkPool.virtualBounded(concurrency)) {
+			for (MatchingDocs hits : matchingDocs) {
+				futures.add(taskExecutor.executeAsync(() -> {
+					handlMatchingDocsForSegment(hits);
+					return null;
+				}));
 			}
+		}
+		for (ListenableFuture<Object> future : futures) {
+			try {
+				future.get();
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+			catch (ExecutionException e) {
+				if (e.getCause() instanceof IOException ioException) {
+					throw ioException;
+				}
+				throw new RuntimeException(e.getCause());
+			}
+		}
+	}
 
-			DocIdSetIterator docs = hits.bits().iterator();
+	private void handlMatchingDocsForSegment(MatchingDocs hits) throws IOException {
+		LeafReader reader = hits.context().reader();
 
-			FacetsReader facetReader = null;
+		List<NumericFieldStatContext> fieldContexts = new ArrayList<>();
+		for (NumericFieldStatInfo field : fields) {
+			NumericFieldStatContext numericFieldStatContext = new NumericFieldStatContext(reader, field);
+			fieldContexts.add(numericFieldStatContext);
+		}
 
+		DocIdSetIterator docs = hits.bits().iterator();
+
+		FacetsReader facetReader = null;
+
+		if (needsFacets) {
+			facetReader = new BinaryFacetReader(reader);
+			docs = facetReader.getCombinedIterator(docs);
+		}
+
+		for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
+
+			final FacetHandler facetHandler;
 			if (needsFacets) {
-				facetReader = new BinaryFacetReader(reader);
-				docs = facetReader.getCombinedIterator(docs);
+				facetHandler = facetReader.getFacetHandler();
+
+				if (globalFacetInfo.hasFacets()) {
+					facetHandler.handleFacets(globalFacetInfo);
+				}
+			}
+			else {
+				facetHandler = null;
 			}
 
-			for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
+			for (NumericFieldStatContext fieldContext : fieldContexts) {
+				fieldContext.advanceNumericValues(doc);
 
-				final FacetHandler facetHandler;
-				if (needsFacets) {
-					facetHandler = facetReader.getFacetHandler();
-
-					if (globalFacetInfo.hasFacets()) {
-						facetHandler.handleFacets(globalFacetInfo);
-					}
+				if (fieldContext.hasFacets()) {
+					facetHandler.handleFacets(fieldContext);
 				}
-				else {
-					facetHandler = null;
+				if (fieldContext.hasGlobal()) {
+					Stats<?> stats = fieldContext.getGlobalStats();
+					stats.handleNumericValues(fieldContext.getNumericValues(), fieldContext.getNumericValueCount());
 				}
 
-				for (NumericFieldStatInfo field : fields) {
-					field.advanceNumericValues(doc);
-
-					if (field.hasFacets()) {
-						facetHandler.handleFacets(field);
-					}
-					if (field.hasGlobal()) {
-						Stats<?> stats = field.getGlobalStats();
-						stats.handleNumericValues(field.getNumericValues(), field.getNumericValueCount());
-					}
-
-				}
 			}
 		}
 	}
