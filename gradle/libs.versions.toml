@@ -23,7 +23,7 @@ grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc"
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 graalvm-js = { module = "org.graalvm.js:js", version = "23.0.3" }
-gson = { module = "com.google.code.gson:gson", version = "2.10.1" }
+gson = { module = "com.google.code.gson:gson", version = "2.11.0" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version = "2.16.1" }
 jakarta-validation = { module = "jakarta.validation:jakarta.validation-api" }
 jansi = { module = "org.fusesource.jansi:jansi", version = "2.4.1" }
