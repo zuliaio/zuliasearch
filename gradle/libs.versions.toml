@@ -5,9 +5,9 @@ koloboke = "1.0.0"
 micronaut = "4.5.1" # used by the micronaut plugin configuration
 mongodb = "5.2.0"
 picocli = "4.7.6"
-poi = "5.2.5"
+poi = "5.3.0"
 protobuf = "3.25.5"
-unirest = '4.2.1'
+unirest = '4.4.5'
 
 
 [libraries]
@@ -68,7 +68,7 @@ snake-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
 snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.5" }
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
 unirest-core = { module = "com.konghq:unirest-java-core", version.ref = "unirest" }
-unirest-gson = { module = "com.konghq:unirest-object-mappers-gson", version.ref = "unirest" }
+unirest-gson = { module = "com.konghq:unirest-modules-gson", version.ref = "unirest" }
 unirest-java-bom = { module = "com.konghq:unirest-java-bom", version.ref = "unirest" }
 univocity-parsers = { module = "com.univocity:univocity-parsers", version = "2.9.1" }
 
