@@ -203,7 +203,7 @@ distributions {
             }
 
             filePermissions {
-                unix(777)
+                unix("777")
             }
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
