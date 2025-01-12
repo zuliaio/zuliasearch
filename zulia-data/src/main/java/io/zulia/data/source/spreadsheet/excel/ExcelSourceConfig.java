@@ -10,16 +10,16 @@ public class ExcelSourceConfig {
 	public static ExcelSourceConfig from(DataInputStream dataStream) {
 		return new ExcelSourceConfig(dataStream);
 	}
-
+	
 	private DelimitedListHandler delimitedListHandler = new DefaultDelimitedListHandler(';');
-
+	
 	private final DataInputStream dataInputStream;
 	private HeaderConfig headerConfig;
-
+	
 	private OpenHandling openHandling = OpenHandling.FIRST_SHEET;
-
+	
 	private ExcelCellHandler excelCellHandler = new DefaultExcelCellHandler();
-
+	
 	public enum OpenHandling {
 		ACTIVE_SHEET,
 		FIRST_SHEET
@@ -32,12 +32,11 @@ public class ExcelSourceConfig {
 	public ExcelSourceConfig withHeaders() {
 		return withHeaders(new HeaderConfig());
 	}
-
+	
 	public ExcelSourceConfig withStrictHeaders() {
 		return withHeaders(new HeaderConfig().allowBlanks(true).allowDuplicates(true));
 	}
-
-
+	
 	public ExcelSourceConfig withHeaders(HeaderConfig headerConfig) {
 		this.headerConfig = headerConfig;
 		return this;
@@ -62,7 +61,7 @@ public class ExcelSourceConfig {
 		this.excelCellHandler = excelCellHandler;
 		return this;
 	}
-
+	
 	public final OpenHandling getOpenHandling() {
 		return openHandling;
 	}
@@ -71,23 +70,23 @@ public class ExcelSourceConfig {
 		this.openHandling = openHandling;
 		return this;
 	}
-
+	
 	public final DataInputStream getDataInputStream() {
 		return dataInputStream;
 	}
-
+	
 	public final boolean hasHeaders() {
 		return headerConfig != null;
 	}
-
+	
 	public DelimitedListHandler getDelimitedListHandler() {
 		return delimitedListHandler;
 	}
-
+	
 	public ExcelCellHandler getExcelCellHandler() {
 		return excelCellHandler;
 	}
-
+	
 	public HeaderConfig getHeaderConfig() {
 		return headerConfig;
 	}

@@ -13,7 +13,7 @@ import io.zulia.data.source.spreadsheet.tsv.TSVSourceConfig;
 import java.io.IOException;
 
 public class SpreadsheetSourceFactory {
-
+	
 	public enum HeaderOptions {
 		STRICT,
 		STANDARD,
@@ -27,11 +27,11 @@ public class SpreadsheetSourceFactory {
 	public static SpreadsheetSource<?> fromFileWithHeaders(String filePath) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), HeaderOptions.STANDARD);
 	}
-
+	
 	public static SpreadsheetSource<?> fromFileWithStrictHeaders(String filePath) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), HeaderOptions.STRICT);
 	}
-
+	
 	public static SpreadsheetSource<?> fromFile(String filePath, HeaderOptions headerOptions) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), headerOptions);
 	}
@@ -43,11 +43,11 @@ public class SpreadsheetSourceFactory {
 	public static SpreadsheetSource<?> fromStreamWithHeaders(DataInputStream dataInputStream) throws IOException {
 		return fromStream(dataInputStream, HeaderOptions.STANDARD);
 	}
-
+	
 	public static SpreadsheetSource<?> fromStreamWithStrictHeaders(DataInputStream dataInputStream) throws IOException {
 		return fromStream(dataInputStream, HeaderOptions.STRICT);
 	}
-
+	
 	public static SpreadsheetSource<?> fromStream(DataInputStream dataInputStream, HeaderOptions headerOptions) throws IOException {
 		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataInputStream.getMeta());
 		
@@ -55,7 +55,8 @@ public class SpreadsheetSourceFactory {
 			CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream);
 			if (HeaderOptions.STRICT.equals(headerOptions)) {
 				csvSourceConfig.withStrictHeaders();
-			} else if (HeaderOptions.STANDARD.equals(headerOptions)) {
+			}
+			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
 				csvSourceConfig.withHeaders();
 			}
 			return CSVSource.withConfig(csvSourceConfig);
@@ -64,7 +65,8 @@ public class SpreadsheetSourceFactory {
 			TSVSourceConfig tsvSourceConfig = TSVSourceConfig.from(dataInputStream);
 			if (HeaderOptions.STRICT.equals(headerOptions)) {
 				tsvSourceConfig.withStrictHeaders();
-			} else if (HeaderOptions.STANDARD.equals(headerOptions)) {
+			}
+			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
 				tsvSourceConfig.withHeaders();
 			}
 			return TSVSource.withConfig(tsvSourceConfig);
@@ -73,7 +75,8 @@ public class SpreadsheetSourceFactory {
 			ExcelSourceConfig excelSourceConfig = ExcelSourceConfig.from(dataInputStream);
 			if (HeaderOptions.STRICT.equals(headerOptions)) {
 				excelSourceConfig.withStrictHeaders();
-			} else if (HeaderOptions.STANDARD.equals(headerOptions)) {
+			}
+			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
 				excelSourceConfig.withHeaders();
 			}
 			return ExcelSource.withConfig(excelSourceConfig);
