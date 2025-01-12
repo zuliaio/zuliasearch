@@ -32,7 +32,12 @@ public class ExcelSourceConfig {
 	public ExcelSourceConfig withHeaders() {
 		return withHeaders(new HeaderConfig());
 	}
-	
+
+	public ExcelSourceConfig withStrictHeaders() {
+		return withHeaders(new HeaderConfig().allowBlanks(true).allowDuplicates(true));
+	}
+
+
 	public ExcelSourceConfig withHeaders(HeaderConfig headerConfig) {
 		this.headerConfig = headerConfig;
 		return this;

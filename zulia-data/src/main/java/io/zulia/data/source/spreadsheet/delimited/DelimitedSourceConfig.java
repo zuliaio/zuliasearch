@@ -50,6 +50,10 @@ public class DelimitedSourceConfig {
 	public DelimitedSourceConfig withHeaders() {
 		return withHeaders(new HeaderConfig());
 	}
+
+	public DelimitedSourceConfig withStrictHeaders() {
+		return withHeaders(new HeaderConfig().allowBlanks(false).allowDuplicates(false));
+	}
 	
 	public DelimitedSourceConfig withHeaders(HeaderConfig headerConfig) {
 		this.headerConfig = headerConfig;

@@ -2,8 +2,8 @@ package io.zulia.data.common;
 
 public class HeaderConfig {
 
-	private boolean allowDuplicates;
-	private boolean allowBlanks;
+	private boolean allowDuplicates = true;
+	private boolean allowBlanks = true;
 
 	public HeaderConfig() {
 
