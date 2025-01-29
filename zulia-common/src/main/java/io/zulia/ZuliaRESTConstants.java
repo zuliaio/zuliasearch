@@ -35,7 +35,6 @@ public interface ZuliaRESTConstants {
 	String SORT = "sort";
 	String FETCH = "fetch";
 	String FIELDS = "fl";
-	String PRETTY = "pretty";
 	String MIN_MATCH = "mm";
 	String DEBUG = "debug";
 	String AMOUNT = "amount";
