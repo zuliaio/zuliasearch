@@ -22,35 +22,41 @@ import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 @Controller
-@ApiResponses({ @ApiResponse(responseCode = "400", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
-		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
-		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
-		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
+@ApiResponses(
+				{ @ApiResponse(
+								responseCode = "400",
+								content = { @Content(schema = @Schema(implementation = JsonError.class)) }), @ApiResponse(
+								responseCode = "404",
+								content = { @Content(schema = @Schema(implementation = JsonError.class)) }), @ApiResponse(
+								responseCode = "500",
+								content = { @Content(schema = @Schema(implementation = JsonError.class)) }), @ApiResponse(
+								responseCode = "503",
+								content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
 public class FetchController {
-
+	
 	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.FETCH_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public String fetch(@QueryValue(ZuliaRESTConstants.ID) String uniqueId, @QueryValue(ZuliaRESTConstants.INDEX) String indexName) throws Exception {
 		return runFetch(uniqueId, indexName);
 	}
-
+	
 	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.FETCH_URL + "/{indexName}/{uniqueId}")
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public String fetchPath(String uniqueId, String indexName) throws Exception {
 		return runFetch(uniqueId, indexName);
 	}
-
+	
 	private static String runFetch(String uniqueId, String indexName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
-
+		
 		FetchRequest.Builder fetchRequest = FetchRequest.newBuilder();
 		fetchRequest.setIndexName(indexName);
 		fetchRequest.setUniqueId(uniqueId);
-
+		
 		FetchResponse fetchResponse = indexManager.fetch(fetchRequest.build());
-
+		
 		if (fetchResponse.hasResultDocument()) {
 			Document document = ResultHelper.getDocumentFromResultDocument(fetchResponse.getResultDocument());
 			if (document != null) {
@@ -59,5 +65,5 @@ public class FetchController {
 		}
 		throw new DocumentDoesNotExistException(uniqueId, indexName);
 	}
-
+	
 }

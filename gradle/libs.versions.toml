@@ -8,7 +8,7 @@ picocli = "4.7.6"
 poi = "5.3.0"
 protobuf = "3.25.5"
 unirest = '4.4.5'
-
+djl = "0.31.1"
 
 [libraries]
 annontations = { module = "org.jetbrains:annotations", version = "24.0.0" }
@@ -17,6 +17,10 @@ bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
 commons-compress = { module = "org.apache.commons:commons-compress", version = "1.27.1" }
 commons-pool2 = { module = "org.apache.commons:commons-pool2", version = "2.11.1" }
+djl-pytorch-engine = { module = "ai.djl.pytorch:pytorch-engine", version.ref = "djl" }
+djl-basicdataset = { module = "ai.djl:basicdataset", version.ref = "djl" }
+djl-model-zoo = { module = "ai.djl:model-zoo", version.ref = "djl" }
+djl-huggingface-tokenizers = { module = "ai.djl.huggingface:tokenizers", version.ref = "djl" }
 flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.17.0" }
 guava = { module = "com.google.guava:guava", version = "33.3.1-jre" }
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
