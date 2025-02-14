@@ -32,6 +32,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLOutput;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +48,7 @@ public class Train {
 		load();
 	}
 	
-	private static void load() throws IOException, MalformedModelException {
+	private static void load() throws IOException, MalformedModelException, TranslateException {
 		
 		Gson gson = new Gson();
 		
@@ -81,25 +83,36 @@ public class Train {
 				}
 			});
 			
+			List<ClassifierFeatureVector> featureVectors = new ArrayList<>();
+			
 			AtomicInteger count = new AtomicInteger();
 			try (Stream<String> lines = Files.lines(Paths.get("/data/23.6M_feature_files/orcid2024-2_testing_features.csv"))) {
 				lines.forEach(s -> {
-					ClassifierFeatureVector v = gson.fromJson(s, ClassifierFeatureVector.class);
-					try {
-						Float output = predictor.predict(v.getFeatures());
-						
-						System.out.println(output + " : " + v.getCategory());
-						
-						if (count.getAndIncrement() > 10) {
-							throw new RuntimeException("Ending early");
-						}
-					}
-					catch (TranslateException e) {
-						throw new RuntimeException(e);
+					if (count.getAndIncrement() < 100) {
+						ClassifierFeatureVector v = gson.fromJson(s, ClassifierFeatureVector.class);
+						featureVectors.add(v);
 					}
 				});
 			}
 			
+			//single example
+			ClassifierFeatureVector test1 = featureVectors.getFirst();
+			Float predict = predictor.predict(test1.getFeatures());
+			System.out.println("Predicted: " + predict + " with real category " + test1.getCategory());
+			
+			//batch example
+			List<float[]> featureList = new ArrayList<>();
+			List<Integer> categories = new ArrayList<>();
+			for (ClassifierFeatureVector featureVector : featureVectors) {
+				featureList.add(featureVector.getFeatures());
+				categories.add(featureVector.getCategory());
+			}
+			
+			System.out.println("Batch predicting");
+			List<Float> outputs = predictor.batchPredict(featureList);
+			for (int i = 0; i < outputs.size(); i++) {
+				System.out.println(outputs.get(i) + " ->  " + categories.get(i));
+			}
 		}
 	}
 	
