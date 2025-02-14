@@ -7,7 +7,7 @@ import ai.djl.training.listener.TrainingListener;
 
 public class TrainingConfigurationFactory {
 	
-	public static TrainingConfig getTrainingConfig(TrainingSettings trainingSettings) {
+	public static DefaultTrainingConfig getTrainingConfig(TrainingSettings trainingSettings) {
 		DefaultTrainingConfig defaultTrainingConfig = new DefaultTrainingConfig(trainingSettings.getLoss());
 		defaultTrainingConfig.optOptimizer(trainingSettings.getOptimizer());
 		for (Evaluator evaluator : trainingSettings.getEvaluators()) {

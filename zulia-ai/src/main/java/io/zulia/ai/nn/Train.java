@@ -4,9 +4,12 @@ import ai.djl.Model;
 import ai.djl.metric.Metrics;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.nn.Block;
+import ai.djl.training.DefaultTrainingConfig;
 import ai.djl.training.EasyTrain;
 import ai.djl.training.Trainer;
+import ai.djl.training.TrainingConfig;
 import ai.djl.training.dataset.Batch;
+import ai.djl.training.listener.SaveModelTrainingListener;
 import ai.djl.translate.TranslateException;
 import io.zulia.ai.dataset.TrainingVectorDataset;
 import io.zulia.ai.features.scaler.FeatureScaler;
@@ -48,13 +51,18 @@ public class Train {
 		FullyConnectedConfiguration fullyConnectedConfiguration = new FullyConnectedConfiguration(List.of(trainingSet.getNumberOfFeatures(), 40),
 						trainingSet.getNumberOfFeatures(), 1);
 		
-		try (Model model = Model.newInstance("some-network-1")) {
+		try (Model model = Model.newInstance("23mil-0.001lr-0.5t")) {
 			
 			Block trainingNetwork = fullyConnectedConfiguration.getTrainingNetwork(trainingSettings);
 			model.setBlock(trainingNetwork);
 			
-			Trainer trainer = model.newTrainer(TrainingConfigurationFactory.getTrainingConfig(trainingSettings));
+			DefaultTrainingConfig trainingConfig = TrainingConfigurationFactory.getTrainingConfig(trainingSettings);
+			trainingConfig.addTrainingListeners(new SaveModelTrainingListener("/data/disambiguation/models/23mil/"));
+			
+			Trainer trainer = model.newTrainer(trainingConfig);
 			trainer.initialize(new Shape(batchSize, fullyConnectedConfiguration.getNumberOfInputs()));
+			
+			
 			
 			Metrics metrics = new Metrics();
 			trainer.setMetrics(metrics);
