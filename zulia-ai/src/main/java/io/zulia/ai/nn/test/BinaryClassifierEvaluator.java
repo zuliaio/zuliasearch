@@ -62,10 +62,10 @@ public abstract class BinaryClassifierEvaluator extends Evaluator {
 		checkLabelShapes(label, prediction, false);
 		
 		NDArray predictionReducedInt64 = prediction.gte(threshold).toType(DataType.INT64, false);
-		NDArray notPredictionReducedInt64 = predictionReducedInt64.add(1).mul(-1).add(2);
+		NDArray notPredictionReducedInt64 = predictionReducedInt64.add(-1).mul(-1);
 		
 		NDArray labelInt64 = label.toType(DataType.INT64, false);
-		NDArray notLabelInt64 = labelInt64.add(1).mul(-1).add(2);
+		NDArray notLabelInt64 = labelInt64.add(-1).mul(-1);
 		
 		long truePositive = predictionReducedInt64.mul(labelInt64).countNonzero().sum().getLong();
 		long falseNegative = notPredictionReducedInt64.mul(labelInt64).countNonzero().sum().getLong();
