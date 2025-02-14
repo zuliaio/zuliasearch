@@ -32,7 +32,6 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -52,7 +51,7 @@ public class Train {
 		
 		Gson gson = new Gson();
 		
-		String modelDir = "6898e43e-7007-464b-94ff-99f7e30f9428";
+		String modelDir = "2065b677-fd6d-4aa4-9db2-5e747c26b378";
 		Path modelPath = Path.of("/data/disambiguation/models/23mil/" + modelDir);
 		
 		String modelName = "23mil-0.001lr-0.5t";
@@ -111,7 +110,7 @@ public class Train {
 			System.out.println("Batch predicting");
 			List<Float> outputs = predictor.batchPredict(featureList);
 			for (int i = 0; i < outputs.size(); i++) {
-				System.out.println(outputs.get(i) + " ->  " + categories.get(i));
+				System.out.println(String.format("%.3f", outputs.get(i)) + " ->  " + categories.get(i));
 			}
 		}
 	}
@@ -136,7 +135,7 @@ public class Train {
 		
 		TrainingSettings trainingSettings = new DefaultBinarySettings(0.5f).setFixedLearningRate(0.001f);
 		FullyConnectedConfiguration fullyConnectedConfiguration = new FullyConnectedConfiguration(List.of(trainingSet.getNumberOfFeatures(), 40),
-						trainingSet.getNumberOfFeatures(), 1);
+						trainingSet.getNumberOfFeatures(), 1).setSigmoidOutput(true);
 		
 		Gson gson = new Gson();
 		try (Model model = Model.newInstance("23mil-0.001lr-0.5t")) {

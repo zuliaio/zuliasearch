@@ -1,5 +1,6 @@
 package io.zulia.ai.nn.config;
 
+import ai.djl.nn.Activation;
 import ai.djl.nn.Block;
 import ai.djl.nn.Parameter;
 import ai.djl.nn.SequentialBlock;
@@ -15,6 +16,7 @@ public class FullyConnectedConfiguration implements NeuralNetworkConfiguration {
 	private final int numberOfInputs;
 	private final int numberOfOutputs;
 	private ActivationFunction activation;
+	private boolean sigmoidOutput;
 	
 	public FullyConnectedConfiguration(List<Integer> hiddenSizes, int numberOfInputs, int numberOfOutputs) {
 		this.hiddenSizes = hiddenSizes;
@@ -33,6 +35,15 @@ public class FullyConnectedConfiguration implements NeuralNetworkConfiguration {
 	
 	public int getNumberOfOutputs() {
 		return numberOfOutputs;
+	}
+	
+	public FullyConnectedConfiguration setSigmoidOutput(boolean sigmoidOutput) {
+		this.sigmoidOutput = sigmoidOutput;
+		return this;
+	}
+	
+	public boolean isSigmoidOutput() {
+		return sigmoidOutput;
 	}
 	
 	public FullyConnectedConfiguration setActivation(ActivationFunction activation) {
@@ -68,6 +79,9 @@ public class FullyConnectedConfiguration implements NeuralNetworkConfiguration {
 			net.add(BatchNorm.builder().build());
 		}
 		net.add(Linear.builder().setUnits(numberOfOutputs).build());
+		if (sigmoidOutput) {
+			net.add(Activation::sigmoid);
+		}
 		return net;
 	}
 }
