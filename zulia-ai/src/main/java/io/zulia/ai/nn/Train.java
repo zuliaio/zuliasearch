@@ -4,7 +4,6 @@ import ai.djl.MalformedModelException;
 import ai.djl.Model;
 import ai.djl.inference.Predictor;
 import ai.djl.metric.Metrics;
-import ai.djl.ndarray.NDList;
 import ai.djl.ndarray.types.Shape;
 import ai.djl.nn.Block;
 import ai.djl.training.DefaultTrainingConfig;
@@ -12,8 +11,6 @@ import ai.djl.training.EasyTrain;
 import ai.djl.training.Trainer;
 import ai.djl.training.dataset.Batch;
 import ai.djl.translate.TranslateException;
-import ai.djl.translate.Translator;
-import ai.djl.translate.TranslatorContext;
 import com.google.gson.Gson;
 import io.zulia.ai.dataset.TrainingVectorDataset;
 import io.zulia.ai.features.generator.ClassifierFeatureVector;
@@ -25,6 +22,7 @@ import io.zulia.ai.nn.config.FullyConnectedConfiguration;
 import io.zulia.ai.nn.training.config.DefaultBinarySettings;
 import io.zulia.ai.nn.training.config.TrainingConfigurationFactory;
 import io.zulia.ai.nn.training.config.TrainingSettings;
+import io.zulia.ai.nn.translator.ScaledFeatureBinaryOutputTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,22 +63,11 @@ public class Train {
 			FullyConnectedConfiguration fullyConnectedConfiguration = gson.fromJson(Files.readString(fullConfigPath), FullyConnectedConfiguration.class);
 			
 			Block evaluationNetwork = fullyConnectedConfiguration.getEvaluationNetwork();
-			evaluationNetwork.loadParameters(finalModel.getNDManager(), new DataInputStream(new FileInputStream(modelPath.resolve(paramsName).toFile())));
+			try (DataInputStream is = new DataInputStream(new FileInputStream(modelPath.resolve(paramsName).toFile()))) {
+				evaluationNetwork.loadParameters(finalModel.getNDManager(), is);
+			}
 			finalModel.setBlock(evaluationNetwork);
-			
-			Predictor<float[], Float> predictor = finalModel.newPredictor(new Translator<>() {
-				
-				@Override
-				public NDList processInput(TranslatorContext ctx, float[] input) {
-					float[] scaledFeatures = featureScaler.scaleFeatures(input);
-					return new NDList(ctx.getNDManager().create(scaledFeatures));
-				}
-				
-				@Override
-				public Float processOutput(TranslatorContext ctx, NDList list) {
-					return list.getFirst().getFloat(0);
-				}
-			});
+
 			
 			List<ClassifierFeatureVector> featureVectors = new ArrayList<>();
 			
@@ -93,6 +80,9 @@ public class Train {
 					}
 				});
 			}
+			
+			
+			Predictor<float[], Float> predictor = finalModel.newPredictor(new ScaledFeatureBinaryOutputTranslator(featureScaler));
 			
 			//single example
 			ClassifierFeatureVector test1 = featureVectors.getFirst();
