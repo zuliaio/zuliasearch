@@ -1,0 +1,1334 @@
+openapi: 3.0.1
+info:
+  title: zulia-service
+  version: 1.0.0
+paths:
+  /associated/{indexName}/all:
+    get:
+      operationId: getAllAssociatedForIndex
+      parameters:
+        - name: indexName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: q
+          in: query
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: getAllAssociatedForIndex 200 response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AssociatedMetadataDTO"
+  /associated/{indexName}/{uniqueId}/bundle:
+    get:
+      operationId: getAssociatedBundleForId
+      parameters:
+        - name: uniqueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: indexName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: getAssociatedBundleForId 200 response
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /associated/{indexName}/{uniqueId}/filenames:
+    get:
+      operationId: getAssociatedFileNamesForId
+      parameters:
+        - name: uniqueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: indexName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: getAssociatedFileNamesForId 200 response
+          content:
+            text/json:
+              schema:
+                $ref: "#/components/schemas/AssociatedController.Filenames"
+  /associated/{indexName}/{uniqueId}/{fileName}:
+    post:
+      operationId: storeAssociated
+      parameters:
+        - name: uniqueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: indexName
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                metaJson:
+                  type: string
+                  nullable: true
+            encoding:
+              file:
+                contentType: application/octet-stream
+        required: true
+      responses:
+        "200":
+          description: storeAssociated 200 response
+          content:
+            text/plain:
+              schema:
+                type: object
+  /associated/{indexName}/{uniqueId}/{fileName}/file:
+    get:
+      operationId: getAssociatedFile
+      parameters:
+        - name: indexName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: uniqueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: getAssociatedFile 200 response
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /associated/{indexName}/{uniqueId}/{fileName}/metadata:
+    get:
+      operationId: getAssociatedMetadata
+      parameters:
+        - name: indexName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: uniqueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: getAssociatedMetadata 200 response
+          content:
+            application/json:
+              schema:
+                type: string
+  /fetch:
+    get:
+      operationId: fetch
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: fetch 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                type: string
+  /fetch/{indexName}/{uniqueId}:
+    get:
+      operationId: fetchPath
+      parameters:
+        - name: uniqueId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: indexName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: fetchPath 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                type: string
+  /fields:
+    get:
+      operationId: getFields
+      parameters:
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: getFields 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/FieldsDTO"
+  /index:
+    get:
+      operationId: getIndexLegacy
+      parameters:
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: getIndexLegacy 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                type: string
+  /indexes:
+    get:
+      operationId: getIndexes
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: getIndexes 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/IndexesResponseDTO"
+  /indexes/{index}:
+    get:
+      operationId: getIndex
+      parameters:
+        - name: index
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: getIndex 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                type: string
+  /nodes:
+    get:
+      operationId: getNodes
+      parameters:
+        - name: active
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: getNodes 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/NodesResponseDTO"
+  /query:
+    get:
+      operationId: get
+      parameters:
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            default: '*:*'
+        - name: qf
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fq
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: qJson
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fl
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fetch
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: true
+        - name: rows
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: facet
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: drillDown
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: defaultOp
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: sort
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: mm
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: sim
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: debug
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: false
+        - name: dontCache
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: true
+        - name: start
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: hl
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: hlJson
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: alJson
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: truncate
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: get 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/SearchResultsDTO"
+  /query/csv:
+    get:
+      operationId: getCSV
+      parameters:
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            default: '*:*'
+        - name: qf
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fq
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: qJson
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fl
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fetch
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: true
+        - name: rows
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: facet
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: drillDown
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: defaultOp
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: sort
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: mm
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: sim
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: debug
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: false
+        - name: dontCache
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: true
+        - name: start
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: hl
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: hlJson
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: alJson
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: batch
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: false
+        - name: batchSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 500
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: getCSV 200 response
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                type: object
+  /query/facet:
+    get:
+      operationId: getFacets
+      parameters:
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            default: '*:*'
+        - name: qf
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fq
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: qJson
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fl
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: facet
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: drillDown
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: defaultOp
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: sort
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: mm
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: debug
+          in: query
+          required: true
+          schema:
+            type: boolean
+            default: false
+        - name: start
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: getFacets 200 response
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                type: object
+  /stats:
+    get:
+      operationId: getStats
+      responses:
+        "200":
+          description: getStats 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/StatsDTO"
+  /terms:
+    get:
+      operationId: getTermsJson
+      parameters:
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: fl
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: minDocFreq
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: minTermFreq
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: startTerm
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: endTerm
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: termFilter
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: termMatch
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: includeTerm
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fuzzyTermJson
+          in: query
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: getTermsJson 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/TermsResponseDTO"
+  /terms/csv:
+    get:
+      operationId: getTermsCsv
+      parameters:
+        - name: index
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: fl
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: amount
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: minDocFreq
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: minTermFreq
+          in: query
+          schema:
+            type: integer
+            format: int32
+            nullable: true
+        - name: startTerm
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: endTerm
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: termFilter
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: termMatch
+          in: query
+          schema:
+            type: string
+            nullable: true
+        - name: includeTerm
+          in: query
+          schema:
+            type: array
+            nullable: true
+            items:
+              type: string
+        - name: fuzzyTermJson
+          in: query
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: getTermsCsv 200 response
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                type: string
+components:
+  schemas:
+    AbstractResource_JsonError_:
+      type: object
+      properties:
+        _links:
+          type: object
+          additionalProperties: true
+        _embedded:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/Resource"
+    AnalysisDTO:
+      required:
+        - field
+        - terms
+      type: object
+      properties:
+        field:
+          type: string
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/TermDTO"
+    AnalysisResultDTO:
+      required:
+        - analysisRequest
+        - terms
+        - tokens
+      type: object
+      properties:
+        analysisRequest:
+          type: object
+          additionalProperties: true
+        tokens:
+          type: array
+          items:
+            type: string
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/TermDTO"
+    AssociatedController.Filenames:
+      required:
+        - filenames
+      type: object
+      properties:
+        filenames:
+          type: array
+          items:
+            type: string
+    AssociatedMetadataDTO:
+      required:
+        - filename
+        - meta
+        - uniqueId
+        - uploadDate
+      type: object
+      properties:
+        uniqueId:
+          type: string
+        filename:
+          type: string
+        uploadDate:
+          type: string
+          format: date-time
+        meta:
+          type: object
+          additionalProperties: true
+    FacetDTO:
+      required:
+        - count
+        - facet
+        - maxError
+      type: object
+      properties:
+        facet:
+          type: string
+        count:
+          type: integer
+          format: int64
+        maxError:
+          type: integer
+          format: int64
+    FacetsDTO:
+      required:
+        - field
+        - maxPossibleMissing
+        - values
+      type: object
+      properties:
+        field:
+          type: string
+        maxPossibleMissing:
+          type: integer
+          format: int64
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetDTO"
+    FieldsDTO:
+      type: object
+      properties:
+        index:
+          type: string
+        fields:
+          type: array
+          items:
+            type: string
+    HighlightDTO:
+      required:
+        - field
+        - fragments
+      type: object
+      properties:
+        field:
+          type: string
+        fragments:
+          type: array
+          items:
+            type: string
+    IndexMappingDTO:
+      type: object
+      properties:
+        name:
+          type: string
+        indexWeight:
+          type: integer
+          format: int32
+        primary:
+          type: array
+          items:
+            type: integer
+            format: int32
+        replica:
+          type: array
+          items:
+            type: integer
+            format: int32
+    IndexesResponseDTO:
+      type: object
+      properties:
+        indexes:
+          type: array
+          items:
+            type: string
+    JsonError:
+      required:
+        - message
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/AbstractResource_JsonError_"
+        - properties:
+            _links:
+              type: object
+              additionalProperties: true
+            _embedded:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resource"
+            message:
+              type: string
+            logref:
+              type: string
+              nullable: true
+            path:
+              type: string
+              nullable: true
+    NodeDTO:
+      type: object
+      properties:
+        serverAddress:
+          type: string
+        servicePort:
+          type: integer
+          format: int32
+        restPort:
+          type: integer
+          format: int32
+        heartbeat:
+          type: integer
+          format: int64
+        indexMappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/IndexMappingDTO"
+    NodesResponseDTO:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: "#/components/schemas/NodeDTO"
+    OptionalMultiValues_Link_:
+      $ref: "#/components/schemas/OptionalValues_List_Link__"
+    OptionalMultiValues_Resource_:
+      $ref: "#/components/schemas/OptionalValues_List_Resource__"
+    OptionalValues_List_Link__:
+      type: object
+      properties:
+        empty:
+          type: boolean
+    OptionalValues_List_Resource__:
+      type: object
+      properties:
+        empty:
+          type: boolean
+    Resource:
+      type: object
+      properties:
+        _links:
+          $ref: "#/components/schemas/OptionalMultiValues_Link_"
+        _embedded:
+          $ref: "#/components/schemas/OptionalMultiValues_Resource_"
+    ScoredResultDTO:
+      type: object
+      properties:
+        id:
+          type: string
+        score:
+          type: number
+          format: float
+        indexName:
+          type: string
+        document:
+          type: object
+          additionalProperties: true
+        highlights:
+          type: array
+          items:
+            $ref: "#/components/schemas/HighlightDTO"
+        analysis:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisResultDTO"
+    SearchResultsDTO:
+      type: object
+      properties:
+        totalHits:
+          type: integer
+          format: int64
+        cursor:
+          type: string
+        analysis:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalysisDTO"
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoredResultDTO"
+        facets:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetsDTO"
+    StatsDTO:
+      type: object
+      properties:
+        jvmUsedMemoryMB:
+          type: integer
+          format: int64
+        jvmFreeMemoryMB:
+          type: integer
+          format: int64
+        jvmTotalMemoryMB:
+          type: integer
+          format: int64
+        jvmMaxMemoryMB:
+          type: integer
+          format: int64
+        freeDataDirSpaceGB:
+          type: number
+          format: double
+        totalDataDirSpaceGB:
+          type: number
+          format: double
+        usedDataDirSpaceGB:
+          type: number
+          format: double
+        zuliaVersion:
+          type: string
+    TermDTO:
+      required:
+        - docFreq
+        - score
+        - term
+        - termFreq
+      type: object
+      properties:
+        term:
+          type: string
+        docFreq:
+          type: integer
+          format: int64
+        termFreq:
+          type: integer
+          format: int64
+        score:
+          type: number
+          format: double
+    TermsResponseDTO:
+      type: object
+      properties:
+        index:
+          type: string
+        field:
+          type: string
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/TermDTO"

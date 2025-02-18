@@ -18,15 +18,11 @@ micronaut {
     }
 }
 
-
 tasks.register<Copy>("copySwagger") {
-    from(layout.buildDirectory.dir("classes/java/main/META-INF/swagger/swagger.yml"))
-    into(project.rootProject.file("api/"))
-    rename("swagger.yml", project.name + "_swagger.yml")
+    from(layout.buildDirectory.dir("classes/java/main/META-INF/swagger/"))
+    into(project.rootProject.file("zulia-swagger/"))
     dependsOn("buildLayers")
 }
-
-
 
 tasks.withType<Test> {
     maxParallelForks = 1

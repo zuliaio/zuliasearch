@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang='en'>
+
+<head>
+    <meta charset='UTF-8'/>
+    <title>zulia-service-1.0.0</title>
+</head>
+
+<body>
+
+<div id='swagger-ui'></div>
+<script>
+
+    const extract = function (v) {
+        return decodeURIComponent(v.replace(/(?:^|.*;\s*)contextPath\s*=\s*([^;]*).*$|^.*$/, "$1"));
+    };
+    const cookie = extract(document.cookie);
+    const contextPath = cookie === '' ? extract(window.location.search.substring(1)) : cookie;
+    const head = document.getElementsByTagName('head')[0]
+
+    link(contextPath + "/swagger-ui/res/swagger-ui.css", head, "text/css", "stylesheet")
+    link(contextPath + "/swagger-ui/res/favicon-16x16.png", head, "image/png", "icon", "16x16")
+    link(contextPath + "/swagger-ui/res/favicon-32x32.png", head, "image/png", "icon", "32x32")
+    link(contextPath + "/swagger-ui/res/flattop.css", head, "text/css", "stylesheet")
+
+    window.onload = function () {
+        const swaggerUiBundle = script(contextPath + "/swagger-ui/res/swagger-ui-bundle.js", head)
+        script(contextPath + "/swagger-ui/res/swagger-ui-standalone-preset.js", head)
+
+        swaggerUiBundle.onload = function () {
+            const f = contextPath === '' ? undefined : () => {
+                return {
+                    statePlugins: {
+                        spec: {
+                            wrapActions: {
+                                updateJsonSpec: (oriAction) => (...args) => {
+                                    let [spec] = args;
+                                    if (spec && spec.paths) {
+                                        const newPaths = {};
+                                        Object.entries(spec.paths).forEach(([path, value]) => newPaths[contextPath + path] = value);
+                                        spec.paths = newPaths;
+                                    }
+                                    oriAction(...args);
+                                }
+                            }
+                        }
+                    }
+                };
+            };
+            const ui = SwaggerUIBundle({
+                url: contextPath + '/swagger/zulia-service-1.0.0.yml',
+                dom_id: '#swagger-ui',
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl,
+                    f
+                ],
+
+
+                deepLinking: true,
+                layout: "StandaloneLayout",
+                tagsSorter: "alpha",
+                validatorUrl: null
+            });
+
+            window.ui = ui;
+
+        };
+    };
+
+    function link(href, head, type, rel, sizes) {
+        const el = document.createElement('link');
+        el.href = href;
+        el.type = type;
+        el.rel = rel;
+        if (sizes !== undefined && sizes) {
+            el.sizes = sizes;
+        }
+        head.appendChild(el);
+    }
+
+    function script(src, head) {
+        const el = document.createElement('script');
+        el.src = src;
+        head.appendChild(el);
+        return el;
+    }
+</script>
+</body>
+
+</html>
