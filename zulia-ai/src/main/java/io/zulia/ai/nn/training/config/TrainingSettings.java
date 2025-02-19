@@ -19,4 +19,9 @@ public interface TrainingSettings {
 	Collection<TrainingListener> getTrainingListeners();
 	
 	Initializer getWeightInitializer();
+	
+	int getBatchSize();
+	
+	int getIterations();
+	
 }

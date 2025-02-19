@@ -5,12 +5,17 @@ import ai.djl.translate.Translator;
 import ai.djl.translate.TranslatorContext;
 import io.zulia.ai.features.scaler.FeatureScaler;
 
-public class ScaledFeatureBinaryOutputTranslator implements Translator<float[], Float> {
+import java.util.function.Function;
+
+public class ScaledFeatureBinaryOutputTranslator<T> implements Translator<T, Float> {
 	
 	private final FeatureScaler featureScaler;
+	private final Function<T, float[]> convertToDenseFeatures;
+
 	
-	public ScaledFeatureBinaryOutputTranslator(FeatureScaler featureScaler) {
+	public ScaledFeatureBinaryOutputTranslator(FeatureScaler featureScaler, DenseFeatureGenerator<T> convertToDenseFeatures) {
 		this.featureScaler = featureScaler;
+		this.convertToDenseFeatures = convertToDenseFeatures;
 	}
 	
 	@Override
@@ -19,8 +24,9 @@ public class ScaledFeatureBinaryOutputTranslator implements Translator<float[], 
 	}
 	
 	@Override
-	public NDList processInput(TranslatorContext ctx, float[] input) {
-		float[] scaledFeatures = featureScaler.scaleFeatures(input);
+	public NDList processInput(TranslatorContext ctx, T input) {
+		float[] denseFeatures = convertToDenseFeatures.apply(input);
+		float[] scaledFeatures = featureScaler.scaleFeatures(denseFeatures);
 		return new NDList(ctx.getNDManager().create(scaledFeatures));
 	}
 }

@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class TrainingVectorDataset extends RandomAccessDataset {
+public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 	
 	private final List<ClassifierFeatureVector> classifierFeatureVectors;
 	private final int categories;
@@ -31,7 +31,7 @@ public class TrainingVectorDataset extends RandomAccessDataset {
 	private final IntIntMap categoryCountMap;
 	private FeatureScaler featureScaler;
 	
-	public TrainingVectorDataset(Builder builder) {
+	public DenseFeatureAndCategoryDataset(Builder builder) {
 		super(builder);
 		this.classifierFeatureVectors = builder.classifierFeatureVectors;
 		this.featureStats = builder.featureStats;
@@ -141,7 +141,7 @@ public class TrainingVectorDataset extends RandomAccessDataset {
 			return this;
 		}
 		
-		public TrainingVectorDataset build() throws IOException {
+		public DenseFeatureAndCategoryDataset build() throws IOException {
 			
 			int featureCount;
 			try (Stream<String> lines = Files.lines(Paths.get(filename))) {
@@ -168,7 +168,7 @@ public class TrainingVectorDataset extends RandomAccessDataset {
 			}
 			
 			this.featureStats = featureStatGenerator.computeFeatureStats();
-			return new TrainingVectorDataset(this);
+			return new DenseFeatureAndCategoryDataset(this);
 		}
 	}
 }
