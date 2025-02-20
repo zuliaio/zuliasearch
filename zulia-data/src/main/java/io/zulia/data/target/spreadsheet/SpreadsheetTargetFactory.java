@@ -9,6 +9,7 @@ import io.zulia.data.target.spreadsheet.excel.ExcelTarget;
 import io.zulia.data.target.spreadsheet.excel.ExcelTargetConfig;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 
 public class SpreadsheetTargetFactory {
@@ -17,12 +18,20 @@ public class SpreadsheetTargetFactory {
 		return fromStream(FileDataOutputStream.from(filePath, overwrite));
 	}
 	
+	public static SpreadsheetTarget<?, ?> fromPath(Path path, boolean overwrite) throws IOException {
+		return fromStream(FileDataOutputStream.from(path, overwrite));
+	}
+	
 	public static SpreadsheetTarget<?, ?> fromStream(DataOutputStream dataOutputStream) throws IOException {
 		return fromStreamWithHeaders(dataOutputStream, null);
 	}
 	
 	public static SpreadsheetTarget<?, ?> fromFileWithHeaders(String filePath, boolean overwrite, Collection<String> headers) throws IOException {
 		return fromStreamWithHeaders(FileDataOutputStream.from(filePath, overwrite), headers);
+	}
+	
+	public static SpreadsheetTarget<?, ?> fromPathWithHeaders(Path path, boolean overwrite, Collection<String> headers) throws IOException {
+		return fromStreamWithHeaders(FileDataOutputStream.from(path, overwrite), headers);
 	}
 	
 	public static SpreadsheetTarget<?, ?> fromStreamWithHeaders(DataOutputStream dataOutputStream, Collection<String> headers) throws IOException {

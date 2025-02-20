@@ -5,4 +5,5 @@ public interface FeatureScaler {
 	double[] scaleFeatures(double[] features);
 	
 	float[] scaleFeatures(float[] features);
+	
 }

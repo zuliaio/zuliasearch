@@ -16,4 +16,9 @@ public class MinMaxFeatureScaler extends FeatureStatScaler {
 		}
 		return retVal;
 	}
+	
+	@Override
+	public String toString() {
+		return "MinMaxFeatureScaler";
+	}
 }

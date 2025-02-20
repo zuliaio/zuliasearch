@@ -47,4 +47,8 @@ public class PercentileClippingFeatureScaler extends FeatureStatScaler {
 		return retVal;
 	}
 	
+	@Override
+	public String toString() {
+		return "PercentileClippingFeatureScaler(" + normalizeRange + ", " + clip + ")";
+	}
 }

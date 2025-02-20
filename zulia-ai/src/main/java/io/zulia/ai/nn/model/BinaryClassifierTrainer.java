@@ -16,6 +16,8 @@ import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;
 import io.zulia.ai.nn.training.config.TrainingConfigurationFactory;
 import io.zulia.ai.nn.training.config.TrainingSettings;
+import io.zulia.data.target.spreadsheet.SpreadsheetTarget;
+import io.zulia.data.target.spreadsheet.SpreadsheetTargetFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +26,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
 public class BinaryClassifierTrainer {
 	public static final String FEATURE_STATS_JSON = "feature_stats.json";
 	public static final String FULL_NETWORK_CONFIG_JSON = "full_network_config.json";
+	public static final String TRAINING_SETTINGS_JSON = "training_settings.json";
 	
 	private final static Logger LOG = LoggerFactory.getLogger(BinaryClassifierTrainer.class);
 	
@@ -90,44 +94,50 @@ public class BinaryClassifierTrainer {
 		Metrics metrics = new Metrics();
 		trainer.setMetrics(metrics);
 		
-		String featureStatJson = gson.toJson(trainingSet.getFeatureStats());
-		Files.writeString(modelPath.resolve(model.getName() + "_" + FEATURE_STATS_JSON), featureStatJson);
+		Files.writeString(modelPath.resolve(model.getName() + "_" + FEATURE_STATS_JSON), gson.toJson(trainingSet.getFeatureStats()));
+		Files.writeString(modelPath.resolve(model.getName() + "_" + FULL_NETWORK_CONFIG_JSON), gson.toJson(fullyConnectedConfiguration));
+		Files.writeString(modelPath.resolve(model.getName() + "_" + TRAINING_SETTINGS_JSON), gson.toJson(trainingSettings));
 		
-		String fullConnectionNetworkConfigJson = gson.toJson(fullyConnectedConfiguration);
-		Files.writeString(modelPath.resolve(model.getName() + "_" + FULL_NETWORK_CONFIG_JSON), fullConnectionNetworkConfigJson);
+		String featureScalerDesc = featureScaler.toString();
 		
 		BinaryClassifierTrainingResults binaryClassifierTrainingResults = new BinaryClassifierTrainingResults(modelUuid);
-		for (int iteration = 0; iteration < trainingSettings.getIterations(); iteration++) {
-			trainingSet.shuffle();
+		try (SpreadsheetTarget<?, ?> spreadsheetTarget = SpreadsheetTargetFactory.fromPathWithHeaders(modelPath.resolve("results.csv"), true,
+						List.of("Model Name", "Epoch", "F1", "Precision", "Recall", "Model Suffix", "Feature Scaler"))) {
 			
-			for (Batch batch : trainer.iterateDataset(trainingSet)) {
-				EasyTrain.trainBatch(trainer, batch);
-				trainer.step();
-				batch.close();
+			for (int iteration = 0; iteration < trainingSettings.getIterations(); iteration++) {
+				trainingSet.shuffle();
+				
+				for (Batch batch : trainer.iterateDataset(trainingSet)) {
+					EasyTrain.trainBatch(trainer, batch);
+					trainer.step();
+					batch.close();
+				}
+				
+				EasyTrain.evaluateDataset(trainer, testingSet);
+				
+				// reset training and validation evaluators at end of epoch
+				trainer.notifyListeners(listener -> listener.onEpoch(trainer));
+				
+				float testingF1 = metrics.getMetric("validate_epoch_BCF1").getLast().getValue().floatValue();
+				float testingPrecision = metrics.getMetric("validate_epoch_BCPrecision").getLast().getValue().floatValue();
+				float testingRecall = metrics.getMetric("validate_epoch_BCRecall").getLast().getValue().floatValue();
+				
+				String suffix = String.format("%.3f", testingF1) + "_" + iteration;
+				
+				spreadsheetTarget.writeRow(modelName, iteration, testingF1, testingPrecision, testingRecall, suffix, featureScalerDesc);
+				
+				BinaryClassifierEpochResult epochResult = new BinaryClassifierEpochResult(iteration, testingF1, testingPrecision, testingRecall, suffix);
+				binaryClassifierTrainingResults.addEpochResult(epochResult);
+				
+				handleEpochResults(epochResult);
+				saveModel(trainingNetwork, modelPath, epochResult);
+				
+				if (earlyStopTraining(binaryClassifierTrainingResults, epochResult)) {
+					break;
+				}
 			}
 			
-			EasyTrain.evaluateDataset(trainer, testingSet);
-			
-			// reset training and validation evaluators at end of epoch
-			trainer.notifyListeners(listener -> listener.onEpoch(trainer));
-			
-			float testingF1 = metrics.getMetric("validate_epoch_BCF1").getLast().getValue().floatValue();
-			float testingPrecision = metrics.getMetric("validate_epoch_BCPrecision").getLast().getValue().floatValue();
-			float testingRecall = metrics.getMetric("validate_epoch_BCRecall").getLast().getValue().floatValue();
-			
-			String suffix = String.format("%.3f", testingF1) + "_" + iteration;
-			
-			BinaryClassifierEpochResult epochResult = new BinaryClassifierEpochResult(iteration, testingF1, testingPrecision, testingRecall, suffix);
-			binaryClassifierTrainingResults.addEpochResult(epochResult);
-			
-			handleEpochResults(epochResult);
-			saveModel(trainingNetwork, modelPath, epochResult);
-			
-			if (earlyStopTraining(binaryClassifierTrainingResults, epochResult)) {
-				break;
-			}
 		}
-		
 		return binaryClassifierTrainingResults;
 	}
 	
