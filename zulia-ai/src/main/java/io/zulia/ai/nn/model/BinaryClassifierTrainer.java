@@ -10,14 +10,18 @@ import ai.djl.training.Trainer;
 import ai.djl.training.dataset.Batch;
 import ai.djl.translate.TranslateException;
 import com.google.gson.Gson;
+import com.univocity.parsers.csv.CsvWriter;
 import io.zulia.ai.dataset.DenseFeatureAndCategoryDataset;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;
 import io.zulia.ai.nn.training.config.TrainingConfigurationFactory;
 import io.zulia.ai.nn.training.config.TrainingSettings;
+import io.zulia.data.output.FileDataOutputStream;
 import io.zulia.data.target.spreadsheet.SpreadsheetTarget;
-import io.zulia.data.target.spreadsheet.SpreadsheetTargetFactory;
+import io.zulia.data.target.spreadsheet.csv.CSVTarget;
+import io.zulia.data.target.spreadsheet.csv.CSVTargetConfig;
+import io.zulia.data.target.spreadsheet.delimited.formatter.NumberCSVWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,8 +105,12 @@ public class BinaryClassifierTrainer {
 		String featureScalerDesc = featureScaler.toString();
 		
 		BinaryClassifierTrainingResults binaryClassifierTrainingResults = new BinaryClassifierTrainingResults(modelUuid);
-		try (SpreadsheetTarget<?, ?> spreadsheetTarget = SpreadsheetTargetFactory.fromPathWithHeaders(modelPath.resolve("results.csv"), true,
-						List.of("Model Name", "Epoch", "F1", "Precision", "Recall", "Model Suffix", "Feature Scaler"))) {
+		
+		FileDataOutputStream fileDataOutputStream = FileDataOutputStream.from(modelPath.resolve("results.csv"), true);
+		CSVTargetConfig csvTargetConfig = CSVTargetConfig.from(fileDataOutputStream)
+						.withHeaders(List.of("Model Name", "Epoch", "F1", "Precision", "Recall", "Model Suffix", "Feature Scaler"))
+						.withNumberTypeHandler(new NumberCSVWriter<CsvWriter>().withDecimalPlaces(4));
+		try (SpreadsheetTarget<?, ?> spreadsheetTarget = CSVTarget.withConfig(csvTargetConfig)) {
 			
 			for (int iteration = 0; iteration < trainingSettings.getIterations(); iteration++) {
 				trainingSet.shuffle();
