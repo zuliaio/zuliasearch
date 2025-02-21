@@ -1,4 +1,4 @@
-package io.zulia.ai.dataset;
+package io.zulia.ai.dataset.spreadsheet;
 
 import ai.djl.ndarray.NDManager;
 import io.zulia.data.source.spreadsheet.SpreadsheetRecord;

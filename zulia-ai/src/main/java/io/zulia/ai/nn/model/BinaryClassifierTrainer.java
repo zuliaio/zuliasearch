@@ -11,7 +11,7 @@ import ai.djl.training.dataset.Batch;
 import ai.djl.translate.TranslateException;
 import com.google.gson.Gson;
 import com.univocity.parsers.csv.CsvWriter;
-import io.zulia.ai.dataset.DenseFeatureAndCategoryDataset;
+import io.zulia.ai.dataset.json.DenseFeatureAndCategoryDataset;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;

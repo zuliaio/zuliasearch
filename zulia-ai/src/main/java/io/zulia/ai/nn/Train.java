@@ -4,7 +4,7 @@ import ai.djl.MalformedModelException;
 import ai.djl.inference.Predictor;
 import ai.djl.translate.TranslateException;
 import com.google.gson.Gson;
-import io.zulia.ai.dataset.DenseFeatureAndCategoryDataset;
+import io.zulia.ai.dataset.json.DenseFeatureAndCategoryDataset;
 import io.zulia.ai.features.generator.ClassifierFeatureVector;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.scaler.PercentileClippingFeatureScaler;

@@ -1,4 +1,4 @@
-package io.zulia.ai.dataset;
+package io.zulia.ai.dataset.json;
 
 import ai.djl.ndarray.NDArray;
 import ai.djl.ndarray.NDList;
@@ -100,8 +100,7 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 	}
 	
 	public static final class Builder extends BaseBuilder<Builder> {
-		private static Gson gson = new Gson();
-		
+
 		private final List<ClassifierFeatureVector> classifierFeatureVectors;
 		private String filename;
 		private int categories;
@@ -142,6 +141,7 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 		}
 		
 		public DenseFeatureAndCategoryDataset build() throws IOException {
+			Gson gson = new Gson();
 			
 			int featureCount;
 			try (Stream<String> lines = Files.lines(Paths.get(filename))) {
