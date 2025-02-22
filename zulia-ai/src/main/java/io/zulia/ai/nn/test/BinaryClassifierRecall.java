@@ -4,8 +4,10 @@ package io.zulia.ai.nn.test;
 
 public class BinaryClassifierRecall extends BinaryClassifierEvaluator {
 	
+	public static final String BC_RECALL = "BCRecall";
+	
 	public BinaryClassifierRecall(float threshold) {
-		this("BCRecall", threshold);
+		this(BC_RECALL, threshold);
 	}
 	
 	public BinaryClassifierRecall(String name, float threshold) {

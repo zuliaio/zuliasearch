@@ -4,8 +4,10 @@ package io.zulia.ai.nn.test;
 
 public class BinaryClassifierPrecision extends BinaryClassifierEvaluator {
 	
+	public static final String BC_PRECISION = "BCPrecision";
+	
 	public BinaryClassifierPrecision(float threshold) {
-		this("BCPrecision", threshold);
+		this(BC_PRECISION, threshold);
 	}
 	
 	public BinaryClassifierPrecision(String name, float threshold) {
