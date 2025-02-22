@@ -6,6 +6,7 @@ import ai.djl.translate.TranslateException;
 import com.google.gson.Gson;
 import io.zulia.ai.dataset.json.DenseFeatureAndCategoryDataset;
 import io.zulia.ai.features.generator.ClassifierFeatureVector;
+import io.zulia.ai.features.generator.ClassifierFeatureVector.BatchedClassifierFeatureVector;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.scaler.PercentileClippingFeatureScaler;
 import io.zulia.ai.features.scaler.PercentileClippingFeatureScaler.NormalizeRange;
@@ -14,6 +15,7 @@ import io.zulia.ai.nn.config.FullyConnectedConfiguration;
 import io.zulia.ai.nn.model.BinaryClassifierModel;
 import io.zulia.ai.nn.model.BinaryClassifierTrainer;
 import io.zulia.ai.nn.model.BinaryClassifierTrainingResults;
+import io.zulia.ai.nn.test.BinaryClassifierStats;
 import io.zulia.ai.nn.training.config.DefaultBinarySettings;
 import io.zulia.ai.nn.training.config.TrainingSettings;
 import org.slf4j.Logger;
@@ -40,34 +42,56 @@ public class Train {
 		String modelName = "23mil-0.001lr-0.5t";
 		String modelBaseDir = "/data/disambiguation/models/23mil/";
 		
+		boolean train = false;
 		Function<FeatureStat[], FeatureScaler> featureScalerGenerator = featureStats -> new PercentileClippingFeatureScaler(featureStats,
 						NormalizeRange.P10_TO_P90, 2.0);
 		
-		BinaryClassifierTrainingResults trainingResults = train(modelBaseDir, modelName, featureScalerGenerator, trainFeatures, testingFeatures);
-		
-		try (BinaryClassifierModel binaryClassifierModel = new BinaryClassifierModel(modelBaseDir, trainingResults.getUuid(), modelName, trainingResults.getBestF1Epoch().modelSuffix(),
-						featureScalerGenerator)) {
-			List<ClassifierFeatureVector> featureVectors = loadTestingFeaturesSample(testingFeatures, 100);
+		String uuid;
+		String modelSuffix;
+		if (train) {
+			
+			BinaryClassifierTrainingResults trainingResults = train(modelBaseDir, modelName, featureScalerGenerator, trainFeatures, testingFeatures);
+			
+			uuid = trainingResults.getUuid();
+			modelSuffix = trainingResults.getBestF1Epoch().modelSuffix();
+			
+		}
+		else {
+			uuid = "d21f106d-6c95-4e7f-9f0a-08ddbbf5025a";
+			modelSuffix = "0.984_2";
+		}
+		test(modelBaseDir, uuid, modelSuffix, modelName, featureScalerGenerator, testingFeatures);
+	}
+	
+	private static void test(String modelBaseDir, String uuid, String modelSuffix, String modelName,
+					Function<FeatureStat[], FeatureScaler> featureScalerGenerator, String testingFeatures)
+					throws IOException, TranslateException, MalformedModelException {
+		try (BinaryClassifierModel binaryClassifierModel = new BinaryClassifierModel(modelBaseDir, uuid, modelName, modelSuffix, featureScalerGenerator)) {
+			
+			int testingBatchSize = 1000;
+			DenseFeatureAndCategoryDataset testingSet = new DenseFeatureAndCategoryDataset.Builder().setSampling(testingBatchSize, false)
+							.setFilename(testingFeatures).build();
+			
+			LOG.info("Testing");
+			BinaryClassifierStats binaryClassifierStats = binaryClassifierModel.evaluate(testingSet, 0.5f, testingBatchSize);
+			LOG.info("Testing Stats on Loaded Model: {}", binaryClassifierStats);
+			
+			List<ClassifierFeatureVector> testingSample = loadTestingFeaturesSample(testingFeatures, 100);
 			
 			try (Predictor<float[], Float> predictor = binaryClassifierModel.getPredictor()) {
 				
 				//single example
-				ClassifierFeatureVector test1 = featureVectors.getFirst();
+				ClassifierFeatureVector test1 = testingSample.getFirst();
 				Float predict = predictor.predict(test1.getFeatures());
 				LOG.info("Predicted: {} with real category {}", predict, test1.getCategory());
 				
 				//batch example
-				List<float[]> featureList = new ArrayList<>();
-				List<Integer> categories = new ArrayList<>();
-				for (ClassifierFeatureVector featureVector : featureVectors) {
-					featureList.add(featureVector.getFeatures());
-					categories.add(featureVector.getCategory());
-				}
-				
 				LOG.info("Batch predicting");
-				List<Float> outputs = predictor.batchPredict(featureList);
-				for (int i = 0; i < outputs.size(); i++) {
-					LOG.info("{} ->  {}", String.format("%.3f", outputs.get(i)), categories.get(i));
+				
+				BatchedClassifierFeatureVector batchedClassifierFeatureVector = ClassifierFeatureVector.asBatch(testingSample);
+				List<Float> outputs = predictor.batchPredict(batchedClassifierFeatureVector.featureList());
+				for (int batchIndex = 0; batchIndex < outputs.size(); batchIndex++) {
+					LOG.info("{} ->  {}", String.format("%.3f", outputs.get(batchIndex)), batchedClassifierFeatureVector.getCategory(batchIndex));
 				}
 			}
 		}
@@ -103,7 +127,8 @@ public class Train {
 		FullyConnectedConfiguration fullyConnectedConfiguration = new FullyConnectedConfiguration(List.of(trainingSet.getNumberOfFeatures(), 40),
 						trainingSet.getNumberOfFeatures(), 1).setSigmoidOutput(true);
 		
-		BinaryClassifierTrainer binaryClassifierTrainer = new BinaryClassifierTrainer(modelBaseDir, modelName, fullyConnectedConfiguration, trainingSettings, featureScalerGenerator);
+		BinaryClassifierTrainer binaryClassifierTrainer = new BinaryClassifierTrainer(modelBaseDir, modelName, fullyConnectedConfiguration, trainingSettings,
+						featureScalerGenerator);
 		return binaryClassifierTrainer.train(trainingSet, testingSet);
 		
 	}

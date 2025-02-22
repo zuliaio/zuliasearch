@@ -4,10 +4,16 @@ import ai.djl.MalformedModelException;
 import ai.djl.Model;
 import ai.djl.inference.Predictor;
 import ai.djl.nn.Block;
+import ai.djl.translate.TranslateException;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import io.zulia.ai.dataset.json.DenseFeatureAndCategoryDataset;
+import io.zulia.ai.features.generator.ClassifierFeatureVector;
+import io.zulia.ai.features.generator.ClassifierFeatureVector.BatchedClassifierFeatureVector;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;
+import io.zulia.ai.nn.test.BinaryClassifierStats;
 import io.zulia.ai.nn.translator.DenseFeatureGenerator;
 import io.zulia.ai.nn.translator.NoOpDenseFeatureGenerator;
 import io.zulia.ai.nn.translator.ScaledFeatureBinaryOutputTranslator;
@@ -19,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.function.Function;
 
 public class BinaryClassifierModel implements AutoCloseable {
@@ -47,6 +54,27 @@ public class BinaryClassifierModel implements AutoCloseable {
 			evaluationNetwork.loadParameters(model.getNDManager(), is);
 		}
 		model.setBlock(evaluationNetwork);
+	}
+	
+	public BinaryClassifierStats evaluate(DenseFeatureAndCategoryDataset dataset, float threshold, int batchSize) throws TranslateException {
+		
+		List<List<ClassifierFeatureVector>> batches = Lists.partition(dataset.getClassifierFeatureVectors(), batchSize);
+		
+		BinaryClassifierStats binaryClassifierStats = new BinaryClassifierStats();
+		try (Predictor<float[], Float> predictor = getPredictor()) {
+			for (List<ClassifierFeatureVector> batch : batches) {
+				BatchedClassifierFeatureVector batchedClassifierFeatureVector = ClassifierFeatureVector.asBatch(batch);
+				List<Float> outputs = predictor.batchPredict(batchedClassifierFeatureVector.featureList());
+				for (int batchIndex = 0; batchIndex < outputs.size(); batchIndex++) {
+					boolean predicted = outputs.get(batchIndex) >= threshold;
+					boolean actual = batchedClassifierFeatureVector.getCategory(batchIndex) == 1;
+					binaryClassifierStats.evaluateResult(predicted, actual);
+				}
+			}
+		}
+		
+		return binaryClassifierStats;
+		
 	}
 	
 	public Predictor<float[], Float> getPredictor() {
