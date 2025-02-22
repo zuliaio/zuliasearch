@@ -39,6 +39,10 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 		this.categoryCountMap = builder.categoryCountMap;
 	}
 	
+	public List<ClassifierFeatureVector> getClassifierFeatureVectors() {
+		return classifierFeatureVectors;
+	}
+	
 	public int getNumberOfFeatures() {
 		return this.featureStats.length;
 	}
