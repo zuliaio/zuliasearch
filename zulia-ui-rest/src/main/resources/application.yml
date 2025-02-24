@@ -1,0 +1,56 @@
+micronaut:
+  server:
+    port: 32194
+    cors:
+      enabled: true
+  application:
+    name: zulia-ui-rest-service
+  endpoints:
+    health:
+      enabled: true
+      sensitive: false
+      details-visible: String
+      status:
+        http-mapping: Map<String, HttpStatus>
+  security:
+    authentication: bearer
+    #redirect:
+    #  enabled: true
+    #  login-success: /auth/userInfo
+    #  refresh:
+    #    url: /auth/userInfo
+    #    enabled: true
+    #endpoints:
+    #  oauth:
+    #    path: /auth/oauth/access_token
+    #  logout:
+    #    path: /auth/logout
+    token:
+      #refresh:
+      #  cookie:
+      #    cookie-max-age: 7200s # 2 hours to give a 70-minute refresh window
+      #cookie-max-age: 50s #Testing time
+      jwt:
+        #cookie:
+        #enabled: true
+        #cookie-same-site: strict
+        #cookie-path: /
+        signatures:
+          secret:
+            generator:
+              secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:ZuliaUISecretGeneratorPassword}"'
+        generator:
+          refresh-token:
+            secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:ZuliaUISecretGeneratorPassword}"'
+            enabled: true
+          access-token:
+            expiration: 3000 # 50 minutes. This is in seconds
+            #expiration: 30 #Testing time
+          #signatures:
+          #          jwks:
+
+# mongoDB info
+mongodb:
+  uri: mongodb://localhost:27017?retryWrites=false&retryReads=false
+  package-names:
+    - io.zulia.ui.rest.beans
