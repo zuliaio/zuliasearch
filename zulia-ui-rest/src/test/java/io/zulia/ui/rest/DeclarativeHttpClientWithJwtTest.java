@@ -2,13 +2,14 @@ package io.zulia.ui.rest;
 
 import com.nimbusds.jwt.JWTParser;
 import com.nimbusds.jwt.SignedJWT;
+import io.micronaut.context.ApplicationContext;
+import io.micronaut.runtime.server.EmbeddedServer;
 import io.micronaut.security.authentication.UsernamePasswordCredentials;
 import io.micronaut.security.token.render.BearerAccessRefreshToken;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
-import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
+import java.util.Collections;
 
 import static io.zulia.ui.rest.TestConstants.PASSWORD;
 import static io.zulia.ui.rest.TestConstants.USERNAME;
@@ -16,11 +17,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@MicronautTest
 public class DeclarativeHttpClientWithJwtTest {
 
-	@Inject
-	AppClient appClient;
+	EmbeddedServer embeddedServer = ApplicationContext.run(EmbeddedServer.class, Collections.emptyMap());
+	AppClient appClient = embeddedServer.getApplicationContext().createBean(AppClient.class, embeddedServer.getURL());
 
 	@Test
 	void verifyJwtAuthenticationWorksWithDeclarativeClient() throws ParseException {

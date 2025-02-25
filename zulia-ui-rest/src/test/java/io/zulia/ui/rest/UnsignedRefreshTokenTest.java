@@ -1,16 +1,16 @@
 package io.zulia.ui.rest;
 
+import io.micronaut.context.ApplicationContext;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.client.HttpClient;
-import io.micronaut.http.client.annotation.Client;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
+import io.micronaut.runtime.server.EmbeddedServer;
 import io.micronaut.security.endpoints.TokenRefreshRequest;
 import io.micronaut.security.token.render.BearerAccessRefreshToken;
-import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
-import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,12 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@MicronautTest
 public class UnsignedRefreshTokenTest {
 
-	@Inject
-	@Client("/")
-	HttpClient client;
+	EmbeddedServer embeddedServer = ApplicationContext.run(EmbeddedServer.class, Collections.emptyMap());
+	HttpClient client = embeddedServer.getApplicationContext().createBean(HttpClient.class, embeddedServer.getURL());
 
 	@Test
 	void accessingSecuredURLWithoutAuthenticatingReturnsUnauthorized() {

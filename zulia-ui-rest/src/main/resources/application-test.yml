@@ -1,6 +1,6 @@
 micronaut:
   server:
-    port: 32194
+    port: -1
     cors:
       enabled: true
   application:
@@ -26,12 +26,12 @@ micronaut:
             enabled: true
       generator:
         access-token:
-          expiration: 3600 # in seconds which makes this a one hour access-token
+          expiration: 30 # in seconds
       bearer:
         enabled: true
 
 # mongoDB info
 mongodb:
-  uri: mongodb://localhost:27017/zuliaAuth?retryWrites=false&retryReads=false
+  uri: mongodb://localhost:27017/zuliaAuthTest?retryWrites=false&retryReads=false
   package-names:
     - io.zulia.ui.rest.beans
