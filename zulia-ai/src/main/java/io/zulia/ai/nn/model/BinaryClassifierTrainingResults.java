@@ -6,7 +6,7 @@ import java.util.List;
 public class BinaryClassifierTrainingResults {
 	private final String uuid;
 	
-	private List<BinaryClassifierEpochResult> binaryClassifierEpochResults;
+	private final List<BinaryClassifierEpochResult> binaryClassifierEpochResults;
 	
 	public BinaryClassifierTrainingResults(String uuid) {
 		this.uuid = uuid;

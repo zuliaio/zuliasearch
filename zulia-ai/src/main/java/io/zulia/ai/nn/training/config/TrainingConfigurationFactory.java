@@ -1,7 +1,6 @@
 package io.zulia.ai.nn.training.config;
 
 import ai.djl.training.DefaultTrainingConfig;
-import ai.djl.training.TrainingConfig;
 import ai.djl.training.evaluator.Evaluator;
 import ai.djl.training.listener.TrainingListener;
 
