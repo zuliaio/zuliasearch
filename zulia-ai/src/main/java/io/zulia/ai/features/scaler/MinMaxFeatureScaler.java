@@ -5,7 +5,7 @@ import io.zulia.ai.features.stat.FeatureStat;
 public class MinMaxFeatureScaler extends FeatureStatScaler {
 	
 	public MinMaxFeatureScaler(FeatureStat[] featureStats) {
-		super(featureStats);
+		super(featureStats, "MinMax");
 	}
 	
 	@Override

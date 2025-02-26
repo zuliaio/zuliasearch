@@ -6,4 +6,5 @@ public interface FeatureScaler {
 	
 	float[] scaleFeatures(float[] features);
 	
+	String getDescription();
 }

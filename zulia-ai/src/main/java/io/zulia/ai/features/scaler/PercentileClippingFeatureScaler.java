@@ -18,7 +18,7 @@ public class PercentileClippingFeatureScaler extends FeatureStatScaler {
 	}
 	
 	public PercentileClippingFeatureScaler(FeatureStat[] featureStats, NormalizeRange normalizeRange, Double clip) {
-		super(featureStats);
+		super(featureStats, "PercentileClipping");
 		this.normalizeRange = normalizeRange;
 		this.clip = clip;
 	}

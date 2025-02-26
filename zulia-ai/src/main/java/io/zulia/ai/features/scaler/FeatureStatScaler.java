@@ -4,10 +4,12 @@ import io.zulia.ai.features.stat.FeatureStat;
 
 public abstract class FeatureStatScaler implements FeatureScaler {
 	
-	private final FeatureStat[] featureStats;
+	private final transient FeatureStat[] featureStats;
+	private String description;
 	
-	public FeatureStatScaler(FeatureStat[] featureStats) {
+	public FeatureStatScaler(FeatureStat[] featureStats, String description) {
 		this.featureStats = featureStats;
+		this.description = description;
 	}
 	
 	@Override
@@ -42,5 +44,10 @@ public abstract class FeatureStatScaler implements FeatureScaler {
 	
 	protected float scaleFeature(FeatureStat featureStat, float value) {
 		return (float) scaleFeature(featureStat, (double) value);
+	}
+	
+	@Override
+	public String getDescription() {
+		return description;
 	}
 }
