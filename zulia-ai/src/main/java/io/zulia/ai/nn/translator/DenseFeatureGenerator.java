@@ -4,7 +4,5 @@ import java.util.function.Function;
 
 public interface DenseFeatureGenerator<T> extends Function<T, float[]>  {
 	
-	default int maxThreads() {
-		return 1;
-	}
+
 }

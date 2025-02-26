@@ -10,17 +10,17 @@ import io.zulia.util.pool.WorkPool;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 public class ScaledFeatureBinaryOutputTranslator<T> implements Translator<T, Float> {
 	
 	private final FeatureScaler featureScaler;
 	private final DenseFeatureGenerator<T> convertToDenseFeatures;
-
+	private final int maxThreads;
 	
-	public ScaledFeatureBinaryOutputTranslator(FeatureScaler featureScaler, DenseFeatureGenerator<T> convertToDenseFeatures) {
+	public ScaledFeatureBinaryOutputTranslator(int maxThreads, FeatureScaler featureScaler, DenseFeatureGenerator<T> convertToDenseFeatures) {
 		this.featureScaler = featureScaler;
 		this.convertToDenseFeatures = convertToDenseFeatures;
+		this.maxThreads = maxThreads;
 	}
 	
 	@Override
@@ -37,17 +37,17 @@ public class ScaledFeatureBinaryOutputTranslator<T> implements Translator<T, Flo
 	
 	@Override
 	public NDList batchProcessInput(TranslatorContext ctx, List<T> inputs) throws Exception {
-		if (convertToDenseFeatures.maxThreads() > 1) {
+		if (maxThreads > 1) {
 			List<NDList> output = new ArrayList<>();
-			try (TaskExecutor taskExecutor = WorkPool.virtualPool(convertToDenseFeatures.maxThreads())) {
+			try (TaskExecutor taskExecutor = WorkPool.virtualPool(maxThreads)) {
 				ThreadedSequence<T, NDList> threadedSequence = new ThreadedSequence<>(taskExecutor, inputs.size()) {
 					@Override
-					public NDList doWork(T t){
+					public NDList doWork(T t) {
 						return processInput(ctx, t);
 					}
 					
 					@Override
-					public void outputBatch(List<NDList> batchOut)  {
+					public void outputBatch(List<NDList> batchOut) {
 						output.addAll(batchOut);
 					}
 				};

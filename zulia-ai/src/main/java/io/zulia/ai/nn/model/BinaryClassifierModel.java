@@ -78,11 +78,19 @@ public class BinaryClassifierModel implements AutoCloseable {
 	}
 	
 	public Predictor<float[], Float> getPredictor() {
-		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(featureScaler, new NoOpDenseFeatureGenerator()));
+		return getPredictor(1);
+	}
+	
+	public Predictor<float[], Float> getPredictor(int maxThreadsFeatureGenThreads) {
+		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(maxThreadsFeatureGenThreads, featureScaler, new NoOpDenseFeatureGenerator()));
 	}
 	
 	public <T> Predictor<T, Float> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures) {
-		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(featureScaler, convertToDenseFeatures));
+		return getPredictor(convertToDenseFeatures, 1);
+	}
+	
+	public <T> Predictor<T, Float> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures, int maxThreadsFeatureGenThreads) {
+		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(maxThreadsFeatureGenThreads, featureScaler, convertToDenseFeatures));
 	}
 	
 	@Override
