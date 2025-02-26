@@ -31,6 +31,9 @@ public class PercentileClippingFeatureScaler extends FeatureStatScaler {
 			case P10_TO_P90 -> featureStat.getP90() - featureStat.getP10();
 			case P05_TO_P95 -> featureStat.getP95() - featureStat.getP05();
 		};
+		if (range == 0.0d) {
+			range = featureStat.getMax() - featureStat.getMin();
+		}
 		
 		double retVal = ((value - featureStat.getAvg()) / range);
 		if (Double.isNaN(retVal)) {
