@@ -41,6 +41,7 @@ public class BinaryClassifierTrainer {
 	public static final String FEATURE_STATS_JSON = "feature_stats.json";
 	public static final String FULL_NETWORK_CONFIG_JSON = "full_network_config.json";
 	public static final String TRAINING_SETTINGS_JSON = "training_settings.json";
+	public static final String FEATURE_SCALER = "feature_scaler.json";
 	
 	private final static Logger LOG = LoggerFactory.getLogger(BinaryClassifierTrainer.class);
 	
@@ -104,6 +105,7 @@ public class BinaryClassifierTrainer {
 				Files.writeString(modelPath.resolve(model.getName() + "_" + FEATURE_STATS_JSON), gson.toJson(trainingSet.getFeatureStats()));
 				Files.writeString(modelPath.resolve(model.getName() + "_" + FULL_NETWORK_CONFIG_JSON), gson.toJson(fullyConnectedConfiguration));
 				Files.writeString(modelPath.resolve(model.getName() + "_" + TRAINING_SETTINGS_JSON), gson.toJson(trainingSettings));
+				Files.writeString(modelPath.resolve(model.getName() + "_" + FEATURE_SCALER), gson.toJson(featureScaler));
 				
 				String featureScalerDesc = featureScaler.toString();
 				
