@@ -3,6 +3,7 @@ micronaut:
     port: -1
     cors:
       enabled: true
+    context-path: /zuliauirest
   application:
     name: zulia-ui-rest-service
   endpoints:

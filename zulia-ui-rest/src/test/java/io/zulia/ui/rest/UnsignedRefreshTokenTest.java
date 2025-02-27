@@ -33,9 +33,8 @@ public class UnsignedRefreshTokenTest {
 		Argument<Map> errorArgument = Argument.of(Map.class);
 
 		HttpClientResponseException e = assertThrows(HttpClientResponseException.class, () -> {
-			client.toBlocking().exchange(
-					HttpRequest.POST("/oauth/access_token", new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, unsignedRefreshedToken)),
-					bodyArgument, errorArgument);
+			client.toBlocking().exchange(HttpRequest.POST("/zuliauirest/oauth/access_token",
+					new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, unsignedRefreshedToken)), bodyArgument, errorArgument);
 		});
 		assertEquals(BAD_REQUEST, e.getStatus());
 

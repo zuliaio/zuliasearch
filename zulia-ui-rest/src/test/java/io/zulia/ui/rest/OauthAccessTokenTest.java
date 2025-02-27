@@ -29,7 +29,7 @@ public class OauthAccessTokenTest {
 	void verifyJWTAccessTokenRefreshWorks() throws InterruptedException {
 
 		UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
-		HttpRequest<?> request = HttpRequest.POST("/login", creds);
+		HttpRequest<?> request = HttpRequest.POST("/zuliauirest/login", creds);
 
 		long oldTokenCount = refreshTokenRepository.count();
 		BearerAccessRefreshToken rsp = client.toBlocking().retrieve(request, BearerAccessRefreshToken.class);
@@ -40,8 +40,8 @@ public class OauthAccessTokenTest {
 		assertNotNull(rsp.getRefreshToken());
 
 		Thread.sleep(1_000); // sleep for one second to give time for the issued at `iat` Claim to change
-		AccessRefreshToken refreshResponse = client.toBlocking()
-				.retrieve(HttpRequest.POST("/oauth/access_token", new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, rsp.getRefreshToken())),
+		AccessRefreshToken refreshResponse = client.toBlocking().retrieve(HttpRequest.POST("/zuliauirest/oauth/access_token",
+						new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, rsp.getRefreshToken())),
 						AccessRefreshToken.class); // <1>
 
 		assertNotNull(refreshResponse.getAccessToken());

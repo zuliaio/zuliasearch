@@ -46,8 +46,8 @@ public class RefreshTokenRevokedTest {
 		Argument<BearerAccessRefreshToken> bodyArgument = Argument.of(BearerAccessRefreshToken.class);
 		Argument<Map> errorArgument = Argument.of(Map.class);
 		HttpClientResponseException e = assertThrows(HttpClientResponseException.class, () -> {
-			client.toBlocking().exchange(
-					HttpRequest.POST("/oauth/access_token", new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, signedRefreshToken)),
+			client.toBlocking().exchange(HttpRequest.POST("/zuliauirest/oauth/access_token",
+							new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, signedRefreshToken)),
 					bodyArgument, errorArgument);
 		});
 		assertEquals(BAD_REQUEST, e.getStatus());

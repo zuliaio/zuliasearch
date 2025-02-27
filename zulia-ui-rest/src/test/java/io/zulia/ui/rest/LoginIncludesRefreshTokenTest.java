@@ -27,7 +27,7 @@ public class LoginIncludesRefreshTokenTest {
 	@Test
 	void uponSuccessfulAuthenticationUserGetsAccessTokenAndRefreshToken() throws ParseException {
 		UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
-		HttpRequest<?> request = HttpRequest.POST("/login", creds);
+		HttpRequest<?> request = HttpRequest.POST("/zuliauirest/login", creds);
 		BearerAccessRefreshToken rsp = client.toBlocking().retrieve(request, BearerAccessRefreshToken.class);
 
 		assertEquals(USERNAME, rsp.getUsername());

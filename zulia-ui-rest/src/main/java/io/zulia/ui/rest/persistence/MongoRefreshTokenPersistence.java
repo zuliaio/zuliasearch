@@ -10,6 +10,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.util.List;
 import java.util.Optional;
 
 import static io.micronaut.security.errors.IssuingAnAccessTokenErrorCode.INVALID_GRANT;
@@ -41,7 +42,7 @@ public class MongoRefreshTokenPersistence implements RefreshTokenPersistence {
 					emitter.error(new OauthErrorResponseException(INVALID_GRANT, "refresh token revoked", null));
 				}
 				else {
-					emitter.next(Authentication.build(token.getUsername()));
+					emitter.next(Authentication.build(token.getUsername(), List.of("ADMIN")));
 					emitter.complete();
 				}
 			}
