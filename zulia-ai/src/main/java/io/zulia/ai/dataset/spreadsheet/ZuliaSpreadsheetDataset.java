@@ -89,7 +89,7 @@ public class ZuliaSpreadsheetDataset extends RandomAccessDataset {
 			return this;
 		}
 		
-		ZuliaSpreadsheetDataset build() throws IOException {
+		public ZuliaSpreadsheetDataset build() throws IOException {
 			this.recordList = new ArrayList<>();
 			try (SpreadsheetSource<?> source = SpreadsheetSourceFactory.fromFileWithHeaders(filename)) {
 				
