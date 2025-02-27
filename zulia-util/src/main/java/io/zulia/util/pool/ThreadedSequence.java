@@ -42,6 +42,11 @@ public abstract class ThreadedSequence<I, O> {
 		this.batchSize = batchSize;
 		taskExecutor = WorkPool.nativePool(threads);
 	}
+	
+	public ThreadedSequence(TaskExecutor taskExecutor, int batchSize) {
+		this.batchSize = batchSize;
+		this.taskExecutor = taskExecutor;
+	}
 
 	public void setProgressTracker(ProgressTracker progressTracker) {
 		this.progressTracker = progressTracker;
