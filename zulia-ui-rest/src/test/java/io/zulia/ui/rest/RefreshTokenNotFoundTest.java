@@ -39,7 +39,8 @@ class RefreshTokenNotFoundTest {
 		String signedRefreshToken = refreshTokenOptional.get();
 		Argument<BearerAccessRefreshToken> bodyArgument = Argument.of(BearerAccessRefreshToken.class);
 		Argument<Map> errorArgument = Argument.of(Map.class);
-		HttpRequest<?> req = HttpRequest.POST("/oauth/access_token", new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, signedRefreshToken));
+		HttpRequest<?> req = HttpRequest.POST("/zuliauirest/oauth/access_token",
+				new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, signedRefreshToken));
 
 		HttpClientResponseException e = assertThrows(HttpClientResponseException.class, () -> {
 			client.toBlocking().exchange(req, bodyArgument, errorArgument);

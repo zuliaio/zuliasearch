@@ -3,6 +3,7 @@ micronaut:
     port: 32194
     cors:
       enabled: true
+    context-path: /zuliauirest
   application:
     name: zulia-ui-rest-service
   endpoints:
@@ -27,6 +28,8 @@ micronaut:
       generator:
         access-token:
           expiration: 3600 # in seconds which makes this a one hour access-token
+        refresh-token:
+          expiration: 3600
       bearer:
         enabled: true
 

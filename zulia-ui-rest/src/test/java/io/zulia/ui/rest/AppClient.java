@@ -12,7 +12,7 @@ import io.micronaut.security.token.render.BearerAccessRefreshToken;
 import static io.micronaut.http.HttpHeaders.AUTHORIZATION;
 import static io.micronaut.http.MediaType.TEXT_PLAIN;
 
-@Client("/")
+@Client("/zuliauirest")
 public interface AppClient {
 
 	@Post("/login")

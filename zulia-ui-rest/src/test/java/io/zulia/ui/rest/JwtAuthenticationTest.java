@@ -48,7 +48,7 @@ public class JwtAuthenticationTest {
 	@Test
 	void accessingASecuredUrlWithoutAuthenticatingReturnsUnauthorized() {
 		HttpClientResponseException e = assertThrows(HttpClientResponseException.class, () -> {
-			client.toBlocking().exchange(HttpRequest.GET("/").accept(TEXT_PLAIN)); // <3>
+			client.toBlocking().exchange(HttpRequest.GET("/zuliauirest/").accept(TEXT_PLAIN)); // <3>
 		});
 
 		assertEquals(UNAUTHORIZED, e.getStatus()); // <3>
@@ -57,7 +57,7 @@ public class JwtAuthenticationTest {
 	@Test
 	void uponSuccessfulAuthenticationAJsonWebTokenIsIssuedToTheUser() throws ParseException {
 		UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
-		HttpRequest<?> request = HttpRequest.POST("/login", creds); // <4>
+		HttpRequest<?> request = HttpRequest.POST("/zuliauirest/login", creds); // <4>
 		HttpResponse<BearerAccessRefreshToken> rsp = client.toBlocking().exchange(request, BearerAccessRefreshToken.class); // <5>
 		assertEquals(OK, rsp.getStatus());
 
@@ -67,7 +67,7 @@ public class JwtAuthenticationTest {
 		assertInstanceOf(SignedJWT.class, JWTParser.parse(bearerAccessRefreshToken.getAccessToken()));
 
 		String accessToken = bearerAccessRefreshToken.getAccessToken();
-		HttpRequest<?> requestWithAuthorization = HttpRequest.GET("/").accept(TEXT_PLAIN).bearerAuth(accessToken); // <6>
+		HttpRequest<?> requestWithAuthorization = HttpRequest.GET("/zuliauirest/").accept(TEXT_PLAIN).bearerAuth(accessToken); // <6>
 		HttpResponse<String> response = client.toBlocking().exchange(requestWithAuthorization, String.class);
 
 		assertEquals(OK, rsp.getStatus());
