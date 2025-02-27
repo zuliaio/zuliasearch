@@ -37,13 +37,13 @@ public class AccessTokenExpiredTest {
 		{
 			// Login to obtain an access token
 			UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
-			HttpRequest<?> request = HttpRequest.POST("/login", creds);
+			HttpRequest<?> request = HttpRequest.POST("/zuliauirest/login", creds);
 			BearerAccessRefreshToken rsp = client.toBlocking().retrieve(request, BearerAccessRefreshToken.class);
 
 			String accessToken = rsp.getAccessToken();
 
 			// test that token can access protected resource
-			HttpRequest<?> requestWithAuthorization = HttpRequest.GET("/").accept(TEXT_PLAIN).bearerAuth(accessToken);
+			HttpRequest<?> requestWithAuthorization = HttpRequest.GET("/zuliauirest/").accept(TEXT_PLAIN).bearerAuth(accessToken);
 			HttpResponse<String> response = client.toBlocking().exchange(requestWithAuthorization, String.class);
 			assertEquals(OK, response.getStatus());
 
@@ -54,7 +54,7 @@ public class AccessTokenExpiredTest {
 
 			// Attempt to access a protected resource with the expired token
 			HttpClientResponseException e = assertThrows(HttpClientResponseException.class, () -> {
-				client.toBlocking().exchange(HttpRequest.GET("/").accept(TEXT_PLAIN));
+				client.toBlocking().exchange(HttpRequest.GET("/zuliauirest/").accept(TEXT_PLAIN));
 			});
 			assertEquals(UNAUTHORIZED, e.getStatus());
 		}
@@ -62,13 +62,13 @@ public class AccessTokenExpiredTest {
 		{
 			// Login to obtain an access token
 			UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
-			HttpRequest<?> request = HttpRequest.POST("/login", creds);
+			HttpRequest<?> request = HttpRequest.POST("/zuliauirest/login", creds);
 			BearerAccessRefreshToken rsp = client.toBlocking().retrieve(request, BearerAccessRefreshToken.class);
 
 			String accessToken = rsp.getAccessToken();
-
+			System.out.println("Access token: " + accessToken);
 			// test that token can access protected resource
-			HttpRequest<?> requestWithAuthorization = HttpRequest.GET("/").accept(TEXT_PLAIN).bearerAuth(accessToken);
+			HttpRequest<?> requestWithAuthorization = HttpRequest.GET("/zuliauirest/").accept(TEXT_PLAIN).bearerAuth(accessToken);
 			HttpResponse<String> response = client.toBlocking().exchange(requestWithAuthorization, String.class);
 			assertEquals(OK, response.getStatus());
 
@@ -77,15 +77,24 @@ public class AccessTokenExpiredTest {
 			Thread.sleep(10_000);
 
 			// attempt to refresh the expired token
-			AccessRefreshToken refreshResponse = client.toBlocking().retrieve(
-					HttpRequest.POST("/oauth/access_token", new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, rsp.getRefreshToken())),
-					AccessRefreshToken.class);
+			AccessRefreshToken refreshResponse = client.toBlocking().retrieve(HttpRequest.POST("/zuliauirest/oauth/access_token",
+					new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, rsp.getRefreshToken())), AccessRefreshToken.class);
 
 			assertNotNull(refreshResponse.getAccessToken());
 			assertNotEquals(rsp.getAccessToken(), refreshResponse.getAccessToken());
+
+			System.out.println("Refreshed access token: " + refreshResponse.getAccessToken());
+			// test that refreshed token can access protected resource
+			HttpRequest<?> requestWithAuthorization2 = HttpRequest.GET("/zuliauirest/").accept(TEXT_PLAIN).bearerAuth(refreshResponse.getAccessToken());
+			HttpResponse<String> response2 = client.toBlocking().exchange(requestWithAuthorization2, String.class);
+			assertEquals(OK, response2.getStatus());
+
+			// test that refreshed token can access protected resource
+			HttpRequest<?> requestWithAuthorization3 = HttpRequest.GET("/zuliauirest/").accept(TEXT_PLAIN).bearerAuth(accessToken);
+			HttpResponse<String> response3 = client.toBlocking().exchange(requestWithAuthorization3, String.class);
+			assertEquals(OK, response3.getStatus());
 		}
 
-		System.out.println("Deleting tokens");
 		refreshTokenRepository.deleteAll();
 
 	}
