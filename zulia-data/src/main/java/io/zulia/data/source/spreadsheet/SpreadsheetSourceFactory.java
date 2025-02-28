@@ -14,46 +14,69 @@ import java.io.IOException;
 
 public class SpreadsheetSourceFactory {
 	
+	public enum HeaderOptions {
+		STRICT,
+		STANDARD,
+		NONE
+	}
+	
 	public static SpreadsheetSource<?> fromFileWithoutHeaders(String filePath) throws IOException {
-		return fromStream(FileDataInputStream.from(filePath), false);
+		return fromStream(FileDataInputStream.from(filePath), HeaderOptions.NONE);
 	}
 	
 	public static SpreadsheetSource<?> fromFileWithHeaders(String filePath) throws IOException {
-		return fromStream(FileDataInputStream.from(filePath), true);
+		return fromStream(FileDataInputStream.from(filePath), HeaderOptions.STANDARD);
 	}
 	
-	public static SpreadsheetSource<?> fromFile(String filePath, boolean hasHeaders) throws IOException {
-		return fromStream(FileDataInputStream.from(filePath), hasHeaders);
+	public static SpreadsheetSource<?> fromFileWithStrictHeaders(String filePath) throws IOException {
+		return fromStream(FileDataInputStream.from(filePath), HeaderOptions.STRICT);
+	}
+	
+	public static SpreadsheetSource<?> fromFile(String filePath, HeaderOptions headerOptions) throws IOException {
+		return fromStream(FileDataInputStream.from(filePath), headerOptions);
 	}
 	
 	public static SpreadsheetSource<?> fromStreamWithoutHeaders(DataInputStream dataInputStream) throws IOException {
-		return fromStream(dataInputStream, false);
+		return fromStream(dataInputStream, HeaderOptions.NONE);
 	}
 	
 	public static SpreadsheetSource<?> fromStreamWithHeaders(DataInputStream dataInputStream) throws IOException {
-		return fromStream(dataInputStream, true);
+		return fromStream(dataInputStream, HeaderOptions.STANDARD);
 	}
 	
-	public static SpreadsheetSource<?> fromStream(DataInputStream dataInputStream, boolean hasHeaders) throws IOException {
+	public static SpreadsheetSource<?> fromStreamWithStrictHeaders(DataInputStream dataInputStream) throws IOException {
+		return fromStream(dataInputStream, HeaderOptions.STRICT);
+	}
+	
+	public static SpreadsheetSource<?> fromStream(DataInputStream dataInputStream, HeaderOptions headerOptions) throws IOException {
 		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataInputStream.getMeta());
 		
 		if (SpreadsheetType.CSV.equals(spreadsheetType)) {
 			CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream);
-			if (hasHeaders) {
+			if (HeaderOptions.STRICT.equals(headerOptions)) {
+				csvSourceConfig.withStrictHeaders();
+			}
+			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
 				csvSourceConfig.withHeaders();
 			}
 			return CSVSource.withConfig(csvSourceConfig);
 		}
 		else if (SpreadsheetType.TSV.equals(spreadsheetType)) {
 			TSVSourceConfig tsvSourceConfig = TSVSourceConfig.from(dataInputStream);
-			if (hasHeaders) {
+			if (HeaderOptions.STRICT.equals(headerOptions)) {
+				tsvSourceConfig.withStrictHeaders();
+			}
+			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
 				tsvSourceConfig.withHeaders();
 			}
 			return TSVSource.withConfig(tsvSourceConfig);
 		}
 		else if (SpreadsheetType.XLSX.equals(spreadsheetType) || SpreadsheetType.XLS.equals(spreadsheetType)) {
 			ExcelSourceConfig excelSourceConfig = ExcelSourceConfig.from(dataInputStream);
-			if (hasHeaders) {
+			if (HeaderOptions.STRICT.equals(headerOptions)) {
+				excelSourceConfig.withStrictHeaders();
+			}
+			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
 				excelSourceConfig.withHeaders();
 			}
 			return ExcelSource.withConfig(excelSourceConfig);
