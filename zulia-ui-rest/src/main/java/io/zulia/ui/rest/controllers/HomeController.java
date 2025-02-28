@@ -42,4 +42,5 @@ public class HomeController {
 		System.out.println("was able to hit secured method with ADMIN role: " + principal.getName());
 		return principal.getName();
 	}
+
 }
