@@ -35,6 +35,12 @@ micronaut:
 
 # mongoDB info
 mongodb:
-  uri: mongodb://localhost:27017/zuliaAuth?retryWrites=false&retryReads=false
+  uri: mongodb://localhost:27017/retryWrites=false&retryReads=false
+  auth-db:
+    name: zuliaAuth
+    collection: refreshTokens
+  user-db:
+    name: zuliaUsers
+    collection: users
   package-names:
     - io.zulia.ui.rest.beans
