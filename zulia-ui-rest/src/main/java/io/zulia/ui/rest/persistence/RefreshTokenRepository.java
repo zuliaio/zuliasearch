@@ -8,7 +8,6 @@ import io.micronaut.data.mongodb.annotation.MongoRepository;
 import io.micronaut.data.repository.CrudRepository;
 import io.zulia.ui.rest.beans.RefreshTokenEntity;
 import jakarta.annotation.PostConstruct;
-import jakarta.inject.Inject;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -18,16 +17,18 @@ import java.util.concurrent.TimeUnit;
 @MongoRepository
 public abstract class RefreshTokenRepository implements CrudRepository<RefreshTokenEntity, String> {
 
+	private final MongoRefreshTokenConfiguration mongoConf;
+	private final MongoClient mongoClient;
+
+	public RefreshTokenRepository(MongoRefreshTokenConfiguration mongoConf, MongoClient mongoClient) {
+		this.mongoConf = mongoConf;
+		this.mongoClient = mongoClient;
+	}
+
 	// Unfortunately mongo doesn't handle creating indexes based on annotations, so we are creating a TTL index for dateCreated to clean up after a day
-	private static final String DATABASE = "zuliaAuth";
-	private static final String COLLECTION = "refreshTokens";
-
-	@Inject
-	MongoClient mongoClient;
-
 	@PostConstruct
 	public void createIndex() {
-		mongoClient.getDatabase(DATABASE).getCollection(COLLECTION)
+		mongoClient.getDatabase(mongoConf.getName()).getCollection(mongoConf.getCollection())
 				.createIndex(Indexes.ascending("dateCreated"), new IndexOptions().background(true).expireAfter(24L, TimeUnit.HOURS));
 	}
 

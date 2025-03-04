@@ -3,6 +3,28 @@ info:
   title: zulia-ui-rest-service
   version: 1.0.0
 paths:
+  /zuliauirest/:
+    get:
+      operationId: home
+      responses:
+        "200":
+          description: home 200 response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /zuliauirest/create-user:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserEntity"
+        required: true
+      responses:
+        "200":
+          description: createUser 200 response
   /zuliauirest/forbidden-test:
     get:
       operationId: forbiddenTest
@@ -131,6 +153,23 @@ paths:
                 type: object
 components:
   schemas:
+    UserEntity:
+      required:
+        - dateCreated
+        - hashedPassword
+        - password
+        - username
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        hashedPassword:
+          type: string
+        dateCreated:
+          type: string
+          format: date-time
     UsernamePasswordCredentials:
       required:
         - password
