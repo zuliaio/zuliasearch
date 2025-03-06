@@ -1,0 +1,190 @@
+openapi: 3.0.1
+info:
+  title: zulia-ui-rest-service
+  version: 1.0.0
+paths:
+  /zuliauirest/:
+    get:
+      operationId: home
+      responses:
+        "200":
+          description: home 200 response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /zuliauirest/create-user:
+    post:
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserEntity"
+        required: true
+      responses:
+        "200":
+          description: createUser 200 response
+  /zuliauirest/forbidden-test:
+    get:
+      operationId: forbiddenTest
+      responses:
+        "200":
+          description: forbiddenTest 200 response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /zuliauirest/home-test:
+    get:
+      operationId: homeTest
+      responses:
+        "200":
+          description: homeTest 200 response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /zuliauirest/home-test-admin:
+    get:
+      operationId: homeTestAdmin
+      responses:
+        "200":
+          description: homeTestAdmin 200 response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /zuliauirest/keys:
+    get:
+      operationId: keys
+      responses:
+        "200":
+          description: keys 200 response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /zuliauirest/login:
+    post:
+      operationId: login
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/UsernamePasswordCredentials"
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsernamePasswordCredentials"
+        required: true
+      responses:
+        "200":
+          description: login 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+  /zuliauirest/logout:
+    get:
+      operationId: indexGet
+      responses:
+        "200":
+          description: indexGet 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      operationId: index
+      responses:
+        "200":
+          description: index 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+  /zuliauirest/oauth/access_token:
+    get:
+      operationId: index_1
+      parameters:
+        - name: JWT_REFRESH_TOKEN
+          in: cookie
+          schema:
+            type: string
+            nullable: true
+      responses:
+        "200":
+          description: index_1 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+    post:
+      operationId: index_2
+      parameters:
+        - name: JWT_REFRESH_TOKEN
+          in: cookie
+          schema:
+            type: string
+            nullable: true
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+              nullable: true
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: string
+              nullable: true
+        required: true
+      responses:
+        "200":
+          description: index_2 200 response
+          content:
+            application/json:
+              schema:
+                type: object
+components:
+  schemas:
+    UserEntity:
+      required:
+        - dateCreated
+        - hashedPassword
+        - password
+        - username
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        hashedPassword:
+          type: string
+        dateCreated:
+          type: string
+          format: date-time
+    UsernamePasswordCredentials:
+      required:
+        - password
+        - username
+      type: object
+      properties:
+        username:
+          minLength: 1
+          type: string
+        password:
+          minLength: 1
+          type: string
+        identity:
+          type: string
+          nullable: true
+        secret:
+          type: string
+          nullable: true

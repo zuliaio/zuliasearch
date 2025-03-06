@@ -1,0 +1,44 @@
+micronaut:
+  server:
+    port: -1
+    cors:
+      enabled: true
+    context-path: /zuliauirest
+  application:
+    name: zulia-ui-rest-service
+  endpoints:
+    health:
+      enabled: true
+      sensitive: false
+      details-visible: String
+      status:
+        http-mapping: Map<String, HttpStatus>
+  security:
+    authentication: bearer
+    token:
+      jwt:
+        signatures:
+          secret:
+            generator:
+              secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:ZuliaUISecretGeneratorPassword}"'
+        generator:
+          refresh-token:
+            secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:ZuliaUISecretGeneratorPassword}"'
+            enabled: true
+      generator:
+        access-token:
+          expiration: 30 # in seconds
+      bearer:
+        enabled: true
+
+# mongoDB info
+mongodb:
+  uri: mongodb://localhost:27017/retryWrites=false&retryReads=false
+  auth-db:
+    name: zuliaAuthTest
+    collection: refreshTokens
+  user-db:
+    name: zuliaUsers
+    collection: users
+  package-names:
+    - io.zulia.ui.rest.beans
