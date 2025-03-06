@@ -36,7 +36,7 @@ public class MongoUserPersistence implements UserService {
 	@Override
 	public void createUser(UserEntity user) {
 		String rawPassword = user.getPassword();
-		String hashedPassword = Password.hash(rawPassword).withBcrypt().getResult();
+		String hashedPassword = Password.hash(rawPassword).addRandomSalt().withBcrypt().getResult();
 		user.setHashedPassword(hashedPassword);
 		user.setPassword(null);
 		getCollection().replaceOne(Filters.eq(user.getUsername()), user, new ReplaceOptions().upsert(true));
