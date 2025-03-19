@@ -10,6 +10,7 @@ import io.micronaut.security.authentication.UsernamePasswordCredentials;
 import io.micronaut.security.endpoints.TokenRefreshRequest;
 import io.micronaut.security.token.render.AccessRefreshToken;
 import io.micronaut.security.token.render.BearerAccessRefreshToken;
+import io.zulia.ui.rest.beans.UserEntity;
 import io.zulia.ui.rest.persistence.RefreshTokenRepository;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +36,17 @@ public class AccessTokenExpiredTest {
 	public void verifyJWTAccessTokenRefreshWorks() throws InterruptedException {
 
 		{
+			// create user
+			UserEntity user = new UserEntity();
+			user.setUsername("zulia-test");
+			user.setPassword("password");
+			HttpRequest<?> request = HttpRequest.POST("/zuliauirest/create-user", user); // <4>
+			HttpResponse<BearerAccessRefreshToken> rsp = client.toBlocking().exchange(request, BearerAccessRefreshToken.class);
+		}
+
+		{
 			// Login to obtain an access token
+
 			UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
 			HttpRequest<?> request = HttpRequest.POST("/zuliauirest/login", creds);
 			BearerAccessRefreshToken rsp = client.toBlocking().retrieve(request, BearerAccessRefreshToken.class);
