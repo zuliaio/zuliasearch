@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.micronaut.application)
 }
 
-description = "Zulia Server"
+description = "Zulia UI REST"
 
 defaultTasks("build", "installDist")
 
@@ -39,11 +39,10 @@ dependencies {
     annotationProcessor(libs.micronaut.openapi)
     annotationProcessor(libs.micronaut.serde.processor)
     annotationProcessor(libs.micronaut.validation.processor)
+    annotationProcessor(libs.micronaut.data.processor)
+    annotationProcessor(libs.micronaut.data.document.processor)
     annotationProcessor(libs.picocli.codegen)
-    api(libs.lucene.backward.codecs)
-    api(libs.lucene.expressions)
-    api(libs.lucene.facet)
-    api(libs.lucene.highlighter)
+    annotationProcessor(libs.micronaut.openapi)
     api(libs.mongodb.driver.sync)
     implementation(libs.awssdk.s3)
     implementation(libs.caffeine)
@@ -60,76 +59,24 @@ dependencies {
     implementation(libs.micronaut.management)
     implementation(libs.micronaut.reactor)
     implementation(libs.micronaut.serde.jackson)
-    implementation(libs.picocli.base)
+    implementation(libs.micronaut.security.jwt)
+    implementation(libs.micronaut.openapi)
+    implementation(libs.micronaut.data.mongodb)
+    implementation(libs.micronaut.http.client)
     implementation(libs.sketches.java)
     implementation(libs.snake.yaml)
     implementation(libs.snappy.java)
     implementation(libs.swagger.annotations)
+    implementation(libs.password4j)
 
     testImplementation(libs.flapdoodle.mongo)
-    testImplementation(libs.micronaut.http.client)
     testImplementation(libs.micronaut.test.junit5)
     testImplementation(project(":zulia-client"))
+    testImplementation(libs.micronaut.test.security)
+    testImplementation(libs.jakarta.inject)
 }
+
 tasks.withType<JavaCompile> {
     options.isFork = true
     options.forkOptions.jvmArgs?.addAll(listOf("-Dmicronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.theme=flattop"))
 }
-
-
-val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts") {
-    applicationName = "zuliad"
-    mainClass.set("io.zulia.server.cmd.ZuliaD")
-    doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("exec ", "export APP_HOME\nexec ")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
-    }
-}
-
-
-
-tasks.register("autocompleteDir") {
-    dependsOn(":zulia-common:version")
-    doLast {
-        mkdir("${layout.buildDirectory.get()}/autocomplete")
-    }
-}
-
-task("picoCliZuliaDAutoComplete", JavaExec::class) {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliad.sh",
-        "io.zulia.server.cmd.ZuliaD"
-    )
-}
-
-
-tasks.withType<AbstractArchiveTask> {
-    dependsOn(
-        "picoCliZuliaDAutoComplete",
-    )
-}
-
-
-distributions {
-    main {
-        contents {
-            from("${layout.buildDirectory.get()}/autocomplete/") {
-                into("bin/autocomplete")
-            }
-
-            filePermissions {
-                unix("777")
-            }
-            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-        }
-
-    }
-}
-
