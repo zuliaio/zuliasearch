@@ -25,6 +25,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.runtime.server.EmbeddedServer;
 import io.micronaut.security.authentication.UsernamePasswordCredentials;
 import io.micronaut.security.token.render.BearerAccessRefreshToken;
+import io.zulia.ui.rest.beans.UserEntity;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
@@ -56,6 +57,15 @@ public class JwtAuthenticationTest {
 
 	@Test
 	void uponSuccessfulAuthenticationAJsonWebTokenIsIssuedToTheUser() throws ParseException {
+		{
+			// create user
+			UserEntity user = new UserEntity();
+			user.setUsername("zulia-test");
+			user.setPassword("password");
+			HttpRequest<?> request = HttpRequest.POST("/zuliauirest/create-user", user); // <4>
+			HttpResponse<BearerAccessRefreshToken> rsp = client.toBlocking().exchange(request, BearerAccessRefreshToken.class);
+		}
+
 		UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
 		HttpRequest<?> request = HttpRequest.POST("/zuliauirest/login", creds); // <4>
 		HttpResponse<BearerAccessRefreshToken> rsp = client.toBlocking().exchange(request, BearerAccessRefreshToken.class); // <5>
