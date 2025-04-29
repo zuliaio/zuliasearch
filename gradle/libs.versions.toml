@@ -22,7 +22,7 @@ djl-pytorch-engine = { module = "ai.djl.pytorch:pytorch-engine", version.ref = "
 djl-basicdataset = { module = "ai.djl:basicdataset", version.ref = "djl" }
 djl-huggingface-tokenizers = { module = "ai.djl.huggingface:tokenizers", version.ref = "djl" }
 djl-model-zoo = { module = "ai.djl:model-zoo", version.ref = "djl" }
-flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.17.0" }
+flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.20.0" }
 guava = { module = "com.google.guava:guava", version = "33.3.1-jre" }
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
