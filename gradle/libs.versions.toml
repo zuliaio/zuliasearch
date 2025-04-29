@@ -2,7 +2,7 @@
 grpc = "1.72.0"
 lucene = "10.2.0"
 koloboke = "1.0.0"
-micronaut = "4.7.3" # used by the micronaut plugin configuration
+micronaut = "4.8.2" # used by the micronaut plugin configuration
 mongodb = "5.4.0"
 picocli = "4.7.7"
 poi = "5.4.1"
@@ -90,5 +90,5 @@ poi = ["poi", "poi-ooxml"]
 
 [plugins]
 reckon = { id = "org.ajoberstar.reckon", version = "0.18.2" }
-micronaut-application = { id = "io.micronaut.application", version = "4.4.4" }
+micronaut-application = { id = "io.micronaut.application", version = "4.5.3" }
 protobuf = { id = "com.google.protobuf", version = "0.9.4" }
