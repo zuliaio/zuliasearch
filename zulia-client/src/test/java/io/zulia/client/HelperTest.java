@@ -4,6 +4,7 @@ import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.factory.Values;
 import io.zulia.message.ZuliaQuery;
+import io.zulia.util.QueryHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +41,7 @@ public class HelperTest {
 		}
 
 		{
-			String query = Values.all().valueHandlerChain(List.of(String::toLowerCase, Values.VALUE_QUOTER)).of("slow cat", "Pink Shirt").asString();
+			String query = Values.all().valueHandlerChain(List.of(String::toLowerCase, QueryHelper.VALUE_QUOTER)).of("slow cat", "Pink Shirt").asString();
 			Assertions.assertEquals("(\"slow cat\" AND \"pink shirt\")", query);
 		}
 
