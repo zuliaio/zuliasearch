@@ -10,11 +10,10 @@ import java.util.regex.Pattern;
  */
 public class QueryHelper {
 	
-	public static final Joiner COMMA_JOINER = Joiner.on(",");
-	public static final Joiner SPACE_JOINER = Joiner.on(" ");
-	public static final Joiner OR_JOINER = Joiner.on(" OR ");
-	
-	public static final Joiner AND_JOINER = Joiner.on(" AND ");
+	public static final Joiner COMMA_JOINER = Joiner.on(",").skipNulls();
+	public static final Joiner SPACE_JOINER = Joiner.on(" ").skipNulls();
+	public static final Joiner OR_JOINER = Joiner.on(" OR ").skipNulls();
+	public static final Joiner AND_JOINER = Joiner.on(" AND ").skipNulls();
 	
 	public static final Pattern NEEDS_QUOTING = Pattern.compile("[\\s\\\\+\\-!():^\\[\\]\"{}~*?|&/@]");
 	
