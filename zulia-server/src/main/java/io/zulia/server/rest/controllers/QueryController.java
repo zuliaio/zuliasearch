@@ -14,12 +14,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.zulia.ZuliaRESTConstants;
-import io.zulia.rest.dto.AnalysisDTO;
-import io.zulia.rest.dto.FacetsDTO;
-import io.zulia.rest.dto.HighlightDTO;
-import io.zulia.rest.dto.ScoredResultDTO;
-import io.zulia.rest.dto.SearchResultsDTO;
-import io.zulia.rest.dto.TermDTO;
+import io.zulia.rest.dto.*;
 import io.zulia.server.exceptions.WrappedCheckedException;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.util.ZuliaNodeProvider;
@@ -34,13 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Writer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static io.zulia.message.ZuliaBase.Similarity;
 import static io.zulia.message.ZuliaQuery.*;
@@ -69,7 +58,6 @@ public class QueryController {
 			@QueryValue(value = ZuliaRESTConstants.ROWS, defaultValue = "0") Integer rows, @Nullable @QueryValue(ZuliaRESTConstants.FACET) List<String> facet,
 			@Nullable @QueryValue(ZuliaRESTConstants.DRILL_DOWN) List<String> drillDowns,
 			@Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator, @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
-			@QueryValue(value = ZuliaRESTConstants.PRETTY, defaultValue = "true") Boolean pretty,
 			@Nullable @QueryValue(ZuliaRESTConstants.MIN_MATCH) Integer mm, @Nullable @QueryValue(ZuliaRESTConstants.SIMILARITY) List<String> similarity,
 			@QueryValue(value = ZuliaRESTConstants.DEBUG, defaultValue = "false") Boolean debug,
 			@QueryValue(value = ZuliaRESTConstants.DONT_CACHE, defaultValue = "true") Boolean dontCache,
@@ -99,7 +87,6 @@ public class QueryController {
 			@QueryValue(value = ZuliaRESTConstants.ROWS, defaultValue = "0") Integer rows, @Nullable @QueryValue(ZuliaRESTConstants.FACET) List<String> facet,
 			@Nullable @QueryValue(ZuliaRESTConstants.DRILL_DOWN) List<String> drillDowns,
 			@Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator, @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
-			@QueryValue(value = ZuliaRESTConstants.PRETTY, defaultValue = "true") Boolean pretty,
 			@Nullable @QueryValue(ZuliaRESTConstants.MIN_MATCH) Integer mm, @Nullable @QueryValue(ZuliaRESTConstants.SIMILARITY) List<String> similarity,
 			@QueryValue(value = ZuliaRESTConstants.DEBUG, defaultValue = "false") Boolean debug,
 			@QueryValue(value = ZuliaRESTConstants.DONT_CACHE, defaultValue = "true") Boolean dontCache,

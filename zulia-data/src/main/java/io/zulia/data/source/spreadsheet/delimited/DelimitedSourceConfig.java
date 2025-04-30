@@ -32,7 +32,7 @@ public class DelimitedSourceConfig {
 				default -> null;
 			};
 		};
-
+		
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneId.systemDefault());
 		this.dateParser = (s) -> Date.from(Instant.from(formatter.parse(s)));
 	}
@@ -49,6 +49,10 @@ public class DelimitedSourceConfig {
 	
 	public DelimitedSourceConfig withHeaders() {
 		return withHeaders(new HeaderConfig());
+	}
+	
+	public DelimitedSourceConfig withStrictHeaders() {
+		return withHeaders(new HeaderConfig().allowBlanks(false).allowDuplicates(false));
 	}
 	
 	public DelimitedSourceConfig withHeaders(HeaderConfig headerConfig) {

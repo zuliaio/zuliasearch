@@ -35,7 +35,6 @@ public interface ZuliaRESTConstants {
 	String SORT = "sort";
 	String FETCH = "fetch";
 	String FIELDS = "fl";
-	String PRETTY = "pretty";
 	String MIN_MATCH = "mm";
 	String DEBUG = "debug";
 	String AMOUNT = "amount";
@@ -45,8 +44,7 @@ public interface ZuliaRESTConstants {
 	String END_TERM = "endTerm";
 	String DEFAULT_OP = "defaultOp";
 	String DRILL_DOWN = "drillDown";
-	String DISMAX = "dismax";
-	String DISMAX_TIE = "dismaxTie";
+	
 	String SIMILARITY = "sim";
 	String START = "start";
 	String ACTIVE = "active";
@@ -55,7 +53,6 @@ public interface ZuliaRESTConstants {
 	String TERM_MATCH = "termMatch";
 	String INCLUDE_TERM = "includeTerm";
 
-	String FORMAT = "format";
 
 	String HIGHLIGHT = "hl";
 
