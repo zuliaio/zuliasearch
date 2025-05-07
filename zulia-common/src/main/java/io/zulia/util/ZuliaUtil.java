@@ -20,6 +20,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -207,9 +208,31 @@ public class ZuliaUtil {
 		return document.toJson();
 	}
 
-	public static void main(String[] args) {
-		String[] s = new String[] { "test", "!" };
-
-		handleLists(s, System.out::println);
+	public float[] getFloatArray(Document document, String fieldName, float[] defaultValue) {
+		List<Double> vector = document.getList(fieldName, Double.class);
+		if (vector == null) {
+			return defaultValue;
+		}
+		
+		float[] vectorFloat = new float[vector.size()];
+		for (int i = 0; i < vector.size(); i++) {
+			vectorFloat[i] = vector.get(i).floatValue();
+		}
+		return vectorFloat;
+		
+	}
+	
+	public double[] getDoubleArray(Document document, String fieldName, double[] defaultValue) {
+		List<Double> vector = document.getList(fieldName, Double.class);
+		if (vector == null) {
+			return defaultValue;
+		}
+		
+		double[] vectorFloat = new double[vector.size()];
+		for (int i = 0; i < vector.size(); i++) {
+			vectorFloat[i] = vector.get(i);
+		}
+		return vectorFloat;
+		
 	}
 }
