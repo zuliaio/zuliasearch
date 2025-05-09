@@ -59,12 +59,12 @@ public class IndexRouting {
 		if (shardMapping.isEmpty()) {
 			return null;
 		}
-		
+
 		int shardNumber = 0;
 		if (numberOfShards > 1) {
 			shardNumber = ShardUtil.findShardForUniqueId(uniqueId, numberOfShards);
 		}
-		
+
 		return shardMapping.get(shardNumber);
 	}
 

@@ -10,7 +10,7 @@ import java.util.List;
 public class JsonSourceRecord implements DataSourceRecord {
 
 	private final Document document;
-	
+
 	public JsonSourceRecord(String json) {
 		document = Document.parse(json);
 	}

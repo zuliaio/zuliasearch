@@ -213,26 +213,26 @@ public class ZuliaUtil {
 		if (vector == null) {
 			return defaultValue;
 		}
-		
+
 		float[] vectorFloat = new float[vector.size()];
 		for (int i = 0; i < vector.size(); i++) {
 			vectorFloat[i] = vector.get(i).floatValue();
 		}
 		return vectorFloat;
-		
+
 	}
-	
+
 	public double[] getDoubleArray(Document document, String fieldName, double[] defaultValue) {
 		List<Double> vector = document.getList(fieldName, Double.class);
 		if (vector == null) {
 			return defaultValue;
 		}
-		
+
 		double[] vectorFloat = new double[vector.size()];
 		for (int i = 0; i < vector.size(); i++) {
 			vectorFloat[i] = vector.get(i);
 		}
 		return vectorFloat;
-		
+
 	}
 }

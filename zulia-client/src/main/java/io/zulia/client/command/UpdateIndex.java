@@ -184,7 +184,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		this.fieldMappingOperation.addAllRemovedKeys(aliasesToRemove);
 		return this;
 	}
-	
+
 	public UpdateIndex removeAllFieldMappings() {
 		return replaceFieldMapping(List.of());
 	}
@@ -352,7 +352,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		this.metaDataOperation.addAllRemovedKeys(keysToRemove);
 		return this;
 	}
-	
+
 	public UpdateIndex removeAllMetadata() {
 		return replaceMetadata(new Document());
 	}
@@ -413,13 +413,11 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		this.warmingSearches = queryRequests;
 		return this;
 	}
-	
-	
-	
+
 	public UpdateIndex removeAllWarmingSearches() {
 		return replaceWarmingSearches();
 	}
-	
+
 	public UpdateIndex replaceWarmingSearches(Search... searches) {
 		return replaceWarmingSearches(Arrays.asList(searches));
 	}

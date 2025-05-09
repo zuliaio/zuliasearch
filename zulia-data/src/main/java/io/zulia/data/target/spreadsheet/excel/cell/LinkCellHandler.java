@@ -10,7 +10,7 @@ import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 
 public class LinkCellHandler implements SpreadsheetTypeHandler<CellReference, Link> {
-	
+
 	@Override
 	public void writeType(CellReference reference, Link value) {
 		SXSSFCell cell = reference.cell();

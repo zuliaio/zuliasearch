@@ -13,44 +13,44 @@ import io.zulia.data.source.spreadsheet.tsv.TSVSourceConfig;
 import java.io.IOException;
 
 public class SpreadsheetSourceFactory {
-	
+
 	public enum HeaderOptions {
 		STRICT,
 		STANDARD,
 		NONE
 	}
-	
+
 	public static SpreadsheetSource<?> fromFileWithoutHeaders(String filePath) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), HeaderOptions.NONE);
 	}
-	
+
 	public static SpreadsheetSource<?> fromFileWithHeaders(String filePath) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), HeaderOptions.STANDARD);
 	}
-	
+
 	public static SpreadsheetSource<?> fromFileWithStrictHeaders(String filePath) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), HeaderOptions.STRICT);
 	}
-	
+
 	public static SpreadsheetSource<?> fromFile(String filePath, HeaderOptions headerOptions) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), headerOptions);
 	}
-	
+
 	public static SpreadsheetSource<?> fromStreamWithoutHeaders(DataInputStream dataInputStream) throws IOException {
 		return fromStream(dataInputStream, HeaderOptions.NONE);
 	}
-	
+
 	public static SpreadsheetSource<?> fromStreamWithHeaders(DataInputStream dataInputStream) throws IOException {
 		return fromStream(dataInputStream, HeaderOptions.STANDARD);
 	}
-	
+
 	public static SpreadsheetSource<?> fromStreamWithStrictHeaders(DataInputStream dataInputStream) throws IOException {
 		return fromStream(dataInputStream, HeaderOptions.STRICT);
 	}
-	
+
 	public static SpreadsheetSource<?> fromStream(DataInputStream dataInputStream, HeaderOptions headerOptions) throws IOException {
 		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataInputStream.getMeta());
-		
+
 		if (SpreadsheetType.CSV.equals(spreadsheetType)) {
 			CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream);
 			if (HeaderOptions.STRICT.equals(headerOptions)) {
@@ -82,9 +82,10 @@ public class SpreadsheetSourceFactory {
 			return ExcelSource.withConfig(excelSourceConfig);
 		}
 		else {
-			throw new IllegalArgumentException("Failed to determine file type from content type <" + dataInputStream.getMeta()
-							.contentType() + "> with filename <" + dataInputStream.getMeta().fileName() + ">");
+			throw new IllegalArgumentException(
+					"Failed to determine file type from content type <" + dataInputStream.getMeta().contentType() + "> with filename <"
+							+ dataInputStream.getMeta().fileName() + ">");
 		}
 	}
-	
+
 }

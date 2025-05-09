@@ -79,5 +79,4 @@ public interface SpreadsheetRecord extends DataSourceRecord {
 
 	String[] getRow();
 
-
 }

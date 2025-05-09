@@ -14,7 +14,7 @@ public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoClo
 	private BufferedReader reader;
 
 	private String next;
-	
+
 	public static JsonLineDataSource withConfig(JsonLineSourceConfig jsonLineSourceConfig) throws IOException {
 		return new JsonLineDataSource(jsonLineSourceConfig);
 	}
@@ -22,7 +22,7 @@ public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoClo
 	public static JsonLineDataSource withDefaults(DataInputStream dataInputStream) throws IOException {
 		return withConfig(JsonLineSourceConfig.from(dataInputStream));
 	}
-	
+
 	protected JsonLineDataSource(JsonLineSourceConfig jsonLineSourceConfig) throws IOException {
 		this.jsonLineSourceConfig = jsonLineSourceConfig;
 		open();
@@ -41,7 +41,7 @@ public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoClo
 
 	@Override
 	public Iterator<JsonSourceRecord> iterator() {
-		
+
 		if (next == null) {
 			try {
 				reset();
@@ -50,7 +50,7 @@ public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoClo
 				throw new RuntimeException(e);
 			}
 		}
-		
+
 		return new Iterator<>() {
 
 			@Override

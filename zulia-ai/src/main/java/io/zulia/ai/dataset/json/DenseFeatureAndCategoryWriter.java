@@ -11,17 +11,17 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
 public class DenseFeatureAndCategoryWriter<T> implements AutoCloseable {
-	
+
 	private final OutputStreamWriter featureWriter;
 	private final DenseFeatureGenerator<T> featureGenerator;
 	private final Gson gson;
-	
+
 	public DenseFeatureAndCategoryWriter(DenseFeatureGenerator<T> featureGenerator, String featureFile) throws FileNotFoundException {
 		this.featureWriter = new OutputStreamWriter(new FileOutputStream(featureFile), StandardCharsets.UTF_8);
 		this.featureGenerator = featureGenerator;
 		this.gson = new Gson();
 	}
-	
+
 	public void writeExample(T example, int category) throws IOException {
 		ClassifierFeatureVector classifierFeatureVector = new ClassifierFeatureVector();
 		classifierFeatureVector.setFeatures(featureGenerator.apply(example));
@@ -29,7 +29,7 @@ public class DenseFeatureAndCategoryWriter<T> implements AutoCloseable {
 		gson.toJson(classifierFeatureVector, featureWriter);
 		featureWriter.write('\n');
 	}
-	
+
 	@Override
 	public void close() throws Exception {
 		this.featureWriter.close();

@@ -16,22 +16,22 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 	private JsonParser parser;
 
 	private final ObjectMapper mapper = new ObjectMapper();
-	
+
 	public static JsonArraySource withConfig(JsonArraySourceConfig jsonArraySourceConfig) throws IOException {
 		return new JsonArraySource(jsonArraySourceConfig);
 	}
-	
+
 	public static JsonArraySource withDefaults(DataInputStream dataInputStream) throws IOException {
 		return withConfig(JsonArraySourceConfig.from(dataInputStream));
 	}
-	
+
 	protected JsonArraySource(JsonArraySourceConfig jsonArraySourceConfig) throws IOException {
 		this.jsonArraySourceConfig = jsonArraySourceConfig;
 		open();
 	}
 
 	protected void open() throws IOException {
-		
+
 		parser = mapper.getFactory().createParser(jsonArraySourceConfig.getDataInputStream().openInputStream());
 		if (parser.nextToken() != JsonToken.START_ARRAY) {
 			throw new IllegalStateException("Expected an array");
@@ -49,7 +49,7 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 
 	@Override
 	public Iterator<JsonSourceRecord> iterator() {
-		
+
 		if (next == null) {
 			try {
 				reset();
@@ -58,8 +58,7 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 				throw new RuntimeException(e);
 			}
 		}
-		
-		
+
 		return new Iterator<>() {
 
 			@Override

@@ -52,8 +52,7 @@ public class OauthAccessTokenTest {
 
 		Thread.sleep(1_000); // sleep for one second to give time for the issued at `iat` Claim to change
 		AccessRefreshToken refreshResponse = client.toBlocking().retrieve(HttpRequest.POST("/zuliauirest/oauth/access_token",
-						new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, rsp.getRefreshToken())),
-						AccessRefreshToken.class); // <1>
+				new TokenRefreshRequest(TokenRefreshRequest.GRANT_TYPE_REFRESH_TOKEN, rsp.getRefreshToken())), AccessRefreshToken.class); // <1>
 
 		assertNotNull(refreshResponse.getAccessToken());
 		assertNotEquals(rsp.getAccessToken(), refreshResponse.getAccessToken()); // <2>

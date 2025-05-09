@@ -11,23 +11,23 @@ import java.util.Collection;
 import java.util.List;
 
 public class DefaultBinarySettings extends DefaultTrainingSettings {
-	
+
 	private final float threshold;
-	
+
 	public DefaultBinarySettings(float threshold) {
 		super();
 		this.threshold = threshold;
 	}
-	
+
 	@Override
 	public Loss getLoss() {
 		return new L2Loss();
 	}
-	
+
 	@Override
 	public Collection<Evaluator> getEvaluators() {
 		return List.of(new BinaryClassifierPrecision(threshold) {
 		}, new BinaryClassifierRecall(threshold), new BinaryClassifierF1(threshold));
 	}
-	
+
 }
