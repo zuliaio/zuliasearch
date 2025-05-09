@@ -1,14 +1,19 @@
 package io.zulia.ai.features.stat;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 
 public class FeatureStatPersistence {
-	
+
 	public static void save(FeatureStat[] featureStats, OutputStream outputStream) throws IOException {
 		try (ObjectOutput output = new ObjectOutputStream(outputStream)) {
-			
+
 			output.writeInt(featureStats.length);
-			
+
 			for (FeatureStat featureStat : featureStats) {
 				output.writeDouble(featureStat.getAvg());
 				output.writeDouble(featureStat.getMin());
@@ -21,15 +26,15 @@ public class FeatureStatPersistence {
 				output.writeDouble(featureStat.getP95());
 				output.writeDouble(featureStat.getMax());
 			}
-			
+
 		}
 	}
-	
+
 	public static FeatureStat[] load(InputStream inputStream) throws IOException {
 		try (ObjectInputStream objectInputStream = new ObjectInputStream(inputStream)) {
 			int numberOfFeatures = objectInputStream.readInt();
 			FeatureStat[] featureStats = new FeatureStat[numberOfFeatures];
-			
+
 			for (int i = 0; i < numberOfFeatures; i++) {
 				FeatureStat featureStat = new FeatureStat();
 				featureStat.setAvg(objectInputStream.readDouble());

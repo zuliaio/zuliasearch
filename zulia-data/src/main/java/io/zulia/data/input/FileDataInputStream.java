@@ -2,7 +2,12 @@ package io.zulia.data.input;
 
 import io.zulia.data.common.DataStreamMeta;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
 
 public class FileDataInputStream implements DataInputStream {

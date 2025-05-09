@@ -11,7 +11,6 @@ import java.io.IOException;
 
 public class CSVSource extends DelimitedSource<CSVRecord, CSVSourceConfig> {
 
-
 	public static CSVSource withConfig(CSVSourceConfig csvSourceConfig) throws IOException {
 		return new CSVSource(csvSourceConfig);
 

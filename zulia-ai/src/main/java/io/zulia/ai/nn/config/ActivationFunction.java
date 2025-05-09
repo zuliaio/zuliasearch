@@ -10,13 +10,13 @@ public enum ActivationFunction {
 	Tanh(Activation::tanh),
 	LRelu((list) -> Activation.leakyRelu(list, 0.01f)),
 	Sigmoid(Activation::sigmoid);
-	
+
 	private final Function<NDList, NDList> activationFunction;
-	
+
 	ActivationFunction(Function<NDList, NDList> activationFunction) {
 		this.activationFunction = activationFunction;
 	}
-	
+
 	public Function<NDList, NDList> getActivationFunction() {
 		return activationFunction;
 	}

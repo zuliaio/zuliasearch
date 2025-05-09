@@ -17,7 +17,7 @@ public class ExcelRecord implements SpreadsheetRecord {
 	private final DelimitedListHandler delimitedListHandler;
 	private final ExcelCellHandler excelCellHandler;
 	private final SheetInfo sheetInfo;
-	
+
 	public ExcelRecord(Row row, SheetInfo sheetInfo, ExcelSourceConfig excelSourceConfig) {
 		this.row = row;
 		this.sheetInfo = sheetInfo;

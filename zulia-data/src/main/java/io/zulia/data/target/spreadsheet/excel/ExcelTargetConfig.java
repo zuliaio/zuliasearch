@@ -14,13 +14,13 @@ import io.zulia.data.target.spreadsheet.excel.cell.NumberCellHandler;
 import io.zulia.data.target.spreadsheet.excel.cell.StringCellHandler;
 
 public class ExcelTargetConfig extends SpreadsheetTargetConfig<CellReference, ExcelTargetConfig> {
-	
+
 	public static ExcelTargetConfig from(DataOutputStream dataStream) {
 		return new ExcelTargetConfig(dataStream);
 	}
-	
+
 	private String primarySheetName;
-	
+
 	private ExcelTargetConfig(DataOutputStream dataStream) {
 		super(dataStream);
 		withStringHandler(new StringCellHandler());
@@ -33,15 +33,15 @@ public class ExcelTargetConfig extends SpreadsheetTargetConfig<CellReference, Ex
 		withHeaderHandler(new HeaderCellHandler());
 		withBoldHandler(new BoldCellHandler());
 	}
-	
+
 	public ExcelTargetConfig getSelf() {
 		return this;
 	}
-	
+
 	public String getPrimarySheetName() {
 		return primarySheetName;
 	}
-	
+
 	public ExcelTargetConfig withPrimarySheetName(String primarySheetName) {
 		this.primarySheetName = primarySheetName;
 		return this;
