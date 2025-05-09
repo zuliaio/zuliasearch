@@ -124,8 +124,8 @@ public class Zulia {
 	void facet(@CommandLine.Option(names = { "-f", "--facetField" }, required = true, description = "Facet facet field name") String facetField,
 			@CommandLine.Option(names = { "-p", "--path" }, description = "Path values for a hierarchical facet") List<String> path,
 			@CommandLine.Option(names = { "-t", "--topN" }, description = "The number of facets to return") Integer topN, @CommandLine.Option(names = { "-s",
-			"--shardTopN" }, description = "The number of facets to request from each shard.  Increasing this number can increase the accuracy of sharded facets when all of the facets are not returned in the top N")
-	Integer shardTopN) {
+					"--shardTopN" }, description = "The number of facets to request from each shard.  Increasing this number can increase the accuracy of sharded facets when all of the facets are not returned in the top N")
+			Integer shardTopN) {
 		CountFacet countFacet = path != null && !path.isEmpty() ? new CountFacet(facetField, path) : new CountFacet(facetField);
 
 		if (topN != null) {
@@ -142,8 +142,8 @@ public class Zulia {
 	void statFacet(@CommandLine.Option(names = { "-n", "--numericField" }, required = true, description = "Numeric field name") String numericField,
 			@CommandLine.Option(names = { "-f", "--facetField" }, required = true, description = "Facet field name") String facetField,
 			@CommandLine.Option(names = { "-t", "--topN" }, description = "The number of facets to return") Integer topN, @CommandLine.Option(names = { "-s",
-			"--shardTopN" }, description = "The number of facets to request from each shard.  Increasing this number can increase the accuracy of sharded facets when all of the facets are not returned in the top N")
-	Integer shardTopN, @CommandLine.Option(names = { "-p", "--path" }, description = "Path values for a hierarchical facet") List<String> path) {
+					"--shardTopN" }, description = "The number of facets to request from each shard.  Increasing this number can increase the accuracy of sharded facets when all of the facets are not returned in the top N")
+			Integer shardTopN, @CommandLine.Option(names = { "-p", "--path" }, description = "Path values for a hierarchical facet") List<String> path) {
 
 		StatFacet statFacet = path != null && !path.isEmpty() ? new StatFacet(numericField, facetField, path) : new StatFacet(numericField, facetField);
 		if (topN != null) {

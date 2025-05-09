@@ -9,19 +9,19 @@ import ai.djl.training.optimizer.Optimizer;
 import java.util.Collection;
 
 public interface TrainingSettings {
-	
+
 	Loss getLoss();
-	
+
 	Optimizer getOptimizer();
-	
+
 	Collection<Evaluator> getEvaluators();
-	
+
 	Collection<TrainingListener> getTrainingListeners();
-	
+
 	Initializer getWeightInitializer();
-	
+
 	int getBatchSize();
-	
+
 	int getIterations();
-	
+
 }

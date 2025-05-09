@@ -5,7 +5,7 @@ import org.apache.poi.ss.usermodel.BuiltinFormats;
 import org.apache.poi.ss.usermodel.CellStyle;
 
 public class NumberCellHandler implements SpreadsheetTypeHandler<CellReference, Number> {
-	
+
 	@Override
 	public void writeType(CellReference reference, Number value) {
 		if (value != null) {
@@ -19,7 +19,7 @@ public class NumberCellHandler implements SpreadsheetTypeHandler<CellReference, 
 			reference.cell().setBlank();
 		}
 	}
-	
+
 	public void configureFloatingPointStyle(CellStyle style) {
 		style.setDataFormat((short) BuiltinFormats.getBuiltinFormat("0.00"));
 	}

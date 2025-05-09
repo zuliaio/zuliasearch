@@ -8,7 +8,7 @@ import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 
 public class HeaderCellHandler implements SpreadsheetTypeHandler<CellReference, String> {
-	
+
 	@Override
 	public void writeType(CellReference reference, String value) {
 		SXSSFCell cell = reference.cell();

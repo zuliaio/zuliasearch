@@ -10,6 +10,6 @@ public interface SpreadsheetSource<T extends SpreadsheetRecord> extends DataSour
 	boolean hasHeader(String field);
 
 	SequencedSet<String> getHeaders();
-	
+
 	void close() throws IOException;
 }

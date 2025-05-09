@@ -468,6 +468,44 @@ public class IndexTest {
 			Assertions.assertEquals(4, indexSettings.getIndexWeight());
 		}
 
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.removeAllWarmingSearches();
+
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			ClientIndexConfig clientIndexConfig = updateIndexResult.getClientIndexConfig();
+			Assertions.assertEquals(0, clientIndexConfig.getWarmingSearches().size());
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(3, indexSettings.getFieldMappingList().size());
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.removeAllFieldMappings();
+
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
+			Assertions.assertEquals(0, indexSettings.getFieldMappingList().size());
+
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.replaceMetadata(new Document().append("stuff", "for free").append("hello", "world").append("the", "best"));
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+
+			Assertions.assertEquals(3, updateIndexResult.getClientIndexConfig().getMeta().size());
+		}
+
+		{
+			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
+			updateIndex.removeAllMetadata();
+			UpdateIndexResult updateIndexResult = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertEquals(0, updateIndexResult.getClientIndexConfig().getMeta().size());
+		}
 	}
 
 	@Test

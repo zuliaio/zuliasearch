@@ -44,7 +44,7 @@ public interface ZuliaRESTConstants {
 	String END_TERM = "endTerm";
 	String DEFAULT_OP = "defaultOp";
 	String DRILL_DOWN = "drillDown";
-	
+
 	String SIMILARITY = "sim";
 	String START = "start";
 	String ACTIVE = "active";
@@ -52,7 +52,6 @@ public interface ZuliaRESTConstants {
 	String TERM_FILTER = "termFilter";
 	String TERM_MATCH = "termMatch";
 	String INCLUDE_TERM = "includeTerm";
-
 
 	String HIGHLIGHT = "hl";
 

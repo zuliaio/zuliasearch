@@ -8,13 +8,13 @@ import io.zulia.data.target.spreadsheet.delimited.DelimitedTargetConfig;
 import java.util.Collection;
 
 public class CollectionDelimitedWriter<T extends AbstractWriter<?>, S extends DelimitedTargetConfig<T, S>> implements SpreadsheetTypeHandler<T, Collection<?>> {
-	
+
 	private final DelimitedTargetConfig<T, S> csvDataTargetConfig;
-	
+
 	public CollectionDelimitedWriter(DelimitedTargetConfig<T, S> csvDataTargetConfig) {
 		this.csvDataTargetConfig = csvDataTargetConfig;
 	}
-	
+
 	@Override
 	public void writeType(T reference, Collection<?> value) {
 		if (value != null) {

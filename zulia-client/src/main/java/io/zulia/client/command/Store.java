@@ -90,13 +90,15 @@ public class Store extends SimpleCommand<StoreRequest, StoreResult> implements S
 	}
 
 	public Store addExternalDocument(ExternalBuilder externalBuilder) {
-			externalBuilder.setDocumentUniqueId(uniqueId);
-			externalBuilder.setIndexName(indexName);
-			externalDocuments.add(externalBuilder.build());
-			return this;
+		externalBuilder.setDocumentUniqueId(uniqueId);
+		externalBuilder.setIndexName(indexName);
+		externalDocuments.add(externalBuilder.build());
+		return this;
 	}
 
-	public List<ZuliaBase.ExternalDocument> getExternalDocument() {return externalDocuments;}
+	public List<ZuliaBase.ExternalDocument> getExternalDocument() {
+		return externalDocuments;
+	}
 
 	public Store setExternalDocuments(List<ZuliaBase.ExternalDocument> externalDocuments) {
 		this.externalDocuments = externalDocuments;

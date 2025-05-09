@@ -25,7 +25,6 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 	private final ZuliaQuery.FacetRequest.Builder facetRequest = ZuliaQuery.FacetRequest.newBuilder();
 	private final ZuliaQuery.SortRequest.Builder sortRequest = ZuliaQuery.SortRequest.newBuilder();
 
-
 	public Search(String... indexes) {
 		this(Arrays.asList(indexes));
 	}
