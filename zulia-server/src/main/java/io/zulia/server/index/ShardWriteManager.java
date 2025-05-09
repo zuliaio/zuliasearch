@@ -148,7 +148,7 @@ public class ShardWriteManager {
 		return false;
 	}
 
-	public WarmInfo needsSearchWarming(long lastestShardTime) {
+	WarmInfo needsSearchWarming(long lastestShardTime) {
 		long currentTime = System.currentTimeMillis();
 
 		//reassign so it can't change in the middle of the logic
