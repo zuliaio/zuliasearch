@@ -32,7 +32,7 @@ public class S3Location extends Document {
 		}
 
 		public S3Location build() {
-			assert(null != key && null != bucket && null != region);
+			assert (null != key && null != bucket && null != region);
 			return new S3Location(bucket, region, key);
 		}
 	}

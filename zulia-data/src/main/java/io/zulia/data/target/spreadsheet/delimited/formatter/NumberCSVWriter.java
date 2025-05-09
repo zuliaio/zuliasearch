@@ -4,28 +4,28 @@ import com.univocity.parsers.common.AbstractWriter;
 import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
 
 public class NumberCSVWriter<T extends AbstractWriter<?>> implements SpreadsheetTypeHandler<T, Number> {
-	
+
 	private int decimalPlaces;
 	private String doubleFormatter;
-	
+
 	public NumberCSVWriter() {
 		this(3);
 	}
-	
+
 	public NumberCSVWriter(int decimalPlaces) {
 		withDecimalPlaces(decimalPlaces);
 	}
-	
+
 	public NumberCSVWriter<T> withDecimalPlaces(int decimalPlaces) {
 		this.doubleFormatter = "%." + decimalPlaces + "f";
 		this.decimalPlaces = decimalPlaces;
 		return this;
 	}
-	
+
 	public int getDecimalPlaces() {
 		return decimalPlaces;
 	}
-	
+
 	@Override
 	public void writeType(T reference, Number value) {
 		switch (value) {

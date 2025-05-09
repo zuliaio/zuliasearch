@@ -11,15 +11,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class WorkbookHelper {
-	
+
 	private final Map<String, CellStyle> styleMap = new ConcurrentHashMap<>();
 	private final Map<String, Font> fontMap = new ConcurrentHashMap<>();
 	private final SXSSFWorkbook workbook;
-	
+
 	public WorkbookHelper(SXSSFWorkbook workbook) {
 		this.workbook = workbook;
 	}
-	
+
 	public CellStyle createOrGetStyle(String styleName, Consumer<CellStyle> styleInit) {
 		return styleMap.computeIfAbsent(styleName, k -> {
 			CellStyle cellStyle = workbook.createCellStyle();
@@ -27,7 +27,7 @@ public class WorkbookHelper {
 			return cellStyle;
 		});
 	}
-	
+
 	public Font createOrGetFont(String fontName, Consumer<Font> fontInit) {
 		return fontMap.computeIfAbsent(fontName, k -> {
 			Font font = workbook.createFont();
@@ -35,11 +35,11 @@ public class WorkbookHelper {
 			return font;
 		});
 	}
-	
+
 	public Hyperlink createLink(String href) {
 		Hyperlink link = workbook.getCreationHelper().createHyperlink(HyperlinkType.URL);
 		link.setAddress(href);
 		return link;
 	}
-	
+
 }

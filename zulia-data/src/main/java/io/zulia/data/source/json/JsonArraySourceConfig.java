@@ -10,11 +10,11 @@ public class JsonArraySourceConfig {
 	private final DataInputStream dataInputStream;
 
 	private Charset charset = StandardCharsets.UTF_8;
-	
+
 	public static JsonArraySourceConfig from(DataInputStream dataInputStream) {
 		return new JsonArraySourceConfig(dataInputStream);
 	}
-	
+
 	private JsonArraySourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
 	}

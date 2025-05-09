@@ -15,5 +15,4 @@ public interface ZuliaParser {
 
 	Query parse(String query) throws Exception;
 
-
 }

@@ -30,36 +30,36 @@ import java.util.function.Function;
 
 public class BinaryClassifierModel implements AutoCloseable {
 	private final static Logger LOG = LoggerFactory.getLogger(BinaryClassifierModel.class);
-	
+
 	private final Model model;
 	private final FeatureScaler featureScaler;
-	
+
 	public BinaryClassifierModel(String modelBaseDir, String modelUuid, String modelName, String modelSuffix,
-					Function<FeatureStat[], FeatureScaler> featureScalerGenerator) throws IOException, MalformedModelException {
+			Function<FeatureStat[], FeatureScaler> featureScalerGenerator) throws IOException, MalformedModelException {
 		model = Model.newInstance(modelName);
-		
+
 		Gson gson = new Gson();
-		
+
 		Path modelPath = Path.of(modelBaseDir, modelUuid);
 		String paramsName = modelName + "_" + modelSuffix;
 		Path featureStatPath = modelPath.resolve(modelName + "_" + "feature_stats.json");
 		FeatureStat[] featureStats = gson.fromJson(Files.readString(featureStatPath), FeatureStat[].class);
 		featureScaler = featureScalerGenerator.apply(featureStats);
-		
+
 		Path fullConfigPath = modelPath.resolve(modelName + "_" + "full_network_config.json");
 		FullyConnectedConfiguration fullyConnectedConfiguration = gson.fromJson(Files.readString(fullConfigPath), FullyConnectedConfiguration.class);
-		
+
 		Block evaluationNetwork = fullyConnectedConfiguration.getEvaluationNetwork();
 		try (DataInputStream is = new DataInputStream(new FileInputStream(modelPath.resolve(paramsName).toFile()))) {
 			evaluationNetwork.loadParameters(model.getNDManager(), is);
 		}
 		model.setBlock(evaluationNetwork);
 	}
-	
+
 	public BinaryClassifierStats evaluate(DenseFeatureAndCategoryDataset dataset, float threshold, int batchSize) throws TranslateException {
-		
+
 		List<List<ClassifierFeatureVector>> batches = Lists.partition(dataset.getClassifierFeatureVectors(), batchSize);
-		
+
 		BinaryClassifierStats binaryClassifierStats = new BinaryClassifierStats();
 		try (Predictor<float[], Float> predictor = getPredictor()) {
 			for (List<ClassifierFeatureVector> batch : batches) {
@@ -72,30 +72,30 @@ public class BinaryClassifierModel implements AutoCloseable {
 				}
 			}
 		}
-		
+
 		return binaryClassifierStats;
-		
+
 	}
-	
+
 	public Predictor<float[], Float> getPredictor() {
 		return getPredictor(1);
 	}
-	
+
 	public Predictor<float[], Float> getPredictor(int maxThreadsFeatureGenThreads) {
 		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(maxThreadsFeatureGenThreads, featureScaler, new NoOpDenseFeatureGenerator()));
 	}
-	
+
 	public <T> Predictor<T, Float> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures) {
 		return getPredictor(convertToDenseFeatures, 1);
 	}
-	
+
 	public <T> Predictor<T, Float> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures, int maxThreadsFeatureGenThreads) {
 		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(maxThreadsFeatureGenThreads, featureScaler, convertToDenseFeatures));
 	}
-	
+
 	@Override
 	public void close() {
 		model.close();
 	}
-	
+
 }

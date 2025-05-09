@@ -5,7 +5,7 @@ import ai.djl.training.evaluator.Evaluator;
 import ai.djl.training.listener.TrainingListener;
 
 public class TrainingConfigurationFactory {
-	
+
 	public static DefaultTrainingConfig getTrainingConfig(TrainingSettings trainingSettings) {
 		DefaultTrainingConfig defaultTrainingConfig = new DefaultTrainingConfig(trainingSettings.getLoss());
 		defaultTrainingConfig.optOptimizer(trainingSettings.getOptimizer());
@@ -17,7 +17,7 @@ public class TrainingConfigurationFactory {
 				defaultTrainingConfig.addTrainingListeners(trainingListener);
 			}
 		}
-		
+
 		return defaultTrainingConfig;
 	}
 }

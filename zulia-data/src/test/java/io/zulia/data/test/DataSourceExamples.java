@@ -27,7 +27,7 @@ public class DataSourceExamples {
 		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) { //reads first line as headers
 			// optionally do something with the headers but not required to use headers below
 			SequencedSet<String> headers = dataSource.getHeaders();
-			
+
 			for (SpreadsheetRecord spreadsheetRecord : dataSource) {
 				String firstColumn = spreadsheetRecord.getString(0); // access value in first column not relying on headers
 				String title = spreadsheetRecord.getString("title"); // can access by header name because headers were read on open
@@ -55,31 +55,31 @@ public class DataSourceExamples {
 
 			}
 		}
-		
+
 		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromFileWithHeaders("/data/test.csv")) {  // concise version of above
-			
+
 			// two (or more) passes are supported by the iterator
-			
+
 			int count = 0;
 			for (SpreadsheetRecord spreadsheetRecord : dataSource) {
 				count++;
 			}
-			
+
 			// second more in depth pass using the count for progress for example
 			for (SpreadsheetRecord spreadsheetRecord : dataSource) {
-			
+
 			}
 		}
-		
+
 	}
 
 	public static void manualConfigurationOfCSV() throws IOException {
 		// manual configuration allows more flexibility than generic by more verbose
 		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.csv");
-		
+
 		CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream);
 		csvSourceConfig.withHeaders();
-		
+
 		//optionally configure these below
 		csvSourceConfig.withDelimiter('|'); // set alternate delimiter
 		csvSourceConfig.withListDelimiter(';'); // if reading a cell as a list, split on this, defaults to ;
@@ -93,7 +93,7 @@ public class DataSourceExamples {
 			// implement specialized boolean parsing here
 			return null;
 		});
-		
+
 		try (CSVSource csvSource = CSVSource.withConfig(csvSourceConfig)) {
 			for (CSVRecord csvRecord : csvSource) {
 				// Standard handling
@@ -104,7 +104,7 @@ public class DataSourceExamples {
 				Boolean recommended = csvRecord.getBoolean("recommended");
 				Date dateAdded = csvRecord.getDate("dateAdded");
 				List<String> labels = csvRecord.getList("labels", String.class);
-				
+
 				// no special handling for CSV
 			}
 		}
@@ -113,9 +113,9 @@ public class DataSourceExamples {
 	public static void manualConfigurationWithExcel() throws IOException {
 		FileDataInputStream dataInputStream = FileDataInputStream.from("/data/test.xlsx"); // xlsx and xls are supported;
 		ExcelSourceConfig excelSourceConfig = ExcelSourceConfig.from(dataInputStream).withHeaders();
-		
+
 		excelSourceConfig.withListDelimiter(';');
-		
+
 		// default is DefaultExcelCellHandler but a complete custom implementation can be given or can override individual methods
 		excelSourceConfig.withExcelCellHandler(new DefaultExcelCellHandler() {
 			@Override
@@ -123,18 +123,18 @@ public class DataSourceExamples {
 				// override boolean handling
 				return false;
 			}
-			
+
 			@Override
 			public Float cellToFloat(Cell cell) {
 				// override boolean handling
 				return 0f;
 			}
 		});
-		
+
 		try (ExcelSource excelSource = ExcelSource.withConfig(excelSourceConfig)) {
-			
+
 			for (ExcelRecord excelRecord : excelSource) {
-				
+
 				// Standard handling
 				String firstColumn = excelRecord.getString(0); // access value in first column not relying on headers
 				String title = excelRecord.getString("title"); // can access by header name because headers were read on open
@@ -143,17 +143,17 @@ public class DataSourceExamples {
 				Boolean recommended = excelRecord.getBoolean("recommended");
 				Date dateAdded = excelRecord.getDate("dateAdded");
 				List<String> labels = excelRecord.getList("labels", String.class);
-				
+
 				//Excel specific
 				Row nativeRow = excelRecord.getNativeRow();
 				Cell titleCell = excelRecord.getCell("title");
 			}
-			
+
 		}
 	}
 
 	public static void main(String[] args) throws IOException {
 
 	}
-	
+
 }
