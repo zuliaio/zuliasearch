@@ -9,8 +9,6 @@ import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
 
 public class NumericFieldStatInfo extends FacetInfo {
 
-
-
 	private String numericFieldName;
 	private String sortFieldName;
 
