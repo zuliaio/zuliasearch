@@ -134,25 +134,23 @@ public class NumericSetTest {
 		Assertions.assertEquals("1", searchResult.getCompleteResults().get(0).getUniqueId());
 		Assertions.assertEquals("2", searchResult.getCompleteResults().get(1).getUniqueId());
 		Assertions.assertEquals("5", searchResult.getCompleteResults().get(2).getUniqueId());
-		
-		
+
 		search = new Search(NUMERIC_SET_TEST);
-		search.addQuery(new FilterQuery(NumericSet.withField("intField").of(1,2).asString())).addSort(new Sort("id"));
+		search.addQuery(new FilterQuery(NumericSet.withField("intField").of(1, 2).asString())).addSort(new Sort("id"));
 		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(3, searchResult.getTotalHits());
-		
+
 		Assertions.assertEquals("1", searchResult.getCompleteResults().get(0).getUniqueId());
 		Assertions.assertEquals("2", searchResult.getCompleteResults().get(1).getUniqueId());
 		Assertions.assertEquals("5", searchResult.getCompleteResults().get(2).getUniqueId());
-		
-		
+
 		search = new Search(NUMERIC_SET_TEST);
-		search.addQuery(new FilterQuery(NumericSet.defaultFields().of(1,2).asString()).addQueryField("intField")).addSort(new Sort("id"));
+		search.addQuery(new FilterQuery(NumericSet.defaultFields().of(1, 2).asString()).addQueryField("intField")).addSort(new Sort("id"));
 		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(3, searchResult.getTotalHits());
-		
+
 		Assertions.assertEquals("1", searchResult.getCompleteResults().get(0).getUniqueId());
 		Assertions.assertEquals("2", searchResult.getCompleteResults().get(1).getUniqueId());
 		Assertions.assertEquals("5", searchResult.getCompleteResults().get(2).getUniqueId());

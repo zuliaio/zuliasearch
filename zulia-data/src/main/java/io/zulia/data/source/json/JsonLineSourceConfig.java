@@ -12,11 +12,11 @@ public class JsonLineSourceConfig {
 	private Charset charset = StandardCharsets.UTF_8;
 
 	private JsonLineParseExceptionHandler exceptionHandler = new ThrowingJsonLineParseExceptionHandler();
-	
+
 	public static JsonLineSourceConfig from(DataInputStream dataInputStream) {
 		return new JsonLineSourceConfig(dataInputStream);
 	}
-	
+
 	private JsonLineSourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
 	}

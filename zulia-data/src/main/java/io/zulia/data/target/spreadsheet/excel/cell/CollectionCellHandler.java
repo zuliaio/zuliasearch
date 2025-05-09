@@ -7,13 +7,13 @@ import io.zulia.data.target.spreadsheet.excel.ExcelTargetConfig;
 import java.util.Collection;
 
 public class CollectionCellHandler implements SpreadsheetTypeHandler<CellReference, Collection<?>> {
-	
+
 	private final ExcelTargetConfig excelDataTargetConfig;
-	
+
 	public CollectionCellHandler(ExcelTargetConfig excelDataTargetConfig) {
 		this.excelDataTargetConfig = excelDataTargetConfig;
 	}
-	
+
 	@Override
 	public void writeType(CellReference reference, Collection<?> value) {
 		if (value != null) {
