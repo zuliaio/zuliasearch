@@ -8,7 +8,7 @@ import org.apache.poi.xssf.streaming.SXSSFCell;
 import java.util.Date;
 
 public class DateCellHandler implements SpreadsheetTypeHandler<CellReference, Date> {
-	
+
 	@Override
 	public void writeType(CellReference reference, Date value) {
 		SXSSFCell cell = reference.cell();
