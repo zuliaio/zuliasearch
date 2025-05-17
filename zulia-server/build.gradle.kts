@@ -80,6 +80,7 @@ tasks.withType<JavaCompile> {
 val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts") {
     applicationName = "zuliad"
     mainClass.set("io.zulia.server.cmd.ZuliaD")
+    defaultJvmOpts = listOf("--add-modules","jdk.incubator.vector","--enable-native-access=ALL-UNNAMED")
     doLast {
         val unixScriptFile = file(unixScript)
         val text = unixScriptFile.readText(Charsets.UTF_8)
