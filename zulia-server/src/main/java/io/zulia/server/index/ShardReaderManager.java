@@ -20,7 +20,7 @@ public class ShardReaderManager extends ReferenceManager<ShardReader> {
 
 	@Override
 	protected ShardReader refreshIfNeeded(ShardReader referenceToRefresh) throws IOException {
-		// Evaluate last build time for outside decision making
+		// Evaluate last build time for outside decision-making
 		ShardReader next = referenceToRefresh.refreshIfNeeded();
 		if (next != null) {
 			latestShardTime = next.getCreationTime();

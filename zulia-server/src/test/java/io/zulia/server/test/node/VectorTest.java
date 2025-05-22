@@ -85,7 +85,9 @@ public class VectorTest {
 	@Order(3)
 	public void searchTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		Search search = new Search(VECTOR_TEST);
+
+		//run the first search with realtime to force seeing latest changes without waiting for a commit
+		Search search = new Search(VECTOR_TEST).setRealtime(true);
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(uniqueDocs, searchResult.getTotalHits());
 

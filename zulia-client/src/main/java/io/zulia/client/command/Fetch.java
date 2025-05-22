@@ -25,6 +25,8 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 	private Set<String> documentFields = Collections.emptySet();
 	private Set<String> documentMaskedFields = Collections.emptySet();
 
+	private Boolean realtime;
+
 	public Fetch(String uniqueId, String indexName) {
 		this.uniqueId = uniqueId;
 		this.indexName = indexName;
@@ -91,6 +93,15 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 		return this;
 	}
 
+	public Boolean getRealtime() {
+		return realtime;
+	}
+
+	public Fetch setRealtime(boolean realtime) {
+		this.realtime = realtime;
+		return this;
+	}
+
 	@Override
 	public FetchRequest getRequest() {
 		FetchRequest.Builder fetchRequestBuilder = FetchRequest.newBuilder();
@@ -108,6 +119,9 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 		}
 		if (associatedFetchType != null) {
 			fetchRequestBuilder.setAssociatedFetchType(associatedFetchType);
+		}
+		if (realtime != null) {
+			fetchRequestBuilder.setRealtime(realtime);
 		}
 
 		fetchRequestBuilder.addAllDocumentFields(documentFields);

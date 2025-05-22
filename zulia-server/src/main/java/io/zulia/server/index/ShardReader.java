@@ -568,20 +568,19 @@ public class ShardReader implements AutoCloseable {
 
 		}
 
-		Sort sort = new Sort(sortFields.toArray(new SortField[0]));
-		return sort;
+		return new Sort(sortFields.toArray(new SortField[0]));
 	}
 
 	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,
-			List<String> fieldsToMask) throws Exception {
+			List<String> fieldsToMask, boolean realtime) throws Exception {
 
-		ShardQuery shardQuery = ShardQuery.queryById(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
+		ShardQuery shardQuery = ShardQuery.queryById(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
 
 		ZuliaQuery.ShardQueryResponse segmentResponse = this.queryShard(shardQuery);
 
 		List<ZuliaQuery.ScoredResult> scoredResultList = segmentResponse.getScoredResultList();
 		if (!scoredResultList.isEmpty()) {
-			ZuliaQuery.ScoredResult scoredResult = scoredResultList.iterator().next();
+			ZuliaQuery.ScoredResult scoredResult = scoredResultList.getFirst();
 			if (scoredResult.hasResultDocument()) {
 				return scoredResult.getResultDocument();
 			}

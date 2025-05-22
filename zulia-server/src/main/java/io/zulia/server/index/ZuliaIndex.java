@@ -82,6 +82,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -746,7 +747,7 @@ public class ZuliaIndex {
 
 		if (indexConfig.getNumberOfShards() != 1) {
 			if (!queryRequest.getFetchFull() && (amount > 0)) {
-				amount = (int) (((amount / numberOfShards) + indexConfig.getIndexSettings().getMinShardRequest()) * indexConfig.getIndexSettings()
+				amount = (int) (((amount / (float)numberOfShards) + indexConfig.getIndexSettings().getMinShardRequest()) * indexConfig.getIndexSettings()
 						.getRequestFactor());
 			}
 		}
@@ -833,7 +834,7 @@ public class ZuliaIndex {
 		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
 		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
 				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
-				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug());
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug(), queryRequest.getRealtime());
 	}
 
 	public Integer getNumberOfShards() {
@@ -902,7 +903,7 @@ public class ZuliaIndex {
 		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getNumberOfDocsRequest.getMasterSlaveSettings());
 
 		for (ZuliaShard shard : shardsForCommand) {
-			Future<ShardCountResponse> response = shardPool.submit(shard::getNumberOfDocs);
+			Future<ShardCountResponse> response = shardPool.submit(() -> shard.getNumberOfDocs(getNumberOfDocsRequest.getRealtime()));
 			responses.add(response);
 		}
 
@@ -971,7 +972,7 @@ public class ZuliaIndex {
 
 		for (final ZuliaShard shard : shardsForCommand) {
 
-			Future<GetFieldNamesResponse> response = shardPool.submit(shard::getFieldNames);
+			Future<GetFieldNamesResponse> response = shardPool.submit(() -> shard.getFieldNames(getFieldNamesRequest.getRealtime()));
 
 			responses.add(response);
 
@@ -1118,11 +1119,11 @@ public class ZuliaIndex {
 		return documentStorage.getAssociatedMetadataForQuery(query);
 	}
 
-	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
+	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask, boolean realtime)
 			throws Exception {
 
 		ZuliaShard s = findShardFromUniqueId(uniqueId);
-		return s.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
+		return s.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
 
 	}
 
@@ -1173,7 +1174,7 @@ public class ZuliaIndex {
 		if (!FetchType.NONE.equals(resultFetchType)) {
 
 			ZuliaBase.ResultDocument resultDoc = getSourceDocument(uniqueId, resultFetchType, fetchRequest.getDocumentFieldsList(),
-					fetchRequest.getDocumentMaskedFieldsList());
+					fetchRequest.getDocumentMaskedFieldsList(), fetchRequest.getRealtime());
 			if (null != resultDoc) {
 				frBuilder.setResultDocument(resultDoc);
 			}

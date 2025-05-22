@@ -65,7 +65,9 @@ public class ZuliaShard {
 
 	public ShardQueryResponse queryShard(ShardQuery shardQuery) throws Exception {
 
-		shardReaderManager.maybeRefreshBlocking();
+		if (shardQuery.isRealtime()) {
+			shardReaderManager.maybeRefreshBlocking();
+		}
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
@@ -78,7 +80,7 @@ public class ZuliaShard {
 
 	public void forceCommit() throws IOException {
 		if (!primary) {
-			throw new IllegalStateException("Cannot force commit from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+			throw new IllegalStateException("Cannot force commit from replica for index " + indexName + ":s" + shardNumber);
 		}
 
 		shardWriteManager.commit();
@@ -88,6 +90,7 @@ public class ZuliaShard {
 	public void tryIdleCommit() throws IOException {
 
 		if (shardWriteManager.needsIdleCommit()) {
+			LOG.info("Index {}:s{} is idle, triggering commit", indexName, shardNumber);
 			forceCommit();
 		}
 	}
@@ -115,7 +118,7 @@ public class ZuliaShard {
 
 	private void warmSearches(ZuliaIndex zuliaIndex, boolean primary, List<ZuliaServiceOuterClass.QueryRequest> warmingSearches, WarmInfo warmInfo,
 			long lastestShardTime) {
-		LOG.info("Started warming searching for index {}", indexName);
+		LOG.info("Started warming searching for index {}:s{}", indexName, shardNumber);
 		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 		for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
@@ -128,27 +131,27 @@ public class ZuliaShard {
 
 			// has the index changed since we made the decision to start warming ?
 			if (!Objects.equals(warmInfo.lastChanged(), shardWriteManager.getLastChanged())) {
-				LOG.info("Index {} changed: canceling warming", indexName);
+				LOG.info("Index {}:s{} changed: canceling warming", indexName, shardNumber);
 				return;
 			}
 			if (!Objects.equals(warmInfo.lastCommit(), shardWriteManager.getLastCommit())) {
-				LOG.info("Index {} commited: canceling warming", indexName);
+				LOG.info("Index {}:s{} commited: canceling warming", indexName, shardNumber);
 				return;
 			}
 			if (lastestShardTime != shardReaderManager.getLatestShardTime()) {
-				LOG.info("Index {} reloaded: canceling warming", indexName);
+				LOG.info("Index {}:s{} reloaded: canceling warming", indexName, shardNumber);
 				return;
 			}
 
 			if (shardNeedsWarmForSearch) {
 				try {
-					LOG.info("Warming search with label <{}>", warmingSearch.getSearchLabel());
+					LOG.info("Warming search for index {}:s{} with label {}", indexName, shardNumber, warmingSearch.getSearchLabel());
 					Query query = zuliaIndex.getQuery(warmingSearch);
 					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
 					queryShard(shardQuery);
 				}
 				catch (Exception e) {
-					LOG.error("Failed to warm search with label <{}>: {}", warmingSearch.getSearchLabel(), e.getMessage());
+					LOG.error("Warming search for index {}:s{} with label {}: {}", indexName, shardNumber, warmingSearch.getSearchLabel(), e.getMessage());
 				}
 			}
 
@@ -156,22 +159,22 @@ public class ZuliaShard {
 
 		// has the index changed since we made the decision to start warming ?
 		if (!Objects.equals(warmInfo.lastChanged(), shardWriteManager.getLastChanged())) {
-			LOG.info("Index {} changed: canceling warming", indexName);
+			LOG.info("Index {}:s{} changed: canceling warming", indexName, shardNumber);
 			return;
 		}
 		if (!Objects.equals(warmInfo.lastCommit(), shardWriteManager.getLastCommit())) {
-			LOG.info("Index {} commited: canceling warming", indexName);
+			LOG.info("Index {}:s{} commited: canceling warming", indexName, shardNumber);
 			return;
 		}
 
 		long warmTime = System.currentTimeMillis();
 		if (lastestShardTime != shardReaderManager.getLatestShardTime()) {
-			LOG.info("Index {} reloaded: canceling warming", indexName);
+			LOG.info("Index {}:s{} reloaded: canceling warming", indexName, shardNumber);
 			return;
 		}
 
 		shardWriteManager.searchesWarmed(warmTime);
-		LOG.info("Finished warming searching for index {}", indexName);
+		LOG.info("Finished warming searching for index {}:s{}", indexName, shardNumber);
 	}
 
 	public void reindex() throws IOException {
@@ -189,7 +192,7 @@ public class ZuliaShard {
 			AtomicInteger count = new AtomicInteger();
 			shardReader.streamAllDocs(d -> {
 				if (!myTrackingId.equals(trackingId)) {
-					throw new RuntimeException("Reindex interrupted by another reindex");
+					throw new RuntimeException("Reindex for " + indexName + ":s" + shardNumber + " interrupted by another reindex");
 				}
 
 				try {
@@ -227,7 +230,7 @@ public class ZuliaShard {
 					trackedIds = new HashSet<>();
 				}
 			}
-			LOG.info("Re-indexed <{}> documents for shard <{}> for index <{}>", count.get(), shardNumber, indexName);
+			LOG.info("Re-indexed {} documents for index {}:s{}", count.get(), indexName, shardNumber);
 			forceCommit();
 		}
 		finally {
@@ -242,7 +245,7 @@ public class ZuliaShard {
 
 	public void index(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata) throws Exception {
 		if (!primary) {
-			throw new IllegalStateException("Cannot index document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+			throw new IllegalStateException("Cannot index document " + uniqueId + " from replica:  index " + indexName + ":s" + shardNumber);
 		}
 
 		if (trackingId != null) {
@@ -258,7 +261,7 @@ public class ZuliaShard {
 
 	public void deleteDocument(String uniqueId) throws Exception {
 		if (!primary) {
-			throw new IllegalStateException("Cannot delete document <" + uniqueId + "> from replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+			throw new IllegalStateException("Cannot delete document " + uniqueId + " from replica:  index " + indexName + ":s" + shardNumber);
 		}
 
 		if (trackingId != null) {
@@ -274,7 +277,7 @@ public class ZuliaShard {
 
 	public void optimize(int maxNumberSegments) throws IOException {
 		if (!primary) {
-			throw new IllegalStateException("Cannot optimize replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+			throw new IllegalStateException("Cannot optimize replica for index " + indexName + ":s" + shardNumber);
 		}
 
 		shardWriteManager.forceMerge(maxNumberSegments);
@@ -283,15 +286,18 @@ public class ZuliaShard {
 
 	public void clear() throws IOException {
 		if (!primary) {
-			throw new IllegalStateException("Cannot clear replica:  index <" + indexName + "> shard <" + shardNumber + ">");
+			throw new IllegalStateException("Cannot clear replica for index " + indexName + ":s" + shardNumber);
 		}
 
 		shardWriteManager.deleteAll();
 		forceCommit();
 	}
 
-	public GetFieldNamesResponse getFieldNames() throws IOException {
-		shardReaderManager.maybeRefreshBlocking();
+	public GetFieldNamesResponse getFieldNames(boolean realtime) throws IOException {
+
+		if (realtime) {
+			shardReaderManager.maybeRefreshBlocking();
+		}
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
@@ -304,7 +310,9 @@ public class ZuliaShard {
 
 	public GetTermsResponse getTerms(GetTermsRequest request) throws IOException {
 
-		shardReaderManager.maybeRefreshBlocking();
+		if (request.getRealtime()) {
+			shardReaderManager.maybeRefreshBlocking();
+		}
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
@@ -318,9 +326,11 @@ public class ZuliaShard {
 
 	}
 
-	public ShardCountResponse getNumberOfDocs() throws IOException {
+	public ShardCountResponse getNumberOfDocs(boolean realtime) throws IOException {
 
-		shardReaderManager.maybeRefreshBlocking();
+		if (realtime) {
+			shardReaderManager.maybeRefreshBlocking();
+		}
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
@@ -333,21 +343,26 @@ public class ZuliaShard {
 
 	}
 
-	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
+	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask, boolean realtime)
 			throws Exception {
-		shardReaderManager.maybeRefreshBlocking();
+		if (realtime) {
+			shardReaderManager.maybeRefreshBlocking();
+		}
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
-			return shardReader.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
+			return shardReader.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
 		}
 		finally {
 			shardReaderManager.decRef(shardReader);
 		}
 	}
 
-	public ZuliaBase.ShardCacheStats getShardCacheStats() throws IOException {
-		shardReaderManager.maybeRefreshBlocking();
+	public ZuliaBase.ShardCacheStats getShardCacheStats(boolean realtime) throws IOException {
+
+		if (realtime) {
+			//shardReaderManager.maybeRefreshBlocking();
+		}
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {

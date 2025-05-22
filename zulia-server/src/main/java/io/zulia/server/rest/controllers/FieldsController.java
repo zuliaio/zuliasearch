@@ -1,5 +1,6 @@
 package io.zulia.server.rest.controllers;
 
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
@@ -35,9 +36,14 @@ public class FieldsController {
 	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.FIELDS_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
-	public FieldsDTO getFields(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName) throws Exception {
+	public FieldsDTO getFields(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName,
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) final Boolean realtime) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
-		GetFieldNamesRequest fieldNamesRequest = GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
+		GetFieldNamesRequest.Builder fieldNamesRequestBuilder = GetFieldNamesRequest.newBuilder().setIndexName(indexName);
+		if (realtime != null) {
+			fieldNamesRequestBuilder.setRealtime(realtime);
+		}
+		GetFieldNamesRequest fieldNamesRequest = fieldNamesRequestBuilder.build();
 		GetFieldNamesResponse fieldNamesResponse = indexManager.getFieldNames(fieldNamesRequest);
 
 		FieldsDTO fieldsDTO = new FieldsDTO();

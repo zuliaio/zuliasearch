@@ -113,7 +113,8 @@ public class FacetTest {
 
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		{
-			Search search = new Search(FACET_TEST_INDEX);
+			//run the first search with realtime to force seeing latest changes without waiting for a commit
+			Search search = new Search(FACET_TEST_INDEX).setRealtime(true);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 			Assertions.assertEquals(13, searchResult.getTotalHits());
 		}

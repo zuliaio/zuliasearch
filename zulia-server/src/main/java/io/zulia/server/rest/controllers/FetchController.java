@@ -1,5 +1,6 @@
 package io.zulia.server.rest.controllers;
 
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
@@ -31,23 +32,27 @@ public class FetchController {
 	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.FETCH_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
-	public String fetch(@QueryValue(ZuliaRESTConstants.ID) String uniqueId, @QueryValue(ZuliaRESTConstants.INDEX) String indexName) throws Exception {
-		return runFetch(uniqueId, indexName);
+	public String fetch(@QueryValue(ZuliaRESTConstants.ID) String uniqueId, @QueryValue(ZuliaRESTConstants.INDEX) String indexName,
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
+		return runFetch(uniqueId, indexName, realtime);
 	}
 
 	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.FETCH_URL + "/{indexName}/{uniqueId}")
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
-	public String fetchPath(String uniqueId, String indexName) throws Exception {
-		return runFetch(uniqueId, indexName);
+	public String fetchPath(String uniqueId, String indexName, @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
+		return runFetch(uniqueId, indexName, realtime);
 	}
 
-	private static String runFetch(String uniqueId, String indexName) throws Exception {
+	private static String runFetch(String uniqueId, String indexName, Boolean realtime) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		FetchRequest.Builder fetchRequest = FetchRequest.newBuilder();
 		fetchRequest.setIndexName(indexName);
 		fetchRequest.setUniqueId(uniqueId);
+		if (realtime != null) {
+			fetchRequest.setRealtime(realtime);
+		}
 
 		FetchResponse fetchResponse = indexManager.fetch(fetchRequest.build());
 

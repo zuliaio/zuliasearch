@@ -25,7 +25,6 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 	private final ZuliaQuery.FacetRequest.Builder facetRequest = ZuliaQuery.FacetRequest.newBuilder();
 	private final ZuliaQuery.SortRequest.Builder sortRequest = ZuliaQuery.SortRequest.newBuilder();
 
-
 	public Search(String... indexes) {
 		this(Arrays.asList(indexes));
 	}
@@ -266,6 +265,15 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 
 	public String getSearchLabel() {
 		return queryRequest.getSearchLabel();
+	}
+
+	public Search setRealtime(boolean realtime) {
+		queryRequest.setRealtime(realtime);
+		return this;
+	}
+
+	public boolean getRealtime() {
+		return queryRequest.getRealtime();
 	}
 
 	@Override
