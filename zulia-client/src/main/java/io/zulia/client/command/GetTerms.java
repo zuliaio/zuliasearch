@@ -2,6 +2,7 @@ package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.command.base.SingleIndexRoutableCommand;
+import io.zulia.client.command.builder.Search;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.GetTermsResult;
 import io.zulia.message.ZuliaServiceOuterClass;
@@ -24,6 +25,7 @@ public class GetTerms extends SimpleCommand<GetTermsRequest, GetTermsResult> imp
 	private String termMatch;
 	private Integer amount;
 	private List<String> includeTerms;
+	private Boolean realtime;
 
 	public GetTerms(String indexName, String fieldName) {
 		this.indexName = indexName;
@@ -120,6 +122,17 @@ public class GetTerms extends SimpleCommand<GetTermsRequest, GetTermsResult> imp
 		return this;
 	}
 
+	public Boolean getRealtime() {
+		return realtime;
+	}
+
+	public GetTerms setRealtime(boolean realtime) {
+		this.realtime = realtime;
+		return this;
+	}
+
+
+
 	@Override
 	public GetTermsRequest getRequest() {
 		GetTermsRequest.Builder getTermsRequestBuilder = GetTermsRequest.newBuilder().setIndexName(indexName).setFieldName(fieldName);
@@ -146,6 +159,9 @@ public class GetTerms extends SimpleCommand<GetTermsRequest, GetTermsResult> imp
 		}
 		if (includeTerms != null) {
 			getTermsRequestBuilder.addAllIncludeTerm(includeTerms);
+		}
+		if (realtime != null) {
+			getTermsRequestBuilder.setRealtime(realtime);
 		}
 		return getTermsRequestBuilder.build();
 	}

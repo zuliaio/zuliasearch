@@ -73,7 +73,7 @@ public class TermQueryTest {
 	
 	private void indexRecord(int id, String field1, String field2) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		String uniqueId = String.valueOf(id) + "-i";
+		String uniqueId = id + "-i";
 		
 		Document mongoDocument = new Document();
 		mongoDocument.put("id", uniqueId);
@@ -92,7 +92,9 @@ public class TermQueryTest {
 	@Order(3)
 	public void searchTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		Search search = new Search(TERM_QUERY_TEST);
+
+		//run the first search with realtime to force seeing latest changes without waiting for a commit
+		Search search = new Search(TERM_QUERY_TEST).setRealtime(true);
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(UNIQUE_DOCS * REPEATS, searchResult.getTotalHits());
 		

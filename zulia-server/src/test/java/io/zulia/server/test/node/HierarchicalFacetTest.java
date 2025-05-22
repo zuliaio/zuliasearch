@@ -123,7 +123,8 @@ public class HierarchicalFacetTest {
 	@Order(3)
 	public void facetTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		Search search = new Search(FACET_TEST_INDEX);
+		//run the first search with realtime to force seeing latest changes without waiting for a commit
+		Search search = new Search(FACET_TEST_INDEX).setRealtime(true);
 		search.addCountFacet(new CountFacet("path"));
 		search.addCountFacet(new CountFacet("date"));
 

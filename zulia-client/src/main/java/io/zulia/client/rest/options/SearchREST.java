@@ -20,6 +20,7 @@ public class SearchREST {
 	private Collection<String> sort;
 	private Collection<String> highlights;
 	private String cursor;
+	private Boolean realtime;
 
 	public SearchREST(String index) {
 		this.indexNames = List.of(index);
@@ -183,10 +184,19 @@ public class SearchREST {
 		return this;
 	}
 
+	public SearchREST setRealtime(Boolean realtime) {
+		this.realtime = realtime;
+		return this;
+	}
+
+	public Boolean isRealtime() {
+		return realtime;
+	}
+
 	@Override
 	public String toString() {
-		return "SearchRest{" + "indexNames=" + indexNames + ", query='" + query + '\'' + ", queryFields=" + queryFields + ", filterQueries=" + filterQueries
-				+ ", fields=" + fields + ", rows=" + rows + ", facet=" + facet + ", drillDowns=" + drillDowns + ", defaultOperator='" + defaultOperator + '\''
-				+ ", mm=" + mm + ", sort=" + sort + ", highlights=" + highlights + ", cursor='" + cursor + '\'' + '}';
+		return "SearchREST{" + "indexNames=" + indexNames + ", query='" + query + '\'' + ", queryFields=" + queryFields + ", filterQueries=" + filterQueries
+				+ ", fields=" + fields + ", rows=" + rows + ", facet=" + facet + ", drillDowns=" + drillDowns + ", defaultOperator=" + defaultOperator + ", mm="
+				+ mm + ", sort=" + sort + ", highlights=" + highlights + ", cursor='" + cursor + '\'' + ", realtime=" + realtime + '}';
 	}
 }

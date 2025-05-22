@@ -207,7 +207,8 @@ public class StartStopTest {
 	@Order(3)
 	public void sortScoreBuilder() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		Search search = new Search(FACET_TEST_INDEX).setAmount(10);
+		//run the first search with realtime to force seeing latest changes without waiting for a commit
+		Search search = new Search(FACET_TEST_INDEX).setAmount(10).setRealtime(true);
 		search.addQuery(new ScoredQuery("issn:\"1234-1234\" OR country:US"));
 		search.addSort(new Sort(ZuliaFieldConstants.SCORE_FIELD).ascending());
 
@@ -238,7 +239,7 @@ public class StartStopTest {
 	}
 
 	@Test
-	@Order(3)
+	@Order(4)
 	public void lengthTestBuilder() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search s = new Search(FACET_TEST_INDEX);
@@ -276,7 +277,7 @@ public class StartStopTest {
 	}
 
 	@Test
-	@Order(3)
+	@Order(5)
 	public void boolTestBuilder() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search s = new Search(FACET_TEST_INDEX).addQuery(new FilterQuery("testBool:true"));
@@ -334,7 +335,7 @@ public class StartStopTest {
 	}
 
 	@Test
-	@Order(3)
+	@Order(6)
 	public void termTestBuilder() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search s = new Search(FACET_TEST_INDEX);
@@ -404,7 +405,7 @@ public class StartStopTest {
 	}
 
 	@Test
-	@Order(3)
+	@Order(7)
 	public void testDates() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search s;
@@ -518,7 +519,7 @@ public class StartStopTest {
 	}
 
 	@Test
-	@Order(4)
+	@Order(8)
 	public void reindex() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
@@ -556,13 +557,13 @@ public class StartStopTest {
 	}
 
 	@Test
-	@Order(5)
+	@Order(9)
 	public void restart() throws Exception {
 		nodeExtension.restartNodes();
 	}
 
 	@Test
-	@Order(6)
+	@Order(10)
 	public void confirmBuilder() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		{
@@ -880,7 +881,7 @@ public class StartStopTest {
 	}
 
 	@Test
-	@Order(57)
+	@Order(11)
 	public void confirmTermInSet() throws Exception {
 		//try it again with id being sortable
 		termTestBuilder();

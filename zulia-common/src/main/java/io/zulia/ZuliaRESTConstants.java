@@ -44,6 +44,7 @@ public interface ZuliaRESTConstants {
 	String END_TERM = "endTerm";
 	String DEFAULT_OP = "defaultOp";
 	String DRILL_DOWN = "drillDown";
+	String REALTIME = "realtime";
 	
 	String SIMILARITY = "sim";
 	String START = "start";
