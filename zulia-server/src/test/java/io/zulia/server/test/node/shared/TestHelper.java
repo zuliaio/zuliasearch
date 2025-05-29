@@ -119,7 +119,7 @@ public class TestHelper {
 	}
 
 	public static void startNodes(boolean startRest) throws Exception {
-		LOG.info("Starting <{}> Nodes", NODE_SERVICE.getNodes().size());
+		LOG.info("Starting {} Nodes", NODE_SERVICE.getNodes().size());
 		int i = 0;
 		for (ZuliaBase.Node node : NODE_SERVICE.getNodes()) {
 			ZuliaConfig zuliaConfig = new ZuliaConfig();
@@ -142,13 +142,13 @@ public class TestHelper {
 
 			ZULIA_NODES.add(zuliaNode);
 		}
-		LOG.info("Started <{}> Nodes", ZULIA_NODES.size());
+		LOG.info("Started {} Nodes", ZULIA_NODES.size());
 
 	}
 
 	public static void createNodes(int nodeCount) {
 		clearData();
-		LOG.info("Creating <{}> Nodes", nodeCount);
+		LOG.info("Creating {} Nodes", nodeCount);
 		int port = 20000;
 
 		//drop nodes and index configs
@@ -162,7 +162,7 @@ public class TestHelper {
 
 	public static void stopNodes() {
 
-		LOG.info("Stopping <{}> Nodes", ZULIA_NODES.size());
+		LOG.info("Stopping {} Nodes", ZULIA_NODES.size());
 		for (ZuliaNode zuliaNode : ZULIA_NODES) {
 			zuliaNode.shutdown();
 		}

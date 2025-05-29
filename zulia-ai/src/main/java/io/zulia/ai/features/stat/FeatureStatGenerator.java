@@ -4,10 +4,10 @@ import com.datadoghq.sketch.ddsketch.DDSketch;
 import com.datadoghq.sketch.ddsketch.DDSketches;
 
 public class FeatureStatGenerator {
-	
+
 	private final int numberOfFeatures;
 	private final DDSketch[] featureSketches;
-	
+
 	public FeatureStatGenerator(int numberOfFeatures) {
 		this.numberOfFeatures = numberOfFeatures;
 		this.featureSketches = new DDSketch[numberOfFeatures];
@@ -15,25 +15,25 @@ public class FeatureStatGenerator {
 			featureSketches[i] = DDSketches.unboundedDense(0.0001);
 		}
 	}
-	
+
 	public void addExample(double[] features) {
 		if (features.length != numberOfFeatures) {
-			throw new IllegalArgumentException("Number of features <" + numberOfFeatures + "> does not match features array size <" + features.length + ">");
+			throw new IllegalArgumentException("Number of features " + numberOfFeatures + " does not match features array size " + features.length);
 		}
 		for (int i = 0; i < numberOfFeatures; i++) {
 			featureSketches[i].accept(features[i]);
 		}
 	}
-	
+
 	public void addExample(float[] features) {
 		if (features.length != numberOfFeatures) {
-			throw new IllegalArgumentException("Number of features <" + numberOfFeatures + "> does not match features array size <" + features.length + ">");
+			throw new IllegalArgumentException("Number of features " + numberOfFeatures + " does not match features array size " + features.length);
 		}
 		for (int i = 0; i < numberOfFeatures; i++) {
 			featureSketches[i].accept(features[i]);
 		}
 	}
-	
+
 	public FeatureStat[] computeFeatureStats() {
 		FeatureStat[] featureStats = new FeatureStat[numberOfFeatures];
 		for (int i = 0; i < numberOfFeatures; i++) {
@@ -53,5 +53,5 @@ public class FeatureStatGenerator {
 		}
 		return featureStats;
 	}
-	
+
 }

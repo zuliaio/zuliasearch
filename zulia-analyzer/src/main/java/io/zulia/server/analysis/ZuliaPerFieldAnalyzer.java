@@ -129,7 +129,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 					src = new StandardTokenizer();
 				}
 				else {
-					throw new RuntimeException("Unknown tokenizer type <" + tokenizer);
+					throw new RuntimeException("Unknown tokenizer type " + tokenizer);
 				}
 
 				return new TokenStreamComponents(src, getFilteredStream(src));
@@ -219,7 +219,7 @@ public class ZuliaPerFieldAnalyzer extends DelegatingAnalyzerWrapper {
 						tok = new GermanNormalizationFilter(lastTok);
 					}
 					else {
-						throw new RuntimeException("Unknown filter type <" + filter + ">");
+						throw new RuntimeException("Unknown filter type " + filter);
 					}
 					lastTok = tok;
 				}

@@ -27,9 +27,9 @@ import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class FetchController {
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.FETCH_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public String fetch(@QueryValue(ZuliaRESTConstants.ID) String uniqueId, @QueryValue(ZuliaRESTConstants.INDEX) String indexName,
@@ -37,7 +37,6 @@ public class FetchController {
 		return runFetch(uniqueId, indexName, realtime);
 	}
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.FETCH_URL + "/{indexName}/{uniqueId}")
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public String fetchPath(String uniqueId, String indexName, @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {

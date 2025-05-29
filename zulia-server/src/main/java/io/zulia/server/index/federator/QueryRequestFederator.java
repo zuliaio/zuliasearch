@@ -71,12 +71,15 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 		String queryJson = JsonFormat.printer().print(request);
 
+		queryJson = queryJson.replace('\n', ' ').replaceAll("\\s+", " ");
+
 		String searchLabel = request.getSearchLabel();
+
 		if (searchLabel.isEmpty()) {
-			LOG.info("Running id <{}> query <{}>", queryId, queryJson);
+			LOG.info("Running id {} query {}", queryId, queryJson);
 		}
 		else {
-			LOG.info("Running id <{}> with label <{}> query <{}>", queryId, searchLabel, queryJson);
+			LOG.info("Running id {} with label {} query {}", queryId, searchLabel, queryJson);
 		}
 
 		List<InternalQueryResponse> results = send(request);
@@ -112,10 +115,10 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		String resultSize = String.format("%.2f", (qr.getSerializedSize() / 1024.0));
 
 		if (searchLabel.isEmpty()) {
-			LOG.info("{} id <{}> with result size {}KB in {}ms", prefix, queryId, resultSize, time);
+			LOG.info("{} id {} with result size {}KB in {}ms", prefix, queryId, resultSize, time);
 		}
 		else {
-			LOG.info("{} id <{}> with label <{}> with result size {}KB in {}ms", prefix, queryId, searchLabel, resultSize, time);
+			LOG.info("{} id {} with label {} with result size {}KB in {}ms", prefix, queryId, searchLabel, resultSize, time);
 		}
 	}
 }

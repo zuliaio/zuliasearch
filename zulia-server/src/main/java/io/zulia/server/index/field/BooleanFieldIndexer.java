@@ -30,8 +30,8 @@ public class BooleanFieldIndexer extends FieldIndexer {
 						boolVal = false;
 					}
 					else {
-						throw new Exception("String for Boolean field be 'Yes', 'No', 'Y', 'N', '1', '0', 'True', 'False', 'T', 'F' (case insensitive) for <"
-								+ storedFieldName + "> and found <" + s + ">");
+						throw new Exception("String for Boolean field be 'Yes', 'No', 'Y', 'N', '1', '0', 'True', 'False', 'T', 'F' (case insensitive) for "
+								+ storedFieldName + " and found " + s);
 					}
 				}
 				case Number number -> {
@@ -43,12 +43,12 @@ public class BooleanFieldIndexer extends FieldIndexer {
 						boolVal = true;
 					}
 					else {
-						throw new Exception("Number for Boolean field must be 0 or 1 for <" + storedFieldName + "> and found <" + v + ">");
+						throw new Exception("Number for Boolean field must be 0 or 1 for " + storedFieldName + " and found " + v );
 					}
 				}
 				default -> throw new Exception(
-						"Expecting collection of data type of Boolean, String, or Number for field <" + storedFieldName + "> and found <" + value.getClass()
-								.getSimpleName() + ">");
+						"Expecting collection of data type of Boolean, String, or Number for field " + storedFieldName + " and found " + value.getClass()
+								.getSimpleName());
 			}
 			d.add(new IntPoint(FieldTypeUtil.getIndexField(indexedFieldName, FieldType.BOOL), boolVal ? 1 : 0));
 		}

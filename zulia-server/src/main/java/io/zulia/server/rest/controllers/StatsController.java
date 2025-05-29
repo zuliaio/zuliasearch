@@ -19,11 +19,11 @@ import java.io.File;
  * @author pmeyer
  */
 @Controller
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class StatsController {
 
 	private static final int MB = 1024 * 1024;
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.STATS_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public StatsDTO getStats() {

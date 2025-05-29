@@ -171,7 +171,7 @@ public class ShardDocumentIndexer {
 		ByteBuffer byteBuffer = ByteBuffer.allocate(((orderedDimOrdinals.size() * 2) + fieldOrdinalCount) * 4);
 
 		IntBuffer ordinalBuffer = byteBuffer.asIntBuffer();
-		for (Integer dimOrdinal : orderedDimOrdinals) {
+		for (int dimOrdinal : orderedDimOrdinals) {
 			IntSet fieldOrdinals = facetDimToOrdinal.get(dimOrdinal);
 			ordinalBuffer.put(dimOrdinal);
 			ordinalBuffer.put(fieldOrdinals.size());
@@ -181,8 +181,7 @@ public class ShardDocumentIndexer {
 		luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.FACET_STORAGE, new BytesRef(byteBuffer.array())));
 	}
 
-	private void addIndexingForStoredField(Document luceneDocument, String storedFieldName, FieldConfig fc, FieldConfig.FieldType fieldType, Object o)
-			throws Exception {
+	private void addIndexingForStoredField(Document luceneDocument, String storedFieldName, FieldConfig fc, FieldConfig.FieldType fieldType, Object o) {
 		for (ZuliaIndex.IndexAs indexAs : fc.getIndexAsList()) {
 
 			String indexedFieldName = indexAs.getIndexFieldName();
@@ -247,13 +246,13 @@ public class ShardDocumentIndexer {
 							break;
 						default:
 							throw new RuntimeException(
-									"Not handled string handling <" + stringHandling + "> for document field <" + storedFieldName + "> / sort field <"
-											+ sortFieldName + ">");
+									"Not handled string handling " + stringHandling + " for document field " + storedFieldName + " / sort field "
+											+ sortFieldName);
 					}
 
 					if (text.length() > 32766) {
 						throw new IllegalArgumentException(
-								"Field <" + sortAs.getSortFieldName() + "> is too large to sort.  Must be less <= 32766 characters and is " + text.length());
+								"Field " + sortAs.getSortFieldName() + " is too large to sort.  Must be less <= 32766 characters and is " + text.length());
 					}
 
 					SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));
