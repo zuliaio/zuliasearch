@@ -94,9 +94,6 @@ public class ZuliaShard {
 
 	public void tryWarmSearches(ZuliaIndex zuliaIndex, boolean primary) {
 
-		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
-		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
-
 		long lastestShardTime = shardReaderManager.getLatestShardTime();
 		WarmInfo warmInfo = shardWriteManager.needsSearchWarming(lastestShardTime);
 		if (warmInfo.needsWarming()) {
@@ -109,43 +106,24 @@ public class ZuliaShard {
 				throw new RuntimeException(e);
 			}
 
-			LOG.info("Started warming searching for index {}", indexName);
 			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
+			if (!warmingSearches.isEmpty()) {
+				warmSearches(zuliaIndex, primary, warmingSearches, warmInfo, lastestShardTime);
+			}
+		}
+	}
 
-			for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
-				MasterSlaveSettings primaryReplicaSettings = warmingSearch.getMasterSlaveSettings();
-				boolean shardNeedsWarmForSearch = (primary ? usesPrimary : usesReplica).contains(primaryReplicaSettings);
+	private void warmSearches(ZuliaIndex zuliaIndex, boolean primary, List<ZuliaServiceOuterClass.QueryRequest> warmingSearches, WarmInfo warmInfo,
+			long lastestShardTime) {
+		LOG.info("Started warming searching for index {}", indexName);
+		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
+		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
+		for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
+			MasterSlaveSettings primaryReplicaSettings = warmingSearch.getMasterSlaveSettings();
+			boolean shardNeedsWarmForSearch = (primary ? usesPrimary : usesReplica).contains(primaryReplicaSettings);
 
-				if (unloaded) {
-					return;
-				}
-
-				// has the index changed since we made the decision to start warming ?
-				if (!Objects.equals(warmInfo.lastChanged(), shardWriteManager.getLastChanged())) {
-					LOG.info("Index {} changed: canceling warming", indexName);
-					return;
-				}
-				if (!Objects.equals(warmInfo.lastCommit(), shardWriteManager.getLastCommit())) {
-					LOG.info("Index {} commited: canceling warming", indexName);
-					return;
-				}
-				if (lastestShardTime != shardReaderManager.getLatestShardTime()) {
-					LOG.info("Index {} reloaded: canceling warming", indexName);
-					return;
-				}
-
-				if (shardNeedsWarmForSearch) {
-					try {
-						LOG.info("Warming search with label <{}>", warmingSearch.getSearchLabel());
-						Query query = zuliaIndex.getQuery(warmingSearch);
-						ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
-						queryShard(shardQuery);
-					}
-					catch (Exception e) {
-						LOG.error("Failed to warm search with label <{}>: {}", warmingSearch.getSearchLabel(), e.getMessage());
-					}
-				}
-
+			if (unloaded) {
+				return;
 			}
 
 			// has the index changed since we made the decision to start warming ?
@@ -157,16 +135,43 @@ public class ZuliaShard {
 				LOG.info("Index {} commited: canceling warming", indexName);
 				return;
 			}
-
-			long warmTime = System.currentTimeMillis();
 			if (lastestShardTime != shardReaderManager.getLatestShardTime()) {
 				LOG.info("Index {} reloaded: canceling warming", indexName);
 				return;
 			}
 
-			shardWriteManager.searchesWarmed(warmTime);
-			LOG.info("Finished warming searching for index {}", indexName);
+			if (shardNeedsWarmForSearch) {
+				try {
+					LOG.info("Warming search with label <{}>", warmingSearch.getSearchLabel());
+					Query query = zuliaIndex.getQuery(warmingSearch);
+					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
+					queryShard(shardQuery);
+				}
+				catch (Exception e) {
+					LOG.error("Failed to warm search with label <{}>: {}", warmingSearch.getSearchLabel(), e.getMessage());
+				}
+			}
+
 		}
+
+		// has the index changed since we made the decision to start warming ?
+		if (!Objects.equals(warmInfo.lastChanged(), shardWriteManager.getLastChanged())) {
+			LOG.info("Index {} changed: canceling warming", indexName);
+			return;
+		}
+		if (!Objects.equals(warmInfo.lastCommit(), shardWriteManager.getLastCommit())) {
+			LOG.info("Index {} commited: canceling warming", indexName);
+			return;
+		}
+
+		long warmTime = System.currentTimeMillis();
+		if (lastestShardTime != shardReaderManager.getLatestShardTime()) {
+			LOG.info("Index {} reloaded: canceling warming", indexName);
+			return;
+		}
+
+		shardWriteManager.searchesWarmed(warmTime);
+		LOG.info("Finished warming searching for index {}", indexName);
 	}
 
 	public void reindex() throws IOException {
