@@ -68,11 +68,11 @@ public class AggregationHandler {
 				SortFieldInfo numericSortFieldInfo = serverIndexConfig.getSortFieldInfo(numericField);
 				if (numericSortFieldInfo == null) {
 					//TODO fix this message to mention char list and list length
-					throw new IllegalArgumentException("Numeric field <" + numericField + "> must be indexed as a SORTABLE numeric field");
+					throw new IllegalArgumentException("Numeric field " + numericField + " must be indexed as a SORTABLE numeric field");
 				}
 				if (!FieldTypeUtil.isHandledAsNumericFieldType(numericSortFieldInfo.getFieldType())) {
 					//TODO fix this message to mention char list and list length
-					throw new IllegalArgumentException("Numeric field <" + numericField + "> must be indexed as a sortable NUMERIC field");
+					throw new IllegalArgumentException("Numeric field " + numericField + " must be indexed as a sortable NUMERIC field");
 				}
 
 				NumericFieldStatInfo info = new NumericFieldStatInfo(numericField);
@@ -173,7 +173,7 @@ public class AggregationHandler {
 			}
 		}
 		if (fieldStats == null) {
-			throw new IllegalArgumentException("Field <" + field + "> was not given in constructor");
+			throw new IllegalArgumentException("Field " + field + " was not given in constructor");
 		}
 
 		return fieldStats;
@@ -228,7 +228,7 @@ public class AggregationHandler {
 		NumericFieldStatInfo fieldStats = getFieldStatByName(field);
 
 		if (!fieldStats.hasGlobal()) {
-			throw new IllegalArgumentException("Field <" + field + "> has not requested as a global stat in the constructor");
+			throw new IllegalArgumentException("Field " + field + " has not requested as a global stat in the constructor");
 		}
 
 		return fieldStats.getGlobalStats().buildResponse().build();
@@ -238,7 +238,7 @@ public class AggregationHandler {
 		NumericFieldStatInfo fieldStats = getFieldStatByName(field);
 
 		if (!fieldStats.hasFacets()) {
-			throw new IllegalArgumentException("Field <" + field + "> has not requested as a facet stat in the constructor");
+			throw new IllegalArgumentException("Field " + field + " has not requested as a facet stat in the constructor");
 		}
 
 		MapStatOrdinalStorage<?> facetStatStorage = fieldStats.getFacetStatStorage();

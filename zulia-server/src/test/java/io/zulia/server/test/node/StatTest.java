@@ -421,7 +421,7 @@ public class StatTest {
 				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
 			}
 			else {
-				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
+				throw new AssertionFailedError("Unexpected facet " + facetStats.getFacet());
 			}
 		}
 	}
@@ -446,7 +446,7 @@ public class StatTest {
 				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
 			}
 			else {
-				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
+				throw new AssertionFailedError("Unexpected facet " + facetStats.getFacet());
 			}
 		}
 	}

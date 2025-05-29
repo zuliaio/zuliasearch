@@ -26,27 +26,27 @@ public class Slf4jLoggingConnectionListener implements ConnectionListener {
 	@Override
 	public void connectionBeforeClose(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Closing connection #{} to <{}:{}> id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(), node.getServicePort(),
+		LOG.info("Closing connection #{} to {}:{} id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(), node.getServicePort(),
 				zuliaConnection.getConnectionId());
 	}
 
 	@Override
 	public void connectionClosed(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Closed connection #{} to <{}:{}> id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(), node.getServicePort(),
+		LOG.info("Closed connection #{} to {}:{} id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(), node.getServicePort(),
 				zuliaConnection.getConnectionId());
 	}
 
 	@Override
 	public void exceptionClosing(ZuliaConnection zuliaConnection, Exception e) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.error("Exception closing connection #{} to <{}:{}> id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(),
+		LOG.error("Exception closing connection #{} to {}:{} id: {}", zuliaConnection.getConnectionNumberForNode(), node.getServerAddress(),
 				node.getServicePort(), zuliaConnection.getConnectionId(), e);
 	}
 
 	@Override
 	public void restClientCreated(String server, int restPort) {
-		LOG.info("Created OkHttp client for server <{}> on port <{}>", server, restPort);
+		LOG.info("Created OkHttp client for server {}:{}", server, restPort);
 	}
 
 	@Override

@@ -29,9 +29,10 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
  * @author pmeyer
  */
 @Controller
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class TermsController {
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
+
 	@Get(ZuliaRESTConstants.TERMS_URL)
 	@Produces({ ZuliaRESTConstants.UTF8_JSON })
 	public TermsResponseDTO getTermsJson(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName,
@@ -62,7 +63,6 @@ public class TermsController {
 
 	}
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.TERMS_URL + "/csv")
 	@Produces({ ZuliaRESTConstants.UTF8_CSV })
 	public String getTermsCsv(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName, @QueryValue(ZuliaRESTConstants.FIELDS) final String field,

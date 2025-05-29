@@ -7,11 +7,6 @@ public class DefaultCSVWriter<T extends AbstractWriter<?>> implements Spreadshee
 	
 	@Override
 	public void writeType(T reference, Object value) {
-		if (value != null) {
-			reference.addValue(value);
-		}
-		else {
-			reference.addValue(null);
-		}
+		reference.addValue(value);
 	}
 }

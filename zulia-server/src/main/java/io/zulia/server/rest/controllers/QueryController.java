@@ -13,6 +13,8 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.*;
 import io.zulia.server.exceptions.WrappedCheckedException;
@@ -42,6 +44,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
  * @author pmeyer
  */
 @Controller(ZuliaRESTConstants.QUERY_URL)
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class QueryController {
 
 	private final static Logger LOG = LoggerFactory.getLogger(QueryController.class);
@@ -259,7 +262,7 @@ public class QueryController {
 				mainQueryBuilder.setDefaultOp(Query.Operator.OR);
 			}
 			else {
-				throw new IllegalArgumentException("Invalid default operator <" + defaultOperator + ">");
+				throw new IllegalArgumentException("Invalid default operator " + defaultOperator);
 			}
 		}
 		mainQueryBuilder.setQueryType(Query.QueryType.SCORE_MUST);
@@ -289,13 +292,13 @@ public class QueryController {
 						fieldSimilarity.setSimilarity(Similarity.TFIDF);
 					}
 					else {
-						throw new IllegalArgumentException("Unknown similarity type <" + simType + ">");
+						throw new IllegalArgumentException("Unknown similarity type " + simType );
 					}
 
 					qrBuilder.addFieldSimilarity(fieldSimilarity);
 				}
 				else {
-					throw new IllegalArgumentException("Similarity <" + sim + "> should be in the form field:simType");
+					throw new IllegalArgumentException("Similarity " + sim + " should be in the form field:simType");
 				}
 			}
 		}
@@ -380,7 +383,7 @@ public class QueryController {
 						count = Integer.parseInt(countString);
 					}
 					catch (Exception e) {
-						throw new IllegalArgumentException("Invalid facet count <" + countString + "> for facet <" + f + ">");
+						throw new IllegalArgumentException("Invalid facet count " + countString + " for facet " + f);
 					}
 				}
 
@@ -540,7 +543,7 @@ public class QueryController {
 								Object subValue = subDoc.get(subKey);
 								if (subValue instanceof List) {
 									if (!((List<?>) subValue).isEmpty()) {
-										if (((List<?>) subValue).get(0) instanceof String) {
+										if (((List<?>) subValue).getFirst() instanceof String) {
 											if (((List<String>) subValue).size() > 10) {
 												List<String> value = ((List<String>) subValue).subList(0, 10);
 												value.add("...[truncated]");

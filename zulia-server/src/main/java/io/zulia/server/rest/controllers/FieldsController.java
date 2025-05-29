@@ -31,9 +31,9 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class FieldsController {
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.FIELDS_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public FieldsDTO getFields(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName,

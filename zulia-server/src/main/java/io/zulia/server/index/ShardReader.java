@@ -206,8 +206,8 @@ public class ShardReader implements AutoCloseable {
 		indexSearcher.setSimilarity(similarity);
 
 		if (shardQuery.isDebug()) {
-			LOG.info("Lucene Query for index <{}> segment <{}>: {}", indexName, shardNumber, shardQuery.getQuery());
-			LOG.info("Rewritten Query for index <{}> segment <{}>: {}", indexName, shardNumber, indexSearcher.rewrite(shardQuery.getQuery()));
+			LOG.info("Lucene Query for index {}:s{}: {}", indexName, shardNumber, shardQuery.getQuery());
+			LOG.info("Rewritten Query for index {}:s{}: {}", indexName, shardNumber, indexSearcher.rewrite(shardQuery.getQuery()));
 		}
 
 		int hasMoreAmount = shardQuery.getAmount() + 1;
@@ -383,7 +383,7 @@ public class ShardReader implements AutoCloseable {
 					analyzer = ZuliaPerFieldAnalyzer.getAnalyzerForField(analyzerSettings);
 				}
 				else {
-					throw new RuntimeException("Invalid analyzer name <" + analyzerOverride + ">");
+					throw new RuntimeException("Invalid analyzer name " + analyzerOverride );
 				}
 			}
 
@@ -409,7 +409,7 @@ public class ShardReader implements AutoCloseable {
 			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexField);
 
 			if (indexFieldInfo == null) {
-				throw new RuntimeException("Cannot highlight non-indexed field <" + indexField + ">");
+				throw new RuntimeException("Cannot highlight non-indexed field " + indexField );
 			}
 
 			QueryScorer queryScorer = new QueryScorer(q, highlightRequest.getField());
