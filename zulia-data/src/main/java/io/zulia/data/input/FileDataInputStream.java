@@ -23,10 +23,10 @@ public class FileDataInputStream implements DataInputStream {
 		dataStreamMeta = DataStreamMeta.fromFullPath(filePath);
 		file = new File(filePath);
 		if (!file.exists()) {
-			throw new FileNotFoundException("File <" + filePath + "> does not exist");
+			throw new FileNotFoundException("File " + filePath + " does not exist");
 		}
 		if (file.isDirectory()) {
-			throw new IOException("File <" + filePath + "> is a directory");
+			throw new IOException("File " + filePath + " is a directory");
 		}
 	}
 

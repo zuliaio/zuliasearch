@@ -15,6 +15,7 @@ public class DefaultDelimitedListHandler implements DelimitedListHandler {
 		this.listDelimiter = listDelimiter;
 	}
 
+	@SuppressWarnings("unchecked")
 	public <T> List<T> cellValueToList(Class<T> clazz, String cellValue) {
 		if (cellValue != null) {
 			Stream<String> listStream = Splitter.on(listDelimiter).splitToStream(cellValue);
@@ -34,7 +35,7 @@ public class DefaultDelimitedListHandler implements DelimitedListHandler {
 				return (List<T>) listStream.map(Double::parseDouble).toList();
 			}
 			else {
-				throw new IllegalArgumentException("Unsupported clazz <" + clazz + ">");
+				throw new IllegalArgumentException("Unsupported clazz " + clazz);
 			}
 		}
 		return null;

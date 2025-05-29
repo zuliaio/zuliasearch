@@ -18,7 +18,7 @@ public class FeatureStatGenerator {
 
 	public void addExample(double[] features) {
 		if (features.length != numberOfFeatures) {
-			throw new IllegalArgumentException("Number of features <" + numberOfFeatures + "> does not match features array size <" + features.length + ">");
+			throw new IllegalArgumentException("Number of features " + numberOfFeatures + " does not match features array size " + features.length);
 		}
 		for (int i = 0; i < numberOfFeatures; i++) {
 			featureSketches[i].accept(features[i]);
@@ -27,7 +27,7 @@ public class FeatureStatGenerator {
 
 	public void addExample(float[] features) {
 		if (features.length != numberOfFeatures) {
-			throw new IllegalArgumentException("Number of features <" + numberOfFeatures + "> does not match features array size <" + features.length + ">");
+			throw new IllegalArgumentException("Number of features " + numberOfFeatures + " does not match features array size " + features.length);
 		}
 		for (int i = 0; i < numberOfFeatures; i++) {
 			featureSketches[i].accept(features[i]);

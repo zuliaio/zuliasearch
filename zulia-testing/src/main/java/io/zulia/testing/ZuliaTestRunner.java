@@ -104,7 +104,7 @@ public class ZuliaTestRunner {
 			ZuliaWorkPool zuliaWorkPool = connectionToConnectionConfig.get(indexConfig.getConnection()).get();
 			Search s = buildSearch(indexConfig.getIndexName(), searchConfig);
 			if (zuliaTestConfig.isLogSearches()) {
-				LOG.info("Running search <{}>:\n{}", searchConfig.getName(), s);
+				LOG.info("Running search {}:\n{}", searchConfig.getName(), s);
 			}
 			SearchResult searchResult = zuliaWorkPool.search(s);
 			QueryResultObject result = buildQueryResultObject(searchResult, searchConfig);
@@ -285,19 +285,19 @@ public class ZuliaTestRunner {
 				jsValue.putMember(countToEntry.getKey(), countToEntry.getValue());
 				if (zuliaTestConfig.isLogSearchResults()) {
 					String json = context.eval("js", "JSON.stringify(" + countToEntry.getKey() + ")").asString();
-					LOG.info("Search result <{}>:\n{}", countToEntry.getKey(), json);
+					LOG.info("Search result {}:\n{}", countToEntry.getKey(), json);
 				}
 			}
 
 			for (TestConfig testConfig : zuliaTestConfig.getTests()) {
-				LOG.info("Running Test <{}>", testConfig.getName());
+				LOG.info("Running Test {}", testConfig.getName());
 
 				TestResult testResult = new TestResult();
 				testResult.setTestId(testConfig.getName());
 				testResult.setTestConfig(testConfig);
 				Value js = context.eval("js", testConfig.getExpr());
 				testResult.setPassed(js.asBoolean());
-				LOG.info("Test <{}> {}", testConfig.getName(), js.asBoolean() ? "Passed" : "Failed");
+				LOG.info("Test {} {}", testConfig.getName(), js.asBoolean() ? "Passed" : "Failed");
 				testResults.add(testResult);
 			}
 

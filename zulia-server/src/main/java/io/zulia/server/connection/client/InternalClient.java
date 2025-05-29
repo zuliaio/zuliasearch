@@ -73,7 +73,7 @@ public class InternalClient {
 
 		if (!internalConnectionPoolMap.containsKey(nodeKey)) {
 
-			LOG.info("Adding connection pool for node <{}>", nodeKey);
+			LOG.info("Adding connection pool for node {}", nodeKey);
 
 			GenericObjectPool<InternalRpcConnection> pool = new GenericObjectPool<>(
 					new InternalRpcConnectionFactory(node.getServerAddress(), node.getServicePort()));
@@ -84,21 +84,21 @@ public class InternalClient {
 			internalConnectionPoolMap.putIfAbsent(nodeKey, pool);
 		}
 		else {
-			LOG.info("Already loaded connection for node <{}>", nodeKey);
+			LOG.info("Already loaded connection for node {}", nodeKey);
 		}
 	}
 
 	public void removeNode(Node node) {
 		String nodeKey = getNodeKey(node);
 
-		LOG.info("Removing connection pool for node <{}>", nodeKey);
+		LOG.info("Removing connection pool for node {}", nodeKey);
 		GenericObjectPool<InternalRpcConnection> connectionPool = internalConnectionPoolMap.remove(nodeKey);
 
 		if (connectionPool != null) {
 			connectionPool.close();
 		}
 		else {
-			LOG.info("Already closed connection for node <{}>", nodeKey);
+			LOG.info("Already closed connection for node {}", nodeKey);
 		}
 
 	}
@@ -130,12 +130,12 @@ public class InternalClient {
 				}
 			}
 			catch (Exception e) {
-				LOG.error("Failed to return blocking connection to node <{}> pool", nodeKey, e);
+				LOG.error("Failed to return blocking connection to node {} pool", nodeKey, e);
 			}
 		}
 		else {
-			LOG.error("Failed to return blocking connection to node <{}> pool. Pool does not exist.", nodeKey);
-			LOG.error("Current pool members <{}>", internalConnectionPoolMap.keySet());
+			LOG.error("Failed to return blocking connection to node {} pool. Pool does not exist.", nodeKey);
+			LOG.error("Current pool members {}", internalConnectionPoolMap.keySet());
 			if (rpcConnection != null) {
 				rpcConnection.close();
 			}

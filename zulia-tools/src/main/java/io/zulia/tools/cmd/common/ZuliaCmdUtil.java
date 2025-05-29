@@ -74,27 +74,27 @@ public class ZuliaCmdUtil {
 
 							int c = count.incrementAndGet();
 							if (c % 1000 == 0) {
-								LOG.info("So far written <{}> of <{}> for index <{}>", c, totalHits, index);
+								LOG.info("So far written {} of {} for index {}", c, totalHits, index);
 							}
 
 						}
 						catch (IOException e) {
-							LOG.error("Could not write record <{}> for index <{}>", completeResult.getUniqueId(), index, e);
+							LOG.error("Could not write record {} for index {}", completeResult.getUniqueId(), index, e);
 						}
 						catch (Throwable e) {
-							LOG.error("Could not write output for index <{}>", index, e);
+							LOG.error("Could not write output for index {}", index, e);
 						}
 
 					});
 				});
 			}
 			catch (Throwable t) {
-				LOG.error("Query failed for index <{}>", index, t);
+				LOG.error("Query failed for index {}", index, t);
 			}
 
 		}
 		catch (Throwable e) {
-			LOG.error("Could not write output for index <{}>", index, e);
+			LOG.error("Could not write output for index {}", index, e);
 			throw e;
 		}
 	}
@@ -172,7 +172,7 @@ public class ZuliaCmdUtil {
 														}
 													}
 													catch (Throwable t) {
-														LOG.error("Could not restore associated file <{}>", filename, t);
+														LOG.error("Could not restore associated file {}", filename, t);
 													}
 												}
 
@@ -186,7 +186,7 @@ public class ZuliaCmdUtil {
 												}
 											}
 											catch (Throwable t) {
-												LOG.error("Could not list the individual files for dir <{}>", path.getFileName(), t);
+												LOG.error("Could not list the individual files for dir {}", path.getFileName(), t);
 											}
 										}
 										else {
@@ -202,14 +202,14 @@ public class ZuliaCmdUtil {
 
 								}
 								else {
-									//LOG.error("Could not extract file <{}>", fullPathToFile);
+									//LOG.error("Could not extract file {}", fullPathToFile);
 								}
 
 							}
 
 							int i = count.incrementAndGet();
 							if (i % 10000 == 0) {
-								LOG.info("So far indexed <{}> for index <{}>", i, index);
+								LOG.info("So far indexed {} for index {}", i, index);
 							}
 							return null;
 						}

@@ -42,11 +42,11 @@ public class ZuliaTest implements Callable<Integer> {
 			Yaml yaml = new Yaml();
 			try (FileInputStream fileInputStream = new FileInputStream(testConfigPath.toFile())) {
 				ZuliaTestConfig zuliaTestConfig = yaml.loadAs(fileInputStream, ZuliaTestConfig.class);
-				LOG.info("Running tests from <{}>", testConfig);
+				LOG.info("Running tests from {}", testConfig);
 				ZuliaTestRunner zuliaTestRunner = new ZuliaTestRunner(zuliaTestConfig);
 				List<TestResult> testResults = zuliaTestRunner.runTests();
 
-				LOG.info("Writing results to <{}>", testOutput);
+				LOG.info("Writing results to {}", testOutput);
 				FileDataOutputStream dataOutputStream = FileDataOutputStream.from(testOutput, true);
 
 				boolean anyFailed = false;
@@ -66,7 +66,7 @@ public class ZuliaTest implements Callable<Integer> {
 
 		}
 		else {
-			System.err.println("Yaml configuration file <" + testConfig + "> does not exist or is not readable");
+			System.err.println("Yaml configuration file " + testConfig + " does not exist or is not readable");
 			System.exit(9);
 		}
 

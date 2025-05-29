@@ -32,10 +32,10 @@ public class FileDataOutputStream implements DataOutputStream {
 		this.dataStreamMeta = DataStreamMeta.fromPath(path);
 		this.file = path.toFile();
 		if (!overwrite && file.exists()) {
-			throw new FileNotFoundException("File <" + file + "> exists and overwrite is false");
+			throw new FileNotFoundException("File " + file + " exists and overwrite is false");
 		}
 		if (file.isDirectory()) {
-			throw new IOException("Cannot write file.  File <" + file + "> is a directory");
+			throw new IOException("Cannot write file.  File " + file + " is a directory");
 		}
 	}
 
@@ -43,10 +43,10 @@ public class FileDataOutputStream implements DataOutputStream {
 		this.dataStreamMeta = DataStreamMeta.fromFile(file);
 		this.file = file;
 		if (!overwrite && file.exists()) {
-			throw new FileNotFoundException("File <" + file + "> exists and overwrite is false");
+			throw new FileNotFoundException("File " + file + " exists and overwrite is false");
 		}
 		if (file.isDirectory()) {
-			throw new IOException("Cannot write file.  File <" + file + "> is a directory");
+			throw new IOException("Cannot write file.  File " + file + " is a directory");
 		}
 	}
 
@@ -54,10 +54,10 @@ public class FileDataOutputStream implements DataOutputStream {
 		this.dataStreamMeta = DataStreamMeta.fromFullPath(filePath);
 		this.file = new File(filePath);
 		if (!overwrite && this.file.exists()) {
-			throw new FileNotFoundException("File <" + filePath + "> exists and overwrite is false");
+			throw new FileNotFoundException("File " + filePath + " exists and overwrite is false");
 		}
 		if (this.file.isDirectory()) {
-			throw new IOException("Cannot write file.  File <" + filePath + "> is a directory");
+			throw new IOException("Cannot write file.  File " + filePath + " is a directory");
 		}
 	}
 

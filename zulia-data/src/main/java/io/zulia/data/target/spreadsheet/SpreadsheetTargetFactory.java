@@ -55,9 +55,8 @@ public class SpreadsheetTargetFactory {
 			return ExcelTarget.withConfig(excelDataSourceConfig);
 		}
 		else {
-			throw new IllegalArgumentException(
-					"Failed to determine file type from content type <" + dataOutputStream.getMeta().contentType() + "> with filename <"
-							+ dataOutputStream.getMeta().fileName() + ">");
+			throw new IllegalArgumentException("Failed to determine file type from content type " + dataOutputStream.getMeta()
+							.contentType() + " with filename " + dataOutputStream.getMeta().fileName());
 		}
 	}
 }

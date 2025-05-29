@@ -78,7 +78,7 @@ public class ZuliaRestore implements Callable<Integer> {
 						restore(zuliaWorkPool, dir, ind, idField, drop, threads, associatedFilesHandling);
 					}
 					catch (Exception e) {
-						throw new Exception("There was a problem restoring index <" + indexDir.getFileName() + ">");
+						throw new Exception("There was a problem restoring index " + indexDir.getFileName());
 					}
 				}
 			}
@@ -99,26 +99,26 @@ public class ZuliaRestore implements Callable<Integer> {
 				workPool.deleteIndex(index);
 			}
 
-			LOG.info("Creating index <{}>", index);
+			LOG.info("Creating index {}", index);
 			ZuliaIndex.IndexSettings.Builder indexSettingsBuilder = ZuliaIndex.IndexSettings.newBuilder();
 			JsonFormat.parser().merge(Files.readString(settingsPath, Charsets.UTF_8), indexSettingsBuilder);
 			ClientIndexConfig indexConfig = new ClientIndexConfig();
 			indexConfig.configure(indexSettingsBuilder.build());
 			workPool.createIndex(indexConfig);
-			LOG.info("Finished creating index <{}>", index);
+			LOG.info("Finished creating index {}", index);
 
 			AtomicInteger count = new AtomicInteger();
-			LOG.info("Starting to index records for index <{}>", index);
+			LOG.info("Starting to index records for index {}", index);
 			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count, threads, associatedFilesHandling);
-			LOG.info("Finished indexing for index <{}> with total records: {}", index, count);
+			LOG.info("Finished indexing for index {} with total records: {}", index, count);
 		}
 		else {
 			if (index.endsWith(".json")) {
 				throw new Exception("Please provide the path to the parent directory in --dir option.");
 			}
 			else {
-				throw new Exception("Index <" + index + "> does not exist in the given dir <" + dir
-						+ ">, please provide the path to the parent directory in --dir option.");
+				throw new Exception("Index " + index + " does not exist in the given dir " + dir
+						+ ", please provide the path to the parent directory in --dir option.");
 			}
 		}
 	}

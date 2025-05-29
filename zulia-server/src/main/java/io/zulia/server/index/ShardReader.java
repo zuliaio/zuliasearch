@@ -213,8 +213,8 @@ public class ShardReader implements AutoCloseable {
 		indexSearcher.setSimilarity(similarity);
 
 		if (shardQuery.isDebug()) {
-			LOG.info("Lucene Query for index <{}> segment <{}>: {}", indexName, shardNumber, shardQuery.getQuery());
-			LOG.info("Rewritten Query for index <{}> segment <{}>: {}", indexName, shardNumber, indexSearcher.rewrite(shardQuery.getQuery()));
+			LOG.info("Lucene Query for index {}:s{}: {}", indexName, shardNumber, shardQuery.getQuery());
+			LOG.info("Rewritten Query for index {}:s{}: {}", indexName, shardNumber, indexSearcher.rewrite(shardQuery.getQuery()));
 		}
 
 		int hasMoreAmount = shardQuery.getAmount() + 1;
@@ -391,7 +391,7 @@ public class ShardReader implements AutoCloseable {
 					analyzer = ZuliaPerFieldAnalyzer.getAnalyzerForField(analyzerSettings);
 				}
 				else {
-					throw new RuntimeException("Invalid analyzer name <" + analyzerOverride + ">");
+					throw new RuntimeException("Invalid analyzer name " + analyzerOverride );
 				}
 			}
 
@@ -417,7 +417,7 @@ public class ShardReader implements AutoCloseable {
 			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexField);
 
 			if (indexFieldInfo == null) {
-				throw new RuntimeException("Cannot highlight non-indexed field <" + indexField + ">");
+				throw new RuntimeException("Cannot highlight non-indexed field " + indexField );
 			}
 
 			QueryScorer queryScorer = new QueryScorer(q, highlightRequest.getField());
@@ -576,20 +576,19 @@ public class ShardReader implements AutoCloseable {
 
 		}
 
-		Sort sort = new Sort(sortFields.toArray(new SortField[0]));
-		return sort;
+		return new Sort(sortFields.toArray(new SortField[0]));
 	}
 
 	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,
-			List<String> fieldsToMask) throws Exception {
+			List<String> fieldsToMask, boolean realtime) throws Exception {
 
-		ShardQuery shardQuery = ShardQuery.queryById(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
+		ShardQuery shardQuery = ShardQuery.queryById(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
 
 		ZuliaQuery.ShardQueryResponse segmentResponse = this.queryShard(shardQuery);
 
 		List<ZuliaQuery.ScoredResult> scoredResultList = segmentResponse.getScoredResultList();
 		if (!scoredResultList.isEmpty()) {
-			ZuliaQuery.ScoredResult scoredResult = scoredResultList.iterator().next();
+			ZuliaQuery.ScoredResult scoredResult = scoredResultList.getFirst();
 			if (scoredResult.hasResultDocument()) {
 				return scoredResult.getResultDocument();
 			}

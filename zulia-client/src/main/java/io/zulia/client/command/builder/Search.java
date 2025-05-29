@@ -267,6 +267,15 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return queryRequest.getSearchLabel();
 	}
 
+	public Search setRealtime(boolean realtime) {
+		queryRequest.setRealtime(realtime);
+		return this;
+	}
+
+	public boolean getRealtime() {
+		return queryRequest.getRealtime();
+	}
+
 	@Override
 	public QueryRequest getRequest() {
 		queryRequest.setFacetRequest(facetRequest);
