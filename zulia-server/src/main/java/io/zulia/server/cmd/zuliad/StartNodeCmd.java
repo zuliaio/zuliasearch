@@ -57,7 +57,7 @@ public class StartNodeCmd implements Callable<Integer> {
 		ZuliaCommonCmd.printOrange(zuliaArt);
 		System.out.println();
 		LOG.info("Zulia ({}) based on Lucene {}", ZuliaVersion.getVersion(), Version.LATEST);
-
+		LOG.info("Running java {}", Runtime.version().version().getFirst());
 		ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
 
 		ZuliaNodeProvider.setZuliaNode(zuliaNode);
