@@ -212,7 +212,7 @@ public class CacheTest {
 
 		indexRecord(CACHE_TEST, 1000, "an amazing title", "pink and purple", 1000.0);
 
-		search = new Search(CACHE_TEST);
+		search = new Search(CACHE_TEST).setRealtime(true); // force reading change above without commit
 		search.addQuery(new ScoredQuery("rating:[4.0 TO *] AND title:blue"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getShardsCached());

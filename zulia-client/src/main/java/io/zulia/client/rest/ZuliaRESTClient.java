@@ -62,8 +62,8 @@ public class ZuliaRESTClient implements AutoCloseable {
 				.ifFailure(new FailureHandler<>()).getBody();
 	}
 
-	public FieldsDTO getFields(String indexName) {
-		return unirestInstance.get(ZuliaRESTConstants.FIELDS_URL).queryString(ZuliaRESTConstants.INDEX, indexName).asObject(FieldsDTO.class)
+	public FieldsDTO getFields(String indexName, boolean realtime) {
+		return unirestInstance.get(ZuliaRESTConstants.FIELDS_URL).queryString(ZuliaRESTConstants.INDEX, indexName).queryString("realtime", realtime).asObject(FieldsDTO.class)
 				.ifFailure(new FailureHandler<>()).getBody();
 	}
 
@@ -72,9 +72,9 @@ public class ZuliaRESTClient implements AutoCloseable {
 		unirestInstance.close();
 	}
 
-	public Document fetchRecord(String indexName, String uniqueId) {
+	public Document fetchRecord(String indexName, String uniqueId, boolean realtime) {
 		String json = unirestInstance.get(ZuliaRESTConstants.FETCH_URL + "/{indexName}/{uniqueId}").routeParam("indexName", indexName)
-				.routeParam("uniqueId", uniqueId).asString().ifFailure(new FailureHandler<>()).getBody();
+				.routeParam("uniqueId", uniqueId).queryString("realtime", realtime).asString().ifFailure(new FailureHandler<>()).getBody();
 		return Document.parse(json);
 	}
 
@@ -82,13 +82,13 @@ public class ZuliaRESTClient implements AutoCloseable {
 		return unirestInstance.get(ZuliaRESTConstants.STATS_URL).asObject(StatsDTO.class).ifFailure(new FailureHandler<>()).getBody();
 	}
 
-	public TermsResponseDTO getTerms(String indexName, String fieldName) {
-		return getTerms(indexName, fieldName, null);
+	public TermsResponseDTO getTerms(String indexName, String fieldName, boolean realtime) {
+		return getTerms(indexName, fieldName, null, realtime);
 	}
 
-	public TermsResponseDTO getTerms(String indexName, String fieldName, TermsRESTOptions termsOptions) {
+	public TermsResponseDTO getTerms(String indexName, String fieldName, TermsRESTOptions termsOptions, boolean realtime) {
 		return unirestInstance.get(ZuliaRESTConstants.TERMS_URL).queryString(ZuliaRESTConstants.INDEX, indexName)
-				.queryString(ZuliaRESTConstants.FIELDS, fieldName).queryString(termsOptions != null ? termsOptions.getParameters() : null)
+				.queryString(ZuliaRESTConstants.FIELDS, fieldName).queryString(termsOptions != null ? termsOptions.getParameters() : null).queryString("realtime", realtime)
 				.asObject(TermsResponseDTO.class).ifFailure(new FailureHandler<>()).getBody();
 	}
 
@@ -257,6 +257,10 @@ public class ZuliaRESTClient implements AutoCloseable {
 		}
 		if (searchRest.getHighlights() != null && !searchRest.getHighlights().isEmpty()) {
 			request = request.queryString(ZuliaRESTConstants.HIGHLIGHT, searchRest.getHighlights());
+		}
+
+		if (searchRest.isRealtime() != null) {
+			request = request.queryString(ZuliaRESTConstants.REALTIME, searchRest.isRealtime());
 		}
 
 		return request.asObject(SearchResultsDTO.class).ifFailure(new FailureHandler<>()).getBody();

@@ -170,7 +170,8 @@ public class SortTest {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 
-		Search search = new Search(INDEX_NAME).setAmount(10);
+		//run the first search with realtime to force seeing latest changes without waiting for a commit
+		Search search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
 
 		search.addSort(new Sort("title")); //default ascending missing first
 		searchResult = zuliaWorkPool.search(search);

@@ -53,7 +53,7 @@ public class ZuliaDConfig {
 			config = prefix + File.separator + config;
 		}
 
-		LOG.info("Loading config <{}>", config);
+		LOG.info("Loading config {}", config);
 
 		try (FileReader fr = new FileReader(config)) {
 
@@ -78,15 +78,15 @@ public class ZuliaDConfig {
 
 		File dataFile = dataPath.toFile();
 		if (!dataFile.exists()) {
-			throw new FileNotFoundException("Data dir <" + dataDir + "> does not exist");
+			throw new FileNotFoundException("Data dir " + dataDir + " does not exist");
 		}
 		else {
-			LOG.info("Using data directory <{}>", dataFile.getAbsolutePath());
+			LOG.info("Using data directory {}", dataFile.getAbsolutePath());
 		}
 
 		if (zuliaConfig.getServerAddress() == null) {
 			zuliaConfig.setServerAddress(ServerNameHelper.getLocalServer());
-			LOG.warn("Server address is not defined.  Autodetected server name <{}>", zuliaConfig.getServerAddress());
+			LOG.warn("Server address is not defined.  Autodetected server name {}", zuliaConfig.getServerAddress());
 		}
 
 		if (zuliaConfig.isCluster()) {

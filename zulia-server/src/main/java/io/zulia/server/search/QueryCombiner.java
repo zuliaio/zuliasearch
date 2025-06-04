@@ -88,7 +88,7 @@ public class QueryCombiner {
 					Map<Integer, ShardQueryResponse> shardResponseMap = indexToShardQueryResponseMap.get(indexName);
 
 					if (shardResponseMap.containsKey(shardNumber)) {
-						throw new Exception("Shard <" + shardNumber + "> is repeated for <" + indexName + ">");
+						throw new Exception("Shard " + shardNumber + " is repeated for " + indexName);
 					}
 					else {
 						shardResponseMap.put(shardNumber, sr);
@@ -105,16 +105,16 @@ public class QueryCombiner {
 			Map<Integer, ShardQueryResponse> shardResponseMap = indexToShardQueryResponseMap.get(index.getIndexName());
 
 			if (shardResponseMap == null) {
-				throw new Exception("Missing index <" + index.getIndexName() + "> in response");
+				throw new Exception("Missing index " + index.getIndexName() + "> in response");
 			}
 
 			if (shardResponseMap.size() != numberOfShards) {
-				throw new Exception("Found <" + shardResponseMap.size() + "> expected <" + numberOfShards + ">");
+				throw new Exception("Found " + shardResponseMap.size() + " expected " + numberOfShards);
 			}
 
 			for (int shardNumber = 0; shardNumber < numberOfShards; shardNumber++) {
 				if (!shardResponseMap.containsKey(shardNumber)) {
-					throw new Exception("Missing shard <" + shardNumber + ">");
+					throw new Exception("Missing shard " + shardNumber);
 				}
 			}
 		}
@@ -308,7 +308,7 @@ public class QueryCombiner {
 						if (compare > 0) {
 
 							if (sorting) {
-								String msg = "Result set did not return the most relevant sorted documents for index <" + indexName + ">\n";
+								String msg = "Result set did not return the most relevant sorted documents for index " + indexName + "\n";
 								msg += "    Last for index from shard <" + lastForIndex.getShard() + "> has sort values <" + lastForIndex.getSortValues()
 										+ ">\n";
 								msg += "    Next for shard <" + next.getShard() + ">  has sort values <" + next.getSortValues() + ">\n";
@@ -367,10 +367,9 @@ public class QueryCombiner {
 				}
 				else {
 					if (!currentSortType.equals(indexSortType)) {
-						LOG.error("Sort fields must be defined the same in all indexes searched in a single query");
-						String message = "Cannot sort on field <" + sortField + ">: found type: <" + currentSortType + "> then type: <" + indexSortType + ">";
+						String message = "Sort fields must be defined the same in all indexes searched in a single query.  Cannot sort on field " + sortField
+								+ ": found type: " + currentSortType + " then type: " + indexSortType;
 						LOG.error(message);
-
 						throw new Exception(message);
 					}
 				}

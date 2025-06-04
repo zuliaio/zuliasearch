@@ -196,7 +196,7 @@ public class ZuliaIndex {
 				}
 			}
 			catch (Exception e) {
-				LOG.error("Failed to flush shard <{}> for index <{}>", shard.getShardNumber(), indexName, e);
+				LOG.error("Failed to flush index {}:s{}", indexName, shard.getShardNumber(), e);
 			}
 		}
 
@@ -204,7 +204,7 @@ public class ZuliaIndex {
 
 	public void unload(boolean terminate) throws IOException {
 
-		LOG.info("Canceling timers for <{}>", indexName);
+		LOG.info("Canceling timers for {}", indexName);
 		commitTask.cancel();
 		commitTimer.cancel();
 
@@ -212,38 +212,38 @@ public class ZuliaIndex {
 		warmTimer.cancel();
 
 		if (!terminate) {
-			LOG.info("Committing <{}>", indexName);
+			LOG.info("Committing {}", indexName);
 			doCommit(true);
 		}
 
-		LOG.info("Shutting down shard pool for <{}>", indexName);
+		LOG.info("Shutting down shard pool for {}", indexName);
 		shardPool.shutdownNow();
 
 		for (Integer shardNumber : primaryShardMap.keySet()) {
-			LOG.info("Unloading primary shard <{}> for <{}>", shardNumber, indexName);
+			LOG.info("Unloading primary shard {}:s{}", indexName, shardNumber);
 			unloadShard(shardNumber);
-			LOG.info("Unloaded primary shard <{}> for <{}>", shardNumber, indexName);
+			LOG.info("Unloaded primary shard {}:s{}", indexName, shardNumber);
 			if (terminate) {
-				LOG.info("Deleting primary shard <{}> for <{}>", shardNumber, indexName);
+				LOG.info("Deleting primary shard {}:s{}", indexName, shardNumber);
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
-				LOG.info("Deleted primary shard <{}> for <{}>", shardNumber, indexName);
+				LOG.info("Deleted primary shard {}:s{}", indexName, shardNumber);
 			}
 		}
 
 		LOG.info("Deleting replicas");
 		for (Integer shardNumber : replicaShardMap.keySet()) {
-			LOG.info("Unloading replica shard <{}> for <{}>", shardNumber, indexName);
+			LOG.info("Unloading replica shard {}:s{}", indexName, shardNumber);
 			unloadShard(shardNumber);
-			LOG.info("Unloaded replica shard <{}> for <{}>", shardNumber, indexName);
+			LOG.info("Unloaded replica shard {}:s{}", indexName, shardNumber);
 			if (terminate) {
-				LOG.info("Deleting replica shard <{}> for <{}>", shardNumber, indexName);
+				LOG.info("Deleting replica shard {}:s{}", indexName, shardNumber);
 				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
 				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
-				LOG.info("Deleted replica shard <{}> for <{}>", shardNumber, indexName);
+				LOG.info("Deleted replica shard {}:s{}", indexName, shardNumber);
 			}
 		}
-		LOG.info("Shut down shard pool for <{}>", indexName);
+		LOG.info("Shut down shard pool for {}", indexName);
 
 	}
 
@@ -255,11 +255,11 @@ public class ZuliaIndex {
 		ZuliaShard s = new ZuliaShard(shardWriteManager, primary);
 
 		if (primary) {
-			LOG.info("Loaded primary shard <{}> for index <{}>", shardNumber, indexName);
+			LOG.info("Loaded primary shard {}:s{}", indexName, shardNumber);
 			primaryShardMap.put(shardNumber, s);
 		}
 		else {
-			LOG.info("Loaded replica shard <{}> for index <{}>", shardNumber, indexName);
+			LOG.info("Loaded replica shard {}:s{}", indexName, shardNumber);
 			replicaShardMap.put(shardNumber, s);
 		}
 
@@ -278,9 +278,9 @@ public class ZuliaIndex {
 		{
 			ZuliaShard s = primaryShardMap.remove(shardNumber);
 			if (s != null) {
-				LOG.info("{}Closing primary shard <{}> for index <{}>", getLogPrefix(), shardNumber, indexName);
+				LOG.info("{}:{} Closing primary shard {}:s{}", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort(), indexName, shardNumber);
 				s.close();
-				LOG.info("{}Removed primary shard <{}> for index <{}>", getLogPrefix(), shardNumber, indexName);
+				LOG.info("{}:{} Removed primary shard {}:s{}", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort(), indexName, shardNumber);
 
 			}
 		}
@@ -288,9 +288,9 @@ public class ZuliaIndex {
 		{
 			ZuliaShard s = replicaShardMap.remove(shardNumber);
 			if (s != null) {
-				LOG.info("{}Closing replica shard <{}> for index <{}>", getLogPrefix(), shardNumber, indexName);
+				LOG.info("{}:{} Closing replica shard {}:s{}", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort(), indexName, shardNumber);
 				s.close();
-				LOG.info("{}Removed replica shard <{}> for index <{}>", getLogPrefix(), shardNumber, indexName);
+				LOG.info("{}:{} Removed replica shard {}:s{}", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort(), indexName, shardNumber);
 			}
 		}
 
@@ -396,7 +396,7 @@ public class ZuliaIndex {
 		IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(field);
 
 		if (indexFieldInfo == null) {
-			throw new RuntimeException("Field <" + field + "> is not indexed");
+			throw new RuntimeException("Field " + field + " is not indexed");
 		}
 
 		return SetQueryHelper.getTermInSetQuery(query.getTermList(), field, indexFieldInfo);
@@ -612,7 +612,7 @@ public class ZuliaIndex {
 				SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(var);
 				FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
 				if (fieldType == null) {
-					throw new IllegalArgumentException("Score Function references unknown sort field <" + var + ">");
+					throw new IllegalArgumentException("Score Function references unknown sort field " + var);
 				}
 
 				if (FieldTypeUtil.isStoredAsInt(fieldType)) {
@@ -746,7 +746,7 @@ public class ZuliaIndex {
 
 		if (indexConfig.getNumberOfShards() != 1) {
 			if (!queryRequest.getFetchFull() && (amount > 0)) {
-				amount = (int) (((amount / numberOfShards) + indexConfig.getIndexSettings().getMinShardRequest()) * indexConfig.getIndexSettings()
+				amount = (int) (((amount / (float) numberOfShards) + indexConfig.getIndexSettings().getMinShardRequest()) * indexConfig.getIndexSettings()
 						.getRequestFactor());
 			}
 		}
@@ -833,7 +833,7 @@ public class ZuliaIndex {
 		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
 		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
 				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
-				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug());
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug(), queryRequest.getRealtime());
 	}
 
 	public Integer getNumberOfShards() {
@@ -902,7 +902,7 @@ public class ZuliaIndex {
 		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getNumberOfDocsRequest.getMasterSlaveSettings());
 
 		for (ZuliaShard shard : shardsForCommand) {
-			Future<ShardCountResponse> response = shardPool.submit(shard::getNumberOfDocs);
+			Future<ShardCountResponse> response = shardPool.submit(() -> shard.getNumberOfDocs(getNumberOfDocsRequest.getRealtime()));
 			responses.add(response);
 		}
 
@@ -971,7 +971,7 @@ public class ZuliaIndex {
 
 		for (final ZuliaShard shard : shardsForCommand) {
 
-			Future<GetFieldNamesResponse> response = shardPool.submit(shard::getFieldNames);
+			Future<GetFieldNamesResponse> response = shardPool.submit(() -> shard.getFieldNames(getFieldNamesRequest.getRealtime()));
 
 			responses.add(response);
 
@@ -1118,11 +1118,11 @@ public class ZuliaIndex {
 		return documentStorage.getAssociatedMetadataForQuery(query);
 	}
 
-	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask)
-			throws Exception {
+	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
+			boolean realtime) throws Exception {
 
 		ZuliaShard s = findShardFromUniqueId(uniqueId);
-		return s.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
+		return s.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
 
 	}
 
@@ -1173,7 +1173,7 @@ public class ZuliaIndex {
 		if (!FetchType.NONE.equals(resultFetchType)) {
 
 			ZuliaBase.ResultDocument resultDoc = getSourceDocument(uniqueId, resultFetchType, fetchRequest.getDocumentFieldsList(),
-					fetchRequest.getDocumentMaskedFieldsList());
+					fetchRequest.getDocumentMaskedFieldsList(), fetchRequest.getRealtime());
 			if (null != resultDoc) {
 				frBuilder.setResultDocument(resultDoc);
 			}
@@ -1215,10 +1215,6 @@ public class ZuliaIndex {
 	@Override
 	public int hashCode() {
 		return indexName.hashCode();
-	}
-
-	private String getLogPrefix() {
-		return zuliaConfig.getServerAddress() + ":" + zuliaConfig.getServicePort() + " ";
 	}
 
 }

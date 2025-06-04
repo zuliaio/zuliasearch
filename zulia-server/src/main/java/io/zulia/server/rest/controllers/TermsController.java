@@ -29,9 +29,10 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
  * @author pmeyer
  */
 @Controller
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class TermsController {
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
+
 	@Get(ZuliaRESTConstants.TERMS_URL)
 	@Produces({ ZuliaRESTConstants.UTF8_JSON })
 	public TermsResponseDTO getTermsJson(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName,
@@ -43,12 +44,13 @@ public class TermsController {
 			@Nullable @QueryValue(ZuliaRESTConstants.TERM_FILTER) final String termFilter,
 			@Nullable @QueryValue(ZuliaRESTConstants.TERM_MATCH) final String termMatch,
 			@Nullable @QueryValue(ZuliaRESTConstants.INCLUDE_TERM) final List<String> includeTerm,
-			@Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson,
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) final Boolean realtime) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		GetTermsRequest termsRequest = getTermsRequest(indexName, field, amount, minDocFreq, minTermFreq, startTerm, endTerm, termFilter, termMatch,
-				includeTerm, fuzzyTermJson);
+				includeTerm, fuzzyTermJson, realtime);
 		GetTermsResponse terms = indexManager.getTerms(termsRequest);
 
 		TermsResponseDTO termsResponseDTO = new TermsResponseDTO();
@@ -61,7 +63,6 @@ public class TermsController {
 
 	}
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.TERMS_URL + "/csv")
 	@Produces({ ZuliaRESTConstants.UTF8_CSV })
 	public String getTermsCsv(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName, @QueryValue(ZuliaRESTConstants.FIELDS) final String field,
@@ -73,12 +74,13 @@ public class TermsController {
 			@Nullable @QueryValue(ZuliaRESTConstants.TERM_FILTER) final String termFilter,
 			@Nullable @QueryValue(ZuliaRESTConstants.TERM_MATCH) final String termMatch,
 			@Nullable @QueryValue(ZuliaRESTConstants.INCLUDE_TERM) final List<String> includeTerm,
-			@Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson,
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) final Boolean realtime) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		GetTermsRequest termsRequest = getTermsRequest(indexName, field, amount, minDocFreq, minTermFreq, startTerm, endTerm, termFilter, termMatch,
-				includeTerm, fuzzyTermJson);
+				includeTerm, fuzzyTermJson,realtime);
 		GetTermsResponse terms = indexManager.getTerms(termsRequest);
 
 		StringBuilder csvString = new StringBuilder();
@@ -110,7 +112,7 @@ public class TermsController {
 	}
 
 	private static GetTermsRequest getTermsRequest(String indexName, String field, Integer amount, Integer minDocFreq, Integer minTermFreq, String startTerm,
-			String endTerm, String termFilter, String termMatch, List<String> includeTerm, String fuzzyTermJson) {
+			String endTerm, String termFilter, String termMatch, List<String> includeTerm, String fuzzyTermJson, Boolean realtime) {
 		GetTermsRequest.Builder termsBuilder = GetTermsRequest.newBuilder();
 		termsBuilder.setIndexName(indexName);
 		termsBuilder.setFieldName(field);
@@ -153,6 +155,10 @@ public class TermsController {
 				throw new IllegalArgumentException("Failed to parse fuzzy term json: " + e.getMessage());
 			}
 
+		}
+
+		if (realtime != null) {
+			termsBuilder.setRealtime(realtime);
 		}
 		return termsBuilder.build();
 	}

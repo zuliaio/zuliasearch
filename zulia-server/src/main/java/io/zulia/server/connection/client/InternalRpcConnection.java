@@ -28,7 +28,7 @@ public class InternalRpcConnection {
 
 		blockingStub = ZuliaServiceGrpc.newBlockingStub(channel);
 
-		LOG.info("Connecting to <{}:{}>", memberAddress, servicePort);
+		LOG.info("Connecting to {}:{}", memberAddress, servicePort);
 	}
 
 	public ZuliaServiceBlockingStub getService() {
@@ -38,13 +38,13 @@ public class InternalRpcConnection {
 	public void close() {
 		try {
 			if (channel != null) {
-				LOG.info("Closing connection to <{}:{}>", memberAddress, internalServicePort);
+				LOG.info("Closing connection to {}:{}", memberAddress, internalServicePort);
 				channel.shutdown();
 				try {
 					channel.awaitTermination(15, TimeUnit.SECONDS);
 				}
 				catch (InterruptedException ex) {
-					LOG.warn("connection to <{}:{}> timed out on close", memberAddress, internalServicePort);
+					LOG.warn("connection to {}:{} timed out on close", memberAddress, internalServicePort);
 				}
 
 			}

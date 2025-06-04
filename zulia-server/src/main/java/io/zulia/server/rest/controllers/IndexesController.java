@@ -40,24 +40,22 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class IndexesController {
 	private final static Logger LOG = LoggerFactory.getLogger(IndexesController.class);
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.INDEXES_URL + "/{index}")
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public String getIndex(String index) throws Exception {
 		return JsonFormat.printer().print(getIndexResponse(index));
 	}
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.INDEX_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public String getIndexLegacy(@QueryValue(ZuliaRESTConstants.INDEX) String index) throws Exception {
 		return JsonFormat.printer().print(getIndexResponse(index));
 	}
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.INDEXES_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public IndexesResponseDTO getIndexes() throws Exception {

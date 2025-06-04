@@ -11,7 +11,7 @@ across servers.
 * Distributed
 * Pure Java
 * Open Source
-* Based on Lucene 9.x
+* Based on Lucene 10.x
 
 ## Zulia supports:
 

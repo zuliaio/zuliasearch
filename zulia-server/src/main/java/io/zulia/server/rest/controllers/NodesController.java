@@ -41,9 +41,9 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class NodesController {
 
-	@ExecuteOn(TaskExecutors.BLOCKING)
 	@Get(ZuliaRESTConstants.NODES_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	public NodesResponseDTO getNodes(@QueryValue(value = ZuliaRESTConstants.ACTIVE, defaultValue = "false") Boolean active) throws Exception {

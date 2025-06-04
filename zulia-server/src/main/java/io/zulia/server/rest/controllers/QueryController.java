@@ -13,6 +13,8 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.scheduling.TaskExecutors;
+import io.micronaut.scheduling.annotation.ExecuteOn;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.*;
 import io.zulia.server.exceptions.WrappedCheckedException;
@@ -42,6 +44,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
  * @author pmeyer
  */
 @Controller(ZuliaRESTConstants.QUERY_URL)
+@ExecuteOn(TaskExecutors.BLOCKING)
 public class QueryController {
 
 	private final static Logger LOG = LoggerFactory.getLogger(QueryController.class);
@@ -64,12 +67,13 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.START) Integer start, @Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT) List<String> highlightList,
 			@Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
 			@Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList, @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
-			@QueryValue(value = ZuliaRESTConstants.TRUNCATE, defaultValue = "false") Boolean truncate) throws Exception {
+			@QueryValue(value = ZuliaRESTConstants.TRUNCATE, defaultValue = "false") Boolean truncate,
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
-				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor);
+				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime);
 		QueryResponse qr = indexManager.query(qrBuilder.build());
 		return getJsonResponse(qr, cursor != null, truncate);
 
@@ -95,12 +99,13 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList,
 			@QueryValue(value = ZuliaRESTConstants.BATCH, defaultValue = "false") Boolean batch,
 			@QueryValue(value = ZuliaRESTConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
-			@Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
-				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor);
+				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime);
 
 		LocalDateTime now = LocalDateTime.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
@@ -132,12 +137,13 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.DRILL_DOWN) List<String> drillDowns,
 			@Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator, @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
 			@Nullable @QueryValue(ZuliaRESTConstants.MIN_MATCH) Integer mm, @QueryValue(value = ZuliaRESTConstants.DEBUG, defaultValue = "false") Boolean debug,
-			@Nullable @QueryValue(ZuliaRESTConstants.START) Integer start, @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.START) Integer start, @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, null, 0, facet, drillDowns,
-				defaultOperator, sort, mm, null, debug, null, start, null, null, null, cursor);
+				defaultOperator, sort, mm, null, debug, null, start, null, null, null, cursor, realtime);
 
 		if (facet != null && !facet.isEmpty()) {
 			String response = getFacetCSV(indexManager, qrBuilder);
@@ -211,7 +217,7 @@ public class QueryController {
 	private static QueryRequest.Builder buildQueryRequest(List<String> indexName, String query, List<String> queryFields, List<String> filterQueries,
 			List<String> queryJsonList, List<String> fields, Boolean fetch, Integer rows, List<String> facet, List<String> drillDowns, String defaultOperator,
 			List<String> sort, Integer mm, List<String> similarity, Boolean debug, Boolean dontCache, Integer start, List<String> highlightList,
-			List<String> highlightJsonList, List<String> analyzeJsonList, String cursor) {
+			List<String> highlightJsonList, List<String> analyzeJsonList, String cursor, Boolean realtime) {
 		QueryRequest.Builder qrBuilder = QueryRequest.newBuilder().addAllIndex(indexName);
 		if (cursor != null) {
 			if (!cursor.equals("0")) {
@@ -220,6 +226,10 @@ public class QueryController {
 			if (sort == null || sort.isEmpty()) {
 				throw new IllegalArgumentException("Sort on unique value or value combination is required to use a cursor (i.e. id or title,id)");
 			}
+		}
+
+		if (realtime != null) {
+			qrBuilder.setRealtime(realtime);
 		}
 
 		if (debug != null) {
@@ -252,7 +262,7 @@ public class QueryController {
 				mainQueryBuilder.setDefaultOp(Query.Operator.OR);
 			}
 			else {
-				throw new IllegalArgumentException("Invalid default operator <" + defaultOperator + ">");
+				throw new IllegalArgumentException("Invalid default operator " + defaultOperator);
 			}
 		}
 		mainQueryBuilder.setQueryType(Query.QueryType.SCORE_MUST);
@@ -282,13 +292,13 @@ public class QueryController {
 						fieldSimilarity.setSimilarity(Similarity.TFIDF);
 					}
 					else {
-						throw new IllegalArgumentException("Unknown similarity type <" + simType + ">");
+						throw new IllegalArgumentException("Unknown similarity type " + simType );
 					}
 
 					qrBuilder.addFieldSimilarity(fieldSimilarity);
 				}
 				else {
-					throw new IllegalArgumentException("Similarity <" + sim + "> should be in the form field:simType");
+					throw new IllegalArgumentException("Similarity " + sim + " should be in the form field:simType");
 				}
 			}
 		}
@@ -373,7 +383,7 @@ public class QueryController {
 						count = Integer.parseInt(countString);
 					}
 					catch (Exception e) {
-						throw new IllegalArgumentException("Invalid facet count <" + countString + "> for facet <" + f + ">");
+						throw new IllegalArgumentException("Invalid facet count " + countString + " for facet " + f);
 					}
 				}
 
@@ -533,7 +543,7 @@ public class QueryController {
 								Object subValue = subDoc.get(subKey);
 								if (subValue instanceof List) {
 									if (!((List<?>) subValue).isEmpty()) {
-										if (((List<?>) subValue).get(0) instanceof String) {
+										if (((List<?>) subValue).getFirst() instanceof String) {
 											if (((List<String>) subValue).size() > 10) {
 												List<String> value = ((List<String>) subValue).subList(0, 10);
 												value.add("...[truncated]");

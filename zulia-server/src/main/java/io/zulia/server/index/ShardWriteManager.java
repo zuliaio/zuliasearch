@@ -20,22 +20,31 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ShardWriteManager {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ShardWriteManager.class);
+
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final ShardDocumentIndexer shardDocumentIndexer;
 	private final ServerIndexConfig indexConfig;
 	private final int shardNumber;
 	private final String indexName;
 	private final AtomicLong counter;
+	private final ZuliaConcurrentMergeScheduler mergeScheduler;
+	private final Semaphore indexingThrottle;
+
+	private final IndexWriter indexWriter;
+	private final DirectoryTaxonomyWriter taxoWriter;
+
 	private Long lastCommit;
 	private Long lastChange;
 	private Long lastWarm;
-	private IndexWriter indexWriter;
-	private DirectoryTaxonomyWriter taxoWriter;
+
+	private final AtomicLong totalIndexedUnthrottled;
+	private final AtomicLong totalIndexedThrottled;
 
 	public ShardWriteManager(int shardNumber, Path pathToIndex, Path pathToTaxoIndex, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
@@ -52,8 +61,13 @@ public class ShardWriteManager {
 		this.lastChange = null;
 		this.lastWarm = null;
 
-		openIndexWriter(pathToIndex);
-		openTaxoWriter(pathToTaxoIndex);
+		this.totalIndexedUnthrottled = new AtomicLong();
+		this.totalIndexedThrottled = new AtomicLong();
+		this.indexingThrottle = new Semaphore(1);
+		this.mergeScheduler = new ZuliaConcurrentMergeScheduler();
+
+		this.indexWriter = openIndexWriter(pathToIndex);
+		this.taxoWriter = openTaxoWriter(pathToTaxoIndex);
 
 		updateIndexSettings();
 
@@ -67,7 +81,7 @@ public class ShardWriteManager {
 		return indexConfig;
 	}
 
-	private void openIndexWriter(Path pathToIndex) throws IOException {
+	private IndexWriter openIndexWriter(Path pathToIndex) throws IOException {
 
 		Directory d = MMapDirectory.open(pathToIndex);
 
@@ -77,36 +91,30 @@ public class ShardWriteManager {
 		config.setRAMBufferSizeMB(128); // should be overwritten by ZuliaShard.updateIndexSettings()
 		config.setUseCompoundFile(false);
 
+		config.setMergeScheduler(mergeScheduler);
+
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 50, 150);
 
-		this.indexWriter = new IndexWriter(nrtCachingDirectory, config);
+		return new IndexWriter(nrtCachingDirectory, config);
 
 	}
 
-	private void openTaxoWriter(Path pathToTaxo) throws IOException {
+	private DirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
-		this.taxoWriter = new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND,
-				new LruTaxonomyWriterCache(32 * 1024 * 1024));
+		return new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(32 * 1024 * 1024));
 
 	}
 
 	public void close() throws IOException {
-		if (indexWriter != null) {
+		{
 			Directory directory = indexWriter.getDirectory();
-
 			indexWriter.close();
-			indexWriter = null;
 			directory.close();
-
 		}
-		if (taxoWriter != null) {
+		{
 			Directory directory = taxoWriter.getDirectory();
-
 			taxoWriter.close();
-
-			taxoWriter = null;
-
 			directory.close();
 
 		}
@@ -120,7 +128,10 @@ public class ShardWriteManager {
 	}
 
 	public void commit() throws IOException {
-		LOG.info("Committing shard <{}> for index <{}>", shardNumber, indexName);
+		long indexedThrottled = totalIndexedThrottled.get();
+		long indexedUntrottled = totalIndexedUnthrottled.get();
+		LOG.info("Committing index {}:s{} with {} total indexed ({} indexed throttled)", indexName, shardNumber, indexedUntrottled + indexedThrottled,
+				indexedThrottled);
 
 		long currentTime = System.currentTimeMillis();
 		indexWriter.commit();
@@ -220,7 +231,21 @@ public class ShardWriteManager {
 	public void indexDocument(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata) throws Exception {
 		Document luceneDocument = shardDocumentIndexer.getIndexDocument(uniqueId, timestamp, mongoDocument, metadata, taxoWriter);
 		Term updateQuery = new Term(ZuliaFieldConstants.ID_FIELD, uniqueId);
-		indexWriter.updateDocument(updateQuery, luceneDocument);
+
+		if (mergeScheduler.mergeSaturated()) {
+			indexingThrottle.acquire();
+			try {
+				indexWriter.updateDocument(updateQuery, luceneDocument);
+				totalIndexedThrottled.incrementAndGet();
+			}
+			finally {
+				indexingThrottle.release();
+			}
+		}
+		else {
+			indexWriter.updateDocument(updateQuery, luceneDocument);
+			totalIndexedUnthrottled.incrementAndGet();
+		}
 
 	}
 

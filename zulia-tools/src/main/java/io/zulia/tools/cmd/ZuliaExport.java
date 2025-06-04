@@ -78,9 +78,9 @@ public class ZuliaExport implements Callable<Integer> {
 		String recordsFilename = indOutputDir + File.separator + index + ".json";
 
 		AtomicInteger count = new AtomicInteger();
-		LOG.info("Exporting from index <{}>", index);
+		LOG.info("Exporting from index {}", index);
 		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, uniqueIds);
-		LOG.info("Finished exporting from index <{}>, total: {}", index, count);
+		LOG.info("Finished exporting from index {}, total: {}", index, count);
 
 	}
 

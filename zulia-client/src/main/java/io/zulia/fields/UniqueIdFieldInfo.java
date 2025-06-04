@@ -25,7 +25,7 @@ public class UniqueIdFieldInfo<T> {
 			}
 
 		}
-		throw new RuntimeException("Unique id field <" + field.getName() + "> must not be null");
+		throw new RuntimeException("Unique id field " + field.getName() + " must not be null");
 	}
 
 	public void populate(T newInstance, Document savedDocument) throws Exception {

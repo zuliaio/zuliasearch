@@ -107,7 +107,8 @@ public class StatTest {
 		Search search;
 		SearchResult searchResult;
 
-		search = new Search(STAT_TEST_INDEX);
+		//run the first search with realtime to force seeing latest changes without waiting for a commit
+		search = new Search(STAT_TEST_INDEX).setRealtime(true);
 		search.addStat(new NumericStat("rating").setPercentiles(percentiles));
 		search.addQuery(new FilterQuery("title:boring").exclude());
 
@@ -420,7 +421,7 @@ public class StatTest {
 				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
 			}
 			else {
-				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
+				throw new AssertionFailedError("Unexpected facet " + facetStats.getFacet());
 			}
 		}
 	}
@@ -445,7 +446,7 @@ public class StatTest {
 				Assertions.assertEquals(2L * repeatCount, facetStats.getValueCount());
 			}
 			else {
-				throw new AssertionFailedError("Unexpected facet <" + facetStats.getFacet() + ">");
+				throw new AssertionFailedError("Unexpected facet " + facetStats.getFacet());
 			}
 		}
 	}

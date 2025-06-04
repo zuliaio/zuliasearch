@@ -37,7 +37,7 @@ public class ZuliaNumericSetQueryNode extends ZuliaFieldableQueryNode {
 
 	public Query getQuery() {
 		Objects.requireNonNull(getField(), "Field must not be null for numeric set queries");
-		Objects.requireNonNull(getIndexFieldInfo(), "Field <" + getField() + "> must be indexed for numeric set queries");
+		Objects.requireNonNull(getIndexFieldInfo(), "Field " + getField() + " must be indexed for numeric set queries");
 		return SetQueryHelper.getNumericSetQuery(getField().toString(), getIndexFieldInfo(), intTerms(), longTerms(), floatTerms(), doubleTerms());
 	}
 

@@ -42,7 +42,7 @@ public class ZuliaFlexibleQueryParser implements ZuliaParser {
 
 				}
 				catch (Exception e) {
-					throw new IllegalArgumentException("Invalid queryText field boost <" + field + ">");
+					throw new IllegalArgumentException("Invalid queryText field boost " + field);
 				}
 			}
 
