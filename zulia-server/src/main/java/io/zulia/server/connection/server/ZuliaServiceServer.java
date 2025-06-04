@@ -9,10 +9,13 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.util.NettyRuntime;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
+import io.zulia.util.ZuliaThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 public class ZuliaServiceServer {
 	private final static Logger LOG = LoggerFactory.getLogger(ZuliaServiceServer.class);
 	private final Server server;
+
+	private final ExecutorService executor;
 
 	public static class ResponseCompressionIntercept implements ServerInterceptor {
 
@@ -37,16 +42,18 @@ public class ZuliaServiceServer {
 
 		if (zuliaConfig.getRpcWorkers() != 0) {
 			System.setProperty("io.grpc.netty.shaded.io.netty.eventLoopThreads", String.valueOf(zuliaConfig.getRpcWorkers()));
-			LOG.info("Using <{}> event loop threads", zuliaConfig.getRpcWorkers());
+			LOG.info("Using {} event loop threads", zuliaConfig.getRpcWorkers());
 		}
 		else {
-			LOG.info("Using netty default of <{}> processors", NettyRuntime.availableProcessors());
+			LOG.info("Using netty default of {} processors for event loop threads", NettyRuntime.availableProcessors());
 		}
 
 		int externalServicePort = zuliaConfig.getServicePort();
 
+		this.executor = Executors.newCachedThreadPool(new ZuliaThreadFactory("grpc"));;
+
 		ZuliaServiceHandler zuliaServiceHandler = new ZuliaServiceHandler(indexManager);
-		NettyServerBuilder nettyServerBuilder = NettyServerBuilder.forPort(externalServicePort).addService(zuliaServiceHandler)
+		NettyServerBuilder nettyServerBuilder = NettyServerBuilder.forPort(externalServicePort).addService(zuliaServiceHandler).executor(executor)
 				.maxInboundMessageSize(128 * 1024 * 1024);
 
 		if (zuliaConfig.isResponseCompression()) {
@@ -61,6 +68,7 @@ public class ZuliaServiceServer {
 
 	public void shutdown() {
 		server.shutdown();
+		executor.shutdown();
 		try {
 			server.awaitTermination(2, TimeUnit.SECONDS);
 		}

@@ -137,13 +137,13 @@ public class RestTest {
 	@Order(5)
 	public void fieldsTest() {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
-		FieldsDTO fields = restClient.getFields("index1");
+		FieldsDTO fields = restClient.getFields("index1", true);
 
 		Assertions.assertEquals(2, fields.getFields().size());
 		Assertions.assertTrue(fields.getFields().contains("title"));
 		Assertions.assertTrue(fields.getFields().contains("id"));
 
-		fields = restClient.getFields("index2");
+		fields = restClient.getFields("index2", true);
 
 		Assertions.assertEquals(0, fields.getFields().size());
 
@@ -153,7 +153,7 @@ public class RestTest {
 	@Order(5)
 	public void fetchTest() {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
-		Document document = restClient.fetchRecord("index1", "123");
+		Document document = restClient.fetchRecord("index1", "123", true);
 		Assertions.assertEquals("test", document.getString("title"));
 		Assertions.assertEquals("some value", document.getString("notIndexed"));
 	}
@@ -170,7 +170,7 @@ public class RestTest {
 	@Order(6)
 	public void termTest() {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
-		TermsResponseDTO termsResponseDTO = restClient.getTerms("index1", "title");
+		TermsResponseDTO termsResponseDTO = restClient.getTerms("index1", "title", true);
 		Assertions.assertEquals(7, termsResponseDTO.getTerms().size());
 		Assertions.assertEquals("different", termsResponseDTO.getTerms().get(0).term());
 		Assertions.assertEquals("place", termsResponseDTO.getTerms().get(1).term());
@@ -180,15 +180,15 @@ public class RestTest {
 		Assertions.assertEquals("totally", termsResponseDTO.getTerms().get(5).term());
 		Assertions.assertEquals("value", termsResponseDTO.getTerms().get(6).term());
 
-		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setAmount(1));
+		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setAmount(1), true);
 		Assertions.assertEquals(1, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("different", termsResponseDTO.getTerms().get(0).term());
+		Assertions.assertEquals("different", termsResponseDTO.getTerms().getFirst().term());
 
-		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setAmount(1).setStartTerm("t"));
+		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setAmount(1).setStartTerm("t"), true);
 		Assertions.assertEquals(1, termsResponseDTO.getTerms().size());
-		Assertions.assertEquals("test", termsResponseDTO.getTerms().get(0).term());
+		Assertions.assertEquals("test", termsResponseDTO.getTerms().getFirst().term());
 
-		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setTermFilter("test"));
+		termsResponseDTO = restClient.getTerms("index1", "title", new TermsRESTOptions().setTermFilter("test"), true);
 		Assertions.assertEquals(6, termsResponseDTO.getTerms().size());
 		Assertions.assertEquals("different", termsResponseDTO.getTerms().get(0).term());
 		Assertions.assertEquals("place", termsResponseDTO.getTerms().get(1).term());
@@ -270,7 +270,7 @@ public class RestTest {
 					}
 					case "test2.txt/test2.txt_metadata.json" -> {
 						piecesFound[4] = true;
-						Assertions.assertEquals(Document.parse(new String(b)), new Document("aKey", "aValue"));
+						Assertions.assertEquals(new Document("aKey", "aValue"), Document.parse(new String(b)));
 					}
 					default -> throw new Exception("Unexpected file <" + ze.getName());
 				}
@@ -304,7 +304,7 @@ public class RestTest {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		SearchResultsDTO searchResultsDTO;
 
-		searchResultsDTO = restClient.search(new SearchREST("index1"));
+		searchResultsDTO = restClient.search(new SearchREST("index1").setRealtime(true));
 		Assertions.assertEquals(3, searchResultsDTO.getTotalHits());
 
 		searchResultsDTO = restClient.search(new SearchREST("index1"));

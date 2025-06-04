@@ -43,7 +43,7 @@ public class Mapper<T> extends GsonDocumentMapper<T> {
 
 		List<Field> allFields = AnnotationUtil.getNonStaticFields(clazz, true);
 
-		UniqueIdFieldInfo uf = null;
+		UniqueIdFieldInfo<T> uf = null;
 		for (Field f : allFields) {
 			f.setAccessible(true);
 

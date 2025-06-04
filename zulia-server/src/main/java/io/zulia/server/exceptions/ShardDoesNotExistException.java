@@ -7,7 +7,7 @@ public class ShardDoesNotExistException extends NotFoundException {
 	private final int shardNumber;
 
 	public ShardDoesNotExistException(String indexName, int shardNumber) {
-		super("Shard does not exist for index <" + indexName + "> with shard <" + shardNumber + ">");
+		super("Shard does not exist for index " + indexName + " with shard " + shardNumber);
 		this.indexName = indexName;
 		this.shardNumber = shardNumber;
 	}

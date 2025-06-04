@@ -93,7 +93,8 @@ public class AnalyzerTest {
 	@Order(3)
 	public void searchTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		Search search = new Search(ANALYZER_TEST_INDEX);
+		//run the first search with realtime to force seeing latest changes without waiting for a commit
+		Search search = new Search(ANALYZER_TEST_INDEX).setRealtime(true);
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount * uniqueDocs, searchResult.getTotalHits());
 

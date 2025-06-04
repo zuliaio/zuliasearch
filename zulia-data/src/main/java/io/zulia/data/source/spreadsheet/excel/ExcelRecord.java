@@ -33,7 +33,7 @@ public class ExcelRecord implements SpreadsheetRecord {
 		if (headerMapping.hasHeader(field)) {
 			return headerMapping.getHeaderIndex(field);
 		}
-		throw new IllegalStateException("Field <" + field + "> does not exist in header");
+		throw new IllegalStateException("Field " + field + " does not exist in header");
 	}
 
 	public SequencedSet<String> getHeaders() {

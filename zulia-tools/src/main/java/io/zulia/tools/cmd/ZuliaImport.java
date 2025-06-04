@@ -51,13 +51,13 @@ public class ZuliaImport implements Callable<Integer> {
 
 		if (Files.exists(Paths.get(recordsFilename))) {
 			AtomicInteger count = new AtomicInteger();
-			LOG.info("Starting to index records for index <{}>", index);
+			LOG.info("Starting to index records for index {}", index);
 			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, zuliaWorkPool, count, threadedArgs.getThreads(),
 					ZuliaCmdUtil.AssociatedFilesHandling.skip);
-			LOG.info("Finished indexing for index <{}> with total records: {}", index, count);
+			LOG.info("Finished indexing for index {} with total records: {}", index, count);
 		}
 		else {
-			System.err.println("File <" + recordsFilename + "> does not exist in the given dir <" + dir + ">");
+			System.err.println("File " + recordsFilename + " does not exist in the given dir " + dir);
 			System.exit(9);
 		}
 

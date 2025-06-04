@@ -16,6 +16,7 @@ import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 public class GetFields extends SimpleCommand<ZuliaServiceOuterClass.GetFieldNamesRequest, GetFieldsResult> implements SingleIndexRoutableCommand {
 
 	private final String indexName;
+	private Boolean realtime;
 
 	public GetFields(String indexName) {
 		this.indexName = indexName;
@@ -26,9 +27,23 @@ public class GetFields extends SimpleCommand<ZuliaServiceOuterClass.GetFieldName
 		return indexName;
 	}
 
+	public Boolean getRealtime() {
+		return realtime;
+	}
+
+	public GetFields setRealtime(boolean realtime) {
+		this.realtime = realtime;
+		return this;
+	}
+
+
 	@Override
 	public ZuliaServiceOuterClass.GetFieldNamesRequest getRequest() {
-		return ZuliaServiceOuterClass.GetFieldNamesRequest.newBuilder().setIndexName(indexName).build();
+		ZuliaServiceOuterClass.GetFieldNamesRequest.Builder builder = ZuliaServiceOuterClass.GetFieldNamesRequest.newBuilder();
+		if (realtime != null) {
+			builder.setRealtime(realtime);
+		}
+		return builder.setIndexName(indexName).build();
 	}
 
 	@Override

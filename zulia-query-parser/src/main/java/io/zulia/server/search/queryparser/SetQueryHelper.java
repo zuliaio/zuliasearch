@@ -28,13 +28,13 @@ public class SetQueryHelper {
 		String sortField = indexFieldInfo.getInternalSortFieldName();
 
 		if (fieldType == null) {
-			throw new IllegalArgumentException("Field <" + field + "> is not indexed");
+			throw new IllegalArgumentException("Field " + field + " is not indexed");
 		}
 		else {
 			if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
 				List<Integer> integerValueList = intSupplier.get();
 				if (integerValueList.isEmpty()) {
-					throw new IllegalArgumentException("No integer values for integer field <" + field + "> for numeric set query");
+					throw new IllegalArgumentException("No integer values for integer field " + field + " for numeric set query");
 				}
 
 				Query pointQuery = IntPoint.newSetQuery(searchField, integerValueList);
@@ -47,7 +47,7 @@ public class SetQueryHelper {
 			else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
 				List<Long> longValueList = longSupplier.get();
 				if (longValueList.isEmpty()) {
-					throw new IllegalArgumentException("No long values for long field <" + field + "> for numeric set query");
+					throw new IllegalArgumentException("No long values for long field " + field + " for numeric set query");
 				}
 
 				Query pointQuery = LongPoint.newSetQuery(searchField, longValueList);
@@ -73,7 +73,7 @@ public class SetQueryHelper {
 			else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
 				List<Double> doubleValueList = doubleSupplier.get();
 				if (doubleValueList.isEmpty()) {
-					throw new IllegalArgumentException("No double values for double field <" + field + "> for numeric set query");
+					throw new IllegalArgumentException("No double values for double field " + field + " for numeric set query");
 				}
 
 				Query pointQuery = DoublePoint.newSetQuery(searchField, doubleValueList);
@@ -84,7 +84,7 @@ public class SetQueryHelper {
 				return new IndexOrDocValuesQuery(pointQuery, SortedNumericDocValuesField.newSlowSetQuery(sortField, pointsArray));
 			}
 		}
-		throw new IllegalArgumentException("No field type of <" + fieldType + "> is not supported for numeric set queries");
+		throw new IllegalArgumentException("No field type of " + fieldType + " is not supported for numeric set queries");
 	}
 
 	public static Query getTermInSetQuery(List<String> terms, String field, IndexFieldInfo indexFieldInfo) {
@@ -105,6 +105,6 @@ public class SetQueryHelper {
 			return new TermInSetQuery(field, termBytesRef);
 		}
 		throw new IllegalArgumentException(
-				"Field type of <" + indexFieldInfo.getFieldType() + "> is not supported for term queries.  Only STRING is supported.");
+				"Field type of " + indexFieldInfo.getFieldType() + " is not supported for term queries.  Only STRING is supported.");
 	}
 }
