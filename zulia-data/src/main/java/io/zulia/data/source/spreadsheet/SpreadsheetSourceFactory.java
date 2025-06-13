@@ -1,8 +1,10 @@
 package io.zulia.data.source.spreadsheet;
 
+import io.zulia.data.common.DataStreamMeta;
 import io.zulia.data.common.SpreadsheetType;
 import io.zulia.data.input.DataInputStream;
 import io.zulia.data.input.FileDataInputStream;
+import io.zulia.data.input.SingleUseDataInputStream;
 import io.zulia.data.source.spreadsheet.csv.CSVSource;
 import io.zulia.data.source.spreadsheet.csv.CSVSourceConfig;
 import io.zulia.data.source.spreadsheet.excel.ExcelSource;
@@ -11,6 +13,7 @@ import io.zulia.data.source.spreadsheet.tsv.TSVSource;
 import io.zulia.data.source.spreadsheet.tsv.TSVSourceConfig;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public class SpreadsheetSourceFactory {
 
@@ -47,6 +50,24 @@ public class SpreadsheetSourceFactory {
 	public static SpreadsheetSource<?> fromStreamWithStrictHeaders(DataInputStream dataInputStream) throws IOException {
 		return fromStream(dataInputStream, HeaderOptions.STRICT);
 	}
+
+	public static SpreadsheetSource<?> fromSingleUseStreamWithoutHeaders(InputStream inputStream, DataStreamMeta dataStreamMeta) throws IOException {
+		return fromStream(SingleUseDataInputStream.from(inputStream, dataStreamMeta), HeaderOptions.NONE);
+	}
+
+	public static SpreadsheetSource<?> fromSingleUseStreamWithHeaders(InputStream inputStream, DataStreamMeta dataStreamMeta) throws IOException {
+		return fromStream(SingleUseDataInputStream.from(inputStream, dataStreamMeta), HeaderOptions.STANDARD);
+	}
+
+	public static SpreadsheetSource<?> fromSingleUseStreamWithStrictHeaders(InputStream inputStream, DataStreamMeta dataStreamMeta) throws IOException {
+		return fromStream(SingleUseDataInputStream.from(inputStream, dataStreamMeta), HeaderOptions.STRICT);
+	}
+
+
+	public static SpreadsheetSource<?> fromSingleUseStream(InputStream inputStream, DataStreamMeta dataStreamMeta, HeaderOptions headerOptions) throws IOException {
+		return fromStream(SingleUseDataInputStream.from(inputStream, dataStreamMeta), headerOptions);
+	}
+
 
 	public static SpreadsheetSource<?> fromStream(DataInputStream dataInputStream, HeaderOptions headerOptions) throws IOException {
 		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataInputStream.getMeta());
