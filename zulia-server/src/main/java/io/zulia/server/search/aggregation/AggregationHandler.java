@@ -127,10 +127,10 @@ public class AggregationHandler {
 	private void sumValues(List<MatchingDocs> matchingDocs) throws IOException {
 
 		List<ListenableFuture<Object>> futures = new ArrayList<>();
-		try (TaskExecutor taskExecutor = WorkPool.virtualBounded(concurrency)) {
+		try (TaskExecutor taskExecutor = WorkPool.virtualPool(concurrency)) {
 			for (MatchingDocs hits : matchingDocs) {
 				futures.add(taskExecutor.executeAsync(() -> {
-					handlMatchingDocsForSegment(hits);
+					handleMatchingDocsForSegment(hits);
 					return null;
 				}));
 			}
@@ -151,7 +151,7 @@ public class AggregationHandler {
 		}
 	}
 
-	private void handlMatchingDocsForSegment(MatchingDocs hits) throws IOException {
+	private void handleMatchingDocsForSegment(MatchingDocs hits) throws IOException {
 		LeafReader reader = hits.context().reader();
 
 		List<NumericFieldStatContext> fieldContexts = new ArrayList<>();
@@ -162,11 +162,14 @@ public class AggregationHandler {
 
 		DocIdSetIterator docs = hits.bits().iterator();
 
-		FacetsReader facetReader = null;
+		final FacetsReader facetReader;
 
 		if (needsFacets) {
 			facetReader = new BinaryFacetReader(reader);
 			docs = facetReader.getCombinedIterator(docs);
+		}
+		else {
+			facetReader = null;
 		}
 
 		for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
@@ -174,10 +177,7 @@ public class AggregationHandler {
 			final FacetHandler facetHandler;
 			if (needsFacets) {
 				facetHandler = facetReader.getFacetHandler();
-
-				if (globalFacetInfo.hasFacets()) {
-					facetHandler.handleFacets(globalFacetInfo);
-				}
+				globalFacetInfo.maybeHandleFacets(facetHandler);
 			}
 			else {
 				facetHandler = null;
@@ -185,15 +185,8 @@ public class AggregationHandler {
 
 			for (NumericFieldStatContext fieldContext : fieldContexts) {
 				fieldContext.advanceNumericValues(doc);
-
-				if (fieldContext.hasFacets()) {
-					facetHandler.handleFacets(fieldContext);
-				}
-				if (fieldContext.hasGlobal()) {
-					Stats<?> stats = fieldContext.getGlobalStats();
-					stats.handleNumericValues(fieldContext.getNumericValues(), fieldContext.getNumericValueCount());
-				}
-
+				fieldContext.maybeHandleFacet(facetHandler);
+				fieldContext.maybeHandleGlobal();
 			}
 		}
 	}

@@ -1,5 +1,6 @@
 package io.zulia.server.search.aggregation.stats;
 
+import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.OrdinalConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
@@ -22,18 +23,6 @@ public class NumericFieldStatContext implements OrdinalConsumer {
 		this.numericValues = new long[1];
 	}
 
-	public Stats<?> getGlobalStats() {
-		return numericFieldStatInfo.getGlobalStats();
-	}
-
-	public boolean hasGlobal() {
-		return numericFieldStatInfo.hasGlobal();
-	}
-
-	public boolean hasFacets() {
-		return numericFieldStatInfo.hasFacets();
-	}
-
 	public void advanceNumericValues(int doc) throws IOException {
 		numericValueCount = -1;
 		if (numericDocValues.advanceExact(doc)) {
@@ -47,14 +36,6 @@ public class NumericFieldStatContext implements OrdinalConsumer {
 		}
 	}
 
-	public long[] getNumericValues() {
-		return numericValues;
-	}
-
-	public int getNumericValueCount() {
-		return numericValueCount;
-	}
-
 	@Override
 	public void handleOrdinal(int ordinal) {
 		Stats<?> stats = numericFieldStatInfo.getFacetStatStorage().getOrCreateStat(ordinal);
@@ -66,4 +47,17 @@ public class NumericFieldStatContext implements OrdinalConsumer {
 		return numericFieldStatInfo.requestedDimensionOrdinals();
 	}
 
+	public void maybeHandleFacet(FacetHandler facetHandler) {
+		if (numericFieldStatInfo.hasFacets()) {
+			facetHandler.handleFacets(this);
+		}
+	}
+
+	public void maybeHandleGlobal() {
+		if (numericFieldStatInfo.hasGlobal()) {
+			Stats<?> stats = numericFieldStatInfo.getGlobalStats();
+			stats.handleNumericValues(numericValues, numericValueCount);
+		}
+
+	}
 }

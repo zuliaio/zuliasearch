@@ -23,6 +23,7 @@ import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.aggregation.AggregationHandler;
 import io.zulia.util.pool.SemaphoreLimitedVirtualPool;
+import io.zulia.util.pool.VirtualThreadPerTaskTaskExecutor;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollectorManager;
@@ -198,8 +199,8 @@ public class ShardReader implements AutoCloseable {
 	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery) throws Exception {
 
 		int concurrency = 32;
-		try (SemaphoreLimitedVirtualPool semaphoreLimitedVirtualPool = new SemaphoreLimitedVirtualPool(concurrency)) {
-			return getShardQueryResponseAndCache(shardQuery, semaphoreLimitedVirtualPool, concurrency);
+		try (VirtualThreadPerTaskTaskExecutor executor = new VirtualThreadPerTaskTaskExecutor()) {
+			return getShardQueryResponseAndCache(shardQuery, executor, concurrency);
 		}
 	}
 
@@ -581,9 +582,9 @@ public class ShardReader implements AutoCloseable {
 	}
 
 	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,
-			List<String> fieldsToMask) throws Exception {
+			List<String> fieldsToMask, boolean realtime) throws Exception {
 
-		ShardQuery shardQuery = ShardQuery.queryById(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask);
+		ShardQuery shardQuery = ShardQuery.queryById(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
 
 		ZuliaQuery.ShardQueryResponse segmentResponse = this.queryShard(shardQuery);
 
