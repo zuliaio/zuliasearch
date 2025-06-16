@@ -127,7 +127,7 @@ public class AggregationHandler {
 	private void sumValues(List<MatchingDocs> matchingDocs) throws IOException {
 
 		List<ListenableFuture<Object>> futures = new ArrayList<>();
-		try (TaskExecutor taskExecutor = WorkPool.virtualPool(concurrency)) {
+		try (TaskExecutor taskExecutor = WorkPool.virtualBounded(concurrency)) {
 			for (MatchingDocs hits : matchingDocs) {
 				futures.add(taskExecutor.executeAsync(() -> {
 					handleMatchingDocsForSegment(hits);
@@ -154,8 +154,11 @@ public class AggregationHandler {
 	private void handleMatchingDocsForSegment(MatchingDocs hits) throws IOException {
 		LeafReader reader = hits.context().reader();
 
+		CountFacetInfo	localGlobalFacetInfo = new CountFacetInfo(globalFacetInfo);
+
 		List<NumericFieldStatContext> fieldContexts = new ArrayList<>();
 		for (NumericFieldStatInfo field : fields) {
+			// TODO copy numeric stat in this constructor
 			NumericFieldStatContext numericFieldStatContext = new NumericFieldStatContext(reader, field);
 			fieldContexts.add(numericFieldStatContext);
 		}
@@ -177,7 +180,7 @@ public class AggregationHandler {
 			final FacetHandler facetHandler;
 			if (needsFacets) {
 				facetHandler = facetReader.getFacetHandler();
-				globalFacetInfo.maybeHandleFacets(facetHandler);
+				localGlobalFacetInfo.maybeHandleFacets(facetHandler);
 			}
 			else {
 				facetHandler = null;
@@ -189,6 +192,12 @@ public class AggregationHandler {
 				fieldContext.maybeHandleGlobal();
 			}
 		}
+
+		globalFacetInfo.merge(localGlobalFacetInfo);
+
+		//for (NumericFieldStatInfo field : fields) {
+			// TODO merge numeric stat back into the main stat here
+		//
 	}
 
 	private NumericFieldStatInfo getFieldStatByName(String field) {

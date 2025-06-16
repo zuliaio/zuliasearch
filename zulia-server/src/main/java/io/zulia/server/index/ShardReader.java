@@ -198,13 +198,13 @@ public class ShardReader implements AutoCloseable {
 
 	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery) throws Exception {
 
-		int concurrency = 32;
-		try (VirtualThreadPerTaskTaskExecutor executor = new VirtualThreadPerTaskTaskExecutor()) {
+		int concurrency = 1;
+		try (VirtualThreadPerTaskTaskExecutor executor = new SemaphoreLimitedVirtualPool(concurrency)) {
 			return getShardQueryResponseAndCache(shardQuery, executor, concurrency);
 		}
 	}
 
-	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery, Executor searchExecutor, int aggregrationConcurrency)
+	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery, Executor searchExecutor, int aggregationConcurrency)
 			throws Exception {
 		IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
 
@@ -259,7 +259,7 @@ public class ShardReader implements AutoCloseable {
 			Object[] results = indexSearcher.search(shardQuery.getQuery(), new MultiCollectorManager(collectorManager, facetsCollectorManager));
 			topDocs = (TopDocs) results[0];
 			FacetsCollector facetsCollector = (FacetsCollector) results[1];
-			handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector, aggregrationConcurrency);
+			handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector, aggregationConcurrency);
 		}
 		else {
 			topDocs = indexSearcher.search(shardQuery.getQuery(), collectorManager);

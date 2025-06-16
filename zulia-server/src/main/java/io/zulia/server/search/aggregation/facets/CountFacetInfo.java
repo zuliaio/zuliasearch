@@ -11,6 +11,7 @@ public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 
 	private final IntIntMap countFacetInfo;
 
+
 	public CountFacetInfo() {
 		countFacetInfo = HashIntIntMaps.newMutableMap();
 	}
@@ -29,7 +30,7 @@ public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 		countFacetInfo.addValue(ordinal, 1);
 	}
 
-	protected synchronized void merge(CountFacetInfo other) {
+	public synchronized void merge(CountFacetInfo other) {
 		for (Map.Entry<Integer, Integer> localKeyToValue : other.countFacetInfo.entrySet()) {
 			countFacetInfo.addValue(localKeyToValue.getKey(), localKeyToValue.getValue());
 		}
@@ -37,9 +38,7 @@ public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 
 	public void maybeHandleFacets(FacetHandler facetHandler) {
 		if (hasFacets()) {
-			CountFacetInfo localCountFacetInfo = new CountFacetInfo(this);
-			facetHandler.handleFacets(localCountFacetInfo);
-			merge(localCountFacetInfo);
+			facetHandler.handleFacets(this);
 		}
 	}
 }
