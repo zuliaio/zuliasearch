@@ -47,7 +47,7 @@ public class RestNodeExtension implements BeforeAllCallback, AfterAllCallback, B
 			LOG.info("Suite finishing: {}", context.getTestClass().get());
 		}
 		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
+		zuliaWorkPool.close();
 		zuliaRestClient.close();
 		if (context.getTestClass().isPresent()) {
 			LOG.info("Suite finished: {}", context.getTestClass().get());
