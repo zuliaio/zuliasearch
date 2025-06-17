@@ -55,7 +55,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 public class ShardReader implements AutoCloseable {
@@ -199,14 +198,14 @@ public class ShardReader implements AutoCloseable {
 	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery) throws Exception {
 
 		int concurrency = 8;
-		try (VirtualThreadPerTaskTaskExecutor executor = new SemaphoreLimitedVirtualPool(concurrency)) {
-			return getShardQueryResponseAndCache(shardQuery, executor, concurrency);
+		try (VirtualThreadPerTaskTaskExecutor searchExecutor = new SemaphoreLimitedVirtualPool(concurrency)) {
+			IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
+			return getShardQueryResponseAndCache(shardQuery, indexSearcher, concurrency);
 		}
 	}
 
-	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery, Executor searchExecutor, int aggregationConcurrency)
+	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery, IndexSearcher indexSearcher, int aggregationConcurrency)
 			throws Exception {
-		IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
 
 		PerFieldSimilarityWrapper similarity = getSimilarity(shardQuery.getSimilarityOverrideMap());
 
@@ -392,7 +391,7 @@ public class ShardReader implements AutoCloseable {
 					analyzer = ZuliaPerFieldAnalyzer.getAnalyzerForField(analyzerSettings);
 				}
 				else {
-					throw new RuntimeException("Invalid analyzer name <" + analyzerOverride + ">");
+					throw new RuntimeException("Invalid analyzer name " + analyzerOverride);
 				}
 			}
 
@@ -418,7 +417,7 @@ public class ShardReader implements AutoCloseable {
 			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexField);
 
 			if (indexFieldInfo == null) {
-				throw new RuntimeException("Cannot highlight non-indexed field <" + indexField + ">");
+				throw new RuntimeException("Cannot highlight non-indexed field " + indexField);
 			}
 
 			QueryScorer queryScorer = new QueryScorer(q, highlightRequest.getField());
@@ -471,7 +470,7 @@ public class ShardReader implements AutoCloseable {
 					return new TFSimilarity();
 				}
 				else {
-					throw new RuntimeException("Unknown similarity type <" + similarity + ">");
+					throw new RuntimeException("Unknown similarity type " + similarity);
 				}
 			}
 		};
@@ -517,7 +516,7 @@ public class ShardReader implements AutoCloseable {
 			SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
 
 			if (sortFieldInfo == null) {
-				throw new IllegalArgumentException("Field <" + sortField + "> must be sortable");
+				throw new IllegalArgumentException("Field " + sortField + " must be sortable");
 			}
 
 			FieldType sortFieldType = sortFieldInfo.getFieldType();
@@ -555,7 +554,7 @@ public class ShardReader implements AutoCloseable {
 					type = SortField.Type.DOUBLE;
 				}
 				else {
-					throw new Exception("Invalid numeric sort type <" + sortFieldType + "> for sort field <" + sortField + ">");
+					throw new Exception("Invalid numeric sort type " + sortFieldType + " for sort field " + sortField);
 				}
 
 				SortedNumericSortField e = new SortedNumericSortField(internalSortFieldName, type, reverse, sortedNumericSelector);
