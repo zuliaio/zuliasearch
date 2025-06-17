@@ -10,7 +10,19 @@ public class SingleUseDataInputStream implements DataInputStream {
 	private final DataStreamMeta meta;
 	private InputStream inputStream;
 
-	public SingleUseDataInputStream(InputStream inputStream, DataStreamMeta meta) {
+	public static SingleUseDataInputStream from(InputStream inputStream, DataStreamMeta meta) throws IOException {
+		return new SingleUseDataInputStream(inputStream, meta);
+	}
+
+	public static SingleUseDataInputStream from(InputStream inputStream, String filename) throws IOException {
+		return new SingleUseDataInputStream(inputStream, DataStreamMeta.fromFileName(filename));
+	}
+
+	public static SingleUseDataInputStream from(InputStream inputStream, String contentType, String filename) throws IOException {
+		return new SingleUseDataInputStream(inputStream, new DataStreamMeta(contentType, filename));
+	}
+
+	private SingleUseDataInputStream(InputStream inputStream, DataStreamMeta meta) {
 		this.inputStream = inputStream;
 		this.meta = meta;
 	}
