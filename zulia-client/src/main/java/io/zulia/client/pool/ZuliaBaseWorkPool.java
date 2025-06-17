@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.zulia.message.ZuliaBase.Node;
 
-public class ZuliaBaseWorkPool {
+public class ZuliaBaseWorkPool implements AutoCloseable {
 
 	private final TaskExecutor taskExecutor;
 	private ZuliaPool zuliaPool;
@@ -51,8 +51,13 @@ public class ZuliaBaseWorkPool {
 		zuliaPool.updateNodes(nodes);
 	}
 
-	public void shutdown() throws Exception {
+	public void shutdown() {
 		taskExecutor.close();
 		zuliaPool.close();
+	}
+
+	@Override
+	public void close() throws Exception {
+		shutdown();
 	}
 }
