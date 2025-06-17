@@ -198,7 +198,7 @@ public class ShardReader implements AutoCloseable {
 
 	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery) throws Exception {
 
-		int concurrency = 1;
+		int concurrency = 8;
 		try (VirtualThreadPerTaskTaskExecutor executor = new SemaphoreLimitedVirtualPool(concurrency)) {
 			return getShardQueryResponseAndCache(shardQuery, executor, concurrency);
 		}
@@ -214,8 +214,8 @@ public class ShardReader implements AutoCloseable {
 		indexSearcher.setSimilarity(similarity);
 
 		if (shardQuery.isDebug()) {
-			LOG.info("Lucene Query for index <{}> segment <{}>: {}", indexName, shardNumber, shardQuery.getQuery());
-			LOG.info("Rewritten Query for index <{}> segment <{}>: {}", indexName, shardNumber, indexSearcher.rewrite(shardQuery.getQuery()));
+			LOG.info("Lucene Query for index {}:s{}: {}", indexName, shardNumber, shardQuery.getQuery());
+			LOG.info("Rewritten Query for index {}:s{}: {}", indexName, shardNumber, indexSearcher.rewrite(shardQuery.getQuery()));
 		}
 
 		int hasMoreAmount = shardQuery.getAmount() + 1;
