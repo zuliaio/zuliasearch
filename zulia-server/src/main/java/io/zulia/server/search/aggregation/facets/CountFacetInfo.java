@@ -16,9 +16,13 @@ public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 		countFacetInfo = HashIntIntMaps.newMutableMap();
 	}
 
-	public CountFacetInfo(CountFacetInfo copyFacetInfo) {
+	private CountFacetInfo(CountFacetInfo copyFacetInfo) {
 		super(copyFacetInfo);
 		countFacetInfo = HashIntIntMaps.newMutableMap();
+	}
+
+	public CountFacetInfo cloneNewCounter() {
+		return new CountFacetInfo(this);
 	}
 
 	public int getOrdinalCount(int child) {

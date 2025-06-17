@@ -11,15 +11,16 @@ import java.io.IOException;
 public class NumericFieldStatContext implements OrdinalConsumer {
 
 	private final SortedNumericDocValues numericDocValues;
-
-	private final NumericFieldStatInfo numericFieldStatInfo;
+	private final NumericFieldStatInfo localNumericFieldStatInfo;
+	private final NumericFieldStatInfo globalNumericFieldStatInfo;
 
 	private long[] numericValues;
 	private int numericValueCount;
 
 	public NumericFieldStatContext(LeafReader reader, NumericFieldStatInfo numericFieldStatInfo) throws IOException {
-		this.numericFieldStatInfo = numericFieldStatInfo;
-		this.numericDocValues = DocValues.getSortedNumeric(reader, numericFieldStatInfo.getSortFieldName());
+		this.globalNumericFieldStatInfo = numericFieldStatInfo;
+		this.localNumericFieldStatInfo = numericFieldStatInfo.cloneNewStatCount();
+		this.numericDocValues = DocValues.getSortedNumeric(reader, localNumericFieldStatInfo.getSortFieldName());
 		this.numericValues = new long[1];
 	}
 
@@ -38,26 +39,29 @@ public class NumericFieldStatContext implements OrdinalConsumer {
 
 	@Override
 	public void handleOrdinal(int ordinal) {
-		Stats<?> stats = numericFieldStatInfo.getFacetStatStorage().getOrCreateStat(ordinal);
+		Stats<?> stats = localNumericFieldStatInfo.getFacetStatStorage().getOrCreateStat(ordinal);
 		stats.handleNumericValues(numericValues, numericValueCount);
 	}
 
 	@Override
 	public int[] requestedDimensionOrdinals() {
-		return numericFieldStatInfo.requestedDimensionOrdinals();
+		return localNumericFieldStatInfo.requestedDimensionOrdinals();
 	}
 
 	public void maybeHandleFacet(FacetHandler facetHandler) {
-		if (numericFieldStatInfo.hasFacets()) {
+		if (localNumericFieldStatInfo.hasFacets()) {
 			facetHandler.handleFacets(this);
 		}
 	}
 
 	public void maybeHandleGlobal() {
-		if (numericFieldStatInfo.hasGlobal()) {
-			Stats<?> stats = numericFieldStatInfo.getGlobalStats();
+		if (localNumericFieldStatInfo.hasGlobal()) {
+			Stats<?> stats = localNumericFieldStatInfo.getGlobalStats();
 			stats.handleNumericValues(numericValues, numericValueCount);
 		}
+	}
 
+	public void mergeStats() {
+		globalNumericFieldStatInfo.merge(localNumericFieldStatInfo);
 	}
 }

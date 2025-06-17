@@ -5,16 +5,15 @@ import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
 import com.datadoghq.sketch.ddsketch.DDSketches;
 import io.zulia.message.ZuliaQuery;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 
-	protected int ordinal;
-	private final AtomicLong docCount;
-	private final AtomicLong allDocCount;
-	private final AtomicLong valueCount;
-
+	private final double precision;
 	private final DDSketch sketch;
+
+	private int ordinal;
+	private long docCount;
+	private long allDocCount;
+	private long valueCount;
 
 	// overload constructor for building w/ precision
 	public Stats(double precision) {
@@ -26,26 +25,42 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 		else {
 			this.sketch = null;
 		}
-		this.docCount = new AtomicLong();
-		this.allDocCount = new AtomicLong();
-		this.valueCount = new AtomicLong();
+		this.precision = precision;
+	}
+
+	protected DDSketch getSketch() {
+		return sketch;
+	}
+
+	protected long getDocCount() {
+		return docCount;
+	}
+
+	protected long getAllDocCount() {
+		return allDocCount;
+	}
+
+	protected long getValueCount() {
+		return valueCount;
+	}
+
+	protected double getPrecision() {
+		return precision;
 	}
 
 	public abstract void handleDocValue(long docValue);
 
 	public void newDoc(boolean hasValues) {
-		allDocCount.getAndIncrement();
+		allDocCount++;
 		if (hasValues) {
-			docCount.getAndIncrement();
+			docCount++;
 		}
 	}
 
 	public void tallyValue(double newValue) {
-		this.valueCount.getAndIncrement();
+		this.valueCount++;
 		if (this.sketch != null) {
-			synchronized (this.sketch) {
-				this.sketch.accept(newValue);
-			}
+			this.sketch.accept(newValue);
 		}
 	}
 
@@ -57,9 +72,13 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 		return ordinal;
 	}
 
+	public int compareOrdinal(Stats<T> o) {
+		return Integer.compare(o.ordinal, ordinal);
+	}
+
 	public ZuliaQuery.FacetStatsInternal.Builder buildResponse() {
-		ZuliaQuery.FacetStatsInternal.Builder builder = ZuliaQuery.FacetStatsInternal.newBuilder().setDocCount(docCount.get()).setAllDocCount(allDocCount.get())
-				.setValueCount(valueCount.get());
+		ZuliaQuery.FacetStatsInternal.Builder builder = ZuliaQuery.FacetStatsInternal.newBuilder().setDocCount(docCount).setAllDocCount(allDocCount)
+				.setValueCount(valueCount);
 		if (sketch != null) {
 			builder.setStatSketch(DDSketchProtoBinding.toProto(sketch));
 		}
@@ -72,4 +91,17 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 			handleDocValue(numericValues[j]);
 		}
 	}
+
+	public void merge(Stats<?> other) {
+		allDocCount += other.getAllDocCount();
+		docCount += other.getDocCount();
+		valueCount += other.getValueCount();
+		if (sketch != null) {
+			sketch.mergeWith(other.getSketch());
+		}
+		mergeExtra((T) other);
+	}
+
+	protected abstract void mergeExtra(T other);
+
 }

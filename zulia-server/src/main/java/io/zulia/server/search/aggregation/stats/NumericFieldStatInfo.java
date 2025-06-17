@@ -22,6 +22,24 @@ public class NumericFieldStatInfo extends FacetInfo {
 		this.numericFieldName = numericFieldName;
 	}
 
+	private NumericFieldStatInfo(NumericFieldStatInfo copyNumericFieldStatInfo) {
+		super(copyNumericFieldStatInfo);
+		this.numericFieldName = copyNumericFieldStatInfo.numericFieldName;
+		this.sortFieldName = copyNumericFieldStatInfo.sortFieldName;
+		this.facetPrecision = copyNumericFieldStatInfo.facetPrecision;
+		this.numericFieldType = copyNumericFieldStatInfo.numericFieldType;
+		if (copyNumericFieldStatInfo.hasGlobal()) {
+			enableGlobal(copyNumericFieldStatInfo.globalStats.getPrecision());
+		}
+		if (copyNumericFieldStatInfo.hasFacets()) {
+			enableFacetWithPrecision(copyNumericFieldStatInfo.facetPrecision);
+		}
+	}
+
+	public NumericFieldStatInfo cloneNewStatCount() {
+		return new NumericFieldStatInfo(this);
+	}
+
 	public void setNumericFieldType(ZuliaIndex.FieldConfig.FieldType numericFieldType) {
 		this.numericFieldType = numericFieldType;
 	}
@@ -90,6 +108,15 @@ public class NumericFieldStatInfo extends FacetInfo {
 
 	public String getNumericFieldName() {
 		return numericFieldName;
+	}
+
+	public void merge(NumericFieldStatInfo other) {
+		if (hasGlobal()) {
+			globalStats.merge(other.getGlobalStats());
+		}
+		if (hasFacets()) {
+			facetStatStorage.merge(other.getFacetStatStorage());
+		}
 	}
 
 }

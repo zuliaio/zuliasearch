@@ -1,47 +1,53 @@
 package io.zulia.server.search.aggregation.stats;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import io.zulia.message.ZuliaQuery;
 
 public abstract class DoubleStats extends Stats<DoubleStats> implements Comparable<DoubleStats> {
-	private final AtomicDouble doubleSum;
-	private final AtomicDouble doubleMinValue;
-	private final AtomicDouble doubleMaxValue;
+	private double doubleSum;
+	private double doubleMinValue = Double.POSITIVE_INFINITY;
+	private double doubleMaxValue = Double.NEGATIVE_INFINITY;
 
 	public DoubleStats(double precision) {
 		super(precision);
-		doubleSum = new AtomicDouble();
-		doubleMinValue = new AtomicDouble(Double.POSITIVE_INFINITY);
-		doubleMaxValue = new AtomicDouble(Double.NEGATIVE_INFINITY);
 	}
 
 	public void newValue(double newValue) {
-		doubleSum.addAndGet(newValue);
-		doubleMinValue.getAndAccumulate(newValue, Math::min);
-		doubleMaxValue.getAndAccumulate(newValue, Math::max);
+		this.doubleSum += newValue;
+		if (newValue < doubleMinValue) {
+			doubleMinValue = newValue;
+		}
+		if (newValue > doubleMaxValue) {
+			doubleMaxValue = newValue;
+		}
 
 		tallyValue(newValue);
 	}
 
 	public double getDoubleSum() {
-		return doubleSum.get();
+		return doubleSum;
 	}
 
 	public ZuliaQuery.FacetStatsInternal.Builder buildResponse() {
 		ZuliaQuery.FacetStatsInternal.Builder builder = super.buildResponse();
-		ZuliaQuery.SortValue sum = ZuliaQuery.SortValue.newBuilder().setDoubleValue(doubleSum.get()).build();
-		ZuliaQuery.SortValue min = ZuliaQuery.SortValue.newBuilder().setDoubleValue(doubleMinValue.get()).build();
-		ZuliaQuery.SortValue max = ZuliaQuery.SortValue.newBuilder().setDoubleValue(doubleMaxValue.get()).build();
+		ZuliaQuery.SortValue sum = ZuliaQuery.SortValue.newBuilder().setDoubleValue(doubleSum).build();
+		ZuliaQuery.SortValue min = ZuliaQuery.SortValue.newBuilder().setDoubleValue(doubleMinValue).build();
+		ZuliaQuery.SortValue max = ZuliaQuery.SortValue.newBuilder().setDoubleValue(doubleMaxValue).build();
 		return builder.setSum(sum).setMin(min).setMax(max);
 	}
 
 	@Override
 	public int compareTo(DoubleStats o) {
-		int compare = Double.compare(doubleSum.get(), o.doubleSum.get());
+		int compare = Double.compare(doubleSum, o.doubleSum);
 		if (compare == 0) {
-			return Integer.compare(o.ordinal, ordinal);
+			return compareOrdinal(o);
 		}
 		return compare;
 	}
 
+	public void mergeExtra(DoubleStats other) {
+		this.doubleSum += other.doubleSum;
+		this.doubleMinValue = Math.min(this.doubleMinValue, other.doubleMinValue);
+		this.doubleMaxValue = Math.max(this.doubleMaxValue, other.doubleMaxValue);
+	}
 }
+

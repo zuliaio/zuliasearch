@@ -30,7 +30,6 @@ import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatContext;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatInfo;
-import io.zulia.server.search.aggregation.stats.Stats;
 import io.zulia.util.pool.TaskExecutor;
 import io.zulia.util.pool.WorkPool;
 import org.apache.lucene.facet.FacetsCollector;
@@ -154,7 +153,7 @@ public class AggregationHandler {
 	private void handleMatchingDocsForSegment(MatchingDocs hits) throws IOException {
 		LeafReader reader = hits.context().reader();
 
-		CountFacetInfo	localGlobalFacetInfo = new CountFacetInfo(globalFacetInfo);
+		CountFacetInfo localGlobalFacetInfo = globalFacetInfo.cloneNewCounter();
 
 		List<NumericFieldStatContext> fieldContexts = new ArrayList<>();
 		for (NumericFieldStatInfo field : fields) {
@@ -195,9 +194,9 @@ public class AggregationHandler {
 
 		globalFacetInfo.merge(localGlobalFacetInfo);
 
-		//for (NumericFieldStatInfo field : fields) {
-			// TODO merge numeric stat back into the main stat here
-		//
+		for (NumericFieldStatContext fieldContext : fieldContexts) {
+			fieldContext.mergeStats();
+		}
 	}
 
 	private NumericFieldStatInfo getFieldStatByName(String field) {

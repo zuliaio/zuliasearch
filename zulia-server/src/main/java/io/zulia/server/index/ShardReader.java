@@ -589,7 +589,7 @@ public class ShardReader implements AutoCloseable {
 
 		List<ZuliaQuery.ScoredResult> scoredResultList = segmentResponse.getScoredResultList();
 		if (!scoredResultList.isEmpty()) {
-			ZuliaQuery.ScoredResult scoredResult = scoredResultList.iterator().next();
+			ZuliaQuery.ScoredResult scoredResult = scoredResultList.getFirst();
 			if (scoredResult.hasResultDocument()) {
 				return scoredResult.getResultDocument();
 			}

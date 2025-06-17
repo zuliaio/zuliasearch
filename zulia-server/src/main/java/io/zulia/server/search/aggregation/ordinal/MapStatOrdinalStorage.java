@@ -11,6 +11,7 @@ import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public abstract class MapStatOrdinalStorage<T extends Stats<T>> implements StatOrdinalStorage {
@@ -24,13 +25,12 @@ public abstract class MapStatOrdinalStorage<T extends Stats<T>> implements StatO
 	}
 
 	public T getOrCreateStat(int ordinal) {
-		synchronized (ordinalToStat) {
-			return ordinalToStat.computeIfAbsent(ordinal, i -> {
-				T t = statConstructor.get();
-				t.setOrdinal(ordinal);
-				return t;
-			});
-		}
+
+		return ordinalToStat.computeIfAbsent(ordinal, i -> {
+			T t = statConstructor.get();
+			t.setOrdinal(ordinal);
+			return t;
+		});
 
 	}
 
@@ -59,6 +59,12 @@ public abstract class MapStatOrdinalStorage<T extends Stats<T>> implements StatO
 		}
 
 		return Arrays.asList(facetStats);
+	}
+
+	public void merge(MapStatOrdinalStorage<?> other) {
+		for (Map.Entry<Integer, ?> otherOrdinalToStatEntry : other.ordinalToStat.entrySet()) {
+			getOrCreateStat(otherOrdinalToStatEntry.getKey()).merge((Stats<?>) otherOrdinalToStatEntry.getValue());
+		}
 	}
 
 }
