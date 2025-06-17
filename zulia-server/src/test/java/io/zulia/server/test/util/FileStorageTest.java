@@ -77,7 +77,7 @@ public class FileStorageTest {
 
 	private void cleanUp() throws Exception {
 		zuliaWorkPool.deleteIndex(TEST_INDEX);
-		zuliaWorkPool.shutdown();
+		zuliaWorkPool.close();
 	}
 
 	private void query() throws Exception {

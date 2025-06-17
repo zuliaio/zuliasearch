@@ -39,7 +39,7 @@ public class NodeExtension implements BeforeAllCallback, AfterAllCallback, Befor
 			LOG.info("Suite finishing: {}", context.getTestClass().get());
 		}
 		TestHelper.stopNodes();
-		zuliaWorkPool.shutdown();
+		zuliaWorkPool.close();
 		if (context.getTestClass().isPresent()) {
 			LOG.info("Suite finished: {}", context.getTestClass().get());
 		}
