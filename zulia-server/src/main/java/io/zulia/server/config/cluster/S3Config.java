@@ -4,6 +4,7 @@ public class S3Config {
 	private String s3BucketName;
 	private String region;
 	private boolean propWait = false;
+	private String profile;
 
 	public String getS3BucketName() {
 		return s3BucketName;
@@ -29,12 +30,21 @@ public class S3Config {
 		this.propWait = propWait;
 	}
 
+	public String getProfile() {
+		return profile;
+	}
+
+	public void setProfile(String profile) {
+		this.profile = profile;
+	}
+
 	public S3Config() {
 
 	}
 
 	@Override
 	public String toString() {
-		return "S3Config{" + "s3BucketName='" + s3BucketName + '\'' + ", region='" + region + '\'' + ", propWait=" + propWait + '}';
+		return "S3Config{" + "s3BucketName='" + s3BucketName + '\'' + ", region='" + region + '\'' + ", propWait=" + propWait + ", profile='" + profile + '\''
+				+ '}';
 	}
 }
