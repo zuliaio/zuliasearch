@@ -93,13 +93,20 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 	}
 
 	public void merge(Stats<?> other) {
-		allDocCount += other.getAllDocCount();
-		docCount += other.getDocCount();
-		valueCount += other.getValueCount();
-		if (sketch != null) {
-			sketch.mergeWith(other.getSketch());
+
+		synchronized (this) {
+			this.allDocCount += other.getAllDocCount();
+			this.docCount += other.getDocCount();
+			this.valueCount += other.getValueCount();
+			mergeExtra((T) other);
 		}
-		mergeExtra((T) other);
+
+		if (this.sketch != null) {
+			synchronized (this.sketch) {
+				this.sketch.mergeWith(other.getSketch());
+			}
+		}
+
 	}
 
 	protected abstract void mergeExtra(T other);

@@ -17,9 +17,9 @@ public class NumericFieldStatContext implements OrdinalConsumer {
 	private long[] numericValues;
 	private int numericValueCount;
 
-	public NumericFieldStatContext(LeafReader reader, NumericFieldStatInfo numericFieldStatInfo) throws IOException {
-		this.globalNumericFieldStatInfo = numericFieldStatInfo;
-		this.localNumericFieldStatInfo = numericFieldStatInfo.cloneNewStatCount();
+	public NumericFieldStatContext(LeafReader reader, NumericFieldStatInfo globalNumericFieldStatInfo) throws IOException {
+		this.globalNumericFieldStatInfo = globalNumericFieldStatInfo;
+		this.localNumericFieldStatInfo = globalNumericFieldStatInfo.cloneNewStatCount();
 		this.numericDocValues = DocValues.getSortedNumeric(reader, localNumericFieldStatInfo.getSortFieldName());
 		this.numericValues = new long[1];
 	}

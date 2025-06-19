@@ -61,9 +61,10 @@ public abstract class MapStatOrdinalStorage<T extends Stats<T>> implements StatO
 		return Arrays.asList(facetStats);
 	}
 
-	public void merge(MapStatOrdinalStorage<?> other) {
+	public synchronized void merge(MapStatOrdinalStorage<?> other) {
 		for (Map.Entry<Integer, ?> otherOrdinalToStatEntry : other.ordinalToStat.entrySet()) {
-			getOrCreateStat(otherOrdinalToStatEntry.getKey()).merge((Stats<?>) otherOrdinalToStatEntry.getValue());
+			Stats<?> otherValue = (Stats<?>) otherOrdinalToStatEntry.getValue();
+			getOrCreateStat(otherOrdinalToStatEntry.getKey()).merge(otherValue);
 		}
 	}
 
