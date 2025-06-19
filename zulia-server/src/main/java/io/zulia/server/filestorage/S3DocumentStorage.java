@@ -76,10 +76,13 @@ public class S3DocumentStorage implements DocumentStorage {
 		this.indexName = indexName;
 		this.dbName = dbName;
 
+		ProfileCredentialsProvider profileCredProvider = (s3Config.getProfile() != null) ?
+				ProfileCredentialsProvider.create((s3Config.getProfile())) :
+				ProfileCredentialsProvider.create();
+
 		AwsCredentialsProviderChain credentialsProvider = AwsCredentialsProviderChain.builder()
-				.credentialsProviders(InstanceProfileCredentialsProvider.builder().build(), ContainerCredentialsProvider.builder().build(),
-						EnvironmentVariableCredentialsProvider.create(), SystemPropertyCredentialsProvider.create(),
-						ProfileCredentialsProvider.builder().build()).build();
+				.credentialsProviders(SystemPropertyCredentialsProvider.create(), EnvironmentVariableCredentialsProvider.create(), profileCredProvider,
+						ContainerCredentialsProvider.create(), InstanceProfileCredentialsProvider.create()).build();
 
 		this.s3 = S3Client.builder().region(Region.of(this.region)).credentialsProvider(credentialsProvider).build();
 
