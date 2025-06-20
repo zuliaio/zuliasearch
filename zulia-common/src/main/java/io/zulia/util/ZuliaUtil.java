@@ -208,7 +208,7 @@ public class ZuliaUtil {
 		return document.toJson();
 	}
 
-	public float[] getFloatArray(Document document, String fieldName, float[] defaultValue) {
+	public static float[] getFloatArray(Document document, String fieldName, float[] defaultValue) {
 		List<Double> vector = document.getList(fieldName, Double.class);
 		if (vector == null) {
 			return defaultValue;
@@ -222,7 +222,7 @@ public class ZuliaUtil {
 
 	}
 
-	public double[] getDoubleArray(Document document, String fieldName, double[] defaultValue) {
+	public static double[] getDoubleArray(Document document, String fieldName, double[] defaultValue) {
 		List<Double> vector = document.getList(fieldName, Double.class);
 		if (vector == null) {
 			return defaultValue;
