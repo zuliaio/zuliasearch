@@ -28,11 +28,12 @@ public class ShardQuery {
 	List<ZuliaQuery.AnalysisRequest> analysisRequestList;
 	boolean debug;
 	boolean realtime;
+	int concurrency;
 
 	public ShardQuery(Query query, Map<String, ZuliaBase.Similarity> similarityOverrideMap, int amount, Map<Integer, FieldDoc> shardToAfter,
 			ZuliaQuery.FacetRequest facetRequest, ZuliaQuery.SortRequest sortRequest, QueryCacheKey queryCacheKey, ZuliaQuery.FetchType resultFetchType,
 			List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaQuery.HighlightRequest> highlightList,
-			List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug, boolean realtime) {
+			List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug, boolean realtime, int concurrency) {
 		this.query = query;
 		this.similarityOverrideMap = similarityOverrideMap;
 		this.amount = amount;
@@ -47,13 +48,14 @@ public class ShardQuery {
 		this.analysisRequestList = analysisRequestList;
 		this.debug = debug;
 		this.realtime = realtime;
+		this.concurrency = concurrency;
 	}
 
 	public static ShardQuery queryById(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
 			boolean realtime) {
 		Query query = new ConstantScoreQuery(new TermQuery(new Term(ZuliaFieldConstants.ID_FIELD, uniqueId)));
 		return new ShardQuery(query, null, 1, Collections.emptyMap(), ZuliaQuery.FacetRequest.newBuilder().build(), null, null, resultFetchType, fieldsToReturn,
-				fieldsToMask, Collections.emptyList(), Collections.emptyList(), false, realtime);
+				fieldsToMask, Collections.emptyList(), Collections.emptyList(), false, realtime, 1);
 	}
 
 	public Query getQuery() {
@@ -110,5 +112,9 @@ public class ShardQuery {
 
 	public boolean isRealtime() {
 		return realtime;
+	}
+
+	public int getConcurrency() {
+		return concurrency;
 	}
 }

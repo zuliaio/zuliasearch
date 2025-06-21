@@ -197,7 +197,7 @@ public class ShardReader implements AutoCloseable {
 
 	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery) throws Exception {
 
-		int concurrency = 8;
+		int concurrency = shardQuery.getConcurrency();
 		try (VirtualThreadPerTaskTaskExecutor searchExecutor = new SemaphoreLimitedVirtualPool(concurrency)) {
 			IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
 			return getShardQueryResponseAndCache(shardQuery, indexSearcher, concurrency);

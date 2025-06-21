@@ -76,4 +76,5 @@ public interface ZuliaRESTConstants {
 
 	String DESC = "DESC";
 	String ASC = "ASC";
+	String CONCURRENCY = "concurrency";
 }

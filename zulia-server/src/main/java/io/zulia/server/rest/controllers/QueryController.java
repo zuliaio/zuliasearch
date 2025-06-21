@@ -79,12 +79,13 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
 			@Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList, @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
 			@QueryValue(value = ZuliaRESTConstants.TRUNCATE, defaultValue = "false") Boolean truncate,
-			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime,
+			@Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
-				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime);
+				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime, concurrency);
 		QueryResponse qr = indexManager.query(qrBuilder.build());
 		return getJsonResponse(qr, cursor != null, truncate);
 
@@ -110,13 +111,14 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList,
 			@QueryValue(value = ZuliaRESTConstants.BATCH, defaultValue = "false") Boolean batch,
 			@QueryValue(value = ZuliaRESTConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
-			@Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
-			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor, @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime,
+			@Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
-				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime);
+				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime,
+				concurrency);
 
 		LocalDateTime now = LocalDateTime.now();
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-H-mm-ss");
@@ -149,12 +151,13 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator, @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
 			@Nullable @QueryValue(ZuliaRESTConstants.MIN_MATCH) Integer mm, @QueryValue(value = ZuliaRESTConstants.DEBUG, defaultValue = "false") Boolean debug,
 			@Nullable @QueryValue(ZuliaRESTConstants.START) Integer start, @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
-			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime, @Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency)
+			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, null, 0, facet, drillDowns,
-				defaultOperator, sort, mm, null, debug, null, start, null, null, null, cursor, realtime);
+				defaultOperator, sort, mm, null, debug, null, start, null, null, null, cursor, realtime, concurrency);
 
 		if (facet != null && !facet.isEmpty()) {
 			String response = getFacetCSV(indexManager, qrBuilder);
@@ -228,7 +231,7 @@ public class QueryController {
 	private static QueryRequest.Builder buildQueryRequest(List<String> indexName, String query, List<String> queryFields, List<String> filterQueries,
 			List<String> queryJsonList, List<String> fields, Boolean fetch, Integer rows, List<String> facet, List<String> drillDowns, String defaultOperator,
 			List<String> sort, Integer mm, List<String> similarity, Boolean debug, Boolean dontCache, Integer start, List<String> highlightList,
-			List<String> highlightJsonList, List<String> analyzeJsonList, String cursor, Boolean realtime) {
+			List<String> highlightJsonList, List<String> analyzeJsonList, String cursor, Boolean realtime, Integer concurrency) {
 		QueryRequest.Builder qrBuilder = QueryRequest.newBuilder().addAllIndex(indexName);
 		if (cursor != null) {
 			if (!cursor.equals("0")) {
@@ -241,6 +244,10 @@ public class QueryController {
 
 		if (realtime != null) {
 			qrBuilder.setRealtime(realtime);
+		}
+
+		if (concurrency != null) {
+			qrBuilder.setConcurrency(concurrency);
 		}
 
 		if (debug != null) {
@@ -303,7 +310,7 @@ public class QueryController {
 						fieldSimilarity.setSimilarity(Similarity.TFIDF);
 					}
 					else {
-						throw new IllegalArgumentException("Unknown similarity type " + simType );
+						throw new IllegalArgumentException("Unknown similarity type " + simType);
 					}
 
 					qrBuilder.addFieldSimilarity(fieldSimilarity);
@@ -536,16 +543,16 @@ public class QueryController {
 
 	private void truncateDocumentValues(Document document) {
 		for (String key : document.keySet()) {
-			if (document.get(key) instanceof Document) {
-				truncateDocumentValues((Document) document.get(key));
+			Object documentValueForKey = document.get(key);
+			if (documentValueForKey instanceof Document value) {
+				truncateDocumentValues(value);
 			}
-			if (document.get(key) instanceof String) {
-				String value = (String) document.get(key);
+			else if (documentValueForKey instanceof String value) {
 				if (value.length() > 750) {
 					document.put(key, value.substring(0, 750) + "...[truncated]");
 				}
 			}
-			if (document.get(key) instanceof List<?> o) {
+			else if (documentValueForKey instanceof List<?> o) {
 				if (!o.isEmpty()) {
 					if (o.getFirst() instanceof Document) {
 						for (Object oDoc : o) {
