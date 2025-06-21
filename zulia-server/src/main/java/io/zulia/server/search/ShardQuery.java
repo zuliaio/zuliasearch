@@ -117,4 +117,8 @@ public class ShardQuery {
 	public int getConcurrency() {
 		return concurrency;
 	}
+
+	public void setConcurrency(int concurrency) {
+		this.concurrency = concurrency;
+	}
 }

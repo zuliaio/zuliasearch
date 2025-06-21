@@ -57,6 +57,7 @@ public class IndexTest {
 			indexConfig.setIndexName(INDEX_TEST);
 			indexConfig.setDisableCompression(true);
 			indexConfig.setNumberOfShards(1);
+			indexConfig.setDefaultConcurrency(12);
 
 			zuliaWorkPool.createIndex(indexConfig);
 		}
@@ -72,7 +73,7 @@ public class IndexTest {
 			ClientIndexConfig indexConfigFromServer = zuliaWorkPool.getIndexConfig(INDEX_TEST).getIndexConfig();
 
 			Assertions.assertTrue(indexConfigFromServer.getDisableCompression());
-
+			Assertions.assertEquals(12, indexConfigFromServer.getDefaultConcurrency());
 			Assertions.assertEquals(4, indexConfigFromServer.getFieldConfigMap().size());
 
 			ZuliaIndex.FieldConfig idFieldConfig = indexConfigFromServer.getFieldConfig("id");
@@ -171,6 +172,7 @@ public class IndexTest {
 			UpdateIndex updateIndex = new UpdateIndex(INDEX_TEST);
 			updateIndex.setIndexWeight(4);
 			updateIndex.setDisableCompression(true);
+			updateIndex.setDefaultConcurrency(5);
 
 			FieldConfigBuilder newField = FieldConfigBuilder.createString("newField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
 			updateIndex.mergeFieldConfig(newField);
@@ -185,6 +187,7 @@ public class IndexTest {
 
 			Assertions.assertEquals(4, indexConfigFromServer.getIndexWeight());
 			Assertions.assertTrue(indexConfigFromServer.getDisableCompression());
+			Assertions.assertEquals(5, indexConfigFromServer.getDefaultConcurrency());
 			Assertions.assertEquals(4, indexConfigFromServer.getFieldConfigMap().size());
 			ZuliaIndex.FieldConfig newField = indexConfigFromServer.getFieldConfig("newField");
 			Assertions.assertEquals(1, newField.getSortAsCount());
