@@ -39,9 +39,15 @@ public abstract class DoubleStats extends Stats<DoubleStats> implements Comparab
 	public int compareTo(DoubleStats o) {
 		int compare = Double.compare(doubleSum, o.doubleSum);
 		if (compare == 0) {
-			return Integer.compare(o.ordinal, ordinal);
+			return compareOrdinal(o);
 		}
 		return compare;
 	}
 
+	public void mergeExtra(DoubleStats other) {
+		this.doubleSum += other.doubleSum;
+		this.doubleMinValue = Math.min(this.doubleMinValue, other.doubleMinValue);
+		this.doubleMaxValue = Math.max(this.doubleMaxValue, other.doubleMaxValue);
+	}
 }
+
