@@ -47,6 +47,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private Integer numberOfReplicas;
 
 	private Boolean disableCompression;
+	private Integer defaultConcurrency;
 
 	private final UpdateIndexSettings.Operation.Builder analyzerSettingsOperation = UpdateIndexSettings.Operation.newBuilder();
 	private List<ZuliaIndex.AnalyzerSettings> analyzerSettingsList = Collections.emptyList();
@@ -326,6 +327,15 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
+	public Integer getDefaultConcurrency() {
+		return defaultConcurrency;
+	}
+
+	public UpdateIndex setDefaultConcurrency(Integer defaultConcurrency) {
+		this.defaultConcurrency = defaultConcurrency;
+		return this;
+	}
+
 	public Integer getNumberOfReplicas() {
 		return numberOfReplicas;
 	}
@@ -508,6 +518,11 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		if (disableCompression != null) {
 			updateIndexSettings.setSetDisableCompression(true);
 			updateIndexSettings.setDisableCompression(disableCompression);
+		}
+
+		if (defaultConcurrency != null) {
+			updateIndexSettings.setSetDefaultConcurrency(true);
+			updateIndexSettings.setDefaultConcurrency(defaultConcurrency);
 		}
 
 		updateIndexSettings.setMetaUpdateOperation(metaDataOperation);

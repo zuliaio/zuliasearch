@@ -246,6 +246,10 @@ public class ServerIndexConfig {
 		return getMatchingIndexFields(field, true);
 	}
 
+	public int getDefaultConcurrency() {
+		return indexSettings.getDefaultConcurrency();
+	}
+
 	private Set<String> getMatchingIndexFields(String field, boolean includeAliases) {
 		if (field.contains("*")) {
 
@@ -286,5 +290,6 @@ public class ServerIndexConfig {
 	public String toString() {
 		return "ServerIndexConfig{" + "indexSettings=" + indexSettings + '}';
 	}
+
 
 }

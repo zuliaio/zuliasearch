@@ -38,9 +38,14 @@ public abstract class LongStats extends Stats<LongStats> implements Comparable<L
 	public int compareTo(LongStats o) {
 		int compare = Double.compare(longSum, o.longSum);
 		if (compare == 0) {
-			return Integer.compare(o.ordinal, ordinal);
+			return compareOrdinal(o);
 		}
 		return compare;
 	}
 
+	public void mergeExtra(LongStats other) {
+		this.longSum += other.longSum;
+		this.longMinValue = Math.min(this.longMinValue, other.longMinValue);
+		this.longMaxValue = Math.max(this.longMaxValue, other.longMaxValue);
+	}
 }
