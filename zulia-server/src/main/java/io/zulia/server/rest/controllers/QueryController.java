@@ -110,8 +110,8 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList,
 			@QueryValue(value = ZuliaRESTConstants.BATCH, defaultValue = "false") Boolean batch,
 			@QueryValue(value = ZuliaRESTConstants.BATCH_SIZE, defaultValue = "500") Integer batchSize,
-			@Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
-			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor, @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime)
+			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
