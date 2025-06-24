@@ -334,6 +334,7 @@ public class StatTest {
 	public void confirm() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(STAT_TEST_INDEX);
+		search.setConcurrency(3);
 		search.addQuery(new FilterQuery("title:boring").exclude());
 		search.addStat(new NumericStat("authorCount"));
 
@@ -374,6 +375,7 @@ public class StatTest {
 		ratingPathTest(searchResult);
 
 		search = new Search(STAT_TEST_INDEX);
+		search.setConcurrency(3);
 		search.addStat(new StatFacet("rating", "pathFacet"));
 		search.addQuery(new FilterQuery("\"something really special\"").addQueryField("title"));
 		search.addQuery(new FilterQuery("authorCount:4"));

@@ -709,6 +709,18 @@ public class ZuliaIndex {
 		}
 
 		ShardQuery shardQuery = getShardQuery(query, queryRequest);
+		// if concurrency is not set in the query default to the index concurrency if that is set or default to the node level config
+		if (shardQuery.getConcurrency() == 0) {
+			int indexDefaultConcurrency = indexConfig.getDefaultConcurrency();
+			if (indexDefaultConcurrency != 0) {
+				shardQuery.setConcurrency(indexDefaultConcurrency);
+			}
+			else {
+				int nodeLevelDefaultConcurrency = zuliaConfig.getDefaultConcurrency();
+				shardQuery.setConcurrency(nodeLevelDefaultConcurrency);
+			}
+
+		}
 
 		IndexShardResponse.Builder builder = IndexShardResponse.newBuilder();
 
@@ -833,7 +845,7 @@ public class ZuliaIndex {
 		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
 		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
 				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
-				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug(), queryRequest.getRealtime());
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug(), queryRequest.getRealtime(), queryRequest.getConcurrency());
 	}
 
 	public Integer getNumberOfShards() {
