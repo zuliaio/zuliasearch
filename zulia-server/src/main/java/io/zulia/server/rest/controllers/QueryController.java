@@ -303,7 +303,7 @@ public class QueryController {
 						fieldSimilarity.setSimilarity(Similarity.TFIDF);
 					}
 					else {
-						throw new IllegalArgumentException("Unknown similarity type " + simType );
+						throw new IllegalArgumentException("Unknown similarity type " + simType);
 					}
 
 					qrBuilder.addFieldSimilarity(fieldSimilarity);
@@ -536,16 +536,16 @@ public class QueryController {
 
 	private void truncateDocumentValues(Document document) {
 		for (String key : document.keySet()) {
-			if (document.get(key) instanceof Document) {
-				truncateDocumentValues((Document) document.get(key));
+			Object documentValueForKey = document.get(key);
+			if (documentValueForKey instanceof Document value) {
+				truncateDocumentValues(value);
 			}
-			if (document.get(key) instanceof String) {
-				String value = (String) document.get(key);
+			else if (documentValueForKey instanceof String value) {
 				if (value.length() > 750) {
 					document.put(key, value.substring(0, 750) + "...[truncated]");
 				}
 			}
-			if (document.get(key) instanceof List<?> o) {
+			else if (documentValueForKey instanceof List<?> o) {
 				if (!o.isEmpty()) {
 					if (o.getFirst() instanceof Document) {
 						for (Object oDoc : o) {
