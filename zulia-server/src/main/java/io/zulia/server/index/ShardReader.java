@@ -81,7 +81,6 @@ public class ShardReader implements AutoCloseable {
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).recordStats().build();
 		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().build();
-
 	}
 
 	@Override
