@@ -95,6 +95,11 @@ public class StatTest {
 	@Test
 	@Order(3)
 	public void statTest() throws Exception {
+		statTestSearch(null);
+		statTestSearch(2);
+	}
+
+	private void statTestSearch(Integer concurrency) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		List<Double> percentiles = new ArrayList<>() {{
 			add(0.0);
@@ -109,6 +114,10 @@ public class StatTest {
 
 		//run the first search with realtime to force seeing latest changes without waiting for a commit
 		search = new Search(STAT_TEST_INDEX).setRealtime(true);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
+
 		search.addStat(new NumericStat("rating").setPercentiles(percentiles));
 		search.addQuery(new FilterQuery("title:boring").exclude());
 
@@ -162,7 +171,6 @@ public class StatTest {
 		search.addStat(new StatFacet("rating", "madeUp"));
 		Search finalSearch2 = search;
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch2), "Expecting: madeUp is not defined as a facetable field");
-
 	}
 
 	private void ratingTest(FacetStats ratingStat) {
@@ -246,10 +254,17 @@ public class StatTest {
 	@Test
 	@Order(4)
 	public void testRangeFilters() throws Exception {
+		testRangeFiltersSearch(null);
+		testRangeFiltersSearch(3);
+	}
+
+	private static void testRangeFiltersSearch(Integer concurrency) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		SearchResult searchResult;
 		Search search = new Search(STAT_TEST_INDEX);
-
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
 		// Get how many are in the dataset
 		search.addQuery(new MatchAllQuery());
 		searchResult = zuliaWorkPool.search(search);
@@ -332,9 +347,14 @@ public class StatTest {
 	@Test
 	@Order(7)
 	public void confirm() throws Exception {
+		confirmSearches(1);
+		confirmSearches(3);
+	}
+
+	private void confirmSearches(int concurrency) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(STAT_TEST_INDEX);
-		search.setConcurrency(3);
+		search.setConcurrency(concurrency);
 		search.addQuery(new FilterQuery("title:boring").exclude());
 		search.addStat(new NumericStat("authorCount"));
 
@@ -375,7 +395,7 @@ public class StatTest {
 		ratingPathTest(searchResult);
 
 		search = new Search(STAT_TEST_INDEX);
-		search.setConcurrency(3);
+		search.setConcurrency(concurrency);
 		search.addStat(new StatFacet("rating", "pathFacet"));
 		search.addQuery(new FilterQuery("\"something really special\"").addQueryField("title"));
 		search.addQuery(new FilterQuery("authorCount:4"));

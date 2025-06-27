@@ -111,16 +111,23 @@ public class FacetTest {
 	@Order(3)
 	public void searchTest() throws Exception {
 
+		facetTestSearch(1);
+		facetTestSearch(4);
+	}
+
+	private static void facetTestSearch(int concurrency) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		{
 			//run the first search with realtime to force seeing latest changes without waiting for a commit
 			Search search = new Search(FACET_TEST_INDEX).setRealtime(true);
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 			Assertions.assertEquals(13, searchResult.getTotalHits());
 		}
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("boolField1"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyBool1NoQuery(searchResult);
@@ -128,6 +135,7 @@ public class FacetTest {
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("intField1"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyInt1NoQuery(searchResult);
@@ -135,6 +143,7 @@ public class FacetTest {
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("intField2"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyInt2NoQuery(searchResult);
@@ -142,6 +151,7 @@ public class FacetTest {
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("intField2")).addCountFacet(new CountFacet("intField1"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 			verifyInt1NoQuery(searchResult);
 			verifyInt2NoQuery(searchResult);
@@ -149,6 +159,7 @@ public class FacetTest {
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField1"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyString1NoQuery(searchResult);
@@ -156,6 +167,7 @@ public class FacetTest {
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField2"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyString2NoQuery(searchResult);
@@ -163,6 +175,7 @@ public class FacetTest {
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField1")).addCountFacet(new CountFacet("stringField2"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyString1NoQuery(searchResult);
@@ -171,18 +184,21 @@ public class FacetTest {
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField4"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 			verifyString4NoQuery(searchResult);
 		}
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField5"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 			verifyString5NoQuery(searchResult);
 		}
 
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField4")).addCountFacet(new CountFacet("stringField5"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyString4NoQuery(searchResult);
@@ -192,6 +208,7 @@ public class FacetTest {
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField1")).addCountFacet(new CountFacet("stringField4"))
 					.addCountFacet(new CountFacet("stringField5"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyString1NoQuery(searchResult);
@@ -202,6 +219,7 @@ public class FacetTest {
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField1")).addCountFacet(new CountFacet("stringField2"))
 					.addCountFacet(new CountFacet("stringField4")).addCountFacet(new CountFacet("stringField5"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyString1NoQuery(searchResult);
@@ -213,6 +231,7 @@ public class FacetTest {
 		{
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField1")).addCountFacet(new CountFacet("stringField2"))
 					.addCountFacet(new CountFacet("stringField3")).addCountFacet(new CountFacet("stringField4")).addCountFacet(new CountFacet("stringField5"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyString1NoQuery(searchResult);
@@ -226,6 +245,7 @@ public class FacetTest {
 			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField1")).addCountFacet(new CountFacet("stringField2"))
 					.addCountFacet(new CountFacet("stringField3")).addCountFacet(new CountFacet("stringField4")).addCountFacet(new CountFacet("stringField5"))
 					.addCountFacet(new CountFacet("intField1")).addCountFacet(new CountFacet("boolField1"));
+			search.setConcurrency(concurrency);
 			SearchResult searchResult = zuliaWorkPool.search(search);
 
 			verifyString1NoQuery(searchResult);
