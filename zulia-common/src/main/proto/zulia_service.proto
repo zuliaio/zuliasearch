@@ -76,6 +76,7 @@ message QueryRequest {
     bool pinToCache = 18;
     string searchLabel = 19;
     bool realtime = 20;
+    uint32 concurrency = 21;
 }
 
 message QueryResponse {
