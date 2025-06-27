@@ -22,6 +22,8 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.aggregation.AggregationHandler;
+import io.zulia.util.pool.SemaphoreLimitedVirtualPool;
+import io.zulia.util.pool.VirtualThreadPerTaskTaskExecutor;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollectorManager;
@@ -53,8 +55,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 public class ShardReader implements AutoCloseable {
@@ -69,7 +69,6 @@ public class ShardReader implements AutoCloseable {
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache;
 	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> pinnedQueryResultCache;
-	private final ExecutorService searchExecutor;
 
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
@@ -82,14 +81,12 @@ public class ShardReader implements AutoCloseable {
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).recordStats().build();
 		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().build();
-		this.searchExecutor = Executors.newVirtualThreadPerTaskExecutor();
 	}
 
 	@Override
 	public void close() throws Exception {
 		indexReader.close();
 		taxoReader.close();
-		searchExecutor.shutdown();
 	}
 
 	public long getCreationTime() {
@@ -198,9 +195,22 @@ public class ShardReader implements AutoCloseable {
 	}
 
 	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery) throws Exception {
-		PerFieldSimilarityWrapper similarity = getSimilarity(shardQuery.getSimilarityOverrideMap());
 
-		IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
+		int concurrency = shardQuery.getConcurrency();
+		if (concurrency == 0) {
+			concurrency = 1;
+		}
+
+		try (VirtualThreadPerTaskTaskExecutor searchExecutor = new SemaphoreLimitedVirtualPool(concurrency)) {
+			IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
+			return getShardQueryResponseAndCache(shardQuery, indexSearcher, concurrency);
+		}
+	}
+
+	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery, IndexSearcher indexSearcher, int aggregationConcurrency)
+			throws Exception {
+
+		PerFieldSimilarityWrapper similarity = getSimilarity(shardQuery.getSimilarityOverrideMap());
 
 		//similarity is only set query time, indexing time all these similarities are the same
 		indexSearcher.setSimilarity(similarity);
@@ -251,7 +261,7 @@ public class ShardReader implements AutoCloseable {
 			Object[] results = indexSearcher.search(shardQuery.getQuery(), new MultiCollectorManager(collectorManager, facetsCollectorManager));
 			topDocs = (TopDocs) results[0];
 			FacetsCollector facetsCollector = (FacetsCollector) results[1];
-			handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector);
+			handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector, aggregationConcurrency);
 		}
 		else {
 			topDocs = indexSearcher.search(shardQuery.getQuery(), collectorManager);
@@ -302,9 +312,10 @@ public class ShardReader implements AutoCloseable {
 	}
 
 	private void handleAggregations(ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder, List<ZuliaQuery.StatRequest> statRequestList,
-			List<ZuliaQuery.CountRequest> countRequestList, FacetsCollector facetsCollector) throws IOException {
+			List<ZuliaQuery.CountRequest> countRequestList, FacetsCollector facetsCollector, int aggregrationConcurrency) throws IOException {
 
-		AggregationHandler aggregationHandler = new AggregationHandler(taxoReader, facetsCollector, statRequestList, countRequestList, indexConfig);
+		AggregationHandler aggregationHandler = new AggregationHandler(taxoReader, facetsCollector, statRequestList, countRequestList, indexConfig,
+				aggregrationConcurrency);
 
 		for (ZuliaQuery.CountRequest countRequest : countRequestList) {
 
@@ -383,7 +394,7 @@ public class ShardReader implements AutoCloseable {
 					analyzer = ZuliaPerFieldAnalyzer.getAnalyzerForField(analyzerSettings);
 				}
 				else {
-					throw new RuntimeException("Invalid analyzer name " + analyzerOverride );
+					throw new RuntimeException("Invalid analyzer name " + analyzerOverride);
 				}
 			}
 
@@ -409,7 +420,7 @@ public class ShardReader implements AutoCloseable {
 			IndexFieldInfo indexFieldInfo = indexConfig.getIndexFieldInfo(indexField);
 
 			if (indexFieldInfo == null) {
-				throw new RuntimeException("Cannot highlight non-indexed field " + indexField );
+				throw new RuntimeException("Cannot highlight non-indexed field " + indexField);
 			}
 
 			QueryScorer queryScorer = new QueryScorer(q, highlightRequest.getField());
@@ -462,7 +473,7 @@ public class ShardReader implements AutoCloseable {
 					return new TFSimilarity();
 				}
 				else {
-					throw new RuntimeException("Unknown similarity type <" + similarity + ">");
+					throw new RuntimeException("Unknown similarity type " + similarity);
 				}
 			}
 		};
@@ -508,7 +519,7 @@ public class ShardReader implements AutoCloseable {
 			SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sortField);
 
 			if (sortFieldInfo == null) {
-				throw new IllegalArgumentException("Field <" + sortField + "> must be sortable");
+				throw new IllegalArgumentException("Field " + sortField + " must be sortable");
 			}
 
 			FieldType sortFieldType = sortFieldInfo.getFieldType();
@@ -546,7 +557,7 @@ public class ShardReader implements AutoCloseable {
 					type = SortField.Type.DOUBLE;
 				}
 				else {
-					throw new Exception("Invalid numeric sort type <" + sortFieldType + "> for sort field <" + sortField + ">");
+					throw new Exception("Invalid numeric sort type " + sortFieldType + " for sort field " + sortField);
 				}
 
 				SortedNumericSortField e = new SortedNumericSortField(internalSortFieldName, type, reverse, sortedNumericSelector);
@@ -568,7 +579,8 @@ public class ShardReader implements AutoCloseable {
 
 		}
 
-		return new Sort(sortFields.toArray(new SortField[0]));
+		Sort sort = new Sort(sortFields.toArray(new SortField[0]));
+		return sort;
 	}
 
 	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,

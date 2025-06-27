@@ -276,6 +276,15 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return queryRequest.getRealtime();
 	}
 
+	public Search setConcurrency(int concurrency) {
+		queryRequest.setConcurrency(concurrency);
+		return this;
+	}
+
+	public int getConcurrency() {
+		return queryRequest.getConcurrency();
+	}
+
 	@Override
 	public QueryRequest getRequest() {
 		queryRequest.setFacetRequest(facetRequest);

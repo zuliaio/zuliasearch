@@ -29,6 +29,8 @@ public class ZuliaConfig {
 
 	private int rpcWorkers;
 
+	private int defaultConcurrency;
+
 	public ZuliaConfig() {
 	}
 
@@ -136,11 +138,19 @@ public class ZuliaConfig {
 		this.rpcWorkers = rpcWorkers;
 	}
 
+	public int getDefaultConcurrency() {
+		return defaultConcurrency;
+	}
+
+	public void setDefaultConcurrency(int defaultConcurrency) {
+		this.defaultConcurrency = defaultConcurrency;
+	}
+
 	@Override
 	public String toString() {
 		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
 				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoConnection=" + mongoConnection + ", mongoAuth="
 				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", responseCompression="
-				+ responseCompression + ", rpcWorkers=" + rpcWorkers + '}';
+				+ responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + '}';
 	}
 }

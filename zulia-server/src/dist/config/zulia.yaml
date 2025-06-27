@@ -31,6 +31,9 @@ responseCompression: false
 # export settings, defaults to twice the number of processors inside netty (generally number of cores)
 #rpcWorkers: 256
 
+# default concurrency of a search if not explicitly set in index or search
+defaultConcurrency: 1
+
 #mongoConnection:
 # protocol: "mongodb+srv"
 # connectionURL: example.com

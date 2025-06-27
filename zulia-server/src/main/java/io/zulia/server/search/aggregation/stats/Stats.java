@@ -7,12 +7,13 @@ import io.zulia.message.ZuliaQuery;
 
 public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 
-	protected int ordinal;
+	private final double precision;
+	private final DDSketch sketch;
+
+	private int ordinal;
 	private long docCount;
 	private long allDocCount;
 	private long valueCount;
-
-	private DDSketch sketch;
 
 	// overload constructor for building w/ precision
 	public Stats(double precision) {
@@ -21,6 +22,30 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 		if (precision > 0.0) {
 			this.sketch = DDSketches.unboundedDense(precision);
 		}
+		else {
+			this.sketch = null;
+		}
+		this.precision = precision;
+	}
+
+	protected DDSketch getSketch() {
+		return sketch;
+	}
+
+	protected long getDocCount() {
+		return docCount;
+	}
+
+	protected long getAllDocCount() {
+		return allDocCount;
+	}
+
+	protected long getValueCount() {
+		return valueCount;
+	}
+
+	protected double getPrecision() {
+		return precision;
 	}
 
 	public abstract void handleDocValue(long docValue);
@@ -47,6 +72,10 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 		return ordinal;
 	}
 
+	public int compareOrdinal(Stats<T> o) {
+		return Integer.compare(o.ordinal, ordinal);
+	}
+
 	public ZuliaQuery.FacetStatsInternal.Builder buildResponse() {
 		ZuliaQuery.FacetStatsInternal.Builder builder = ZuliaQuery.FacetStatsInternal.newBuilder().setDocCount(docCount).setAllDocCount(allDocCount)
 				.setValueCount(valueCount);
@@ -62,4 +91,24 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 			handleDocValue(numericValues[j]);
 		}
 	}
+
+	public void merge(Stats<?> other) {
+
+		synchronized (this) {
+			this.allDocCount += other.getAllDocCount();
+			this.docCount += other.getDocCount();
+			this.valueCount += other.getValueCount();
+			mergeExtra((T) other);
+		}
+
+		if (this.sketch != null) {
+			synchronized (this.sketch) {
+				this.sketch.mergeWith(other.getSketch());
+			}
+		}
+
+	}
+
+	protected abstract void mergeExtra(T other);
+
 }

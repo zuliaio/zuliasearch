@@ -8,24 +8,31 @@ import com.koloboke.collect.set.hash.HashObjSets;
 import java.util.Arrays;
 
 public class FacetInfo {
-	private ObjSet<String> facets;
-
-	private IntSet dimensionOrdinals;
-
+	private final ObjSet<String> facets;
+	private final IntSet dimensionOrdinals;
 	private int[] dimensionOrdinalsArray;
+	private boolean hasFacets = false;
 
 	public FacetInfo() {
 		this.facets = HashObjSets.newMutableSet();
 		this.dimensionOrdinals = HashIntSets.newMutableSet();
 	}
 
+	public FacetInfo(FacetInfo facetInfo) {
+		this.facets = facetInfo.facets;
+		this.dimensionOrdinals = facetInfo.dimensionOrdinals;
+		this.dimensionOrdinalsArray = facetInfo.dimensionOrdinalsArray;
+		this.hasFacets = facetInfo.hasFacets;
+	}
+
 	public void addFacet(String facet, int dimensionOrdinal) {
 		facets.add(facet);
 		dimensionOrdinals.add(dimensionOrdinal);
+		hasFacets = true;
 	}
 
 	public boolean hasFacets() {
-		return !facets.isEmpty();
+		return hasFacets;
 	}
 
 	public void computeSortedOrdinalArray() {

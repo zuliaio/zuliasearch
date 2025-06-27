@@ -122,9 +122,17 @@ public class HierarchicalFacetTest {
 	@Test
 	@Order(3)
 	public void facetTest() throws Exception {
+		facetTestSearch(1);
+
+	}
+
+	private static void facetTestSearch(Integer concurrency) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		//run the first search with realtime to force seeing latest changes without waiting for a commit
 		Search search = new Search(FACET_TEST_INDEX).setRealtime(true);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
 		search.addCountFacet(new CountFacet("path"));
 		search.addCountFacet(new CountFacet("date"));
 
@@ -174,6 +182,9 @@ public class HierarchicalFacetTest {
 		}
 
 		search = new Search(FACET_TEST_INDEX);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
 		search.addCountFacet(new CountFacet("path", "1"));
 		search.addCountFacet(new CountFacet("path", "2"));
 
@@ -201,6 +212,9 @@ public class HierarchicalFacetTest {
 		}
 
 		search = new Search(FACET_TEST_INDEX);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
 		search.addCountFacet(new CountFacet("path", "one", "two"));
 		queryResult = zuliaWorkPool.search(search);
 		paths = queryResult.getFacetCountsForPath("path", "one", "two");
@@ -214,10 +228,12 @@ public class HierarchicalFacetTest {
 		}
 
 		search = new Search(FACET_TEST_INDEX);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
 		search.addCountFacet(new CountFacet("path2"));
 		Search finalSearch = search;
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch), "path2 is not defined as a facetable field");
-
 	}
 
 	@Test
@@ -251,8 +267,16 @@ public class HierarchicalFacetTest {
 	@Test
 	@Order(6)
 	public void confirm() throws Exception {
+		confirmSearch(1);
+		confirmSearch(5);
+	}
+
+	private static void confirmSearch(Integer concurrency) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		Search search = new Search(FACET_TEST_INDEX);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
 		String pathField = "path2";
 		search.addCountFacet(new CountFacet(pathField));
 		search.addCountFacet(new CountFacet("date"));
@@ -303,6 +327,9 @@ public class HierarchicalFacetTest {
 		}
 
 		search = new Search(FACET_TEST_INDEX);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
 		search.addCountFacet(new CountFacet(pathField, "1"));
 
 		queryResult = zuliaWorkPool.search(search);
@@ -320,6 +347,9 @@ public class HierarchicalFacetTest {
 		}
 
 		search = new Search(FACET_TEST_INDEX);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
 		search.addCountFacet(new CountFacet(pathField, "one", "two"));
 		queryResult = zuliaWorkPool.search(search);
 		paths = queryResult.getFacetCountsForPath(pathField, "one", "two");
