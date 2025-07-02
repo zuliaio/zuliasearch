@@ -2,16 +2,13 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
-import io.zulia.client.command.builder.Highlight;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
-import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
-import io.zulia.message.ZuliaQuery.Query.Operator;
 import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -44,7 +41,7 @@ public class NullEmptyTest {
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("description").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("comments").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(NUlL_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
@@ -60,24 +57,24 @@ public class NullEmptyTest {
 		for (int i = 0; i < repeatCount; i++) {
 
 			indexRecord(i * uniqueDocs, "something special", null, 1.0);
-			indexRecord(i * uniqueDocs + 1, "something really special", "reddish and blueish", 2.4);
-			indexRecord(i * uniqueDocs + 2, "", "pink with big big big stripes", 5.0);
-			indexRecord(i * uniqueDocs + 3, null, "real big", 4.3);
-			indexRecord(i * uniqueDocs + 4, "something really special", "small", 1.6);
-			indexRecord(i * uniqueDocs + 5, "something really special", "", 4.1);
-			indexRecord(i * uniqueDocs + 6, "boring and small", "", null);
+			indexRecord(i * uniqueDocs + 1, "something really special", List.of("reddish and blueish", "the best", "so great"), 2.4);
+			indexRecord(i * uniqueDocs + 2, "", List.of("pink with big big big stripes", ""), 5.0);
+			indexRecord(i * uniqueDocs + 3, null, List.of("real big"), 4.3);
+			indexRecord(i * uniqueDocs + 4, "something really special", List.of("small"), 1.6);
+			indexRecord(i * uniqueDocs + 5, "something really special", List.of(), 4.1);
+			indexRecord(i * uniqueDocs + 6, "boring and small", List.of(""), null);
 		}
 
 	}
 
-	private void indexRecord(int id, String title, String description, Double rating) throws Exception {
+	private void indexRecord(int id, String title, List<String> comments, Double rating) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		String uniqueId = String.valueOf(id);
 
 		Document mongoDocument = new Document();
 		mongoDocument.put("id", uniqueId);
 		mongoDocument.put("title", title);
-		mongoDocument.put("description", description);
+		mongoDocument.put("comments", comments);
 		mongoDocument.put("rating", rating);
 
 		Store s = new Store(uniqueId, NUlL_TEST_INDEX);
@@ -122,12 +119,40 @@ public class NullEmptyTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
 
+		search = new Search(NUlL_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|comments|:0")); // null field is not returned here and empty list are not retuned
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount * 2, searchResult.getTotalHits());
 
 		search = new Search(NUlL_TEST_INDEX);
-		search.addQuery(new ScoredQuery("|description|:0")); // null field is not returned here
+		search.addQuery(new ScoredQuery("|||comments|||:0")); // matches the list of size 0 but not the list with one empty item or the null list
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(NUlL_TEST_INDEX);
+		search.addQuery(new ScoredQuery("comments:*")); // only the null valued would be excluded
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount * 6, searchResult.getTotalHits());
+
+		search = new Search(NUlL_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|||comments|||:0")); // matches the list of size 0 but not the list with one empty item or the null list
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(NUlL_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|||comments|||>2")); // only match documents with more than 2 comments
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(NUlL_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|||comments|||:2")); // only match documents with exactly 2 comments (will match empty comments here)
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(NUlL_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|comments|:0")); // match any documents with at least one comment of length 0 (empty string)
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount*2, searchResult.getTotalHits());
-
 
 	}
 
