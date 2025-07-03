@@ -265,13 +265,13 @@ public class StartStopTest {
 		s = new Search(FACET_TEST_INDEX).setAmount((int) total / 2).addSort(new Sort("|country|"));
 		searchResult = zuliaWorkPool.search(s);
 		for (Document document : searchResult.getDocuments()) {
-			Assertions.assertEquals(document.getString("country"), "US");
+			Assertions.assertEquals("US", document.getString("country"));
 		}
 
 		s = new Search(FACET_TEST_INDEX).setAmount((int) total / 2).addSort(new Sort("|country|").descending());
 		searchResult = zuliaWorkPool.search(s);
 		for (Document document : searchResult.getDocuments()) {
-			Assertions.assertEquals(document.getString("country"), "France");
+			Assertions.assertEquals("France", document.getString("country"));
 		}
 
 	}

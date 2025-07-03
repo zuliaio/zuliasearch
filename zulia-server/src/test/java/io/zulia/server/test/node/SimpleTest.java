@@ -285,7 +285,7 @@ public class SimpleTest {
 		List<String> titleHighlightsForFirstDoc = firstCompleteResult.getHighlightsForField("description");
 		Assertions.assertEquals(1, titleHighlightsForFirstDoc.size());
 		String expected = titleHighlightsForFirstDoc.get(0);
-		Assertions.assertEquals(expected, "plain <em>white</em> and red");
+		Assertions.assertEquals("plain <em>white</em> and red", expected);
 
 		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
 		search.addQuery(new ScoredQuery("white").addQueryFields("description"));
@@ -295,7 +295,7 @@ public class SimpleTest {
 		titleHighlightsForFirstDoc = firstCompleteResult.getHighlightsForField("description");
 		Assertions.assertEquals(1, titleHighlightsForFirstDoc.size());
 		expected = titleHighlightsForFirstDoc.get(0);
-		Assertions.assertEquals(expected, "plain <b>white</b> and red");
+		Assertions.assertEquals("plain <b>white</b> and red", expected);
 
 	}
 

@@ -162,10 +162,10 @@ public class StatTest {
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
 		List<FacetStats> ratingByFacet = searchResult.getFacetFieldStat("rating", "normalFacet");
 		Assertions.assertEquals(1, ratingByFacet.size());
-		Assertions.assertEquals(repeatCount, ratingByFacet.get(0).getDocCount());
-		Assertions.assertEquals(0, ratingByFacet.get(0).getMin().getDoubleValue());
-		Assertions.assertEquals(0, ratingByFacet.get(0).getMax().getDoubleValue());
-		Assertions.assertEquals(0, ratingByFacet.get(0).getSum().getDoubleValue());
+		Assertions.assertEquals(repeatCount, ratingByFacet.getFirst().getDocCount());
+		Assertions.assertEquals(0, ratingByFacet.getFirst().getMin().getDoubleValue());
+		Assertions.assertEquals(0, ratingByFacet.getFirst().getMax().getDoubleValue());
+		Assertions.assertEquals(0, ratingByFacet.getFirst().getSum().getDoubleValue());
 
 		search = new Search(STAT_TEST_INDEX);
 		search.addStat(new StatFacet("rating", "madeUp"));
@@ -404,15 +404,15 @@ public class StatTest {
 		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
 		List<FacetStats> ratingByFacet = searchResult.getFacetFieldStat("rating", "pathFacet");
 		Assertions.assertEquals(1, ratingByFacet.size());
-		Assertions.assertEquals(0, ratingByFacet.get(0).getDocCount()); //No docs have values for rating that match even though there are facets for pathFacet
-		System.err.println(ratingByFacet.get(0).getMin().getDoubleValue());
-		System.err.println(ratingByFacet.get(0).getMax().getDoubleValue());
-		System.err.println(ratingByFacet.get(0).getSum().getDoubleValue());
-		Assertions.assertEquals(Double.POSITIVE_INFINITY, ratingByFacet.get(0).getMin().getDoubleValue(),
+		Assertions.assertEquals(0, ratingByFacet.getFirst().getDocCount()); //No docs have values for rating that match even though there are facets for pathFacet
+		System.err.println(ratingByFacet.getFirst().getMin().getDoubleValue());
+		System.err.println(ratingByFacet.getFirst().getMax().getDoubleValue());
+		System.err.println(ratingByFacet.getFirst().getSum().getDoubleValue());
+		Assertions.assertEquals(Double.POSITIVE_INFINITY, ratingByFacet.getFirst().getMin().getDoubleValue(),
 				0.001); // Positive Infinity for Min when no values found
-		Assertions.assertEquals(Double.NEGATIVE_INFINITY, ratingByFacet.get(0).getMax().getDoubleValue(),
+		Assertions.assertEquals(Double.NEGATIVE_INFINITY, ratingByFacet.getFirst().getMax().getDoubleValue(),
 				0.001); // Negative Infinity for Max when no values found
-		Assertions.assertEquals(0, ratingByFacet.get(0).getSum().getDoubleValue(), 0.001);
+		Assertions.assertEquals(0, ratingByFacet.getFirst().getSum().getDoubleValue(), 0.001);
 	}
 
 	private void authorCountPathFacetTest(SearchResult searchResult) {
