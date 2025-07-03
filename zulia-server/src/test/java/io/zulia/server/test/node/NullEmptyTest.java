@@ -56,7 +56,7 @@ public class NullEmptyTest {
 
 		for (int i = 0; i < repeatCount; i++) {
 
-			indexRecord(i * uniqueDocs, "something special", null, 1.0);
+			indexRecord(i * uniqueDocs, "something special but boring", null, 1.0);
 			indexRecord(i * uniqueDocs + 1, "something really special", List.of("reddish and blueish", "the best", "so great"), 2.4);
 			indexRecord(i * uniqueDocs + 2, "", List.of("pink with big big big stripes", ""), 5.0);
 			indexRecord(i * uniqueDocs + 3, null, List.of("real big"), 4.3);
@@ -153,6 +153,14 @@ public class NullEmptyTest {
 		search.addQuery(new ScoredQuery("|comments|:0")); // match any documents with at least one comment of length 0 (empty string)
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount*2, searchResult.getTotalHits());
+
+
+		search = new Search(NUlL_TEST_INDEX);
+		//zulia rewrites pure negative queries (i.e. -title:boring -title:pink to -title:boring -title:pink *:*) to ensure they work out of the box
+		//partial negative queries sometimes need an all docs match *:*
+		search.addQuery(new ScoredQuery("(*:* AND -title:*) OR title:boring")).setDebug(true);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount*3, searchResult.getTotalHits());
 
 	}
 
