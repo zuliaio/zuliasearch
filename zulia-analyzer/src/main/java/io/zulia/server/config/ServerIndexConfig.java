@@ -123,6 +123,9 @@ public class ServerIndexConfig {
 
 		indexFieldMapping.put(ZuliaFieldConstants.ID_FIELD, new IndexFieldInfo(null, ZuliaFieldConstants.ID_FIELD,
 				FieldTypeUtil.getSortField(ZuliaFieldConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), FieldType.STRING, null));
+
+		indexFieldMapping.put(ZuliaFieldConstants.TIMESTAMP_FIELD, new IndexFieldInfo(null, ZuliaFieldConstants.TIMESTAMP_FIELD, null, FieldType.DATE, null));
+
 		indexFieldMapping.put(ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD,
 				new IndexFieldInfo(null, ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD, null, FieldType.STRING, null));
 		indexFieldMapping.put(ZuliaFieldConstants.FIELDS_LIST_FIELD,
@@ -290,6 +293,5 @@ public class ServerIndexConfig {
 	public String toString() {
 		return "ServerIndexConfig{" + "indexSettings=" + indexSettings + '}';
 	}
-
 
 }

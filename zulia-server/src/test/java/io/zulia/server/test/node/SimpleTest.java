@@ -1,6 +1,7 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.Highlight;
 import io.zulia.client.command.builder.ScoredQuery;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -297,6 +299,28 @@ public class SimpleTest {
 		expected = titleHighlightsForFirstDoc.getFirst();
 		Assertions.assertEquals("plain <b>white</b> and red", expected);
 
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery(ZuliaFieldConstants.TIMESTAMP_FIELD + ":[* TO *]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount * uniqueDocs, searchResult.getTotalHits());
+
+		String yesterday = LocalDate.now().minusDays(1).toString();
+		String tomorrow = LocalDate.now().plusDays(1).toString();
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery(ZuliaFieldConstants.TIMESTAMP_FIELD + ":[" + yesterday + " TO " + tomorrow + "]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount * uniqueDocs, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery(ZuliaFieldConstants.TIMESTAMP_FIELD + ":[* TO " + yesterday + "]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery(ZuliaFieldConstants.TIMESTAMP_FIELD + ":[" + tomorrow + " TO *]"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
 	}
 
 	@Test
