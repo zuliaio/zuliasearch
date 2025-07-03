@@ -158,7 +158,7 @@ public class NullEmptyTest {
 		search = new Search(NUlL_TEST_INDEX);
 		//zulia rewrites pure negative queries (i.e. -title:boring -title:pink to -title:boring -title:pink *:*) to ensure they work out of the box
 		//partial negative queries sometimes need an all docs match *:*
-		search.addQuery(new ScoredQuery("(*:* AND -title:*) OR title:boring")).setDebug(true);
+		search.addQuery(new ScoredQuery("(*:* -title:*) OR title:boring")).setDebug(true);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount*3, searchResult.getTotalHits());
 
