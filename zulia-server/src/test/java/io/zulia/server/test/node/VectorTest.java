@@ -109,7 +109,7 @@ public class VectorTest {
 		search.setAmount(10);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(1, searchResult.getTotalHits());
-		Assertions.assertEquals("1", searchResult.getCompleteResults().get(0).getUniqueId());
+		Assertions.assertEquals("1", searchResult.getCompleteResults().getFirst().getUniqueId());
 
 		search = new Search(VECTOR_TEST);
 		search.addQuery(

@@ -147,8 +147,8 @@ public class SimpleJsonTest {
 		search.addCountFacet(new CountFacet("docLanguage").setTopN(10));
 		search.addCountFacet(new CountFacet("docLanguage").setTopN(10));
 		searchResult = zuliaWorkPool.search(search);
-		Assertions.assertEquals("en", searchResult.getFacetCounts("docLanguage").get(0).getFacet());
-		Assertions.assertEquals(3, searchResult.getFacetCounts("docLanguage").get(0).getCount());
+		Assertions.assertEquals("en", searchResult.getFacetCounts("docLanguage").getFirst().getFacet());
+		Assertions.assertEquals(3, searchResult.getFacetCounts("docLanguage").getFirst().getCount());
 
 		search = new Search(SIMPLE_JSON_TEST_INDEX).setAmount(1);
 		search.addQuery(new FilterQuery("documentId:3"));
@@ -157,7 +157,7 @@ public class SimpleJsonTest {
 
 		String singleLineJson = "{\"documentId\": \"3\", \"docType\": \"pdf\", \"docAuthor\": \"Java Developer Zone\", \"docTitle\": \"Solr Blog\", \"isParent\": false, \"parentDocId\": 1, \"docLanguage\": [\"fr\", \"slovak\"]}";
 		Assertions.assertEquals(singleLineJson, searchResult.getFirstDocumentAsJson());
-		Assertions.assertEquals(singleLineJson, searchResult.getDocumentsAsJson().get(0));
+		Assertions.assertEquals(singleLineJson, searchResult.getDocumentsAsJson().getFirst());
 
 		String prettyJson = """
 				{

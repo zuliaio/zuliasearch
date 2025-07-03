@@ -149,7 +149,7 @@ public class AliasTest {
 		Assertions.assertEquals("1", fetch.getDocument().getString("id"));
 
 		GetIndexConfigResult indexConfig = zuliaWorkPool.getIndexConfig("someAlias");
-		Assertions.assertEquals(indexConfig.getIndexConfig().getIndexName(), ALIAS_TEST_INDEX);
+		Assertions.assertEquals(ALIAS_TEST_INDEX, indexConfig.getIndexConfig().getIndexName());
 
 	}
 

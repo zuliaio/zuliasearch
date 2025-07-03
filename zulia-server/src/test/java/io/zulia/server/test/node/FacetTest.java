@@ -261,7 +261,7 @@ public class FacetTest {
 	private static void verifyString1NoQuery(SearchResult searchResult) {
 		List<ZuliaQuery.FacetCount> stringField1Counts = searchResult.getFacetCounts("stringField1");
 		Assertions.assertEquals(3, stringField1Counts.size());
-		ZuliaQuery.FacetCount stringField1Count1 = stringField1Counts.get(0);
+		ZuliaQuery.FacetCount stringField1Count1 = stringField1Counts.getFirst();
 		Assertions.assertEquals("E", stringField1Count1.getFacet());
 		Assertions.assertEquals(2L, stringField1Count1.getCount());
 	}
@@ -269,7 +269,7 @@ public class FacetTest {
 	private static void verifyString2NoQuery(SearchResult searchResult) {
 		List<ZuliaQuery.FacetCount> stringField2Counts = searchResult.getFacetCounts("stringField2");
 		Assertions.assertEquals(4, stringField2Counts.size());
-		ZuliaQuery.FacetCount stringField2Count1 = stringField2Counts.get(0);
+		ZuliaQuery.FacetCount stringField2Count1 = stringField2Counts.getFirst();
 		Assertions.assertEquals("E", stringField2Count1.getFacet());
 		Assertions.assertEquals(3L, stringField2Count1.getCount());
 		ZuliaQuery.FacetCount stringField2Count2 = stringField2Counts.get(1);
@@ -280,7 +280,7 @@ public class FacetTest {
 	private static void verifyString3NoQuery(SearchResult searchResult) {
 		List<ZuliaQuery.FacetCount> stringField3Counts = searchResult.getFacetCounts("stringField3");
 		Assertions.assertEquals(3, stringField3Counts.size());
-		ZuliaQuery.FacetCount stringField3Count1 = stringField3Counts.get(0);
+		ZuliaQuery.FacetCount stringField3Count1 = stringField3Counts.getFirst();
 		Assertions.assertEquals("C", stringField3Count1.getFacet());
 		Assertions.assertEquals(2L, stringField3Count1.getCount());
 	}
@@ -288,7 +288,7 @@ public class FacetTest {
 	private static void verifyString4NoQuery(SearchResult searchResult) {
 		List<ZuliaQuery.FacetCount> stringField4Counts = searchResult.getFacetCounts("stringField4");
 		Assertions.assertEquals(2, stringField4Counts.size());
-		ZuliaQuery.FacetCount stringField4Count1 = stringField4Counts.get(0);
+		ZuliaQuery.FacetCount stringField4Count1 = stringField4Counts.getFirst();
 		Assertions.assertEquals("D", stringField4Count1.getFacet());
 		Assertions.assertEquals(5L, stringField4Count1.getCount());
 		ZuliaQuery.FacetCount stringField4Count2 = stringField4Counts.get(1);
@@ -299,7 +299,7 @@ public class FacetTest {
 	private static void verifyString5NoQuery(SearchResult searchResult) {
 		List<ZuliaQuery.FacetCount> stringField5Counts = searchResult.getFacetCounts("stringField5");
 		Assertions.assertEquals(2, stringField5Counts.size());
-		ZuliaQuery.FacetCount stringField5Count1 = stringField5Counts.get(0);
+		ZuliaQuery.FacetCount stringField5Count1 = stringField5Counts.getFirst();
 		Assertions.assertEquals("D", stringField5Count1.getFacet());
 		Assertions.assertEquals(5L, stringField5Count1.getCount());
 		ZuliaQuery.FacetCount stringField5Count2 = stringField5Counts.get(1);
@@ -310,7 +310,7 @@ public class FacetTest {
 	private static void verifyInt1NoQuery(SearchResult searchResult) {
 		List<ZuliaQuery.FacetCount> intField1Counts = searchResult.getFacetCounts("intField1");
 		Assertions.assertEquals(2, intField1Counts.size());
-		ZuliaQuery.FacetCount intField1Count1 = intField1Counts.get(0);
+		ZuliaQuery.FacetCount intField1Count1 = intField1Counts.getFirst();
 		Assertions.assertEquals("12321", intField1Count1.getFacet());
 		Assertions.assertEquals(2L, intField1Count1.getCount());
 		ZuliaQuery.FacetCount intField1Count2 = intField1Counts.get(1);
@@ -321,7 +321,7 @@ public class FacetTest {
 	private static void verifyInt2NoQuery(SearchResult searchResult) {
 		List<ZuliaQuery.FacetCount> intField2Counts = searchResult.getFacetCounts("intField2");
 		Assertions.assertEquals(2, intField2Counts.size());
-		ZuliaQuery.FacetCount intField2Count1 = intField2Counts.get(0);
+		ZuliaQuery.FacetCount intField2Count1 = intField2Counts.getFirst();
 		Assertions.assertEquals("3", intField2Count1.getFacet());
 		Assertions.assertEquals(3L, intField2Count1.getCount());
 		ZuliaQuery.FacetCount intField2Count2 = intField2Counts.get(1);
@@ -332,7 +332,7 @@ public class FacetTest {
 	private static void verifyBool1NoQuery(SearchResult searchResult) {
 		List<ZuliaQuery.FacetCount> intField2Counts = searchResult.getFacetCounts("boolField1");
 		Assertions.assertEquals(2, intField2Counts.size());
-		ZuliaQuery.FacetCount intField2Count1 = intField2Counts.get(0);
+		ZuliaQuery.FacetCount intField2Count1 = intField2Counts.getFirst();
 		Assertions.assertEquals("False", intField2Count1.getFacet());
 		Assertions.assertEquals(5L, intField2Count1.getCount());
 		ZuliaQuery.FacetCount intField2Count2 = intField2Counts.get(1);

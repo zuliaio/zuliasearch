@@ -79,18 +79,18 @@ public class IndexTest {
 			ZuliaIndex.FieldConfig idFieldConfig = indexConfigFromServer.getFieldConfig("id");
 			Assertions.assertTrue(idFieldConfig.getFacetAsList().isEmpty());
 			Assertions.assertEquals(1, idFieldConfig.getSortAsCount());
-			Assertions.assertEquals("id", idFieldConfig.getSortAsList().get(0).getSortFieldName());
+			Assertions.assertEquals("id", idFieldConfig.getSortAsList().getFirst().getSortFieldName());
 			Assertions.assertEquals(1, idFieldConfig.getIndexAsCount());
-			Assertions.assertEquals("id", idFieldConfig.getIndexAsList().get(0).getIndexFieldName());
-			Assertions.assertEquals(DefaultAnalyzers.LC_KEYWORD, idFieldConfig.getIndexAsList().get(0).getAnalyzerName());
+			Assertions.assertEquals("id", idFieldConfig.getIndexAsList().getFirst().getIndexFieldName());
+			Assertions.assertEquals(DefaultAnalyzers.LC_KEYWORD, idFieldConfig.getIndexAsList().getFirst().getAnalyzerName());
 
 			ZuliaIndex.FieldConfig titleFieldConfig = indexConfigFromServer.getFieldConfig("title");
 			Assertions.assertTrue(titleFieldConfig.getFacetAsList().isEmpty());
 			Assertions.assertEquals(1, titleFieldConfig.getSortAsCount());
-			Assertions.assertEquals("mySortTitle", titleFieldConfig.getSortAsList().get(0).getSortFieldName());
+			Assertions.assertEquals("mySortTitle", titleFieldConfig.getSortAsList().getFirst().getSortFieldName());
 			Assertions.assertEquals(1, titleFieldConfig.getIndexAsCount());
-			Assertions.assertEquals("myTitle", titleFieldConfig.getIndexAsList().get(0).getIndexFieldName());
-			Assertions.assertEquals(DefaultAnalyzers.STANDARD, titleFieldConfig.getIndexAsList().get(0).getAnalyzerName());
+			Assertions.assertEquals("myTitle", titleFieldConfig.getIndexAsList().getFirst().getIndexFieldName());
+			Assertions.assertEquals(DefaultAnalyzers.STANDARD, titleFieldConfig.getIndexAsList().getFirst().getAnalyzerName());
 
 			ZuliaIndex.FieldConfig categoryFieldConfig = indexConfigFromServer.getFieldConfig("category");
 			Assertions.assertTrue(categoryFieldConfig.getFacetAsList().isEmpty());
@@ -106,25 +106,25 @@ public class IndexTest {
 			ZuliaIndex.FieldConfig ratingField = indexConfigFromServer.getFieldConfig("rating");
 			Assertions.assertTrue(ratingField.getFacetAsList().isEmpty());
 			Assertions.assertEquals(1, ratingField.getSortAsCount());
-			Assertions.assertEquals("rating", ratingField.getSortAsList().get(0).getSortFieldName());
+			Assertions.assertEquals("rating", ratingField.getSortAsList().getFirst().getSortFieldName());
 			Assertions.assertEquals(1, ratingField.getIndexAsCount());
-			Assertions.assertEquals("rating", ratingField.getIndexAsList().get(0).getIndexFieldName());
-			Assertions.assertEquals("", ratingField.getIndexAsList().get(0).getAnalyzerName());
+			Assertions.assertEquals("rating", ratingField.getIndexAsList().getFirst().getIndexFieldName());
+			Assertions.assertEquals("", ratingField.getIndexAsList().getFirst().getAnalyzerName());
 			Assertions.assertEquals("Some optional description", ratingField.getDescription());
 			Assertions.assertEquals("Product Rating", ratingField.getDisplayName());
 
 			List<String> defaultSearchFields = indexConfigFromServer.getDefaultSearchFields();
 			Assertions.assertEquals(1, defaultSearchFields.size());
-			Assertions.assertEquals("title", defaultSearchFields.get(0));
+			Assertions.assertEquals("title", defaultSearchFields.getFirst());
 
 			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = indexConfigFromServer.getWarmingSearches();
 			Assertions.assertEquals(2, warmingSearches.size());
-			Assertions.assertEquals("searching for stuff", warmingSearches.get(0).getSearchLabel());
-			Assertions.assertEquals(false, warmingSearches.get(0).getPinToCache());
+			Assertions.assertEquals("searching for stuff", warmingSearches.getFirst().getSearchLabel());
+			Assertions.assertFalse(warmingSearches.getFirst().getPinToCache());
 			Assertions.assertEquals(1, warmingSearches.get(0).getQueryList().size());
 			Assertions.assertEquals("title:stuff", warmingSearches.get(0).getQuery(0).getQ());
 			Assertions.assertEquals("searching for other stuff", warmingSearches.get(1).getSearchLabel());
-			Assertions.assertEquals(true, warmingSearches.get(1).getPinToCache());
+			Assertions.assertTrue(warmingSearches.get(1).getPinToCache());
 			Assertions.assertEquals(1, warmingSearches.get(1).getQueryList().size());
 			Assertions.assertEquals("title:other AND title:stuff", warmingSearches.get(1).getQuery(0).getQ());
 		}
@@ -154,7 +154,7 @@ public class IndexTest {
 
 			Assertions.assertFalse(indexConfigFromServer.getDisableCompression());
 
-			Assertions.assertEquals(indexConfigFromServer.getFieldConfigMap().size(), 3);
+			Assertions.assertEquals(3, indexConfigFromServer.getFieldConfigMap().size());
 
 			List<String> defaultSearchFields = indexConfigFromServer.getDefaultSearchFields();
 			Assertions.assertEquals(2, defaultSearchFields.size());
@@ -191,10 +191,10 @@ public class IndexTest {
 			Assertions.assertEquals(4, indexConfigFromServer.getFieldConfigMap().size());
 			ZuliaIndex.FieldConfig newField = indexConfigFromServer.getFieldConfig("newField");
 			Assertions.assertEquals(1, newField.getSortAsCount());
-			Assertions.assertEquals("newField", newField.getSortAsList().get(0).getSortFieldName());
+			Assertions.assertEquals("newField", newField.getSortAsList().getFirst().getSortFieldName());
 			Assertions.assertEquals(1, newField.getIndexAsCount());
-			Assertions.assertEquals("newField", newField.getIndexAsList().get(0).getIndexFieldName());
-			Assertions.assertEquals(DefaultAnalyzers.LC_KEYWORD, newField.getIndexAsList().get(0).getAnalyzerName());
+			Assertions.assertEquals("newField", newField.getIndexAsList().getFirst().getIndexFieldName());
+			Assertions.assertEquals(DefaultAnalyzers.LC_KEYWORD, newField.getIndexAsList().getFirst().getAnalyzerName());
 			Assertions.assertEquals(new Document(), indexConfigFromServer.getMeta());
 		}
 
@@ -216,10 +216,10 @@ public class IndexTest {
 			Assertions.assertEquals(1, indexConfigFromServer.getFieldConfigMap().size());
 			ZuliaIndex.FieldConfig newField = indexConfigFromServer.getFieldConfig("newField2");
 			Assertions.assertEquals(1, newField.getSortAsCount());
-			Assertions.assertEquals("newField2", newField.getSortAsList().get(0).getSortFieldName());
+			Assertions.assertEquals("newField2", newField.getSortAsList().getFirst().getSortFieldName());
 			Assertions.assertEquals(1, newField.getIndexAsCount());
-			Assertions.assertEquals("newField2", newField.getIndexAsList().get(0).getIndexFieldName());
-			Assertions.assertEquals(DefaultAnalyzers.STANDARD, newField.getIndexAsList().get(0).getAnalyzerName());
+			Assertions.assertEquals("newField2", newField.getIndexAsList().getFirst().getIndexFieldName());
+			Assertions.assertEquals(DefaultAnalyzers.STANDARD, newField.getIndexAsList().getFirst().getAnalyzerName());
 			Document meta = indexConfigFromServer.getMeta();
 			Assertions.assertEquals(5, meta.getInteger("someKey"));
 			Assertions.assertEquals("a string", meta.getString("otherKey"));
@@ -298,7 +298,7 @@ public class IndexTest {
 			ZuliaIndex.AnalyzerSettings custom = indexConfigFromServer.getAnalyzerSettings("custom");
 			Assertions.assertEquals("custom", custom.getName());
 			Assertions.assertEquals(1, custom.getFilterCount());
-			Assertions.assertEquals(Filter.LOWERCASE, custom.getFilterList().get(0));
+			Assertions.assertEquals(Filter.LOWERCASE, custom.getFilterList().getFirst());
 
 			ZuliaIndex.AnalyzerSettings mine = indexConfigFromServer.getAnalyzerSettings("mine");
 			Assertions.assertEquals("mine", mine.getName());
@@ -371,7 +371,7 @@ public class IndexTest {
 
 			ClientIndexConfig clientIndexConfig = updateIndexResult.getClientIndexConfig();
 			Assertions.assertEquals(2, clientIndexConfig.getWarmingSearches().size());
-			Assertions.assertEquals("different query", clientIndexConfig.getWarmingSearches().get(0).getQuery(0).getQ());
+			Assertions.assertEquals("different query", clientIndexConfig.getWarmingSearches().getFirst().getQuery(0).getQ());
 
 		}
 
@@ -430,7 +430,7 @@ public class IndexTest {
 
 			IndexSettings indexSettings = updateIndexResult.getFullIndexSettings();
 			Assertions.assertEquals(1, indexSettings.getFieldMappingList().size());
-			Assertions.assertEquals("title", indexSettings.getFieldMappingList().get(0).getAlias());
+			Assertions.assertEquals("title", indexSettings.getFieldMappingList().getFirst().getAlias());
 			//check some other fields to make sure they didn't change, only field mapping
 			Assertions.assertEquals(2, indexSettings.getWarmingSearchesCount());
 			Assertions.assertEquals(4, indexSettings.getIndexWeight());
