@@ -18,23 +18,50 @@ public class SpreadsheetTargetFactory {
 		return fromStream(FileDataOutputStream.from(filePath, overwrite));
 	}
 
+	public static SpreadsheetTarget<?, ?> fromFile(String filePath, boolean overwrite, SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
+		return fromStream(FileDataOutputStream.from(filePath, overwrite), configFinalizer);
+	}
+
 	public static SpreadsheetTarget<?, ?> fromPath(Path path, boolean overwrite) throws IOException {
 		return fromStream(FileDataOutputStream.from(path, overwrite));
+	}
+
+	public static SpreadsheetTarget<?, ?> fromPath(Path path, boolean overwrite, SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
+		return fromStream(FileDataOutputStream.from(path, overwrite), configFinalizer);
 	}
 
 	public static SpreadsheetTarget<?, ?> fromStream(DataOutputStream dataOutputStream) throws IOException {
 		return fromStreamWithHeaders(dataOutputStream, null);
 	}
 
+	public static SpreadsheetTarget<?, ?> fromStream(DataOutputStream dataOutputStream, SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
+		return fromStreamWithHeaders(dataOutputStream, null, configFinalizer);
+	}
+
 	public static SpreadsheetTarget<?, ?> fromFileWithHeaders(String filePath, boolean overwrite, Collection<String> headers) throws IOException {
 		return fromStreamWithHeaders(FileDataOutputStream.from(filePath, overwrite), headers);
+	}
+
+	public static SpreadsheetTarget<?, ?> fromFileWithHeaders(String filePath, boolean overwrite, Collection<String> headers,
+			SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
+		return fromStreamWithHeaders(FileDataOutputStream.from(filePath, overwrite), headers, configFinalizer);
 	}
 
 	public static SpreadsheetTarget<?, ?> fromPathWithHeaders(Path path, boolean overwrite, Collection<String> headers) throws IOException {
 		return fromStreamWithHeaders(FileDataOutputStream.from(path, overwrite), headers);
 	}
 
+	public static SpreadsheetTarget<?, ?> fromPathWithHeaders(Path path, boolean overwrite, Collection<String> headers,
+			SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
+		return fromStreamWithHeaders(FileDataOutputStream.from(path, overwrite), headers, configFinalizer);
+	}
+
 	public static SpreadsheetTarget<?, ?> fromStreamWithHeaders(DataOutputStream dataOutputStream, Collection<String> headers) throws IOException {
+		return fromStreamWithHeaders(dataOutputStream, headers, null);
+	}
+
+	public static SpreadsheetTarget<?, ?> fromStreamWithHeaders(DataOutputStream dataOutputStream, Collection<String> headers,
+			SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
 		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataOutputStream.getMeta());
 
 		if (SpreadsheetType.CSV.equals(spreadsheetType) || SpreadsheetType.TSV.equals(spreadsheetType)) {
@@ -45,6 +72,9 @@ public class SpreadsheetTargetFactory {
 			if (SpreadsheetType.TSV.equals(spreadsheetType)) {
 				csvDataTargetConfig.withDelimiter('\t');
 			}
+			if (configFinalizer != null) {
+				configFinalizer.accept(csvDataTargetConfig);
+			}
 			return CSVTarget.withConfig(csvDataTargetConfig);
 		}
 		else if (SpreadsheetType.XLSX.equals(spreadsheetType)) {
@@ -52,11 +82,14 @@ public class SpreadsheetTargetFactory {
 			if (headers != null) {
 				excelDataSourceConfig.withHeaders(headers);
 			}
+			if (configFinalizer != null) {
+				configFinalizer.accept(excelDataSourceConfig);
+			}
 			return ExcelTarget.withConfig(excelDataSourceConfig);
 		}
 		else {
-			throw new IllegalArgumentException("Failed to determine file type from content type " + dataOutputStream.getMeta()
-							.contentType() + " with filename " + dataOutputStream.getMeta().fileName());
+			throw new IllegalArgumentException("Failed to determine file type from content type " + dataOutputStream.getMeta().contentType() + " with filename "
+					+ dataOutputStream.getMeta().fileName());
 		}
 	}
 }
