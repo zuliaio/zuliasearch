@@ -176,7 +176,7 @@ public class AggregationHandler {
 			for (MatchingDocs segment : matchingDocs) {
 				futures.add(taskExecutor.executeAsync(() -> {
 					PerThreadCounter perThreadCounter = counterResourcePool.acquire();
-					try  {
+					try {
 						handleSegment(segment, perThreadCounter.fields, perThreadCounter.countFacetInfo);
 						return null;
 					}
