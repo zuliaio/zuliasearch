@@ -30,6 +30,7 @@ import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatContext;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatInfo;
+import io.zulia.util.ResourcePool;
 import io.zulia.util.pool.TaskExecutor;
 import io.zulia.util.pool.WorkPool;
 import org.apache.lucene.facet.FacetsCollector;
@@ -45,7 +46,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 public class AggregationHandler {
 
@@ -142,34 +142,73 @@ public class AggregationHandler {
 		concurrency = Math.min(concurrency, requestedConcurrency);
 
 		if (concurrency > 1) {
-			List<ListenableFuture<Object>> futures = new ArrayList<>();
-			try (TaskExecutor taskExecutor = WorkPool.virtualBounded(concurrency)) {
 
-				for (MatchingDocs segment : matchingDocs) {
-					futures.add(taskExecutor.executeAsync(() -> {
-						handleSegmentsThreadSafe(List.of(segment));
-						return null;
-					}));
-				}
+			if (true) {
+				handleSegmentsConcurrentlyA(matchingDocs, concurrency);
 			}
-			for (ListenableFuture<Object> future : futures) {
-				try {
-					future.get();
-				}
-				catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-				catch (ExecutionException e) {
-					if (e.getCause() instanceof IOException ioException) {
-						throw ioException;
-					}
-					throw new RuntimeException(e.getCause());
-				}
+			else {
+				handleSegmentsConcurrentlyB(matchingDocs, concurrency);
 			}
 		}
 		else {
 			handleSegments(matchingDocs, fields, globalFacetInfo);
 		}
+
+	}
+
+	record PerThreadCounter(CountFacetInfo countFacetInfo, NumericFieldStatInfo[] fields) {
+
+	}
+
+	private void handleSegmentsConcurrentlyA(List<MatchingDocs> matchingDocs, int concurrency) throws IOException {
+
+		ResourcePool<PerThreadCounter> counterResourcePool = new ResourcePool<>(concurrency, () -> {
+			CountFacetInfo countFacetInfo = globalFacetInfo.cloneNewCounter();
+			NumericFieldStatInfo[] localFields = new NumericFieldStatInfo[fields.length];
+			for (int j = 0; j < fields.length; j++) {
+				localFields[j] = fields[j].cloneNewStatCount();
+			}
+			return new PerThreadCounter(countFacetInfo, localFields);
+		});
+
+		try (TaskExecutor taskExecutor = WorkPool.virtualBounded(concurrency)) {
+			List<ListenableFuture<Void>> futures = new ArrayList<>();
+			for (MatchingDocs segment : matchingDocs) {
+				futures.add(taskExecutor.executeAsync(() -> {
+					PerThreadCounter perThreadCounter = counterResourcePool.acquire();
+					handleSegment(segment, perThreadCounter.fields, perThreadCounter.countFacetInfo);
+					return null;
+				}));
+			}
+
+			//list of void returned but would throw exception here
+			WorkPool.resolveFutures(futures);
+
+		}
+
+		counterResourcePool.forEachParallel(perThreadCounter -> {
+			globalFacetInfo.merge(perThreadCounter.countFacetInfo);
+			for (int i = 0; i < fields.length; i++) {
+				fields[i].merge(perThreadCounter.fields[i]);
+			}
+		});
+
+	}
+
+	private void handleSegmentsConcurrentlyB(List<MatchingDocs> matchingDocs, int concurrency) throws IOException {
+		List<ListenableFuture<Void>> futures = new ArrayList<>();
+		try (TaskExecutor taskExecutor = WorkPool.virtualBounded(concurrency)) {
+
+			for (MatchingDocs segment : matchingDocs) {
+				futures.add(taskExecutor.executeAsync(() -> {
+					handleSegmentsThreadSafe(List.of(segment));
+					return null;
+				}));
+			}
+		}
+
+		//list of void returned but would throw exception here
+		WorkPool.resolveFutures(futures);
 
 	}
 
@@ -193,7 +232,6 @@ public class AggregationHandler {
 	private void handleSegments(Collection<MatchingDocs> matchingDocsList, NumericFieldStatInfo[] localFields, CountFacetInfo localGlobalFacetInfo)
 			throws IOException {
 		for (MatchingDocs matchingDocs : matchingDocsList) {
-
 			handleSegment(matchingDocs, localFields, localGlobalFacetInfo);
 		}
 	}

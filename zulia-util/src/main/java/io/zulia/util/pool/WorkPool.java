@@ -1,5 +1,11 @@
 package io.zulia.util.pool;
 
+import com.google.common.util.concurrent.ListenableFuture;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class WorkPool {
@@ -84,6 +90,22 @@ public class WorkPool {
 	 */
 	public static TaskExecutor virtualBounded(int maxThreads) {
 		return new SemaphoreLimitedVirtualPool(maxThreads);
+	}
+
+	public static <T> List<T> resolveFutures(List<ListenableFuture<T>> futureList) {
+		List<T> results = new ArrayList<>();
+		for (ListenableFuture<T> future : futureList) {
+			try {
+				results.add(future.get());
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+			catch (ExecutionException e) {
+				throw new RuntimeException(e.getCause());
+			}
+		}
+		return results;
 	}
 
 }
