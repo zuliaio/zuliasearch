@@ -129,17 +129,9 @@ public class AggregationHandler {
 			return;
 		}
 
+		// TODO how can I enable this without breaking the smaller test cases (this adjusts concurrency to 1 for the test cases)
+		//int concurrency = getAdjustedConcurrency(matchingDocs, requestedConcurrency);
 		int concurrency = requestedConcurrency;
-		if (concurrency > 1) {
-			int totalHits = 0;
-			for (MatchingDocs matchingDoc : matchingDocs) {
-				totalHits += matchingDoc.totalHits();
-			}
-			int maxConcurrencyBasedOnHits = (totalHits / 10000) + 1; // max concurrency of 1 per 10,0000
-			concurrency = Math.min(maxConcurrencyBasedOnHits, requestedConcurrency);
-			concurrency = Math.min(concurrency, matchingDocs.size()); // do not allow more concurrency than the number of segments
-		}
-		concurrency = Math.min(concurrency, requestedConcurrency);
 
 		if (concurrency > 1) {
 			//TODO: change here
@@ -150,6 +142,19 @@ public class AggregationHandler {
 			handleSegments(matchingDocs, fields, globalFacetInfo);
 		}
 
+	}
+
+	private static int getAdjustedConcurrency(List<MatchingDocs> matchingDocs, int concurrency) {
+		if (concurrency > 1) {
+			int totalHits = 0;
+			for (MatchingDocs matchingDoc : matchingDocs) {
+				totalHits += matchingDoc.totalHits();
+			}
+			int maxConcurrencyBasedOnHits = (totalHits / 10000) + 1; // max concurrency of 1 per 10,0000
+			concurrency = Math.min(concurrency, maxConcurrencyBasedOnHits);
+			concurrency = Math.min(concurrency, matchingDocs.size()); // do not allow more concurrency than the number of segments
+		}
+		return concurrency;
 	}
 
 	record PerThreadCounter(CountFacetInfo countFacetInfo, NumericFieldStatInfo[] fields) {
