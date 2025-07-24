@@ -142,13 +142,9 @@ public class AggregationHandler {
 		concurrency = Math.min(concurrency, requestedConcurrency);
 
 		if (concurrency > 1) {
-
-			if (true) {
-				handleSegmentsConcurrentlyA(matchingDocs, concurrency);
-			}
-			else {
-				handleSegmentsConcurrentlyB(matchingDocs, concurrency);
-			}
+			//TODO: change here
+			handleSegmentsConcurrentlyA(matchingDocs, concurrency);
+			//	handleSegmentsConcurrentlyB(matchingDocs, concurrency);
 		}
 		else {
 			handleSegments(matchingDocs, fields, globalFacetInfo);
