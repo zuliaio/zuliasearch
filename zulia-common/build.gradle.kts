@@ -21,7 +21,7 @@ dependencies {
     api(libs.protobuf.java.util)
     api(libs.simplemagic)
 
-    // commented out and DDSketch.proto is copyed from the ddsktech repo, until ddsketch is patched to fix the poisoning
+    // commented out and DDSketch.proto is copied from the ddsktech repo, until ddsketch is patched to fix the poisoning
     // https://github.com/DataDog/sketches-java/issues/76
     //protobuf(libs.sketches.java)
 
