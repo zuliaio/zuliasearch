@@ -1,12 +1,12 @@
 [versions]
-grpc = "1.72.0"
+grpc = "1.73.0"
 lucene = "10.2.1"
 koloboke = "1.0.0"
-micronaut = "4.7.6" # used by the micronaut plugin configuration
-mongodb = "5.4.0"
+micronaut = "4.9.1" # used by the micronaut plugin configuration
+mongodb = "5.5.1"
 picocli = "4.7.7"
 poi = "5.4.1"
-protobuf = "3.25.5"
+protobuf = "4.31.1"
 unirest = '4.4.5'
 djl = "0.32.0"
 
@@ -15,14 +15,14 @@ annontations = { module = "org.jetbrains:annotations", version = "24.0.0" }
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
-commons-compress = { module = "org.apache.commons:commons-compress", version = "1.27.1" }
+commons-compress = { module = "org.apache.commons:commons-compress", version = "1.28.0" }
 commons-pool2 = { module = "org.apache.commons:commons-pool2", version = "2.12.1" }
 djl-bom = { module = "ai.djl:bom", version.ref = "djl" }
 djl-pytorch-engine = { module = "ai.djl.pytorch:pytorch-engine", version.ref = "djl" }
 djl-basicdataset = { module = "ai.djl:basicdataset", version.ref = "djl" }
-djl-huggingface-tokenizers = { module = "ai.djl.huggingface:tokenizers", version.ref = "djl" }
-djl-model-zoo = { module = "ai.djl:model-zoo", version.ref = "djl" }
-flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.20.0" }
+#djl-huggingface-tokenizers = { module = "ai.djl.huggingface:tokenizers", version.ref = "djl" }
+#djl-model-zoo = { module = "ai.djl:model-zoo", version.ref = "djl" }
+flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.21.0" }
 guava = { module = "com.google.guava:guava", version = "33.4.8-jre" }
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
@@ -75,8 +75,8 @@ poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 simplemagic = { module = "com.j256.simplemagic:simplemagic", version = "1.17" }
 sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.3" }
-slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.16" }
-snake-yaml = { module = "org.yaml:snakeyaml", version = "2.3" }
+slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.17" }
+snake-yaml = { module = "org.yaml:snakeyaml", version = "2.4" }
 snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.5" }
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
 unirest-core = { module = "com.konghq:unirest-java-core", version.ref = "unirest" }
@@ -92,5 +92,5 @@ poi = ["poi", "poi-ooxml"]
 [plugins]
 #reckon is defined in settings.gradle.kts now
 #reckon = { id = "org.ajoberstar.reckon", version = "0.19.2" }
-micronaut-application = { id = "io.micronaut.application", version = "4.5.3" }
-protobuf = { id = "com.google.protobuf", version = "0.9.4" }
+micronaut-application = { id = "io.micronaut.application", version = "4.5.4" }
+protobuf = { id = "com.google.protobuf", version = "0.9.5" }
