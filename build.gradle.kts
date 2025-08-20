@@ -3,16 +3,8 @@ plugins {
     idea
     signing
     `maven-publish`
-    alias(libs.plugins.reckon)
 }
 
-reckon {
-    setDefaultInferredScope("patch")
-    setScopeCalc(calcScopeFromProp())
-    snapshots()
-    stages("beta", "final")
-    setStageCalc(calcStageFromProp())
-}
 
 allprojects {
     group = "io.zulia"
@@ -103,10 +95,9 @@ subprojects {
 
 
     dependencies {
-        testImplementation(platform(libs.junit.bom))
-        testImplementation(libs.jupiter.api)
-        testImplementation(libs.jupiter.params)
-        testRuntimeOnly(libs.jupiter.engine)
+        testImplementation(platform(libs.junit.jupiter.bom))
+        testImplementation("org.junit.jupiter:junit-jupiter")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     }
 
     tasks.withType<Test> {
