@@ -98,7 +98,7 @@ tasks.register("autocompleteDir") {
     }
 }
 
-task("picoCliZuliaDAutoComplete", JavaExec::class) {
+tasks.register<JavaExec>("picoCliZuliaDAutoComplete") {
     dependsOn("autocompleteDir")
     mainClass.set("picocli.AutoComplete")
     classpath = sourceSets["main"].runtimeClasspath

@@ -48,14 +48,28 @@ protobuf {
 
 }
 
-tasks.register("version") {
-    doLast {
-        File("${project.layout.buildDirectory.get()}/classes/java/main/").mkdirs()
-        File("${project.layout.buildDirectory.get()}/classes/java/main/version").writeText(project.version.toString())
+abstract class WriteVersion : DefaultTask() {
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
+
+    @get:Input
+    abstract val versionText: Property<String>
+
+    @TaskAction
+    fun write() {
+        val f = outputFile.get().asFile
+        f.parentFile.mkdirs()
+        f.writeText(versionText.get())
     }
 }
 
+val version by tasks.registering(WriteVersion::class) {
+    outputFile.set(layout.buildDirectory.file("classes/java/main/version"))
+    // Lazily read the project version
+    versionText.set(providers.provider { project.version.toString() })
+}
+
 tasks.withType<JavaCompile> {
-    dependsOn("version")
+    dependsOn(version)
 }
 
