@@ -39,6 +39,8 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -55,6 +57,8 @@ public class AggregationHandler {
 
 	private final CountFacetInfo globalFacetInfo;
 	private final int requestedConcurrency;
+
+	private final static Logger LOG = LoggerFactory.getLogger(AggregationHandler.class);
 
 	public AggregationHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests,
 			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int requestedConcurrency) throws IOException {
@@ -256,6 +260,13 @@ public class AggregationHandler {
 		FacetLabel countPath = new FacetLabel(dim, path);
 		int dimOrd = taxoReader.getOrdinal(countPath);
 		if (dimOrd == -1) {
+			if (path.length == 0) {
+				LOG.warn("Facet {} has not been indexed but was requested by count request", dim);
+			}
+			else {
+				// Do not warm for now if they are requesting a dimension with a path as paths could be sparse
+				// Consider checking for the existence of the dimension itself at least without the path in this case
+			}
 			return ZuliaQuery.FacetGroup.newBuilder();
 		}
 
@@ -321,7 +332,18 @@ public class AggregationHandler {
 		}
 
 		FacetLabel countPath = new FacetLabel(dim, path);
-		return facetStatStorage.getFacetStats(taxoReader, countPath, topN);
+		List<ZuliaQuery.FacetStatsInternal> facetStats = facetStatStorage.getFacetStats(taxoReader, countPath, topN);
+		if (facetStats == null) {
+			if (path.length == 0) {
+				LOG.warn("Facet {} has not been indexed but was requested by stat facet request", dim);
+			}
+			else {
+				// Do not warm for now if they are requesting a dimension with a path as paths could be sparse
+				// Consider checking for the existence of the dimension itself at least without the path in this case
+			}
+			return List.of();
+		}
+		return facetStats;
 
 	}
 
