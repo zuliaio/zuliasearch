@@ -23,7 +23,6 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.SortFieldInfo;
 import io.zulia.server.field.FieldTypeUtil;
-import io.zulia.server.index.ShardReader;
 import io.zulia.server.search.aggregation.facets.BinaryFacetReader;
 import io.zulia.server.search.aggregation.facets.CountFacetInfo;
 import io.zulia.server.search.aggregation.facets.FacetsReader;
@@ -58,7 +57,6 @@ public class AggregationHandler {
 
 	private final CountFacetInfo globalFacetInfo;
 	private final int requestedConcurrency;
-
 
 	private final static Logger LOG = LoggerFactory.getLogger(AggregationHandler.class);
 
