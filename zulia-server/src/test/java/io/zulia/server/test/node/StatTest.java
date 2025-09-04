@@ -49,6 +49,7 @@ public class StatTest {
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("pathFacet").indexAs(DefaultAnalyzers.LC_KEYWORD).facetHierarchical().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("normalFacet").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("unusedFacet").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
 		//indexConfig.addFieldConfig(FieldConfigBuilder.create("authorCount", FieldType.NUMERIC_INT).index().sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(STAT_TEST_INDEX);
@@ -171,6 +172,15 @@ public class StatTest {
 		search.addStat(new StatFacet("rating", "madeUp"));
 		Search finalSearch2 = search;
 		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(finalSearch2), "Expecting: madeUp is not defined as a facetable field");
+
+
+
+
+		search = new Search(STAT_TEST_INDEX);
+		search.addStat(new StatFacet("rating", "unusedFacet"));
+		searchResult = zuliaWorkPool.search(search);
+		List<FacetStats> unusedFacet = searchResult.getFacetFieldStat("rating", "unusedFacet");
+		Assertions.assertEquals(0, unusedFacet.size());
 	}
 
 	private void ratingTest(FacetStats ratingStat) {
