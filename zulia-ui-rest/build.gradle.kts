@@ -1,6 +1,4 @@
 plugins {
-    application
-    `java-library`
     alias(libs.plugins.micronaut.application)
 }
 
@@ -16,6 +14,10 @@ micronaut {
         incremental(true)
         annotations("io.zulia.*")
     }
+}
+
+application {
+    mainClass.set("io.zulia.ui.rest.ZuliaUIREST")
 }
 
 tasks.register<Copy>("copySwagger") {
@@ -69,9 +71,9 @@ dependencies {
     implementation(libs.swagger.annotations)
     implementation(libs.password4j)
 
+    testImplementation(projects.zuliaClient)
     testImplementation(libs.flapdoodle.mongo)
     testImplementation(libs.micronaut.test.junit5)
-    testImplementation(project(":zulia-client"))
     testImplementation(libs.micronaut.test.security)
     testImplementation(libs.jakarta.inject)
 }

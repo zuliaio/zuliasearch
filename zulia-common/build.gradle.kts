@@ -1,10 +1,8 @@
 import com.google.protobuf.gradle.id
-import com.google.protobuf.gradle.protobuf
+//import com.google.protobuf.gradle.protobuf
 
 plugins {
-    `java-library`
     alias(libs.plugins.protobuf)
-
 }
 
 defaultTasks("generateProto", "version", "build")
@@ -12,6 +10,7 @@ defaultTasks("generateProto", "version", "build")
 description = "Zulia Common"
 
 dependencies {
+    api(projects.zuliaUtil)
     api(libs.annontations)
     api(libs.commons.pool2)
     api(libs.grpc.netty.shaded)
@@ -25,7 +24,7 @@ dependencies {
     // https://github.com/DataDog/sketches-java/issues/76
     //protobuf(libs.sketches.java)
 
-    api(projects.zuliaUtil)
+
 }
 
 
@@ -65,13 +64,14 @@ abstract class WriteVersion : DefaultTask() {
     }
 }
 
-val version by tasks.registering(WriteVersion::class) {
-    outputFile.set(layout.buildDirectory.file("classes/java/main/version"))
+val generateVersion by tasks.registering(WriteVersion::class) {
+    outputFile.set(layout.buildDirectory.file("version"))
     // Lazily read the project version
     versionText.set(providers.provider { project.version.toString() })
 }
 
-tasks.withType<JavaCompile> {
-    dependsOn(version)
+tasks.named<ProcessResources>("processResources") {
+    from(generateVersion.flatMap { it.outputFile }) {
+        into("/") // put version at the root of resources output
+    }
 }
-

@@ -9,21 +9,18 @@ plugins {
 allprojects {
     group = "io.zulia"
 }
-apply {
-    from("javacc.gradle")
-}
 
-val Project.libs by lazy {
-    the<org.gradle.accessors.dm.LibrariesForLibs>()
-}
+
+
 
 defaultTasks("build")
 subprojects {
 
-    apply(plugin = "java")
-    apply(plugin = "idea")
-    apply(plugin = "signing")
-    apply(plugin = "maven-publish")
+    plugins.apply("java")
+    plugins.apply("idea")
+    plugins.apply("signing")
+    plugins.apply("maven-publish")
+    plugins.apply("java-library")
 
     java {
         sourceCompatibility = JavaVersion.VERSION_21
@@ -42,8 +39,11 @@ subprojects {
         from(tasks.javadoc)
     }
 
-    artifacts.add("archives", sourcesJar)
-    artifacts.add("archives", javadocJar)
+    tasks.named("assemble") {
+        dependsOn(sourcesJar)
+        dependsOn(javadocJar)
+    }
+
 
     publishing {
         publications {
@@ -93,11 +93,14 @@ subprojects {
         mavenCentral()
     }
 
-
     dependencies {
-        testImplementation(platform(libs.junit.jupiter.bom))
-        testImplementation("org.junit.jupiter:junit-jupiter")
-        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        val catalogs = rootProject.extensions.getByType<VersionCatalogsExtension>()
+        val libs = catalogs.named("libs")
+
+        add("testImplementation", platform(libs.findLibrary("junit-bom").get()))
+        add("testImplementation", libs.findLibrary("junit-jupiter").get())
+        add("testRuntimeOnly", libs.findLibrary("junit-platform-launcher").get())
+
     }
 
     tasks.withType<Test> {
