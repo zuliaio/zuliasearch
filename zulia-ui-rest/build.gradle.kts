@@ -27,6 +27,10 @@ val copySwagger by tasks.registering(Copy::class) {
     into(rootProject.layout.projectDirectory.dir("zulia-swagger"))
 }
 
+tasks.named("build") {
+    finalizedBy("copySwagger")
+}
+
 tasks.withType<Test> {
     maxParallelForks = 1
     maxHeapSize = "8g"
