@@ -15,3 +15,11 @@ reckon {
     stages("beta", "final")
     setStageCalc(calcStageFromProp())
 }
+
+
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        mavenCentral()
+    }
+}

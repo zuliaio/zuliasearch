@@ -20,10 +20,11 @@ application {
     mainClass.set("io.zulia.ui.rest.ZuliaUIREST")
 }
 
-tasks.register<Copy>("copySwagger") {
-    from(layout.buildDirectory.dir("classes/java/main/META-INF/swagger/"))
-    into(project.rootProject.file("zulia-swagger/"))
-    dependsOn("buildLayers")
+val copySwagger by tasks.registering(Copy::class) {
+    val compileJava = tasks.named<JavaCompile>(JavaPlugin.COMPILE_JAVA_TASK_NAME)
+    val swaggerDir = compileJava.flatMap { it.destinationDirectory.dir("META-INF/swagger") }
+    from(swaggerDir)
+    into(rootProject.layout.projectDirectory.dir("zulia-swagger"))
 }
 
 tasks.withType<Test> {

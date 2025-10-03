@@ -25,25 +25,9 @@ subprojects {
     java {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+        withSourcesJar()
+        withJavadocJar()
     }
-
-    val sourcesJar = tasks.register<Jar>("sourcesJar") {
-        dependsOn(JavaPlugin.CLASSES_TASK_NAME)
-        archiveClassifier.set("sources")
-        from(sourceSets.main.get().allJava)
-    }
-
-    val javadocJar = tasks.register<Jar>("javadocJar") {
-        dependsOn(JavaPlugin.JAVADOC_TASK_NAME)
-        archiveClassifier.set("javadoc")
-        from(tasks.javadoc)
-    }
-
-    tasks.named("assemble") {
-        dependsOn(sourcesJar)
-        dependsOn(javadocJar)
-    }
-
 
     publishing {
         publications {
@@ -88,10 +72,6 @@ subprojects {
     }
 
     group = "io.zulia"
-
-    repositories {
-        mavenCentral()
-    }
 
     dependencies {
         val catalogs = rootProject.extensions.getByType<VersionCatalogsExtension>()
