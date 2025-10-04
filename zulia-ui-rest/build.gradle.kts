@@ -1,6 +1,4 @@
 plugins {
-    application
-    `java-library`
     alias(libs.plugins.micronaut.application)
 }
 
@@ -18,10 +16,19 @@ micronaut {
     }
 }
 
-tasks.register<Copy>("copySwagger") {
-    from(layout.buildDirectory.dir("classes/java/main/META-INF/swagger/"))
-    into(project.rootProject.file("zulia-swagger/"))
-    dependsOn("buildLayers")
+application {
+    mainClass.set("io.zulia.ui.rest.ZuliaUIREST")
+}
+
+val copySwagger by tasks.registering(Copy::class) {
+    val compileJava = tasks.named<JavaCompile>(JavaPlugin.COMPILE_JAVA_TASK_NAME)
+    val swaggerDir = compileJava.flatMap { it.destinationDirectory.dir("META-INF/swagger") }
+    from(swaggerDir)
+    into(rootProject.layout.projectDirectory.dir("zulia-swagger"))
+}
+
+tasks.named("build") {
+    finalizedBy("copySwagger")
 }
 
 tasks.withType<Test> {
@@ -69,9 +76,9 @@ dependencies {
     implementation(libs.swagger.annotations)
     implementation(libs.password4j)
 
+    testImplementation(projects.zuliaClient)
     testImplementation(libs.flapdoodle.mongo)
     testImplementation(libs.micronaut.test.junit5)
-    testImplementation(project(":zulia-client"))
     testImplementation(libs.micronaut.test.security)
     testImplementation(libs.jakarta.inject)
 }

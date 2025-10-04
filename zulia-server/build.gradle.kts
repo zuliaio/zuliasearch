@@ -1,6 +1,7 @@
+import io.zulia.task.PicoCLITask
+
 plugins {
     application
-    `java-library`
     alias(libs.plugins.micronaut.application)
 }
 
@@ -18,10 +19,15 @@ micronaut {
     }
 }
 
-tasks.register<Copy>("copySwagger") {
-    from(layout.buildDirectory.dir("classes/java/main/META-INF/swagger/"))
-    into(project.rootProject.file("zulia-swagger/"))
-    dependsOn("buildLayers")
+val copySwagger by tasks.registering(Copy::class) {
+    val compileJava = tasks.named<JavaCompile>(JavaPlugin.COMPILE_JAVA_TASK_NAME)
+    val swaggerDir = compileJava.flatMap { it.destinationDirectory.dir("META-INF/swagger") }
+    from(swaggerDir)
+    into(rootProject.layout.projectDirectory.dir("zulia-swagger"))
+}
+
+tasks.named("build") {
+    finalizedBy("copySwagger")
 }
 
 tasks.withType<Test> {
@@ -77,52 +83,33 @@ tasks.withType<JavaCompile> {
     options.forkOptions.jvmArgs?.addAll(listOf("-Dmicronaut.openapi.views.spec=swagger-ui.enabled=true,swagger-ui.theme=flattop"))
 }
 
-
-val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts") {
+application {
     applicationName = "zuliad"
     mainClass.set("io.zulia.server.cmd.ZuliaD")
-    defaultJvmOpts = listOf("--add-modules","jdk.incubator.vector","--enable-native-access=ALL-UNNAMED")
+    applicationDefaultJvmArgs = listOf( "--add-modules", "jdk.incubator.vector", "--enable-native-access=ALL-UNNAMED")
+}
+
+tasks.named<CreateStartScripts>("startScripts") {
     doLast {
-        val unixScriptFile = file(unixScript)
-        val text = unixScriptFile.readText(Charsets.UTF_8)
-        val newText = text.replace("exec ", "export APP_HOME\nexec ")
-        unixScriptFile.writeText(newText, Charsets.UTF_8)
+        unixScript.writeText(
+            unixScript.readText().replace("exec ", "export APP_HOME\nexec ")
+        )
     }
 }
 
-
-
-tasks.register("autocompleteDir") {
-    dependsOn(":zulia-common:version")
-    doLast {
-        mkdir("${layout.buildDirectory.get()}/autocomplete")
-    }
+val autocompleteTask = tasks.register<PicoCLITask>("autocomplete") {
+    completionScript = layout.buildDirectory.file("autocomplete/zuliad.sh")
+    driverClass = "io.zulia.server.cmd.ZuliaD"
 }
 
-tasks.register<JavaExec>("picoCliZuliaDAutoComplete") {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliad.sh",
-        "io.zulia.server.cmd.ZuliaD"
-    )
+project.tasks.withType(PicoCLITask::class.java).configureEach {
+    runtimeClasspath.from(project.configurations.runtimeClasspath, sourceSets.main.get().output)
 }
-
-
-tasks.withType<AbstractArchiveTask> {
-    dependsOn(
-        "picoCliZuliaDAutoComplete",
-    )
-}
-
 
 distributions {
     main {
         contents {
-            from("${layout.buildDirectory.get()}/autocomplete/") {
+            from(autocompleteTask.flatMap { it.completionScript }) {
                 into("bin/autocomplete")
             }
 

@@ -1,6 +1,7 @@
+import io.zulia.task.PicoCLITask
+
 plugins {
     application
-    `java-library`
 }
 
 description = "Zulia Tools"
@@ -67,115 +68,48 @@ val zuliaTestScriptTask = tasks.register<CreateStartScripts>("createZuliaTestScr
     classpath = zuliaScriptTask.classpath
 }
 
-tasks.register("autocompleteDir") {
-    dependsOn(":zulia-common:version")
-    doLast {
-        mkdir("${layout.buildDirectory.get()}/autocomplete")
-    }
-}
 
-tasks.register<JavaExec>("picoCliZuliaAutoComplete") {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zulia.sh",
-        "io.zulia.tools.cmd.Zulia"
-    )
+val picoCliZuliaAutoComplete = tasks.register<PicoCLITask>("autocompleteZulia") {
+    completionScript = layout.buildDirectory.file("autocomplete/zulia.sh")
+    driverClass = "io.zulia.tools.cmd.Zulia"
 }
 
 
-tasks.register<JavaExec>("picoCliZuliaAdminAutoComplete") {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliaadmin.sh",
-        "io.zulia.tools.cmd.ZuliaAdmin"
-    )
-}
-
-tasks.register<JavaExec>("picoCliZuliaDumpAutoComplete") {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args =
-        listOf(
-            "--force",
-            "--completionScript",
-            "${layout.buildDirectory.get()}/autocomplete/zuliadump.sh",
-            "io.zulia.tools.cmd.ZuliaDump"
-        )
+val picoCliZuliaAdminAutoComplete = tasks.register<PicoCLITask>("autocompleteZuliaAdmin") {
+    completionScript = layout.buildDirectory.file("autocomplete/zuliaadmin.sh")
+    driverClass = "io.zulia.tools.cmd.ZuliaAdmin"
 }
 
 
-
-tasks.register<JavaExec>("picoCliZuliaRestoreAutoComplete") {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliarestore.sh",
-        "io.zulia.tools.cmd.ZuliaRestore"
-    )
+val picoCliZuliaDumpAutoComplete = tasks.register<PicoCLITask>("autocompleteZuliaDump") {
+    completionScript = layout.buildDirectory.file("autocomplete/zuliadump.sh")
+    driverClass = "io.zulia.tools.cmd.ZuliaDump"
 }
 
 
-tasks.register<JavaExec>("picoCliZuliaImportAutoComplete") {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliaimport.sh",
-        "io.zulia.tools.cmd.ZuliaImport"
-    )
+val picoCliZuliaRestoreAutoComplete = tasks.register<PicoCLITask>("autocompleteZuliaRestore") {
+    completionScript = layout.buildDirectory.file("autocomplete/zuliarestore.sh")
+    driverClass = "io.zulia.tools.cmd.ZuliaRestore"
 }
 
-tasks.register<JavaExec>("picoCliZuliaExportAutoComplete") {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliaexport.sh",
-        "io.zulia.tools.cmd.ZuliaExport"
-    )
+val picoCliZuliaImportAutoComplete = tasks.register<PicoCLITask>("autocompleteZuliaImport") {
+    completionScript = layout.buildDirectory.file("autocomplete/zuliaimport.sh")
+    driverClass = "io.zulia.tools.cmd.ZuliaImport"
 }
 
-
-tasks.register<JavaExec>("picoCliZuliaTestAutoComplete") {
-    dependsOn("autocompleteDir")
-    mainClass.set("picocli.AutoComplete")
-    classpath = sourceSets["main"].runtimeClasspath
-    args = listOf(
-        "--force",
-        "--completionScript",
-        "${layout.buildDirectory.get()}/autocomplete/zuliatest.sh",
-        "io.zulia.tools.cmd.ZuliaTest"
-    )
+val picoCliZuliaExportAutoComplete = tasks.register<PicoCLITask>("autocompleteZuliaExport") {
+    completionScript = layout.buildDirectory.file("autocomplete/zuliaexport.sh")
+    driverClass = "io.zulia.tools.cmd.ZuliaExport"
 }
 
-tasks.withType<AbstractArchiveTask> {
-    dependsOn(
-        "picoCliZuliaAutoComplete",
-        "picoCliZuliaAdminAutoComplete",
-        "picoCliZuliaDumpAutoComplete",
-        "picoCliZuliaRestoreAutoComplete",
-        "picoCliZuliaImportAutoComplete",
-        "picoCliZuliaExportAutoComplete",
-        "picoCliZuliaTestAutoComplete"
-    )
+val picoCliZuliaTestAutoComplete = tasks.register<PicoCLITask>("autocompleteZuliaTest") {
+    completionScript = layout.buildDirectory.file("autocomplete/zuliatest.sh")
+    driverClass = "io.zulia.tools.cmd.ZuliaTest"
 }
 
+project.tasks.withType(PicoCLITask::class.java).configureEach {
+    runtimeClasspath.from(project.configurations.runtimeClasspath, sourceSets.main.get().output)
+}
 
 distributions {
     main {
@@ -198,9 +132,30 @@ distributions {
             from(zuliaTestScriptTask) {
                 into("bin")
             }
-            from("${layout.buildDirectory.get()}/autocomplete/") {
+
+            from(picoCliZuliaAutoComplete.flatMap { it.completionScript }) {
                 into("bin/autocomplete")
             }
+            from(picoCliZuliaAdminAutoComplete.flatMap { it.completionScript }) {
+                into("bin/autocomplete")
+            }
+            from(picoCliZuliaDumpAutoComplete.flatMap { it.completionScript }) {
+                into("bin/autocomplete")
+            }
+            from(picoCliZuliaRestoreAutoComplete.flatMap { it.completionScript }) {
+                into("bin/autocomplete")
+            }
+            from(picoCliZuliaImportAutoComplete.flatMap { it.completionScript }) {
+                into("bin/autocomplete")
+            }
+            from(picoCliZuliaExportAutoComplete.flatMap { it.completionScript }) {
+                into("bin/autocomplete")
+            }
+            from(picoCliZuliaTestAutoComplete.flatMap { it.completionScript }) {
+                into("bin/autocomplete")
+            }
+
+
 
             filePermissions {
                 unix("777")
