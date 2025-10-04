@@ -1,12 +1,8 @@
-plugins {
-    `java-library`
-}
-
 description = "Zulia CMD Shared"
 
 dependencies {
-    annotationProcessor(libs.picocli.codegen)
     api(projects.zuliaCommon)
+    annotationProcessor(libs.picocli.codegen)
     implementation(libs.picocli.base)
 }
 

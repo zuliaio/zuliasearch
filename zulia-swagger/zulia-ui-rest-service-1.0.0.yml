@@ -109,11 +109,12 @@ paths:
     get:
       operationId: index_1
       parameters:
-        - name: JWT_REFRESH_TOKEN
-          in: cookie
-          schema:
-            type: string
-            nullable: true
+      - name: JWT_REFRESH_TOKEN
+        in: cookie
+        deprecated: true
+        schema:
+          type: string
+          nullable: true
       responses:
         "200":
           description: index_1 200 response
@@ -124,11 +125,12 @@ paths:
     post:
       operationId: index_2
       parameters:
-        - name: JWT_REFRESH_TOKEN
-          in: cookie
-          schema:
-            type: string
-            nullable: true
+      - name: JWT_REFRESH_TOKEN
+        in: cookie
+        deprecated: true
+        schema:
+          type: string
+          nullable: true
       requestBody:
         content:
           application/x-www-form-urlencoded:
@@ -136,13 +138,11 @@ paths:
               type: object
               additionalProperties:
                 type: string
-              nullable: true
           application/json:
             schema:
               type: object
               additionalProperties:
                 type: string
-              nullable: true
         required: true
       responses:
         "200":
@@ -155,10 +155,10 @@ components:
   schemas:
     UserEntity:
       required:
-        - dateCreated
-        - hashedPassword
-        - password
-        - username
+      - dateCreated
+      - hashedPassword
+      - password
+      - username
       type: object
       properties:
         username:
@@ -172,8 +172,8 @@ components:
           format: date-time
     UsernamePasswordCredentials:
       required:
-        - password
-        - username
+      - password
+      - username
       type: object
       properties:
         username:

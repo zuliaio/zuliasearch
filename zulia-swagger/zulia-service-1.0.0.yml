@@ -7,16 +7,17 @@ paths:
     get:
       operationId: getAllAssociatedForIndex
       parameters:
-        - name: indexName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: q
-          in: query
-          schema:
-            type: string
-            nullable: true
+      - name: indexName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: q
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
       responses:
         "200":
           description: getAllAssociatedForIndex 200 response
@@ -30,16 +31,16 @@ paths:
     get:
       operationId: getAssociatedBundleForId
       parameters:
-        - name: uniqueId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: indexName
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: uniqueId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: indexName
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: getAssociatedBundleForId 200 response
@@ -52,16 +53,16 @@ paths:
     get:
       operationId: getAssociatedFileNamesForId
       parameters:
-        - name: uniqueId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: indexName
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: uniqueId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: indexName
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: getAssociatedFileNamesForId 200 response
@@ -73,21 +74,21 @@ paths:
     post:
       operationId: storeAssociated
       parameters:
-        - name: uniqueId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: fileName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: indexName
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: uniqueId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: fileName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: indexName
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           multipart/form-data:
@@ -103,6 +104,7 @@ paths:
             encoding:
               file:
                 contentType: application/octet-stream
+                explode: false
         required: true
       responses:
         "200":
@@ -115,21 +117,21 @@ paths:
     get:
       operationId: getAssociatedFile
       parameters:
-        - name: indexName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: uniqueId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: fileName
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: indexName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: uniqueId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: fileName
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: getAssociatedFile 200 response
@@ -142,21 +144,21 @@ paths:
     get:
       operationId: getAssociatedMetadata
       parameters:
-        - name: indexName
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: uniqueId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: fileName
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: indexName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: uniqueId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: fileName
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "200":
           description: getAssociatedMetadata 200 response
@@ -168,16 +170,24 @@ paths:
     get:
       operationId: fetch
       parameters:
-        - name: id
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: index
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+      - name: index
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+      - name: realtime
+        in: query
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
       responses:
         "400":
           description: Bad Request
@@ -213,16 +223,22 @@ paths:
     get:
       operationId: fetchPath
       parameters:
-        - name: uniqueId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: indexName
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: uniqueId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: indexName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: realtime
+        in: query
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
       responses:
         "400":
           description: Bad Request
@@ -258,11 +274,18 @@ paths:
     get:
       operationId: getFields
       parameters:
-        - name: index
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: index
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+      - name: realtime
+        in: query
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
       responses:
         "400":
           description: Bad Request
@@ -298,11 +321,12 @@ paths:
     get:
       operationId: getIndexLegacy
       parameters:
-        - name: index
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: index
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
       responses:
         "400":
           description: Bad Request
@@ -372,11 +396,11 @@ paths:
     get:
       operationId: getIndex
       parameters:
-        - name: index
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: index
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
         "400":
           description: Bad Request
@@ -412,12 +436,13 @@ paths:
     get:
       operationId: getNodes
       parameters:
-        - name: active
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: false
+      - name: active
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: false
       responses:
         "400":
           description: Bad Request
@@ -453,149 +478,184 @@ paths:
     get:
       operationId: get
       parameters:
-        - name: index
-          in: query
-          required: true
-          schema:
-            type: array
-            items:
-              type: string
-        - name: q
-          in: query
-          required: true
-          schema:
+      - name: index
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: array
+          items:
             type: string
-            default: '*:*'
-        - name: qf
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fq
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: qJson
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fl
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fetch
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: true
-        - name: rows
-          in: query
-          required: true
-          schema:
-            type: integer
-            format: int32
-            default: 0
-        - name: facet
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: drillDown
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: defaultOp
-          in: query
-          schema:
+      - name: q
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+          default: '*:*'
+      - name: qf
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
             type: string
-            nullable: true
-        - name: sort
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: mm
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: sim
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: debug
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: false
-        - name: dontCache
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: true
-        - name: start
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: hl
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: hlJson
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: alJson
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: cursor
-          in: query
-          schema:
+      - name: fq
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
             type: string
-            nullable: true
-        - name: truncate
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: false
+      - name: qJson
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: fl
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: fetch
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: true
+      - name: rows
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: facet
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: drillDown
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: defaultOp
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: sort
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: mm
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: sim
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: debug
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: false
+      - name: dontCache
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: true
+      - name: start
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: hl
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: hlJson
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: alJson
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: cursor
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: truncate
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: false
+      - name: realtime
+        in: query
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
+      - name: concurrency
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
       responses:
         "200":
           description: get 200 response
@@ -607,156 +667,192 @@ paths:
     get:
       operationId: getCSV
       parameters:
-        - name: index
-          in: query
-          required: true
-          schema:
-            type: array
-            items:
-              type: string
-        - name: q
-          in: query
-          required: true
-          schema:
+      - name: index
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: array
+          items:
             type: string
-            default: '*:*'
-        - name: qf
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fq
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: qJson
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fl
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fetch
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: true
-        - name: rows
-          in: query
-          required: true
-          schema:
-            type: integer
-            format: int32
-            default: 0
-        - name: facet
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: drillDown
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: defaultOp
-          in: query
-          schema:
+      - name: q
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+          default: '*:*'
+      - name: qf
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
             type: string
-            nullable: true
-        - name: sort
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: mm
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: sim
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: debug
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: false
-        - name: dontCache
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: true
-        - name: start
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: hl
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: hlJson
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: alJson
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: batch
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: false
-        - name: batchSize
-          in: query
-          required: true
-          schema:
-            type: integer
-            format: int32
-            default: 500
-        - name: cursor
-          in: query
-          schema:
+      - name: fq
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
             type: string
-            nullable: true
+      - name: qJson
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: fl
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: fetch
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: true
+      - name: rows
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          default: 0
+      - name: facet
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: drillDown
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: defaultOp
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: sort
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: mm
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: sim
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: debug
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: false
+      - name: dontCache
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: true
+      - name: start
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: hl
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: hlJson
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: alJson
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: batch
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: false
+      - name: batchSize
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          default: 500
+      - name: cursor
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: realtime
+        in: query
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
+      - name: concurrency
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
       responses:
         "200":
           description: getCSV 200 response
@@ -768,96 +864,123 @@ paths:
     get:
       operationId: getFacets
       parameters:
-        - name: index
-          in: query
-          required: true
-          schema:
-            type: array
-            items:
-              type: string
-        - name: q
-          in: query
-          required: true
-          schema:
+      - name: index
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: array
+          items:
             type: string
-            default: '*:*'
-        - name: qf
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fq
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: qJson
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fl
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: facet
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: drillDown
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: defaultOp
-          in: query
-          schema:
+      - name: q
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+          default: '*:*'
+      - name: qf
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
             type: string
-            nullable: true
-        - name: sort
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: mm
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: debug
-          in: query
-          required: true
-          schema:
-            type: boolean
-            default: false
-        - name: start
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: cursor
-          in: query
-          schema:
+      - name: fq
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
             type: string
-            nullable: true
+      - name: qJson
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: fl
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: facet
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: drillDown
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: defaultOp
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: sort
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
+      - name: mm
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: debug
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: boolean
+          default: false
+      - name: start
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: cursor
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: realtime
+        in: query
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
+      - name: concurrency
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
       responses:
         "200":
           description: getFacets 200 response
@@ -879,66 +1002,83 @@ paths:
     get:
       operationId: getTermsJson
       parameters:
-        - name: index
-          in: query
-          required: true
-          schema:
+      - name: index
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+      - name: fl
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+      - name: amount
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: minDocFreq
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: minTermFreq
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: startTerm
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: endTerm
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: termFilter
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: termMatch
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: includeTerm
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
             type: string
-        - name: fl
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: amount
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: minDocFreq
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: minTermFreq
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: startTerm
-          in: query
-          schema:
-            type: string
-            nullable: true
-        - name: endTerm
-          in: query
-          schema:
-            type: string
-            nullable: true
-        - name: termFilter
-          in: query
-          schema:
-            type: string
-            nullable: true
-        - name: termMatch
-          in: query
-          schema:
-            type: string
-            nullable: true
-        - name: includeTerm
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fuzzyTermJson
-          in: query
-          schema:
-            type: string
-            nullable: true
+      - name: fuzzyTermJson
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: realtime
+        in: query
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
       responses:
         "200":
           description: getTermsJson 200 response
@@ -950,66 +1090,83 @@ paths:
     get:
       operationId: getTermsCsv
       parameters:
-        - name: index
-          in: query
-          required: true
-          schema:
+      - name: index
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+      - name: fl
+        in: query
+        required: true
+        explode: false
+        schema:
+          type: string
+      - name: amount
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: minDocFreq
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: minTermFreq
+        in: query
+        explode: false
+        schema:
+          type: integer
+          format: int32
+          nullable: true
+      - name: startTerm
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: endTerm
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: termFilter
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: termMatch
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: includeTerm
+        in: query
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
             type: string
-        - name: fl
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: amount
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: minDocFreq
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: minTermFreq
-          in: query
-          schema:
-            type: integer
-            format: int32
-            nullable: true
-        - name: startTerm
-          in: query
-          schema:
-            type: string
-            nullable: true
-        - name: endTerm
-          in: query
-          schema:
-            type: string
-            nullable: true
-        - name: termFilter
-          in: query
-          schema:
-            type: string
-            nullable: true
-        - name: termMatch
-          in: query
-          schema:
-            type: string
-            nullable: true
-        - name: includeTerm
-          in: query
-          schema:
-            type: array
-            nullable: true
-            items:
-              type: string
-        - name: fuzzyTermJson
-          in: query
-          schema:
-            type: string
-            nullable: true
+      - name: fuzzyTermJson
+        in: query
+        explode: false
+        schema:
+          type: string
+          nullable: true
+      - name: realtime
+        in: query
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
       responses:
         "200":
           description: getTermsCsv 200 response
@@ -1024,7 +1181,8 @@ components:
       properties:
         _links:
           type: object
-          additionalProperties: true
+          additionalProperties:
+            type: object
         _embedded:
           type: object
           additionalProperties:
@@ -1033,8 +1191,8 @@ components:
               $ref: "#/components/schemas/Resource"
     AnalysisDTO:
       required:
-        - field
-        - terms
+      - field
+      - terms
       type: object
       properties:
         field:
@@ -1045,14 +1203,15 @@ components:
             $ref: "#/components/schemas/TermDTO"
     AnalysisResultDTO:
       required:
-        - analysisRequest
-        - terms
-        - tokens
+      - analysisRequest
+      - terms
+      - tokens
       type: object
       properties:
         analysisRequest:
           type: object
-          additionalProperties: true
+          additionalProperties:
+            type: object
         tokens:
           type: array
           items:
@@ -1063,7 +1222,7 @@ components:
             $ref: "#/components/schemas/TermDTO"
     AssociatedController.Filenames:
       required:
-        - filenames
+      - filenames
       type: object
       properties:
         filenames:
@@ -1072,10 +1231,10 @@ components:
             type: string
     AssociatedMetadataDTO:
       required:
-        - filename
-        - meta
-        - uniqueId
-        - uploadDate
+      - filename
+      - meta
+      - uniqueId
+      - uploadDate
       type: object
       properties:
         uniqueId:
@@ -1087,12 +1246,13 @@ components:
           format: date-time
         meta:
           type: object
-          additionalProperties: true
+          additionalProperties:
+            type: object
     FacetDTO:
       required:
-        - count
-        - facet
-        - maxError
+      - count
+      - facet
+      - maxError
       type: object
       properties:
         facet:
@@ -1105,9 +1265,9 @@ components:
           format: int64
     FacetsDTO:
       required:
-        - field
-        - maxPossibleMissing
-        - values
+      - field
+      - maxPossibleMissing
+      - values
       type: object
       properties:
         field:
@@ -1130,8 +1290,8 @@ components:
             type: string
     HighlightDTO:
       required:
-        - field
-        - fragments
+      - field
+      - fragments
       type: object
       properties:
         field:
@@ -1167,28 +1327,30 @@ components:
             type: string
     JsonError:
       required:
-        - message
+      - message
       type: object
       allOf:
-        - $ref: "#/components/schemas/AbstractResource_JsonError_"
-        - properties:
-            _links:
+      - $ref: "#/components/schemas/AbstractResource_JsonError_"
+      - type: object
+        properties:
+          _links:
+            type: object
+            additionalProperties:
               type: object
-              additionalProperties: true
-            _embedded:
-              type: object
-              additionalProperties:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Resource"
-            message:
-              type: string
-            logref:
-              type: string
-              nullable: true
-            path:
-              type: string
-              nullable: true
+          _embedded:
+            type: object
+            additionalProperties:
+              type: array
+              items:
+                $ref: "#/components/schemas/Resource"
+          message:
+            type: string
+          logref:
+            type: string
+            nullable: true
+          path:
+            type: string
+            nullable: true
     NodeDTO:
       type: object
       properties:
@@ -1247,7 +1409,8 @@ components:
           type: string
         document:
           type: object
-          additionalProperties: true
+          additionalProperties:
+            type: object
         highlights:
           type: array
           items:
@@ -1304,10 +1467,10 @@ components:
           type: string
     TermDTO:
       required:
-        - docFreq
-        - score
-        - term
-        - termFreq
+      - docFreq
+      - score
+      - term
+      - termFreq
       type: object
       properties:
         term:

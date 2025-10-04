@@ -1,9 +1,4 @@
-plugins {
-    `java-library`
-}
-
 description = "Zulia Testing"
-
 
 dependencies {
     api(projects.zuliaUtil)
