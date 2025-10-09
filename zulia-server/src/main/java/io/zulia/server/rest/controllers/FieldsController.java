@@ -1,5 +1,6 @@
 package io.zulia.server.rest.controllers;
 
+import io.micronaut.core.annotation.Blocking;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
@@ -31,7 +32,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
-@ExecuteOn(TaskExecutors.BLOCKING)
+@ExecuteOn(TaskExecutors.VIRTUAL)
 public class FieldsController {
 
 	@Get(ZuliaRESTConstants.FIELDS_URL)

@@ -40,7 +40,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
-@ExecuteOn(TaskExecutors.BLOCKING)
+@ExecuteOn(TaskExecutors.VIRTUAL)
 public class IndexesController {
 	private final static Logger LOG = LoggerFactory.getLogger(IndexesController.class);
 

@@ -19,7 +19,7 @@ import java.io.File;
  * @author pmeyer
  */
 @Controller
-@ExecuteOn(TaskExecutors.BLOCKING)
+@ExecuteOn(TaskExecutors.VIRTUAL)
 public class StatsController {
 
 	private static final int MB = 1024 * 1024;
