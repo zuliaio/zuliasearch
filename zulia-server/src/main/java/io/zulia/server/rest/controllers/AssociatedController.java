@@ -47,7 +47,7 @@ public class AssociatedController {
 	private final static Logger LOG = LoggerFactory.getLogger(AssociatedController.class);
 
 	@Get("/{indexName}/{uniqueId}/{fileName}/metadata")
-	@ExecuteOn(TaskExecutors.BLOCKING)
+	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getAssociatedMetadata(String indexName, String uniqueId, String fileName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
@@ -60,7 +60,7 @@ public class AssociatedController {
 	}
 
 	@Get("/{indexName}/{uniqueId}/{fileName}/file")
-	@ExecuteOn(TaskExecutors.BLOCKING)
+	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
 	public StreamedFile getAssociatedFile(String indexName, String uniqueId, String fileName) throws Exception {
 
@@ -79,7 +79,7 @@ public class AssociatedController {
 	}
 
 	@Get("/{indexName}/{uniqueId}/filenames")
-	@ExecuteOn(TaskExecutors.BLOCKING)
+	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.TEXT_JSON)
 	public Filenames getAssociatedFileNamesForId(final String uniqueId, String indexName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
@@ -89,7 +89,7 @@ public class AssociatedController {
 	}
 
 	@Get("/{indexName}/{uniqueId}/bundle")
-	@ExecuteOn(TaskExecutors.BLOCKING)
+	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
 	public StreamedFile getAssociatedBundleForId(final String uniqueId, String indexName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();

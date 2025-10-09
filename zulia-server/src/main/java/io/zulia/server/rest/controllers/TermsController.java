@@ -29,7 +29,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
  * @author pmeyer
  */
 @Controller
-@ExecuteOn(TaskExecutors.BLOCKING)
+@ExecuteOn(TaskExecutors.VIRTUAL)
 public class TermsController {
 
 
