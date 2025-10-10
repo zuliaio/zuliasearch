@@ -1,6 +1,6 @@
 [versions]
 grpc = "1.73.0"
-lucene = "10.3.0"
+lucene = "10.3.1"
 koloboke = "1.0.0"
 micronaut = "4.9.3" # used by the micronaut plugin configuration
 mongodb = "5.5.1"
