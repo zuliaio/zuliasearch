@@ -2,7 +2,7 @@
 grpc = "1.76.0"
 lucene = "10.3.1"
 koloboke = "1.0.0"
-micronaut = "4.9.3" # used by the micronaut plugin configuration
+micronaut = "4.9.4" # used by the micronaut plugin configuration
 mongodb = "5.5.1"
 picocli = "4.7.7"
 poi = "5.4.1"
