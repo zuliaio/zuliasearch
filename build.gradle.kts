@@ -29,6 +29,10 @@ subprojects {
         withJavadocJar()
     }
 
+    tasks.withType<AbstractArchiveTask>().configureEach {
+        isPreserveFileTimestamps = true
+    }
+
     publishing {
         publications {
             create<MavenPublication>("mavenJava") {

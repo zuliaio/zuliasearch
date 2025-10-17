@@ -108,6 +108,7 @@ project.tasks.withType(PicoCLITask::class.java).configureEach {
 
 distributions {
     main {
+        distributionBaseName.set("zulia-server")
         contents {
             from(autocompleteTask.flatMap { it.completionScript }) {
                 into("bin/autocomplete")
