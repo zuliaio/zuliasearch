@@ -33,8 +33,6 @@ subprojects {
         publications {
             create<MavenPublication>("mavenJava") {
                 from(components["java"])
-                artifact(tasks["sourcesJar"])
-                artifact(tasks["javadocJar"])
                 pom {
                     url.set("https://zulia.io")
                     licenses {
