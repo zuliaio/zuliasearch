@@ -3,7 +3,7 @@
 
 <head>
     <meta charset='UTF-8' />
-    <title>zulia-ui-rest-service-1.0.0</title>
+    <title>zulia-service-1.0.0</title>
 </head>
 
 <body>
@@ -18,14 +18,14 @@
         const contextPath = cookie === '' ? extract(window.location.search.substring(1)) : cookie;
         const head = document.getElementsByTagName('head')[0]
 
-        link(contextPath + "/zuliauirest/swagger-ui/res/swagger-ui.css", head, "text/css", "stylesheet")
-        link(contextPath + "/zuliauirest/swagger-ui/res/favicon-16x16.png", head, "image/png", "icon", "16x16")
-        link(contextPath + "/zuliauirest/swagger-ui/res/favicon-32x32.png", head, "image/png", "icon", "32x32")
-        link(contextPath + "/zuliauirest/swagger-ui/res/flattop.css", head, "text/css", "stylesheet")
+        link(contextPath + "/swagger-ui/res/swagger-ui.css", head, "text/css", "stylesheet")
+        link(contextPath + "/swagger-ui/res/favicon-16x16.png", head, "image/png", "icon", "16x16")
+        link(contextPath + "/swagger-ui/res/favicon-32x32.png", head, "image/png", "icon", "32x32")
+        link(contextPath + "/swagger-ui/res/flattop.css", head, "text/css", "stylesheet")
         
         window.onload = function() {
-            const swaggerUiBundle = script(contextPath + "/zuliauirest/swagger-ui/res/swagger-ui-bundle.js", head)
-            script(contextPath + "/zuliauirest/swagger-ui/res/swagger-ui-standalone-preset.js", head)
+            const swaggerUiBundle = script(contextPath + "/swagger-ui/res/swagger-ui-bundle.js", head)
+            script(contextPath + "/swagger-ui/res/swagger-ui-standalone-preset.js", head)
 
             swaggerUiBundle.onload = function() {
                 const f = contextPath === '' ? undefined : () => {
@@ -48,7 +48,7 @@
                     };
                 };
                 const ui = SwaggerUIBundle({
-                    url: contextPath + '/zuliauirest/swagger/zulia-ui-rest-service-1.0.0.yml',
+                    url: contextPath + '/swagger/zulia-service-1.0.0.yml',
                     dom_id: '#swagger-ui',
                     presets: [
                         SwaggerUIBundle.presets.apis,
