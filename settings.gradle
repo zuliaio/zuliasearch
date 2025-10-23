@@ -1,5 +1,25 @@
+plugins {
+    id("org.ajoberstar.reckon.settings") version "0.19.2"
+}
+
 rootProject.name = "ZuliaSearch"
 
 include 'zulia-ai', 'zulia-analyzer', 'zulia-common', 'zulia-cmd-shared', 'zulia-client', 'zulia-data', 'zulia-query-parser', 'zulia-server', 'zulia-testing', 'zulia-tools', 'zulia-util', 'zulia-ui-rest'
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
+reckon {
+    setDefaultInferredScope("patch")
+    setScopeCalc(calcScopeFromProp())
+    snapshots()
+    stages("beta", "final")
+    setStageCalc(calcStageFromProp())
+}
+
+
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        mavenCentral()
+    }
+}

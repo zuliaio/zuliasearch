@@ -3,62 +3,40 @@ plugins {
     idea
     signing
     `maven-publish`
-    alias(libs.plugins.reckon)
 }
 
-reckon {
-    setDefaultInferredScope("patch")
-    setScopeCalc(calcScopeFromProp())
-    snapshots()
-    stages("beta", "final")
-    setStageCalc(calcStageFromProp())
-}
 
 allprojects {
     group = "io.zulia"
 }
-apply {
-    from("javacc.gradle")
-}
 
-val Project.libs by lazy {
-    the<org.gradle.accessors.dm.LibrariesForLibs>()
-}
+
+
 
 defaultTasks("build")
 subprojects {
 
-    apply(plugin = "java")
-    apply(plugin = "idea")
-    apply(plugin = "signing")
-    apply(plugin = "maven-publish")
+    plugins.apply("java")
+    plugins.apply("idea")
+    plugins.apply("signing")
+    plugins.apply("maven-publish")
+    plugins.apply("java-library")
 
     java {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+        withSourcesJar()
+        withJavadocJar()
     }
 
-    val sourcesJar = tasks.register<Jar>("sourcesJar") {
-        dependsOn(JavaPlugin.CLASSES_TASK_NAME)
-        archiveClassifier.set("sources")
-        from(sourceSets.main.get().allJava)
+    tasks.withType<AbstractArchiveTask>().configureEach {
+        isPreserveFileTimestamps = true
     }
-
-    val javadocJar = tasks.register<Jar>("javadocJar") {
-        dependsOn(JavaPlugin.JAVADOC_TASK_NAME)
-        archiveClassifier.set("javadoc")
-        from(tasks.javadoc)
-    }
-
-    artifacts.add("archives", sourcesJar)
-    artifacts.add("archives", javadocJar)
 
     publishing {
         publications {
             create<MavenPublication>("mavenJava") {
                 from(components["java"])
-                artifact(tasks["sourcesJar"])
-                artifact(tasks["javadocJar"])
                 pom {
                     url.set("https://zulia.io")
                     licenses {
@@ -97,16 +75,14 @@ subprojects {
 
     group = "io.zulia"
 
-    repositories {
-        mavenCentral()
-    }
-
-
     dependencies {
-        testImplementation(platform(libs.junit.bom))
-        testImplementation(libs.jupiter.api)
-        testImplementation(libs.jupiter.params)
-        testRuntimeOnly(libs.jupiter.engine)
+        val catalogs = rootProject.extensions.getByType<VersionCatalogsExtension>()
+        val libs = catalogs.named("libs")
+
+        add("testImplementation", platform(libs.findLibrary("junit-bom").get()))
+        add("testImplementation", libs.findLibrary("junit-jupiter").get())
+        add("testRuntimeOnly", libs.findLibrary("junit-platform-launcher").get())
+
     }
 
     tasks.withType<Test> {

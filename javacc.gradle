@@ -33,12 +33,12 @@ configure(rootProject) {
         mavenCentral()
     }
 
-    task javacc() {
-        description "Regenerate sources for corresponding javacc grammar files."
-        group "generation"
+    tasks.register('javacc', {
+        description = "Regenerate sources for corresponding javacc grammar files."
+        group = "generation"
 
         dependsOn allprojects.collect { prj -> prj.tasks.withType(JavaCCTask) }
-    }
+    })
 
     ext {
         /**
@@ -115,9 +115,9 @@ def commonCleanups = { FileTree generatedFiles ->
 
 configure(project(":zulia-query-parser")) {
 
-    task javaccParserZuliaFlexibleInternal(type: JavaCCTask) {
-        description "Regenerate flexible query parser from ZuliaSyntaxParser.jj"
-        group "generation"
+    tasks.register('javaccParserZuliaFlexibleInternal', JavaCCTask) {
+        description = "Regenerate flexible query parser from ZuliaSyntaxParser.jj"
+        group = "generation"
 
         javaccFile = file('src/main/java/io/zulia/server/search/queryparser/parser/ZuliaSyntaxParser.jj')
 
@@ -195,10 +195,10 @@ configure(project(":zulia-query-parser")) {
         }
     }
 
-    task javacc() {
-        description "Regenerate query parsers (javacc syntax definitions)."
-        group "generation"
-    }
+    tasks.register('javacc', {
+        description = "Regenerate query parsers (javacc syntax definitions)."
+        group = "generation"
+    })
 
 }
 

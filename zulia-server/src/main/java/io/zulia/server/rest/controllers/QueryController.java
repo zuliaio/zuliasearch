@@ -55,7 +55,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
  * @author pmeyer
  */
 @Controller(ZuliaRESTConstants.QUERY_URL)
-@ExecuteOn(TaskExecutors.BLOCKING)
+@ExecuteOn(TaskExecutors.VIRTUAL)
 public class QueryController {
 
 	private final static Logger LOG = LoggerFactory.getLogger(QueryController.class);

@@ -1,10 +1,8 @@
 import com.google.protobuf.gradle.id
-import com.google.protobuf.gradle.protobuf
+//import com.google.protobuf.gradle.protobuf
 
 plugins {
-    `java-library`
     alias(libs.plugins.protobuf)
-
 }
 
 defaultTasks("generateProto", "version", "build")
@@ -12,6 +10,7 @@ defaultTasks("generateProto", "version", "build")
 description = "Zulia Common"
 
 dependencies {
+    api(projects.zuliaUtil)
     api(libs.annontations)
     api(libs.commons.pool2)
     api(libs.grpc.netty.shaded)
@@ -21,9 +20,11 @@ dependencies {
     api(libs.protobuf.java.util)
     api(libs.simplemagic)
 
-    protobuf(libs.sketches.java)
+    // commented out and DDSketch.proto is copied from the ddsktech repo, until ddsketch is patched to fix the poisoning
+    // https://github.com/DataDog/sketches-java/issues/76
+    //protobuf(libs.sketches.java)
 
-    api(projects.zuliaUtil)
+
 }
 
 
@@ -48,14 +49,29 @@ protobuf {
 
 }
 
-tasks.register("version") {
-    doLast {
-        File("${project.layout.buildDirectory.get()}/classes/java/main/").mkdirs()
-        File("${project.layout.buildDirectory.get()}/classes/java/main/version").writeText(project.version.toString())
+abstract class WriteVersion : DefaultTask() {
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
+
+    @get:Input
+    abstract val versionText: Property<String>
+
+    @TaskAction
+    fun write() {
+        val f = outputFile.get().asFile
+        f.parentFile.mkdirs()
+        f.writeText(versionText.get())
     }
 }
 
-tasks.withType<JavaCompile> {
-    dependsOn("version")
+val generateVersion by tasks.registering(WriteVersion::class) {
+    outputFile.set(layout.buildDirectory.file("version"))
+    // Lazily read the project version
+    versionText.set(providers.provider { project.version.toString() })
 }
 
+tasks.named<ProcessResources>("processResources") {
+    from(generateVersion.flatMap { it.outputFile }) {
+        into("/") // put version at the root of resources output
+    }
+}

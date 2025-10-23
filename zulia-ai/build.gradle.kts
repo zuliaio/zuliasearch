@@ -1,11 +1,4 @@
-plugins {
-    `java-library`
-}
-
 description = "Zulia AI"
-
-
-defaultTasks("build", "installDist")
 
 dependencies {
     api(projects.zuliaData)
