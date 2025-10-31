@@ -3,6 +3,7 @@ package io.zulia.data.test;
 import io.zulia.data.common.DataStreamMeta;
 import io.zulia.data.input.SingleUseDataInputStream;
 import io.zulia.data.output.DataOutputStream;
+import io.zulia.data.output.SingleUseDataOutputStream;
 import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
 import io.zulia.data.source.spreadsheet.SpreadsheetSource;
 import io.zulia.data.source.spreadsheet.SpreadsheetSourceFactory;
@@ -22,18 +23,7 @@ public class DataSourceTest {
 	void testCSV() throws IOException {
 
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		DataOutputStream outputStream = new DataOutputStream() {
-
-			@Override
-			public OutputStream openOutputStream() {
-				return byteArrayOutputStream;
-			}
-
-			@Override
-			public DataStreamMeta getMeta() {
-				return DataStreamMeta.fromFileName("test.csv");
-			}
-		};
+		SingleUseDataOutputStream outputStream = SingleUseDataOutputStream.from(byteArrayOutputStream, "test.csv");
 
 		try (var target = SpreadsheetTargetFactory.fromStreamWithHeaders(outputStream, List.of("header1", "header2"))) {
 			target.appendValue("value1");
