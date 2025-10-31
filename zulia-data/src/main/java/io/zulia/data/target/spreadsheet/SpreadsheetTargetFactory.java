@@ -1,14 +1,17 @@
 package io.zulia.data.target.spreadsheet;
 
+import io.zulia.data.common.DataStreamMeta;
 import io.zulia.data.common.SpreadsheetType;
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.FileDataOutputStream;
+import io.zulia.data.output.SingleUseDataOutputStream;
 import io.zulia.data.target.spreadsheet.csv.CSVTarget;
 import io.zulia.data.target.spreadsheet.csv.CSVTargetConfig;
 import io.zulia.data.target.spreadsheet.excel.ExcelTarget;
 import io.zulia.data.target.spreadsheet.excel.ExcelTargetConfig;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 
@@ -60,6 +63,25 @@ public class SpreadsheetTargetFactory {
 		return fromStreamWithHeaders(dataOutputStream, headers, null);
 	}
 
+	public static SpreadsheetTarget<?, ?> fromSingleUseStreamWithoutHeaders(OutputStream outputStream, DataStreamMeta dataStreamMeta) throws IOException {
+		return fromStream(SingleUseDataOutputStream.from(outputStream, dataStreamMeta));
+	}
+
+	public static SpreadsheetTarget<?, ?> fromSingleUseStreamWithoutHeaders(OutputStream outputStream, DataStreamMeta dataStreamMeta,
+			SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
+		return fromStream(SingleUseDataOutputStream.from(outputStream, dataStreamMeta), configFinalizer);
+	}
+
+	public static SpreadsheetTarget<?, ?> fromSingleUseStreamWithHeaders(OutputStream outputStream, DataStreamMeta dataStreamMeta, Collection<String> headers)
+			throws IOException {
+		return fromStreamWithHeaders(SingleUseDataOutputStream.from(outputStream, dataStreamMeta), headers);
+	}
+
+	public static SpreadsheetTarget<?, ?> fromSingleUseStreamWithHeaders(OutputStream outputStream, DataStreamMeta dataStreamMeta, Collection<String> headers,
+			SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
+		return fromStreamWithHeaders(SingleUseDataOutputStream.from(outputStream, dataStreamMeta), headers, configFinalizer);
+	}
+
 	public static SpreadsheetTarget<?, ?> fromStreamWithHeaders(DataOutputStream dataOutputStream, Collection<String> headers,
 			SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
 		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataOutputStream.getMeta());
@@ -92,4 +114,5 @@ public class SpreadsheetTargetFactory {
 					+ dataOutputStream.getMeta().fileName());
 		}
 	}
+
 }
