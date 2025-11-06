@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
@@ -30,12 +31,14 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 	private final FeatureStat[] featureStats;
 	private final IntIntMap categoryCountMap;
 	private FeatureScaler featureScaler;
+	private boolean binary;
 
 	public DenseFeatureAndCategoryDataset(Builder builder) {
 		super(builder);
 		this.classifierFeatureVectors = builder.classifierFeatureVectors;
 		this.featureStats = builder.featureStats;
 		this.categories = builder.getCategories();
+		this.binary = (categories == 2); // Default here to allow prior behavior
 		this.categoryCountMap = builder.categoryCountMap;
 	}
 
@@ -48,7 +51,12 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 	}
 
 	public boolean isBinary() {
-		return categories == 2;
+		return binary;
+	}
+
+	// Don't WANT to use binary version on multi networks
+	public void setBinary(boolean binary) {
+		this.binary = binary;
 	}
 
 	public int getCategories() {
@@ -127,16 +135,16 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 			return this;
 		}
 
+		private int getCategories() {
+			return categories;
+		}
+
 		public Builder setCategories(int categories) {
 			if (categories < 2) {
 				throw new IllegalArgumentException("Categories must be at least 2");
 			}
 			this.categories = categories;
 			return this;
-		}
-
-		private int getCategories() {
-			return categories;
 		}
 
 		@Override
@@ -159,21 +167,50 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 			try (Stream<String> lines = Files.lines(Paths.get(filename))) {
 				lines.forEach(s -> {
 					ClassifierFeatureVector v = gson.fromJson(s, ClassifierFeatureVector.class);
-					if (v.getCategory() >= categories) {
-						throw new IllegalArgumentException(
-								"Categories is set to " + categories + " but found category " + v.getCategory() + ". Expected values are between 0 and " + (
-										categories - 1) + ".");
-					}
-
-					classifierFeatureVectors.add(v);
-					featureStatGenerator.addExample(v.getFeatures());
-					categoryCountMap.addValue(v.getCategory(), 1);
-
+					handleVector(featureStatGenerator, v);
 				});
 			}
 
 			this.featureStats = featureStatGenerator.computeFeatureStats();
 			return new DenseFeatureAndCategoryDataset(this);
 		}
+
+		/**
+		 * Allow building from in-memory vectors instead of reading them from a file
+		 *
+		 * @param vectors list of vectors which are essentially the same as the file listed above
+		 * @return
+		 */
+		public DenseFeatureAndCategoryDataset build(Collection<ClassifierFeatureVector> vectors) {
+			ClassifierFeatureVector any = vectors.iterator().next();
+			// Set up how many features there are from a random value in the collection
+			FeatureStatGenerator featureStatGenerator = new FeatureStatGenerator(any.getFeatures().length);
+			this.categoryCountMap = HashIntIntMaps.newMutableMap();
+			for (ClassifierFeatureVector v : vectors) {
+				handleVector(featureStatGenerator, v);
+			}
+
+			this.featureStats = featureStatGenerator.computeFeatureStats();
+			return new DenseFeatureAndCategoryDataset(this);
+		}
+
+		/**
+		 * Compile and track individual training features, categorized
+		 *
+		 * @param featureStatGenerator
+		 * @param v
+		 */
+		private void handleVector(FeatureStatGenerator featureStatGenerator, ClassifierFeatureVector v) {
+			if (v.getCategory() >= categories) {
+				throw new IllegalArgumentException(
+						"Categories is set to " + categories + " but found category " + v.getCategory() + ". Expected values are between 0 and " + (categories
+								- 1) + ".");
+			}
+
+			classifierFeatureVectors.add(v);
+			featureStatGenerator.addExample(v.getFeatures());
+			categoryCountMap.addValue(v.getCategory(), 1);
+		}
+
 	}
 }
