@@ -1,4 +1,4 @@
-package io.zulia.ai.nn.model;
+package io.zulia.ai.nn.model.generics;
 
 import ai.djl.Model;
 import ai.djl.metric.Metrics;
@@ -15,9 +15,6 @@ import io.zulia.ai.dataset.json.DenseFeatureAndCategoryDataset;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;
-import io.zulia.ai.nn.test.BinaryClassifierF1;
-import io.zulia.ai.nn.test.BinaryClassifierPrecision;
-import io.zulia.ai.nn.test.BinaryClassifierRecall;
 import io.zulia.ai.nn.training.config.TrainingConfigurationFactory;
 import io.zulia.ai.nn.training.config.TrainingSettings;
 import io.zulia.data.output.FileDataOutputStream;
@@ -37,22 +34,23 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
-public class BinaryClassifierTrainer {
+public abstract class ClassifierTrainer {
+	private static final Logger LOG = LoggerFactory.getLogger(ClassifierTrainer.class);
+
 	public static final String FEATURE_STATS_JSON = "feature_stats.json";
 	public static final String FULL_NETWORK_CONFIG_JSON = "full_network_config.json";
 	public static final String TRAINING_SETTINGS_JSON = "training_settings.json";
 	public static final String FEATURE_SCALER = "feature_scaler.json";
 
-	private final static Logger LOG = LoggerFactory.getLogger(BinaryClassifierTrainer.class);
+	protected final String modelBaseDir;
+	protected final String modelName;
+	protected final FullyConnectedConfiguration fullyConnectedConfiguration;
 
-	private final String modelBaseDir;
-	private final String modelName;
-	private final FullyConnectedConfiguration fullyConnectedConfiguration;
-	private final TrainingSettings trainingSettings;
-	private final Function<FeatureStat[], FeatureScaler> featureScalerGenerator;
+	protected final TrainingSettings trainingSettings;
+	protected final Function<FeatureStat[], FeatureScaler> featureScalerGenerator;
 
-	public BinaryClassifierTrainer(String modelBaseDir, String modelName, FullyConnectedConfiguration fullyConnectedConfiguration,
-			TrainingSettings trainingSettings, Function<FeatureStat[], FeatureScaler> featureScalerGenerator) {
+	public ClassifierTrainer(String modelBaseDir, String modelName, FullyConnectedConfiguration fullyConnectedConfiguration, TrainingSettings trainingSettings,
+			Function<FeatureStat[], FeatureScaler> featureScalerGenerator) {
 		this.modelBaseDir = modelBaseDir;
 		this.modelName = modelName;
 		this.fullyConnectedConfiguration = fullyConnectedConfiguration;
@@ -76,8 +74,10 @@ public class BinaryClassifierTrainer {
 		return trainingSettings;
 	}
 
-	public BinaryClassifierTrainingResults train(DenseFeatureAndCategoryDataset trainingSet, DenseFeatureAndCategoryDataset testingSet)
+	public ClassifierTrainingResults train(DenseFeatureAndCategoryDataset trainingSet, DenseFeatureAndCategoryDataset testingSet)
 			throws IOException, TranslateException {
+
+		long tic = System.currentTimeMillis();
 
 		FeatureScaler featureScaler = featureScalerGenerator.apply(trainingSet.getFeatureStats());
 		trainingSet.setFeatureScaler(featureScaler);
@@ -87,6 +87,7 @@ public class BinaryClassifierTrainer {
 		Path modelPath = Path.of(modelBaseDir, modelUuid);
 		Files.createDirectory(modelPath);
 		LOG.info("Model directory: {}", modelPath);
+		ClassifierTrainingResults classifierTrainingResults = new ClassifierTrainingResults(modelUuid);
 
 		Gson gson = new Gson();
 
@@ -102,6 +103,7 @@ public class BinaryClassifierTrainer {
 				Metrics metrics = new Metrics();
 				trainer.setMetrics(metrics);
 
+				// Write metafiles for users to retrieve settings
 				Files.writeString(modelPath.resolve(model.getName() + "_" + FEATURE_STATS_JSON), gson.toJson(trainingSet.getFeatureStats()));
 				Files.writeString(modelPath.resolve(model.getName() + "_" + FULL_NETWORK_CONFIG_JSON), gson.toJson(fullyConnectedConfiguration));
 				Files.writeString(modelPath.resolve(model.getName() + "_" + TRAINING_SETTINGS_JSON), gson.toJson(trainingSettings));
@@ -109,11 +111,9 @@ public class BinaryClassifierTrainer {
 
 				String featureScalerDesc = featureScaler.toString();
 
-				BinaryClassifierTrainingResults binaryClassifierTrainingResults = new BinaryClassifierTrainingResults(modelUuid);
-
+				// Logger for results to see live training output
 				FileDataOutputStream fileDataOutputStream = FileDataOutputStream.from(modelPath.resolve("results.csv"), true);
-				CSVTargetConfig csvTargetConfig = CSVTargetConfig.from(fileDataOutputStream)
-						.withHeaders(List.of("Model Name", "Epoch", "F1", "Precision", "Recall", "Model Suffix", "Feature Scaler"))
+				CSVTargetConfig csvTargetConfig = CSVTargetConfig.from(fileDataOutputStream).withHeaders(getHeaders())
 						.withNumberTypeHandler(new NumberCSVWriter<CsvWriter>().withDecimalPlaces(4));
 				try (SpreadsheetTarget<?, ?> spreadsheetTarget = CSVTarget.withConfig(csvTargetConfig)) {
 
@@ -131,48 +131,63 @@ public class BinaryClassifierTrainer {
 						// reset training and validation evaluators at end of epoch
 						trainer.notifyListeners(listener -> listener.onEpoch(trainer));
 
-						float testingF1 = metrics.getMetric("validate_epoch_" + BinaryClassifierF1.BCF1).getLast().getValue().floatValue();
-						float testingPrecision = metrics.getMetric("validate_epoch_" + BinaryClassifierPrecision.BC_PRECISION).getLast().getValue()
-								.floatValue();
-						float testingRecall = metrics.getMetric("validate_epoch_" + BinaryClassifierRecall.BC_RECALL).getLast().getValue().floatValue();
+						// This is handled down in the weeds of the individual trainer
+						ClassifierEpochResult epochResult = logResults(metrics, iteration, spreadsheetTarget, featureScalerDesc);
 
-						String suffix = String.format("%.3f", testingF1) + "_" + iteration;
+						// Store results into list
+						classifierTrainingResults.addEpochResult(epochResult);
 
-						BinaryClassifierEpochResult epochResult = new BinaryClassifierEpochResult(iteration, testingF1, testingPrecision, testingRecall,
-								suffix);
-						binaryClassifierTrainingResults.addEpochResult(epochResult);
-
-						spreadsheetTarget.writeRow(modelName, epochResult.epoch(), epochResult.f1(), epochResult.precision(), epochResult.recall(),
-								epochResult.modelSuffix(), featureScalerDesc);
-
+						// Write and look for breakpoint
 						handleEpochResults(epochResult);
 						saveModel(trainingNetwork, modelPath, epochResult);
 
-						if (earlyStopTraining(binaryClassifierTrainingResults, epochResult)) {
+						if (earlyStopTraining(classifierTrainingResults, epochResult)) {
 							break;
 						}
 					}
 
 				}
-				return binaryClassifierTrainingResults;
+
 			}
+
+			double totalTimeSeconds = (System.currentTimeMillis() - tic) / 1000.0;
+
+			// final logging
+			var bestResult = classifierTrainingResults.getBestEpoch();
+			LOG.info("Training complete in <{}>s. Best Epoch: <{}>", totalTimeSeconds, bestResult.epoch());
+			handleEpochResults(bestResult);
+
+			// Send output to caller
+			return classifierTrainingResults;
+		}
+	}
+
+	protected abstract List<String> getHeaders();
+
+	protected abstract ClassifierEpochResult logResults(Metrics metrics, int iteration, SpreadsheetTarget<?, ?> spreadsheetTarget, String featureScalerDesc);
+
+	protected boolean earlyStopTraining(ClassifierTrainingResults classifierTrainingResults, ClassifierEpochResult epochResult) {
+		if (epochResult.epoch() < trainingSettings.getIterations() / 3) {
+			return false; // Do at least 1/3 of the requested training to see what happens
 		}
 
-	}
-
-	protected boolean earlyStopTraining(BinaryClassifierTrainingResults binaryClassifierTrainingResults, BinaryClassifierEpochResult epochResult) {
 		// if the latest epoch is not the best F1, stop
-		return binaryClassifierTrainingResults.getBestF1Epoch().epoch() != epochResult.epoch();
+		return classifierTrainingResults.getBestEpoch().epoch() != epochResult.epoch();
 	}
 
-	protected void saveModel(Block trainingNetwork, Path modelPath, BinaryClassifierEpochResult epochResults) throws IOException {
+	protected void saveModel(Block trainingNetwork, Path modelPath, ClassifierEpochResult epochResults) throws IOException {
 		try (DataOutputStream os = new DataOutputStream(new FileOutputStream(modelPath.resolve(getModelName() + "_" + epochResults.modelSuffix()).toFile()))) {
 			trainingNetwork.saveParameters(os);
 		}
 	}
 
-	protected void handleEpochResults(BinaryClassifierEpochResult epochResults) {
-		LOG.info("Epoch {}: Testing F1: {} Testing Precision: {} Testing Recall {}", epochResults.epoch(), epochResults.f1(), epochResults.precision(),
-				epochResults.recall());
+	protected void handleEpochResults(ClassifierEpochResult epochResults) {
+		if (epochResults.f1() != null) {
+			LOG.info("Epoch {}: Testing F1: {} Testing Precision: {} Testing Recall {}", epochResults.epoch(), epochResults.f1(), epochResults.precision(),
+					epochResults.recall());
+		}
+		else {
+			LOG.info("Epoch {}: Testing Accuracy: {}", epochResults.epoch(), epochResults.accuracy());
+		}
 	}
 }

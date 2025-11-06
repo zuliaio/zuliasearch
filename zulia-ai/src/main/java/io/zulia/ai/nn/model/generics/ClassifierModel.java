@@ -1,4 +1,4 @@
-package io.zulia.ai.nn.model;
+package io.zulia.ai.nn.model.generics;
 
 import ai.djl.MalformedModelException;
 import ai.djl.Model;
@@ -28,13 +28,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
 
-public class BinaryClassifierModel implements AutoCloseable {
-	private final static Logger LOG = LoggerFactory.getLogger(BinaryClassifierModel.class);
+public abstract class ClassifierModel<K> implements AutoCloseable {
+	private final static Logger LOG = LoggerFactory.getLogger(ClassifierModel.class);
 
-	private final Model model;
-	private final FeatureScaler featureScaler;
+	protected final Model model;
+	protected final FeatureScaler featureScaler;
 
-	public BinaryClassifierModel(String modelBaseDir, String modelUuid, String modelName, String modelSuffix,
+	public ClassifierModel(String modelBaseDir, String modelUuid, String modelName, String modelSuffix,
 			Function<FeatureStat[], FeatureScaler> featureScalerGenerator) throws IOException, MalformedModelException {
 		model = Model.newInstance(modelName);
 
@@ -77,19 +77,19 @@ public class BinaryClassifierModel implements AutoCloseable {
 
 	}
 
-	public Predictor<float[], Float> getPredictor() {
+	public Predictor<float[], K> getPredictor() {
 		return getPredictor(1);
 	}
 
-	public Predictor<float[], Float> getPredictor(int maxThreadsFeatureGenThreads) {
+	public Predictor<float[], K> getPredictor(int maxThreadsFeatureGenThreads) {
 		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(maxThreadsFeatureGenThreads, featureScaler, new NoOpDenseFeatureGenerator()));
 	}
 
-	public <T> Predictor<T, Float> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures) {
+	public <T> Predictor<T, K> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures) {
 		return getPredictor(convertToDenseFeatures, 1);
 	}
 
-	public <T> Predictor<T, Float> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures, int maxThreadsFeatureGenThreads) {
+	public <T> Predictor<T, K> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures, int maxThreadsFeatureGenThreads) {
 		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(maxThreadsFeatureGenThreads, featureScaler, convertToDenseFeatures));
 	}
 
