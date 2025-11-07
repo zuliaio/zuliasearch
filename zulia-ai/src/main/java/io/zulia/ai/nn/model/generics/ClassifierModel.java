@@ -4,19 +4,11 @@ import ai.djl.MalformedModelException;
 import ai.djl.Model;
 import ai.djl.inference.Predictor;
 import ai.djl.nn.Block;
-import ai.djl.translate.TranslateException;
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
-import io.zulia.ai.dataset.json.DenseFeatureAndCategoryDataset;
-import io.zulia.ai.features.generator.ClassifierFeatureVector;
-import io.zulia.ai.features.generator.ClassifierFeatureVector.BatchedClassifierFeatureVector;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;
-import io.zulia.ai.nn.test.BinaryClassifierStats;
 import io.zulia.ai.nn.translator.DenseFeatureGenerator;
-import io.zulia.ai.nn.translator.NoOpDenseFeatureGenerator;
-import io.zulia.ai.nn.translator.ScaledFeatureBinaryOutputTranslator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +17,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.function.Function;
 
 public abstract class ClassifierModel<K> implements AutoCloseable {
@@ -56,42 +47,13 @@ public abstract class ClassifierModel<K> implements AutoCloseable {
 		model.setBlock(evaluationNetwork);
 	}
 
-	public BinaryClassifierStats evaluate(DenseFeatureAndCategoryDataset dataset, float threshold, int batchSize) throws TranslateException {
+	public abstract Predictor<float[], K> getPredictor();
 
-		List<List<ClassifierFeatureVector>> batches = Lists.partition(dataset.getClassifierFeatureVectors(), batchSize);
+	public abstract Predictor<float[], K> getPredictor(int maxThreadsFeatureGenThreads);
 
-		BinaryClassifierStats binaryClassifierStats = new BinaryClassifierStats();
-		try (Predictor<float[], Float> predictor = getPredictor()) {
-			for (List<ClassifierFeatureVector> batch : batches) {
-				BatchedClassifierFeatureVector batchedClassifierFeatureVector = ClassifierFeatureVector.asBatch(batch);
-				List<Float> outputs = predictor.batchPredict(batchedClassifierFeatureVector.featureList());
-				for (int batchIndex = 0; batchIndex < outputs.size(); batchIndex++) {
-					boolean predicted = outputs.get(batchIndex) >= threshold;
-					boolean actual = batchedClassifierFeatureVector.getCategory(batchIndex) == 1;
-					binaryClassifierStats.evaluateResult(predicted, actual);
-				}
-			}
-		}
+	public abstract <T> Predictor<T, K> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures);
 
-		return binaryClassifierStats;
-
-	}
-
-	public Predictor<float[], K> getPredictor() {
-		return getPredictor(1);
-	}
-
-	public Predictor<float[], K> getPredictor(int maxThreadsFeatureGenThreads) {
-		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(maxThreadsFeatureGenThreads, featureScaler, new NoOpDenseFeatureGenerator()));
-	}
-
-	public <T> Predictor<T, K> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures) {
-		return getPredictor(convertToDenseFeatures, 1);
-	}
-
-	public <T> Predictor<T, K> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures, int maxThreadsFeatureGenThreads) {
-		return model.newPredictor(new ScaledFeatureBinaryOutputTranslator<>(maxThreadsFeatureGenThreads, featureScaler, convertToDenseFeatures));
-	}
+	public abstract <T> Predictor<T, K> getPredictor(DenseFeatureGenerator<T> convertToDenseFeatures, int maxThreadsFeatureGenThreads);
 
 	@Override
 	public void close() {
