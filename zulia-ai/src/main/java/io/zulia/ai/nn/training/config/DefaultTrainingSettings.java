@@ -18,6 +18,7 @@ public abstract class DefaultTrainingSettings implements TrainingSettings {
 	private ParameterTracker learningRateTracker;
 	private Float clipGrad;
 	private Float weightDecays;
+	private boolean trainInMemory = false;
 
 	public DefaultTrainingSettings() {
 
@@ -61,6 +62,16 @@ public abstract class DefaultTrainingSettings implements TrainingSettings {
 	public DefaultTrainingSettings setWeightDecays(Float weightDecays) {
 		this.weightDecays = weightDecays;
 		return this;
+	}
+
+	public DefaultTrainingSettings setTrainInMemory(boolean trainInMemory) {
+		this.trainInMemory = trainInMemory;
+		return this;
+	}
+
+	@Override
+	public boolean getTrainInMemory() {
+		return trainInMemory;
 	}
 
 	@Override
