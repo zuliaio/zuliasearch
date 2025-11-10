@@ -1,6 +1,6 @@
 package io.zulia.ai.nn.test;
 
-public class BinaryClassifierStats {
+public class BinaryClassifierStats extends ClassifierStats<Boolean> {
 
 	private long truePositive;
 	private long falsePositive;
@@ -17,14 +17,18 @@ public class BinaryClassifierStats {
 		this.falseNegative = falseNegative;
 	}
 
-	public void merge(BinaryClassifierStats other) {
-		this.truePositive += other.truePositive;
-		this.falsePositive += other.falsePositive;
-		this.trueNegative += other.trueNegative;
-		this.falseNegative += other.falseNegative;
+	@Override
+	protected void mergeSpecific(ClassifierStats<Boolean> other) {
+		if (other instanceof BinaryClassifierStats otherBCS) {
+			this.truePositive += otherBCS.truePositive;
+			this.falsePositive += otherBCS.falsePositive;
+			this.trueNegative += otherBCS.trueNegative;
+			this.falseNegative += otherBCS.falseNegative;
+		}
 	}
 
-	public void evaluateResult(boolean predicted, boolean actual) {
+	@Override
+	protected void evaluateResultSpecific(Boolean predicted, Boolean actual) {
 		if (actual) {
 			if (predicted) {
 				truePositive++;
@@ -43,6 +47,23 @@ public class BinaryClassifierStats {
 		}
 	}
 
+	@Override
+	public float getPrecision() {
+		return (float) truePositive / (truePositive + falsePositive);
+	}
+
+	@Override
+	public float getRecall() {
+		return (float) truePositive / (truePositive + falseNegative);
+	}
+
+	@Override
+	public float getF1() {
+		float precision = getPrecision();
+		float recall = getRecall();
+		return 2 * precision * recall / (precision + recall);
+	}
+
 	public long getTruePositive() {
 		return truePositive;
 	}
@@ -57,20 +78,6 @@ public class BinaryClassifierStats {
 
 	public long getFalseNegative() {
 		return falseNegative;
-	}
-
-	public float getPrecision() {
-		return (float) truePositive / (truePositive + falsePositive);
-	}
-
-	public float getRecall() {
-		return (float) truePositive / (truePositive + falseNegative);
-	}
-
-	public float getF1() {
-		float precision = getPrecision();
-		float recall = getRecall();
-		return 2 * precision * recall / (precision + recall);
 	}
 
 	@Override

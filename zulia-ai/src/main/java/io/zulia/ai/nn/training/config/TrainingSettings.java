@@ -10,6 +10,8 @@ import java.util.Collection;
 
 public interface TrainingSettings {
 
+	boolean getTrainInMemory();
+
 	Loss getLoss();
 
 	Optimizer getOptimizer();
