@@ -1,15 +1,17 @@
 package io.zulia.ai.nn.model.generics;
 
-import com.google.gson.Gson;
+import ai.djl.Model;
+import io.zulia.ai.features.scaler.FeatureScaler;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ClassifierTrainingResults {
 	private final String uuid;
-	private final Gson gson = new Gson();
-
 	private final List<ClassifierEpochResult> classifierEpochResults;
+	// Results could come with a model, if desired
+	private Model resultModel;
+	private FeatureScaler resultFeatureScaler;
 
 	public ClassifierTrainingResults(String uuid) {
 		this.uuid = uuid;
@@ -66,4 +68,19 @@ public class ClassifierTrainingResults {
 		return bestEpochResult;
 	}
 
+	public FeatureScaler getResultFeatureScaler() {
+		return resultFeatureScaler;
+	}
+
+	public void setResultFeatureScaler(FeatureScaler resultFeatureScaler) {
+		this.resultFeatureScaler = resultFeatureScaler;
+	}
+
+	public Model getResultModel() {
+		return resultModel;
+	}
+
+	public void setResultModel(Model resultModel) {
+		this.resultModel = resultModel;
+	}
 }

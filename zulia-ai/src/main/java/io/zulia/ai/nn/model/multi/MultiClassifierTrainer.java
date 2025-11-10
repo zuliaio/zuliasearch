@@ -31,7 +31,9 @@ public class MultiClassifierTrainer extends ClassifierTrainer {
 
 		ClassifierEpochResult epochResult = new ClassifierEpochResult(iteration, testingAccuracy, null, null, null, suffix);
 
-		spreadsheetTarget.writeRow(modelName, epochResult.epoch(), testingAccuracy, epochResult.modelSuffix(), featureScalerDesc);
+		if (spreadsheetTarget != null) {
+			spreadsheetTarget.writeRow(modelName, epochResult.epoch(), testingAccuracy, epochResult.modelSuffix(), featureScalerDesc);
+		}
 		return epochResult;
 	}
 

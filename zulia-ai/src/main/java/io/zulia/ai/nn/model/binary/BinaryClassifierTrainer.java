@@ -37,8 +37,10 @@ public class BinaryClassifierTrainer extends ClassifierTrainer {
 
 		ClassifierEpochResult epochResult = new ClassifierEpochResult(iteration, testingAccuracy, testingF1, testingPrecision, testingRecall, suffix);
 
-		spreadsheetTarget.writeRow(modelName, epochResult.epoch(), epochResult.f1(), epochResult.precision(), epochResult.recall(), epochResult.modelSuffix(),
-				featureScalerDesc);
+		if (spreadsheetTarget != null) {
+			spreadsheetTarget.writeRow(modelName, epochResult.epoch(), epochResult.f1(), epochResult.precision(), epochResult.recall(),
+					epochResult.modelSuffix(), featureScalerDesc);
+		}
 		return epochResult;
 	}
 
