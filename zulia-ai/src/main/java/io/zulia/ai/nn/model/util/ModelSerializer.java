@@ -65,7 +65,7 @@ public class ModelSerializer {
 	}
 
 	// Lifted from inside djl, which works only on filesystem
-	public byte[] serializeModel(Model model) throws IOException {
+	public static byte[] serializeModel(Model model) throws IOException {
 		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
 			try (DataOutputStream dos = new DataOutputStream(byteArrayOutputStream)) {
 				dos.writeBytes("DJL@");
@@ -95,7 +95,7 @@ public class ModelSerializer {
 	}
 
 	// Wrapper around build in method for loading a model
-	public Model deserializeModelFromBuffer(byte[] buffer, String modelName) throws IOException, MalformedModelException {
+	public static Model deserializeModelFromBuffer(byte[] buffer, String modelName) throws IOException, MalformedModelException {
 		try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buffer)) {
 			try (DataInputStream dataInputStream = new DataInputStream(byteArrayInputStream)) {
 				Model newModel = Model.newInstance(modelName);
