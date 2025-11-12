@@ -16,6 +16,7 @@ import io.zulia.ai.dataset.json.DenseFeatureAndCategoryDataset;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;
+import io.zulia.ai.nn.model.util.ModelSerializer;
 import io.zulia.ai.nn.training.config.TrainingConfigurationFactory;
 import io.zulia.ai.nn.training.config.TrainingSettings;
 import io.zulia.data.output.FileDataOutputStream;
@@ -26,9 +27,6 @@ import io.zulia.data.target.spreadsheet.delimited.formatter.NumberCSVWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -60,6 +58,11 @@ public abstract class ClassifierTrainer {
 		this.fullyConnectedConfiguration = fullyConnectedConfiguration;
 		this.trainingSettings = trainingSettings;
 		this.featureScalerGenerator = featureScalerGenerator;
+	}
+
+	public ClassifierTrainer(String modelName, FullyConnectedConfiguration fullyConnectedConfiguration, TrainingSettings trainingSettings,
+			Function<FeatureStat[], FeatureScaler> featureScalerGenerator) {
+		this(null, modelName, fullyConnectedConfiguration, trainingSettings, featureScalerGenerator);
 	}
 
 	public String getModelBaseDir() {
@@ -107,8 +110,9 @@ public abstract class ClassifierTrainer {
 
 	/**
 	 * Do the full training excercise in memory so that something else could handle IO OR the network can be used and discarded
-	 * @param trainingSet dataset for training
-	 * @param testingSet dataset for epoch evaluation
+	 *
+	 * @param trainingSet   dataset for training
+	 * @param testingSet    dataset for epoch evaluation
 	 * @param featureScaler scaler for features
 	 * @return results of training WITH a model and scaler inside
 	 */
@@ -144,7 +148,7 @@ public abstract class ClassifierTrainer {
 
 					// If we just made the best epoch, then we should update the saved data
 					if (classifierTrainingResults.getBestEpoch().epoch() == epochResult.epoch()) {
-						bestNetworkBuffer = serializeNetworkInMemory(trainingNetwork);
+						bestNetworkBuffer = ModelSerializer.serializeNetworkInMemory(trainingNetwork);
 					}
 				}
 			}
@@ -155,53 +159,19 @@ public abstract class ClassifierTrainer {
 		try {
 			// Bring up the best serialized model into a new copy
 			Model model = Model.newInstance(modelName);
-			deserializeParametersFromBuffer(bestNetworkBuffer, model);
+			ModelSerializer.deserializeParametersFromBuffer(bestNetworkBuffer, model, fullyConnectedConfiguration);
 
 			// Store out results
 			classifierTrainingResults.setResultModel(model);
 			classifierTrainingResults.setResultFeatureScaler(featureScaler);
-		} catch (MalformedModelException e) {
+		}
+		catch (MalformedModelException e) {
 			LOG.error("Could not deserialize parameters from model.", e);
 			throw new RuntimeException(e);
 		}
 
 		// Send output to caller
 		return classifierTrainingResults;
-	}
-
-	/**
-	 * Used to take a snapshot of the training settings for rollback
-	 * @param trainingNetwork network block being frozen
-	 * @return buffer snapshot of network history
-	 */
-	private static byte[] serializeNetworkInMemory(Block trainingNetwork) throws IOException {
-		byte[] inMemoryData;
-		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-			try (DataOutputStream dataOutputStream = new DataOutputStream(byteArrayOutputStream)) {
-				trainingNetwork.saveParameters(dataOutputStream);
-			}
-
-			byteArrayOutputStream.flush();
-			inMemoryData = byteArrayOutputStream.toByteArray();
-		}
-		return inMemoryData;
-	}
-
-	/**
-	 * Used to convert a snapshotted buffer back into a useable model (for return to user)
-	 * @param inMemoryData buffer of a network to be read
-	 * @param model to put this network into
-	 */
-	private void deserializeParametersFromBuffer(byte[] inMemoryData, Model model) throws IOException, MalformedModelException {
-		// Read from memory buffer into output block
-		Block evaluationNetwork = fullyConnectedConfiguration.getEvaluationNetwork();
-		try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(inMemoryData)) {
-			try (DataInputStream dataInputStream = new DataInputStream(byteArrayInputStream)) {
-				evaluationNetwork.loadParameters(model.getNDManager(), dataInputStream);
-			}
-		}
-
-		model.setBlock(evaluationNetwork);
 	}
 
 	private static void trainEpoch(DenseFeatureAndCategoryDataset trainingSet, DenseFeatureAndCategoryDataset testingSet, Trainer trainer)
@@ -221,8 +191,9 @@ public abstract class ClassifierTrainer {
 
 	/**
 	 * More "classic" training style that write out the results of training to file system for reuse/deployment and retrieval
-	 * @param trainingSet train on these
-	 * @param testingSet  validate epoch scores on these
+	 *
+	 * @param trainingSet   train on these
+	 * @param testingSet    validate epoch scores on these
 	 * @param featureScaler scaler to log during epoch writes
 	 * @return results of training (no model included)
 	 */

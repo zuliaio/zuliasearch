@@ -52,11 +52,6 @@ public abstract class ClassifierModel<K> implements AutoCloseable {
 		this.featureScaler = featureScaler;
 	}
 
-	public ClassifierModel(ClassifierTrainingResults results) {
-		this.model = results.getResultModel();
-		this.featureScaler = results.getResultFeatureScaler();
-	}
-
 	public abstract Predictor<float[], K> getPredictor();
 
 	public abstract Predictor<float[], K> getPredictor(int maxThreadsFeatureGenThreads);
