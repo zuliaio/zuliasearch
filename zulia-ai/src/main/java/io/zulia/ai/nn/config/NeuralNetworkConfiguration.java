@@ -3,7 +3,9 @@ package io.zulia.ai.nn.config;
 import ai.djl.nn.Block;
 import io.zulia.ai.nn.training.config.TrainingSettings;
 
-public interface NeuralNetworkConfiguration {
+import java.io.Serializable;
+
+public interface NeuralNetworkConfiguration extends Serializable {
 
 	Block getTrainingNetwork(TrainingSettings trainingSettings);
 

@@ -1,6 +1,7 @@
 package io.zulia.ai.nn.model.multi;
 
 import ai.djl.MalformedModelException;
+import ai.djl.Model;
 import ai.djl.inference.Predictor;
 import ai.djl.translate.TranslateException;
 import com.google.common.collect.Lists;
@@ -9,6 +10,7 @@ import io.zulia.ai.features.generator.ClassifierFeatureVector;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.model.generics.ClassifierModel;
+import io.zulia.ai.nn.model.generics.ClassifierTrainingResults;
 import io.zulia.ai.nn.test.MultiClassifierStats;
 import io.zulia.ai.nn.translator.DenseFeatureGenerator;
 import io.zulia.ai.nn.translator.NoOpDenseFeatureGenerator;
@@ -22,6 +24,14 @@ public class MultiClassifierModel extends ClassifierModel<float[]> {
 	public MultiClassifierModel(String modelBaseDir, String modelUuid, String modelName, String modelSuffix,
 			Function<FeatureStat[], FeatureScaler> featureScalerGenerator) throws IOException, MalformedModelException {
 		super(modelBaseDir, modelUuid, modelName, modelSuffix, featureScalerGenerator);
+	}
+
+	public MultiClassifierModel(Model model, FeatureScaler featureScaler) {
+		super(model, featureScaler);
+	}
+
+	public MultiClassifierModel(ClassifierTrainingResults results) {
+		super(results.getResultModel(), results.getResultFeatureScaler());
 	}
 
 	/**

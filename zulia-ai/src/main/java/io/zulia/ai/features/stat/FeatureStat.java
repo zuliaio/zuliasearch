@@ -1,6 +1,8 @@
 package io.zulia.ai.features.stat;
 
-public class FeatureStat {
+import java.io.Serializable;
+
+public class FeatureStat implements Serializable {
 
 	private double min;
 	private double max;
