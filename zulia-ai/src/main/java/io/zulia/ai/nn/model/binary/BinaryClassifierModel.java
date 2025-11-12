@@ -1,6 +1,7 @@
 package io.zulia.ai.nn.model.binary;
 
 import ai.djl.MalformedModelException;
+import ai.djl.Model;
 import ai.djl.inference.Predictor;
 import ai.djl.translate.TranslateException;
 import com.google.common.collect.Lists;
@@ -9,6 +10,7 @@ import io.zulia.ai.features.generator.ClassifierFeatureVector;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.model.generics.ClassifierModel;
+import io.zulia.ai.nn.model.generics.ClassifierTrainingResults;
 import io.zulia.ai.nn.test.BinaryClassifierStats;
 import io.zulia.ai.nn.translator.DenseFeatureGenerator;
 import io.zulia.ai.nn.translator.NoOpDenseFeatureGenerator;
@@ -24,6 +26,14 @@ public class BinaryClassifierModel extends ClassifierModel<Float> {
 			Function<FeatureStat[], FeatureScaler> featureScalerGenerator) throws IOException, MalformedModelException {
 		super(modelBaseDir, modelUuid, modelName, modelSuffix, featureScalerGenerator);
 
+	}
+
+	public BinaryClassifierModel(Model model, FeatureScaler featureScaler) {
+		super(model, featureScaler);
+	}
+
+	public BinaryClassifierModel(ClassifierTrainingResults results) {
+		super(results.getResultModel(), results.getResultFeatureScaler());
 	}
 
 	public BinaryClassifierStats evaluate(DenseFeatureAndCategoryDataset dataset, float threshold, int batchSize) throws TranslateException {
