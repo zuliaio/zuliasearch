@@ -997,7 +997,7 @@ paths:
           content:
             application/json;charset=utf-8:
               schema:
-                $ref: "#/components/schemas/StatsDTO"
+                $ref: "#/components/schemas/ZuliaBase.NodeStats"
   /terms:
     get:
       operationId: getTermsJson
@@ -1439,32 +1439,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FacetsDTO"
-    StatsDTO:
-      type: object
-      properties:
-        jvmUsedMemoryMB:
-          type: integer
-          format: int64
-        jvmFreeMemoryMB:
-          type: integer
-          format: int64
-        jvmTotalMemoryMB:
-          type: integer
-          format: int64
-        jvmMaxMemoryMB:
-          type: integer
-          format: int64
-        freeDataDirSpaceGB:
-          type: number
-          format: double
-        totalDataDirSpaceGB:
-          type: number
-          format: double
-        usedDataDirSpaceGB:
-          type: number
-          format: double
-        zuliaVersion:
-          type: string
     TermDTO:
       required:
       - docFreq
@@ -1495,3 +1469,72 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TermDTO"
+    ZuliaBase.CacheStats:
+      type: object
+      properties:
+        estimatedSize:
+          type: integer
+          format: int64
+        hitCount:
+          type: integer
+          format: int64
+        missCount:
+          type: integer
+          format: int64
+        totalLoadTime:
+          type: integer
+          format: int64
+        evictionCount:
+          type: integer
+          format: int64
+        resultSize:
+          type: integer
+          format: int64
+    ZuliaBase.IndexStats:
+      type: object
+      properties:
+        indexName:
+          type: string
+        shardCacheStat:
+          type: array
+          items:
+            $ref: "#/components/schemas/ZuliaBase.ShardCacheStats"
+    ZuliaBase.NodeStats:
+      type: object
+      properties:
+        jvmUsedMemoryMB:
+          type: integer
+          format: int64
+        jvmFreeMemoryMB:
+          type: integer
+          format: int64
+        jvmTotalMemoryMB:
+          type: integer
+          format: int64
+        jvmMaxMemoryMB:
+          type: integer
+          format: int64
+        freeDataDirSpaceGB:
+          type: number
+          format: double
+        totalDataDirSpaceGB:
+          type: number
+          format: double
+        usedDataDirSpaceGB:
+          type: number
+          format: double
+        zuliaVersion:
+          type: string
+        indexStat:
+          type: array
+          items:
+            $ref: "#/components/schemas/ZuliaBase.IndexStats"
+    ZuliaBase.ShardCacheStats:
+      type: object
+      properties:
+        primary:
+          type: boolean
+        pinnedCache:
+          $ref: "#/components/schemas/ZuliaBase.CacheStats"
+        generalCache:
+          $ref: "#/components/schemas/ZuliaBase.CacheStats"

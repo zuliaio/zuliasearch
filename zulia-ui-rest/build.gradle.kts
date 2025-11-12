@@ -24,7 +24,7 @@ val copySwagger by tasks.registering(Copy::class) {
     val compileJava = tasks.named<JavaCompile>(JavaPlugin.COMPILE_JAVA_TASK_NAME)
     val swaggerDir = compileJava.flatMap { it.destinationDirectory.dir("META-INF/swagger") }
     from(swaggerDir)
-    into(rootProject.layout.projectDirectory.dir("zulia-swagger"))
+    into(rootProject.layout.projectDirectory.dir("zulia-swagger/ui"))
 }
 
 tasks.named("build") {
