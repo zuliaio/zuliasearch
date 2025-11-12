@@ -1,7 +1,6 @@
 package io.zulia.ai.nn.model.binary;
 
 import ai.djl.MalformedModelException;
-import ai.djl.Model;
 import ai.djl.inference.Predictor;
 import ai.djl.translate.TranslateException;
 import com.google.common.collect.Lists;
