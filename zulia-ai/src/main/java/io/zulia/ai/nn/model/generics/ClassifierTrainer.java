@@ -37,12 +37,12 @@ import java.util.UUID;
 import java.util.function.Function;
 
 public abstract class ClassifierTrainer {
-	private static final Logger LOG = LoggerFactory.getLogger(ClassifierTrainer.class);
-
 	public static final String FEATURE_STATS_JSON = "feature_stats.json";
 	public static final String FULL_NETWORK_CONFIG_JSON = "full_network_config.json";
 	public static final String TRAINING_SETTINGS_JSON = "training_settings.json";
 	public static final String FEATURE_SCALER = "feature_scaler.json";
+	private static final Logger LOG = LoggerFactory.getLogger(ClassifierTrainer.class);
+	private static final int MIN_EPOCHS = 5;
 
 	protected final String modelBaseDir;
 	protected final String modelName;
@@ -63,6 +63,21 @@ public abstract class ClassifierTrainer {
 	public ClassifierTrainer(String modelName, FullyConnectedConfiguration fullyConnectedConfiguration, TrainingSettings trainingSettings,
 			Function<FeatureStat[], FeatureScaler> featureScalerGenerator) {
 		this(null, modelName, fullyConnectedConfiguration, trainingSettings, featureScalerGenerator);
+	}
+
+	private static void trainEpoch(DenseFeatureAndCategoryDataset trainingSet, DenseFeatureAndCategoryDataset testingSet, Trainer trainer)
+			throws IOException, TranslateException {
+		trainingSet.shuffle();
+		for (Batch batch : trainer.iterateDataset(trainingSet)) {
+			EasyTrain.trainBatch(trainer, batch);
+			trainer.step();
+			batch.close();
+		}
+
+		EasyTrain.evaluateDataset(trainer, testingSet);
+
+		// reset training and validation evaluators at end of epoch
+		trainer.notifyListeners(listener -> listener.onEpoch(trainer));
 	}
 
 	public String getModelBaseDir() {
@@ -121,7 +136,7 @@ public abstract class ClassifierTrainer {
 		String modelUuid = UUID.randomUUID().toString();
 		ClassifierTrainingResults classifierTrainingResults = new ClassifierTrainingResults(modelUuid);
 
-		byte[] bestNetworkBuffer = null;
+		byte[] bestModelBuffer = null;
 		try (Model model = Model.newInstance(modelName)) {
 			Block trainingNetwork = fullyConnectedConfiguration.getTrainingNetwork(trainingSettings);
 			model.setBlock(trainingNetwork);
@@ -148,7 +163,11 @@ public abstract class ClassifierTrainer {
 
 					// If we just made the best epoch, then we should update the saved data
 					if (classifierTrainingResults.getBestEpoch().epoch() == epochResult.epoch()) {
-						bestNetworkBuffer = ModelSerializer.serializeNetworkInMemory(trainingNetwork);
+						bestModelBuffer = ModelSerializer.serializeModel(model, fullyConnectedConfiguration, featureScaler);
+					}
+					else if (iteration >= MIN_EPOCHS - 1) {
+						// If the epoch just received is not the best epoch, but you've run through a few, then break out
+						break;
 					}
 				}
 			}
@@ -158,12 +177,11 @@ public abstract class ClassifierTrainer {
 		// NOT autocloseable because someone else needs to handle that
 		try {
 			// Bring up the best serialized model into a new copy
-			Model model = Model.newInstance(modelName);
-			ModelSerializer.deserializeParametersFromBuffer(bestNetworkBuffer, model, fullyConnectedConfiguration);
+			ModelSerializer.FullModel fullModel = ModelSerializer.deserializeFullModelFromBuffer(bestModelBuffer);
 
 			// Store out results
-			classifierTrainingResults.setResultModel(model);
-			classifierTrainingResults.setResultFeatureScaler(featureScaler);
+			classifierTrainingResults.setResultModel(fullModel.model());
+			classifierTrainingResults.setResultFeatureScaler(fullModel.scaler());
 		}
 		catch (MalformedModelException e) {
 			LOG.error("Could not deserialize parameters from model.", e);
@@ -172,21 +190,6 @@ public abstract class ClassifierTrainer {
 
 		// Send output to caller
 		return classifierTrainingResults;
-	}
-
-	private static void trainEpoch(DenseFeatureAndCategoryDataset trainingSet, DenseFeatureAndCategoryDataset testingSet, Trainer trainer)
-			throws IOException, TranslateException {
-		trainingSet.shuffle();
-		for (Batch batch : trainer.iterateDataset(trainingSet)) {
-			EasyTrain.trainBatch(trainer, batch);
-			trainer.step();
-			batch.close();
-		}
-
-		EasyTrain.evaluateDataset(trainer, testingSet);
-
-		// reset training and validation evaluators at end of epoch
-		trainer.notifyListeners(listener -> listener.onEpoch(trainer));
 	}
 
 	/**
@@ -265,8 +268,8 @@ public abstract class ClassifierTrainer {
 	protected abstract ClassifierEpochResult logResults(Metrics metrics, int iteration, SpreadsheetTarget<?, ?> spreadsheetTarget, String featureScalerDesc);
 
 	protected boolean earlyStopTraining(ClassifierTrainingResults classifierTrainingResults, ClassifierEpochResult epochResult) {
-		if (epochResult.epoch() < trainingSettings.getIterations() / 3) {
-			return false; // Do at least 1/3 of the requested training to see what happens
+		if (epochResult.epoch() <= MIN_EPOCHS - 1) {
+			return false; // Do at least a few of the requested training to see what happens
 		}
 
 		// if the latest epoch is not the best F1, stop
