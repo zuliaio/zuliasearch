@@ -1,6 +1,8 @@
 package io.zulia.ai.features.scaler;
 
-public interface FeatureScaler {
+import java.io.Serializable;
+
+public interface FeatureScaler extends Serializable {
 
 	double[] scaleFeatures(double[] features);
 

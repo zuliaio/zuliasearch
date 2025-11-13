@@ -2,20 +2,20 @@ package io.zulia.ai.nn.model.util;
 
 import ai.djl.MalformedModelException;
 import ai.djl.Model;
-import ai.djl.ndarray.types.Shape;
 import ai.djl.nn.Block;
-import ai.djl.util.Pair;
-import ai.djl.util.PairList;
+import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;
+import org.apache.commons.lang3.SerializationUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.Map;
 
 public class ModelSerializer {
+
+	private static final int VERSION = 1;
 
 	/**
 	 * Used to take a snapshot of the training settings for rollback
@@ -64,44 +64,113 @@ public class ModelSerializer {
 		deserializeParametersFromBuffer(inMemoryData, model, fullyConnectedConfiguration.getEvaluationNetwork());
 	}
 
-	// Lifted from inside djl, which works only on filesystem
-	public static byte[] serializeModel(Model model) throws IOException {
+	/**
+	 * Serialize a model for later loading / reading
+	 *
+	 * @param model         model to store
+	 * @param configuration configuration which will be needed to set up blocks
+	 * @return buffer of serialized model
+	 */
+	public static byte[] serializeModel(Model model, FullyConnectedConfiguration configuration) throws IOException {
+		return serializeModel(model, configuration, null); // simpler version
+	}
+
+	/**
+	 * Serialize a model for later loading / reading
+	 *
+	 * @param model         model to store
+	 * @param configuration configuration which will be needed to set up blocks
+	 * @param featureScaler scaler needed to make a predictor
+	 * @return buffer of serialized model
+	 */
+	public static byte[] serializeModel(Model model, FullyConnectedConfiguration configuration, FeatureScaler featureScaler) throws IOException {
 		try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
 			try (DataOutputStream dos = new DataOutputStream(byteArrayOutputStream)) {
-				dos.writeBytes("DJL@");
-				dos.writeInt(1);
+				dos.writeUTF("OPA_DJL");
+				dos.writeInt(VERSION);
+				// Write out the configuration
+				byte[] config = SerializationUtils.serialize(configuration);
+				dos.writeInt(config.length);
+				dos.write(config);
+
+				// Write out the name
 				dos.writeUTF(model.getName());
-				dos.writeUTF(model.getDataType().name());
-				PairList<String, Shape> inputData = model.getBlock().describeInput();
-				dos.writeInt(inputData.size());
-				// Put in the descriptors
-				for (Pair<String, Shape> desc : inputData) {
-					String name = desc.getKey();
-					dos.writeUTF(name != null ? name : "");
-					dos.write(desc.getValue().getEncoded());
-				}
 
-				dos.writeInt(model.getProperties().size());
-				for (Map.Entry<String, String> entry : model.getProperties().entrySet()) {
-					dos.writeUTF(entry.getKey());
-					dos.writeUTF(entry.getValue());
-				}
-
+				// Write out the parameters
 				model.getBlock().saveParameters(dos);
-			}
 
-			return byteArrayOutputStream.toByteArray(); // to a buffer we can use anywhere
+				// Optionally write the feature scaler
+				if (featureScaler != null) {
+					byte[] scaler = SerializationUtils.serialize(featureScaler);
+					dos.writeInt(scaler.length);
+					dos.write(scaler);
+				}
+			}
+			return byteArrayOutputStream.toByteArray();
 		}
 	}
 
-	// Wrapper around build in method for loading a model
-	public static Model deserializeModelFromBuffer(byte[] buffer, String modelName) throws IOException, MalformedModelException {
+	/**
+	 * Deserialize a functional model from the buffer
+	 *
+	 * @param buffer serialized model
+	 * @return Model with parameters configured
+	 */
+	public static Model deserializeModelFromBuffer(byte[] buffer) throws IOException, MalformedModelException {
+		return deserializeFullModelFromBuffer(buffer).model();
+	}
+
+	/**
+	 * Deserialize a functional model from the buffer
+	 *
+	 * @param buffer serialized model
+	 * @return Model with parameters configured and a feature scaler to use with it
+	 */
+	public static FullModel deserializeFullModelFromBuffer(byte[] buffer) throws IOException, MalformedModelException {
 		try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(buffer)) {
-			try (DataInputStream dataInputStream = new DataInputStream(byteArrayInputStream)) {
-				Model newModel = Model.newInstance(modelName);
-				newModel.load(dataInputStream);
-				return newModel;
+			try (DataInputStream dis = new DataInputStream(byteArrayInputStream)) {
+				String header = dis.readUTF();
+				assert header.equals("OPA_DJL");
+
+				int version = dis.readInt();
+				if (version != VERSION) {
+					throw new RuntimeException("Version mismatch");
+				}
+
+				int blockSize = dis.readInt();
+				byte[] serializedSettings = dis.readNBytes(blockSize);
+				FullyConnectedConfiguration fcc = SerializationUtils.deserialize(serializedSettings);
+
+				String name = dis.readUTF();
+				Model model = Model.newInstance(name);
+
+				// Read parameters
+				Block newBlock = fcc.getEvaluationNetwork();
+				newBlock.loadParameters(model.getNDManager(), dis);
+
+				// Build your model
+				model.setBlock(newBlock);
+
+				// Check for the next part
+				FeatureScaler featureScaler = null;
+				if (dis.available() > 0) {
+					int scalerSize = dis.readInt();
+					if (scalerSize > 0) {
+						byte[] serialized = dis.readNBytes(scalerSize);
+						featureScaler = SerializationUtils.deserialize(serialized);
+					}
+				}
+
+				// Send back the carrier
+				return new FullModel(model, featureScaler);
 			}
+		}
+	}
+
+	public record FullModel(Model model, FeatureScaler scaler) implements AutoCloseable {
+		@Override
+		public void close() throws Exception {
+			model.close();
 		}
 	}
 }
