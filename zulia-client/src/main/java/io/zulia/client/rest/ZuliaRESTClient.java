@@ -1,9 +1,12 @@
 package io.zulia.client.rest;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.client.rest.options.SearchREST;
 import io.zulia.client.rest.options.TermsRESTOptions;
+import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaBase.NodeStats;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
@@ -11,7 +14,6 @@ import io.zulia.rest.dto.FieldsDTO;
 import io.zulia.rest.dto.IndexesResponseDTO;
 import io.zulia.rest.dto.NodesResponseDTO;
 import io.zulia.rest.dto.SearchResultsDTO;
-import io.zulia.rest.dto.StatsDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
 import kong.unirest.core.GenericType;
 import kong.unirest.core.GetRequest;
@@ -78,8 +80,12 @@ public class ZuliaRESTClient implements AutoCloseable {
 		return Document.parse(json);
 	}
 
-	public StatsDTO getStats() {
-		return unirestInstance.get(ZuliaRESTConstants.STATS_URL).asObject(StatsDTO.class).ifFailure(new FailureHandler<>()).getBody();
+	public NodeStats getStats() throws InvalidProtocolBufferException {
+		String jsonResponse = unirestInstance.get(ZuliaRESTConstants.STATS_URL).asString().ifFailure(new FailureHandler<>()).getBody();
+		NodeStats.Builder nodeStatsBuilder = NodeStats.newBuilder();
+		JsonFormat.parser().merge(jsonResponse, nodeStatsBuilder);
+		return nodeStatsBuilder.build();
+
 	}
 
 	public TermsResponseDTO getTerms(String indexName, String fieldName, boolean realtime) {
