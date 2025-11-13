@@ -5,6 +5,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaBase.IndexStats;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
@@ -891,9 +892,12 @@ public class ZuliaIndexManager {
 		return DeleteIndexAliasResponse.newBuilder().build();
 	}
 
-	public void getStats() {
-		for (ZuliaIndex value : indexMap.values()) {
-
+	public List<IndexStats> getIndexStats() throws IOException {
+		List<IndexStats> list = new ArrayList<>();
+		for (ZuliaIndex zuliaIndex : indexMap.values()) {
+			IndexStats indexStats = zuliaIndex.getIndexStats();
+			list.add(indexStats);
 		}
+		return list;
 	}
 }

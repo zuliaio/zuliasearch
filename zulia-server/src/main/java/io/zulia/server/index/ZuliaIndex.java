@@ -845,7 +845,8 @@ public class ZuliaIndex {
 		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
 		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
 				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
-				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug(), queryRequest.getRealtime(), queryRequest.getConcurrency());
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug(), queryRequest.getRealtime(),
+				queryRequest.getConcurrency());
 	}
 
 	public Integer getNumberOfShards() {
@@ -1229,4 +1230,17 @@ public class ZuliaIndex {
 		return indexName.hashCode();
 	}
 
+	public ZuliaBase.IndexStats getIndexStats() throws IOException {
+
+		ZuliaBase.IndexStats.Builder indexStats = ZuliaBase.IndexStats.newBuilder();
+		indexStats.setIndexName(indexName);
+		for (ZuliaShard zuliaShard : primaryShardMap.values()) {
+			indexStats.addShardCacheStat(zuliaShard.getShardCacheStats());
+		}
+		for (ZuliaShard zuliaShard : replicaShardMap.values()) {
+			indexStats.addShardCacheStat(zuliaShard.getShardCacheStats());
+		}
+
+		return indexStats.build();
+	}
 }

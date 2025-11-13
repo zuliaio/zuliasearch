@@ -1,5 +1,6 @@
 package io.zulia.server.test.node;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.client.command.Store;
@@ -9,6 +10,8 @@ import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.rest.options.SearchREST;
 import io.zulia.client.rest.options.TermsRESTOptions;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.message.ZuliaBase;
+import io.zulia.message.ZuliaBase.NodeStats;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.rest.dto.FacetDTO;
@@ -21,7 +24,6 @@ import io.zulia.rest.dto.NodeDTO;
 import io.zulia.rest.dto.NodesResponseDTO;
 import io.zulia.rest.dto.ScoredResultDTO;
 import io.zulia.rest.dto.SearchResultsDTO;
-import io.zulia.rest.dto.StatsDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
 import io.zulia.server.test.node.shared.RestNodeExtension;
 import io.zulia.util.ZuliaVersion;
@@ -160,10 +162,10 @@ public class RestTest {
 
 	@Test
 	@Order(5)
-	public void statTest() {
+	public void statTest() throws InvalidProtocolBufferException {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
-		StatsDTO statsDTO = restClient.getStats();
-		Assertions.assertEquals(statsDTO.getZuliaVersion(), ZuliaVersion.getVersion());
+		NodeStats statsDTO = restClient.getStats();
+		Assertions.assertEquals(ZuliaVersion.getVersion(), statsDTO.getZuliaVersion());
 	}
 
 	@Test

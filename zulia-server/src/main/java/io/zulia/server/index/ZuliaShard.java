@@ -358,15 +358,12 @@ public class ZuliaShard {
 		}
 	}
 
-	public ZuliaBase.ShardCacheStats getShardCacheStats(boolean realtime) throws IOException {
+	public ZuliaBase.ShardCacheStats getShardCacheStats() throws IOException {
 
-		if (realtime) {
-			//shardReaderManager.maybeRefreshBlocking();
-		}
 		ShardReader shardReader = shardReaderManager.acquire();
 
 		try {
-			return shardReader.getShardCacheStats();
+			return shardReader.getShardCacheStats().setPrimary(primary).build();
 		}
 		finally {
 			shardReaderManager.decRef(shardReader);
