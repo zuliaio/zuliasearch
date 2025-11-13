@@ -79,19 +79,35 @@ enum Similarity {
     TF = 3;
 }
 
+message NodeStats {
+    uint64 jvmUsedMemoryMB = 2;
+    uint64 jvmFreeMemoryMB = 3;
+    uint64 jvmTotalMemoryMB = 4;
+    uint64 jvmMaxMemoryMB = 5;
+    double freeDataDirSpaceGB = 6;
+    double totalDataDirSpaceGB = 7;
+    double usedDataDirSpaceGB = 8;
+    string zuliaVersion = 9;
+    repeated IndexStats indexStat = 10;
+}
+
+message IndexStats {
+    string indexName = 1;
+    repeated ShardCacheStats shardCacheStat = 2;
+}
+
 message ShardCacheStats {
-    CacheStats pinnedCache = 1;
-    CacheStats generalCache = 2;
+    bool primary = 1;
+    CacheStats pinnedCache = 2;
+    CacheStats generalCache = 3;
 }
 
 message CacheStats {
     uint64 estimatedSize = 1;
     uint64 hitCount = 2;
     uint64 missCount = 3;
-    uint64 loadSuccessCount = 4;
-    uint64 loadFailureCount = 5;
-    uint64 totalLoadTime = 6;
-    uint64 evictionCount = 7;
-    uint64 evictionWeight = 8;
+    uint64 totalLoadTime = 4;
+    uint64 evictionCount = 5;
+    uint64 resultSize = 6;
 }
 

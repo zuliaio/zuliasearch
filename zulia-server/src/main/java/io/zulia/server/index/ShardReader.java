@@ -2,6 +2,7 @@ package io.zulia.server.index;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
@@ -55,6 +56,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class ShardReader implements AutoCloseable {
@@ -67,8 +69,11 @@ public class ShardReader implements AutoCloseable {
 	private final int shardNumber;
 	private final long creationTime;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
-	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache;
-	private final Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> pinnedQueryResultCache;
+	private final Cache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> queryResultCache;
+	private final Cache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> pinnedQueryResultCache;
+
+	private final AtomicInteger queryResultCacheSize = new AtomicInteger();
+	private final AtomicInteger pinnedQueryResultCacheSize = new AtomicInteger();
 
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
@@ -79,7 +84,10 @@ public class ShardReader implements AutoCloseable {
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
-		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).recordStats().build();
+		RemovalListener<@NotNull QueryCacheKey, ZuliaQuery.@NotNull ShardQueryResponse> removalListener = (key, value, cause) -> queryResultCacheSize.getAndAdd(
+				-value.getSerializedSize());
+		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).removalListener(removalListener)
+				.recordStats().build();
 		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().build();
 	}
 
@@ -147,16 +155,31 @@ public class ShardReader implements AutoCloseable {
 
 		QueryCacheKey queryCacheKey = shardQuery.getQueryCacheKey(); //null when don't cache is set
 		if (queryCacheKey != null) {
-			ZuliaQuery.ShardQueryResponse.Builder pinnedCacheHit;
+			ZuliaQuery.ShardQueryResponse pinnedCacheHit;
 
 			// Check if the search is existing in the pinned cache, so we can indicate it is cached. Otherwise, compute it in the cache so multiple identical requests are deduplicated
 			pinnedCacheHit = pinnedQueryResultCache.getIfPresent(queryCacheKey);
 			if (pinnedCacheHit != null) {
-				return pinnedCacheHit.setCached(true).setPinned(true).build();
+				return pinnedCacheHit.toBuilder().setCached(true).setPinned(true).build();
 			}
 
 			if (queryCacheKey.isPinned()) {
-				return getShardQueryResponseAndCache(queryCacheKey, shardQuery, pinnedQueryResultCache);
+				try {
+					return pinnedQueryResultCache.get(queryCacheKey, key -> {
+						try {
+
+							ZuliaQuery.ShardQueryResponse shardQueryResponse = getShardQueryResponse(shardQuery);
+							pinnedQueryResultCacheSize.getAndAdd(shardQueryResponse.getSerializedSize());
+							return shardQueryResponse;
+						}
+						catch (Exception e) {
+							throw new WrappedCheckedException(e);
+						}
+					});
+				}
+				catch (WrappedCheckedException e) {
+					throw e.getCause();
+				}
 			}
 
 			int segmentQueryCacheMaxAmount = indexConfig.getIndexSettings().getShardQueryCacheMaxAmount();
@@ -164,37 +187,34 @@ public class ShardReader implements AutoCloseable {
 			if (useCache) {
 
 				// Check if the search is existing, so we can indicate it is cached. Otherwise, compute it in the cache so multiple identical requests are deduplicated
-				ZuliaQuery.ShardQueryResponse.Builder cachedResult = queryResultCache.getIfPresent(queryCacheKey);
+				ZuliaQuery.ShardQueryResponse cachedResult = queryResultCache.getIfPresent(queryCacheKey);
 				if (cachedResult != null) {
-					return cachedResult.setCached(true).build();
+					return cachedResult.toBuilder().setCached(true).build();
 				}
 
-				return getShardQueryResponseAndCache(queryCacheKey, shardQuery, queryResultCache);
+				try {
+					return queryResultCache.get(queryCacheKey, key -> {
+						try {
+							ZuliaQuery.ShardQueryResponse shardQueryResponse = getShardQueryResponse(shardQuery);
+							queryResultCacheSize.getAndAdd(shardQueryResponse.getSerializedSize());
+							return shardQueryResponse;
+						}
+						catch (Exception e) {
+							throw new WrappedCheckedException(e);
+						}
+					});
+				}
+				catch (WrappedCheckedException e) {
+					throw e.getCause();
+				}
 			}
 		}
 
-		return getShardQueryResponseAndCache(shardQuery).build();
+		return getShardQueryResponse(shardQuery);
 
 	}
 
-	private ZuliaQuery.ShardQueryResponse getShardQueryResponseAndCache(QueryCacheKey queryCacheKey, ShardQuery shardQuery,
-			Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> queryResultCache) throws Exception {
-		try {
-			return queryResultCache.get(queryCacheKey, key -> {
-				try {
-					return getShardQueryResponseAndCache(shardQuery);
-				}
-				catch (Exception e) {
-					throw new WrappedCheckedException(e);
-				}
-			}).build();
-		}
-		catch (WrappedCheckedException e) {
-			throw e.getCause();
-		}
-	}
-
-	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery) throws Exception {
+	private ZuliaQuery.ShardQueryResponse getShardQueryResponse(ShardQuery shardQuery) throws Exception {
 
 		int concurrency = shardQuery.getConcurrency();
 		if (concurrency == 0) {
@@ -203,11 +223,11 @@ public class ShardReader implements AutoCloseable {
 
 		try (VirtualThreadPerTaskTaskExecutor searchExecutor = new SemaphoreLimitedVirtualPool(concurrency)) {
 			IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
-			return getShardQueryResponseAndCache(shardQuery, indexSearcher, concurrency);
+			return getShardQueryResponse(shardQuery, indexSearcher, concurrency);
 		}
 	}
 
-	private ZuliaQuery.ShardQueryResponse.Builder getShardQueryResponseAndCache(ShardQuery shardQuery, IndexSearcher indexSearcher, int aggregationConcurrency)
+	private ZuliaQuery.ShardQueryResponse getShardQueryResponse(ShardQuery shardQuery, IndexSearcher indexSearcher, int aggregationConcurrency)
 			throws Exception {
 
 		PerFieldSimilarityWrapper similarity = getSimilarity(shardQuery.getSimilarityOverrideMap());
@@ -308,7 +328,7 @@ public class ShardReader implements AutoCloseable {
 				}
 			}
 		}
-		return shardQueryReponseBuilder;
+		return shardQueryReponseBuilder.build();
 	}
 
 	private void handleAggregations(ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder, List<ZuliaQuery.StatRequest> statRequestList,
@@ -691,16 +711,21 @@ public class ShardReader implements AutoCloseable {
 		}
 	}
 
-	public ZuliaBase.ShardCacheStats getShardCacheStats() {
-		return ZuliaBase.ShardCacheStats.newBuilder().setGeneralCache(getCacheStats(queryResultCache)).setPinnedCache(getCacheStats(pinnedQueryResultCache))
-				.build();
+	public ZuliaBase.ShardCacheStats.Builder getShardCacheStats() {
+		ZuliaBase.ShardCacheStats.Builder b = ZuliaBase.ShardCacheStats.newBuilder();
+		b.setGeneralCache(getCacheStats(queryResultCache).setResultSize(queryResultCacheSize.get()));
+		b.setPinnedCache(getCacheStats(pinnedQueryResultCache).setResultSize(pinnedQueryResultCacheSize.get()));
+		return b;
 	}
 
-	private static ZuliaBase.CacheStats getCacheStats(Cache<QueryCacheKey, ZuliaQuery.ShardQueryResponse.Builder> cache) {
+	private static ZuliaBase.CacheStats.Builder getCacheStats(Cache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> cache) {
 		CacheStats stats = cache.stats();
-
-		return ZuliaBase.CacheStats.newBuilder().setEstimatedSize(cache.estimatedSize()).setHitCount(stats.hitCount()).setMissCount(stats.missCount())
-				.setLoadSuccessCount(stats.loadSuccessCount()).setLoadFailureCount(stats.loadFailureCount()).setTotalLoadTime(stats.totalLoadTime())
-				.setEvictionCount(stats.evictionCount()).build();
+		ZuliaBase.CacheStats.Builder b = ZuliaBase.CacheStats.newBuilder();
+		b.setEstimatedSize(cache.estimatedSize());
+		b.setHitCount(stats.hitCount());
+		b.setMissCount(stats.missCount());
+		b.setTotalLoadTime(stats.totalLoadTime() / 1_000_000);
+		b.setEvictionCount(stats.evictionCount());
+		return b;
 	}
 }
