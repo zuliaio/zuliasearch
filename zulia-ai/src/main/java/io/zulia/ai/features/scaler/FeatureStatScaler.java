@@ -4,7 +4,7 @@ import io.zulia.ai.features.stat.FeatureStat;
 
 public abstract class FeatureStatScaler implements FeatureScaler {
 
-	private final transient FeatureStat[] featureStats;
+	private final FeatureStat[] featureStats;
 	private final String description;
 
 	public FeatureStatScaler(FeatureStat[] featureStats, String description) {
