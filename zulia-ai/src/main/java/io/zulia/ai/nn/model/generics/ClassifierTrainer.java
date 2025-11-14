@@ -181,7 +181,7 @@ public abstract class ClassifierTrainer {
 
 			// Store out results
 			classifierTrainingResults.setResultModel(fullModel.model());
-			classifierTrainingResults.setResultFeatureScaler(fullModel.scaler());
+			classifierTrainingResults.setResultFeatureScaler(featureScaler);
 		}
 		catch (MalformedModelException e) {
 			LOG.error("Could not deserialize parameters from model.", e);

@@ -33,11 +33,11 @@ public abstract class ClassifierModel<K> implements AutoCloseable {
 
 		Path modelPath = Path.of(modelBaseDir, modelUuid);
 		String paramsName = modelName + "_" + modelSuffix;
-		Path featureStatPath = modelPath.resolve(modelName + "_" + "feature_stats.json");
+		Path featureStatPath = modelPath.resolve(modelName + "_" + ClassifierTrainer.FEATURE_STATS_JSON);
 		FeatureStat[] featureStats = gson.fromJson(Files.readString(featureStatPath), FeatureStat[].class);
 		featureScaler = featureScalerGenerator.apply(featureStats);
 
-		Path fullConfigPath = modelPath.resolve(modelName + "_" + "full_network_config.json");
+		Path fullConfigPath = modelPath.resolve(modelName + "_" + ClassifierTrainer.FULL_NETWORK_CONFIG_JSON);
 		FullyConnectedConfiguration fullyConnectedConfiguration = gson.fromJson(Files.readString(fullConfigPath), FullyConnectedConfiguration.class);
 
 		Block evaluationNetwork = fullyConnectedConfiguration.getEvaluationNetwork();
