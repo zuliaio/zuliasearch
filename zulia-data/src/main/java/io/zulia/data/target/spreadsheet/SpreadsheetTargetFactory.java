@@ -17,6 +17,10 @@ import java.util.Collection;
 
 public class SpreadsheetTargetFactory {
 
+	public static SpreadsheetTarget<?, ?> fromFile(String filePath) throws IOException {
+		return fromStream(FileDataOutputStream.from(filePath, true));
+	}
+
 	public static SpreadsheetTarget<?, ?> fromFile(String filePath, boolean overwrite) throws IOException {
 		return fromStream(FileDataOutputStream.from(filePath, overwrite));
 	}
