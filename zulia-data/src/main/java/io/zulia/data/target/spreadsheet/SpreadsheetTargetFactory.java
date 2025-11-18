@@ -29,6 +29,10 @@ public class SpreadsheetTargetFactory {
 		return fromStream(FileDataOutputStream.from(filePath, overwrite), configFinalizer);
 	}
 
+	public static SpreadsheetTarget<?, ?> fromPath(Path path) throws IOException {
+		return fromStream(FileDataOutputStream.from(path, true));
+	}
+
 	public static SpreadsheetTarget<?, ?> fromPath(Path path, boolean overwrite) throws IOException {
 		return fromStream(FileDataOutputStream.from(path, overwrite));
 	}
@@ -45,6 +49,10 @@ public class SpreadsheetTargetFactory {
 		return fromStreamWithHeaders(dataOutputStream, null, configFinalizer);
 	}
 
+	public static SpreadsheetTarget<?, ?> fromFileWithHeaders(String filePath, Collection<String> headers) throws IOException {
+		return fromStreamWithHeaders(FileDataOutputStream.from(filePath, true), headers);
+	}
+
 	public static SpreadsheetTarget<?, ?> fromFileWithHeaders(String filePath, boolean overwrite, Collection<String> headers) throws IOException {
 		return fromStreamWithHeaders(FileDataOutputStream.from(filePath, overwrite), headers);
 	}
@@ -52,6 +60,10 @@ public class SpreadsheetTargetFactory {
 	public static SpreadsheetTarget<?, ?> fromFileWithHeaders(String filePath, boolean overwrite, Collection<String> headers,
 			SpreadsheetTargetConfigHandler configFinalizer) throws IOException {
 		return fromStreamWithHeaders(FileDataOutputStream.from(filePath, overwrite), headers, configFinalizer);
+	}
+
+	public static SpreadsheetTarget<?, ?> fromPathWithHeaders(Path path, Collection<String> headers) throws IOException {
+		return fromStreamWithHeaders(FileDataOutputStream.from(path, true), headers);
 	}
 
 	public static SpreadsheetTarget<?, ?> fromPathWithHeaders(Path path, boolean overwrite, Collection<String> headers) throws IOException {
