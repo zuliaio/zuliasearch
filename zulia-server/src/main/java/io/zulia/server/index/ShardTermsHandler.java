@@ -187,10 +187,7 @@ public class ShardTermsHandler {
 			}
 		}
 
-		if (!termsMap.containsKey(textStr)) {
-			termsMap.put(textStr, ZuliaBase.Term.newBuilder().setValue(textStr).setDocFreq(0).setTermFreq(0));
-		}
-		ZuliaBase.Term.Builder builder = termsMap.get(textStr);
+		ZuliaBase.Term.Builder builder = termsMap.computeIfAbsent(textStr, s -> ZuliaBase.Term.newBuilder().setValue(s).setDocFreq(0).setTermFreq(0));
 		builder.setDocFreq(builder.getDocFreq() + termsEnum.docFreq());
 		builder.setTermFreq(builder.getTermFreq() + termsEnum.totalTermFreq());
 		BoostAttribute boostAttribute = termsEnum.attributes().getAttribute(BoostAttribute.class);
