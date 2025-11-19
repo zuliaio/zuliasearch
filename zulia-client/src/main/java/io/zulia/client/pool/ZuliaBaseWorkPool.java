@@ -15,6 +15,7 @@ import static io.zulia.message.ZuliaBase.Node;
 
 public class ZuliaBaseWorkPool implements AutoCloseable {
 
+	private boolean closed;
 	private final TaskExecutor taskExecutor;
 	private ZuliaPool zuliaPool;
 
@@ -57,7 +58,12 @@ public class ZuliaBaseWorkPool implements AutoCloseable {
 	}
 
 	public void close() {
-		taskExecutor.close();
-		zuliaPool.close();
+		synchronized (this) {
+			if (!closed) {
+				taskExecutor.close();
+				zuliaPool.close();
+				closed = true;
+			}
+		}
 	}
 }
