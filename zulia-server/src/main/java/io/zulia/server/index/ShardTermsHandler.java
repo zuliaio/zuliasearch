@@ -18,6 +18,7 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +51,7 @@ public class ShardTermsHandler {
 
 		String fieldName = request.getFieldName();
 
-		HashObjObjMap<String, ZuliaBase.Term.Builder> termsMap = HashObjObjMaps.newMutableMap();
+		Map<String, ZuliaBase.Term.Builder> termsMap = new HashMap<>();
 
 		if (request.getIncludeTermCount() > 0) {
 
@@ -170,7 +171,7 @@ public class ShardTermsHandler {
 		return builder.build();
 	}
 
-	private void handleTerm(HashObjObjMap<String, ZuliaBase.Term.Builder> termsMap, TermsEnum termsEnum, BytesRef text, Pattern termFilter, Pattern termMatch)
+	private void handleTerm(Map<String, ZuliaBase.Term.Builder> termsMap, TermsEnum termsEnum, BytesRef text, Pattern termFilter, Pattern termMatch)
 			throws IOException {
 
 		String textStr = text.utf8ToString();
@@ -189,7 +190,11 @@ public class ShardTermsHandler {
 			}
 		}
 
-		ZuliaBase.Term.Builder builder = termsMap.computeIfAbsent(textStr, s -> ZuliaBase.Term.newBuilder().setValue(s).setDocFreq(0).setTermFreq(0));
+		ZuliaBase.Term.Builder builder = termsMap.get(textStr);
+		if (builder == null) {
+			builder =  ZuliaBase.Term.newBuilder().setValue(textStr).setDocFreq(0).setTermFreq(0);
+			termsMap.put(textStr, builder);
+		}
 		builder.setDocFreq(builder.getDocFreq() + termsEnum.docFreq());
 		builder.setTermFreq(builder.getTermFreq() + termsEnum.totalTermFreq());
 		BoostAttribute boostAttribute = termsEnum.attributes().getAttribute(BoostAttribute.class);

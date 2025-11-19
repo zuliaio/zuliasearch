@@ -17,6 +17,7 @@ import io.zulia.server.index.ZuliaIndex;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -55,13 +56,17 @@ public class GetTermsRequestFederator extends MasterSlaveNodeRequestFederator<Ge
 
 		List<InternalGetTermsResponse> responses = send(request);
 
-		HashObjObjMap<String, Term.Builder> terms = HashObjObjMaps.newMutableMap();
+		Map<String, Term.Builder> terms = new HashMap<>();
 		for (InternalGetTermsResponse response : responses) {
 			for (GetTermsResponse gtr : response.getGetTermsResponseList()) {
 				for (Term term : gtr.getTermList()) {
 					String key = term.getValue();
 
-					ZuliaBase.Term.Builder builder = terms.computeIfAbsent(key, s -> Term.newBuilder().setValue(key).setDocFreq(0).setTermFreq(0).setScore(0));
+					ZuliaBase.Term.Builder builder = terms.get(key);
+					if (builder == null) {
+						builder = Term.newBuilder().setValue(key).setDocFreq(0).setTermFreq(0).setScore(0);
+						terms.put(key, builder);
+					}
 					builder.setDocFreq(builder.getDocFreq() + term.getDocFreq());
 					builder.setTermFreq(builder.getTermFreq() + term.getTermFreq());
 					builder.setScore(builder.getScore() + term.getScore());
