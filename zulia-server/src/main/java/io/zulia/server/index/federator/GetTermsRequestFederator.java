@@ -1,5 +1,6 @@
 package io.zulia.server.index.federator;
 
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.Term;
@@ -12,9 +13,11 @@ import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.index.ZuliaIndex;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-import java.util.TreeMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 public class GetTermsRequestFederator extends MasterSlaveNodeRequestFederator<GetTermsRequest, InternalGetTermsResponse> {
@@ -50,22 +53,20 @@ public class GetTermsRequestFederator extends MasterSlaveNodeRequestFederator<Ge
 
 		List<InternalGetTermsResponse> responses = send(request);
 
-		TreeMap<String, Term.Builder> terms = new TreeMap<>();
+		Map<String, Term.Builder> terms = new HashMap<>();
 		for (InternalGetTermsResponse response : responses) {
 			for (GetTermsResponse gtr : response.getGetTermsResponseList()) {
 				for (Term term : gtr.getTermList()) {
 					String key = term.getValue();
-					if (!terms.containsKey(key)) {
-						Term.Builder termBuilder = Term.newBuilder().setValue(key).setDocFreq(0).setTermFreq(0);
-						termBuilder.setScore(0);
-						terms.put(key, termBuilder);
+
+					ZuliaBase.Term.Builder builder = terms.get(key);
+					if (builder == null) {
+						builder = Term.newBuilder().setValue(key).setDocFreq(0).setTermFreq(0).setScore(0);
+						terms.put(key, builder);
 					}
-					Term.Builder builder = terms.get(key);
 					builder.setDocFreq(builder.getDocFreq() + term.getDocFreq());
 					builder.setTermFreq(builder.getTermFreq() + term.getTermFreq());
-
 					builder.setScore(builder.getScore() + term.getScore());
-
 				}
 			}
 		}
@@ -77,10 +78,14 @@ public class GetTermsRequestFederator extends MasterSlaveNodeRequestFederator<Ge
 		int count = 0;
 
 		int amount = request.getAmount();
-		for (Term.Builder builder : terms.values()) {
-			value = builder;
-			if (builder.getDocFreq() >= request.getMinDocFreq() && builder.getTermFreq() >= request.getMinTermFreq()) {
-				responseBuilder.addTerm(builder.build());
+
+		ArrayList<Map.Entry<String, Term.Builder>> entries = new ArrayList<>(terms.entrySet());
+		entries.sort(Map.Entry.comparingByKey());
+
+		for (Map.Entry<String, Term.Builder> entry : entries) {
+			value = entry.getValue();
+			if (value.getDocFreq() >= request.getMinDocFreq() && value.getTermFreq() >= request.getMinTermFreq()) {
+				responseBuilder.addTerm(value.build());
 				count++;
 			}
 
