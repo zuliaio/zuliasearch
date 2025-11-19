@@ -1,5 +1,7 @@
 package io.zulia.server.index;
 
+import com.koloboke.collect.map.hash.HashObjObjMap;
+import com.koloboke.collect.map.hash.HashObjObjMaps;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
@@ -17,9 +19,9 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -48,7 +50,7 @@ public class ShardTermsHandler {
 
 		String fieldName = request.getFieldName();
 
-		SortedMap<String, ZuliaBase.Term.Builder> termsMap = new TreeMap<>();
+		HashObjObjMap<String, ZuliaBase.Term.Builder> termsMap = HashObjObjMaps.newMutableMap();
 
 		if (request.getIncludeTermCount() > 0) {
 
@@ -168,7 +170,7 @@ public class ShardTermsHandler {
 		return builder.build();
 	}
 
-	private void handleTerm(SortedMap<String, ZuliaBase.Term.Builder> termsMap, TermsEnum termsEnum, BytesRef text, Pattern termFilter, Pattern termMatch)
+	private void handleTerm(HashObjObjMap<String, ZuliaBase.Term.Builder> termsMap, TermsEnum termsEnum, BytesRef text, Pattern termFilter, Pattern termMatch)
 			throws IOException {
 
 		String textStr = text.utf8ToString();
