@@ -1,5 +1,7 @@
 package io.zulia.server.index;
 
+import com.koloboke.collect.map.hash.HashObjObjMap;
+import com.koloboke.collect.map.hash.HashObjObjMaps;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
@@ -16,10 +18,11 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -48,7 +51,7 @@ public class ShardTermsHandler {
 
 		String fieldName = request.getFieldName();
 
-		SortedMap<String, ZuliaBase.Term.Builder> termsMap = new TreeMap<>();
+		Map<String, ZuliaBase.Term.Builder> termsMap = new HashMap<>();
 
 		if (request.getIncludeTermCount() > 0) {
 
@@ -168,7 +171,7 @@ public class ShardTermsHandler {
 		return builder.build();
 	}
 
-	private void handleTerm(SortedMap<String, ZuliaBase.Term.Builder> termsMap, TermsEnum termsEnum, BytesRef text, Pattern termFilter, Pattern termMatch)
+	private void handleTerm(Map<String, ZuliaBase.Term.Builder> termsMap, TermsEnum termsEnum, BytesRef text, Pattern termFilter, Pattern termMatch)
 			throws IOException {
 
 		String textStr = text.utf8ToString();
@@ -187,10 +190,11 @@ public class ShardTermsHandler {
 			}
 		}
 
-		if (!termsMap.containsKey(textStr)) {
-			termsMap.put(textStr, ZuliaBase.Term.newBuilder().setValue(textStr).setDocFreq(0).setTermFreq(0));
-		}
 		ZuliaBase.Term.Builder builder = termsMap.get(textStr);
+		if (builder == null) {
+			builder =  ZuliaBase.Term.newBuilder().setValue(textStr).setDocFreq(0).setTermFreq(0);
+			termsMap.put(textStr, builder);
+		}
 		builder.setDocFreq(builder.getDocFreq() + termsEnum.docFreq());
 		builder.setTermFreq(builder.getTermFreq() + termsEnum.totalTermFreq());
 		BoostAttribute boostAttribute = termsEnum.attributes().getAttribute(BoostAttribute.class);
