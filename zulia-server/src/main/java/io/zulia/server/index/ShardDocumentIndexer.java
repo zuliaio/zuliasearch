@@ -52,15 +52,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
 
 public class ShardDocumentIndexer {
 
 	private final static Splitter facetPathSplitter = Splitter.on(ZuliaFieldConstants.FACET_PATH_DELIMITER).omitEmptyStrings();
-
-	private final Map<String, Integer> dimToOrdinal = new ConcurrentHashMap<>();
 
 	private final ServerIndexConfig indexConfig;
 	private final int majorVersion;
@@ -133,14 +131,7 @@ public class ShardDocumentIndexer {
 
 			Set<FacetLabel> facetLabels = facetFieldToFacetLabels.get(facetField);
 
-			int dimOridinal = dimToOrdinal.computeIfAbsent(facetField, s -> {
-				try {
-					return taxoWriter.addCategory(new FacetLabel(facetField));
-				}
-				catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			});
+			int dimOridinal = getOrdinalForFacetField(taxoWriter, facetField);
 
 			HashIntSet fieldOrdinals = HashIntSets.newMutableSet();
 			facetDimToOrdinal.put(dimOridinal, fieldOrdinals);
@@ -162,12 +153,43 @@ public class ShardDocumentIndexer {
 				}
 
 			}
+			if (indexConfig.isStoredIndividually(facetField)) {
+				storeIndividualFacets(luceneDocument, facetField, fieldOrdinals);
+			}
 
 			fieldOrdinalCount += fieldOrdinals.size();
 		}
 
-		TreeSet<Integer> orderedDimOrdinals = new TreeSet<>(facetDimToOrdinal.keySet());
+		Map<String, Set<String>> facetGroupToFacets = indexConfig.getFacetGroups();
+		for (String facetGroup : facetGroupToFacets.keySet()) {
+			Set<String> facetsInGroup = facetGroupToFacets.get(facetGroup);
+			TreeSet<Integer> orderedDimOrdinalsForGroup = new TreeSet<>();
+			for (String facet : facetsInGroup) {
+				Integer i = getOrdinalForFacetField(taxoWriter, facet);
+				orderedDimOrdinalsForGroup.add(i);
+			}
+			storeOrderedFacetsAsDocValue(luceneDocument, orderedDimOrdinalsForGroup, fieldOrdinalCount, facetDimToOrdinal,
+					ZuliaFieldConstants.FACET_STORAGE_GROUP + facetGroup);
+		}
 
+		TreeSet<Integer> orderedDimOrdinals = new TreeSet<>(facetDimToOrdinal.keySet());
+		storeOrderedFacetsAsDocValue(luceneDocument, orderedDimOrdinals, fieldOrdinalCount, facetDimToOrdinal, ZuliaFieldConstants.FACET_STORAGE);
+	}
+
+	private int getOrdinalForFacetField(DirectoryTaxonomyWriter taxoWriter, String facetField) throws IOException {
+		return taxoWriter.addCategory(new FacetLabel(facetField));
+	}
+
+	private static void storeIndividualFacets(Document luceneDocument, String facetField, HashIntSet fieldOrdinals) {
+		ByteBuffer byteBuffer = ByteBuffer.allocate((fieldOrdinals.size() + 1) * 4);
+		IntBuffer ordinalBuffer = byteBuffer.asIntBuffer();
+		ordinalBuffer.put(fieldOrdinals.size());
+		fieldOrdinals.forEach((IntConsumer) ordinalBuffer::put);
+		luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.FACET_STORAGE_INDIVIDUAL + facetField, new BytesRef(byteBuffer.array())));
+	}
+
+	private static void storeOrderedFacetsAsDocValue(Document luceneDocument, SortedSet<Integer> orderedDimOrdinals, int fieldOrdinalCount,
+			IntObjMap<IntSet> facetDimToOrdinal, String field) {
 		ByteBuffer byteBuffer = ByteBuffer.allocate(((orderedDimOrdinals.size() * 2) + fieldOrdinalCount) * 4);
 
 		IntBuffer ordinalBuffer = byteBuffer.asIntBuffer();
@@ -178,7 +200,7 @@ public class ShardDocumentIndexer {
 			fieldOrdinals.forEach((IntConsumer) ordinalBuffer::put);
 		}
 
-		luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.FACET_STORAGE, new BytesRef(byteBuffer.array())));
+		luceneDocument.add(new BinaryDocValuesField(field, new BytesRef(byteBuffer.array())));
 	}
 
 	private void addIndexingForStoredField(Document luceneDocument, String storedFieldName, FieldConfig fc, FieldConfig.FieldType fieldType, Object o) {

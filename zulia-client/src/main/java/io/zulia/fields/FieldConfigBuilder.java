@@ -111,6 +111,16 @@ public class FieldConfigBuilder {
 		return facetAs(builder.build());
 	}
 
+	public FieldConfigBuilder facetAs(String facetName, String facetGroup) {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setHierarchical(false).addFacetGroups(facetGroup);
+		return facetAs(builder.build());
+	}
+
+	public FieldConfigBuilder facetAsWithOwnGroup(String facetName, String facetGroup) {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setHierarchical(false).addFacetGroups(facetGroup).setStoreInOwnGroup(true);
+		return facetAs(builder.build());
+	}
+
 	public FieldConfigBuilder facetAsHierarchical(String facetName) {
 		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setHierarchical(true);
 		return facetAs(builder.build());

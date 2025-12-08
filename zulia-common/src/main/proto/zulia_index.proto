@@ -221,6 +221,8 @@ message FacetAs {
     string facetName = 1;
     DateHandling dateHandling = 2;
     bool hierarchical = 3;
+    repeated string facetGroups = 4;
+    bool storeInOwnGroup = 5;
 }
 
 message SortAs {

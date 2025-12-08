@@ -19,6 +19,7 @@ package io.zulia.server.search.aggregation;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.koloboke.collect.map.ObjObjMap;
 import com.koloboke.collect.map.hash.HashObjObjMaps;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.SortFieldInfo;
@@ -46,7 +47,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
 public class AggregationHandler {
@@ -60,6 +65,9 @@ public class AggregationHandler {
 
 	private final static Logger LOG = LoggerFactory.getLogger(AggregationHandler.class);
 
+	private String facetField;
+	private boolean individualFacet;
+
 	public AggregationHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests,
 			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int requestedConcurrency) throws IOException {
 
@@ -68,11 +76,13 @@ public class AggregationHandler {
 
 		ObjObjMap<String, NumericFieldStatInfo> fieldToDimensions = HashObjObjMaps.newMutableMap();
 
+		TreeSet<String> facets = new TreeSet<>();
+
 		boolean needsFacetLocal = false;
 		for (ZuliaQuery.StatRequest statRequest : statRequests) {
 			//global
 			String facetLabel = statRequest.getFacetField().getLabel();
-
+			facets.add(facetLabel);
 			String numericField = statRequest.getNumericField();
 
 			NumericFieldStatInfo fieldStatInfo = fieldToDimensions.computeIfAbsent(numericField, s -> {
@@ -108,6 +118,7 @@ public class AggregationHandler {
 		for (ZuliaQuery.CountRequest countRequest : countRequests) {
 			ZuliaQuery.Facet facetField = countRequest.getFacetField();
 			String facetFieldLabel = facetField.getLabel();
+			facets.add(facetFieldLabel);
 			globalFacetInfo.addFacet(facetFieldLabel, taxoReader.getOrdinal(new FacetLabel(facetFieldLabel)));
 			needsFacetLocal = true;
 		}
@@ -126,6 +137,22 @@ public class AggregationHandler {
 		}
 
 		sumValues(fc.getMatchingDocs());
+
+		// TODO compute facet field
+		// TODO set facet type (single format, ordered format)
+
+		if (facets.size() == 1 && serverIndexConfig.isStoredIndividually(facets.first())) {
+			individualFacet = true;
+			facetField = ZuliaFieldConstants.FACET_STORAGE_INDIVIDUAL  + facets.first();
+		}
+		else  {
+			String facetGroup = serverIndexConfig.getFacetGroupForFacets(facets);
+			facetField = facetGroup!= null ? ZuliaFieldConstants.FACET_STORAGE_GROUP + facetGroup : ZuliaFieldConstants.FACET_STORAGE;
+			individualFacet = false;
+		}
+
+
+
 	}
 
 	private void sumValues(List<MatchingDocs> matchingDocs) throws IOException {
@@ -215,7 +242,7 @@ public class AggregationHandler {
 		final FacetsReader facetReader;
 
 		if (needsFacets) {
-			facetReader = new BinaryFacetReader(reader);
+			facetReader = new BinaryFacetReader(reader, facetField, individualFacet);
 			docs = facetReader.getCombinedIterator(docs);
 		}
 		else {
