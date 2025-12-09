@@ -196,8 +196,13 @@ public class ShardDocumentIndexer {
 		for (int dimOrdinal : orderedDimOrdinals) {
 			IntSet fieldOrdinals = facetDimToOrdinal.get(dimOrdinal);
 			ordinalBuffer.put(dimOrdinal);
-			ordinalBuffer.put(fieldOrdinals.size());
-			fieldOrdinals.forEach((IntConsumer) ordinalBuffer::put);
+			if (fieldOrdinals != null) {
+				ordinalBuffer.put(fieldOrdinals.size());
+				fieldOrdinals.forEach((IntConsumer) ordinalBuffer::put);
+			}
+			else {
+				ordinalBuffer.put(0);
+			}
 		}
 
 		luceneDocument.add(new BinaryDocValuesField(field, new BytesRef(byteBuffer.array())));

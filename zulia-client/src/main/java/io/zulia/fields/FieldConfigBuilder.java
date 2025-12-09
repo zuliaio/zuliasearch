@@ -156,6 +156,15 @@ public class FieldConfigBuilder {
 		return this;
 	}
 
+	public FieldConfigBuilder facetAs(FacetConfigBuilder facetConfigBuilder) {
+		FacetAs.Builder builder = facetConfigBuilder.build();
+		if (builder.getFacetName().isEmpty()) {
+			builder.setFacetName(storedFieldName);
+		}
+		this.facetAsList.add(builder.build());
+		return this;
+	}
+
 	public FieldConfigBuilder sort() {
 		return sortAs(null, storedFieldName);
 	}
