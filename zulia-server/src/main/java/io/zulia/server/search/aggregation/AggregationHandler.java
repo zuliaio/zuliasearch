@@ -27,6 +27,7 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.aggregation.facets.BinaryFacetReader;
 import io.zulia.server.search.aggregation.facets.CountFacetInfo;
 import io.zulia.server.search.aggregation.facets.FacetsReader;
+import io.zulia.server.search.aggregation.facets.NoOpReader;
 import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatContext;
@@ -47,10 +48,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
@@ -65,8 +63,8 @@ public class AggregationHandler {
 
 	private final static Logger LOG = LoggerFactory.getLogger(AggregationHandler.class);
 
-	private String facetField;
-	private boolean individualFacet;
+	private final String facetField;
+	private final boolean individualFacet;
 
 	public AggregationHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests,
 			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int requestedConcurrency) throws IOException {
@@ -136,22 +134,19 @@ public class AggregationHandler {
 			}
 		}
 
-		sumValues(fc.getMatchingDocs());
-
-		// TODO compute facet field
-		// TODO set facet type (single format, ordered format)
-
 		if (facets.size() == 1 && serverIndexConfig.isStoredIndividually(facets.first())) {
-			individualFacet = true;
-			facetField = ZuliaFieldConstants.FACET_STORAGE_INDIVIDUAL  + facets.first();
+			this.facetField = ZuliaFieldConstants.FACET_STORAGE_INDIVIDUAL + facets.first();
+			this.individualFacet = true;
 		}
-		else  {
+		else {
 			String facetGroup = serverIndexConfig.getFacetGroupForFacets(facets);
-			facetField = facetGroup!= null ? ZuliaFieldConstants.FACET_STORAGE_GROUP + facetGroup : ZuliaFieldConstants.FACET_STORAGE;
-			individualFacet = false;
+			this.facetField = facetGroup != null ? ZuliaFieldConstants.FACET_STORAGE_GROUP + facetGroup : ZuliaFieldConstants.FACET_STORAGE;
+			this.individualFacet = false;
 		}
 
+		System.out.println("FACET FIELD: " + facetField + "_" + individualFacet);
 
+		sumValues(fc.getMatchingDocs());
 
 	}
 
@@ -239,26 +234,14 @@ public class AggregationHandler {
 
 		DocIdSetIterator docs = matchingDocs.bits().iterator();
 
-		final FacetsReader facetReader;
+		final FacetsReader facetReader = needsFacets ?  new BinaryFacetReader(reader, facetField, individualFacet) : NoOpReader.INSTANCE;
 
-		if (needsFacets) {
-			facetReader = new BinaryFacetReader(reader, facetField, individualFacet);
-			docs = facetReader.getCombinedIterator(docs);
-		}
-		else {
-			facetReader = null;
-		}
+		docs = facetReader.getCombinedIterator(docs);
 
 		for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
 
-			final FacetHandler facetHandler;
-			if (needsFacets) {
-				facetHandler = facetReader.getFacetHandler();
-				localGlobalFacetInfo.maybeHandleFacets(facetHandler);
-			}
-			else {
-				facetHandler = null;
-			}
+			final FacetHandler facetHandler =  facetReader.getFacetHandler();
+			localGlobalFacetInfo.maybeHandleFacets(facetHandler);
 
 			for (NumericFieldStatContext fieldContext : fieldContexts) {
 				fieldContext.advanceNumericValues(doc);

@@ -39,7 +39,7 @@ public class FacetTest {
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("stringField1").indexAs(DefaultAnalyzers.STANDARD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("stringField2").indexAs(DefaultAnalyzers.STANDARD).facet());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("stringField3").indexAs(DefaultAnalyzers.STANDARD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("stringField3").indexAs(DefaultAnalyzers.STANDARD).facetWithOwnGroup());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("stringField4").indexAs(DefaultAnalyzers.STANDARD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("stringField5").indexAs(DefaultAnalyzers.STANDARD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("intField1").index().facet());
@@ -255,6 +255,13 @@ public class FacetTest {
 			verifyString5NoQuery(searchResult);
 			verifyInt1NoQuery(searchResult);
 			verifyBool1NoQuery(searchResult);
+		}
+
+		{
+			Search search = new Search(FACET_TEST_INDEX).addCountFacet(new CountFacet("stringField3"));
+			search.setConcurrency(concurrency);
+			SearchResult searchResult = zuliaWorkPool.search(search);
+			verifyString3NoQuery(searchResult);
 		}
 	}
 

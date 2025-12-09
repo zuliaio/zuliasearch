@@ -15,8 +15,8 @@ public interface ZuliaFieldConstants {
 	String LIST_LENGTH_PREFIX = "_zll_";
 	String SORT_SUFFIX = "_zss_";
 	String FACET_STORAGE = "_zfs_";
-	String FACET_STORAGE_INDIVIDUAL = ZuliaFieldConstants.FACET_STORAGE + "_fi_";
-	String FACET_STORAGE_GROUP = ZuliaFieldConstants.FACET_STORAGE + "_fg_";
+	String FACET_STORAGE_INDIVIDUAL = ZuliaFieldConstants.FACET_STORAGE + "fi_";
+	String FACET_STORAGE_GROUP = ZuliaFieldConstants.FACET_STORAGE + "fg_";
 
 	String SCORE_FIELD = "zuliaScore";
 
