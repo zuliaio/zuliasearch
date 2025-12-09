@@ -144,8 +144,6 @@ public class AggregationHandler {
 			this.individualFacet = false;
 		}
 
-		System.out.println("FACET FIELD: " + facetField + "_" + individualFacet);
-
 		sumValues(fc.getMatchingDocs());
 
 	}
