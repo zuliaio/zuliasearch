@@ -1,45 +1,47 @@
 package io.zulia.data.source.spreadsheet.delimited;
 
-import com.univocity.parsers.common.AbstractParser;
+import de.siegmar.fastcsv.reader.CsvReader;
+import de.siegmar.fastcsv.reader.CsvRecord;
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.source.spreadsheet.SpreadsheetSource;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.SequencedSet;
 
 public abstract class DelimitedSource<T extends DelimitedRecord, S extends DelimitedSourceConfig> implements SpreadsheetSource<T>, AutoCloseable {
 	private final S delimitedSourceConfig;
-	private final AbstractParser<?> abstractParser;
-	private String[] nextRow;
+	private final CsvReader.CsvReaderBuilder csvReaderBuilder;
+	private CsvReader<CsvRecord> csvRecords;
+	private List<String> nextRow;
 	private HeaderMapping headerMapping;
 
 	public DelimitedSource(S delimitedSourceConfig) throws IOException {
 		this.delimitedSourceConfig = delimitedSourceConfig;
-		this.abstractParser = createParser(delimitedSourceConfig);
+		this.csvReaderBuilder = createParser(delimitedSourceConfig);
 		open();
 	}
 
-	protected abstract AbstractParser<?> createParser(S delimitedSourceConfig);
+	protected abstract CsvReader.CsvReaderBuilder createParser(S delimitedSourceConfig);
 
 	public void reset() throws IOException {
-		abstractParser.stopParsing();
+		//csvReaderBuilder.stopParsing();
 		open();
 	}
 
 	protected void open() throws IOException {
-		abstractParser.beginParsing(new BufferedInputStream(delimitedSourceConfig.getDataInputStream().openInputStream()));
+		csvRecords = csvReaderBuilder.ofCsvRecord(new BufferedInputStream(delimitedSourceConfig.getDataInputStream().openInputStream()));
 
 		if (delimitedSourceConfig.hasHeaders()) {
 
-			String[] headerRow = abstractParser.parseNext();
-			headerMapping = new HeaderMapping(delimitedSourceConfig.getHeaderConfig(), Arrays.stream(headerRow).toList());
+			List<String> headerRow = csvRecords.iterator().next().getFields();
+			headerMapping = new HeaderMapping(delimitedSourceConfig.getHeaderConfig(), headerRow);
 
 		}
 
-		nextRow = abstractParser.parseNext();
+		nextRow = csvRecords.iterator().next().getFields();
 	}
 
 	public boolean hasHeader(String field) {
@@ -78,8 +80,13 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 
 			@Override
 			public T next() {
-				T t = createRecord(delimitedSourceConfig, nextRow);
-				nextRow = abstractParser.parseNext();
+				T t = createRecord(delimitedSourceConfig, nextRow.toArray(new String[0]));
+				if (csvRecords.iterator().hasNext()) {
+					nextRow = csvRecords.iterator().next().getFields();
+				}
+				else {
+					nextRow = null;
+				}
 				return t;
 			}
 
@@ -98,6 +105,11 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 
 	@Override
 	public void close() {
-		abstractParser.stopParsing();
+		try {
+			csvRecords.close();
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Could not close the CSV Records", e);
+		}
 	}
 }

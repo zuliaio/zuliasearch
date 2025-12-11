@@ -1,7 +1,6 @@
 package io.zulia.data.target.spreadsheet.tsv;
 
-import com.univocity.parsers.tsv.TsvWriter;
-import com.univocity.parsers.tsv.TsvWriterSettings;
+import de.siegmar.fastcsv.writer.CsvWriter;
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.FileDataOutputStream;
 import io.zulia.data.target.spreadsheet.delimited.DelimitedTarget;
@@ -9,10 +8,11 @@ import io.zulia.data.target.spreadsheet.delimited.DelimitedTarget;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.List;
 
-public class TSVTarget extends DelimitedTarget<TsvWriter, TSVTargetConfig> {
+public class TSVTarget extends DelimitedTarget<List<String>, TSVTargetConfig> {
 
-	private TsvWriterSettings settings;
+	private CsvWriter.CsvWriterBuilder builder;
 
 	public static TSVTarget withConfig(TSVTargetConfig csvDataTargetConfig) throws IOException {
 		return new TSVTarget(csvDataTargetConfig);
@@ -36,13 +36,12 @@ public class TSVTarget extends DelimitedTarget<TsvWriter, TSVTargetConfig> {
 
 	@Override
 	protected void init(TSVTargetConfig tsvTargetConfig) {
-		settings = new TsvWriterSettings();
-		settings.setMaxColumns(2048);
+		builder = CsvWriter.builder().autoFlush(true).fieldSeparator('\t');
 	}
 
 	@Override
-	protected TsvWriter createWriter(OutputStream outputStream) {
-		return new TsvWriter(outputStream, settings);
+	protected CsvWriter createWriter(OutputStream outputStream) {
+		return builder.build(outputStream);
 	}
 
 }

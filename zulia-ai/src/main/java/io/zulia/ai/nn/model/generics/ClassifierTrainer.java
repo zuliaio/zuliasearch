@@ -11,7 +11,6 @@ import ai.djl.training.Trainer;
 import ai.djl.training.dataset.Batch;
 import ai.djl.translate.TranslateException;
 import com.google.gson.Gson;
-import com.univocity.parsers.csv.CsvWriter;
 import io.zulia.ai.dataset.json.DenseFeatureAndCategoryDataset;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
@@ -233,7 +232,7 @@ public abstract class ClassifierTrainer {
 				// Logger for results to see live training output
 				FileDataOutputStream fileDataOutputStream = FileDataOutputStream.from(modelPath.resolve("results.csv"), true);
 				CSVTargetConfig csvTargetConfig = CSVTargetConfig.from(fileDataOutputStream).withHeaders(getHeaders())
-						.withNumberTypeHandler(new NumberCSVWriter<CsvWriter>().withDecimalPlaces(4));
+						.withNumberTypeHandler(new NumberCSVWriter<>().withDecimalPlaces(4));
 				try (SpreadsheetTarget<?, ?> spreadsheetTarget = CSVTarget.withConfig(csvTargetConfig)) {
 
 					for (int iteration = 0; iteration < trainingSettings.getIterations(); iteration++) {

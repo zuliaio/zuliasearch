@@ -1,6 +1,5 @@
 package io.zulia.data.target.spreadsheet.delimited;
 
-import com.univocity.parsers.common.AbstractWriter;
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.target.spreadsheet.SpreadsheetTargetConfig;
 import io.zulia.data.target.spreadsheet.delimited.formatter.BooleanDelimitedWriter;
@@ -11,7 +10,9 @@ import io.zulia.data.target.spreadsheet.delimited.formatter.LinkCSVWriter;
 import io.zulia.data.target.spreadsheet.delimited.formatter.NumberCSVWriter;
 import io.zulia.data.target.spreadsheet.delimited.formatter.StringDelimitedWriter;
 
-public abstract class DelimitedTargetConfig<T extends AbstractWriter<?>, S extends DelimitedTargetConfig<T, S>> extends SpreadsheetTargetConfig<T, S> {
+import java.util.List;
+
+public abstract class DelimitedTargetConfig<T extends List<String>, S extends DelimitedTargetConfig<T, S>> extends SpreadsheetTargetConfig<T, S> {
 
 	public DelimitedTargetConfig(DataOutputStream dataStream) {
 		super(dataStream);
