@@ -1,13 +1,13 @@
 package io.zulia.data.target.spreadsheet.delimited.formatter;
 
-import com.univocity.parsers.common.AbstractWriter;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
 import io.zulia.data.target.spreadsheet.delimited.DelimitedTargetConfig;
 
 import java.util.Collection;
+import java.util.List;
 
-public class CollectionDelimitedWriter<T extends AbstractWriter<?>, S extends DelimitedTargetConfig<T, S>> implements SpreadsheetTypeHandler<T, Collection<?>> {
+public class CollectionDelimitedWriter<T extends List<String>, S extends DelimitedTargetConfig<T, S>> implements SpreadsheetTypeHandler<T, Collection<?>> {
 
 	private final DelimitedTargetConfig<T, S> csvDataTargetConfig;
 
@@ -24,7 +24,7 @@ public class CollectionDelimitedWriter<T extends AbstractWriter<?>, S extends De
 			stringCellHandler.writeType(reference, s);
 		}
 		else {
-			reference.addValue(null);
+			reference.add(null);
 		}
 	}
 }

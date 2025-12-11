@@ -1,10 +1,11 @@
 package io.zulia.data.target.spreadsheet.csv;
 
-import com.univocity.parsers.csv.CsvWriter;
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.target.spreadsheet.delimited.DelimitedTargetConfig;
 
-public class CSVTargetConfig extends DelimitedTargetConfig<CsvWriter, CSVTargetConfig> {
+import java.util.List;
+
+public class CSVTargetConfig extends DelimitedTargetConfig<List<String>, CSVTargetConfig> {
 
 	public static CSVTargetConfig from(DataOutputStream dataStream) {
 		return new CSVTargetConfig(dataStream);
