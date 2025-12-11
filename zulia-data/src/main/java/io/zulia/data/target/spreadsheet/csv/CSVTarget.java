@@ -36,14 +36,7 @@ public class CSVTarget extends DelimitedTarget<List<String>, CSVTargetConfig> {
 
 	@Override
 	protected void init(CSVTargetConfig csvDataTargetConfig) {
-
 		csvWriterBuilder = CsvWriter.builder().autoFlush(true).fieldSeparator(csvDataTargetConfig.getDelimiter());
-
-		/*
-		settings = new CsvWriterSettings();
-		settings.setMaxColumns(2048);
-		settings.getFormat().setDelimiter(csvDataTargetConfig.getDelimiter());
-		 */
 	}
 
 	@Override
