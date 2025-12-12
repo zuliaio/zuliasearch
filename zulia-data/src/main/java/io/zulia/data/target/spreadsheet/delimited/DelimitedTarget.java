@@ -9,17 +9,17 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class DelimitedTarget<T extends List<String>, S extends DelimitedTargetConfig<T, S>> extends SpreadsheetTarget<T, S> {
+public abstract class DelimitedTarget<S extends DelimitedTargetConfig<List<String>, S>> extends SpreadsheetTarget<List<String>, S> {
 
-	private final SpreadsheetTargetConfig<T, S> delimitedTargetConfig;
-	private final T reference;
+	private final SpreadsheetTargetConfig<List<String>, S> delimitedTargetConfig;
+	private final List<String> reference;
 
 	private CsvWriter delimitedWriter;
 
 	protected DelimitedTarget(S delimitedTargetConfig) throws IOException {
 		super(delimitedTargetConfig);
 		this.delimitedTargetConfig = delimitedTargetConfig;
-		reference = (T) new ArrayList<String>();
+		reference = new ArrayList<>();
 		init(delimitedTargetConfig);
 		open();
 	}
@@ -36,7 +36,7 @@ public abstract class DelimitedTarget<T extends List<String>, S extends Delimite
 	protected abstract CsvWriter createWriter(OutputStream outputStream) throws IOException;
 
 	@Override
-	protected T generateReference() {
+	protected List<String> generateReference() {
 		return reference;
 	}
 

@@ -10,7 +10,7 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
 
-public class TSVTarget extends DelimitedTarget<List<String>, TSVTargetConfig> {
+public class TSVTarget extends DelimitedTarget<TSVTargetConfig> {
 
 	private CsvWriter.CsvWriterBuilder builder;
 
