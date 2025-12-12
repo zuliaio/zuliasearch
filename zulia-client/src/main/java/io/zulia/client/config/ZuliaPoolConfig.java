@@ -24,6 +24,10 @@ public class ZuliaPoolConfig {
 	public final static int DEFAULT_DEFAULT_RETRIES = 0;
 	public final static int DEFAULT_MEMBER_UPDATE_INTERVAL = 10000;
 
+	public static ZuliaPoolConfig localhost() {
+		return new ZuliaPoolConfig().addNode("localhost");
+	}
+
 	public ZuliaPoolConfig() {
 		this.nodes = new ArrayList<>();
 		this.maxConnections = 32;
