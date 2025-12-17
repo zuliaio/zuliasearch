@@ -1,9 +1,10 @@
 package io.zulia.data.target.spreadsheet.delimited.formatter;
 
-import com.univocity.parsers.common.AbstractWriter;
 import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
 
-public class NumberCSVWriter<T extends AbstractWriter<?>> implements SpreadsheetTypeHandler<T, Number> {
+import java.util.List;
+
+public class NumberCSVWriter<T extends List<String>> implements SpreadsheetTypeHandler<T, Number> {
 
 	private int decimalPlaces;
 	private String doubleFormatter;
@@ -29,11 +30,11 @@ public class NumberCSVWriter<T extends AbstractWriter<?>> implements Spreadsheet
 	@Override
 	public void writeType(T reference, Number value) {
 		switch (value) {
-			case Integer i -> reference.addValue(String.valueOf(i));
-			case Long l -> reference.addValue(String.valueOf(l));
-			case Float f -> reference.addValue(String.format(doubleFormatter, f));
-			case Double d -> reference.addValue(String.format(doubleFormatter, d));
-			case null, default -> reference.addValue(null);
+			case Integer i -> reference.add(String.valueOf(i));
+			case Long l -> reference.add(String.valueOf(l));
+			case Float f -> reference.add(String.format(doubleFormatter, f));
+			case Double d -> reference.add(String.format(doubleFormatter, d));
+			case null, default -> reference.add(null);
 		}
 	}
 }

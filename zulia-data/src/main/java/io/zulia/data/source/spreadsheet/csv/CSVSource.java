@@ -1,9 +1,7 @@
 package io.zulia.data.source.spreadsheet.csv;
 
-import com.univocity.parsers.common.AbstractParser;
-import com.univocity.parsers.csv.CsvFormat;
-import com.univocity.parsers.csv.CsvParser;
-import com.univocity.parsers.csv.CsvParserSettings;
+import de.siegmar.fastcsv.reader.CommentStrategy;
+import de.siegmar.fastcsv.reader.CsvReader;
 import io.zulia.data.input.DataInputStream;
 import io.zulia.data.source.spreadsheet.delimited.DelimitedSource;
 
@@ -26,15 +24,11 @@ public class CSVSource extends DelimitedSource<CSVRecord, CSVSourceConfig> {
 	}
 
 	@Override
-	protected AbstractParser<?> createParser(CSVSourceConfig csvSourceConfig) {
-		CsvParserSettings parserSettings = new CsvParserSettings();
-		parserSettings.setLineSeparatorDetectionEnabled(true);
-		CsvFormat csvFormat = new CsvFormat();
-		csvFormat.setDelimiter(csvSourceConfig.getDelimiter());
-		parserSettings.setFormat(csvFormat);
-		parserSettings.setMaxCharsPerColumn(100_000_000);
-		parserSettings.setMaxColumns(10_000);
-		return new CsvParser(parserSettings);
+	protected CsvReader.CsvReaderBuilder createParser(CSVSourceConfig csvSourceConfig) {
+		return CsvReader.builder().fieldSeparator(csvSourceConfig.getDelimiter()).quoteCharacter('"').commentStrategy(CommentStrategy.SKIP)
+				.commentCharacter('#').skipEmptyLines(true).allowExtraFields(false).allowMissingFields(false).allowExtraCharsAfterClosingQuote(false)
+				.detectBomHeader(false).maxBufferSize(16777216);
+
 	}
 
 	@Override

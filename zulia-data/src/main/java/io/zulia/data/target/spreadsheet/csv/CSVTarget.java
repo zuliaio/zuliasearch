@@ -1,7 +1,6 @@
 package io.zulia.data.target.spreadsheet.csv;
 
-import com.univocity.parsers.csv.CsvWriter;
-import com.univocity.parsers.csv.CsvWriterSettings;
+import de.siegmar.fastcsv.writer.CsvWriter;
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.FileDataOutputStream;
 import io.zulia.data.target.spreadsheet.delimited.DelimitedTarget;
@@ -9,10 +8,11 @@ import io.zulia.data.target.spreadsheet.delimited.DelimitedTarget;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
+import java.util.List;
 
-public class CSVTarget extends DelimitedTarget<CsvWriter, CSVTargetConfig> {
+public class CSVTarget extends DelimitedTarget<CSVTargetConfig> {
 
-	private CsvWriterSettings settings;
+	private CsvWriter.CsvWriterBuilder csvWriterBuilder;
 
 	public static CSVTarget withConfig(CSVTargetConfig csvDataTargetConfig) throws IOException {
 		return new CSVTarget(csvDataTargetConfig);
@@ -36,14 +36,12 @@ public class CSVTarget extends DelimitedTarget<CsvWriter, CSVTargetConfig> {
 
 	@Override
 	protected void init(CSVTargetConfig csvDataTargetConfig) {
-		settings = new CsvWriterSettings();
-		settings.setMaxColumns(2048);
-		settings.getFormat().setDelimiter(csvDataTargetConfig.getDelimiter());
+		csvWriterBuilder = CsvWriter.builder().autoFlush(true).fieldSeparator(csvDataTargetConfig.getDelimiter());
 	}
 
 	@Override
 	protected CsvWriter createWriter(OutputStream outputStream) throws IOException {
-		return new CsvWriter(outputStream, settings);
+		return csvWriterBuilder.build(outputStream);
 	}
 
 }

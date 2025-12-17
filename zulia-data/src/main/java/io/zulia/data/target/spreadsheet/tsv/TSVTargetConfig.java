@@ -1,10 +1,11 @@
 package io.zulia.data.target.spreadsheet.tsv;
 
-import com.univocity.parsers.tsv.TsvWriter;
 import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.target.spreadsheet.delimited.DelimitedTargetConfig;
 
-public class TSVTargetConfig extends DelimitedTargetConfig<TsvWriter, TSVTargetConfig> {
+import java.util.List;
+
+public class TSVTargetConfig extends DelimitedTargetConfig<List<String>, TSVTargetConfig> {
 
 	public static TSVTargetConfig from(DataOutputStream dataStream) {
 		return new TSVTargetConfig(dataStream);

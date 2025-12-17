@@ -1,13 +1,13 @@
 package io.zulia.data.target.spreadsheet.delimited.formatter;
 
-import com.univocity.parsers.common.AbstractWriter;
 import io.zulia.data.target.spreadsheet.SpreadsheetTypeHandler;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
 
-public class DateCSVWriter<T extends AbstractWriter<?>> implements SpreadsheetTypeHandler<T, Date> {
+public class DateCSVWriter<T extends List<String>> implements SpreadsheetTypeHandler<T, Date> {
 
 	private DateTimeFormatter dateTimeFormatter;
 
@@ -31,10 +31,10 @@ public class DateCSVWriter<T extends AbstractWriter<?>> implements SpreadsheetTy
 	@Override
 	public void writeType(T reference, Date value) {
 		if (value != null) {
-			reference.addValue(dateTimeFormatter.format(value.toInstant()));
+			reference.add(dateTimeFormatter.format(value.toInstant()));
 		}
 		else {
-			reference.addValue(null);
+			reference.add(null);
 		}
 	}
 }

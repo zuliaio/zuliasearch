@@ -1,24 +1,27 @@
 package io.zulia.data.target.spreadsheet.delimited;
 
-import com.univocity.parsers.common.AbstractWriter;
+import de.siegmar.fastcsv.writer.CsvWriter;
 import io.zulia.data.target.spreadsheet.SpreadsheetTarget;
 import io.zulia.data.target.spreadsheet.SpreadsheetTargetConfig;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
-public abstract class DelimitedTarget<T extends AbstractWriter<?>, S extends DelimitedTargetConfig<T, S>> extends SpreadsheetTarget<T, S> {
+public abstract class DelimitedTarget<S extends DelimitedTargetConfig<List<String>, S>> extends SpreadsheetTarget<List<String>, S> {
 
-	private final SpreadsheetTargetConfig<T, S> delimitedTargetConfig;
+	private final SpreadsheetTargetConfig<List<String>, S> delimitedTargetConfig;
+	private final List<String> reference;
 
-	private T delimitedWriter;
+	private CsvWriter delimitedWriter;
 
 	protected DelimitedTarget(S delimitedTargetConfig) throws IOException {
 		super(delimitedTargetConfig);
 		this.delimitedTargetConfig = delimitedTargetConfig;
+		reference = new ArrayList<>();
 		init(delimitedTargetConfig);
 		open();
-
 	}
 
 	protected abstract void init(S delimitedTargetConfig);
@@ -26,23 +29,29 @@ public abstract class DelimitedTarget<T extends AbstractWriter<?>, S extends Del
 	protected void open() throws IOException {
 		delimitedWriter = createWriter(delimitedTargetConfig.getDataStream().openOutputStream());
 		if (delimitedTargetConfig.getHeaders() != null) {
-			delimitedWriter.writeRow(delimitedTargetConfig.getHeaders());
+			delimitedWriter.writeRecord(delimitedTargetConfig.getHeaders());
 		}
 	}
 
-	protected abstract T createWriter(OutputStream outputStream) throws IOException;
+	protected abstract CsvWriter createWriter(OutputStream outputStream) throws IOException;
 
 	@Override
-	protected T generateReference() {
-		return delimitedWriter;
+	protected List<String> generateReference() {
+		return reference;
 	}
 
 	public void finishRow() {
-		delimitedWriter.writeValuesToRow();
+		delimitedWriter.writeRecord(reference);
+		reference.clear();
 	}
 
 	public void close() {
-		delimitedWriter.close();
+		try {
+			delimitedWriter.close();
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }
