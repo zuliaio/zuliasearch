@@ -3,6 +3,7 @@ package io.zulia.server.index;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.index.cache.ZuliaTaxonomyWriterCache;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -102,8 +103,7 @@ public class ShardWriteManager {
 	private DirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
-		return new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(32 * 1024 * 1024));
-
+		return new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new ZuliaTaxonomyWriterCache());
 	}
 
 	public void close() throws IOException {

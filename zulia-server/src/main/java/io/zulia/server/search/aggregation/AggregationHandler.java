@@ -19,6 +19,7 @@ package io.zulia.server.search.aggregation;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.koloboke.collect.map.ObjObjMap;
 import com.koloboke.collect.map.hash.HashObjObjMaps;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.SortFieldInfo;
@@ -26,6 +27,7 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.search.aggregation.facets.BinaryFacetReader;
 import io.zulia.server.search.aggregation.facets.CountFacetInfo;
 import io.zulia.server.search.aggregation.facets.FacetsReader;
+import io.zulia.server.search.aggregation.facets.NoOpReader;
 import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.MapStatOrdinalStorage;
 import io.zulia.server.search.aggregation.stats.NumericFieldStatContext;
@@ -47,6 +49,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
 public class AggregationHandler {
@@ -60,6 +63,9 @@ public class AggregationHandler {
 
 	private final static Logger LOG = LoggerFactory.getLogger(AggregationHandler.class);
 
+	private final String facetField;
+	private final boolean individualFacet;
+
 	public AggregationHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests,
 			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int requestedConcurrency) throws IOException {
 
@@ -68,11 +74,13 @@ public class AggregationHandler {
 
 		ObjObjMap<String, NumericFieldStatInfo> fieldToDimensions = HashObjObjMaps.newMutableMap();
 
+		TreeSet<String> facets = new TreeSet<>();
+
 		boolean needsFacetLocal = false;
 		for (ZuliaQuery.StatRequest statRequest : statRequests) {
 			//global
 			String facetLabel = statRequest.getFacetField().getLabel();
-
+			facets.add(facetLabel);
 			String numericField = statRequest.getNumericField();
 
 			NumericFieldStatInfo fieldStatInfo = fieldToDimensions.computeIfAbsent(numericField, s -> {
@@ -108,6 +116,7 @@ public class AggregationHandler {
 		for (ZuliaQuery.CountRequest countRequest : countRequests) {
 			ZuliaQuery.Facet facetField = countRequest.getFacetField();
 			String facetFieldLabel = facetField.getLabel();
+			facets.add(facetFieldLabel);
 			globalFacetInfo.addFacet(facetFieldLabel, taxoReader.getOrdinal(new FacetLabel(facetFieldLabel)));
 			needsFacetLocal = true;
 		}
@@ -125,7 +134,18 @@ public class AggregationHandler {
 			}
 		}
 
+		if (facets.size() == 1 && serverIndexConfig.isStoredIndividually(facets.first())) {
+			this.facetField = ZuliaFieldConstants.FACET_STORAGE_INDIVIDUAL + facets.first();
+			this.individualFacet = true;
+		}
+		else {
+			String facetGroup = serverIndexConfig.getFacetGroupForFacets(facets);
+			this.facetField = facetGroup != null ? ZuliaFieldConstants.FACET_STORAGE_GROUP + facetGroup : ZuliaFieldConstants.FACET_STORAGE;
+			this.individualFacet = false;
+		}
+
 		sumValues(fc.getMatchingDocs());
+
 	}
 
 	private void sumValues(List<MatchingDocs> matchingDocs) throws IOException {
@@ -212,26 +232,14 @@ public class AggregationHandler {
 
 		DocIdSetIterator docs = matchingDocs.bits().iterator();
 
-		final FacetsReader facetReader;
+		final FacetsReader facetReader = needsFacets ?  new BinaryFacetReader(reader, facetField, individualFacet) : NoOpReader.INSTANCE;
 
-		if (needsFacets) {
-			facetReader = new BinaryFacetReader(reader);
-			docs = facetReader.getCombinedIterator(docs);
-		}
-		else {
-			facetReader = null;
-		}
+		docs = facetReader.getCombinedIterator(docs);
 
 		for (int doc = docs.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = docs.nextDoc()) {
 
-			final FacetHandler facetHandler;
-			if (needsFacets) {
-				facetHandler = facetReader.getFacetHandler();
-				localGlobalFacetInfo.maybeHandleFacets(facetHandler);
-			}
-			else {
-				facetHandler = null;
-			}
+			final FacetHandler facetHandler =  facetReader.getFacetHandler();
+			localGlobalFacetInfo.maybeHandleFacets(facetHandler);
 
 			for (NumericFieldStatContext fieldContext : fieldContexts) {
 				fieldContext.advanceNumericValues(doc);
