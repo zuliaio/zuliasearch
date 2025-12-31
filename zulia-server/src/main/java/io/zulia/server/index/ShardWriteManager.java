@@ -13,6 +13,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -87,6 +88,12 @@ public class ShardWriteManager {
 		Directory d = MMapDirectory.open(pathToIndex);
 
 		IndexWriterConfig config = new IndexWriterConfig(zuliaPerFieldAnalyzer);
+		TieredMergePolicy tieredMergePolicy = new TieredMergePolicy();
+		tieredMergePolicy.setMaxCFSSegmentSizeMB(100);
+		tieredMergePolicy.setMaxMergedSegmentMB(10_000);
+		tieredMergePolicy.setMaxMergeAtOnce(4);
+		tieredMergePolicy.setDeletesPctAllowed(0.15);
+		config.setMergePolicy(tieredMergePolicy);
 		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
 		config.setRAMBufferSizeMB(128); // should be overwritten by ZuliaShard.updateIndexSettings()
