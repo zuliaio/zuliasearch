@@ -3,6 +3,7 @@ package io.zulia.server.index;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.config.ServerIndexConfig;
+import io.zulia.server.index.cache.ZuliaTaxonomyWriterCache;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
@@ -12,6 +13,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
@@ -86,6 +88,12 @@ public class ShardWriteManager {
 		Directory d = MMapDirectory.open(pathToIndex);
 
 		IndexWriterConfig config = new IndexWriterConfig(zuliaPerFieldAnalyzer);
+		TieredMergePolicy tieredMergePolicy = new TieredMergePolicy();
+		tieredMergePolicy.setMaxCFSSegmentSizeMB(100);
+		tieredMergePolicy.setMaxMergedSegmentMB(10_000);
+		tieredMergePolicy.setMaxMergeAtOnce(4);
+		tieredMergePolicy.setDeletesPctAllowed(0.15);
+		config.setMergePolicy(tieredMergePolicy);
 		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
 		config.setRAMBufferSizeMB(128); // should be overwritten by ZuliaShard.updateIndexSettings()
@@ -102,8 +110,7 @@ public class ShardWriteManager {
 	private DirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
-		return new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new LruTaxonomyWriterCache(32 * 1024 * 1024));
-
+		return new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new ZuliaTaxonomyWriterCache());
 	}
 
 	public void close() throws IOException {

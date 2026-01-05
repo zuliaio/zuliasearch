@@ -79,13 +79,14 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
 			@Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList, @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
 			@QueryValue(value = ZuliaRESTConstants.TRUNCATE, defaultValue = "false") Boolean truncate,
-			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime,
-			@Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency) throws Exception {
+			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime, @Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency)
+			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
-				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime, concurrency);
+				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime,
+				concurrency);
 		QueryResponse qr = indexManager.query(qrBuilder.build());
 		return getJsonResponse(qr, cursor != null, truncate);
 
@@ -480,6 +481,7 @@ public class QueryController {
 
 		SearchResultsDTO searchResultsDTO = new SearchResultsDTO();
 		searchResultsDTO.setTotalHits(qr.getTotalHits());
+
 		if (cursor) {
 			searchResultsDTO.setCursor(CursorHelper.getUniqueSortedCursor(qr.getLastResult()));
 		}
@@ -503,6 +505,8 @@ public class QueryController {
 				if (!Double.isNaN(sr.getScore())) {
 					scoredResultDTO.setScore(sr.getScore());
 				}
+
+				scoredResultDTO.setShard(sr.getShard());
 
 				scoredResultDTO.setIndexName(sr.getIndexName());
 

@@ -75,6 +75,8 @@ public class ShardReader implements AutoCloseable {
 	private final AtomicInteger queryResultCacheSize = new AtomicInteger();
 	private final AtomicInteger pinnedQueryResultCacheSize = new AtomicInteger();
 
+	private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
 		this.creationTime = System.currentTimeMillis();
@@ -350,12 +352,9 @@ public class ShardReader implements AutoCloseable {
 
 			int numOfFacets = getFacetCount(countRequest.getShardFacets(), countRequest.getMaxFacets());
 
-			if (indexConfig.isHierarchicalFacet(label)) {
-				facetGroup = aggregationHandler.getTopChildren(numOfFacets, label, facetField.getPathList().toArray(new String[0]));
-			}
-			else {
-				facetGroup = aggregationHandler.getTopChildren(numOfFacets, label);
-			}
+			String[] path = getPathForFacetField(facetField);
+			facetGroup = aggregationHandler.getTopChildren(numOfFacets, label, path);
+
 			facetGroup.setCountRequest(countRequest);
 			shardQueryReponseBuilder.addFacetGroup(facetGroup);
 
@@ -365,7 +364,8 @@ public class ShardReader implements AutoCloseable {
 
 			ZuliaQuery.StatGroupInternal.Builder statGroupBuilder = ZuliaQuery.StatGroupInternal.newBuilder();
 			statGroupBuilder.setStatRequest(statRequest);
-			String label = statRequest.getFacetField().getLabel();
+			ZuliaQuery.Facet facetField = statRequest.getFacetField();
+			String label = facetField.getLabel();
 			if (!label.isEmpty()) {
 
 				int numOfFacets = getFacetCount(statRequest.getShardFacets(), statRequest.getMaxFacets());
@@ -374,16 +374,9 @@ public class ShardReader implements AutoCloseable {
 					throw new IllegalArgumentException(label + " is not defined as a facetable field");
 				}
 
-				if (indexConfig.isHierarchicalFacet(label)) {
-					List<ZuliaQuery.FacetStatsInternal> topChildren = aggregationHandler.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
-							statRequest.getFacetField().getPathList().toArray(new String[0]));
-					statGroupBuilder.addAllFacetStats(topChildren);
-				}
-				else {
-					List<ZuliaQuery.FacetStatsInternal> topChildren = aggregationHandler.getTopChildren(statRequest.getNumericField(), numOfFacets, label,
-							statRequest.getFacetField().getPathList().toArray(new String[0]));
-					statGroupBuilder.addAllFacetStats(topChildren);
-				}
+				String[] path = getPathForFacetField(facetField);
+				List<ZuliaQuery.FacetStatsInternal> topChildren = aggregationHandler.getTopChildren(statRequest.getNumericField(), numOfFacets, label, path);
+				statGroupBuilder.addAllFacetStats(topChildren);
 
 			}
 			else {
@@ -394,6 +387,17 @@ public class ShardReader implements AutoCloseable {
 			shardQueryReponseBuilder.addStatGroup(statGroupBuilder.build());
 		}
 
+	}
+
+	private static String @NotNull [] getPathForFacetField(ZuliaQuery.Facet facetField) {
+		String[] path;
+		if (!facetField.getPathList().isEmpty()) {
+			path = facetField.getPathList().toArray(new String[0]);
+		}
+		else {
+			path = EMPTY_STRING_ARRAY;
+		}
+		return path;
 	}
 
 	private List<AnalysisHandler> getAnalysisHandlerList(List<ZuliaQuery.AnalysisRequest> analysisRequests) {
