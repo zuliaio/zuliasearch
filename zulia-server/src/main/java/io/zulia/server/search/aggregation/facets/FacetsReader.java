@@ -11,5 +11,4 @@ public interface FacetsReader {
 
 	FacetHandler getFacetHandler() throws IOException;
 
-	boolean hasValues();
 }

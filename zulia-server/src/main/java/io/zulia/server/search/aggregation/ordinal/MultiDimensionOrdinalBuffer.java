@@ -5,10 +5,10 @@ import org.apache.lucene.util.BytesRef;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
-public class OrdinalBuffer implements FacetHandler {
+public class MultiDimensionOrdinalBuffer implements FacetHandler {
 	private final IntBuffer ordinalBuffer;
 
-	public OrdinalBuffer(BytesRef bytesRef) {
+	public MultiDimensionOrdinalBuffer(BytesRef bytesRef) {
 		ordinalBuffer = ByteBuffer.wrap(bytesRef.bytes, bytesRef.offset, bytesRef.length).asIntBuffer();
 	}
 

@@ -101,6 +101,11 @@ public class FieldConfigBuilder {
 		return facetAs(builder.build());
 	}
 
+	public FieldConfigBuilder facetWithOwnGroup() {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(storedFieldName).setHierarchical(false).setStoreInOwnGroup(true);
+		return facetAs(builder.build());
+	}
+
 	public FieldConfigBuilder facetHierarchical() {
 		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(storedFieldName).setHierarchical(true);
 		return facetAs(builder.build());
@@ -108,6 +113,16 @@ public class FieldConfigBuilder {
 
 	public FieldConfigBuilder facetAs(String facetName) {
 		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setHierarchical(false);
+		return facetAs(builder.build());
+	}
+
+	public FieldConfigBuilder facetAs(String facetName, String facetGroup) {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setHierarchical(false).addFacetGroups(facetGroup);
+		return facetAs(builder.build());
+	}
+
+	public FieldConfigBuilder facetAsWithOwnGroup(String facetName, String facetGroup) {
+		FacetAs.Builder builder = FacetAs.newBuilder().setFacetName(facetName).setHierarchical(false).addFacetGroups(facetGroup).setStoreInOwnGroup(true);
 		return facetAs(builder.build());
 	}
 
@@ -138,6 +153,15 @@ public class FieldConfigBuilder {
 
 	public FieldConfigBuilder facetAs(FacetAs facetAs) {
 		this.facetAsList.add(facetAs);
+		return this;
+	}
+
+	public FieldConfigBuilder facetAs(FacetConfigBuilder facetConfigBuilder) {
+		FacetAs.Builder builder = facetConfigBuilder.build();
+		if (builder.getFacetName().isEmpty()) {
+			builder.setFacetName(storedFieldName);
+		}
+		this.facetAsList.add(builder.build());
 		return this;
 	}
 

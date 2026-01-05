@@ -11,6 +11,7 @@ public class ScoredResultDTO {
 	private Document document;
 	private List<HighlightDTO> highlights;
 	private List<AnalysisResultDTO> analysis;
+	private int shard;
 
 	public ScoredResultDTO() {
 	}
@@ -63,9 +64,17 @@ public class ScoredResultDTO {
 		this.analysis = analysis;
 	}
 
+	public int getShard() {
+		return shard;
+	}
+
+	public void setShard(int shard) {
+		this.shard = shard;
+	}
+
 	@Override
 	public String toString() {
 		return "ScoredResultDTO{" + "id='" + id + '\'' + ", score=" + score + ", indexName='" + indexName + '\'' + ", document=" + document + ", highlights="
-				+ highlights + ", analysis=" + analysis + '}';
+				+ highlights + ", analysis=" + analysis + ", shard=" + shard + '}';
 	}
 }
