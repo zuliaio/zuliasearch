@@ -1419,6 +1419,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AnalysisResultDTO"
+        shard:
+          type: integer
+          format: int32
     SearchResultsDTO:
       type: object
       properties:
