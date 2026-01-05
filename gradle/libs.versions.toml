@@ -7,7 +7,7 @@ mongodb = "5.5.1"
 picocli = "4.7.7"
 poi = "5.4.1"
 protobuf = "4.31.1"
-unirest = '4.4.5'
+unirest = '4.7.0'
 djl = "0.34.0"
 junit = "5.13.4"
 
@@ -82,7 +82,6 @@ swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
 unirest-core = { module = "com.konghq:unirest-java-core", version.ref = "unirest" }
 unirest-gson = { module = "com.konghq:unirest-modules-gson", version.ref = "unirest" }
 unirest-java-bom = { module = "com.konghq:unirest-java-bom", version.ref = "unirest" }
-univocity-parsers = { module = "com.univocity:univocity-parsers", version = "2.9.1" }
 password4j = { module = "com.password4j:password4j", version = "1.8.2" }
 
 [bundles]
