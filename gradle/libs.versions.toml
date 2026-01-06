@@ -92,4 +92,4 @@ poi = ["poi", "poi-ooxml"]
 #reckon is defined in settings.gradle.kts now
 #reckon = { id = "org.ajoberstar.reckon", version = "0.19.2" }
 micronaut-application = { id = "io.micronaut.application", version = "4.6.1" }
-protobuf = { id = "com.google.protobuf", version = "0.9.5" }
+protobuf = { id = "com.google.protobuf", version = "0.9.6" }
