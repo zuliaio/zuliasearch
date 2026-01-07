@@ -1,5 +1,9 @@
 package io.zulia.server.search.aggregation.facets;
 
+import com.koloboke.collect.map.hash.HashObjIntMap;
+import com.koloboke.collect.map.hash.HashObjIntMaps;
+import com.koloboke.collect.map.hash.HashObjLongMap;
+import com.koloboke.collect.map.hash.HashObjLongMaps;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
@@ -42,7 +46,7 @@ public class FacetCombiner {
 		}
 		else {
 
-			Map<String, AtomicLong> facetCounts = new HashMap<>();
+			HashObjLongMap<String> facetCounts = HashObjLongMaps.newMutableMap();
 			Map<String, FixedBitSet> shardsReturned = new HashMap<>();
 			FixedBitSet fullResults = new FixedBitSet(shardReponses);
 			long[] minForShard = new long[shardReponses];
@@ -53,19 +57,10 @@ public class FacetCombiner {
 
 				for (FacetCount fc : fg.getFacetCountList()) {
 					String facet = fc.getFacet();
-					AtomicLong facetSum = facetCounts.get(facet);
-					FixedBitSet shardSet = shardsReturned.get(facet);
-
-					if (facetSum == null) {
-						facetSum = new AtomicLong();
-						facetCounts.put(facet, facetSum);
-						shardSet = new FixedBitSet(shardReponses);
-						shardsReturned.put(facet, shardSet);
-					}
+					FixedBitSet shardSet = shardsReturned.computeIfAbsent(facet, k -> new FixedBitSet(shardReponses));
 					long count = fc.getCount();
-					facetSum.addAndGet(count);
+					facetCounts.addValue(facet, count);
 					shardSet.set(shardIndex);
-
 					minForShard[shardIndex] = count;
 				}
 
@@ -89,8 +84,8 @@ public class FacetCombiner {
 			boolean computeError = countRequest.getMaxFacets() > 0 && countRequest.getShardFacets() > 0 && numberOfShards > 1;
 			boolean computePossibleMissing = computeError && (maxValuePossibleMissing != 0);
 
-			SortedSet<FacetCountResult> sortedFacetResults = facetCounts.keySet().stream()
-					.map(facet -> new FacetCountResult(facet, facetCounts.get(facet).get())).collect(Collectors.toCollection(TreeSet::new));
+			SortedSet<FacetCountResult> sortedFacetResults = facetCounts.entrySet().stream()
+					.map(entry -> new FacetCountResult(entry.getKey(), entry.getValue())).collect(Collectors.toCollection(TreeSet::new));
 
 			int maxCount = countRequest.getMaxFacets();
 
