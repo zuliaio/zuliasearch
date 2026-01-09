@@ -22,7 +22,7 @@ import java.util.List;
  *
  * @author mdavis
  */
-public class AnalysisHandler {
+public class AnalysisHandler implements AutoCloseable {
 	private final AnalysisRequest analysisRequest;
 	private final String indexField;
 	private final String storedFieldName;
@@ -198,4 +198,12 @@ public class AnalysisHandler {
 		return null;
 	}
 
+
+	@Override
+	public void close() throws Exception {
+		// if a custom analyzer is created we should close it
+		if (!analysisRequest.getAnalyzerOverride().isEmpty()) {
+			analyzer.close();
+		}
+	}
 }

@@ -42,7 +42,7 @@ public class AnalyzerTest {
 		indexConfig.addAnalyzerSetting(
 				AnalyzerSettings.newBuilder().setName("myAnalyzer").setTokenizer(AnalyzerSettings.Tokenizer.STANDARD).addFilter(Filter.LOWERCASE)
 						.addFilter(Filter.ASCII_FOLDING).addFilter(Filter.GERMAN_NORMALIZATION).addFilter(Filter.ENGLISH_POSSESSIVE)
-						.addFilter(Filter.ENGLISH_MIN_STEM).addFilter(Filter.BRITISH_US).build());
+						.addFilter(Filter.ENGLISH_MIN_STEM).addFilter(Filter.BRITISH_US).setStripHTML(true).build());
 
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
@@ -62,7 +62,7 @@ public class AnalyzerTest {
 
 		for (int i = 0; i < repeatCount; i++) {
 			// random wikipedia titles and first bit of text from german and hungarian wikipedia to test folding
-			indexRecord(i * uniqueDocs, "Jürgen",
+			indexRecord(i * uniqueDocs, "<i>Jürgen</i>",
 					"Jürgen ist eine deutsche Nebenform des männlichen Vornamens Georg – Widmungen an den Heiligen Georg finden sich daher auch unter St. Jürgen.");
 			indexRecord(i * uniqueDocs + 1, "Straße ",
 					"Eine Straße ist im Landverkehr ein Verkehrsbauwerk, das Fußgängern und Fahrzeugen als Transport- und Verkehrsweg überwiegend dem Personentransport, dem Gütertransport und dem Tiertransport zur Ortsveränderung dient.");
