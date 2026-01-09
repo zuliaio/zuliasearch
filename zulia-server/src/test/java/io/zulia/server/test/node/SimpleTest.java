@@ -45,7 +45,7 @@ public class SimpleTest {
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD_HTML).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("description").indexAs(DefaultAnalyzers.STANDARD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(SIMPLE_TEST_INDEX);
@@ -63,10 +63,10 @@ public class SimpleTest {
 
 			indexRecord(i * uniqueDocs, "something special", "red and blue", 1.0);
 			indexRecord(i * uniqueDocs + 1, "something really special", "reddish and blueish", 2.4);
-			indexRecord(i * uniqueDocs + 2, "something even more special", "pink with big big big stripes", 5.0);
+			indexRecord(i * uniqueDocs + 2, "something even more special", "pink with big big big st<i>ri</i>pes", 5.0);
 			indexRecord(i * uniqueDocs + 3, "something special", "real big", 4.3);
 			indexRecord(i * uniqueDocs + 4, "something really special", "small", 1.6);
-			indexRecord(i * uniqueDocs + 5, "something really special", "light-blue with flowers", 4.1);
+			indexRecord(i * uniqueDocs + 5, "something really spe<b>ci</b>al", "light-blue with flowers", 4.1);
 			indexRecord(i * uniqueDocs + 6, "boring and small", "plain white and red", null);
 		}
 
@@ -321,6 +321,27 @@ public class SimpleTest {
 		search.addQuery(new ScoredQuery(ZuliaFieldConstants.TIMESTAMP_FIELD + ":[" + tomorrow + " TO *]"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery("description:stripes")); //no html cleaning on description
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery("description:\"st<i>ri</i>pes\""));  //no HTML cleaning on description
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery("title:special"));  // HTML cleaning on title lets spe<b>ci</b>al match
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(6 * repeatCount, searchResult.getTotalHits());
+
+		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
+		search.addQuery(new ScoredQuery("title:\"<b>special</b>\""));  // HTML cleaning on title lets HTML from search be stripped even if no match in the text
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(6 * repeatCount, searchResult.getTotalHits());
 	}
 
 	@Test

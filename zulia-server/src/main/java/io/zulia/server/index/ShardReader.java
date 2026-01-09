@@ -11,6 +11,7 @@ import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.server.analysis.ZuliaFieldAnalyzer;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
 import io.zulia.server.analysis.highlight.ZuliaHighlighter;
 import io.zulia.server.analysis.similarity.ConstantSimilarity;
@@ -328,6 +329,7 @@ public class ShardReader implements AutoCloseable {
 				if (segmentAnalysisResult != null) {
 					shardQueryReponseBuilder.addAnalysisResult(segmentAnalysisResult);
 				}
+				analysisHandler.close();
 			}
 		}
 		return shardQueryReponseBuilder.build();
@@ -415,7 +417,7 @@ public class ShardReader implements AutoCloseable {
 
 				ZuliaIndex.AnalyzerSettings analyzerSettings = indexConfig.getAnalyzerSettingsByName(analyzerOverride);
 				if (analyzerSettings != null) {
-					analyzer = ZuliaPerFieldAnalyzer.getAnalyzerForField(analyzerSettings);
+					analyzer = new ZuliaFieldAnalyzer(analyzerSettings);
 				}
 				else {
 					throw new RuntimeException("Invalid analyzer name " + analyzerOverride);

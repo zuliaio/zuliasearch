@@ -198,7 +198,7 @@ message AnalyzerSettings {
     Tokenizer tokenizer = 2; //STANDARD default
     repeated Filter filter = 3;
     Similarity similarity = 4; //BM25 default
-
+    bool stripHTML = 5;
 }
 
 
