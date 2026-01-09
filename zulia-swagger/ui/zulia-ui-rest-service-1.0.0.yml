@@ -143,7 +143,6 @@ paths:
               type: object
               additionalProperties:
                 type: string
-        required: true
       responses:
         "200":
           description: index_2 200 response
@@ -179,9 +178,11 @@ components:
         username:
           minLength: 1
           type: string
+          nullable: true
         password:
           minLength: 1
           type: string
+          nullable: true
         identity:
           type: string
           nullable: true
