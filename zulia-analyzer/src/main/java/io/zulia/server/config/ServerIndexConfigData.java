@@ -187,6 +187,9 @@ public class ServerIndexConfigData {
 
 		aMap.put(DefaultAnalyzers.STANDARD,
 				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.STANDARD).addFilter(Filter.LOWERCASE).addFilter(Filter.STOPWORDS).build());
+		aMap.put(DefaultAnalyzers.STANDARD_HTML,
+				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.STANDARD_HTML).addFilter(Filter.LOWERCASE).addFilter(Filter.STOPWORDS).setStripHTML(true)
+						.build());
 		aMap.put(DefaultAnalyzers.KEYWORD, AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.KEYWORD).setTokenizer(Tokenizer.KEYWORD).build());
 		aMap.put(DefaultAnalyzers.LC_KEYWORD,
 				AnalyzerSettings.newBuilder().setName(DefaultAnalyzers.LC_KEYWORD).setTokenizer(Tokenizer.KEYWORD).addFilter(Filter.LOWERCASE).build());
