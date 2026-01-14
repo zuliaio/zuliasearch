@@ -58,6 +58,10 @@ public class ZuliaQueryNodeProcessorPipeline extends QueryNodeProcessorPipeline 
 		add(new AllowLeadingWildcardProcessor());
 		add(new AnalyzerQueryNodeProcessor());
 		add(new PhraseSlopQueryNodeProcessor());
+
+		//zulia add for special mm handling that makes inside mm context default operator OR
+		add(new ZuliaMinMatchOrHandlingProcessor());
+
 		add(new BooleanQuery2ModifierNodeProcessor());
 		add(new NoChildOptimizationQueryNodeProcessor());
 		add(new RemoveDeletedQueryNodesProcessor());
