@@ -1,8 +1,6 @@
 package io.zulia.data.test;
 
-import io.zulia.data.common.DataStreamMeta;
 import io.zulia.data.input.SingleUseDataInputStream;
-import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.SingleUseDataOutputStream;
 import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
 import io.zulia.data.source.spreadsheet.SpreadsheetSource;
@@ -14,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 
 public class DataSourceTest {
@@ -53,6 +50,23 @@ public class DataSourceTest {
 				i++;
 			}
 		}
+	}
+
+	@Test
+	void testEmptyCSV() throws IOException {
+
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		SingleUseDataOutputStream outputStream = SingleUseDataOutputStream.from(byteArrayOutputStream, "test.csv");
+
+		try (var target = SpreadsheetTargetFactory.fromStreamWithHeaders(outputStream, List.of("header1", "header2"))) {
+			// just want to create a file with headers and no data rows
+		}
+
+		SingleUseDataInputStream dataInputStream = SingleUseDataInputStream.from(new ByteArrayInputStream(byteArrayOutputStream.toByteArray()), "test.csv");
+		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) {
+			Assertions.assertEquals("header1", dataSource.getHeaders().getFirst());
+		}
+
 	}
 
 }

@@ -41,7 +41,9 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 
 		}
 
-		nextRow = csvRecords.iterator().next().getFields();
+		if (csvRecords.iterator().hasNext()) {
+			nextRow = csvRecords.iterator().next().getFields();
+		}
 	}
 
 	public boolean hasHeader(String field) {
