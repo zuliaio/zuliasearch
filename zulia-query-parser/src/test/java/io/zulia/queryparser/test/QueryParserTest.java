@@ -44,6 +44,22 @@ public class QueryParserTest {
 		Assertions.assertEquals("+abstract:diabetes +((+title:cancer +title:lung -title:fly title:rat title:bear title:insect +title:fruit)~2)",
 				parse.toString());
 
+
+
+		//test other syntax
+		String mmQuery3 = "abstract:diabetes title:(cancer AND lung -fly rat bear insect +fruit)~2";
+		zuliaFlexibleQueryParser.setDefaultOperator(ZuliaQuery.Query.Operator.OR);
+		parse = zuliaFlexibleQueryParser.parse(mmQuery3);
+		Assertions.assertEquals("abstract:diabetes ((+title:cancer +title:lung -title:fly title:rat title:bear title:insect +title:fruit)~2)",
+				parse.toString());
+
+		zuliaFlexibleQueryParser.setDefaultOperator(ZuliaQuery.Query.Operator.AND);
+		parse = zuliaFlexibleQueryParser.parse(mmQuery3);
+		Assertions.assertEquals("+abstract:diabetes +((+title:cancer +title:lung -title:fly title:rat title:bear title:insect +title:fruit)~2)",
+				parse.toString());
+
+
+		//set using global minimum should match
 		zuliaFlexibleQueryParser.setMinimumNumberShouldMatch(2);
 		zuliaFlexibleQueryParser.setDefaultFields(List.of("title"));
 		String mmQuery2 = "cancer AND lung -fly rat bear insect +fruit dragon";
@@ -57,6 +73,9 @@ public class QueryParserTest {
 		parse = zuliaFlexibleQueryParser.parse(mmQuery2);
 		Assertions.assertEquals("(+title:cancer +title:lung -title:fly title:rat title:bear title:insect +title:fruit title:dragon)~2",
 				parse.toString());
+
+
+
 
 	}
 
