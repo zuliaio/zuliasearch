@@ -47,7 +47,7 @@ public abstract class MembershipTask extends TimerTask {
 
 			Map<String, Node> newOtherNodeMap = new HashMap<>();
 
-			long latest = nodesList.get(0).getHeartbeat();
+			long latest = nodesList.getFirst().getHeartbeat();
 			for (Node node : nodesList) {
 				if (latest - node.getHeartbeat() < MAX_HEARTBEAT_LAG_SECONDS * 1000) {
 					if (node.getServerAddress().equals(zuliaConfig.getServerAddress()) && (node.getServicePort() == zuliaConfig.getServicePort())) {
@@ -67,14 +67,14 @@ public abstract class MembershipTask extends TimerTask {
 				removedNodes.removeAll(newOtherNodeMap.keySet());
 
 				if (!removedNodes.isEmpty()) {
-					removedNodesList = removedNodes.stream().map(otherNodeMap::get).collect(Collectors.toList());
+					removedNodesList = removedNodes.stream().map(otherNodeMap::get).toList();
 				}
 
 				Set<String> newNodes = new HashSet<>(newOtherNodeMap.keySet());
 				newNodes.removeAll(otherNodeMap.keySet());
 
 				if (!newNodes.isEmpty()) {
-					newNodesList = newNodes.stream().map(newOtherNodeMap::get).collect(Collectors.toList());
+					newNodesList = newNodes.stream().map(newOtherNodeMap::get).toList();
 				}
 
 			}
