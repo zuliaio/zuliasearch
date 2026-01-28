@@ -8,6 +8,7 @@ import io.zulia.message.ZuliaServiceOuterClass.IndexRouting;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.exceptions.ShardOfflineException;
 import io.zulia.server.node.ZuliaNode;
+import io.zulia.util.ShardUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +32,7 @@ public class MasterSlaveSelector {
 	}
 
 	public Node getNodeForUniqueId(String uniqueId) throws ShardDoesNotExistException, ShardOfflineException {
-		int shardForUniqueId = getShardForUniqueId(uniqueId, indexShardMapping.getNumberOfShards());
+		int shardForUniqueId = ShardUtil.findShardForUniqueId(uniqueId, indexShardMapping.getNumberOfShards());
 
 		for (ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
 			if (shardMapping.getShardNumber() == shardForUniqueId) {
@@ -110,7 +111,5 @@ public class MasterSlaveSelector {
 		return null;
 	}
 
-	public static int getShardForUniqueId(String uniqueId, int numOfShards) {
-		return Math.abs(uniqueId.hashCode()) % numOfShards;
-	}
+
 }
