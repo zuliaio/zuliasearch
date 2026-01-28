@@ -14,6 +14,7 @@ import io.zulia.message.ZuliaQuery.StatGroupInternal;
 import io.zulia.message.ZuliaQuery.StatRequest;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 
@@ -63,8 +64,8 @@ public class StatCombiner {
 		for (FacetStats.Builder fs : facetStats) {
 			if (fs.getHasError()) {
 				// The error is the summation across all shards of the smallest value returned by each shard which did not return this facet
-				List<Integer> missing = getNonReportingShards(facetStatsGroups.get(fs.getFacet()));
-				SortValue errorBound = getErrorBound(missing);
+				BitSet missingShards = getNonReportingShards(facetStatsGroups.get(fs.getFacet()));
+				SortValue errorBound = getErrorBound(missingShards);
 				fs.setMaxSumError(errorBound);
 			}
 		}
@@ -107,32 +108,27 @@ public class StatCombiner {
 	 * Determines which shards are not represented in a list of facet stats
 	 *
 	 * @param facetStats list to interrogate
-	 * @return List of missing shard indexes
+	 * @return BitSet with bits set for missing shard indexes
 	 */
-	private List<Integer> getNonReportingShards(List<FacetStatsWithShardIndex> facetStats) {
-		boolean[] mask = new boolean[shardReponses]; // Defaults to false (arrays are also fast)
-		facetStats.forEach(f -> mask[f.shardIndex()] = true); // Set values to true
+	private BitSet getNonReportingShards(List<FacetStatsWithShardIndex> facetStats) {
+		BitSet reportingShards = new BitSet(shardReponses);
+		facetStats.forEach(f -> reportingShards.set(f.shardIndex()));
 
-		List<Integer> missingShards = new ArrayList<>();
-		for (int i = 0; i < shardReponses; i++) {
-			if (!mask[i]) {
-				missingShards.add(i);
-			}
-		}
-
-		return missingShards;
+		// Flip to get non-reporting shards
+		reportingShards.flip(0, shardReponses);
+		return reportingShards;
 	}
 
 	/**
 	 * Gets the error bound by finding the sum of the minimums across all non-reporting shards
 	 *
-	 * @param missingIndexes list of shard indexes to evaluate
+	 * @param missingShards BitSet with bits set for shard indexes to evaluate
 	 * @return SortValue representing the error bound
 	 */
-	private SortValue getErrorBound(List<Integer> missingIndexes) {
-		List<StatCarrier> statCarriers = new ArrayList<>();
+	private SortValue getErrorBound(BitSet missingShards) {
+		List<StatCarrier> statCarriers = new ArrayList<>(missingShards.cardinality());
 		for (StatGroupWithShardIndex sgi : statGroups) {
-			if (missingIndexes.contains(sgi.shardIndex)) {
+			if (missingShards.get(sgi.shardIndex())) {
 				StatCarrier sc = new StatCarrier();
 				sgi.statGroup().getFacetStatsList().forEach(facetStatsInternal -> sc.addErrorStat(facetStatsInternal.getSum()));
 				statCarriers.add(sc);
