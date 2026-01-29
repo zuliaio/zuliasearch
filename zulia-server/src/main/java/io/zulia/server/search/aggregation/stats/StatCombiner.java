@@ -4,7 +4,6 @@ import com.datadoghq.sketch.ddsketch.DDSketch;
 import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
 import com.datadoghq.sketch.ddsketch.DDSketches;
 import com.datadoghq.sketch.ddsketch.store.UnboundedSizeDenseStore;
-import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetStats;
 import io.zulia.message.ZuliaQuery.FacetStatsInternal;
 import io.zulia.message.ZuliaQuery.Percentile;
@@ -31,6 +30,7 @@ public class StatCombiner {
 	private final List<StatGroupWithShardIndex> statGroups;
 	private final StatRequest statRequest;
 	private final int shardReponses;
+	private SortValue[] shardMinSums;
 
 	public StatCombiner(StatRequest statRequest, int shardReponses) {
 		this.statRequest = statRequest;
@@ -42,7 +42,7 @@ public class StatCombiner {
 		statGroups.add(new StatGroupWithShardIndex(statGroup, shardIndex));
 	}
 
-	public ZuliaQuery.StatGroup getCombinedStatGroupAndConvertToExternalType() {
+	public StatGroup getCombinedStatGroupAndConvertToExternalType() {
 		// Get global stats
 		List<FacetStatsWithShardIndex> globalStatsInternal = new ArrayList<>();
 		statGroups.forEach(sg -> globalStatsInternal.add(new FacetStatsWithShardIndex(sg.statGroup().getGlobalStats(), sg.shardIndex())));
@@ -120,27 +120,38 @@ public class StatCombiner {
 	}
 
 	/**
-	 * Gets the error bound by finding the sum of the minimums across all non-reporting shards
+	 * Lazily computes and caches the minimum sum for each shard. This is used for error bound
+	 * calculations and only computed once when first needed.
+	 *
+	 * @return array of minimum SortValues indexed by shard index
+	 */
+	private SortValue[] getShardMinSums() {
+		if (shardMinSums == null) {
+			shardMinSums = new SortValue[shardReponses];
+			for (StatGroupWithShardIndex sgi : statGroups) {
+				StatCarrier sc = new StatCarrier();
+				for (FacetStatsInternal fsi : sgi.statGroup().getFacetStatsList()) {
+					sc.addErrorStat(fsi.getSum());
+				}
+				shardMinSums[sgi.shardIndex()] = sc.getErrorValue();
+			}
+		}
+		return shardMinSums;
+	}
+
+	/**
+	 * Gets the error bound by finding the sum of the minimums across all non-reporting shards.
+	 * Uses pre-computed shard minimum sums for efficiency with high cardinality facets.
 	 *
 	 * @param missingShards BitSet with bits set for shard indexes to evaluate
 	 * @return SortValue representing the error bound
 	 */
 	private SortValue getErrorBound(BitSet missingShards) {
-		List<StatCarrier> statCarriers = new ArrayList<>(missingShards.cardinality());
-		for (StatGroupWithShardIndex sgi : statGroups) {
-			if (missingShards.get(sgi.shardIndex())) {
-				StatCarrier sc = new StatCarrier();
-				sgi.statGroup().getFacetStatsList().forEach(facetStatsInternal -> sc.addErrorStat(facetStatsInternal.getSum()));
-				statCarriers.add(sc);
-			}
-		}
-
-		// Sum the error values found earlier
+		SortValue[] minSums = getShardMinSums();
 		SortValue.Builder errorBound = SortValue.newBuilder();
-		for (StatCarrier sc : statCarriers) {
-			errorBound = StatCarrier.addToSum(errorBound, sc.getErrorValue());
+		for (int i = missingShards.nextSetBit(0); i >= 0; i = missingShards.nextSetBit(i + 1)) {
+			errorBound = StatCarrier.addToSum(errorBound, minSums[i]);
 		}
-
 		return errorBound.build();
 	}
 
