@@ -186,7 +186,9 @@ public class StatCombiner {
 
 		// Accumulate the local stats
 		StatCarrier carrier = new StatCarrier();
-		internalStats.stream().map(FacetStatsWithShardIndex::facetStats).toList().forEach(carrier::addStat);
+		for (FacetStatsWithShardIndex fsi : internalStats) {
+			carrier.addStat(fsi.facetStats());
+		}
 
 		// Build combined final FacetStats that can be returned to the user
 		return FacetStats.newBuilder().setFacet(facetName).setMin(carrier.getMin()).setMax(carrier.getMax()).setSum(carrier.getSum())
