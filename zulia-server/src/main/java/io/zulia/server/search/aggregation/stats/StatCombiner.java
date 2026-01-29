@@ -156,21 +156,21 @@ public class StatCombiner {
 	}
 
 	/**
-	 * Combines a list of FacetStats Internal type into a single "merged" FacetStats type which can be returned to the calling user. The will combine DDSketches
-	 * into a final single sketch  and then retrieves the requested percentiles.
+	 * Combines a list of FacetStats Internal type into a single "merged" FacetStats type which can be returned to the calling user. Combines DDSketches
+	 * into a final single sketch and then retrieves the requested percentiles.
 	 *
 	 * @param internalStats List of internal stat messages to parse and combine into a return type
 	 * @return Combined FacetStats message object ready to be returned to the user
 	 */
 	private FacetStats.Builder convertAndCombineFacetStats(List<FacetStatsWithShardIndex> internalStats) {
-		String facetName = internalStats.get(0).facetStats().getFacet();
+		String facetName = internalStats.getFirst().facetStats().getFacet();
 
 		// If there are missing shard responses AND not all facets were requested there must be error
 		// -1 means all facets were requested so no error is possible in this case
 		boolean hasError = statRequest.getShardFacets() != -1 && internalStats.size() < shardReponses;
 
 		// No results to convert here. Return a blank value
-		if (internalStats.get(0).facetStats().getSerializedSize() == 0) {
+		if (internalStats.getFirst().facetStats().getSerializedSize() == 0) {
 			return FacetStats.newBuilder();
 		}
 
