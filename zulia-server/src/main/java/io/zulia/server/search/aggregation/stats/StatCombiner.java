@@ -129,11 +129,11 @@ public class StatCombiner {
 		if (shardMinSums == null) {
 			shardMinSums = new SortValue[shardReponses];
 			for (StatGroupWithShardIndex sgi : statGroups) {
-				StatCarrier sc = new StatCarrier();
-				for (FacetStatsInternal fsi : sgi.statGroup().getFacetStatsList()) {
-					sc.addErrorStat(fsi.getSum());
+				List<FacetStatsInternal> facetStatsList = sgi.statGroup().getFacetStatsList();
+				if (!facetStatsList.isEmpty()) {
+					// getFacetStatsList is sorted in descending order by sum, so the last element is the minimum
+					shardMinSums[sgi.shardIndex()] = facetStatsList.getLast().getSum();
 				}
-				shardMinSums[sgi.shardIndex()] = sc.getErrorValue();
 			}
 		}
 		return shardMinSums;
@@ -150,7 +150,9 @@ public class StatCombiner {
 		SortValue[] minSums = getShardMinSums();
 		SortValue.Builder errorBound = SortValue.newBuilder();
 		for (int i = missingShards.nextSetBit(0); i >= 0; i = missingShards.nextSetBit(i + 1)) {
-			errorBound = StatCarrier.addToSum(errorBound, minSums[i]);
+			if (minSums[i] != null) {
+				errorBound = StatCarrier.addToSum(errorBound, minSums[i]);
+			}
 		}
 		return errorBound.build();
 	}
@@ -215,7 +217,6 @@ public class StatCombiner {
 		private SortValue.Builder sum = null;
 		private SortValue.Builder maxValue = null;
 		private SortValue.Builder minValue = null;
-		private SortValue.Builder errorValue = null; // Will be a min
 
 		public StatCarrier() {
 		}
@@ -238,15 +239,6 @@ public class StatCombiner {
 			valueCount += fsi.getValueCount();
 		}
 
-		/**
-		 * Utilize this mechanism for tracking min of an error stat
-		 *
-		 * @param errorMetric error metric to minimize
-		 */
-		private void addErrorStat(SortValue errorMetric) {
-			errorValue = updateMinValue(errorValue, errorMetric);
-		}
-
 		private SortValue getMin() {
 			return minValue.build();
 		}
@@ -257,10 +249,6 @@ public class StatCombiner {
 
 		private SortValue getSum() {
 			return sum.build();
-		}
-
-		private SortValue getErrorValue() {
-			return errorValue.build();
 		}
 
 		/**
