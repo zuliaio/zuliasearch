@@ -1,21 +1,17 @@
 package io.zulia.server.search.aggregation.facets;
 
-import com.koloboke.collect.map.hash.HashObjIntMap;
-import com.koloboke.collect.map.hash.HashObjIntMaps;
 import com.koloboke.collect.map.hash.HashObjLongMap;
 import com.koloboke.collect.map.hash.HashObjLongMaps;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
-import org.apache.lucene.util.FixedBitSet;
-
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 public class FacetCombiner {
@@ -47,28 +43,31 @@ public class FacetCombiner {
 		else {
 
 			HashObjLongMap<String> facetCounts = HashObjLongMaps.newMutableMap();
-			Map<String, FixedBitSet> shardsReturned = new HashMap<>();
-			FixedBitSet fullResults = new FixedBitSet(shardReponses);
+			Map<String, BitSet> shardsReturned = new HashMap<>();
+			BitSet fullResults = new BitSet(shardReponses);
 			long[] minForShard = new long[shardReponses];
 
 			for (FacetGroupWithShardIndex facetGroupWithShardIndex : facetGroups) {
 				FacetGroup fg = facetGroupWithShardIndex.facetGroup();
 				int shardIndex = facetGroupWithShardIndex.shardIndex();
 
-				for (FacetCount fc : fg.getFacetCountList()) {
+				List<FacetCount> facetCountList = fg.getFacetCountList();
+				for (FacetCount fc : facetCountList) {
 					String facet = fc.getFacet();
-					FixedBitSet shardSet = shardsReturned.computeIfAbsent(facet, k -> new FixedBitSet(shardReponses));
-					long count = fc.getCount();
-					facetCounts.addValue(facet, count);
+					BitSet shardSet = shardsReturned.computeIfAbsent(facet, k -> new BitSet(shardReponses));
+					facetCounts.addValue(facet, fc.getCount());
 					shardSet.set(shardIndex);
-					minForShard[shardIndex] = count;
 				}
 
 				int shardFacets = countRequest.getShardFacets();
-				int facetCountCount = fg.getFacetCountCount();
+				int facetCountCount = facetCountList.size();
 				if (facetCountCount < shardFacets || (shardFacets == -1)) {
 					fullResults.set(shardIndex);
 					minForShard[shardIndex] = 0;
+				}
+				else if (!facetCountList.isEmpty()) {
+					// List is sorted descending by count, so last element has minimum count
+					minForShard[shardIndex] = facetCountList.getLast().getCount();
 				}
 			}
 
@@ -94,7 +93,7 @@ public class FacetCombiner {
 			int count = 0;
 			for (FacetCountResult facet : sortedFacetResults) {
 
-				FixedBitSet shardCount = shardsReturned.get(facet.getFacet());
+				BitSet shardCount = shardsReturned.get(facet.getFacet());
 				shardCount.or(fullResults);
 
 				FacetCount.Builder facetCountBuilder = FacetCount.newBuilder().setFacet(facet.getFacet()).setCount(facet.getCount());
@@ -103,10 +102,9 @@ public class FacetCombiner {
 				if (computeError) {
 					long maxError = 0;
 					if (shardCount.cardinality() < numberOfShards) {
-						for (int i = 0; i < numberOfShards; i++) {
-							if (!shardCount.get(i)) {
-								maxError += minForShard[i];
-							}
+						// Iterate only through missing shards using nextClearBit
+						for (int i = shardCount.nextClearBit(0); i < numberOfShards; i = shardCount.nextClearBit(i + 1)) {
+							maxError += minForShard[i];
 						}
 					}
 					facetCountBuilder.setMaxError(maxError);
