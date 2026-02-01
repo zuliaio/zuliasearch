@@ -78,14 +78,11 @@ public class QueryCombiner {
 
 			for (IndexShardResponse isr : iqr.getIndexShardResponseList()) {
 				String indexName = isr.getIndexName();
-				if (!indexToShardQueryResponseMap.containsKey(indexName)) {
-					indexToShardQueryResponseMap.put(indexName, new HashMap<>());
-				}
 
 				for (ShardQueryResponse sr : isr.getShardQueryResponseList()) {
 					int shardNumber = sr.getShardNumber();
 
-					Map<Integer, ShardQueryResponse> shardResponseMap = indexToShardQueryResponseMap.get(indexName);
+					Map<Integer, ShardQueryResponse> shardResponseMap = indexToShardQueryResponseMap.computeIfAbsent(indexName, k -> new HashMap<>());
 
 					if (shardResponseMap.containsKey(shardNumber)) {
 						throw new Exception("Shard " + shardNumber + " is repeated for " + indexName);
@@ -176,18 +173,11 @@ public class QueryCombiner {
 			for (AnalysisResult analysisResult : sr.getAnalysisResultList()) {
 
 				AnalysisRequest analysisRequest = analysisResult.getAnalysisRequest();
-				if (!analysisRequestToTermMap.containsKey(analysisRequest)) {
-					analysisRequestToTermMap.put(analysisRequest, new HashMap<>());
-				}
-
-				Map<String, Term.Builder> termMap = analysisRequestToTermMap.get(analysisRequest);
+				Map<String, Term.Builder> termMap = analysisRequestToTermMap.computeIfAbsent(analysisRequest, k -> new HashMap<>());
 
 				for (Term term : analysisResult.getTermsList()) {
 					String key = term.getValue();
-					if (!termMap.containsKey(key)) {
-						termMap.put(key, Term.newBuilder().setValue(key).setDocFreq(0).setTermFreq(0));
-					}
-					Term.Builder termsBuilder = termMap.get(key);
+					Term.Builder termsBuilder = termMap.computeIfAbsent(key, k -> Term.newBuilder().setValue(k).setDocFreq(0).setTermFreq(0));
 					termsBuilder.setDocFreq(termsBuilder.getDocFreq() + term.getDocFreq());
 					termsBuilder.setScore(termsBuilder.getScore() + term.getScore());
 					termsBuilder.setTermFreq(termsBuilder.getTermFreq() + term.getTermFreq());
@@ -232,14 +222,8 @@ public class QueryCombiner {
 		if (start == 0) {
 			builder.addAllResults(results);
 		}
-		else {
-			int i = 0;
-			for (ScoredResult scoredResult : results) {
-				if (i >= start) {
-					builder.addResults(scoredResult);
-				}
-				i++;
-			}
+		else if (start < results.size()) {
+			builder.addAllResults(results.subList(start, results.size()));
 		}
 
 		builder.setLastResult(createLastResult(lastIndexResultMap));
@@ -381,8 +365,9 @@ public class QueryCombiner {
 
 	private LastResult createLastResult(Map<String, ScoredResult[]> lastIndexResultMap) {
 		LastResult.Builder newLastResultBuilder = LastResult.newBuilder();
-		for (String indexName : lastIndexResultMap.keySet()) {
-			ScoredResult[] lastForShardArr = lastIndexResultMap.get(indexName);
+		for (Map.Entry<String, ScoredResult[]> entry : lastIndexResultMap.entrySet()) {
+			String indexName = entry.getKey();
+			ScoredResult[] lastForShardArr = entry.getValue();
 			int numberOfShards = indexToShardCount.get(indexName);
 			List<ScoredResult> indexList = new ArrayList<>();
 			for (int shard = 0; shard < numberOfShards; shard++) {
@@ -404,8 +389,7 @@ public class QueryCombiner {
 		Map<String, ScoredResult[]> lastIndexResultMap = new HashMap<>();
 
 		for (String indexName : indexToShardQueryResponseMap.keySet()) {
-			int numberOfShards = indexToShardCount.get(indexName);
-			lastIndexResultMap.put(indexName, new ScoredResult[numberOfShards]);
+			lastIndexResultMap.put(indexName, new ScoredResult[indexToShardCount.get(indexName)]);
 		}
 
 		for (LastIndexResult lir : lastResult.getLastIndexResultList()) {
