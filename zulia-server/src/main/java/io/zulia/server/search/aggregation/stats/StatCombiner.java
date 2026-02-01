@@ -64,8 +64,8 @@ public class StatCombiner {
 		for (FacetStats.Builder fs : facetStats) {
 			if (fs.getHasError()) {
 				// The error is the summation across all shards of the smallest value returned by each shard which did not return this facet
-				BitSet missingShards = getNonReportingShards(facetStatsGroups.get(fs.getFacet()));
-				SortValue errorBound = getErrorBound(missingShards);
+				BitSet reportingShards = getReportingShards(facetStatsGroups.get(fs.getFacet()));
+				SortValue errorBound = getErrorBound(reportingShards);
 				fs.setMaxSumError(errorBound);
 			}
 		}
@@ -105,17 +105,14 @@ public class StatCombiner {
 	}
 
 	/**
-	 * Determines which shards are not represented in a list of facet stats
+	 * Determines which shards are represented in a list of facet stats
 	 *
 	 * @param facetStats list to interrogate
-	 * @return BitSet with bits set for missing shard indexes
+	 * @return BitSet with bits set for reporting shard indexes
 	 */
-	private BitSet getNonReportingShards(List<FacetStatsWithShardIndex> facetStats) {
+	private BitSet getReportingShards(List<FacetStatsWithShardIndex> facetStats) {
 		BitSet reportingShards = new BitSet(shardReponses);
 		facetStats.forEach(f -> reportingShards.set(f.shardIndex()));
-
-		// Flip to get non-reporting shards
-		reportingShards.flip(0, shardReponses);
 		return reportingShards;
 	}
 
@@ -143,13 +140,13 @@ public class StatCombiner {
 	 * Gets the error bound by finding the sum of the minimums across all non-reporting shards.
 	 * Uses pre-computed shard minimum sums for efficiency with high cardinality facets.
 	 *
-	 * @param missingShards BitSet with bits set for shard indexes to evaluate
+	 * @param reportingShards BitSet with bits set for shards that reported this facet
 	 * @return SortValue representing the error bound
 	 */
-	private SortValue getErrorBound(BitSet missingShards) {
+	private SortValue getErrorBound(BitSet reportingShards) {
 		SortValue[] minSums = getShardMinSums();
 		SortValue.Builder errorBound = SortValue.newBuilder();
-		for (int i = missingShards.nextSetBit(0); i >= 0; i = missingShards.nextSetBit(i + 1)) {
+		for (int i = reportingShards.nextClearBit(0); i < shardReponses; i = reportingShards.nextClearBit(i + 1)) {
 			if (minSums[i] != null) {
 				errorBound = StatCarrier.addToSum(errorBound, minSums[i]);
 			}
