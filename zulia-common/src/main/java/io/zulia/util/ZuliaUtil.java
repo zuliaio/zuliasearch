@@ -39,7 +39,7 @@ public class ZuliaUtil {
 
 	public static void handleListsUniqueValues(Object o, Consumer<? super Object> action, AtomicInteger listSize, AtomicInteger setSize) {
 		Set<Object> objects = new LinkedHashSet<>();
-		handleLists(o, objects::add, listSize);
+		handleLists(o, objects::add, listSize, false);
 
 		for (Object object : objects) {
 			setSize.incrementAndGet();
@@ -47,29 +47,39 @@ public class ZuliaUtil {
 		}
 	}
 
+	public static void handleListsRetainNullAndEmpty(Object o, Consumer<? super Object> action) {
+		handleLists(o, action, new AtomicInteger(), true);
+	}
+
 	public static void handleLists(Object o, Consumer<? super Object> action) {
-		handleLists(o, action, new AtomicInteger());
+		handleLists(o, action, new AtomicInteger(), false);
 	}
 
 	public static void handleLists(Object o, Consumer<? super Object> action, AtomicInteger listSize) {
+		handleLists(o, action, listSize, false);
+	}
+
+	public static void handleLists(Object o, Consumer<? super Object> action, AtomicInteger listSize, boolean retainNullAndEmpty) {
 		if (o instanceof Collection<?> c) {
 			for (Object obj : c) {
-				if (obj != null) {
-					handleLists(obj, action, listSize);
-				}
+				handleLists(obj, action, listSize, retainNullAndEmpty);
 			}
 
 		}
 		else if (o instanceof Object[] arr) {
 			for (Object obj : arr) {
-				if (obj != null) {
-					handleLists(obj, action, listSize);
-				}
+				handleLists(obj, action, listSize, retainNullAndEmpty);
 			}
 		}
-		else if (o != null) {
-			listSize.incrementAndGet();
-			action.accept(o);
+		else {
+			if (retainNullAndEmpty) {
+				listSize.incrementAndGet();
+				action.accept(o);
+			}
+			else if (o != null) {
+				listSize.incrementAndGet();
+				action.accept(o);
+			}
 		}
 	}
 
