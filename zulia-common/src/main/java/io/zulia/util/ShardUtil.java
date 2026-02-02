@@ -2,7 +2,8 @@ package io.zulia.util;
 
 public class ShardUtil {
 	public static int findShardForUniqueId(String uniqueId, int numOfShards) {
-		return (int) Math.abs(djb2Hash(uniqueId)) % numOfShards;
+		long shard = Math.abs(djb2Hash(uniqueId)) % numOfShards;
+		return (int) shard; // Typecast after modulus to ensure it's within int range
 	}
 
 	public static long djb2Hash(String str) {
