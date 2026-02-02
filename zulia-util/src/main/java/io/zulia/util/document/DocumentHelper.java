@@ -11,6 +11,10 @@ import java.util.List;
 public class DocumentHelper {
 
 	public static Object getValueFromMongoDocument(Document mongoDocument, String storedFieldName) {
+		return getValueFromMongoDocument(mongoDocument, storedFieldName, false);
+	}
+
+	public static Object getValueFromMongoDocument(Document mongoDocument, String storedFieldName, boolean retainNullAndEmpty) {
 
 		int next = storedFieldName.indexOf('.');
 		if (next >= 0) {
@@ -20,14 +24,14 @@ public class DocumentHelper {
 			while (next != -1) {
 				String field = storedFieldName.substring(off, next);
 				off = next + 1;
-				o = getChild(o, field);
+				o = getChild(o, field, retainNullAndEmpty);
 				if (o == null) {
 					return null;
 				}
 				next = storedFieldName.indexOf('.', off);
 			}
 			String field = storedFieldName.substring(off);
-			return getChild(o, field);
+			return getChild(o, field, retainNullAndEmpty);
 		}
 		else {
 			return mongoDocument.get(storedFieldName);
@@ -35,16 +39,35 @@ public class DocumentHelper {
 
 	}
 
-	private static Object getChild(Object o, String field) {
+	private static Object getChild(Object o, String field, boolean retainNullAndEmpty) {
 		if (o instanceof Document d) {
 			o = d.get(field);
+			if (!retainNullAndEmpty && o instanceof List<?>) {
+				List<Object> values = new ArrayList<>();
+				for (Object item : (List<?>) o) {
+					if (item != null) {
+						if (item instanceof String) {
+							if (!((String) item).isEmpty()) {
+								values.add(item);
+							}
+						}
+						else {
+							values.add(item);
+						}
+					}
+				}
+				o = values;
+			}
 		}
 		else if (o instanceof List<?> list) {
 			List<Object> values = new ArrayList<>(list.size());
 			for (Object item : list) {
 				if (item instanceof Document d) {
 					Object object = d.get(field);
-					if (object != null) {
+					if (retainNullAndEmpty) {
+						values.add(object);
+					}
+					else if (object != null) {
 						values.add(object);
 					}
 				}
