@@ -25,7 +25,7 @@ public class ResultHelperTest {
 
 		Document embeddedDocumentTwo = new Document();
 		embeddedDocumentTwo.put("otherfield", "1");
-		embeddedDocumentTwo.put("otherfield2", List.of("1", "2", "3"));
+		embeddedDocumentTwo.put("otherfield2", List.of("1", "2", "3", ""));
 		embeddedDocumentOne.put("subfield2", embeddedDocumentTwo);
 
 		testMongoDocument.put("field2", embeddedDocumentOne);
@@ -56,6 +56,7 @@ public class ResultHelperTest {
 
 		Assertions.assertEquals("1", DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield"));
 		Assertions.assertEquals(List.of("1", "2", "3"), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield2"));
+		Assertions.assertEquals(List.of("1", "2", "3", ""), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield2", true));
 		Assertions.assertNull(DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield1"));
 		Assertions.assertNull(DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1.otherfield"));
 		Assertions.assertNull(DocumentHelper.getValueFromMongoDocument(testMongoDocument, "thing"));
