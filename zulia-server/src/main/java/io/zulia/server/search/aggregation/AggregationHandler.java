@@ -224,7 +224,7 @@ public class AggregationHandler {
 
 	private void handleSegment(MatchingDocs matchingDocs, NumericFieldStatInfo[] localFields, CountFacetInfo localGlobalFacetInfo) throws IOException {
 		LeafReader reader = matchingDocs.context().reader();
-		List<NumericFieldStatContext> fieldContexts = new ArrayList<>();
+		List<NumericFieldStatContext> fieldContexts = new ArrayList<>(localFields.length);
 		for (NumericFieldStatInfo field : localFields) {
 			NumericFieldStatContext numericFieldStatContext = new NumericFieldStatContext(reader, field);
 			fieldContexts.add(numericFieldStatContext);
@@ -312,7 +312,7 @@ public class AggregationHandler {
 			facetCounts[i] = ZuliaQuery.FacetCount.newBuilder().setFacet(label).setCount(ordValue.getValue().longValue()).build();
 		}
 
-		return ZuliaQuery.FacetGroup.newBuilder().addAllFacetCount(Arrays.stream(facetCounts).toList());
+		return ZuliaQuery.FacetGroup.newBuilder().addAllFacetCount(Arrays.asList(facetCounts));
 	}
 
 	public ZuliaQuery.FacetStatsInternal getGlobalStatsForNumericField(String field) {
