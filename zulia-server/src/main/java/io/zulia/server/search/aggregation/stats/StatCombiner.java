@@ -4,7 +4,6 @@ import com.datadoghq.sketch.ddsketch.DDSketch;
 import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
 import com.datadoghq.sketch.ddsketch.DDSketches;
 import com.datadoghq.sketch.ddsketch.store.UnboundedSizeDenseStore;
-import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FacetStats;
 import io.zulia.message.ZuliaQuery.FacetStatsInternal;
 import io.zulia.message.ZuliaQuery.Percentile;
@@ -14,6 +13,7 @@ import io.zulia.message.ZuliaQuery.StatGroupInternal;
 import io.zulia.message.ZuliaQuery.StatRequest;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 
@@ -30,6 +30,7 @@ public class StatCombiner {
 	private final List<StatGroupWithShardIndex> statGroups;
 	private final StatRequest statRequest;
 	private final int shardReponses;
+	private SortValue[] shardMinSums;
 
 	public StatCombiner(StatRequest statRequest, int shardReponses) {
 		this.statRequest = statRequest;
@@ -41,7 +42,7 @@ public class StatCombiner {
 		statGroups.add(new StatGroupWithShardIndex(statGroup, shardIndex));
 	}
 
-	public ZuliaQuery.StatGroup getCombinedStatGroupAndConvertToExternalType() {
+	public StatGroup getCombinedStatGroupAndConvertToExternalType() {
 		// Get global stats
 		List<FacetStatsWithShardIndex> globalStatsInternal = new ArrayList<>();
 		statGroups.forEach(sg -> globalStatsInternal.add(new FacetStatsWithShardIndex(sg.statGroup().getGlobalStats(), sg.shardIndex())));
@@ -63,8 +64,8 @@ public class StatCombiner {
 		for (FacetStats.Builder fs : facetStats) {
 			if (fs.getHasError()) {
 				// The error is the summation across all shards of the smallest value returned by each shard which did not return this facet
-				List<Integer> missing = getNonReportingShards(facetStatsGroups.get(fs.getFacet()));
-				SortValue errorBound = getErrorBound(missing);
+				BitSet reportingShards = getReportingShards(facetStatsGroups.get(fs.getFacet()));
+				SortValue errorBound = getErrorBound(reportingShards);
 				fs.setMaxSumError(errorBound);
 			}
 		}
@@ -96,74 +97,83 @@ public class StatCombiner {
 				comp = Float.compare(sv1.getFloatValue(), sv2.getFloatValue());
 			if (comp == 0)
 				comp = Long.compare(sv1.getDateValue(), sv2.getDateValue());
+			// Secondary sort by facet key A-Z when values are equal
+			if (comp == 0)
+				comp = o1.getFacet().compareTo(o2.getFacet());
 			return comp;
 		}
 		else {
-			return 0;
+			// If neither has sum, sort by facet key A-Z
+			return o1.getFacet().compareTo(o2.getFacet());
 		}
 	}
 
 	/**
-	 * Determines which shards are not represented in a list of facet stats
+	 * Determines which shards are represented in a list of facet stats
 	 *
 	 * @param facetStats list to interrogate
-	 * @return List of missing shard indexes
+	 * @return BitSet with bits set for reporting shard indexes
 	 */
-	private List<Integer> getNonReportingShards(List<FacetStatsWithShardIndex> facetStats) {
-		boolean[] mask = new boolean[shardReponses]; // Defaults to false (arrays are also fast)
-		facetStats.forEach(f -> mask[f.shardIndex()] = true); // Set values to true
-
-		List<Integer> missingShards = new ArrayList<>();
-		for (int i = 0; i < shardReponses; i++) {
-			if (!mask[i]) {
-				missingShards.add(i);
-			}
-		}
-
-		return missingShards;
+	private BitSet getReportingShards(List<FacetStatsWithShardIndex> facetStats) {
+		BitSet reportingShards = new BitSet(shardReponses);
+		facetStats.forEach(f -> reportingShards.set(f.shardIndex()));
+		return reportingShards;
 	}
 
 	/**
-	 * Gets the error bound by finding the sum of the minimums across all non-reporting shards
+	 * Lazily computes and caches the minimum sum for each shard. This is used for error bound
+	 * calculations and only computed once when first needed.
 	 *
-	 * @param missingIndexes list of shard indexes to evaluate
-	 * @return SortValue representing the error bound
+	 * @return array of minimum SortValues indexed by shard index
 	 */
-	private SortValue getErrorBound(List<Integer> missingIndexes) {
-		List<StatCarrier> statCarriers = new ArrayList<>();
-		for (StatGroupWithShardIndex sgi : statGroups) {
-			if (missingIndexes.contains(sgi.shardIndex)) {
-				StatCarrier sc = new StatCarrier();
-				sgi.statGroup().getFacetStatsList().forEach(facetStatsInternal -> sc.addErrorStat(facetStatsInternal.getSum()));
-				statCarriers.add(sc);
+	private SortValue[] getShardMinSums() {
+		if (shardMinSums == null) {
+			shardMinSums = new SortValue[shardReponses];
+			for (StatGroupWithShardIndex sgi : statGroups) {
+				List<FacetStatsInternal> facetStatsList = sgi.statGroup().getFacetStatsList();
+				if (!facetStatsList.isEmpty()) {
+					// getFacetStatsList is sorted in descending order by sum, so the last element is the minimum
+					shardMinSums[sgi.shardIndex()] = facetStatsList.getLast().getSum();
+				}
 			}
 		}
+		return shardMinSums;
+	}
 
-		// Sum the error values found earlier
+	/**
+	 * Gets the error bound by finding the sum of the minimums across all non-reporting shards.
+	 * Uses pre-computed shard minimum sums for efficiency with high cardinality facets.
+	 *
+	 * @param reportingShards BitSet with bits set for shards that reported this facet
+	 * @return SortValue representing the error bound
+	 */
+	private SortValue getErrorBound(BitSet reportingShards) {
+		SortValue[] minSums = getShardMinSums();
 		SortValue.Builder errorBound = SortValue.newBuilder();
-		for (StatCarrier sc : statCarriers) {
-			errorBound = StatCarrier.addToSum(errorBound, sc.getErrorValue());
+		for (int i = reportingShards.nextClearBit(0); i < shardReponses; i = reportingShards.nextClearBit(i + 1)) {
+			if (minSums[i] != null) {
+				errorBound = StatCarrier.addToSum(errorBound, minSums[i]);
+			}
 		}
-
 		return errorBound.build();
 	}
 
 	/**
-	 * Combines a list of FacetStats Internal type into a single "merged" FacetStats type which can be returned to the calling user. The will combine DDSketches
-	 * into a final single sketch  and then retrieves the requested percentiles.
+	 * Combines a list of FacetStats Internal type into a single "merged" FacetStats type which can be returned to the calling user. Combines DDSketches
+	 * into a final single sketch and then retrieves the requested percentiles.
 	 *
 	 * @param internalStats List of internal stat messages to parse and combine into a return type
 	 * @return Combined FacetStats message object ready to be returned to the user
 	 */
 	private FacetStats.Builder convertAndCombineFacetStats(List<FacetStatsWithShardIndex> internalStats) {
-		String facetName = internalStats.get(0).facetStats().getFacet();
+		String facetName = internalStats.getFirst().facetStats().getFacet();
 
 		// If there are missing shard responses AND not all facets were requested there must be error
 		// -1 means all facets were requested so no error is possible in this case
 		boolean hasError = statRequest.getShardFacets() != -1 && internalStats.size() < shardReponses;
 
 		// No results to convert here. Return a blank value
-		if (internalStats.get(0).facetStats().getSerializedSize() == 0) {
+		if (internalStats.getFirst().facetStats().getSerializedSize() == 0) {
 			return FacetStats.newBuilder();
 		}
 
@@ -190,7 +200,9 @@ public class StatCombiner {
 
 		// Accumulate the local stats
 		StatCarrier carrier = new StatCarrier();
-		internalStats.stream().map(FacetStatsWithShardIndex::facetStats).toList().forEach(carrier::addStat);
+		for (FacetStatsWithShardIndex fsi : internalStats) {
+			carrier.addStat(fsi.facetStats());
+		}
 
 		// Build combined final FacetStats that can be returned to the user
 		return FacetStats.newBuilder().setFacet(facetName).setMin(carrier.getMin()).setMax(carrier.getMax()).setSum(carrier.getSum())
@@ -206,7 +218,6 @@ public class StatCombiner {
 		private SortValue.Builder sum = null;
 		private SortValue.Builder maxValue = null;
 		private SortValue.Builder minValue = null;
-		private SortValue.Builder errorValue = null; // Will be a min
 
 		public StatCarrier() {
 		}
@@ -229,15 +240,6 @@ public class StatCombiner {
 			valueCount += fsi.getValueCount();
 		}
 
-		/**
-		 * Utilize this mechanism for tracking min of an error stat
-		 *
-		 * @param errorMetric error metric to minimize
-		 */
-		private void addErrorStat(SortValue errorMetric) {
-			errorValue = updateMinValue(errorValue, errorMetric);
-		}
-
 		private SortValue getMin() {
 			return minValue.build();
 		}
@@ -248,10 +250,6 @@ public class StatCombiner {
 
 		private SortValue getSum() {
 			return sum.build();
-		}
-
-		private SortValue getErrorValue() {
-			return errorValue.build();
 		}
 
 		/**
