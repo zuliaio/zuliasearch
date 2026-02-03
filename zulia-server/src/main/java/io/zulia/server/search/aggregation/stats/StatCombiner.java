@@ -97,10 +97,14 @@ public class StatCombiner {
 				comp = Float.compare(sv1.getFloatValue(), sv2.getFloatValue());
 			if (comp == 0)
 				comp = Long.compare(sv1.getDateValue(), sv2.getDateValue());
+			// Secondary sort by facet key A-Z when values are equal
+			if (comp == 0)
+				comp = o1.getFacet().compareTo(o2.getFacet());
 			return comp;
 		}
 		else {
-			return 0;
+			// If neither has sum, sort by facet key A-Z
+			return o1.getFacet().compareTo(o2.getFacet());
 		}
 	}
 
