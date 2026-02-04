@@ -26,7 +26,7 @@ import java.util.List;
 public class FacetTest {
 
 	@RegisterExtension
-	static final NodeExtension nodeExtension = new NodeExtension(1);
+	static final NodeExtension nodeExtension = new NodeExtension(3);
 
 	public static final String FACET_TEST_INDEX = "facetTest";
 
@@ -365,6 +365,163 @@ public class FacetTest {
 	@Order(6)
 	public void confirm() throws Exception {
 		searchTest();
+	}
+
+	public static final String ERROR_BOUND_INDEX = "facetErrorBoundTest";
+	private static final int ERROR_BOUND_SHARD_COUNT = 5;
+	private static final int ERROR_BOUND_DOC_COUNT = 100;
+
+	@Test
+	@Order(7)
+	public void createErrorBoundIndex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.addDefaultSearchField("title");
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("category").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.setIndexName(ERROR_BOUND_INDEX);
+		indexConfig.setNumberOfShards(ERROR_BOUND_SHARD_COUNT);
+		indexConfig.setShardCommitInterval(20);
+
+		zuliaWorkPool.createIndex(indexConfig);
+	}
+
+	@Test
+	@Order(8)
+	public void indexErrorBoundData() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// Index documents with different categories
+		// Categories: cat1 (40 docs), cat2 (30 docs), cat3 (20 docs), cat4 (10 docs)
+		// Documents are distributed across shards by ID
+		for (int i = 0; i < ERROR_BOUND_DOC_COUNT; i++) {
+			String category;
+			if (i < 40) {
+				category = "cat1";
+			} else if (i < 70) {
+				category = "cat2";
+			} else if (i < 90) {
+				category = "cat3";
+			} else {
+				category = "cat4";
+			}
+
+			Document doc = new Document();
+			doc.put("id", String.valueOf(i));
+			doc.put("category", category);
+
+			Store store = new Store(String.valueOf(i), ERROR_BOUND_INDEX);
+			store.setResultDocument(ResultDocBuilder.from(doc));
+			zuliaWorkPool.store(store);
+		}
+	}
+
+	@Test
+	@Order(9)
+	public void testErrorBounds() throws Exception {
+		testErrorBoundsSearch(null);
+		testErrorBoundsSearch(2);
+	}
+
+	private void testErrorBoundsSearch(Integer concurrency) throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+		Search search = new Search(ERROR_BOUND_INDEX).setRealtime(true);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
+
+		// Test 1: With shardFacets=-1 (all facets) - no errors should occur
+		search.addCountFacet(new CountFacet("category").setTopN(10).setTopNShard(-1));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		List<ZuliaQuery.FacetCount> facetCounts = searchResult.getFacetCounts("category");
+		Assertions.assertFalse(facetCounts.isEmpty(), "Should have facet counts");
+		for (ZuliaQuery.FacetCount fc : facetCounts) {
+			Assertions.assertEquals(0, fc.getMaxError(),
+					"Facet " + fc.getFacet() + " should have no error when shardFacets=-1");
+		}
+
+		// Verify counts
+		ZuliaQuery.FacetCount cat1 = findFacetByName(facetCounts, "cat1");
+		ZuliaQuery.FacetCount cat2 = findFacetByName(facetCounts, "cat2");
+		ZuliaQuery.FacetCount cat3 = findFacetByName(facetCounts, "cat3");
+		ZuliaQuery.FacetCount cat4 = findFacetByName(facetCounts, "cat4");
+
+		Assertions.assertNotNull(cat1);
+		Assertions.assertNotNull(cat2);
+		Assertions.assertNotNull(cat3);
+		Assertions.assertNotNull(cat4);
+
+		Assertions.assertEquals(40, cat1.getCount());
+		Assertions.assertEquals(30, cat2.getCount());
+		Assertions.assertEquals(20, cat3.getCount());
+		Assertions.assertEquals(10, cat4.getCount());
+
+		// Test 2: With limited shardFacets, verify error handling
+		search.clearFacetCount();
+		search.addCountFacet(new CountFacet("category").setTopN(10).setTopNShard(1));
+		searchResult = zuliaWorkPool.search(search);
+
+		facetCounts = searchResult.getFacetCounts("category");
+
+		// With shardFacets=1, only top facet per shard is returned
+		// Facets present in all shards won't have errors
+		// Facets missing from some shards will have maxError >= 0
+		for (ZuliaQuery.FacetCount fc : facetCounts) {
+			Assertions.assertTrue(fc.getMaxError() >= 0,
+					"maxError should be non-negative for facet " + fc.getFacet());
+		}
+
+		// Test 3: With shardFacets=2, more facets returned
+		search.clearFacetCount();
+		search.addCountFacet(new CountFacet("category").setTopN(10).setTopNShard(2));
+		searchResult = zuliaWorkPool.search(search);
+
+		facetCounts = searchResult.getFacetCounts("category");
+		boolean foundAnyFacet = false;
+		for (ZuliaQuery.FacetCount fc : facetCounts) {
+			foundAnyFacet = true;
+			// Error should be reasonable
+			Assertions.assertTrue(fc.getMaxError() >= 0,
+					"maxError should be non-negative for facet " + fc.getFacet());
+			Assertions.assertTrue(fc.getMaxError() <= fc.getCount() + ERROR_BOUND_DOC_COUNT,
+					"maxError " + fc.getMaxError() + " seems unreasonably large for facet " + fc.getFacet());
+		}
+		Assertions.assertTrue(foundAnyFacet, "Should have at least one facet result");
+
+		// Test 4: Verify consistency - same facet with/without limited shardFacets
+		search.clearFacetCount();
+		search.addCountFacet(new CountFacet("category").setTopN(10).setTopNShard(-1));
+		searchResult = zuliaWorkPool.search(search);
+		List<ZuliaQuery.FacetCount> allFacetCounts = searchResult.getFacetCounts("category");
+
+		search.clearFacetCount();
+		search.addCountFacet(new CountFacet("category").setTopN(10).setTopNShard(1));
+		searchResult = zuliaWorkPool.search(search);
+		List<ZuliaQuery.FacetCount> limitedFacetCounts = searchResult.getFacetCounts("category");
+
+		// Find facets that appear in both results
+		for (ZuliaQuery.FacetCount limited : limitedFacetCounts) {
+			ZuliaQuery.FacetCount all = findFacetByName(allFacetCounts, limited.getFacet());
+			if (all != null) {
+				// Count from limited should be <= count from all
+				Assertions.assertTrue(limited.getCount() <= all.getCount(),
+						"Facet " + limited.getFacet() + " limited count should be <= all count");
+				// If no error, counts should match
+				if (limited.getMaxError() == 0) {
+					Assertions.assertEquals(all.getCount(), limited.getCount(),
+							"Facet " + limited.getFacet() + " count should match when no error");
+				}
+			}
+		}
+	}
+
+	private ZuliaQuery.FacetCount findFacetByName(List<ZuliaQuery.FacetCount> facetCounts, String name) {
+		return facetCounts.stream()
+				.filter(fc -> fc.getFacet().equals(name))
+				.findFirst()
+				.orElse(null);
 	}
 
 }
