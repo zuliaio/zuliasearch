@@ -493,4 +493,101 @@ public class StatTest {
 		Assertions.assertEquals(6L * repeatCount, authorCountStats.getValueCount());
 	}
 
+	@Test
+	@Order(8)
+	public void testErrorBounds() throws Exception {
+		testErrorBoundsSearch(null);
+		testErrorBoundsSearch(2);
+	}
+
+	private void testErrorBoundsSearch(Integer concurrency) throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+		Search search = new Search(STAT_TEST_INDEX);
+		if (concurrency != null) {
+			search.setConcurrency(concurrency);
+		}
+
+		// Test 1: With topNShard=-1 (all facets) - no errors should occur
+		search.addStat(new StatFacet("authorCount", "pathFacet").setTopN(10).setTopNShard(-1));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		List<FacetStats> statsByPathFacet = searchResult.getFacetFieldStat("authorCount", "pathFacet");
+		Assertions.assertFalse(statsByPathFacet.isEmpty(), "Should have facet stats");
+		for (FacetStats facetStats : statsByPathFacet) {
+			Assertions.assertFalse(facetStats.getHasError(),
+					"Facet " + facetStats.getFacet() + " should not have error when topNShard=-1");
+		}
+
+		// Test 2: With limited topNShard, verify error handling
+		// Use topNShard=1 which forces only the top facet per shard
+		// pathFacet has 4 values (top1, top2, top3, top4) across 5 shards
+		search.clearStat();
+		search.addStat(new StatFacet("authorCount", "pathFacet").setTopN(10).setTopNShard(1));
+		searchResult = zuliaWorkPool.search(search);
+
+		statsByPathFacet = searchResult.getFacetFieldStat("authorCount", "pathFacet");
+
+		// With topNShard=1, we get the union of top-1 facets from each shard
+		// The returned facets that are present in all shards won't have errors
+		// Facets missing from some shards will have hasError=true with a valid maxSumError
+		for (FacetStats facetStats : statsByPathFacet) {
+			if (facetStats.getHasError()) {
+				// When hasError is true, maxSumError should be set
+				Assertions.assertTrue(facetStats.hasMaxSumError(),
+						"Facet " + facetStats.getFacet() + " has error but no maxSumError set");
+				// maxSumError represents the potential additional sum from missing shards
+				Assertions.assertTrue(facetStats.getMaxSumError().getLongValue() >= 0,
+						"maxSumError should be non-negative for facet " + facetStats.getFacet());
+			}
+		}
+
+		// Test 3: With topNShard=2, more facets returned - verify error bounds are reasonable
+		search.clearStat();
+		search.addStat(new StatFacet("authorCount", "pathFacet").setTopN(10).setTopNShard(2));
+		searchResult = zuliaWorkPool.search(search);
+
+		statsByPathFacet = searchResult.getFacetFieldStat("authorCount", "pathFacet");
+		boolean foundAnyFacet = false;
+		for (FacetStats facetStats : statsByPathFacet) {
+			foundAnyFacet = true;
+			if (facetStats.getHasError()) {
+				long errorBound = facetStats.getMaxSumError().getLongValue();
+				long sum = facetStats.getSum().getLongValue();
+				// Error bound is the sum of minimum values from missing shards
+				// It should be a reasonable value (not larger than total possible sum)
+				Assertions.assertTrue(errorBound >= 0,
+						"Error bound should be non-negative for facet " + facetStats.getFacet());
+				Assertions.assertTrue(errorBound <= sum + (long) repeatCount * 5 * shardCount,
+						"Error bound " + errorBound + " seems unreasonably large for facet " + facetStats.getFacet());
+			}
+		}
+		Assertions.assertTrue(foundAnyFacet, "Should have at least one facet result");
+
+		// Test 4: Verify consistency - same facet with/without limited topNShard should have same sum
+		// (the sum should be the same, error bound just indicates potential undercount)
+		search.clearStat();
+		search.addStat(new StatFacet("authorCount", "normalFacet").setTopN(10).setTopNShard(-1));
+		searchResult = zuliaWorkPool.search(search);
+		List<FacetStats> allFacetsStats = searchResult.getFacetFieldStat("authorCount", "normalFacet");
+
+		search.clearStat();
+		search.addStat(new StatFacet("authorCount", "normalFacet").setTopN(10).setTopNShard(1));
+		searchResult = zuliaWorkPool.search(search);
+		List<FacetStats> limitedFacetsStats = searchResult.getFacetFieldStat("authorCount", "normalFacet");
+
+		// Find a facet that appears in both results
+		for (FacetStats limited : limitedFacetsStats) {
+			for (FacetStats all : allFacetsStats) {
+				if (limited.getFacet().equals(all.getFacet())) {
+					// The sum from limited should be <= sum from all (may be missing some)
+					// But if hasError is false, they should be equal
+					if (!limited.getHasError()) {
+						Assertions.assertEquals(all.getSum().getLongValue(), limited.getSum().getLongValue(),
+								"Facet " + limited.getFacet() + " sum should match when present in all shards");
+					}
+				}
+			}
+		}
+	}
+
 }
