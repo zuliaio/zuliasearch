@@ -611,28 +611,29 @@ public class ZuliaIndex {
 		for (String var : expr.variables) {
 			if (!ZuliaFieldConstants.SCORE_FIELD.equals(var)) {
 				SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(var);
-				FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
-				if (fieldType == null) {
-					throw new IllegalArgumentException("Score Function references unknown sort field " + var);
+				if (sortFieldInfo == null) {
+					throw new IllegalArgumentException("Score Function references unknown sort field <" + var + ">");
 				}
-
+				FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
+				String internalFieldName = sortFieldInfo.getInternalSortFieldName();
+				SortedNumericDoubleValuesSource valuesSource;
 				if (FieldTypeUtil.isStoredAsInt(fieldType)) {
-					bindings.add(var, DoubleValuesSource.fromIntField(var));
+					valuesSource = SortedNumericDoubleValuesSource.fromInt(internalFieldName);
 				}
 				else if (FieldTypeUtil.isStoredAsLong(fieldType)) {
-					bindings.add(var, DoubleValuesSource.fromLongField(var));
+					valuesSource = SortedNumericDoubleValuesSource.fromLong(internalFieldName);
 				}
 				else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-					bindings.add(var, DoubleValuesSource.fromFloatField(var));
+					valuesSource = SortedNumericDoubleValuesSource.fromFloat(internalFieldName);
 				}
 				else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-					bindings.add(var, DoubleValuesSource.fromDoubleField(var));
+					valuesSource = SortedNumericDoubleValuesSource.fromDouble(internalFieldName);
 				}
 				else {
 					throw new IllegalArgumentException("Score Function references sort field that is not numeric or date type <" + var + ">");
 				}
+				bindings.add(var, valuesSource);
 			}
-			//
 		}
 
 		return new FunctionScoreQuery(query, expr.getDoubleValuesSource(bindings));
