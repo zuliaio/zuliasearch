@@ -25,6 +25,7 @@ public abstract class SpreadsheetTargetConfig<T, S extends SpreadsheetTargetConf
 	private SpreadsheetTypeHandler<T, Object> defaultTypeHandler;
 	private SpreadsheetTypeHandler<T, String> headerHandler;
 	private SpreadsheetTypeHandler<T, String> boldHandler;
+	private SpreadsheetTypeHandler<T, String> redBoldHandler;
 
 	public SpreadsheetTargetConfig(DataOutputStream dataStream) {
 		this.dataStream = dataStream;
@@ -138,6 +139,15 @@ public abstract class SpreadsheetTargetConfig<T, S extends SpreadsheetTargetConf
 
 	public S withBoldHandler(SpreadsheetTypeHandler<T, String> boldHandler) {
 		this.boldHandler = boldHandler;
+		return getSelf();
+	}
+
+	public SpreadsheetTypeHandler<T, String> getRedBoldHandler() {
+		return redBoldHandler;
+	}
+
+	public S withRedBoldHandler(SpreadsheetTypeHandler<T, String> redBoldHandler) {
+		this.redBoldHandler = redBoldHandler;
 		return getSelf();
 	}
 }
