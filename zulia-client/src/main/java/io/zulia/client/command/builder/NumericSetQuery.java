@@ -25,12 +25,12 @@ public class NumericSetQuery implements QueryBuilder {
 
 	}
 
-	public QueryBuilder include() {
+	public NumericSetQuery include() {
 		queryBuilder.setQueryType(ZuliaQuery.Query.QueryType.NUMERIC_SET);
 		return this;
 	}
 
-	public QueryBuilder exclude() {
+	public NumericSetQuery exclude() {
 		queryBuilder.setQueryType(ZuliaQuery.Query.QueryType.NUMERIC_SET_NOT);
 		return this;
 	}

@@ -4,6 +4,7 @@ import io.zulia.DefaultAnalyzers;
 import io.zulia.ZuliaConstants;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.MatchAllQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
 import io.zulia.client.command.builder.TermQuery;
@@ -199,6 +200,57 @@ public class TermQueryTest {
 	}
 
 	@Test
+	@Order(4)
+	public void excludeTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// TermQuery exclude: NOT field1 in ("abc", "def")
+		// field1 uses STANDARD analyzer. "abc" matches ids 1,3,4. "def" matches id 2. Total = 4 per repeat.
+		// Exclude gives 9-4 = 5 per repeat
+		Search search = new Search(TERM_QUERY_TEST);
+		search.addQuery(new TermQuery("field1").addTerms("abc", "def").exclude());
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals((UNIQUE_DOCS - 4) * REPEATS, searchResult.getTotalHits());
+
+		// TermQuery exclude on field2: NOT field2 in ("def"). field2 "def" matches ids 1,7 = 2 per repeat
+		search = new Search(TERM_QUERY_TEST);
+		search.addQuery(new TermQuery("field2").addTerm("def").exclude());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals((UNIQUE_DOCS - 2) * REPEATS, searchResult.getTotalHits());
+
+		// Combined: field1 in ("abc") AND NOT field2 in ("sss")
+		// field1 "abc" = ids 1,3,4. field2 "sss" = ids 3,6. Exclude sss from abc set removes id 3. Result = ids 1,4 = 2 per repeat
+		search = new Search(TERM_QUERY_TEST);
+		search.addQuery(new TermQuery("field1").addTerm("abc"));
+		search.addQuery(new TermQuery("field2").addTerm("sss").exclude());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2 * REPEATS, searchResult.getTotalHits());
+
+		// Multi-field exclude: NOT (field1 OR field2) in ("abc", "def")
+		// field1 "abc": ids 1,3,4. field1 "def": id 2. field2 "def": ids 1,7. Union = ids 1,2,3,4,7 = 5 per repeat
+		search = new Search(TERM_QUERY_TEST);
+		search.addQuery(new TermQuery("field1", "field2").addTerms("abc", "def").exclude());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals((UNIQUE_DOCS - 5) * REPEATS, searchResult.getTotalHits());
+
+		// All-negative: TermQuery exclude + FilterQuery exclude with MatchAllQuery base
+		// Exclude field1="abc" (ids 1,3,4) AND exclude field2="sss" (ids 3,6)
+		// Union of excluded = ids 1,3,4,6 = 4 per repeat. Remaining = 5 per repeat
+		search = new Search(TERM_QUERY_TEST);
+		search.addQuery(new TermQuery("field1").addTerm("abc").exclude());
+		search.addQuery(new FilterQuery("field2:sss").exclude());
+		search.addQuery(new MatchAllQuery());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals((UNIQUE_DOCS - 4) * REPEATS, searchResult.getTotalHits());
+
+		// Chaining: exclude then include toggles back to positive
+		search = new Search(TERM_QUERY_TEST);
+		search.addQuery(new TermQuery("field1").addTerms("abc", "def").exclude().include());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4 * REPEATS, searchResult.getTotalHits());
+	}
+
+	@Test
 	@Order(5)
 	public void restart() throws Exception {
 		nodeExtension.restartNodes();
@@ -208,6 +260,7 @@ public class TermQueryTest {
 	@Order(6)
 	public void confirm() throws Exception {
 		searchTest();
+		excludeTest();
 	}
 
 }
