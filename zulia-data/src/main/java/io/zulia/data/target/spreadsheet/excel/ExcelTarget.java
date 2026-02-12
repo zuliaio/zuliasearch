@@ -4,6 +4,7 @@ import io.zulia.data.output.DataOutputStream;
 import io.zulia.data.output.FileDataOutputStream;
 import io.zulia.data.target.spreadsheet.SpreadsheetTarget;
 import io.zulia.data.target.spreadsheet.excel.cell.CellReference;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -93,6 +94,10 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 			writeHeaders(headers);
 		}
 
+	}
+
+	public void addMergedRegion(int firstRow, int lastRow, int firstCol, int lastCol) {
+		this.sheet.addMergedRegion(new CellRangeAddress(firstRow, lastRow, firstCol, lastCol));
 	}
 
 	public void close() throws IOException {
