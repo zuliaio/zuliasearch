@@ -3,9 +3,11 @@ package io.zulia.server.test.node;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.MatchAllQuery;
 import io.zulia.client.command.builder.NumericSetQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.Sort;
+import io.zulia.client.command.builder.TermQuery;
 import io.zulia.client.command.factory.NumericSet;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -324,6 +326,83 @@ public class NumericSetTest {
 	}
 
 	@Test
+	@Order(4)
+	public void excludeTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// Data: id=1 int=1, id=2 int=2, id=3 int=52, id=4 int=12332, id=5 int=2, id=6 int=10
+
+		// NumericSetQuery exclude on int: NOT intField in (1, 2)
+		// intField 1 or 2 matches ids 1,2,5 = 3 docs. Exclude = 6-3 = 3
+		Search search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new NumericSetQuery("intField").addValues(1, 2).exclude());
+		search.addSort(new Sort("id"));
+		search.setAmount(10);
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3, searchResult.getTotalHits());
+		Assertions.assertEquals("3", searchResult.getCompleteResults().get(0).getUniqueId());
+		Assertions.assertEquals("4", searchResult.getCompleteResults().get(1).getUniqueId());
+		Assertions.assertEquals("6", searchResult.getCompleteResults().get(2).getUniqueId());
+
+		// NumericSetQuery exclude on long: NOT longField in (1)
+		// longField=1 matches ids 1,5 = 2 docs. Exclude = 6-2 = 4
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new NumericSetQuery("longField").addValues(1L).exclude());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		// NumericSetQuery exclude on float: NOT floatField in (565.0, 2000)
+		// floatField 565.0f or 2000f matches ids 3,5 = 2 docs. Exclude = 6-2 = 4
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new NumericSetQuery("floatField").addValues(565.0f, 2000f).exclude());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		// NumericSetQuery exclude on double: NOT doubleField in (2.01, 2.0)
+		// doubleField 2.01 or 2.0 matches ids 2,4,5 = 3 docs. Exclude = 6-3 = 3
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new NumericSetQuery("doubleField").addValues(2.01, 2.0).exclude());
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3, searchResult.getTotalHits());
+
+		// Combined: intField in (1,2) AND NOT longField in (1)
+		// intField 1,2 = ids 1,2,5. NOT longField=1 excludes ids 1,5. Result = id 2 only
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new NumericSetQuery("intField").addValues(1, 2));
+		search.addQuery(new NumericSetQuery("longField").addValues(1L).exclude());
+		search.addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+		Assertions.assertEquals("2", searchResult.getCompleteResults().get(0).getUniqueId());
+
+		// All-negative with MatchAllQuery: NOT intField in (1,2) AND NOT doubleField in (2444.0)
+		// Excluded: intField 1,2 = ids 1,2,5. doubleField 2444.0 = id 3. Union = ids 1,2,3,5. Remaining = ids 4,6
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new NumericSetQuery("intField").addValues(1, 2).exclude());
+		search.addQuery(new NumericSetQuery("doubleField").addValues(2444.0).exclude());
+		search.addQuery(new MatchAllQuery());
+		search.addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
+		Assertions.assertEquals("4", searchResult.getCompleteResults().get(0).getUniqueId());
+		Assertions.assertEquals("6", searchResult.getCompleteResults().get(1).getUniqueId());
+
+		// FilterQuery exclude combined with NumericSetQuery: intField in (1,2) AND NOT id="1"
+		// intField 1,2 = ids 1,2,5. Exclude id=1 leaves ids 2,5
+		search = new Search(NUMERIC_SET_TEST);
+		search.addQuery(new NumericSetQuery("intField").addValues(1, 2));
+		search.addQuery(new FilterQuery("id:1").exclude());
+		search.addSort(new Sort("id"));
+		search.setAmount(10);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
+		Assertions.assertEquals("2", searchResult.getCompleteResults().get(0).getUniqueId());
+		Assertions.assertEquals("5", searchResult.getCompleteResults().get(1).getUniqueId());
+	}
+
+	@Test
 	@Order(5)
 	public void restart() throws Exception {
 		nodeExtension.restartNodes();
@@ -333,6 +412,7 @@ public class NumericSetTest {
 	@Order(6)
 	public void confirm() throws Exception {
 		searchTest();
+		excludeTest();
 	}
 
 }

@@ -31,19 +31,19 @@ public class TermQuery implements QueryBuilder {
 		return this;
 	}
 
-	public QueryBuilder addTerms(String... terms) {
+	public TermQuery addTerms(String... terms) {
 		for (String term : terms) {
 			builder.addTerm(term);
 		}
 		return this;
 	}
 
-	public QueryBuilder exclude() {
+	public TermQuery exclude() {
 		builder.setQueryType(ZuliaQuery.Query.QueryType.TERMS_NOT);
 		return this;
 	}
 
-	public QueryBuilder include() {
+	public TermQuery include() {
 		builder.setQueryType(ZuliaQuery.Query.QueryType.TERMS);
 		return this;
 	}
