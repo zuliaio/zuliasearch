@@ -10,10 +10,12 @@ import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.hateoas.JsonError;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaServiceOuterClass;
@@ -36,6 +38,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
  * @author pmeyer
  */
 @Controller
+@Tag(name = "Indexes")
 @ApiResponses({ @ApiResponse(responseCode = "400", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
@@ -46,18 +49,21 @@ public class IndexesController {
 
 	@Get(ZuliaRESTConstants.INDEXES_URL + "/{index}")
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
+	@Operation(summary = "Get index settings", description = "Returns the full configuration and settings for the specified index")
 	public String getIndex(String index) throws Exception {
 		return JsonFormat.printer().print(getIndexResponse(index));
 	}
 
 	@Get(ZuliaRESTConstants.INDEX_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
+	@Operation(summary = "Get index settings (legacy)", description = "Returns index settings using query parameter. Prefer /indexes/{index} instead.", deprecated = true)
 	public String getIndexLegacy(@QueryValue(ZuliaRESTConstants.INDEX) String index) throws Exception {
 		return JsonFormat.printer().print(getIndexResponse(index));
 	}
 
 	@Get(ZuliaRESTConstants.INDEXES_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
+	@Operation(summary = "List all indexes", description = "Returns a sorted list of all index names in the cluster")
 	public IndexesResponseDTO getIndexes() throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();

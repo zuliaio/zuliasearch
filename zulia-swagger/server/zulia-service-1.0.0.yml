@@ -5,6 +5,11 @@ info:
 paths:
   /associated/{indexName}/all:
     get:
+      tags:
+      - Associated
+      summary: List all associated documents
+      description: "Returns metadata for all associated documents in the index, optionally\
+        \ filtered by a query"
       operationId: getAllAssociatedForIndex
       parameters:
       - name: indexName
@@ -19,6 +24,30 @@ paths:
           type: string
           nullable: true
       responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getAllAssociatedForIndex 200 response
           content:
@@ -29,6 +58,11 @@ paths:
                   $ref: "#/components/schemas/AssociatedMetadataDTO"
   /associated/{indexName}/{uniqueId}/bundle:
     get:
+      tags:
+      - Associated
+      summary: Download associated files bundle
+      description: "Downloads all associated files for a document as a ZIP archive,\
+        \ including metadata"
       operationId: getAssociatedBundleForId
       parameters:
       - name: uniqueId
@@ -42,6 +76,30 @@ paths:
         schema:
           type: string
       responses:
+        "400":
+          description: Bad Request
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getAssociatedBundleForId 200 response
           content:
@@ -51,6 +109,10 @@ paths:
                 format: binary
   /associated/{indexName}/{uniqueId}/filenames:
     get:
+      tags:
+      - Associated
+      summary: List associated filenames
+      description: Returns the list of associated filenames for a given document
       operationId: getAssociatedFileNamesForId
       parameters:
       - name: uniqueId
@@ -64,6 +126,30 @@ paths:
         schema:
           type: string
       responses:
+        "400":
+          description: Bad Request
+          content:
+            text/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            text/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            text/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            text/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getAssociatedFileNamesForId 200 response
           content:
@@ -72,6 +158,11 @@ paths:
                 $ref: "#/components/schemas/AssociatedController.Filenames"
   /associated/{indexName}/{uniqueId}/{fileName}:
     post:
+      tags:
+      - Associated
+      summary: Store an associated file
+      description: "Uploads a file and associates it with a document, optionally including\
+        \ metadata JSON"
       operationId: storeAssociated
       parameters:
       - name: uniqueId
@@ -107,6 +198,30 @@ paths:
                 explode: false
         required: true
       responses:
+        "400":
+          description: Bad Request
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            text/plain:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: storeAssociated 200 response
           content:
@@ -115,6 +230,10 @@ paths:
                 type: object
   /associated/{indexName}/{uniqueId}/{fileName}/file:
     get:
+      tags:
+      - Associated
+      summary: Download associated file
+      description: Downloads the associated file content as a binary stream
       operationId: getAssociatedFile
       parameters:
       - name: indexName
@@ -133,6 +252,30 @@ paths:
         schema:
           type: string
       responses:
+        "400":
+          description: Bad Request
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/octet-stream:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getAssociatedFile 200 response
           content:
@@ -142,6 +285,10 @@ paths:
                 format: binary
   /associated/{indexName}/{uniqueId}/{fileName}/metadata:
     get:
+      tags:
+      - Associated
+      summary: Get associated document metadata
+      description: Returns the metadata JSON for a specific associated file
       operationId: getAssociatedMetadata
       parameters:
       - name: indexName
@@ -160,6 +307,30 @@ paths:
         schema:
           type: string
       responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getAssociatedMetadata 200 response
           content:
@@ -168,22 +339,31 @@ paths:
                 type: string
   /fetch:
     get:
+      tags:
+      - Fetch
+      summary: Fetch a document by ID
+      description: Retrieves a stored document by its unique ID from the specified
+        index
       operationId: fetch
       parameters:
       - name: id
         in: query
+        description: Unique document ID
         required: true
         explode: false
         schema:
           type: string
       - name: index
         in: query
+        description: Index name
         required: true
         explode: false
         schema:
           type: string
       - name: realtime
         in: query
+        description: "If true, force a commit before fetching to ensure latest changes\
+          \ are visible"
         explode: false
         schema:
           type: boolean
@@ -221,20 +401,29 @@ paths:
                 type: string
   /fetch/{indexName}/{uniqueId}:
     get:
+      tags:
+      - Fetch
+      summary: Fetch a document by path
+      description: Retrieves a stored document using path parameters instead of query
+        parameters
       operationId: fetchPath
       parameters:
       - name: uniqueId
         in: path
+        description: Unique document ID
         required: true
         schema:
           type: string
       - name: indexName
         in: path
+        description: Index name
         required: true
         schema:
           type: string
       - name: realtime
         in: query
+        description: "If true, force a commit before fetching to ensure latest changes\
+          \ are visible"
         explode: false
         schema:
           type: boolean
@@ -272,16 +461,78 @@ paths:
                 type: string
   /fields:
     get:
-      operationId: getFields
+      tags:
+      - Fields
+      summary: Get field names (legacy)
+      description: "Returns field names using query parameter. Prefer /fields/{indexName}\
+        \ instead."
+      operationId: getFieldsLegacy
       parameters:
       - name: index
         in: query
+        description: Index name
         required: true
         explode: false
         schema:
           type: string
       - name: realtime
         in: query
+        description: "If true, force a commit before reading to ensure latest fields\
+          \ are visible"
+        explode: false
+        schema:
+          type: boolean
+          nullable: true
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: getFieldsLegacy 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/FieldsDTO"
+      deprecated: true
+  /fields/{indexName}:
+    get:
+      tags:
+      - Fields
+      summary: Get field names
+      description: Returns all field names that exist in the specified index
+      operationId: getFields
+      parameters:
+      - name: indexName
+        in: path
+        description: Index name
+        required: true
+        schema:
+          type: string
+      - name: realtime
+        in: query
+        description: "If true, force a commit before reading to ensure latest fields\
+          \ are visible"
         explode: false
         schema:
           type: boolean
@@ -319,6 +570,11 @@ paths:
                 $ref: "#/components/schemas/FieldsDTO"
   /index:
     get:
+      tags:
+      - Indexes
+      summary: Get index settings (legacy)
+      description: "Returns index settings using query parameter. Prefer /indexes/{index}\
+        \ instead."
       operationId: getIndexLegacy
       parameters:
       - name: index
@@ -358,8 +614,13 @@ paths:
             application/json;charset=utf-8:
               schema:
                 type: string
+      deprecated: true
   /indexes:
     get:
+      tags:
+      - Indexes
+      summary: List all indexes
+      description: Returns a sorted list of all index names in the cluster
       operationId: getIndexes
       responses:
         "400":
@@ -394,6 +655,10 @@ paths:
                 $ref: "#/components/schemas/IndexesResponseDTO"
   /indexes/{index}:
     get:
+      tags:
+      - Indexes
+      summary: Get index settings
+      description: Returns the full configuration and settings for the specified index
       operationId: getIndex
       parameters:
       - name: index
@@ -434,10 +699,16 @@ paths:
                 type: string
   /nodes:
     get:
+      tags:
+      - Nodes
+      summary: Get cluster nodes
+      description: Returns information about cluster nodes including their index shard
+        mappings
       operationId: getNodes
       parameters:
       - name: active
         in: query
+        description: "If true, return only active nodes"
         required: true
         explode: false
         schema:
@@ -476,10 +747,16 @@ paths:
                 $ref: "#/components/schemas/NodesResponseDTO"
   /query:
     get:
+      tags:
+      - Query
+      summary: Search documents
+      description: "Executes a query against one or more indexes and returns matching\
+        \ documents with optional facets, highlights, and analysis"
       operationId: get
       parameters:
       - name: index
         in: query
+        description: Index name(s) to search
         required: true
         explode: false
         schema:
@@ -488,6 +765,7 @@ paths:
             type: string
       - name: q
         in: query
+        description: Query string in Lucene syntax
         required: true
         explode: false
         schema:
@@ -495,6 +773,7 @@ paths:
           default: '*:*'
       - name: qf
         in: query
+        description: Query fields to search against
         explode: false
         schema:
           type: array
@@ -503,6 +782,7 @@ paths:
             type: string
       - name: fq
         in: query
+        description: Filter queries (non-scoring)
         explode: false
         schema:
           type: array
@@ -511,6 +791,7 @@ paths:
             type: string
       - name: qJson
         in: query
+        description: Query as JSON (protobuf Query message format)
         explode: false
         schema:
           type: array
@@ -519,6 +800,7 @@ paths:
             type: string
       - name: fl
         in: query
+        description: Fields to return in results. Prefix with - to exclude a field.
         explode: false
         schema:
           type: array
@@ -527,6 +809,7 @@ paths:
             type: string
       - name: fetch
         in: query
+        description: Whether to fetch full documents
         required: true
         explode: false
         schema:
@@ -534,6 +817,7 @@ paths:
           default: true
       - name: rows
         in: query
+        description: Number of results to return
         required: true
         explode: false
         schema:
@@ -542,6 +826,8 @@ paths:
           default: 0
       - name: facet
         in: query
+        description: Facet fields to compute counts for (field or field:maxCount (-1
+          for no limit))
         explode: false
         schema:
           type: array
@@ -550,6 +836,7 @@ paths:
             type: string
       - name: drillDown
         in: query
+        description: Drill-down facet filters (field:value)
         explode: false
         schema:
           type: array
@@ -558,12 +845,14 @@ paths:
             type: string
       - name: defaultOp
         in: query
+        description: Default boolean operator (AND or OR)
         explode: false
         schema:
           type: string
           nullable: true
       - name: sort
         in: query
+        description: Sort fields (field or field:ASC/DESC)
         explode: false
         schema:
           type: array
@@ -572,6 +861,7 @@ paths:
             type: string
       - name: mm
         in: query
+        description: Minimum number of optional clauses that must match
         explode: false
         schema:
           type: integer
@@ -579,6 +869,7 @@ paths:
           nullable: true
       - name: sim
         in: query
+        description: Field similarity override (field:bm25|constant|tf|tfidf)
         explode: false
         schema:
           type: array
@@ -587,6 +878,7 @@ paths:
             type: string
       - name: debug
         in: query
+        description: Enable debug mode to return query explanation
         required: true
         explode: false
         schema:
@@ -594,6 +886,7 @@ paths:
           default: false
       - name: dontCache
         in: query
+        description: "If true, bypass query caching"
         required: true
         explode: false
         schema:
@@ -601,6 +894,7 @@ paths:
           default: true
       - name: start
         in: query
+        description: Starting offset for pagination
         explode: false
         schema:
           type: integer
@@ -608,6 +902,7 @@ paths:
           nullable: true
       - name: hl
         in: query
+        description: Fields to highlight
         explode: false
         schema:
           type: array
@@ -616,6 +911,7 @@ paths:
             type: string
       - name: hlJson
         in: query
+        description: Highlight configuration as JSON (protobuf HighlightRequest format)
         explode: false
         schema:
           type: array
@@ -624,6 +920,7 @@ paths:
             type: string
       - name: alJson
         in: query
+        description: Analysis configuration as JSON (protobuf AnalysisRequest format)
         explode: false
         schema:
           type: array
@@ -632,12 +929,15 @@ paths:
             type: string
       - name: cursor
         in: query
+        description: "Cursor for deep pagination. Use '0' to start, then pass the\
+          \ returned cursor value."
         explode: false
         schema:
           type: string
           nullable: true
       - name: truncate
         in: query
+        description: Truncate long field values in response
         required: true
         explode: false
         schema:
@@ -645,18 +945,39 @@ paths:
           default: false
       - name: realtime
         in: query
+        description: "If true, force a commit before searching to ensure all recent\
+          \ changes are visible"
         explode: false
         schema:
           type: boolean
           nullable: true
       - name: concurrency
         in: query
+        description: Number of concurrent shard queries
         explode: false
         schema:
           type: integer
           format: int32
           nullable: true
       responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: get 200 response
           content:
@@ -665,6 +986,11 @@ paths:
                 $ref: "#/components/schemas/SearchResultsDTO"
   /query/csv:
     get:
+      tags:
+      - Query
+      summary: Export search results as CSV
+      description: Executes a query and returns results as a CSV download. Supports
+        batch mode for large exports using cursor-based pagination.  Fields are required.
       operationId: getCSV
       parameters:
       - name: index
@@ -854,6 +1180,24 @@ paths:
           format: int32
           nullable: true
       responses:
+        "400":
+          description: Bad Request
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getCSV 200 response
           content:
@@ -862,6 +1206,11 @@ paths:
                 type: object
   /query/facet:
     get:
+      tags:
+      - Query
+      summary: Export facet counts as CSV
+      description: "Executes a query and returns facet counts as CSV with columns:\
+        \ facetName, facetKey, facetValue"
       operationId: getFacets
       parameters:
       - name: index
@@ -982,6 +1331,24 @@ paths:
           format: int32
           nullable: true
       responses:
+        "400":
+          description: Bad Request
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getFacets 200 response
           content:
@@ -990,8 +1357,25 @@ paths:
                 type: object
   /stats:
     get:
+      tags:
+      - Stats
+      summary: Get node statistics
+      description: "Returns JVM memory usage, disk space, Zulia version, and per-index\
+        \ statistics for the current node"
       operationId: getStats
       responses:
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getStats 200 response
           content:
@@ -1000,22 +1384,29 @@ paths:
                 $ref: "#/components/schemas/ZuliaBase.NodeStats"
   /terms:
     get:
+      tags:
+      - Terms
+      summary: Get terms as JSON
+      description: Returns terms and their frequencies for a given field in the index
       operationId: getTermsJson
       parameters:
       - name: index
         in: query
+        description: Index name
         required: true
         explode: false
         schema:
           type: string
       - name: fl
         in: query
+        description: Field name to get terms for
         required: true
         explode: false
         schema:
           type: string
       - name: amount
         in: query
+        description: Maximum number of terms to return
         explode: false
         schema:
           type: integer
@@ -1023,6 +1414,7 @@ paths:
           nullable: true
       - name: minDocFreq
         in: query
+        description: Minimum document frequency for a term to be included
         explode: false
         schema:
           type: integer
@@ -1030,6 +1422,7 @@ paths:
           nullable: true
       - name: minTermFreq
         in: query
+        description: Minimum term frequency for a term to be included
         explode: false
         schema:
           type: integer
@@ -1037,30 +1430,35 @@ paths:
           nullable: true
       - name: startTerm
         in: query
+        description: Only return terms lexicographically >= this value
         explode: false
         schema:
           type: string
           nullable: true
       - name: endTerm
         in: query
+        description: Only return terms lexicographically <= this value
         explode: false
         schema:
           type: string
           nullable: true
       - name: termFilter
         in: query
+        description: Regex filter to apply to terms
         explode: false
         schema:
           type: string
           nullable: true
       - name: termMatch
         in: query
+        description: Term match pattern
         explode: false
         schema:
           type: string
           nullable: true
       - name: includeTerm
         in: query
+        description: Specific terms to include in the response
         explode: false
         schema:
           type: array
@@ -1069,17 +1467,38 @@ paths:
             type: string
       - name: fuzzyTermJson
         in: query
+        description: Fuzzy term configuration as JSON (protobuf FuzzyTerm format)
         explode: false
         schema:
           type: string
           nullable: true
       - name: realtime
         in: query
+        description: "If true, force a commit before reading to ensure latest terms\
+          \ are visible"
         explode: false
         schema:
           type: boolean
           nullable: true
       responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getTermsJson 200 response
           content:
@@ -1088,6 +1507,11 @@ paths:
                 $ref: "#/components/schemas/TermsResponseDTO"
   /terms/csv:
     get:
+      tags:
+      - Terms
+      summary: Get terms as CSV
+      description: "Returns terms and their frequencies for a given field as CSV with\
+        \ columns: term, termFreq, docFreq, score"
       operationId: getTermsCsv
       parameters:
       - name: index
@@ -1168,6 +1592,24 @@ paths:
           type: boolean
           nullable: true
       responses:
+        "400":
+          description: Bad Request
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            text/csv;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
         "200":
           description: getTermsCsv 200 response
           content:

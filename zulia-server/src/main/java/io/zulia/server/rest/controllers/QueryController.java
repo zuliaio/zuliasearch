@@ -13,8 +13,15 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.hateoas.JsonError;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.AnalysisDTO;
 import io.zulia.rest.dto.FacetsDTO;
@@ -55,6 +62,10 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
  * @author pmeyer
  */
 @Controller(ZuliaRESTConstants.QUERY_URL)
+@Tag(name = "Query")
+@ApiResponses({ @ApiResponse(responseCode = "400", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
+		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
+		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
 @ExecuteOn(TaskExecutors.VIRTUAL)
 public class QueryController {
 
@@ -62,24 +73,32 @@ public class QueryController {
 
 	@Get
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
-	public SearchResultsDTO get(@QueryValue(ZuliaRESTConstants.INDEX) List<String> indexName,
-			@QueryValue(value = ZuliaRESTConstants.QUERY, defaultValue = "*:*") String query,
-			@Nullable @QueryValue(ZuliaRESTConstants.QUERY_FIELD) List<String> queryFields,
-			@Nullable @QueryValue(ZuliaRESTConstants.FILTER_QUERY) List<String> filterQueries,
-			@Nullable @QueryValue(ZuliaRESTConstants.QUERY_JSON) List<String> queryJsonList,
-			@Nullable @QueryValue(ZuliaRESTConstants.FIELDS) List<String> fields,
-			@QueryValue(value = ZuliaRESTConstants.FETCH, defaultValue = "true") Boolean fetch,
-			@QueryValue(value = ZuliaRESTConstants.ROWS, defaultValue = "0") Integer rows, @Nullable @QueryValue(ZuliaRESTConstants.FACET) List<String> facet,
-			@Nullable @QueryValue(ZuliaRESTConstants.DRILL_DOWN) List<String> drillDowns,
-			@Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator, @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
-			@Nullable @QueryValue(ZuliaRESTConstants.MIN_MATCH) Integer mm, @Nullable @QueryValue(ZuliaRESTConstants.SIMILARITY) List<String> similarity,
-			@QueryValue(value = ZuliaRESTConstants.DEBUG, defaultValue = "false") Boolean debug,
-			@QueryValue(value = ZuliaRESTConstants.DONT_CACHE, defaultValue = "true") Boolean dontCache,
-			@Nullable @QueryValue(ZuliaRESTConstants.START) Integer start, @Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT) List<String> highlightList,
-			@Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
-			@Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList, @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
-			@QueryValue(value = ZuliaRESTConstants.TRUNCATE, defaultValue = "false") Boolean truncate,
-			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime, @Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency)
+	@Operation(summary = "Search documents", description = "Executes a query against one or more indexes and returns matching documents with optional facets, highlights, and analysis")
+	public SearchResultsDTO get(
+			@io.swagger.v3.oas.annotations.Parameter(description = "Index name(s) to search", required = true) @QueryValue(ZuliaRESTConstants.INDEX) List<String> indexName,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Query string in Lucene syntax") @QueryValue(value = ZuliaRESTConstants.QUERY, defaultValue = "*:*") String query,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Query fields to search against") @Nullable @QueryValue(ZuliaRESTConstants.QUERY_FIELD) List<String> queryFields,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Filter queries (non-scoring)") @Nullable @QueryValue(ZuliaRESTConstants.FILTER_QUERY) List<String> filterQueries,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Query as JSON (protobuf Query message format)") @Nullable @QueryValue(ZuliaRESTConstants.QUERY_JSON) List<String> queryJsonList,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Fields to return in results. Prefix with - to exclude a field.") @Nullable @QueryValue(ZuliaRESTConstants.FIELDS) List<String> fields,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Whether to fetch full documents") @QueryValue(value = ZuliaRESTConstants.FETCH, defaultValue = "true") Boolean fetch,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Number of results to return") @QueryValue(value = ZuliaRESTConstants.ROWS, defaultValue = "0") Integer rows,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Facet fields to compute counts for (field or field:maxCount (-1 for no limit))") @Nullable @QueryValue(ZuliaRESTConstants.FACET) List<String> facet,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Drill-down facet filters (field:value)") @Nullable @QueryValue(ZuliaRESTConstants.DRILL_DOWN) List<String> drillDowns,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Default boolean operator (AND or OR)") @Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Sort fields (field or field:ASC/DESC)") @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Minimum number of optional clauses that must match") @Nullable @QueryValue(ZuliaRESTConstants.MIN_MATCH) Integer mm,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Field similarity override (field:bm25|constant|tf|tfidf)") @Nullable @QueryValue(ZuliaRESTConstants.SIMILARITY) List<String> similarity,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Enable debug mode to return query explanation") @QueryValue(value = ZuliaRESTConstants.DEBUG, defaultValue = "false") Boolean debug,
+			@io.swagger.v3.oas.annotations.Parameter(description = "If true, bypass query caching") @QueryValue(value = ZuliaRESTConstants.DONT_CACHE, defaultValue = "true") Boolean dontCache,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Starting offset for pagination") @Nullable @QueryValue(ZuliaRESTConstants.START) Integer start,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Fields to highlight") @Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT) List<String> highlightList,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Highlight configuration as JSON (protobuf HighlightRequest format)") @Nullable @QueryValue(ZuliaRESTConstants.HIGHLIGHT_JSON) List<String> highlightJsonList,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Analysis configuration as JSON (protobuf AnalysisRequest format)") @Nullable @QueryValue(ZuliaRESTConstants.ANALYZE_JSON) List<String> analyzeJsonList,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Cursor for deep pagination. Use '0' to start, then pass the returned cursor value.") @Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Truncate long field values in response") @QueryValue(value = ZuliaRESTConstants.TRUNCATE, defaultValue = "false") Boolean truncate,
+			@io.swagger.v3.oas.annotations.Parameter(description = "If true, force a commit before searching to ensure all recent changes are visible") @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Number of concurrent shard queries") @Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency)
 			throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
@@ -94,6 +113,7 @@ public class QueryController {
 
 	@Get("/csv")
 	@Produces(ZuliaRESTConstants.UTF8_CSV)
+	@Operation(summary = "Export search results as CSV", description = "Executes a query and returns results as a CSV download. Supports batch mode for large exports using cursor-based pagination.  Fields are required.")
 	public HttpResponse<?> getCSV(@QueryValue(ZuliaRESTConstants.INDEX) List<String> indexName,
 			@QueryValue(value = ZuliaRESTConstants.QUERY, defaultValue = "*:*") String query,
 			@Nullable @QueryValue(ZuliaRESTConstants.QUERY_FIELD) List<String> queryFields,
@@ -142,6 +162,7 @@ public class QueryController {
 
 	@Get("/facet")
 	@Produces(ZuliaRESTConstants.UTF8_CSV)
+	@Operation(summary = "Export facet counts as CSV", description = "Executes a query and returns facet counts as CSV with columns: facetName, facetKey, facetValue")
 	public HttpResponse<?> getFacets(@QueryValue(ZuliaRESTConstants.INDEX) List<String> indexName,
 			@QueryValue(value = ZuliaRESTConstants.QUERY, defaultValue = "*:*") String query,
 			@Nullable @QueryValue(ZuliaRESTConstants.QUERY_FIELD) List<String> queryFields,
