@@ -13,6 +13,12 @@ import io.micronaut.http.multipart.StreamingFileUpload;
 import io.micronaut.http.server.types.files.StreamedFile;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.exceptions.AssociatedDocumentDoesNotExistException;
@@ -42,6 +48,11 @@ import java.util.zip.ZipOutputStream;
  * @author pmeyer
  */
 @Controller(ZuliaRESTConstants.ASSOCIATED_URL)
+@Tag(name = "Associated")
+@ApiResponses({ @ApiResponse(responseCode = "400", content = { @Content(schema = @Schema(implementation = io.micronaut.http.hateoas.JsonError.class)) }),
+		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = io.micronaut.http.hateoas.JsonError.class)) }),
+		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = io.micronaut.http.hateoas.JsonError.class)) }),
+		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = io.micronaut.http.hateoas.JsonError.class)) }) })
 public class AssociatedController {
 
 	private final static Logger LOG = LoggerFactory.getLogger(AssociatedController.class);
@@ -49,6 +60,7 @@ public class AssociatedController {
 	@Get("/{indexName}/{uniqueId}/{fileName}/metadata")
 	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.APPLICATION_JSON)
+	@Operation(summary = "Get associated document metadata", description = "Returns the metadata JSON for a specific associated file")
 	public String getAssociatedMetadata(String indexName, String uniqueId, String fileName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 		Document metadataDocument = indexManager.getAssociatedDocumentMeta(indexName, uniqueId, fileName);
@@ -62,6 +74,7 @@ public class AssociatedController {
 	@Get("/{indexName}/{uniqueId}/{fileName}/file")
 	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	@Operation(summary = "Download associated file", description = "Downloads the associated file content as a binary stream")
 	public StreamedFile getAssociatedFile(String indexName, String uniqueId, String fileName) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
@@ -81,6 +94,7 @@ public class AssociatedController {
 	@Get("/{indexName}/{uniqueId}/filenames")
 	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.TEXT_JSON)
+	@Operation(summary = "List associated filenames", description = "Returns the list of associated filenames for a given document")
 	public Filenames getAssociatedFileNamesForId(final String uniqueId, String indexName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -91,6 +105,7 @@ public class AssociatedController {
 	@Get("/{indexName}/{uniqueId}/bundle")
 	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
+	@Operation(summary = "Download associated files bundle", description = "Downloads all associated files for a document as a ZIP archive, including metadata")
 	public StreamedFile getAssociatedBundleForId(final String uniqueId, String indexName) throws Exception {
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -127,6 +142,7 @@ public class AssociatedController {
 
 	@Get("/{indexName}/all")
 	@Produces(MediaType.APPLICATION_JSON)
+	@Operation(summary = "List all associated documents", description = "Returns metadata for all associated documents in the index, optionally filtered by a query")
 	public Flux<AssociatedMetadataDTO> getAllAssociatedForIndex(String indexName, @Nullable @QueryValue(ZuliaRESTConstants.QUERY) String query)
 			throws Exception {
 		Document queryDoc = (query != null) ? Document.parse(query) : new Document();
@@ -137,6 +153,7 @@ public class AssociatedController {
 	@Post("/{indexName}/{uniqueId}/{fileName}")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.TEXT_PLAIN)
+	@Operation(summary = "Store an associated file", description = "Uploads a file and associates it with a document, optionally including metadata JSON")
 	public Publisher<HttpResponse<?>> storeAssociated(StreamingFileUpload file, String uniqueId, String fileName, String indexName, @Nullable String metaJson)
 			throws Exception {
 

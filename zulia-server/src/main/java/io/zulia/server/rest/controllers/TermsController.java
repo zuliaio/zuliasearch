@@ -7,8 +7,16 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
+import io.micronaut.http.hateoas.JsonError;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.TermDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
@@ -29,23 +37,30 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
  * @author pmeyer
  */
 @Controller
+@Tag(name = "Terms")
+@ApiResponses({ @ApiResponse(responseCode = "400", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
+		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
+		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
 @ExecuteOn(TaskExecutors.VIRTUAL)
 public class TermsController {
 
 
 	@Get(ZuliaRESTConstants.TERMS_URL)
 	@Produces({ ZuliaRESTConstants.UTF8_JSON })
-	public TermsResponseDTO getTermsJson(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName,
-			@QueryValue(ZuliaRESTConstants.FIELDS) final String field, @Nullable @QueryValue(ZuliaRESTConstants.AMOUNT) final Integer amount,
-			@Nullable @QueryValue(ZuliaRESTConstants.MIN_DOC_FREQ) final Integer minDocFreq,
-			@Nullable @QueryValue(ZuliaRESTConstants.MIN_TERM_FREQ) final Integer minTermFreq,
-			@Nullable @QueryValue(ZuliaRESTConstants.START_TERM) final String startTerm,
-			@Nullable @QueryValue(ZuliaRESTConstants.END_TERM) final String endTerm,
-			@Nullable @QueryValue(ZuliaRESTConstants.TERM_FILTER) final String termFilter,
-			@Nullable @QueryValue(ZuliaRESTConstants.TERM_MATCH) final String termMatch,
-			@Nullable @QueryValue(ZuliaRESTConstants.INCLUDE_TERM) final List<String> includeTerm,
-			@Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson,
-			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) final Boolean realtime) throws Exception {
+	@Operation(summary = "Get terms as JSON", description = "Returns terms and their frequencies for a given field in the index")
+	public TermsResponseDTO getTermsJson(
+			@Parameter(description = "Index name", required = true) @QueryValue(ZuliaRESTConstants.INDEX) final String indexName,
+			@Parameter(description = "Field name to get terms for", required = true) @QueryValue(ZuliaRESTConstants.FIELDS) final String field,
+			@Parameter(description = "Maximum number of terms to return") @Nullable @QueryValue(ZuliaRESTConstants.AMOUNT) final Integer amount,
+			@Parameter(description = "Minimum document frequency for a term to be included") @Nullable @QueryValue(ZuliaRESTConstants.MIN_DOC_FREQ) final Integer minDocFreq,
+			@Parameter(description = "Minimum term frequency for a term to be included") @Nullable @QueryValue(ZuliaRESTConstants.MIN_TERM_FREQ) final Integer minTermFreq,
+			@Parameter(description = "Only return terms lexicographically >= this value") @Nullable @QueryValue(ZuliaRESTConstants.START_TERM) final String startTerm,
+			@Parameter(description = "Only return terms lexicographically <= this value") @Nullable @QueryValue(ZuliaRESTConstants.END_TERM) final String endTerm,
+			@Parameter(description = "Regex filter to apply to terms") @Nullable @QueryValue(ZuliaRESTConstants.TERM_FILTER) final String termFilter,
+			@Parameter(description = "Term match pattern") @Nullable @QueryValue(ZuliaRESTConstants.TERM_MATCH) final String termMatch,
+			@Parameter(description = "Specific terms to include in the response") @Nullable @QueryValue(ZuliaRESTConstants.INCLUDE_TERM) final List<String> includeTerm,
+			@Parameter(description = "Fuzzy term configuration as JSON (protobuf FuzzyTerm format)") @Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson,
+			@Parameter(description = "If true, force a commit before reading to ensure latest terms are visible") @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) final Boolean realtime) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 
@@ -65,6 +80,7 @@ public class TermsController {
 
 	@Get(ZuliaRESTConstants.TERMS_URL + "/csv")
 	@Produces({ ZuliaRESTConstants.UTF8_CSV })
+	@Operation(summary = "Get terms as CSV", description = "Returns terms and their frequencies for a given field as CSV with columns: term, termFreq, docFreq, score")
 	public String getTermsCsv(@QueryValue(ZuliaRESTConstants.INDEX) final String indexName, @QueryValue(ZuliaRESTConstants.FIELDS) final String field,
 			@Nullable @QueryValue(ZuliaRESTConstants.AMOUNT) final Integer amount,
 			@Nullable @QueryValue(ZuliaRESTConstants.MIN_DOC_FREQ) final Integer minDocFreq,

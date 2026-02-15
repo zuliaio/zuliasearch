@@ -3,8 +3,15 @@ package io.zulia.server.rest.controllers;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.hateoas.JsonError;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.NodeStats;
@@ -22,6 +29,9 @@ import java.util.List;
  * @author pmeyer
  */
 @Controller
+@Tag(name = "Stats")
+@ApiResponses({ @ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
+		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
 @ExecuteOn(TaskExecutors.VIRTUAL)
 public class StatsController {
 
@@ -29,6 +39,7 @@ public class StatsController {
 
 	@Get(ZuliaRESTConstants.STATS_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
+	@Operation(summary = "Get node statistics", description = "Returns JVM memory usage, disk space, Zulia version, and per-index statistics for the current node")
 	public NodeStats getStats() throws IOException {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();

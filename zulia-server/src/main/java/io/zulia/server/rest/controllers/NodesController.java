@@ -7,10 +7,13 @@ import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.hateoas.JsonError;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaServiceOuterClass;
@@ -37,6 +40,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
  * @author pmeyer
  */
 @Controller()
+@Tag(name = "Nodes")
 @ApiResponses({ @ApiResponse(responseCode = "400", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
@@ -46,7 +50,9 @@ public class NodesController {
 
 	@Get(ZuliaRESTConstants.NODES_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
-	public NodesResponseDTO getNodes(@QueryValue(value = ZuliaRESTConstants.ACTIVE, defaultValue = "false") Boolean active) throws Exception {
+	@Operation(summary = "Get cluster nodes", description = "Returns information about cluster nodes including their index shard mappings")
+	public NodesResponseDTO getNodes(
+			@Parameter(description = "If true, return only active nodes") @QueryValue(value = ZuliaRESTConstants.ACTIVE, defaultValue = "false") Boolean active) throws Exception {
 
 		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
 

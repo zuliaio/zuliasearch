@@ -8,10 +8,13 @@ import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.http.hateoas.JsonError;
 import io.micronaut.scheduling.TaskExecutors;
 import io.micronaut.scheduling.annotation.ExecuteOn;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.server.exceptions.DocumentDoesNotExistException;
 import io.zulia.server.index.ZuliaIndexManager;
@@ -23,6 +26,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 
 @Controller
+@Tag(name = "Fetch")
 @ApiResponses({ @ApiResponse(responseCode = "400", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "404", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
 		@ApiResponse(responseCode = "500", content = { @Content(schema = @Schema(implementation = JsonError.class)) }),
@@ -32,14 +36,21 @@ public class FetchController {
 
 	@Get(ZuliaRESTConstants.FETCH_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
-	public String fetch(@QueryValue(ZuliaRESTConstants.ID) String uniqueId, @QueryValue(ZuliaRESTConstants.INDEX) String indexName,
-			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
+	@Operation(summary = "Fetch a document by ID", description = "Retrieves a stored document by its unique ID from the specified index")
+	public String fetch(
+			@Parameter(description = "Unique document ID") @QueryValue(ZuliaRESTConstants.ID) String uniqueId,
+			@Parameter(description = "Index name") @QueryValue(ZuliaRESTConstants.INDEX) String indexName,
+			@Parameter(description = "If true, force a commit before fetching to ensure latest changes are visible") @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
 		return runFetch(uniqueId, indexName, realtime);
 	}
 
 	@Get(ZuliaRESTConstants.FETCH_URL + "/{indexName}/{uniqueId}")
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
-	public String fetchPath(String uniqueId, String indexName, @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
+	@Operation(summary = "Fetch a document by path", description = "Retrieves a stored document using path parameters instead of query parameters")
+	public String fetchPath(
+			@Parameter(description = "Unique document ID") String uniqueId,
+			@Parameter(description = "Index name") String indexName,
+			@Parameter(description = "If true, force a commit before fetching to ensure latest changes are visible") @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime) throws Exception {
 		return runFetch(uniqueId, indexName, realtime);
 	}
 
