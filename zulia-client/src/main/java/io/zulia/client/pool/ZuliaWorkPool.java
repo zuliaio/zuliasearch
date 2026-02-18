@@ -169,6 +169,14 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return executeAsync(new GetNodes());
 	}
 
+	public GetStatsResult getStats() throws Exception {
+		return execute(new GetStats());
+	}
+
+	public ListenableFuture<GetStatsResult> getStatsAsync() {
+		return executeAsync(new GetStats());
+	}
+
 	public GetNumberOfDocsResult getNumberOfDocs(String indexName) throws Exception {
 		return getNumberOfDocs(new GetNumberOfDocs(indexName));
 	}
