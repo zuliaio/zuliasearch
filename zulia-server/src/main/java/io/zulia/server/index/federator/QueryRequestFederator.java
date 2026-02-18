@@ -113,12 +113,13 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		}
 
 		String resultSize = String.format("%.2f", (qr.getSerializedSize() / 1024.0));
+		String hits = qr.getResultsCount() + " of " + qr.getTotalHits();
 
 		if (searchLabel.isEmpty()) {
-			LOG.info("{} id {} with result size {}KB in {}ms", prefix, queryId, resultSize, time);
+			LOG.info("{} id {} returning {} hits with result size {}KB in {}ms", prefix, queryId, hits, resultSize, time);
 		}
 		else {
-			LOG.info("{} id {} with label {} with result size {}KB in {}ms", prefix, queryId, searchLabel, resultSize, time);
+			LOG.info("{} id {} with label {} returning {} hits with result size {}KB in {}ms", prefix, queryId, searchLabel, hits, resultSize, time);
 		}
 	}
 }
