@@ -27,25 +27,25 @@ public class StatsCmd implements Callable<Integer> {
 		NodeStats nodeStats = result.getNodeStats();
 
 		System.out.println();
-		ZuliaCommonCmd.printMagenta("Zulia Version: " + nodeStats.getZuliaVersion());
+		ZuliaCommonCmd.printOrange("Zulia Version: " + nodeStats.getZuliaVersion());
 		System.out.println();
 
 		ZuliaCommonCmd.printMagenta(String.format("%30s", "JVM Memory (MB)"));
-		System.out.printf("%14s | %14s | %14s | %14s%n", "Used", "Free", "Total", "Max");
+		ZuliaCommonCmd.printBlue(String.format("%14s | %14s | %14s | %14s%n", "Used", "Free", "Total", "Max"));
 		System.out.printf("%14d | %14d | %14d | %14d%n", nodeStats.getJvmUsedMemoryMB(), nodeStats.getJvmFreeMemoryMB(), nodeStats.getJvmTotalMemoryMB(),
 				nodeStats.getJvmMaxMemoryMB());
 		System.out.println();
 
 		ZuliaCommonCmd.printMagenta(String.format("%30s", "Data Dir Space (GB)"));
-		System.out.printf("%14s | %14s | %14s%n", "Used", "Free", "Total");
+		ZuliaCommonCmd.printBlue(String.format("%14s | %14s | %14s%n", "Used", "Free", "Total"));
 		System.out.printf("%14.2f | %14.2f | %14.2f%n", nodeStats.getUsedDataDirSpaceGB(), nodeStats.getFreeDataDirSpaceGB(),
 				nodeStats.getTotalDataDirSpaceGB());
 
 		if (!nodeStats.getIndexStatList().isEmpty()) {
 			System.out.println();
 			ZuliaCommonCmd.printMagenta(String.format("%30s", "Index Cache Stats"));
-			System.out.printf("%20s | %7s | %7s | %14s | %14s | %10s | %10s%n", "Index", "Shard", "Primary", "Pinned Size", "General Size", "Pinned Hits",
-					"General Hits");
+			ZuliaCommonCmd.printBlue(String.format("%20s | %7s | %7s | %14s | %14s | %10s | %10s%n", "Index", "Shard", "Primary", "Pinned Size", "General Size", "Pinned Hits",
+					"General Hits"));
 
 			for (IndexStats indexStats : nodeStats.getIndexStatList()) {
 				int shard = 0;
