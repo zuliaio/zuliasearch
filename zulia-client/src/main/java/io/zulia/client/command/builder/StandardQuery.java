@@ -4,7 +4,7 @@ import io.zulia.message.ZuliaQuery;
 
 import java.util.List;
 
-public abstract class StandardQuery<T extends StandardQuery> implements QueryBuilder {
+public abstract class StandardQuery<T extends StandardQuery<?>> implements QueryBuilder {
 
 	private final ZuliaQuery.Query.Builder queryBuilder;
 
@@ -48,7 +48,7 @@ public abstract class StandardQuery<T extends StandardQuery> implements QueryBui
 		return getSelf();
 	}
 
-	public T setQueryFields(List<String> queryFields) {
+	public T setQueryFields(Iterable<String> queryFields) {
 		if (queryFields == null) {
 			throw new IllegalArgumentException("Query Fields cannot be null");
 		}
