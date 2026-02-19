@@ -84,12 +84,14 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 		List<InternalQueryResponse> results = send(request);
 
+		long mergeStart = System.currentTimeMillis();
+
 		QueryCombiner queryCombiner = new QueryCombiner(indexes, request, results);
 
 		QueryResponse qr = queryCombiner.getQueryResponse();
 
 		long end = System.currentTimeMillis();
-		handleLog(queryId, searchLabel, qr, end - start);
+		handleLog(queryId, searchLabel, request.getDebug(), qr, results, end - start, end - mergeStart);
 		if (!queryCombiner.isShort()) {
 			return qr;
 		}
@@ -103,7 +105,8 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 	}
 
-	private static void handleLog(long queryId, String searchLabel, QueryResponse qr, long time) {
+	private static void handleLog(long queryId, String searchLabel, boolean debug, QueryResponse qr, List<InternalQueryResponse> results, long time,
+			long mergeTime) {
 		String prefix = "Finished query";
 		if (qr.getShardsQueried() == qr.getShardsPinned()) {
 			prefix = "Finished query from pinned cache";
@@ -115,11 +118,18 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		String resultSize = String.format("%.2f", (qr.getSerializedSize() / 1024.0));
 		String hits = qr.getResultsCount() + " of " + qr.getTotalHits();
 
+		String debugInfo = "";
+		if (debug && results.size() > 1) {
+			int totalShardSize = results.stream().mapToInt(InternalQueryResponse::getSerializedSize).sum();
+			debugInfo = String.format(" merging %d responses (%.2fKB, %dms)", results.size(), totalShardSize / 1024.0, mergeTime);
+		}
+
 		if (searchLabel.isEmpty()) {
-			LOG.info("{} id {} returning {} hits with result size {}KB in {}ms", prefix, queryId, hits, resultSize, time);
+			LOG.info("{} id {} returning {} hits{} with result size {}KB in {}ms", prefix, queryId, hits, debugInfo, resultSize, time);
 		}
 		else {
-			LOG.info("{} id {} with label {} returning {} hits with result size {}KB in {}ms", prefix, queryId, searchLabel, hits, resultSize, time);
+			LOG.info("{} id {} with label {} returning {} hits{} with result size {}KB in {}ms", prefix, queryId, searchLabel, hits, debugInfo, resultSize,
+					time);
 		}
 	}
 }

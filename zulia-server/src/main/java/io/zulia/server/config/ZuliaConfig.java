@@ -31,6 +31,8 @@ public class ZuliaConfig {
 
 	private int defaultConcurrency;
 
+	private boolean debug;
+
 	public ZuliaConfig() {
 	}
 
@@ -146,11 +148,19 @@ public class ZuliaConfig {
 		this.defaultConcurrency = defaultConcurrency;
 	}
 
+	public boolean isDebug() {
+		return debug;
+	}
+
+	public void setDebug(boolean debug) {
+		this.debug = debug;
+	}
+
 	@Override
 	public String toString() {
 		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
 				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoConnection=" + mongoConnection + ", mongoAuth="
 				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", responseCompression="
-				+ responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + '}';
+				+ responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + ", debug=" + debug + '}';
 	}
 }
