@@ -147,7 +147,7 @@ public class ZuliaShard {
 				try {
 					LOG.info("Warming search for index {}:s{} with label {}", indexName, shardNumber, warmingSearch.getSearchLabel());
 					Query query = zuliaIndex.getQuery(warmingSearch);
-					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch);
+					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch, -1);
 					queryShard(shardQuery);
 				}
 				catch (Exception e) {

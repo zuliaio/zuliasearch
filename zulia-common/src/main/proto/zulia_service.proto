@@ -52,6 +52,7 @@ message IndexRouting {
 message InternalQueryRequest {
     QueryRequest queryRequest = 1;
     repeated IndexRouting indexRouting = 2;
+    uint64 searchId = 3;
 }
 
 
