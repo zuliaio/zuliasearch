@@ -299,6 +299,10 @@ public class ZuliaIndexManager {
 	public QueryResponse query(QueryRequest request) throws Exception {
 		request = new QueryRequestValidator().validateAndSetDefault(request);
 
+		if (zuliaConfig.isDebug() && !request.getDebug()) {
+			request = request.toBuilder().setDebug(true).build();
+		}
+
 		Map<String, Query> queryMap = new HashMap<>();
 		Set<ZuliaIndex> indexes = new HashSet<>();
 
