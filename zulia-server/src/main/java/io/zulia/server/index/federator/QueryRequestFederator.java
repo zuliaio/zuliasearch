@@ -29,6 +29,7 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 	private final InternalClient internalClient;
 	private final Collection<ZuliaIndex> indexes;
 	private final Map<String, Query> queryMap;
+	private final long searchId;
 
 	public QueryRequestFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, Collection<ZuliaIndex> indexes,
 			ExecutorService pool, InternalClient internalClient, Map<String, Query> queryMap) throws IOException {
@@ -36,19 +37,20 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		this.internalClient = internalClient;
 		this.indexes = indexes;
 		this.queryMap = queryMap;
+		this.searchId = QUERY_NUMBER.incrementAndGet();
 	}
 
 	@Override
 	protected InternalQueryResponse processExternal(Node node, QueryRequest request) throws Exception {
 		InternalQueryRequest internalQueryRequest = InternalQueryRequest.newBuilder().addAllIndexRouting(getIndexRouting(node)).setQueryRequest(request)
-				.build();
+				.setSearchId(searchId).build();
 		return internalClient.executeQuery(node, internalQueryRequest);
 	}
 
 	@Override
 	protected InternalQueryResponse processInternal(Node node, QueryRequest request) throws Exception {
 		InternalQueryRequest internalQueryRequest = InternalQueryRequest.newBuilder().addAllIndexRouting(getIndexRouting(node)).setQueryRequest(request)
-				.build();
+				.setSearchId(searchId).build();
 		return internalQuery(indexes, internalQueryRequest, queryMap);
 	}
 
@@ -65,8 +67,6 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 	public QueryResponse getResponse(QueryRequest request) throws Exception {
 
-		long queryId = QUERY_NUMBER.getAndIncrement();
-
 		long start = System.currentTimeMillis();
 
 		String queryJson = JsonFormat.printer().print(request);
@@ -76,20 +76,22 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		String searchLabel = request.getSearchLabel();
 
 		if (searchLabel.isEmpty()) {
-			LOG.info("Running id {} query {}", queryId, queryJson);
+			LOG.info("Running id {} query {}", searchId, queryJson);
 		}
 		else {
-			LOG.info("Running id {} with label {} query {}", queryId, searchLabel, queryJson);
+			LOG.info("Running id {} with label {} query {}", searchId, searchLabel, queryJson);
 		}
 
 		List<InternalQueryResponse> results = send(request);
+
+		long mergeStart = System.currentTimeMillis();
 
 		QueryCombiner queryCombiner = new QueryCombiner(indexes, request, results);
 
 		QueryResponse qr = queryCombiner.getQueryResponse();
 
 		long end = System.currentTimeMillis();
-		handleLog(queryId, searchLabel, qr, end - start);
+		handleLog(searchId, searchLabel, request.getDebug(), qr, results, end - start, end - mergeStart);
 		if (!queryCombiner.isShort()) {
 			return qr;
 		}
@@ -103,7 +105,8 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 
 	}
 
-	private static void handleLog(long queryId, String searchLabel, QueryResponse qr, long time) {
+	private static void handleLog(long queryId, String searchLabel, boolean debug, QueryResponse qr, List<InternalQueryResponse> results, long time,
+			long mergeTime) {
 		String prefix = "Finished query";
 		if (qr.getShardsQueried() == qr.getShardsPinned()) {
 			prefix = "Finished query from pinned cache";
@@ -115,11 +118,18 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 		String resultSize = String.format("%.2f", (qr.getSerializedSize() / 1024.0));
 		String hits = qr.getResultsCount() + " of " + qr.getTotalHits();
 
+		String debugInfo = "";
+		if (debug && results.size() > 1) {
+			int totalShardSize = results.stream().mapToInt(InternalQueryResponse::getSerializedSize).sum();
+			debugInfo = String.format(" merging %d responses (%.2fKB, %dms)", results.size(), totalShardSize / 1024.0, mergeTime);
+		}
+
 		if (searchLabel.isEmpty()) {
-			LOG.info("{} id {} returning {} hits with result size {}KB in {}ms", prefix, queryId, hits, resultSize, time);
+			LOG.info("{} id {} returning {} hits{} with result size {}KB in {}ms", prefix, queryId, hits, debugInfo, resultSize, time);
 		}
 		else {
-			LOG.info("{} id {} with label {} returning {} hits with result size {}KB in {}ms", prefix, queryId, searchLabel, hits, resultSize, time);
+			LOG.info("{} id {} with label {} returning {} hits{} with result size {}KB in {}ms", prefix, queryId, searchLabel, hits, debugInfo, resultSize,
+					time);
 		}
 	}
 }
