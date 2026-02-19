@@ -710,7 +710,7 @@ public class ZuliaIndex {
 			}
 		}
 
-		ShardQuery shardQuery = getShardQuery(query, queryRequest);
+		ShardQuery shardQuery = getShardQuery(query, queryRequest, internalQueryRequest.getSearchId());
 		// if concurrency is not set in the query default to the index concurrency if that is set or default to the node level config
 		if (shardQuery.getConcurrency() == 0) {
 			int indexDefaultConcurrency = indexConfig.getDefaultConcurrency();
@@ -754,7 +754,7 @@ public class ZuliaIndex {
 
 	}
 
-	public ShardQuery getShardQuery(Query query, QueryRequest queryRequest) throws Exception {
+	public ShardQuery getShardQuery(Query query, QueryRequest queryRequest, long searchId) throws Exception {
 
 		int amount = queryRequest.getAmount() + queryRequest.getStart();
 
@@ -845,10 +845,11 @@ public class ZuliaIndex {
 		}
 
 		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
+		boolean debug = queryRequest.getDebug();
 		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
 				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
-				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDebug(), queryRequest.getRealtime(),
-				queryRequest.getConcurrency());
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), debug, searchId, queryRequest.getSearchLabel(),
+				queryRequest.getRealtime(), queryRequest.getConcurrency());
 	}
 
 	public Integer getNumberOfShards() {
