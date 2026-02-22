@@ -18,6 +18,7 @@ service ZuliaService {
     rpc Fetch (FetchRequest) returns (FetchResponse);
     rpc InternalFetch (FetchRequest) returns (FetchResponse);
     rpc BatchFetch (BatchFetchRequest) returns (stream FetchResponse);
+    rpc InternalBatchFetch (InternalBatchFetchRequest) returns (BatchFetchResponse);
     rpc CreateIndex (CreateIndexRequest) returns (CreateIndexResponse);
     rpc UpdateIndex (UpdateIndexRequest) returns (UpdateIndexResponse);
     rpc CreateIndexAlias (CreateIndexAliasRequest) returns (CreateIndexAliasResponse);
@@ -145,12 +146,40 @@ message FetchResponse {
     repeated AssociatedDocument associatedDocument = 2;
 }
 
+message BatchFetchGroup {
+    string indexName = 1;
+    repeated string uniqueId = 2;
+    FetchType resultFetchType = 3;
+    repeated string documentFields = 4;
+    repeated string documentMaskedFields = 5;
+    bool realtime = 6;
+    FetchType associatedFetchType = 7;
+    string filename = 8;
+}
+
 message BatchFetchRequest {
     repeated FetchRequest fetchRequest = 1;
+    repeated BatchFetchGroup batchFetchGroup = 2;
 }
 
 message BatchFetchResponse {
     repeated FetchResponse fetchResponse = 1;
+}
+
+message InternalShardBatchFetchRequest {
+    string indexName = 1;
+    uint32 shardNumber = 2;
+    repeated string uniqueId = 3;
+    FetchType resultFetchType = 4;
+    repeated string documentFields = 5;
+    repeated string documentMaskedFields = 6;
+    bool realtime = 7;
+    FetchType associatedFetchType = 8;
+    string filename = 9;
+}
+
+message InternalBatchFetchRequest {
+    repeated InternalShardBatchFetchRequest shardBatchFetchRequest = 1;
 }
 
 

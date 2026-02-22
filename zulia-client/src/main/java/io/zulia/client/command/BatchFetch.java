@@ -1,6 +1,7 @@
 package io.zulia.client.command;
 
 import io.zulia.client.command.base.SimpleCommand;
+import io.zulia.client.command.builder.BatchFetchGroupBuilder;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.BatchFetchResult;
 import io.zulia.client.result.CompleteResult;
@@ -23,10 +24,12 @@ import static io.zulia.message.ZuliaQuery.FetchType;
  */
 public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResult> {
 
-	private List<Fetch> fetchList;
+	private final List<Fetch> fetchList;
+	private final List<BatchFetchGroupBuilder> groupList;
 
 	public BatchFetch() {
 		this.fetchList = new ArrayList<>();
+		this.groupList = new ArrayList<>();
 	}
 
 	public BatchFetch addFetches(Collection<? extends Fetch> fetches) {
@@ -34,14 +37,13 @@ public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResul
 		return this;
 	}
 
-	public BatchFetch addFetchDocumentsFromUniqueIds(Collection<String> uniqueIds, String indexName) {
+	public BatchFetch addFetchGroup(BatchFetchGroupBuilder group) {
+		this.groupList.add(group);
+		return this;
+	}
 
-		for (String uniqueId : uniqueIds) {
-			Fetch f = new Fetch(uniqueId, indexName);
-			f.setResultFetchType(FetchType.FULL);
-			f.setAssociatedFetchType(FetchType.NONE);
-			fetchList.add(f);
-		}
+	public BatchFetch addFetchDocumentsFromUniqueIds(Collection<String> uniqueIds, String indexName) {
+		groupList.add(new BatchFetchGroupBuilder(indexName, uniqueIds));
 		return this;
 	}
 
@@ -65,6 +67,9 @@ public class BatchFetch extends SimpleCommand<BatchFetchRequest, BatchFetchResul
 		BatchFetchRequest.Builder batchFetchRequestBuilder = BatchFetchRequest.newBuilder();
 		for (Fetch f : fetchList) {
 			batchFetchRequestBuilder.addFetchRequest(f.getRequest());
+		}
+		for (BatchFetchGroupBuilder group : groupList) {
+			batchFetchRequestBuilder.addBatchFetchGroup(group.build());
 		}
 		return batchFetchRequestBuilder.build();
 	}
