@@ -6,7 +6,9 @@ import io.zulia.client.command.BatchFetch;
 import io.zulia.client.command.DeleteFromIndex;
 import io.zulia.client.command.Fetch;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.NumericStat;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -45,7 +47,8 @@ public class GeneralFeaturesTest {
 		indexConfig.addDefaultSearchField("title");
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("category").indexAs(DefaultAnalyzers.STANDARD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("category").indexAs(DefaultAnalyzers.STANDARD).facet());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("type").indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
 		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
 		indexConfig.setIndexName(INDEX_NAME);
 		indexConfig.setNumberOfShards(1);
@@ -57,14 +60,14 @@ public class GeneralFeaturesTest {
 	@Test
 	@Order(2)
 	public void index() throws Exception {
-		indexRecord(1, "Java Programming", "tech", 4.5);
-		indexRecord(2, "Python Basics", "tech", 3.8);
-		indexRecord(3, "Cooking Guide", "food", 4.2);
-		indexRecord(4, "Travel Tips", "travel", 3.5);
-		indexRecord(5, "Data Science", "tech", 4.9);
+		indexRecord(1, "Java Programming", "tech", "book", 4.5);
+		indexRecord(2, "Python Basics", "tech", "book", 3.8);
+		indexRecord(3, "Cooking Guide", "food", "article", 4.2);
+		indexRecord(4, "Travel Tips", "travel", "article", 3.5);
+		indexRecord(5, "Data Science", "tech", "book", 4.9);
 	}
 
-	private void indexRecord(int id, String title, String category, double rating) throws Exception {
+	private void indexRecord(int id, String title, String category, String type, double rating) throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		String uniqueId = String.valueOf(id);
 
@@ -72,6 +75,7 @@ public class GeneralFeaturesTest {
 		mongoDocument.put("id", uniqueId);
 		mongoDocument.put("title", title);
 		mongoDocument.put("category", category);
+		mongoDocument.put("type", type);
 		mongoDocument.put("rating", rating);
 
 		Store s = new Store(uniqueId, INDEX_NAME);
@@ -172,9 +176,9 @@ public class GeneralFeaturesTest {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
 		// Index extra documents to delete
-		indexRecord(100, "To Be Deleted 1", "temp", 1.0);
-		indexRecord(101, "To Be Deleted 2", "temp", 1.0);
-		indexRecord(102, "To Be Deleted 3", "temp", 1.0);
+		indexRecord(100, "To Be Deleted 1", "temp", "article", 1.0);
+		indexRecord(101, "To Be Deleted 2", "temp", "article", 1.0);
+		indexRecord(102, "To Be Deleted 3", "temp", "article", 1.0);
 
 		Search search = new Search(INDEX_NAME).setRealtime(true);
 		SearchResult searchResult = zuliaWorkPool.search(search);
@@ -188,8 +192,8 @@ public class GeneralFeaturesTest {
 		zuliaWorkPool.batchDelete(batchDelete);
 
 		// Batch delete from search results
-		indexRecord(200, "Delete via search 1", "temp2", 1.0);
-		indexRecord(201, "Delete via search 2", "temp2", 1.0);
+		indexRecord(200, "Delete via search 1", "temp2", "article", 1.0);
+		indexRecord(201, "Delete via search 2", "temp2", "article", 1.0);
 
 		search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
 		search.addQuery(new FilterQuery("category:temp2"));
@@ -233,9 +237,9 @@ public class GeneralFeaturesTest {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
 		// Re-add documents after clear
-		indexRecord(1, "Java Programming", "tech", 4.5);
-		indexRecord(2, "Python Basics", "tech", 3.8);
-		indexRecord(3, "Cooking Guide", "food", 4.2);
+		indexRecord(1, "Java Programming", "tech", "book", 4.5);
+		indexRecord(2, "Python Basics", "tech", "book", 3.8);
+		indexRecord(3, "Cooking Guide", "food", "article", 4.2);
 
 		Search search = new Search(INDEX_NAME).setRealtime(true);
 		SearchResult searchResult = zuliaWorkPool.search(search);
@@ -260,12 +264,67 @@ public class GeneralFeaturesTest {
 
 	@Test
 	@Order(8)
+	public void conditionalFacetsTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// After optimizeAndReindexTest, we have 3 docs
+
+		// Per-facet: category with threshold above totalHits (returned), type with threshold below (skipped)
+		Search search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
+		search.addCountFacet(new CountFacet("category").setMaxTotalHitsForFacet(100));
+		search.addCountFacet(new CountFacet("type").setMaxTotalHitsForFacet(1));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3, searchResult.getTotalHits());
+		Assertions.assertFalse(searchResult.getFacetCounts("category").isEmpty(), "category facet should be returned (threshold 100 >= 3 hits)");
+		Assertions.assertNull(searchResult.getFacetCounts("type"), "type facet should be skipped (threshold 1 < 3 hits)");
+
+		// Per-facet: both above threshold → both returned
+		search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
+		search.addCountFacet(new CountFacet("category").setMaxTotalHitsForFacet(100));
+		search.addCountFacet(new CountFacet("type").setMaxTotalHitsForFacet(100));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertFalse(searchResult.getFacetCounts("category").isEmpty(), "category facet should be returned");
+		Assertions.assertFalse(searchResult.getFacetCounts("type").isEmpty(), "type facet should be returned");
+
+		// Per-stat: stat with threshold above (returned), stat with threshold below (skipped)
+		search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
+		search.addStat(new NumericStat("rating").setMaxTotalHitsForFacet(100));
+		SearchResult resultWithStat = zuliaWorkPool.search(search);
+		Assertions.assertFalse(resultWithStat.getStatGroups().isEmpty(), "Stats should be returned (threshold 100 >= 3 hits)");
+
+		search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
+		search.addStat(new NumericStat("rating").setMaxTotalHitsForFacet(1));
+		SearchResult resultWithoutStat = zuliaWorkPool.search(search);
+		Assertions.assertTrue(resultWithoutStat.getStatGroups().isEmpty(), "Stats should be skipped (threshold 1 < 3 hits)");
+
+		// Default (0) means no limit → facets always returned
+		search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
+		search.addCountFacet(new CountFacet("category"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertFalse(searchResult.getFacetCounts("category").isEmpty(), "Facets should be returned when maxTotalHitsForFacet is 0 (no limit)");
+
+		// Shard-level threshold: maxShardHitsForFacet=1 skips at shard even though maxTotalHitsForFacet=100
+		search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
+		search.addCountFacet(new CountFacet("category").setMaxTotalHitsForFacet(100).setMaxShardHitsForFacet(1));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(3, searchResult.getTotalHits());
+		Assertions.assertNull(searchResult.getFacetCounts("category"), "Facet should be skipped at shard level (shard threshold 1 < 3 hits)");
+
+		// Shard-level threshold: maxShardHitsForFacet=0 falls back to maxTotalHitsForFacet
+		search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
+		search.addCountFacet(new CountFacet("category").setMaxTotalHitsForFacet(100).setMaxShardHitsForFacet(0));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertFalse(searchResult.getFacetCounts("category").isEmpty(), "Facet should be returned (shard threshold falls back to 100)");
+	}
+
+	@Test
+	@Order(9)
 	public void restart() throws Exception {
 		nodeExtension.restartNodes();
 	}
 
 	@Test
-	@Order(9)
+	@Order(10)
 	public void confirm() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 

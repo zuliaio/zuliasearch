@@ -54,6 +54,16 @@ public class StatFacet implements StatBuilder {
 		return this;
 	}
 
+	public StatFacet setMaxTotalHitsForFacet(long maxTotalHitsForFacet) {
+		statRequestBuilder.setMaxTotalHitsForFacet(maxTotalHitsForFacet);
+		return this;
+	}
+
+	public StatFacet setMaxShardHitsForFacet(long maxShardHitsForFacet) {
+		statRequestBuilder.setMaxShardHitsForFacet(maxShardHitsForFacet);
+		return this;
+	}
+
 	@Override
 	public StatRequest getStatRequest() {
 		return statRequestBuilder.build();
