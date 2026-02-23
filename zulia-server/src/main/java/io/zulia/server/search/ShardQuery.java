@@ -7,7 +7,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 
 import java.util.Collections;
 import java.util.List;
@@ -60,6 +62,14 @@ public class ShardQuery {
 		Query query = new ConstantScoreQuery(new TermQuery(new Term(ZuliaFieldConstants.ID_FIELD, uniqueId)));
 		return new ShardQuery(query, null, 1, Collections.emptyMap(), ZuliaQuery.FacetRequest.newBuilder().build(), null, null, resultFetchType, fieldsToReturn,
 				fieldsToMask, Collections.emptyList(), Collections.emptyList(), false, 0, "", realtime, 1);
+	}
+
+	public static ShardQuery queryByIds(List<String> uniqueIds, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
+			boolean realtime) {
+		List<BytesRef> bytesRefs = uniqueIds.stream().map(BytesRef::new).toList();
+		Query query = new ConstantScoreQuery(new TermInSetQuery(ZuliaFieldConstants.ID_FIELD, bytesRefs));
+		return new ShardQuery(query, null, uniqueIds.size(), Collections.emptyMap(), ZuliaQuery.FacetRequest.newBuilder().build(), null, null, resultFetchType,
+				fieldsToReturn, fieldsToMask, Collections.emptyList(), Collections.emptyList(), false, 0, "", realtime, 1);
 	}
 
 	public Query getQuery() {

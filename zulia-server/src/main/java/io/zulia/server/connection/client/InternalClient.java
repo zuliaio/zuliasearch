@@ -2,6 +2,7 @@ package io.zulia.server.connection.client;
 
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.*;
+import io.zulia.server.connection.client.handler.InternalBatchFetchHandler;
 import io.zulia.server.connection.client.handler.InternalClearHandler;
 import io.zulia.server.connection.client.handler.InternalCreateIndexAliasHandler;
 import io.zulia.server.connection.client.handler.InternalCreateOrUpdateIndexHandler;
@@ -30,6 +31,7 @@ public class InternalClient {
 	private final InternalStoreHandler internalStoreHandler;
 	private final InternalDeleteHandler internalDeleteHandler;
 	private final InternalFetchHandler internalFetchHandler;
+	private final InternalBatchFetchHandler internalBatchFetchHandler;
 	private final InternalGetNumberOfDocsHandler internalGetNumberOfDocsHandler;
 	private final InternalOptimizeHandler internalOptimizeHandler;
 	private final InternalGetFieldNamesHandler internalGetFieldNamesHandler;
@@ -49,6 +51,7 @@ public class InternalClient {
 		internalStoreHandler = new InternalStoreHandler(this);
 		internalDeleteHandler = new InternalDeleteHandler(this);
 		internalFetchHandler = new InternalFetchHandler(this);
+		internalBatchFetchHandler = new InternalBatchFetchHandler(this);
 		internalGetNumberOfDocsHandler = new InternalGetNumberOfDocsHandler(this);
 		internalOptimizeHandler = new InternalOptimizeHandler(this);
 		internalGetFieldNamesHandler = new InternalGetFieldNamesHandler(this);
@@ -156,6 +159,10 @@ public class InternalClient {
 
 	public FetchResponse executeFetch(Node node, FetchRequest request) throws Exception {
 		return internalFetchHandler.handleRequest(node, request);
+	}
+
+	public BatchFetchResponse executeBatchFetch(Node node, InternalBatchFetchRequest request) throws Exception {
+		return internalBatchFetchHandler.handleRequest(node, request);
 	}
 
 	public GetNumberOfDocsResponse getNumberOfDocs(Node node, InternalGetNumberOfDocsRequest request) throws Exception {

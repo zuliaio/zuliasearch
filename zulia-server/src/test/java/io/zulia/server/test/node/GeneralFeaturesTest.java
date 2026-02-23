@@ -3,16 +3,20 @@ package io.zulia.server.test.node;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.BatchDelete;
 import io.zulia.client.command.BatchFetch;
+import io.zulia.client.command.FetchAllAssociated;
 import io.zulia.client.command.DeleteFromIndex;
 import io.zulia.client.command.Fetch;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.BatchFetchGroupBuilder;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.AssociatedResult;
 import io.zulia.client.result.BatchFetchResult;
 import io.zulia.client.result.FetchResult;
 import io.zulia.client.result.SearchResult;
+import io.zulia.doc.AssociatedBuilder;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.server.test.node.shared.NodeExtension;
@@ -23,6 +27,8 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.zulia.message.ZuliaQuery.FetchType;
 
 import java.util.List;
 
@@ -62,6 +68,18 @@ public class GeneralFeaturesTest {
 		indexRecord(3, "Cooking Guide", "food", 4.2);
 		indexRecord(4, "Travel Tips", "travel", 3.5);
 		indexRecord(5, "Data Science", "tech", 4.9);
+
+		// Store associated text files for docs 1 and 2
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		Store store1 = new Store("1", INDEX_NAME);
+		store1.addAssociatedDocument(AssociatedBuilder.newBuilder().setFilename("notes.txt").setDocument("Java is great"));
+		zuliaWorkPool.store(store1);
+
+		Store store2 = new Store("2", INDEX_NAME);
+		store2.addAssociatedDocument(AssociatedBuilder.newBuilder().setFilename("notes.txt").setDocument("Python is easy"));
+		store2.addAssociatedDocument(AssociatedBuilder.newBuilder().setFilename("summary.txt").setDocument("A beginner guide"));
+		zuliaWorkPool.store(store2);
 	}
 
 	private void indexRecord(int id, String title, String category, double rating) throws Exception {
@@ -168,6 +186,139 @@ public class GeneralFeaturesTest {
 
 	@Test
 	@Order(5)
+	public void batchFetchGroupTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// BatchFetchGroupBuilder: fetch all docs with full documents
+		BatchFetchGroupBuilder allDocsGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "2", "3", "4", "5")).setRealtime(true);
+		BatchFetch groupFetch = new BatchFetch().addFetchGroup(allDocsGroup);
+		BatchFetchResult groupResult = zuliaWorkPool.batchFetch(groupFetch);
+		List<FetchResult> groupResults = groupResult.getFetchResults();
+		Assertions.assertEquals(UNIQUE_DOCS, groupResults.size());
+		for (FetchResult fr : groupResults) {
+			Assertions.assertTrue(fr.hasResultDocument());
+			Document doc = fr.getDocument();
+			Assertions.assertNotNull(doc.getString("title"));
+			Assertions.assertNotNull(doc.getString("category"));
+			Assertions.assertNotNull(doc.get("rating"));
+		}
+
+		// BatchFetchGroupBuilder with document field filtering (whitelist)
+		BatchFetchGroupBuilder fieldsGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "2", "3")).addDocumentField("title").setRealtime(true);
+		BatchFetch fieldsFetch = new BatchFetch().addFetchGroup(fieldsGroup);
+		BatchFetchResult fieldsResult = zuliaWorkPool.batchFetch(fieldsFetch);
+		List<FetchResult> fieldsResults = fieldsResult.getFetchResults();
+		Assertions.assertEquals(3, fieldsResults.size());
+		for (FetchResult fr : fieldsResults) {
+			Document doc = fr.getDocument();
+			Assertions.assertNotNull(doc.getString("title"));
+			Assertions.assertNull(doc.getString("category"), "category should be filtered out");
+			Assertions.assertNull(doc.get("rating"), "rating should be filtered out");
+		}
+
+		// BatchFetchGroupBuilder with masked fields (blacklist)
+		BatchFetchGroupBuilder maskedGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "2")).addDocumentMaskedField("rating")
+				.addDocumentMaskedField("category").setRealtime(true);
+		BatchFetch maskedFetch = new BatchFetch().addFetchGroup(maskedGroup);
+		BatchFetchResult maskedResult = zuliaWorkPool.batchFetch(maskedFetch);
+		List<FetchResult> maskedResults = maskedResult.getFetchResults();
+		Assertions.assertEquals(2, maskedResults.size());
+		for (FetchResult fr : maskedResults) {
+			Document doc = fr.getDocument();
+			Assertions.assertNotNull(doc.getString("title"));
+			Assertions.assertNotNull(doc.getString("id"));
+			Assertions.assertNull(doc.get("rating"), "rating should be masked");
+			Assertions.assertNull(doc.getString("category"), "category should be masked");
+		}
+
+		// Mix: BatchFetchGroupBuilder alongside individual Fetch objects
+		BatchFetchGroupBuilder mixGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "2")).setRealtime(true);
+		Fetch individualFetch = new Fetch("5", INDEX_NAME);
+		individualFetch.setRealtime(true);
+		BatchFetch mixFetch = new BatchFetch().addFetchGroup(mixGroup).addFetches(List.of(individualFetch));
+		BatchFetchResult mixResult = zuliaWorkPool.batchFetch(mixFetch);
+		Assertions.assertEquals(3, mixResult.getFetchResults().size());
+
+		// Multiple groups with different field profiles in the same batch
+		BatchFetchGroupBuilder titleOnlyGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "3")).addDocumentField("title").setRealtime(true);
+		BatchFetchGroupBuilder fullGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("2", "4")).setRealtime(true);
+		BatchFetch multiGroupFetch = new BatchFetch().addFetchGroup(titleOnlyGroup).addFetchGroup(fullGroup);
+		BatchFetchResult multiGroupResult = zuliaWorkPool.batchFetch(multiGroupFetch);
+		List<FetchResult> multiGroupResults = multiGroupResult.getFetchResults();
+		Assertions.assertEquals(4, multiGroupResults.size());
+
+		// Fetch with NONE result type returns no documents (would be used for associated documents only)
+		BatchFetchGroupBuilder noneGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "2")).setResultFetchType(FetchType.NONE).setRealtime(true);
+		BatchFetch noneFetch = new BatchFetch().addFetchGroup(noneGroup);
+		BatchFetchResult noneResult = zuliaWorkPool.batchFetch(noneFetch);
+		List<FetchResult> noneResults = noneResult.getFetchResults();
+		Assertions.assertEquals(2, noneResults.size());
+		for (FetchResult fr : noneResults) {
+			Assertions.assertFalse(fr.hasResultDocument());
+		}
+
+		// Verify associated docs were stored correctly using single fetch
+		FetchResult verifyResult = zuliaWorkPool.fetch(new FetchAllAssociated("2", INDEX_NAME));
+		Assertions.assertEquals(2, verifyResult.getAssociatedDocumentCount());
+
+		// Batch fetch with associated documents (all associated files)
+		BatchFetchGroupBuilder assocGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "2")).setAssociatedFetchType(FetchType.FULL)
+				.setRealtime(true);
+		BatchFetch assocFetch = new BatchFetch().addFetchGroup(assocGroup);
+		BatchFetchResult assocResult = zuliaWorkPool.batchFetch(assocFetch);
+		List<FetchResult> assocResults = assocResult.getFetchResults();
+		Assertions.assertEquals(2, assocResults.size());
+
+		// Doc 1 has 1 associated file, doc 2 has 2
+		int totalAssocDocs = assocResults.stream().mapToInt(FetchResult::getAssociatedDocumentCount).sum();
+		Assertions.assertEquals(3, totalAssocDocs);
+
+		for (FetchResult fr : assocResults) {
+			Assertions.assertTrue(fr.hasResultDocument());
+			Assertions.assertTrue(fr.getAssociatedDocumentCount() > 0);
+			for (AssociatedResult ar : fr.getAssociatedDocuments()) {
+				Assertions.assertNotNull(ar.getFilename());
+				Assertions.assertTrue(ar.hasDocument());
+				Assertions.assertFalse(ar.getDocumentAsUtf8().isEmpty());
+			}
+		}
+
+		// Batch fetch associated by specific filename
+		BatchFetchGroupBuilder fileGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "2")).setAssociatedFetchType(FetchType.FULL)
+				.setFilename("notes.txt").setRealtime(true);
+		BatchFetch fileFetch = new BatchFetch().addFetchGroup(fileGroup);
+		BatchFetchResult fileResult = zuliaWorkPool.batchFetch(fileFetch);
+		List<FetchResult> fileResults = fileResult.getFetchResults();
+		Assertions.assertEquals(2, fileResults.size());
+		for (FetchResult fr : fileResults) {
+			Assertions.assertEquals(1, fr.getAssociatedDocumentCount());
+			Assertions.assertEquals("notes.txt", fr.getFirstAssociatedDocument().getFilename());
+		}
+
+		// Batch fetch with NONE result type + FULL associated (associated docs only)
+		BatchFetchGroupBuilder assocOnlyGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("1", "2")).setResultFetchType(FetchType.NONE)
+				.setAssociatedFetchType(FetchType.FULL).setRealtime(true);
+		BatchFetch assocOnlyFetch = new BatchFetch().addFetchGroup(assocOnlyGroup);
+		BatchFetchResult assocOnlyResult = zuliaWorkPool.batchFetch(assocOnlyFetch);
+		List<FetchResult> assocOnlyResults = assocOnlyResult.getFetchResults();
+		Assertions.assertEquals(2, assocOnlyResults.size());
+		for (FetchResult fr : assocOnlyResults) {
+			Assertions.assertFalse(fr.hasResultDocument(), "result document should not be fetched");
+			Assertions.assertTrue(fr.getAssociatedDocumentCount() > 0, "associated docs should be present");
+		}
+
+		// Doc without associated files should return empty associated list
+		BatchFetchGroupBuilder noAssocGroup = new BatchFetchGroupBuilder(INDEX_NAME, List.of("3")).setAssociatedFetchType(FetchType.FULL).setRealtime(true);
+		BatchFetch noAssocFetch = new BatchFetch().addFetchGroup(noAssocGroup);
+		BatchFetchResult noAssocResult = zuliaWorkPool.batchFetch(noAssocFetch);
+		List<FetchResult> noAssocResults = noAssocResult.getFetchResults();
+		Assertions.assertEquals(1, noAssocResults.size());
+		Assertions.assertTrue(noAssocResults.getFirst().hasResultDocument());
+		Assertions.assertEquals(0, noAssocResults.getFirst().getAssociatedDocumentCount());
+	}
+
+	@Test
+	@Order(6)
 	public void batchDeleteTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
@@ -206,7 +357,7 @@ public class GeneralFeaturesTest {
 	}
 
 	@Test
-	@Order(6)
+	@Order(7)
 	public void clearIndexTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
@@ -228,7 +379,7 @@ public class GeneralFeaturesTest {
 	}
 
 	@Test
-	@Order(7)
+	@Order(8)
 	public void optimizeAndReindexTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
@@ -259,13 +410,13 @@ public class GeneralFeaturesTest {
 	}
 
 	@Test
-	@Order(8)
+	@Order(9)
 	public void restart() throws Exception {
 		nodeExtension.restartNodes();
 	}
 
 	@Test
-	@Order(9)
+	@Order(10)
 	public void confirm() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
