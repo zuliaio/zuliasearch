@@ -285,8 +285,21 @@ public class ShardReader implements AutoCloseable {
 			FacetsCollectorManager facetsCollectorManager = new FacetsCollectorManager();
 			Object[] results = indexSearcher.search(shardQuery.getQuery(), new MultiCollectorManager(collectorManager, facetsCollectorManager));
 			topDocs = (TopDocs) results[0];
-			FacetsCollector facetsCollector = (FacetsCollector) results[1];
-			handleAggregations(shardQueryReponseBuilder, statRequestList, countRequestList, facetsCollector, aggregationConcurrency);
+			int shardTotalHits = (int) topDocs.totalHits.value();
+
+			List<ZuliaQuery.CountRequest> filteredCountRequests = countRequestList.stream().filter(cr -> {
+				long shardLimit = cr.getMaxShardHitsForFacet() != 0 ? cr.getMaxShardHitsForFacet() : cr.getMaxTotalHitsForFacet();
+				return shardLimit == 0 || shardTotalHits <= shardLimit;
+			}).toList();
+			List<ZuliaQuery.StatRequest> filteredStatRequests = statRequestList.stream().filter(sr -> {
+				long shardLimit = sr.getMaxShardHitsForFacet() != 0 ? sr.getMaxShardHitsForFacet() : sr.getMaxTotalHitsForFacet();
+				return shardLimit == 0 || shardTotalHits <= shardLimit;
+			}).toList();
+
+			if (!filteredCountRequests.isEmpty() || !filteredStatRequests.isEmpty()) {
+				FacetsCollector facetsCollector = (FacetsCollector) results[1];
+				handleAggregations(shardQueryReponseBuilder, filteredStatRequests, filteredCountRequests, facetsCollector, aggregationConcurrency);
+			}
 		}
 		else {
 			topDocs = indexSearcher.search(shardQuery.getQuery(), collectorManager);

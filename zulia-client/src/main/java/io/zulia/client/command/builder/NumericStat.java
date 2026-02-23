@@ -33,6 +33,16 @@ public class NumericStat implements StatBuilder {
 		return this;
 	}
 
+	public NumericStat setMaxTotalHitsForFacet(long maxTotalHitsForFacet) {
+		statRequestBuilder.setMaxTotalHitsForFacet(maxTotalHitsForFacet);
+		return this;
+	}
+
+	public NumericStat setMaxShardHitsForFacet(long maxShardHitsForFacet) {
+		statRequestBuilder.setMaxShardHitsForFacet(maxShardHitsForFacet);
+		return this;
+	}
+
 	@Override
 	public StatRequest getStatRequest() {
 		return statRequestBuilder.build();
