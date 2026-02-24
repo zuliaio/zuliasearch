@@ -159,15 +159,22 @@ public class QueryCombiner {
 		for (ShardQueryResponse sr : shardResponses) {
 			for (FacetGroup fg : sr.getFacetGroupList()) {
 				CountRequest countRequest = fg.getCountRequest();
-				FacetCombiner facetCombiner = facetCombinerMap.computeIfAbsent(countRequest,
-						countRequest1 -> new FacetCombiner(countRequest, shardResponses.size()));
-				facetCombiner.handleFacetGroupForShard(fg, shardIndex);
+				long maxTotalHitsForFacet = countRequest.getMaxTotalHitsForFacet();
+				if (maxTotalHitsForFacet == 0 || totalHits <= maxTotalHitsForFacet) {
+					FacetCombiner facetCombiner = facetCombinerMap.computeIfAbsent(countRequest,
+							countRequest1 -> new FacetCombiner(countRequest, shardResponses.size()));
+					facetCombiner.handleFacetGroupForShard(fg, shardIndex);
+				}
 			}
 
 			for (ZuliaQuery.StatGroupInternal sg : sr.getStatGroupList()) {
 				StatRequest statRequest = sg.getStatRequest();
-				StatCombiner statCombiner = statCombinerMap.computeIfAbsent(statRequest, statRequest1 -> new StatCombiner(statRequest, shardResponses.size()));
-				statCombiner.handleStatGroupForShard(sg, shardIndex);
+				long maxTotalHitsForFacet = statRequest.getMaxTotalHitsForFacet();
+				if (maxTotalHitsForFacet == 0 || totalHits <= maxTotalHitsForFacet) {
+					StatCombiner statCombiner = statCombinerMap.computeIfAbsent(statRequest,
+							statRequest1 -> new StatCombiner(statRequest, shardResponses.size()));
+					statCombiner.handleStatGroupForShard(sg, shardIndex);
+				}
 			}
 
 			for (AnalysisResult analysisResult : sr.getAnalysisResultList()) {
@@ -199,11 +206,15 @@ public class QueryCombiner {
 		}
 
 		for (FacetCombiner facetCombiner : facetCombinerMap.values()) {
-			builder.addFacetGroup(facetCombiner.getCombinedFacetGroup());
+			if (facetCombiner.isComplete()) {
+				builder.addFacetGroup(facetCombiner.getCombinedFacetGroup());
+			}
 		}
 
 		for (StatCombiner statCombiner : statCombinerMap.values()) {
-			builder.addStatGroup(statCombiner.getCombinedStatGroupAndConvertToExternalType());
+			if (statCombiner.isComplete()) {
+				builder.addStatGroup(statCombiner.getCombinedStatGroupAndConvertToExternalType());
+			}
 		}
 
 		Map<String, ScoredResult[]> lastIndexResultMap = createLastIndexResultMapWithPreviousLastResults();
