@@ -42,6 +42,10 @@ public class StatCombiner {
 		statGroups.add(new StatGroupWithShardIndex(statGroup, shardIndex));
 	}
 
+	public boolean isComplete() {
+		return statGroups.size() == shardReponses;
+	}
+
 	public StatGroup getCombinedStatGroupAndConvertToExternalType() {
 		// Get global stats
 		List<FacetStatsWithShardIndex> globalStatsInternal = new ArrayList<>();

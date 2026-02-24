@@ -36,6 +36,10 @@ public class FacetCombiner {
 		facetGroups.add(new FacetGroupWithShardIndex(facetGroup, shardIndex));
 	}
 
+	public boolean isComplete() {
+		return facetGroups.size() == shardReponses;
+	}
+
 	public FacetGroup getCombinedFacetGroup() {
 		if (facetGroups.size() == 1) {
 			return facetGroups.getFirst().facetGroup();
