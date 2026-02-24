@@ -18,6 +18,7 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	private final FetchServerRequest fetchServerServerRequest;
 	private final InternalFetchServerRequest internalFetchServerServerRequest;
 	private final BatchFetchServerRequest batchFetchServerRequest;
+	private final InternalBatchFetchServerRequest internalBatchFetchServerRequest;
 	private final CreateIndexServerRequest createIndexServerRequest;
 
 	private final UpdateIndexServerRequest updateIndexServerRequest;
@@ -55,6 +56,7 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 		fetchServerServerRequest = new FetchServerRequest(indexManager);
 		internalFetchServerServerRequest = new InternalFetchServerRequest(indexManager);
 		batchFetchServerRequest = new BatchFetchServerRequest(indexManager);
+		internalBatchFetchServerRequest = new InternalBatchFetchServerRequest(indexManager);
 		createIndexServerRequest = new CreateIndexServerRequest(indexManager);
 		updateIndexServerRequest = new UpdateIndexServerRequest(indexManager);
 		internalCreateIndexServerRequest = new InternalCreateIndexServerRequest(indexManager);
@@ -129,6 +131,11 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	@Override
 	public void batchFetch(BatchFetchRequest request, StreamObserver<FetchResponse> responseObserver) {
 		batchFetchServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalBatchFetch(InternalBatchFetchRequest request, StreamObserver<BatchFetchResponse> responseObserver) {
+		internalBatchFetchServerRequest.handleRequest(request, responseObserver);
 	}
 
 	@Override

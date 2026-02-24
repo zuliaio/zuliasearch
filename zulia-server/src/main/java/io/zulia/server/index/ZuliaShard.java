@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -352,6 +353,21 @@ public class ZuliaShard {
 
 		try {
 			return shardReader.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
+		}
+		finally {
+			shardReaderManager.decRef(shardReader);
+		}
+	}
+
+	public Map<String, ZuliaBase.ResultDocument> getSourceDocuments(List<String> uniqueIds, FetchType resultFetchType, List<String> fieldsToReturn,
+			List<String> fieldsToMask, boolean realtime) throws Exception {
+		if (realtime) {
+			shardReaderManager.maybeRefreshBlocking();
+		}
+		ShardReader shardReader = shardReaderManager.acquire();
+
+		try {
+			return shardReader.getSourceDocuments(uniqueIds, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
 		}
 		finally {
 			shardReaderManager.decRef(shardReader);
