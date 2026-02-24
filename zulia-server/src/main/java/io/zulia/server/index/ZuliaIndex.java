@@ -140,6 +140,8 @@ public class ZuliaIndex {
 			}
 
 		});
+		this.parsers.setMaxIdle(128);
+		this.parsers.setMaxTotal(128);
 
 		this.primaryShardMap = new ConcurrentHashMap<>();
 		this.replicaShardMap = new ConcurrentHashMap<>();
