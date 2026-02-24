@@ -82,6 +82,8 @@ message StatRequest {
     uint32 shardFacets = 4; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
     double precision = 5; // Specify the precision to be used in this request. Default is 0.001
     repeated double percentiles = 6;
+    uint64 maxTotalHitsForFacet = 7; // 0 = no limit (default, backward compatible); skip this stat if totalHits exceeds threshold
+    uint64 maxShardHitsForFacet = 8; // 0 = use maxTotalHitsForFacet for shard-level check (default); set to tune shard-level threshold independently
 }
 
 message Percentile {
@@ -92,6 +94,8 @@ message CountRequest {
     Facet facetField = 1;
     uint32 maxFacets = 2; // default 10, set to -1 to get all
     uint32 shardFacets = 3; // defaults to maxFacets * 10, ignored for single shard indexes, set to -1 to get all
+    uint64 maxTotalHitsForFacet = 4; // 0 = no limit (default, backward compatible); skip this facet if totalHits exceeds threshold
+    uint64 maxShardHitsForFacet = 5; // 0 = use maxTotalHitsForFacet for shard-level check (default); set to tune shard-level threshold independently
 }
 
 message FacetCount {

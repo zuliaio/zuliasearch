@@ -31,6 +31,16 @@ public class CountFacet implements CountFacetBuilder {
 		return this;
 	}
 
+	public CountFacet setMaxTotalHitsForFacet(long maxTotalHitsForFacet) {
+		countRequestBuilder.setMaxTotalHitsForFacet(maxTotalHitsForFacet);
+		return this;
+	}
+
+	public CountFacet setMaxShardHitsForFacet(long maxShardHitsForFacet) {
+		countRequestBuilder.setMaxShardHitsForFacet(maxShardHitsForFacet);
+		return this;
+	}
+
 	@Override
 	public CountRequest getFacetCount() {
 		return countRequestBuilder.build();
