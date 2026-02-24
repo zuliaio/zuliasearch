@@ -1142,6 +1142,54 @@ public class ZuliaIndex {
 
 	}
 
+	public List<FetchResponse> internalShardBatchFetch(InternalShardBatchFetchRequest shardRequest) throws Exception {
+		int shardNumber = shardRequest.getShardNumber();
+		ZuliaShard shard = primaryShardMap.get(shardNumber);
+		if (shard == null) {
+			throw new ShardDoesNotExistException(indexName, shardNumber);
+		}
+
+		List<String> uniqueIds = shardRequest.getUniqueIdList();
+		FetchType resultFetchType = shardRequest.getResultFetchType();
+
+		Map<String, ResultDocument> sourceDocMap = null;
+		if (!FetchType.NONE.equals(resultFetchType)) {
+			sourceDocMap = shard.getSourceDocuments(uniqueIds, resultFetchType, shardRequest.getDocumentFieldsList(),
+					shardRequest.getDocumentMaskedFieldsList(), shardRequest.getRealtime());
+		}
+
+		FetchType associatedFetchType = shardRequest.getAssociatedFetchType();
+		String filename = shardRequest.getFilename();
+
+		List<FetchResponse> responses = new ArrayList<>(uniqueIds.size());
+		for (String uniqueId : uniqueIds) {
+			FetchResponse.Builder frBuilder = FetchResponse.newBuilder();
+
+			if (sourceDocMap != null) {
+				ResultDocument resultDoc = sourceDocMap.get(uniqueId);
+				if (resultDoc != null) {
+					frBuilder.setResultDocument(resultDoc);
+				}
+			}
+
+			if (!FetchType.NONE.equals(associatedFetchType)) {
+				if (!filename.isEmpty()) {
+					AssociatedDocument ad = getAssociatedDocument(uniqueId, filename, associatedFetchType);
+					if (ad != null) {
+						frBuilder.addAssociatedDocument(ad);
+					}
+				}
+				else {
+					for (AssociatedDocument ad : getAssociatedMetadataForUniqueId(uniqueId, associatedFetchType)) {
+						frBuilder.addAssociatedDocument(ad);
+					}
+				}
+			}
+			responses.add(frBuilder.build());
+		}
+		return responses;
+	}
+
 	public AssociatedDocument getAssociatedDocument(String uniqueId, String fileName, FetchType associatedFetchType) throws Exception {
 
 		return documentStorage.getAssociatedDocument(uniqueId, fileName, associatedFetchType);

@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
 import com.google.protobuf.util.JsonFormat;
+import io.grpc.stub.StreamObserver;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.IndexStats;
 import io.zulia.message.ZuliaBase.MasterSlaveSettings;
@@ -35,6 +36,7 @@ import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
 import io.zulia.server.filestorage.S3DocumentStorage;
+import io.zulia.server.index.federator.BatchFetchRequestFederator;
 import io.zulia.server.index.federator.ClearRequestFederator;
 import io.zulia.server.index.federator.CreateIndexAliasRequestFederator;
 import io.zulia.server.index.federator.CreateOrUpdateIndexRequestFederator;
@@ -234,6 +236,40 @@ public class ZuliaIndexManager {
 	public FetchResponse internalFetch(FetchRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
 		return FetchRequestRouter.internalFetch(i, request);
+	}
+
+	public void batchFetch(BatchFetchRequest request, StreamObserver<FetchResponse> responseObserver) throws Exception {
+		if (request.getFetchRequestList().isEmpty() && request.getBatchFetchGroupList().isEmpty()) {
+			return;
+		}
+
+		Set<String> indexNames = new HashSet<>();
+		for (FetchRequest fetchRequest : request.getFetchRequestList()) {
+			indexNames.add(fetchRequest.getIndexName());
+		}
+		for (BatchFetchGroup group : request.getBatchFetchGroupList()) {
+			indexNames.add(group.getIndexName());
+		}
+
+		Map<String, ZuliaIndex> indexCache = new HashMap<>();
+		for (String indexName : indexNames) {
+			indexCache.put(indexName, getIndexFromName(indexName));
+		}
+
+		BatchFetchRequestFederator federator = new BatchFetchRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient, indexCache);
+		List<FetchResponse> responses = federator.send(request);
+		for (FetchResponse response : responses) {
+			responseObserver.onNext(response);
+		}
+	}
+
+	public List<FetchResponse> internalBatchFetch(InternalBatchFetchRequest request) throws Exception {
+		List<FetchResponse> allResponses = new ArrayList<>();
+		for (InternalShardBatchFetchRequest shardRequest : request.getShardBatchFetchRequestList()) {
+			ZuliaIndex index = getIndexFromName(shardRequest.getIndexName());
+			allResponses.addAll(index.internalShardBatchFetch(shardRequest));
+		}
+		return allResponses;
 	}
 
 	public ZuliaBase.AssociatedDocument getAssociatedDocument(String indexName, String uniqueId, String fileName) throws Exception {

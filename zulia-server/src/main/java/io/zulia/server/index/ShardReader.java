@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -644,6 +645,26 @@ public class ShardReader implements AutoCloseable {
 		rdBuilder.setIndexName(indexName);
 		return rdBuilder.build();
 
+	}
+
+	public Map<String, ZuliaBase.ResultDocument> getSourceDocuments(List<String> uniqueIds, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,
+			List<String> fieldsToMask, boolean realtime) throws Exception {
+
+		ShardQuery shardQuery = ShardQuery.queryByIds(uniqueIds, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
+		ZuliaQuery.ShardQueryResponse segmentResponse = this.queryShard(shardQuery);
+
+		Map<String, ZuliaBase.ResultDocument> results = new HashMap<>(uniqueIds.size());
+		for (ZuliaQuery.ScoredResult scoredResult : segmentResponse.getScoredResultList()) {
+			if (scoredResult.hasResultDocument()) {
+				results.put(scoredResult.getUniqueId(), scoredResult.getResultDocument());
+			}
+		}
+		for (String uniqueId : uniqueIds) {
+			if (!results.containsKey(uniqueId)) {
+				results.put(uniqueId, ZuliaBase.ResultDocument.newBuilder().setUniqueId(uniqueId).setIndexName(indexName).build());
+			}
+		}
+		return results;
 	}
 
 	public int docFreq(String field, String term) throws IOException {
