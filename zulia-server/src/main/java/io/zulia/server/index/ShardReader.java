@@ -288,18 +288,23 @@ public class ShardReader implements AutoCloseable {
 			topDocs = (TopDocs) results[0];
 			int shardTotalHits = (int) topDocs.totalHits.value();
 
-			List<ZuliaQuery.CountRequest> filteredCountRequests = countRequestList.stream().filter(cr -> {
-				long shardLimit = cr.getMaxShardHitsForFacet() != 0 ? cr.getMaxShardHitsForFacet() : cr.getMaxTotalHitsForFacet();
-				return shardLimit == 0 || shardTotalHits <= shardLimit;
-			}).toList();
-			List<ZuliaQuery.StatRequest> filteredStatRequests = statRequestList.stream().filter(sr -> {
-				long shardLimit = sr.getMaxShardHitsForFacet() != 0 ? sr.getMaxShardHitsForFacet() : sr.getMaxTotalHitsForFacet();
-				return shardLimit == 0 || shardTotalHits <= shardLimit;
-			}).toList();
+			if (shardTotalHits == 0) {
+				addEmptyFacetAndStatGroups(shardQueryReponseBuilder, countRequestList, statRequestList);
+			}
+			else {
+				List<ZuliaQuery.CountRequest> filteredCountRequests = countRequestList.stream().filter(cr -> {
+					long shardLimit = cr.getMaxShardHitsForFacet() != 0 ? cr.getMaxShardHitsForFacet() : cr.getMaxTotalHitsForFacet();
+					return shardLimit == 0 || shardTotalHits <= shardLimit;
+				}).toList();
+				List<ZuliaQuery.StatRequest> filteredStatRequests = statRequestList.stream().filter(sr -> {
+					long shardLimit = sr.getMaxShardHitsForFacet() != 0 ? sr.getMaxShardHitsForFacet() : sr.getMaxTotalHitsForFacet();
+					return shardLimit == 0 || shardTotalHits <= shardLimit;
+				}).toList();
 
-			if (!filteredCountRequests.isEmpty() || !filteredStatRequests.isEmpty()) {
-				FacetsCollector facetsCollector = (FacetsCollector) results[1];
-				handleAggregations(shardQueryReponseBuilder, filteredStatRequests, filteredCountRequests, facetsCollector, aggregationConcurrency);
+				if (!filteredCountRequests.isEmpty() || !filteredStatRequests.isEmpty()) {
+					FacetsCollector facetsCollector = (FacetsCollector) results[1];
+					handleAggregations(shardQueryReponseBuilder, filteredStatRequests, filteredCountRequests, facetsCollector, aggregationConcurrency);
+				}
 			}
 		}
 		else {
@@ -405,6 +410,20 @@ public class ShardReader implements AutoCloseable {
 			shardQueryReponseBuilder.addStatGroup(statGroupBuilder.build());
 		}
 
+	}
+
+	private static void addEmptyFacetAndStatGroups(ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder,
+			List<ZuliaQuery.CountRequest> countRequestList, List<ZuliaQuery.StatRequest> statRequestList) {
+		for (ZuliaQuery.CountRequest countRequest : countRequestList) {
+			shardQueryReponseBuilder.addFacetGroup(ZuliaQuery.FacetGroup.newBuilder().setCountRequest(countRequest));
+		}
+		for (ZuliaQuery.StatRequest statRequest : statRequestList) {
+			ZuliaQuery.StatGroupInternal.Builder statGroupBuilder = ZuliaQuery.StatGroupInternal.newBuilder().setStatRequest(statRequest);
+			if (statRequest.getFacetField().getLabel().isEmpty()) {
+				statGroupBuilder.setGlobalStats(ZuliaQuery.FacetStatsInternal.getDefaultInstance());
+			}
+			shardQueryReponseBuilder.addStatGroup(statGroupBuilder);
+		}
 	}
 
 	private static String @NotNull [] getPathForFacetField(ZuliaQuery.Facet facetField) {
