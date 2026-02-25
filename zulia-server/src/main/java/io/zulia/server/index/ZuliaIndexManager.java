@@ -75,6 +75,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -264,10 +265,23 @@ public class ZuliaIndexManager {
 	}
 
 	public List<FetchResponse> internalBatchFetch(InternalBatchFetchRequest request) throws Exception {
+		List<InternalShardBatchFetchRequest> shardRequests = request.getShardBatchFetchRequestList();
+		if (shardRequests.size() == 1) {
+			ZuliaIndex index = getIndexFromName(shardRequests.getFirst().getIndexName());
+			return index.internalShardBatchFetch(shardRequests.getFirst());
+		}
+
+		List<Future<List<FetchResponse>>> futures = new ArrayList<>(shardRequests.size());
+		for (InternalShardBatchFetchRequest shardRequest : shardRequests) {
+			futures.add(pool.submit(() -> {
+				ZuliaIndex index = getIndexFromName(shardRequest.getIndexName());
+				return index.internalShardBatchFetch(shardRequest);
+			}));
+		}
+
 		List<FetchResponse> allResponses = new ArrayList<>();
-		for (InternalShardBatchFetchRequest shardRequest : request.getShardBatchFetchRequestList()) {
-			ZuliaIndex index = getIndexFromName(shardRequest.getIndexName());
-			allResponses.addAll(index.internalShardBatchFetch(shardRequest));
+		for (Future<List<FetchResponse>> future : futures) {
+			allResponses.addAll(future.get());
 		}
 		return allResponses;
 	}
