@@ -12,7 +12,6 @@ description = "Zulia Common"
 dependencies {
     api(projects.zuliaUtil)
     api(libs.annontations)
-    api(libs.commons.pool2)
     api(libs.grpc.netty.shaded)
     api(libs.grpc.protobuf)
     api(libs.grpc.stub)
