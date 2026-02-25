@@ -92,7 +92,7 @@ public class FileStorageTest {
 
 		zuliaPoolConfig.setDefaultRetries(1);
 		zuliaPoolConfig.setNodeUpdateEnabled(false);
-		zuliaPoolConfig.setMaxConnections(32);
+		zuliaPoolConfig.setMaxConcurrentRequests(32);
 
 		zuliaWorkPool = new ZuliaWorkPool(zuliaPoolConfig);
 	}

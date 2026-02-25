@@ -60,8 +60,7 @@ public class WikiExamples {
 
 		//optional settings (default values shown)
 		zuliaPoolConfig.setDefaultRetries(0);//Number of attempts to try before throwing an exception
-		zuliaPoolConfig.setMaxConnections(10); //Maximum connections per server
-		zuliaPoolConfig.setMaxIdle(10); //Maximum idle connections per server
+		zuliaPoolConfig.setMaxConcurrentRequests(32); //Maximum concurrent requests across all nodes
 		zuliaPoolConfig.setCompressedConnection(false); //Use this for WAN client connections
 		zuliaPoolConfig.setPoolName(null); //For logging purposes only, null gives default of zuliaPool-n
 		zuliaPoolConfig.setNodeUpdateEnabled(

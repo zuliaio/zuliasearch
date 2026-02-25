@@ -17,7 +17,6 @@ awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
 commons-compress = { module = "org.apache.commons:commons-compress", version = "1.28.0" }
-commons-pool2 = { module = "org.apache.commons:commons-pool2", version = "2.12.1" }
 djl-bom = { module = "ai.djl:bom", version.ref = "djl" }
 djl-pytorch-engine = { module = "ai.djl.pytorch:pytorch-engine", version.ref = "djl" }
 djl-basicdataset = { module = "ai.djl:basicdataset", version.ref = "djl" }
