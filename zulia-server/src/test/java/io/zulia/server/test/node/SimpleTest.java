@@ -23,6 +23,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -304,8 +305,8 @@ public class SimpleTest {
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(repeatCount * uniqueDocs, searchResult.getTotalHits());
 
-		String yesterday = LocalDate.now().minusDays(1).toString();
-		String tomorrow = LocalDate.now().plusDays(1).toString();
+		String yesterday = LocalDate.now(ZoneOffset.UTC).minusDays(1).toString();
+		String tomorrow = LocalDate.now(ZoneOffset.UTC).plusDays(1).toString();
 
 		search = new Search(SIMPLE_TEST_INDEX).setAmount(10);
 		search.addQuery(new ScoredQuery(ZuliaFieldConstants.TIMESTAMP_FIELD + ":[" + yesterday + " TO " + tomorrow + "]"));
