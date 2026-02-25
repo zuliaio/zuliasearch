@@ -24,6 +24,7 @@ import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LRUQueryCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.LoaderOptions;
@@ -151,9 +152,20 @@ public class ZuliaDConfig {
 		return printer.print(node);
 	}
 
-	public static void setLuceneStatic() {
+	public static void setLuceneStatic(ZuliaConfig zuliaConfig) {
 		IndexSearcher.setMaxClauseCount(128 * 1024);
 		FacetsConfig.DEFAULT_DIM_CONFIG.multiValued = true;
+
+		int maxQueries = zuliaConfig.getFilterCacheMaxQueries();
+		long maxBytes = (long) zuliaConfig.getFilterCacheMaxMemoryMB() * 1024L * 1024L;
+		if (maxQueries > 0 && maxBytes > 0) {
+			IndexSearcher.setDefaultQueryCache(new LRUQueryCache(maxQueries, maxBytes));
+			LOG.info("Lucene filter cache configured: maxQueries={}, maxMemoryMB={}", maxQueries, zuliaConfig.getFilterCacheMaxMemoryMB());
+		}
+		else {
+			IndexSearcher.setDefaultQueryCache(null);
+			LOG.info("Lucene filter cache disabled");
+		}
 	}
 
 	public NodeService getNodeService() {

@@ -40,6 +40,7 @@ public class ClientIndexConfig {
 	private Integer defaultConcurrency;
 
 	private Boolean disableCompression;
+	private Boolean disableFilterCache;
 
 	private TreeMap<String, FieldConfig> fieldMap;
 	private TreeMap<String, AnalyzerSettings> analyzerSettingsMap;
@@ -125,6 +126,15 @@ public class ClientIndexConfig {
 
 	public ClientIndexConfig setDisableCompression(Boolean disableCompression) {
 		this.disableCompression = disableCompression;
+		return this;
+	}
+
+	public Boolean getDisableFilterCache() {
+		return disableFilterCache;
+	}
+
+	public ClientIndexConfig setDisableFilterCache(Boolean disableFilterCache) {
+		this.disableFilterCache = disableFilterCache;
 		return this;
 	}
 
@@ -366,6 +376,10 @@ public class ClientIndexConfig {
 			isb.setDisableCompression(disableCompression);
 		}
 
+		if (disableFilterCache != null) {
+			isb.setDisableFilterCache(disableFilterCache);
+		}
+
 		if (defaultConcurrency != null) {
 			isb.setDefaultConcurrency(defaultConcurrency);
 		}
@@ -428,6 +442,7 @@ public class ClientIndexConfig {
 		this.indexWeight = indexSettings.getIndexWeight();
 		this.ramBufferMB = indexSettings.getRamBufferMB();
 		this.disableCompression = indexSettings.getDisableCompression();
+		this.disableFilterCache = indexSettings.getDisableFilterCache();
 		this.defaultConcurrency = indexSettings.getDefaultConcurrency();
 
 		this.meta = ZuliaUtil.byteStringToMongoDocument(indexSettings.getMeta());

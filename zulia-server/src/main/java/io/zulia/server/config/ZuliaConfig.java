@@ -33,6 +33,9 @@ public class ZuliaConfig {
 
 	private boolean debug;
 
+	private int filterCacheMaxQueries = 10000;
+	private int filterCacheMaxMemoryMB = 256;
+
 	public ZuliaConfig() {
 	}
 
@@ -156,11 +159,28 @@ public class ZuliaConfig {
 		this.debug = debug;
 	}
 
+	public int getFilterCacheMaxQueries() {
+		return filterCacheMaxQueries;
+	}
+
+	public void setFilterCacheMaxQueries(int filterCacheMaxQueries) {
+		this.filterCacheMaxQueries = filterCacheMaxQueries;
+	}
+
+	public int getFilterCacheMaxMemoryMB() {
+		return filterCacheMaxMemoryMB;
+	}
+
+	public void setFilterCacheMaxMemoryMB(int filterCacheMaxMemoryMB) {
+		this.filterCacheMaxMemoryMB = filterCacheMaxMemoryMB;
+	}
+
 	@Override
 	public String toString() {
 		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
 				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoConnection=" + mongoConnection + ", mongoAuth="
 				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", responseCompression="
-				+ responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + ", debug=" + debug + '}';
+				+ responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + ", debug=" + debug
+				+ ", filterCacheMaxQueries=" + filterCacheMaxQueries + ", filterCacheMaxMemoryMB=" + filterCacheMaxMemoryMB + '}';
 	}
 }

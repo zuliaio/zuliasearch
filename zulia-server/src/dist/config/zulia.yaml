@@ -34,6 +34,11 @@ responseCompression: false
 # default concurrency of a search if not explicitly set in index or search
 defaultConcurrency: 1
 
+# Lucene filter cache - caches filter clause bitsets shared across queries
+# Set maxQueries or maxMemoryMB to 0 to disable filter caching entirely
+#filterCacheMaxQueries: 10000
+#filterCacheMaxMemoryMB: 256
+
 #mongoConnection:
 # protocol: "mongodb+srv"
 # connectionURL: example.com

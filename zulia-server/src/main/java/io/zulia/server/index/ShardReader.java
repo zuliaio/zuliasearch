@@ -227,6 +227,9 @@ public class ShardReader implements AutoCloseable {
 
 		try (VirtualThreadPerTaskTaskExecutor searchExecutor = new SemaphoreLimitedVirtualPool(concurrency)) {
 			IndexSearcher indexSearcher = new IndexSearcher(indexReader, searchExecutor);
+			if (indexConfig.getIndexSettings().getDisableFilterCache()) {
+				indexSearcher.setQueryCache(null);
+			}
 			return getShardQueryResponse(shardQuery, indexSearcher, concurrency);
 		}
 	}

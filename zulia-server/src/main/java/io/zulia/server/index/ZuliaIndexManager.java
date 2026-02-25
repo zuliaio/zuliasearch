@@ -609,6 +609,10 @@ public class ZuliaIndexManager {
 				existingSettings.setDisableCompression(updateIndexSettings.getDisableCompression());
 			}
 
+			if (updateIndexSettings.getSetDisableFilterCache()) {
+				existingSettings.setDisableFilterCache(updateIndexSettings.getDisableFilterCache());
+			}
+
 			if (updateIndexSettings.getSetDefaultConcurrency()) {
 				existingSettings.setDefaultConcurrency(updateIndexSettings.getDefaultConcurrency());
 			}

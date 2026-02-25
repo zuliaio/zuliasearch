@@ -41,7 +41,7 @@ public class TestHelper {
 
 	static {
 
-		ZuliaDConfig.setLuceneStatic();
+		ZuliaDConfig.setLuceneStatic(new ZuliaConfig());
 
 		MONGO_TEST_INSTANCE = new MongoTestInstance();
 

@@ -62,6 +62,8 @@ message IndexSettings {
     bool disableCompression = 22;
 
     uint32 defaultConcurrency = 23;
+
+    bool disableFilterCache = 24;
 }
 
 
@@ -126,6 +128,9 @@ message UpdateIndexSettings {
 
     bool setDefaultConcurrency = 33;
     uint32 defaultConcurrency = 34;
+
+    bool setDisableFilterCache = 35;
+    bool disableFilterCache = 36;
 
 }
 

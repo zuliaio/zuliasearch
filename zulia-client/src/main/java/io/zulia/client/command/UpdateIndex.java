@@ -47,6 +47,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private Integer numberOfReplicas;
 
 	private Boolean disableCompression;
+	private Boolean disableFilterCache;
 	private Integer defaultConcurrency;
 
 	private final UpdateIndexSettings.Operation.Builder analyzerSettingsOperation = UpdateIndexSettings.Operation.newBuilder();
@@ -327,6 +328,15 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
+	public Boolean getDisableFilterCache() {
+		return disableFilterCache;
+	}
+
+	public UpdateIndex setDisableFilterCache(Boolean disableFilterCache) {
+		this.disableFilterCache = disableFilterCache;
+		return this;
+	}
+
 	public Integer getDefaultConcurrency() {
 		return defaultConcurrency;
 	}
@@ -518,6 +528,11 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		if (disableCompression != null) {
 			updateIndexSettings.setSetDisableCompression(true);
 			updateIndexSettings.setDisableCompression(disableCompression);
+		}
+
+		if (disableFilterCache != null) {
+			updateIndexSettings.setSetDisableFilterCache(true);
+			updateIndexSettings.setDisableFilterCache(disableFilterCache);
 		}
 
 		if (defaultConcurrency != null) {

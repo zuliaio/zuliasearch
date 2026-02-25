@@ -26,11 +26,11 @@ public class StartNodeCmd implements Callable<Integer> {
 	@Override
 	public Integer call() throws Exception {
 
-		ZuliaDConfig.setLuceneStatic();
-
 		ZuliaDConfig zuliaDConfig = new ZuliaDConfig(zuliadCmd.getConfigPath());
 		NodeService nodeService = zuliaDConfig.getNodeService();
 		ZuliaConfig zuliaConfig = zuliaDConfig.getZuliaConfig();
+
+		ZuliaDConfig.setLuceneStatic(zuliaConfig);
 
 		Collection<ZuliaBase.Node> nodes = nodeService.getNodes();
 
