@@ -23,7 +23,8 @@ public class ZuliaConnection {
 	public void open() {
 
 		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(node.getServerAddress(), node.getServicePort())
-				.maxInboundMessageSize(256 * 1024 * 1024).usePlaintext();
+				.maxInboundMessageSize(256 * 1024 * 1024).usePlaintext().keepAliveTime(30, TimeUnit.SECONDS).keepAliveTimeout(5, TimeUnit.SECONDS)
+				.keepAliveWithoutCalls(true);
 		channel = managedChannelBuilder.build();
 
 		blockingStub = ZuliaServiceGrpc.newBlockingStub(channel);
