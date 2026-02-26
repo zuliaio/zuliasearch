@@ -137,7 +137,7 @@ public class AssociatedController {
 			}
 		});
 
-		return new StreamedFile(input, MediaType.of(ZuliaRESTConstants.UTF8_JSON));
+		return new StreamedFile(input, MediaType.APPLICATION_OCTET_STREAM_TYPE);
 	}
 
 	@Get("/{indexName}/all")
