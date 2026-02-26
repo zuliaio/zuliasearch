@@ -23,7 +23,7 @@ public class InternalRpcConnection {
 		this.internalServicePort = servicePort;
 
 		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(memberAddress, servicePort).maxInboundMessageSize(256 * 1024 * 1024)
-				.usePlaintext();
+				.usePlaintext().keepAliveTime(30, TimeUnit.SECONDS).keepAliveTimeout(5, TimeUnit.SECONDS).keepAliveWithoutCalls(true);
 		channel = managedChannelBuilder.build();
 
 		blockingStub = ZuliaServiceGrpc.newBlockingStub(channel);

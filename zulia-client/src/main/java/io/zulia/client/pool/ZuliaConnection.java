@@ -5,27 +5,26 @@ import io.grpc.ManagedChannelBuilder;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceGrpc;
 
+import java.util.concurrent.TimeUnit;
+
 public class ZuliaConnection {
 
-	private final long connectionId;
-	private final long connectionNumberForNode;
 	private final boolean compressedConnection;
 	private final Node node;
 	private ManagedChannel channel;
 	private ZuliaServiceGrpc.ZuliaServiceBlockingStub blockingStub;
 	private ZuliaServiceGrpc.ZuliaServiceStub asyncStub;
 
-	public ZuliaConnection(Node node, boolean compressedConnection, long connectionId, long connectionNumberForNode) {
+	public ZuliaConnection(Node node, boolean compressedConnection) {
 		this.node = node;
-		this.connectionId = connectionId;
-		this.connectionNumberForNode = connectionNumberForNode;
 		this.compressedConnection = compressedConnection;
 	}
 
 	public void open() {
 
 		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(node.getServerAddress(), node.getServicePort())
-				.maxInboundMessageSize(256 * 1024 * 1024).usePlaintext();
+				.maxInboundMessageSize(256 * 1024 * 1024).usePlaintext().keepAliveTime(30, TimeUnit.SECONDS).keepAliveTimeout(5, TimeUnit.SECONDS)
+				.keepAliveWithoutCalls(true);
 		channel = managedChannelBuilder.build();
 
 		blockingStub = ZuliaServiceGrpc.newBlockingStub(channel);
@@ -56,22 +55,20 @@ public class ZuliaConnection {
 		return compressedConnection;
 	}
 
-	public long getConnectionId() {
-		return connectionId;
-	}
-
-	public long getConnectionNumberForNode() {
-		return connectionNumberForNode;
-	}
-
 	/**
-	 * closes the connection to the server if open, calling a method (index, query, ...) will open a new connection
+	 * closes the connection to the server
 	 */
 	public void close() {
 
 		try {
 			if (channel != null) {
-				channel.shutdownNow();
+				channel.shutdown();
+				try {
+					channel.awaitTermination(15, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException ignored) {
+
+				}
 			}
 		}
 		finally {

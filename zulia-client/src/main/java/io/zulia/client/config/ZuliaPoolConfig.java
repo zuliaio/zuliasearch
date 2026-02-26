@@ -11,8 +11,7 @@ import static io.zulia.message.ZuliaBase.Node;
 
 public class ZuliaPoolConfig {
 
-	private int maxConnections;
-	private int maxIdle;
+	private int maxConcurrentRequests;
 	private int defaultRetries;
 	private String poolName;
 	private boolean compressedConnection;
@@ -30,8 +29,7 @@ public class ZuliaPoolConfig {
 
 	public ZuliaPoolConfig() {
 		this.nodes = new ArrayList<>();
-		this.maxConnections = 32;
-		this.maxIdle = 8;
+		this.maxConcurrentRequests = 32;
 		this.defaultRetries = DEFAULT_DEFAULT_RETRIES;
 		this.poolName = null;
 		this.compressedConnection = false;
@@ -68,21 +66,12 @@ public class ZuliaPoolConfig {
 		return nodes;
 	}
 
-	public int getMaxConnections() {
-		return maxConnections;
+	public int getMaxConcurrentRequests() {
+		return maxConcurrentRequests;
 	}
 
-	public ZuliaPoolConfig setMaxConnections(int maxConnections) {
-		this.maxConnections = maxConnections;
-		return this;
-	}
-
-	public int getMaxIdle() {
-		return maxIdle;
-	}
-
-	public ZuliaPoolConfig setMaxIdle(int maxIdle) {
-		this.maxIdle = maxIdle;
+	public ZuliaPoolConfig setMaxConcurrentRequests(int maxConcurrentRequests) {
+		this.maxConcurrentRequests = maxConcurrentRequests;
 		return this;
 	}
 

@@ -6,6 +6,7 @@ import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
+import io.grpc.netty.shaded.io.netty.channel.ChannelOption;
 import io.grpc.netty.shaded.io.netty.util.NettyRuntime;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
@@ -53,7 +54,9 @@ public class ZuliaServiceServer {
 
 		ZuliaServiceHandler zuliaServiceHandler = new ZuliaServiceHandler(indexManager);
 		NettyServerBuilder nettyServerBuilder = NettyServerBuilder.forPort(externalServicePort).addService(zuliaServiceHandler).executor(executor)
-				.maxInboundMessageSize(128 * 1024 * 1024);
+				.maxInboundMessageSize(128 * 1024 * 1024).withChildOption(ChannelOption.TCP_NODELAY, true)
+				.keepAliveTime(30, TimeUnit.SECONDS).keepAliveTimeout(5, TimeUnit.SECONDS).permitKeepAliveTime(10, TimeUnit.SECONDS)
+				.permitKeepAliveWithoutCalls(true);
 
 		if (zuliaConfig.isResponseCompression()) {
 			nettyServerBuilder = nettyServerBuilder.intercept(new ResponseCompressionIntercept());

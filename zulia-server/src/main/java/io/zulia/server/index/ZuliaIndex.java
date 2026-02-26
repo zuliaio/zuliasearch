@@ -41,11 +41,7 @@ import io.zulia.server.search.queryparser.SetQueryHelper;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ShardUtil;
-import io.zulia.util.ZuliaThreadFactory;
-import org.apache.commons.pool2.BasePooledObjectFactory;
-import org.apache.commons.pool2.PooledObject;
-import org.apache.commons.pool2.impl.DefaultPooledObject;
-import org.apache.commons.pool2.impl.GenericObjectPool;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -95,7 +91,7 @@ public class ZuliaIndex {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ZuliaIndex.class);
 	private final ServerIndexConfig indexConfig;
-	private final GenericObjectPool<ZuliaFlexibleQueryParser> parsers;
+	private final ConcurrentLinkedDeque<ZuliaFlexibleQueryParser> parsers;
 	private final ConcurrentHashMap<Integer, ZuliaShard> primaryShardMap;
 	private final ConcurrentHashMap<Integer, ZuliaShard> replicaShardMap;
 	private final ExecutorService shardPool;
@@ -123,25 +119,11 @@ public class ZuliaIndex {
 
 		this.documentStorage = documentStorage;
 
-		this.shardPool = Executors.newCachedThreadPool(new ZuliaThreadFactory(indexName + "-shards"));
+		this.shardPool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + "-shard-", 0).factory());
 
 		this.zuliaPerFieldAnalyzer = new ZuliaPerFieldAnalyzer(indexConfig);
 
-		this.parsers = new GenericObjectPool<>(new BasePooledObjectFactory<>() {
-
-			@Override
-			public ZuliaFlexibleQueryParser create() {
-				return new ZuliaFlexibleQueryParser(zuliaPerFieldAnalyzer, ZuliaIndex.this.indexConfig);
-			}
-
-			@Override
-			public PooledObject<ZuliaFlexibleQueryParser> wrap(ZuliaFlexibleQueryParser obj) {
-				return new DefaultPooledObject<>(obj);
-			}
-
-		});
-		this.parsers.setMaxIdle(128);
-		this.parsers.setMaxTotal(128);
+		this.parsers = new ConcurrentLinkedDeque<>();
 
 		this.primaryShardMap = new ConcurrentHashMap<>();
 		this.replicaShardMap = new ConcurrentHashMap<>();
@@ -686,9 +668,11 @@ public class ZuliaIndex {
 	private Query parseWithQueryParser(String queryText, int minimumShouldMatchNumber, ZuliaQuery.Query.Operator defaultOperator,
 			Collection<String> defaultSearchFieldList) throws Exception {
 		Query query;
-		ZuliaFlexibleQueryParser qp = null;
+		ZuliaFlexibleQueryParser qp = parsers.pollFirst();
+		if (qp == null) {
+			qp = new ZuliaFlexibleQueryParser(zuliaPerFieldAnalyzer, indexConfig);
+		}
 		try {
-			qp = parsers.borrowObject();
 			qp.setMinimumNumberShouldMatch(minimumShouldMatchNumber);
 			qp.setDefaultOperator(defaultOperator);
 			qp.setDefaultFields(defaultSearchFieldList);
@@ -696,7 +680,7 @@ public class ZuliaIndex {
 			query = qp.parse(queryText);
 		}
 		finally {
-			parsers.returnObject(qp);
+			parsers.offerFirst(qp);
 		}
 		return query;
 	}
