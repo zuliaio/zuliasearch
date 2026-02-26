@@ -30,7 +30,7 @@ public class ZuliaBaseWorkPool implements AutoCloseable {
 	}
 
 	public ZuliaBaseWorkPool(ZuliaPool zuliaPool, String poolName) {
-		taskExecutor = WorkPool.nativePool(zuliaPool.getMaxConnections(), zuliaPool.getMaxConnections() * 10, poolName);
+		taskExecutor = WorkPool.virtualBounded(zuliaPool.getMaxConnections(), poolName);
 		this.zuliaPool = zuliaPool;
 	}
 
