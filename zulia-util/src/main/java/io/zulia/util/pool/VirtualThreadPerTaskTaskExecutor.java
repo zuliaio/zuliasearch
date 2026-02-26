@@ -15,6 +15,10 @@ public class VirtualThreadPerTaskTaskExecutor implements TaskExecutor {
 		executorService = MoreExecutors.listeningDecorator(Executors.newVirtualThreadPerTaskExecutor());
 	}
 
+	public VirtualThreadPerTaskTaskExecutor(String name) {
+		executorService = MoreExecutors.listeningDecorator(Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(name + "-", 0).factory()));
+	}
+
 	@Override
 	public <T> ListenableFuture<T> executeAsync(Callable<T> task) {
 		return executorService.submit(task);
