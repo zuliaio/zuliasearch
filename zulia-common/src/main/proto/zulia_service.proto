@@ -210,10 +210,12 @@ message InternalCreateIndexAliasRequest {
 
 
 message CreateIndexResponse {
+    bool changed = 1;
 }
 
 message UpdateIndexResponse {
     IndexSettings fullIndexSettings = 1;
+    bool changed = 2;
 }
 
 message InternalCreateOrUpdateIndexResponse {

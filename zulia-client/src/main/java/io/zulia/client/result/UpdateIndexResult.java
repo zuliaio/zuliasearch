@@ -17,6 +17,10 @@ public class UpdateIndexResult extends Result {
 		return updateIndexResponse.getFullIndexSettings();
 	}
 
+	public boolean isChanged() {
+		return updateIndexResponse.getChanged();
+	}
+
 	public ClientIndexConfig getClientIndexConfig() {
 		ClientIndexConfig clientIndexConfig = new ClientIndexConfig();
 		clientIndexConfig.configure(updateIndexResponse.getFullIndexSettings());
