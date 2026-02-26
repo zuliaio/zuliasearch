@@ -12,6 +12,11 @@ public class SemaphoreLimitedVirtualPool extends VirtualThreadPerTaskTaskExecuto
 		pool = new Semaphore(threads);
 	}
 
+	public SemaphoreLimitedVirtualPool(int threads, String name) {
+		super(name);
+		pool = new Semaphore(threads);
+	}
+
 	@Override
 	public <T> ListenableFuture<T> executeAsync(Callable<T> task) {
 		try {

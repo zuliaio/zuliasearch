@@ -53,7 +53,6 @@ import io.zulia.server.index.router.FetchRequestRouter;
 import io.zulia.server.index.router.StoreRequestRouter;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
-import io.zulia.util.ZuliaThreadFactory;
 import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.search.Query;
 import org.bson.Document;
@@ -121,7 +120,7 @@ public class ZuliaIndexManager {
 			indexAliasMap.put(indexAlias.getAliasName(), indexAlias.getIndexName());
 		}
 
-		this.pool = Executors.newCachedThreadPool(new ZuliaThreadFactory("manager"));
+		this.pool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("manager-", 0).factory());
 
 	}
 

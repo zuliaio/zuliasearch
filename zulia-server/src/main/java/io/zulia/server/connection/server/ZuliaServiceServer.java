@@ -9,7 +9,6 @@ import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import io.grpc.netty.shaded.io.netty.util.NettyRuntime;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.util.ZuliaThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,7 @@ public class ZuliaServiceServer {
 
 		int externalServicePort = zuliaConfig.getServicePort();
 
-		this.executor = Executors.newCachedThreadPool(new ZuliaThreadFactory("grpc"));;
+		this.executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("grpc-", 0).factory());
 
 		ZuliaServiceHandler zuliaServiceHandler = new ZuliaServiceHandler(indexManager);
 		NettyServerBuilder nettyServerBuilder = NettyServerBuilder.forPort(externalServicePort).addService(zuliaServiceHandler).executor(executor)

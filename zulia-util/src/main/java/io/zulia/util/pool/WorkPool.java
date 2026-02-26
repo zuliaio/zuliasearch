@@ -79,11 +79,31 @@ public class WorkPool {
 	}
 
 	/**
+	 * Creates a TaskExecutor that starts a virtual thread per task without any limits on the number of virtual threads created
+	 *
+	 * @param name - name prefix for virtual threads (e.g. "grpc" produces "grpc-0", "grpc-1", ...)
+	 */
+	public static TaskExecutor virtualUnbounded(String name) {
+		return new VirtualThreadPerTaskTaskExecutor(name);
+	}
+
+	/**
 	 * Creates a TaskExecutor that starts a virtual thread per task but limits concurrent threads using a semaphore
 	 * As per <a href="https://inside.java/2024/02/04/sip094/">Managing Throughput with Virtual Threads - Sip of Java</a>
 	 */
 	public static TaskExecutor virtualBounded(int maxThreads) {
 		return new SemaphoreLimitedVirtualPool(maxThreads);
+	}
+
+	/**
+	 * Creates a TaskExecutor that starts a virtual thread per task but limits concurrent threads using a semaphore
+	 * As per <a href="https://inside.java/2024/02/04/sip094/">Managing Throughput with Virtual Threads - Sip of Java</a>
+	 *
+	 * @param maxThreads - tasks to run at the same time
+	 * @param name       - name prefix for virtual threads (e.g. "client" produces "client-0", "client-1", ...)
+	 */
+	public static TaskExecutor virtualBounded(int maxThreads, String name) {
+		return new SemaphoreLimitedVirtualPool(maxThreads, name);
 	}
 
 }
