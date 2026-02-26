@@ -41,7 +41,6 @@ import io.zulia.server.search.queryparser.SetQueryHelper;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ShardUtil;
-import io.zulia.util.ZuliaThreadFactory;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
@@ -120,7 +119,7 @@ public class ZuliaIndex {
 
 		this.documentStorage = documentStorage;
 
-		this.shardPool = Executors.newCachedThreadPool(new ZuliaThreadFactory(indexName + "-shards"));
+		this.shardPool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + "-shard-", 0).factory());
 
 		this.zuliaPerFieldAnalyzer = new ZuliaPerFieldAnalyzer(indexConfig);
 
