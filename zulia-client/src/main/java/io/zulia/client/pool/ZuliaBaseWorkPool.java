@@ -17,20 +17,21 @@ public class ZuliaBaseWorkPool implements AutoCloseable {
 
 	private boolean closed;
 	private final TaskExecutor taskExecutor;
-	private ZuliaPool zuliaPool;
+	private final ZuliaPool zuliaPool;
 
-	private static AtomicInteger counter = new AtomicInteger(0);
+	private static final AtomicInteger counter = new AtomicInteger(0);
 
 	public ZuliaBaseWorkPool(ZuliaPoolConfig zuliaPoolConfig) {
-		this(new ZuliaPool(zuliaPoolConfig), zuliaPoolConfig.getPoolName() != null ? zuliaPoolConfig.getPoolName() : "zuliaPool-" + counter.getAndIncrement());
+		this(new ZuliaPool(zuliaPoolConfig), zuliaPoolConfig.getMaxConcurrentRequests(),
+				zuliaPoolConfig.getPoolName() != null ? zuliaPoolConfig.getPoolName() : "zuliaPool-" + counter.getAndIncrement());
 	}
 
-	public ZuliaBaseWorkPool(ZuliaPool zuliaPool) {
-		this(zuliaPool, "zuliaPool-" + counter.getAndIncrement());
+	protected ZuliaBaseWorkPool(ZuliaPool zuliaPool, int maxConcurrentRequests, String poolName) {
+		this(zuliaPool, WorkPool.virtualBounded(maxConcurrentRequests, poolName));
 	}
 
-	public ZuliaBaseWorkPool(ZuliaPool zuliaPool, String poolName) {
-		taskExecutor = WorkPool.virtualBounded(zuliaPool.getMaxConcurrentRequests(), poolName);
+	protected ZuliaBaseWorkPool(ZuliaPool zuliaPool, TaskExecutor taskExecutor) {
+		this.taskExecutor = taskExecutor;
 		this.zuliaPool = zuliaPool;
 	}
 
