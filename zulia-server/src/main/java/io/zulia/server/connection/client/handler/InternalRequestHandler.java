@@ -16,28 +16,18 @@ public abstract class InternalRequestHandler<S, Q> {
 	}
 
 	public S handleRequest(Node node, Q q) throws Exception {
-		InternalRpcConnection rpcConnection = null;
-
-		boolean valid = true;
 		try {
-			rpcConnection = internalClient.getInternalRpcConnection(node);
+			InternalRpcConnection rpcConnection = internalClient.getConnection(node);
 			return getResponse(q, rpcConnection);
 		}
 		catch (StatusRuntimeException e) {
 			Metadata trailers = e.getTrailers();
-			if (trailers.containsKey(MetaKeys.ERROR_KEY)) {
+			if (trailers != null && trailers.containsKey(MetaKeys.ERROR_KEY)) {
 				throw new Exception(trailers.get(MetaKeys.ERROR_KEY));
 			}
 			else {
 				throw e;
 			}
-		}
-		catch (Exception e) {
-			valid = false;
-			throw e;
-		}
-		finally {
-			internalClient.returnInternalBlockingConnection(node, rpcConnection, valid);
 		}
 	}
 

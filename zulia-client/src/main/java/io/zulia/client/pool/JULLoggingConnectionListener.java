@@ -13,36 +13,31 @@ public class JULLoggingConnectionListener implements ConnectionListener {
 	@Override
 	public void connectionBeforeOpen(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Opening connection #" + zuliaConnection.getConnectionNumberForNode() + " to " + node.getServerAddress() + ":" + node.getServicePort()
-				+ " connection id: " + zuliaConnection.getConnectionId());
+		LOG.info("Opening connection to " + node.getServerAddress() + ":" + node.getServicePort());
 	}
 
 	@Override
 	public void connectionOpened(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Opened connection #" + zuliaConnection.getConnectionNumberForNode() + " to " + node.getServerAddress() + ":" + node.getServicePort()
-				+ " connection id: " + zuliaConnection.getConnectionId());
+		LOG.info("Opened connection to " + node.getServerAddress() + ":" + node.getServicePort());
 	}
 
 	@Override
 	public void connectionBeforeClose(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Closing connection #" + zuliaConnection.getConnectionNumberForNode() + " to " + node.getServerAddress() + ":" + node.getServicePort()
-				+ " id: " + zuliaConnection.getConnectionId());
+		LOG.info("Closing connection to " + node.getServerAddress() + ":" + node.getServicePort());
 	}
 
 	@Override
 	public void connectionClosed(ZuliaConnection zuliaConnection) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.info("Closed connection #" + zuliaConnection.getConnectionNumberForNode() + " to " + node.getServerAddress() + ":" + node.getServicePort()
-				+ " id: " + zuliaConnection.getConnectionId());
+		LOG.info("Closed connection to " + node.getServerAddress() + ":" + node.getServicePort());
 	}
 
 	@Override
 	public void exceptionClosing(ZuliaConnection zuliaConnection, Exception e) {
 		ZuliaBase.Node node = zuliaConnection.getNode();
-		LOG.log(Level.SEVERE, "Exception closing connection #" + zuliaConnection.getConnectionNumberForNode() + " to " + node.getServerAddress() + ":"
-				+ node.getServicePort() + " id: " + zuliaConnection.getConnectionId(), e);
+		LOG.log(Level.SEVERE, "Exception closing connection to " + node.getServerAddress() + ":" + node.getServicePort(), e);
 	}
 
 	@Override

@@ -17,16 +17,19 @@ import io.zulia.server.connection.client.handler.InternalOptimizeHandler;
 import io.zulia.server.connection.client.handler.InternalQueryHandler;
 import io.zulia.server.connection.client.handler.InternalReindexHandler;
 import io.zulia.server.connection.client.handler.InternalStoreHandler;
-import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class InternalClient {
 	private final static Logger LOG = LoggerFactory.getLogger(InternalClient.class);
-	private final ConcurrentHashMap<String, GenericObjectPool<InternalRpcConnection>> internalConnectionPoolMap;
+
+	private static final int CONNECTIONS_PER_NODE = 3;
+
+	private final ConcurrentHashMap<String, InternalRpcConnection[]> internalConnectionMap;
+	private final AtomicInteger roundRobin;
 	private final InternalQueryHandler internalQueryHandler;
 	private final InternalStoreHandler internalStoreHandler;
 	private final InternalDeleteHandler internalDeleteHandler;
@@ -45,7 +48,8 @@ public class InternalClient {
 
 	public InternalClient() {
 
-		this.internalConnectionPoolMap = new ConcurrentHashMap<>();
+		this.internalConnectionMap = new ConcurrentHashMap<>();
+		this.roundRobin = new AtomicInteger();
 
 		internalQueryHandler = new InternalQueryHandler(this);
 		internalStoreHandler = new InternalStoreHandler(this);
@@ -65,43 +69,45 @@ public class InternalClient {
 	}
 
 	public void close() {
-
-		for (GenericObjectPool<InternalRpcConnection> pool : internalConnectionPoolMap.values()) {
-			pool.close();
+		for (InternalRpcConnection[] connections : internalConnectionMap.values()) {
+			for (InternalRpcConnection connection : connections) {
+				connection.close();
+			}
 		}
 	}
 
 	public void addNode(Node node) {
 		String nodeKey = getNodeKey(node);
 
-		if (!internalConnectionPoolMap.containsKey(nodeKey)) {
+		if (!internalConnectionMap.containsKey(nodeKey)) {
 
-			LOG.info("Adding connection pool for node {}", nodeKey);
+			LOG.info("Adding {} connections for node {}", CONNECTIONS_PER_NODE, nodeKey);
 
-			GenericObjectPool<InternalRpcConnection> pool = new GenericObjectPool<>(
-					new InternalRpcConnectionFactory(node.getServerAddress(), node.getServicePort()));
-			pool.setMinIdle(4);
-			pool.setMaxTotal(64);
-			pool.setMinEvictableIdle(Duration.ofMinutes(5));
+			InternalRpcConnection[] connections = new InternalRpcConnection[CONNECTIONS_PER_NODE];
+			for (int i = 0; i < CONNECTIONS_PER_NODE; i++) {
+				connections[i] = new InternalRpcConnection(node.getServerAddress(), node.getServicePort());
+			}
 
-			internalConnectionPoolMap.putIfAbsent(nodeKey, pool);
+			internalConnectionMap.putIfAbsent(nodeKey, connections);
 		}
 		else {
-			LOG.info("Already loaded connection for node {}", nodeKey);
+			LOG.info("Already loaded connections for node {}", nodeKey);
 		}
 	}
 
 	public void removeNode(Node node) {
 		String nodeKey = getNodeKey(node);
 
-		LOG.info("Removing connection pool for node {}", nodeKey);
-		GenericObjectPool<InternalRpcConnection> connectionPool = internalConnectionPoolMap.remove(nodeKey);
+		LOG.info("Removing connections for node {}", nodeKey);
+		InternalRpcConnection[] connections = internalConnectionMap.remove(nodeKey);
 
-		if (connectionPool != null) {
-			connectionPool.close();
+		if (connections != null) {
+			for (InternalRpcConnection connection : connections) {
+				connection.close();
+			}
 		}
 		else {
-			LOG.info("Already closed connection for node {}", nodeKey);
+			LOG.info("Already closed connections for node {}", nodeKey);
 		}
 
 	}
@@ -110,39 +116,14 @@ public class InternalClient {
 		return node.getServerAddress() + ":" + node.getServicePort();
 	}
 
-	public InternalRpcConnection getInternalRpcConnection(Node node) throws Exception {
+	public InternalRpcConnection getConnection(Node node) throws Exception {
 		String nodeKey = getNodeKey(node);
-		GenericObjectPool<InternalRpcConnection> connectionPool = internalConnectionPoolMap.get(nodeKey);
-		if (connectionPool != null) {
-			return connectionPool.borrowObject();
+		InternalRpcConnection[] connections = internalConnectionMap.get(nodeKey);
+		if (connections != null) {
+			int index = Math.floorMod(roundRobin.getAndIncrement(), connections.length);
+			return connections[index];
 		}
 		throw new Exception("Cannot get connection: Node <" + nodeKey + "> not loaded");
-
-	}
-
-	public void returnInternalBlockingConnection(Node node, InternalRpcConnection rpcConnection, boolean valid) {
-		String nodeKey = getNodeKey(node);
-		GenericObjectPool<InternalRpcConnection> connectionPool = internalConnectionPoolMap.get(nodeKey);
-		if (connectionPool != null) {
-			try {
-				if (valid) {
-					connectionPool.returnObject(rpcConnection);
-				}
-				else {
-					connectionPool.invalidateObject(rpcConnection);
-				}
-			}
-			catch (Exception e) {
-				LOG.error("Failed to return blocking connection to node {} pool", nodeKey, e);
-			}
-		}
-		else {
-			LOG.error("Failed to return blocking connection to node {} pool. Pool does not exist.", nodeKey);
-			LOG.error("Current pool members {}", internalConnectionPoolMap.keySet());
-			if (rpcConnection != null) {
-				rpcConnection.close();
-			}
-		}
 	}
 
 	public InternalQueryResponse executeQuery(Node node, InternalQueryRequest request) throws Exception {
