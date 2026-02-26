@@ -11,4 +11,8 @@ public class CreateIndexResult extends Result {
 		this.indexCreateResponse = indexCreateResponse;
 	}
 
+	public boolean isChanged() {
+		return indexCreateResponse.getChanged();
+	}
+
 }

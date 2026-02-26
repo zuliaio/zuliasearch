@@ -9,6 +9,7 @@ import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.GetIndexConfigResult;
+import io.zulia.client.result.CreateIndexResult;
 import io.zulia.client.result.UpdateIndexResult;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex;
@@ -513,6 +514,115 @@ public class IndexTest {
 
 	@Test
 	@Order(3)
+	public void createIndexChangedFlag() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		String indexName = "changedFlagTest";
+
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.setIndexName(indexName);
+		indexConfig.setNumberOfShards(1);
+		indexConfig.addDefaultSearchField("title");
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD));
+
+		// First create should report changed
+		CreateIndexResult createResult = zuliaWorkPool.createIndex(indexConfig);
+		Assertions.assertTrue(createResult.isChanged(), "First createIndex should report changed");
+
+		// Use a no-op updateIndex to read stored settings with timestamps
+		IndexSettings initialSettings = zuliaWorkPool.updateIndex(new UpdateIndex(indexName)).getFullIndexSettings();
+		long initialCreateTime = initialSettings.getCreateTime();
+		long initialUpdateTime = initialSettings.getUpdateTime();
+		Assertions.assertTrue(initialCreateTime > 0, "createTime should be set on initial creation");
+		Assertions.assertTrue(initialUpdateTime > 0, "updateTime should be set on initial creation");
+
+		// Identical re-create should report not changed (timestamps should not defeat the check)
+		CreateIndexResult reCreateResult = zuliaWorkPool.createIndex(indexConfig);
+		Assertions.assertFalse(reCreateResult.isChanged(), "Identical re-createIndex should report not changed");
+
+		// Modify a field and re-create should report changed
+		indexConfig.addFieldConfig(FieldConfigBuilder.createDouble("rating").index().sort());
+		CreateIndexResult modifiedResult = zuliaWorkPool.createIndex(indexConfig);
+		Assertions.assertTrue(modifiedResult.isChanged(), "Modified createIndex should report changed");
+
+		// Verify createTime is preserved and updateTime is refreshed after re-create with changes
+		IndexSettings afterReCreate = zuliaWorkPool.updateIndex(new UpdateIndex(indexName)).getFullIndexSettings();
+		Assertions.assertEquals(initialCreateTime, afterReCreate.getCreateTime(), "createTime should be preserved on re-create");
+		Assertions.assertTrue(afterReCreate.getUpdateTime() >= initialUpdateTime, "updateTime should be refreshed on re-create with changes");
+
+		// Identical re-create after modification should report not changed
+		CreateIndexResult reCreateResult2 = zuliaWorkPool.createIndex(indexConfig);
+		Assertions.assertFalse(reCreateResult2.isChanged(), "Identical re-createIndex after modification should report not changed");
+	}
+
+	@Test
+	@Order(4)
+	public void updateIndexChangedFlag() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// Use the index created in the previous test
+		String indexName = "changedFlagTest";
+
+		// Use a no-op updateIndex to read stored settings with timestamps
+		IndexSettings beforeUpdate = zuliaWorkPool.updateIndex(new UpdateIndex(indexName)).getFullIndexSettings();
+		long originalCreateTime = beforeUpdate.getCreateTime();
+		long originalUpdateTime = beforeUpdate.getUpdateTime();
+		Assertions.assertTrue(originalCreateTime > 0, "createTime should already be set");
+		Assertions.assertTrue(originalUpdateTime > 0, "updateTime should already be set");
+
+		// Update with an actual change should report changed
+		{
+			UpdateIndex updateIndex = new UpdateIndex(indexName);
+			updateIndex.setIndexWeight(5);
+			UpdateIndexResult result = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertTrue(result.isChanged(), "Update with new indexWeight should report changed");
+
+			// Verify createTime is preserved and updateTime is refreshed
+			IndexSettings settings = result.getFullIndexSettings();
+			Assertions.assertEquals(originalCreateTime, settings.getCreateTime(), "createTime should be preserved after updateIndex");
+			Assertions.assertTrue(settings.getUpdateTime() >= originalUpdateTime, "updateTime should be refreshed after updateIndex with changes");
+		}
+
+		// Empty update (no operations) should report not changed
+		{
+			UpdateIndex updateIndex = new UpdateIndex(indexName);
+			UpdateIndexResult result = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertFalse(result.isChanged(), "Empty update should report not changed");
+		}
+
+		// Update setting to the same value should report not changed
+		{
+			UpdateIndex updateIndex = new UpdateIndex(indexName);
+			updateIndex.setIndexWeight(5);
+			UpdateIndexResult result = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertFalse(result.isChanged(), "Update with same indexWeight should report not changed");
+		}
+
+		// Update with a real change should report changed
+		{
+			UpdateIndex updateIndex = new UpdateIndex(indexName);
+			FieldConfigBuilder newField = FieldConfigBuilder.createString("newField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
+			updateIndex.mergeFieldConfig(newField);
+			UpdateIndexResult result = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertTrue(result.isChanged(), "Update adding a new field should report changed");
+		}
+
+		// Remove non-existent warming search should report not changed
+		{
+			UpdateIndex updateIndex = new UpdateIndex(indexName);
+			updateIndex.removeWarmingSearchesByLabel("does not exist");
+			UpdateIndexResult result = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertFalse(result.isChanged(), "Removing non-existent warming search should report not changed");
+		}
+
+		// Verify createTime was never modified through all the updates
+		IndexSettings finalSettings = zuliaWorkPool.updateIndex(new UpdateIndex(indexName)).getFullIndexSettings();
+		Assertions.assertEquals(originalCreateTime, finalSettings.getCreateTime(), "createTime should never change through updates");
+	}
+
+	@Test
+	@Order(5)
 	public void giantIndex() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		{

@@ -450,7 +450,9 @@ public class ZuliaIndexManager {
 		}
 		else {
 
-			if (existingIndex.equals(indexSettings)) {
+			IndexSettings existingComparable = existingIndex.toBuilder().clearCreateTime().clearUpdateTime().build();
+			IndexSettings requestComparable = indexSettings.toBuilder().clearCreateTime().clearUpdateTime().build();
+			if (existingComparable.equals(requestComparable)) {
 				LOG.info("No changes to existing index {}", indexName);
 				return CreateIndexResponse.newBuilder().build();
 			}
@@ -465,7 +467,13 @@ public class ZuliaIndexManager {
 			}
 
 		}
-		indexSettings = indexSettings.toBuilder().setUpdateTime(currentTimeMillis).build();
+
+		IndexSettings.Builder timestampBuilder = indexSettings.toBuilder().setUpdateTime(currentTimeMillis);
+		if (existingIndex != null) {
+			timestampBuilder.setCreateTime(existingIndex.getCreateTime());
+		}
+		indexSettings = timestampBuilder.build();
+
 		indexService.storeIndex(indexSettings);
 
 		CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
@@ -486,7 +494,7 @@ public class ZuliaIndexManager {
 			}
 		}
 
-		return CreateIndexResponse.newBuilder().build();
+		return CreateIndexResponse.newBuilder().setChanged(true).build();
 	}
 
 	public UpdateIndexResponse updateIndex(UpdateIndexRequest request) throws Exception {
@@ -513,6 +521,8 @@ public class ZuliaIndexManager {
 
 				throw new Exception("Failed to update index " + indexName + " that does not exist");
 			}
+
+			IndexSettings originalIndexSettings = indexSettings;
 
 			String queryJson = getJsonString(request);
 			LOG.info("Updating Index {} with {}", indexName, queryJson);
@@ -654,6 +664,13 @@ public class ZuliaIndexManager {
 			CreateIndexRequestValidator.validateIndexSettingsAndSetDefaults(existingSettings);
 			indexSettings = existingSettings.build();
 
+			if (indexSettings.equals(originalIndexSettings)) {
+				LOG.info("No changes to index {} from update", indexName);
+				return UpdateIndexResponse.newBuilder().setFullIndexSettings(indexSettings).setChanged(false).build();
+			}
+
+			indexSettings = indexSettings.toBuilder().setUpdateTime(System.currentTimeMillis()).build();
+
 			indexService.storeIndex(indexSettings);
 
 			CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
@@ -663,7 +680,7 @@ public class ZuliaIndexManager {
 				@SuppressWarnings("unused") List<InternalCreateOrUpdateIndexResponse> send = createOrUpdateIndexRequestFederator.send(
 						InternalCreateOrUpdateIndexRequest.newBuilder().setIndexName(indexName).build());
 
-				return UpdateIndexResponse.newBuilder().setFullIndexSettings(indexSettings).build();
+				return UpdateIndexResponse.newBuilder().setFullIndexSettings(indexSettings).setChanged(true).build();
 			}
 			catch (Exception e) {
 				throw new Exception("Failed to update index " + indexName + ": " + e.getMessage());
