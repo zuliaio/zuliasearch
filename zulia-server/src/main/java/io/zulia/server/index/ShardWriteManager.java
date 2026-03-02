@@ -22,6 +22,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -40,6 +42,7 @@ public class ShardWriteManager {
 
 	private final IndexWriter indexWriter;
 	private final DirectoryTaxonomyWriter taxoWriter;
+	private final ExecutorService segmentOpenExecutor;
 
 	private Long lastCommit;
 	private Long lastChange;
@@ -70,6 +73,8 @@ public class ShardWriteManager {
 
 		this.indexWriter = openIndexWriter(pathToIndex);
 		this.taxoWriter = openTaxoWriter(pathToTaxoIndex);
+		this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(
+				Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
 
 		updateIndexSettings();
 
@@ -114,6 +119,7 @@ public class ShardWriteManager {
 	}
 
 	public void close() throws IOException {
+		segmentOpenExecutor.close();
 		{
 			Directory directory = indexWriter.getDirectory();
 			indexWriter.close();
@@ -131,7 +137,7 @@ public class ShardWriteManager {
 		DirectoryReader indexReader = DirectoryReader.open(indexWriter);
 		DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 		taxoReader.setCacheSize(128000);
-		return new ShardReader(shardNumber, indexReader, taxoReader, indexConfig, zuliaPerFieldAnalyzer);
+		return new ShardReader(shardNumber, indexReader, taxoReader, indexConfig, zuliaPerFieldAnalyzer, segmentOpenExecutor);
 	}
 
 	public void commit() throws IOException {
