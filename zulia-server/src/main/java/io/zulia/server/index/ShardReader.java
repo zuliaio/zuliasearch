@@ -58,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -71,6 +72,7 @@ public class ShardReader implements AutoCloseable {
 	private final int shardNumber;
 	private final long creationTime;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
+	private final ExecutorService segmentOpenExecutor;
 	private final Cache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> queryResultCache;
 	private final Cache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> pinnedQueryResultCache;
 
@@ -80,7 +82,7 @@ public class ShardReader implements AutoCloseable {
 	private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
-			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) {
+			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer, ExecutorService segmentOpenExecutor) {
 		this.creationTime = System.currentTimeMillis();
 		this.shardNumber = shardNumber;
 		this.indexReader = indexReader;
@@ -88,6 +90,7 @@ public class ShardReader implements AutoCloseable {
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
+		this.segmentOpenExecutor = segmentOpenExecutor;
 		RemovalListener<@NotNull QueryCacheKey, ZuliaQuery.@NotNull ShardQueryResponse> removalListener = (key, value, cause) -> queryResultCacheSize.getAndAdd(
 				-value.getSerializedSize());
 		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).removalListener(removalListener)
@@ -593,8 +596,8 @@ public class ShardReader implements AutoCloseable {
 					sortedSetSelector = SortedSetSelector.Type.MAX;
 				}
 
-				SortedSetSortField setSortField = new SortedSetSortField(internalSortFieldName, reverse, sortedSetSelector);
-				setSortField.setMissingValue(!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
+				SortedSetSortField setSortField = new SortedSetSortField(internalSortFieldName, reverse, sortedSetSelector,
+						!fs.getMissingLast() ? SortField.STRING_FIRST : SortField.STRING_LAST);
 				sortFields.add(setSortField);
 			}
 			else {
@@ -604,44 +607,34 @@ public class ShardReader implements AutoCloseable {
 					sortedNumericSelector = SortedNumericSelector.Type.MAX;
 				}
 
+				Object missingValue;
 				SortField.Type type;
 				if (FieldTypeUtil.isStoredAsInt(sortFieldType)) {
 					type = SortField.Type.INT;
+					missingValue = !fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE;
 				}
 				else if (FieldTypeUtil.isStoredAsLong(sortFieldType)) {
 					type = SortField.Type.LONG;
+					missingValue = !fs.getMissingLast() ? Long.MIN_VALUE : Long.MAX_VALUE;
 				}
 				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
 					type = SortField.Type.FLOAT;
+					missingValue = !fs.getMissingLast() ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
 				}
 				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
 					type = SortField.Type.DOUBLE;
+					missingValue = !fs.getMissingLast() ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;
 				}
 				else {
 					throw new Exception("Invalid numeric sort type " + sortFieldType + " for sort field " + sortField);
 				}
 
-				SortedNumericSortField e = new SortedNumericSortField(internalSortFieldName, type, reverse, sortedNumericSelector);
-				if (FieldTypeUtil.isStoredAsInt(sortFieldType)) {
-					e.setMissingValue(!fs.getMissingLast() ? Integer.MIN_VALUE : Integer.MAX_VALUE);
-				}
-				else if (FieldTypeUtil.isStoredAsLong(sortFieldType)) {
-					e.setMissingValue(!fs.getMissingLast() ? Long.MIN_VALUE : Long.MAX_VALUE);
-				}
-				else if (FieldTypeUtil.isNumericFloatFieldType(sortFieldType)) {
-					e.setMissingValue(!fs.getMissingLast() ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY);
-				}
-				else if (FieldTypeUtil.isNumericDoubleFieldType(sortFieldType)) {
-					e.setMissingValue(!fs.getMissingLast() ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
-				}
-
-				sortFields.add(e);
+				sortFields.add(new SortedNumericSortField(internalSortFieldName, type, reverse, sortedNumericSelector, missingValue));
 			}
 
 		}
 
-		Sort sort = new Sort(sortFields.toArray(new SortField[0]));
-		return sort;
+		return new Sort(sortFields.toArray(new SortField[0]));
 	}
 
 	public ZuliaBase.ResultDocument getSourceDocument(String uniqueId, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn,
@@ -717,7 +710,7 @@ public class ShardReader implements AutoCloseable {
 
 	public ShardReader refreshIfNeeded() throws IOException {
 
-		DirectoryReader r = DirectoryReader.openIfChanged(indexReader);
+		DirectoryReader r = DirectoryReader.openIfChanged(indexReader, segmentOpenExecutor);
 		if (r == null) {
 			return null;
 		}
@@ -728,7 +721,7 @@ public class ShardReader implements AutoCloseable {
 				tr = taxoReader;
 			}
 
-			return new ShardReader(shardNumber, r, tr, indexConfig, zuliaPerFieldAnalyzer);
+			return new ShardReader(shardNumber, r, tr, indexConfig, zuliaPerFieldAnalyzer, segmentOpenExecutor);
 		}
 
 	}
