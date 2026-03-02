@@ -75,8 +75,14 @@ public class StatCombiner {
 		}
 
 		// Generate return message
-		return StatGroup.newBuilder().setStatRequest(this.statRequest).setGlobalStats(globalStats)
-				.addAllFacetStats(facetStats.stream().map(FacetStats.Builder::build).sorted(this::reverseCompareFacetStats).toList()).build();
+		int maxFacets = statRequest.getMaxFacets();
+		var sortedStream = facetStats.stream().map(FacetStats.Builder::build).sorted(this::reverseCompareFacetStats);
+		if (maxFacets > 0) {
+			sortedStream = sortedStream.limit(maxFacets);
+		}
+		StatGroup.Builder statGroupBuilder = StatGroup.newBuilder().setStatRequest(this.statRequest).setGlobalStats(globalStats);
+		sortedStream.forEachOrdered(statGroupBuilder::addFacetStats);
+		return statGroupBuilder.build();
 	}
 
 	/**
