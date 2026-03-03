@@ -42,7 +42,7 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 koloboke-api = { module = "com.koloboke:koloboke-api-jdk8", version.ref = "koloboke" }
 koloboke-impl = { module = "com.koloboke:koloboke-impl-jdk8", version.ref = "koloboke" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.19" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.25" }
 lucene-analysis-common = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "lucene" }
 lucene-backward-codecs = { module = "org.apache.lucene:lucene-backward-codecs", version.ref = "lucene" }
 lucene-expressions = { module = "org.apache.lucene:lucene-expressions", version.ref = "lucene" }
