@@ -182,20 +182,17 @@ public class StatCombiner {
 		// -1 means all facets were requested so no error is possible in this case
 		boolean hasError = statRequest.getShardFacets() != -1 && internalStats.size() < shardReponses;
 
-		// No results to convert here. Return a blank value
-		if (internalStats.getFirst().facetStats().getSerializedSize() == 0) {
-			return FacetStats.newBuilder();
-		}
-
 		// Populate percentiles if they were requested correctly
 		List<Percentile> percentiles = new ArrayList<>();
 		if (statRequest.getPrecision() > 0.0 && !statRequest.getPercentilesList().isEmpty()) {
 			// Build initial sketch and merge other sketches into this one
 			DDSketch combinedSketch = DDSketches.unboundedDense(statRequest.getPrecision());
 			for (FacetStatsWithShardIndex fsi : internalStats) {
-				// Handle DDSketches
-				DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.facetStats().getStatSketch());
-				combinedSketch.mergeWith(sketch);
+				// Skip entries with no sketch (e.g. shards with 0 matching docs return default FacetStatsInternal)
+				if (fsi.facetStats().hasStatSketch() && fsi.facetStats().getStatSketch().getSerializedSize() > 0) {
+					DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.facetStats().getStatSketch());
+					combinedSketch.mergeWith(sketch);
+				}
 			}
 
 			// Get all percentiles
@@ -208,13 +205,18 @@ public class StatCombiner {
 			}
 		}
 
-		// Accumulate the local stats
+		// Accumulate the local stats, skipping empty entries (e.g. shards with 0 matching docs)
 		StatCarrier carrier = new StatCarrier();
 		for (FacetStatsWithShardIndex fsi : internalStats) {
-			carrier.addStat(fsi.facetStats());
+			if (fsi.facetStats().getSerializedSize() > 0) {
+				carrier.addStat(fsi.facetStats());
+			}
 		}
 
 		// Build combined final FacetStats that can be returned to the user
+		if (!carrier.hasData()) {
+			return FacetStats.newBuilder();
+		}
 		return FacetStats.newBuilder().setFacet(facetName).setMin(carrier.getMin()).setMax(carrier.getMax()).setSum(carrier.getSum())
 				.setDocCount(carrier.docCount).setAllDocCount(carrier.allDocCount).setValueCount(carrier.valueCount).addAllPercentiles(percentiles)
 				.setHasError(hasError);
@@ -230,6 +232,10 @@ public class StatCombiner {
 		private SortValue.Builder minValue = null;
 
 		public StatCarrier() {
+		}
+
+		public boolean hasData() {
+			return sum != null;
 		}
 
 		/**
