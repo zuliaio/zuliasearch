@@ -241,6 +241,7 @@ public class ZuliaShard {
 
 	public void close() throws IOException {
 		unloaded = true;
+		shardReaderManager.close();
 		shardWriteManager.close();
 	}
 
