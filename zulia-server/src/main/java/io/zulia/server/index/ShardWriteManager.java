@@ -7,7 +7,6 @@ import io.zulia.server.index.cache.ZuliaTaxonomyWriterCache;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import org.apache.lucene.facet.taxonomy.writercache.LruTaxonomyWriterCache;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -73,8 +72,7 @@ public class ShardWriteManager {
 
 		this.indexWriter = openIndexWriter(pathToIndex);
 		this.taxoWriter = openTaxoWriter(pathToTaxoIndex);
-		this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(
-				Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
+		this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
 
 		updateIndexSettings();
 
