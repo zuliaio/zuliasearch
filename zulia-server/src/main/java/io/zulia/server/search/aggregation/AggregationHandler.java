@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.TreeSet;
@@ -304,15 +303,24 @@ public class AggregationHandler {
 
 		}
 
-		ZuliaQuery.FacetCount[] facetCounts = new ZuliaQuery.FacetCount[q.size()];
-		for (int i = facetCounts.length - 1; i >= 0; i--) {
+		int qSize = q.size();
+		int[] ords = new int[qSize];
+		long[] counts = new long[qSize];
+		for (int i = qSize - 1; i >= 0; i--) {
 			TopOrdAndIntQueue.OrdAndValue ordValue = q.pop();
-			FacetLabel c = taxoReader.getPath(ordValue.ord);
-			String label = c.components[countPath.length];
-			facetCounts[i] = ZuliaQuery.FacetCount.newBuilder().setFacet(label).setCount(ordValue.getValue().longValue()).build();
+			ords[i] = ordValue.ord;
+			counts[i] = ordValue.getValue().longValue();
 		}
 
-		return ZuliaQuery.FacetGroup.newBuilder().addAllFacetCount(Arrays.asList(facetCounts));
+		FacetLabel[] paths = taxoReader.getBulkPath(ords);
+
+		List<ZuliaQuery.FacetCount> facetCounts = new ArrayList<>(qSize);
+		for (int i = 0; i < qSize; i++) {
+			String label = paths[i].components[countPath.length];
+			facetCounts.add(ZuliaQuery.FacetCount.newBuilder().setFacet(label).setCount(counts[i]).build());
+		}
+
+		return ZuliaQuery.FacetGroup.newBuilder().addAllFacetCount(facetCounts);
 	}
 
 	public ZuliaQuery.FacetStatsInternal getGlobalStatsForNumericField(String field) {
