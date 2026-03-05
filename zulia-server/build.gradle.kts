@@ -77,6 +77,7 @@ dependencies {
     testImplementation(libs.micronaut.http.client)
     testImplementation(libs.micronaut.test.junit5)
     testImplementation(project(":zulia-client"))
+    testImplementation(project(":zulia-ai"))
 }
 tasks.withType<JavaCompile> {
     options.isFork = true
