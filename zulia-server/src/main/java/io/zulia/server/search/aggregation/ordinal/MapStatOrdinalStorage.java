@@ -9,7 +9,7 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -50,15 +50,24 @@ public abstract class MapStatOrdinalStorage<T extends Stats<T>> implements StatO
 
 		TopStatsQueue<T> q = getTopStatsQueue(taxonomyReader, childrenIterator, topN);
 
-		ZuliaQuery.FacetStatsInternal[] facetStats = new ZuliaQuery.FacetStatsInternal[q.size()];
-		for (int i = facetStats.length - 1; i >= 0; i--) {
+		int qSize = q.size();
+		List<T> stats = new ArrayList<>(qSize);
+		int[] ords = new int[qSize];
+		for (int i = qSize - 1; i >= 0; i--) {
 			T stat = q.pop();
-			FacetLabel child = taxonomyReader.getPath(stat.getOrdinal());
-			String label = child.components[countPath.length];
-			facetStats[i] = stat.buildResponse().setFacet(label).build();
+			stats.addFirst(stat);
+			ords[i] = stat.getOrdinal();
 		}
 
-		return Arrays.asList(facetStats);
+		FacetLabel[] paths = taxonomyReader.getBulkPath(ords);
+
+		List<ZuliaQuery.FacetStatsInternal> facetStats = new ArrayList<>(qSize);
+		for (int i = 0; i < qSize; i++) {
+			String label = paths[i].components[countPath.length];
+			facetStats.add(stats.get(i).buildResponse().setFacet(label).build());
+		}
+
+		return facetStats;
 	}
 
 	public synchronized void merge(MapStatOrdinalStorage<?> other) {
