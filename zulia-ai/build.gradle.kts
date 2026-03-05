@@ -8,7 +8,8 @@ dependencies {
     implementation(libs.koloboke.impl)
     api(libs.djl.pytorch.engine)
     api(libs.djl.bom)
-    //api(libs.djl.huggingface.tokenizers)
+    api(libs.djl.huggingface.tokenizers)
+    api(libs.djl.onnxruntime.engine)
     api(libs.djl.basicdataset)
 
     testRuntimeOnly(libs.logback.classic)
