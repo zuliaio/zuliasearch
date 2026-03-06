@@ -15,7 +15,7 @@ import static io.zulia.message.ZuliaQuery.ScoredResult;
 public class CursorHelper {
 
 	public static String getStaticIndexCursor(LastResult lastResult) {
-		return new String(Base64.getEncoder().encode(lastResult.toByteArray()), StandardCharsets.UTF_8);
+		return new String(Base64.getUrlEncoder().encode(lastResult.toByteArray()), StandardCharsets.UTF_8);
 	}
 
 	public static String getUniqueSortedCursor(LastResult lastResult) {
@@ -31,12 +31,12 @@ public class CursorHelper {
 			lastResultBuilder.addLastIndexResult(lastIndexResultBuilder);
 		}
 
-		return new String(Base64.getEncoder().encode(lastResultBuilder.build().toByteArray()), StandardCharsets.UTF_8);
+		return new String(Base64.getUrlEncoder().encode(lastResultBuilder.build().toByteArray()), StandardCharsets.UTF_8);
 	}
 
 	public static LastResult getLastResultFromCursor(String cursor) {
 		try {
-			return LastResult.parseFrom(Base64.getDecoder().decode(cursor.getBytes(StandardCharsets.UTF_8)));
+			return LastResult.parseFrom(Base64.getUrlDecoder().decode(cursor.getBytes(StandardCharsets.UTF_8)));
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Invalid cursor");
