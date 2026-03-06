@@ -54,6 +54,7 @@ message ExternalDocument {
 message ShardCountResponse {
     uint32 shardNumber = 1;
     uint32 numberOfDocs = 2;
+    uint64 sizeOnDiskBytes = 3;
 }
 
 

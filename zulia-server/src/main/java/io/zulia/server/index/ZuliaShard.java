@@ -337,7 +337,11 @@ public class ZuliaShard {
 
 		try {
 			int count = shardReader.numDocs();
-			return ShardCountResponse.newBuilder().setNumberOfDocs(count).setShardNumber(shardNumber).build();
+			ShardCountResponse.Builder builder = ShardCountResponse.newBuilder().setNumberOfDocs(count).setShardNumber(shardNumber);
+			if (shardWriteManager != null) {
+				builder.setSizeOnDiskBytes(shardWriteManager.getSizeOnDiskBytes());
+			}
+			return builder.build();
 		}
 		finally {
 			shardReaderManager.decRef(shardReader);
