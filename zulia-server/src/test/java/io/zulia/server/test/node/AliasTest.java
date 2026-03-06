@@ -127,6 +127,7 @@ public class AliasTest {
 
 		GetNumberOfDocsResult numberOfDocs = zuliaWorkPool.getNumberOfDocs("someAlias");
 		Assertions.assertEquals(repeatCount * 2 * uniqueDocs, numberOfDocs.getNumberOfDocs());
+		Assertions.assertTrue(numberOfDocs.getSizeOnDiskBytes() > 0, "Index size on disk should be greater than zero after indexing");
 
 		GetFieldsResult getFields = zuliaWorkPool.getFields("someAlias");
 		Assertions.assertEquals(3, getFields.getFieldNames().size());
