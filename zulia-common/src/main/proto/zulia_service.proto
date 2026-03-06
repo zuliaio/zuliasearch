@@ -263,6 +263,7 @@ message InternalGetNumberOfDocsRequest {
 message GetNumberOfDocsResponse {
     uint64 numberOfDocs = 1;
     repeated ShardCountResponse shardCountResponse = 2;
+    uint64 sizeOnDiskBytes = 3;
 }
 
 message ClearRequest {

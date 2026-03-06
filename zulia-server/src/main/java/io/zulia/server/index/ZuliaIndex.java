@@ -916,6 +916,7 @@ public class ZuliaIndex {
 				ShardCountResponse scr = response.get();
 				responseBuilder.addShardCountResponse(scr);
 				responseBuilder.setNumberOfDocs(responseBuilder.getNumberOfDocs() + scr.getNumberOfDocs());
+				responseBuilder.setSizeOnDiskBytes(responseBuilder.getSizeOnDiskBytes() + scr.getSizeOnDiskBytes());
 			}
 			catch (InterruptedException e) {
 				throw new Exception("Interrupted while waiting for shard results");
