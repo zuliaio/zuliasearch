@@ -40,10 +40,23 @@ public class BatchFetchRequestFederator extends NodeRequestBase<InternalBatchFet
 
 	@Override
 	protected List<FetchResponse> processInternal(Node node, InternalBatchFetchRequest request) throws Exception {
+		List<InternalShardBatchFetchRequest> shardRequests = request.getShardBatchFetchRequestList();
+		if (shardRequests.size() == 1) {
+			ZuliaIndex index = indexCache.get(shardRequests.getFirst().getIndexName());
+			return index.internalShardBatchFetch(shardRequests.getFirst());
+		}
+
+		List<Future<List<FetchResponse>>> futures = new ArrayList<>(shardRequests.size());
+		for (InternalShardBatchFetchRequest shardRequest : shardRequests) {
+			futures.add(pool.submit(() -> {
+				ZuliaIndex index = indexCache.get(shardRequest.getIndexName());
+				return index.internalShardBatchFetch(shardRequest);
+			}));
+		}
+
 		List<FetchResponse> allResponses = new ArrayList<>();
-		for (InternalShardBatchFetchRequest shardRequest : request.getShardBatchFetchRequestList()) {
-			ZuliaIndex index = indexCache.get(shardRequest.getIndexName());
-			allResponses.addAll(index.internalShardBatchFetch(shardRequest));
+		for (Future<List<FetchResponse>> future : futures) {
+			allResponses.addAll(future.get());
 		}
 		return allResponses;
 	}
