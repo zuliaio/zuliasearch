@@ -22,6 +22,7 @@ import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.config.single.SingleNodeService;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
+import io.zulia.util.ZuliaUtil;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.slf4j.Logger;
@@ -106,7 +107,7 @@ public class ZuliaDConfig {
 				MongoClientSettings.Builder mongoClientOptions = MongoClientSettings.builder();
 				mongoClientOptions.applyConnectionString(new ConnectionString(cs.toString()));
 				mongoClientOptions.serverApi(ServerApi.builder().version(ServerApiVersion.V1).build());
-
+				mongoClientOptions.codecRegistry(ZuliaUtil.getPojoCodecRegistry());
 				MongoClient mongoClient = MongoClients.create(mongoClientOptions.build());
 				MongoProvider.setMongoClient(mongoClient);
 			}
@@ -119,6 +120,7 @@ public class ZuliaDConfig {
 				}
 
 				MongoClientSettings.Builder mongoBuilder = MongoClientSettings.builder().applyToClusterSettings(builder -> builder.hosts(serverAddressList));
+				mongoBuilder.codecRegistry(ZuliaUtil.getPojoCodecRegistry());
 				MongoAuth mongoAuth = zuliaConfig.getMongoAuth();
 				if (mongoAuth != null) {
 					mongoBuilder.credential(
