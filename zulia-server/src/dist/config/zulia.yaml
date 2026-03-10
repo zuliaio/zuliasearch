@@ -59,3 +59,18 @@ defaultConcurrency: 1
 #s3:
 # s3BucketName: someBucket
 # region: us-gov-east-1
+
+# This section is for controlling health monitoring features.
+# The default values are provided here. If "writeToMongo" is set to true, then a health entry is written to
+# the currently configured mongo instance to the "db"."collection" collection. The data is written every
+# "writeIntervalSeconds" seconds and will expire after "ttlDays" days.
+#
+#health:
+#  memoryThresholdPercent: 90.0
+#  writeToMongo: false
+#  db: "zulia"
+#  collection: "health"
+#  writeIntervalSeconds: 60
+#  ttlDays: 30
+#  systemCpuThresholdPercent: 80.0
+#  jvmCpuThresholdPercent: 90.0

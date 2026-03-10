@@ -15,6 +15,9 @@ micronaut:
       mixed: false
   application:
     name: zulia-service
+  health:
+    monitor:
+      enabled: false
   router:
     static-resources:
       swagger:
@@ -36,3 +39,10 @@ endpoints:
   stop:
     enabled: true
     sensitive: true
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: anonymous
+    disk-space:
+      enabled: true
+      threshold: 1073741824 # 1GB

@@ -3,11 +3,13 @@ package io.zulia.server.rest;
 import io.micronaut.serde.annotation.SerdeImport;
 import io.zulia.message.ZuliaBase;
 import io.zulia.rest.dto.*;
+import io.zulia.server.health.HealthResultDTO;
+import io.zulia.server.health.HealthResultDetailsDTO;
 import io.zulia.server.rest.controllers.AssociatedController;
-import io.zulia.server.serde.ShardCacheStatsModifier;
 import io.zulia.server.serde.IndexStatsModifier;
 import io.zulia.server.serde.NodeStatsModifier;
 import io.zulia.server.serde.ProtoIgnoredGetters;
+import io.zulia.server.serde.ShardCacheStatsModifier;
 import jakarta.inject.Singleton;
 
 @Singleton
@@ -34,6 +36,8 @@ import jakarta.inject.Singleton;
 @SerdeImport(value = ZuliaBase.CacheStats.class, mixin = ProtoIgnoredGetters.class)
 @SerdeImport(TermDTO.class)
 @SerdeImport(TermsResponseDTO.class)
+@SerdeImport(HealthResultDTO.class)
+@SerdeImport(HealthResultDetailsDTO.class)
 public class ZuliaRESTService {
 
 }
