@@ -59,6 +59,7 @@ public class GetNumberOfDocsRequestFederator extends MasterSlaveNodeRequestFeder
 
 		for (GetNumberOfDocsResponse r : responses) {
 			responseBuilder.setNumberOfDocs(responseBuilder.getNumberOfDocs() + r.getNumberOfDocs());
+			responseBuilder.setSizeOnDiskBytes(responseBuilder.getSizeOnDiskBytes() + r.getSizeOnDiskBytes());
 			shardCountResponseList.addAll(r.getShardCountResponseList());
 		}
 

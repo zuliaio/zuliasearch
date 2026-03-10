@@ -18,6 +18,14 @@ public class GetNumberOfDocsResult extends Result {
 		return getNumberOfDocsResponse.getNumberOfDocs();
 	}
 
+	public long getSizeOnDiskBytes() {
+		return getNumberOfDocsResponse.getSizeOnDiskBytes();
+	}
+
+	public double getSizeOnDiskMB() {
+		return getNumberOfDocsResponse.getSizeOnDiskBytes() / (1024.0 * 1024.0);
+	}
+
 	public int getShardCountResponseCount() {
 		return getNumberOfDocsResponse.getShardCountResponseCount();
 	}

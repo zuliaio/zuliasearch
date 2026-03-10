@@ -2,6 +2,7 @@ package io.zulia.tools.cmd.zuliaadmin;
 
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.GetIndexesResult;
+import io.zulia.client.result.GetNumberOfDocsResult;
 import io.zulia.cmd.common.ZuliaCommonCmd;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaIndex;
@@ -48,9 +49,11 @@ public class DisplayIndexesCmd implements Callable<Integer> {
 
 			List<String> indexNames = indexes.getIndexNames();
 
-			ZuliaCommonCmd.printMagenta(String.format("%40s | %40s", "Index Name", "Location"));
+			ZuliaCommonCmd.printMagenta(String.format("%40s | %14s | %14s | %40s", "Index Name", "Docs", "Size (MB)", "Location"));
 			for (String indexName : indexNames) {
-				System.out.printf("%40s | %40s\n", indexName, indexLocation.get(indexName));
+				GetNumberOfDocsResult docsResult = zuliaWorkPool.getNumberOfDocs(indexName);
+				System.out.printf("%40s | %14d | %14.2f | %40s\n", indexName, docsResult.getNumberOfDocs(), docsResult.getSizeOnDiskMB(),
+						indexLocation.get(indexName));
 			}
 		}
 		else {

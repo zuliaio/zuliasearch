@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,6 +43,8 @@ public class ShardWriteManager {
 	private final IndexWriter indexWriter;
 	private final DirectoryTaxonomyWriter taxoWriter;
 	private final ExecutorService segmentOpenExecutor;
+	private final Path pathToIndex;
+	private final Path pathToTaxoIndex;
 
 	private Long lastCommit;
 	private Long lastChange;
@@ -70,6 +73,8 @@ public class ShardWriteManager {
 		this.indexingThrottle = new Semaphore(1);
 		this.mergeScheduler = new ZuliaConcurrentMergeScheduler();
 
+		this.pathToIndex = pathToIndex;
+		this.pathToTaxoIndex = pathToTaxoIndex;
 		this.indexWriter = openIndexWriter(pathToIndex);
 		this.taxoWriter = openTaxoWriter(pathToTaxoIndex);
 		this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
@@ -114,6 +119,14 @@ public class ShardWriteManager {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
 		return new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new ZuliaTaxonomyWriterCache());
+	}
+
+	public long getSizeOnDiskBytes() throws IOException {
+		try (var indexFiles = Files.list(pathToIndex); var taxoFiles = Files.list(pathToTaxoIndex)) {
+			long indexSize = indexFiles.filter(Files::isRegularFile).mapToLong(p -> p.toFile().length()).sum();
+			long taxoSize = taxoFiles.filter(Files::isRegularFile).mapToLong(p -> p.toFile().length()).sum();
+			return indexSize + taxoSize;
+		}
 	}
 
 	public void close() throws IOException {
