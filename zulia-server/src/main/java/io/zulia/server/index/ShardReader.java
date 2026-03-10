@@ -22,6 +22,7 @@ import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.SortFieldInfo;
 import io.zulia.server.exceptions.WrappedCheckedException;
 import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.server.search.GeoDistUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.aggregation.AggregationHandler;
@@ -39,6 +40,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.lucene.search.highlight.QueryScorer;
@@ -143,6 +145,9 @@ public class ShardReader implements AutoCloseable {
 					}
 					else if (fi.name.endsWith(ZuliaFieldConstants.DATE_SUFFIX)) {
 						matchedLength = ZuliaFieldConstants.DATE_SUFFIX.length();
+					}
+					else if (fi.name.endsWith(ZuliaFieldConstants.GEO_POINT_SUFFIX)) {
+						matchedLength = ZuliaFieldConstants.GEO_POINT_SUFFIX.length();
 					}
 					builder.addFieldName(fi.name.substring(0, fi.name.length() - matchedLength));
 
@@ -266,8 +271,14 @@ public class ShardReader implements AutoCloseable {
 			collectorManager = new TopFieldCollectorManager(sort, hasMoreAmount, after, Integer.MAX_VALUE);
 
 			for (ZuliaQuery.FieldSort fieldSort : shardQuery.getSortRequest().getFieldSortList()) {
-				SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(fieldSort.getSortField());
-				sortMetas.add(new SortMeta(fieldSort.getSortField(), sortFieldInfo != null ? sortFieldInfo.getFieldType() : null));
+				String sf = fieldSort.getSortField();
+				if (GeoDistUtil.isGeoDist(sf)) {
+					sortMetas.add(new SortMeta(sf, FieldType.GEO_POINT));
+				}
+				else {
+					SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(sf);
+					sortMetas.add(new SortMeta(sf, sortFieldInfo != null ? sortFieldInfo.getFieldType() : null));
+				}
 			}
 		}
 		else {
@@ -577,6 +588,30 @@ public class ShardReader implements AutoCloseable {
 
 			if (ZuliaFieldConstants.SCORE_FIELD.equals(sortField)) {
 				sortFields.add(new SortField(null, SortField.Type.SCORE, !reverse));
+				continue;
+			}
+
+			if (GeoDistUtil.isGeoDist(sortField)) {
+				GeoDistUtil.GeoDistParsed parsed = GeoDistUtil.parseGeoDist(sortField);
+				SortFieldInfo geoSortFieldInfo = indexConfig.getSortFieldInfo(parsed.field());
+				if (geoSortFieldInfo == null) {
+					throw new IllegalArgumentException(
+							"Field <" + parsed.field() + "> is not a sortable field. Add .sort() or .sortAs() to the field config to use geodist().");
+				}
+				if (!FieldTypeUtil.isGeoPointFieldType(geoSortFieldInfo.getFieldType())) {
+					throw new IllegalArgumentException("Field <" + parsed.field() + "> is not a GEO_POINT field");
+				}
+				String internalFieldName = geoSortFieldInfo.getInternalSortFieldName();
+				if (reverse) {
+					// LatLonDocValuesField.newDistanceSort() doesn't support reverse (BKD competitive iterators),
+					// so use GeoDistanceValuesSource for descending distance sort
+					GeoDistanceValuesSource dvs = new GeoDistanceValuesSource(internalFieldName, parsed.latitude(), parsed.longitude());
+					sortFields.add(dvs.getSortField(true));
+				}
+				else {
+					// Use optimized BKD competitive iterator sort for ascending
+					sortFields.add(LatLonDocValuesField.newDistanceSort(internalFieldName, parsed.latitude(), parsed.longitude()));
+				}
 				continue;
 			}
 

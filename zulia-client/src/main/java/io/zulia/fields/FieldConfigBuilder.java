@@ -5,6 +5,7 @@ import java.util.List;
 
 import static io.zulia.message.ZuliaIndex.FacetAs;
 import static io.zulia.message.ZuliaIndex.FieldConfig;
+import static io.zulia.message.ZuliaIndex.GeoPointConfig;
 import static io.zulia.message.ZuliaIndex.IndexAs;
 import static io.zulia.message.ZuliaIndex.SortAs;
 
@@ -14,6 +15,7 @@ public class FieldConfigBuilder {
 	private final List<IndexAs> indexAsList;
 	private final List<FacetAs> facetAsList;
 	private final List<SortAs> sortAsList;
+	private GeoPointConfig geoPointConfig;
 	private String description;
 	private String displayName;
 
@@ -63,6 +65,26 @@ public class FieldConfigBuilder {
 
 	public static FieldConfigBuilder createUnitVector(String storedFieldName) {
 		return create(storedFieldName, FieldConfig.FieldType.UNIT_VECTOR);
+	}
+
+	public static FieldConfigBuilder createGeoPoint(String storedFieldName) {
+		return createGeoPoint(storedFieldName, "latitude", "longitude");
+	}
+
+	public static FieldConfigBuilder createGeoPoint(String storedFieldName, String latitudeKey, String longitudeKey) {
+		FieldConfigBuilder builder = create(storedFieldName, FieldConfig.FieldType.GEO_POINT);
+		builder.geoPointConfig = GeoPointConfig.newBuilder().setLatitudeKey(latitudeKey).setLongitudeKey(longitudeKey).build();
+		return builder;
+	}
+
+	/**
+	 * Creates a GEO_POINT field where latitude and longitude are top-level document fields
+	 * rather than nested inside a sub-document.
+	 * <p>Example: {@code createGeoPointTopLevel("lat", "lon").indexAsField("position")}
+	 * for documents like {@code {"lat": 40.7, "lon": -74.0}}
+	 */
+	public static FieldConfigBuilder createGeoPointTopLevel(String latitudeKey, String longitudeKey) {
+		return createGeoPoint("", latitudeKey, longitudeKey);
 	}
 
 	public FieldConfigBuilder index() {
@@ -208,6 +230,9 @@ public class FieldConfigBuilder {
 		fcBuilder.addAllIndexAs(indexAsList);
 		fcBuilder.addAllFacetAs(facetAsList);
 		fcBuilder.addAllSortAs(sortAsList);
+		if (geoPointConfig != null) {
+			fcBuilder.setGeoPointConfig(geoPointConfig);
+		}
 		if (description != null) {
 			fcBuilder.setDescription(description);
 		}

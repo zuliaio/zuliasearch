@@ -29,6 +29,8 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.KnnFloatVectorField;
+import org.apache.lucene.document.LatLonDocValuesField;
+import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -109,6 +111,10 @@ public class ShardDocumentIndexer {
 			FieldConfig.FieldType fieldType = fc.getFieldType();
 
 			Object o = DocumentHelper.getValueFromMongoDocument(mongoDocument, storedFieldName);
+			if (o == null && FieldTypeUtil.isGeoPointFieldType(fieldType) && storedFieldName.isEmpty()) {
+				// For GEO_POINT with empty storedFieldName, lat/lon keys are at top level
+				o = mongoDocument;
+			}
 			if (o != null) {
 				generateFacetLabels(fc, o, facetFieldToFacetLabels);
 				addSortForStoredField(luceneDocument, storedFieldName, fc, o);
@@ -241,6 +247,40 @@ public class ShardDocumentIndexer {
 							FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ? VectorSimilarityFunction.DOT_PRODUCT : VectorSimilarityFunction.COSINE));
 				}
 			}
+			else if (FieldTypeUtil.isGeoPointFieldType(fieldType)) {
+				String indexField = FieldTypeUtil.getIndexField(indexedFieldName, fieldType);
+				ZuliaIndex.GeoPointConfig gpc = fc.getGeoPointConfig();
+				String latKey = gpc.getLatitudeKey().isEmpty() ? "latitude" : gpc.getLatitudeKey();
+				String lonKey = gpc.getLongitudeKey().isEmpty() ? "longitude" : gpc.getLongitudeKey();
+
+				ZuliaUtil.handleLists(o, obj -> {
+					if (obj instanceof org.bson.Document geoDoc) {
+						Double lat = null;
+						Double lon = null;
+						if ("Point".equals(geoDoc.get("type"))) {
+							// GeoJSON: coordinates = [longitude, latitude]
+							Object coordsObj = geoDoc.get("coordinates");
+							if (coordsObj instanceof List<?> coords && coords.size() >= 2) {
+								lon = ((Number) coords.get(0)).doubleValue();
+								lat = ((Number) coords.get(1)).doubleValue();
+							}
+						}
+						else {
+							Number latNum = geoDoc.get(latKey, Number.class);
+							Number lonNum = geoDoc.get(lonKey, Number.class);
+							if (latNum != null) {
+								lat = latNum.doubleValue();
+							}
+							if (lonNum != null) {
+								lon = lonNum.doubleValue();
+							}
+						}
+						if (lat != null && lon != null) {
+							luceneDocument.add(new LatLonPoint(indexField, lat, lon));
+						}
+					}
+				});
+			}
 			else {
 				throw new RuntimeException("Unsupported field type <" + fieldType + ">");
 			}
@@ -250,6 +290,51 @@ public class ShardDocumentIndexer {
 	private void addSortForStoredField(Document d, String storedFieldName, FieldConfig fc, Object o) {
 
 		FieldConfig.FieldType fieldType = fc.getFieldType();
+
+		if (FieldTypeUtil.isGeoPointFieldType(fieldType)) {
+			if (fc.getSortAsCount() > 0) {
+				ZuliaIndex.GeoPointConfig gpc = fc.getGeoPointConfig();
+				String latKey = gpc.getLatitudeKey().isEmpty() ? "latitude" : gpc.getLatitudeKey();
+				String lonKey = gpc.getLongitudeKey().isEmpty() ? "longitude" : gpc.getLongitudeKey();
+
+				double[] lastLatLon = { Double.NaN, Double.NaN };
+				ZuliaUtil.handleLists(o, obj -> {
+					if (obj instanceof org.bson.Document geoDoc) {
+						Double lat = null;
+						Double lon = null;
+						if ("Point".equals(geoDoc.get("type"))) {
+							Object coordsObj = geoDoc.get("coordinates");
+							if (coordsObj instanceof List<?> coords && coords.size() >= 2) {
+								lon = ((Number) coords.get(0)).doubleValue();
+								lat = ((Number) coords.get(1)).doubleValue();
+							}
+						}
+						else {
+							Number latNum = geoDoc.get(latKey, Number.class);
+							Number lonNum = geoDoc.get(lonKey, Number.class);
+							if (latNum != null) {
+								lat = latNum.doubleValue();
+							}
+							if (lonNum != null) {
+								lon = lonNum.doubleValue();
+							}
+						}
+						if (lat != null && lon != null) {
+							lastLatLon[0] = lat;
+							lastLatLon[1] = lon;
+						}
+					}
+				});
+				if (!Double.isNaN(lastLatLon[0])) {
+					for (ZuliaIndex.SortAs sortAs : fc.getSortAsList()) {
+						String sortFieldName = FieldTypeUtil.getSortField(sortAs.getSortFieldName(), fieldType);
+						d.add(new LatLonDocValuesField(sortFieldName, lastLatLon[0], lastLatLon[1]));
+					}
+				}
+			}
+			return;
+		}
+
 		for (ZuliaIndex.SortAs sortAs : fc.getSortAsList()) {
 
 			String sortFieldName = FieldTypeUtil.getSortField(sortAs.getSortFieldName(), fieldType);

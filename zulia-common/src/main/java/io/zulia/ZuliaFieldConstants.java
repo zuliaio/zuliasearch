@@ -40,5 +40,6 @@ public interface ZuliaFieldConstants {
 
 	String BOOL_SUFFIX = "_" + ZuliaIndex.FieldConfig.FieldType.BOOL;
 
+	String GEO_POINT_SUFFIX = "_" + ZuliaIndex.FieldConfig.FieldType.GEO_POINT;
 
 }

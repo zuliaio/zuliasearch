@@ -1,5 +1,8 @@
 import java.nio.charset.Charset
 import java.util.function.Function
+import javax.inject.Inject
+import org.gradle.process.ExecOperations
+import org.gradle.api.file.FileSystemOperations
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,133 +22,182 @@ import java.util.function.Function
  */
 
 // This adds javacc generation support.
+// Based on the Lucene project's JavaCCTask, adapted for Zulia.
+// Apply from zulia-query-parser/build.gradle.kts
+// Run with: ./gradlew :zulia-query-parser:javacc --no-configuration-cache
 
-configure(rootProject) {
-    configurations {
-        javacc
-    }
+configurations.maybeCreate("javacc")
+dependencies.add("javacc", "net.java.dev.javacc:javacc:7.0.13")
 
-    dependencies {
-        javacc "net.java.dev.javacc:javacc:7.0.4"
-    }
+ext {
+    modifyFile = { File path, Function<String, String> modify ->
+        Function<String, String> normalizeEols = { text -> text.replace("\r\n", "\n") }
 
-    repositories {
-        mavenCentral()
-    }
-
-    tasks.register('javacc', {
-        description = "Regenerate sources for corresponding javacc grammar files."
-        group = "generation"
-
-        dependsOn allprojects.collect { prj -> prj.tasks.withType(JavaCCTask) }
-    })
-
-    ext {
-        /**
-         * Utility function to read a file, apply changes to its content and write it back.
-         */
-        modifyFile = { File path, Function<String, String> modify ->
-            Function<String, String> normalizeEols = { text -> text.replace("\r\n", "\n") }
-
-            String original = path.getText("UTF-8")
-            String modified = normalizeEols.apply(original)
-            modified = modify.apply(modified)
-            modified = normalizeEols.apply(modified)
-            if (!original.equals(modified)) {
-                path.write(modified, "UTF-8")
-            }
+        String original = path.getText("UTF-8")
+        String modified = normalizeEols.apply(original)
+        modified = modify.apply(modified)
+        modified = normalizeEols.apply(modified)
+        if (!original.equals(modified)) {
+            path.write(modified, "UTF-8")
         }
     }
 }
 
 def commonCleanups = { FileTree generatedFiles ->
-    // This is a minor typo in a comment that nonetheless people have hand-corrected in the past.
-    generatedFiles.matching({ include "CharStream.java" }).each { file ->
-        modifyFile(file, { text ->
-            return text.replace(
-                    "implemetation",
-                    "implementation");
-        })
-    }
-
     generatedFiles.each { file ->
         modifyFile(file, { text ->
-            // Normalize EOLs and tabs (EOLs are a side-effect of modifyFile).
+            // Normalize tabs to spaces
             text = text.replace("\t", "    ");
+            // Filter checksums to prevent noisy VCS diffs
             text = text.replaceAll("JavaCC - OriginalChecksum=[^*]+", "(filtered)")
-            text = text.replace("StringBuffer", "StringBuilder")
             return text
         })
     }
 
     generatedFiles.matching({ include "*TokenManager.java" }).each { file ->
         modifyFile(file, { text ->
-            // Remove redundant imports.
+            // Remove redundant imports (javacc copies all parser imports into TokenManager)
             text = text.replaceAll(
                     /(?m)^import .+/,
                     "")
-            // Add CharStream imports.
+            // Add back only the required CharStream import
             text = text.replaceAll(
                     /package (.+)/,
                     '''
           package $1
-          import org.apache.lucene.queryparser.charstream.CharStream; 
+          import org.apache.lucene.queryparser.charstream.CharStream;
           '''.trim())
-            // Eliminates redundant cast message.
-            text = text.replace(
-                    "int hiByte = (int)(curChar >> 8);",
-                    "int hiByte = curChar >> 8;")
-            // Access to forbidden APIs.
-            text = text.replace(
-                    "public  java.io.PrintStream debugStream = System.out;",
-                    "// (debugStream omitted).")
-            text = text.replace(
-                    "public  void setDebugStream(java.io.PrintStream ds) { debugStream = ds; }",
-                    "// (setDebugStream omitted).")
-            text = text.replace(
-                    "public class QueryParserTokenManager ",
-                    '@SuppressWarnings("unused") public class QueryParserTokenManager ')
-            text = text.replace(
-                    "public class StandardSyntaxParserTokenManager ",
-                    '@SuppressWarnings("unused") public class StandardSyntaxParserTokenManager ')
+            // Remove debugStream (references System.out) and setDebugStream — unused debug plumbing
+            text = text.replace("/** Debug output. */\n", "")
+            text = text.replace("public  java.io.PrintStream debugStream = System.out;\n", "")
+            text = text.replace("/** Set debug output. */\n", "")
+            text = text.replace("public  void setDebugStream(java.io.PrintStream ds) { debugStream = ds; }\n", "")
             return text
         })
     }
 }
 
-configure(project(":zulia-query-parser")) {
+// JavaCC task class — mirrors Lucene's approach, updated for Gradle 9.x
+abstract class JavaCCTask extends DefaultTask {
+    @InputFile
+    File javaccFile
 
-    tasks.register('javaccParserZuliaFlexibleInternal', JavaCCTask) {
-        description = "Regenerate flexible query parser from ZuliaSyntaxParser.jj"
-        group = "generation"
+    @Internal
+    FileCollection javaccClasspath
 
-        javaccFile = file('src/main/java/io/zulia/server/search/queryparser/parser/ZuliaSyntaxParser.jj')
+    @Internal
+    File rootDir
 
-        afterGenerate << commonCleanups
-        afterGenerate << { FileTree generatedFiles ->
-            generatedFiles.matching { include "ParseException.java" }.each { file ->
-                modifyFile(file, { text ->
-                    // Modify constructor.
-                    text = text.replace(
-                            "class ParseException extends Exception",
-                            "class ParseException extends QueryNodeParseException")
+    @Internal
+    List<Closure<FileTree>> afterGenerate = new ArrayList<>()
 
-                    // Modify imports.
-                    text = text.replace(
-                            "package io.zulia.server.search.queryparser.parser;", '''\
+    @Inject
+    abstract ExecOperations getExecOps()
+
+    @Inject
+    abstract FileSystemOperations getFileOps()
+
+    @OutputFiles
+    List<File> getGeneratedSources() {
+        def baseDir = javaccFile.parentFile
+        def baseName = javaccFile.name.replace(".jj", "")
+
+        return [
+                new File(baseDir, "${baseName}.java"),
+                new File(baseDir, "${baseName}Constants.java"),
+                new File(baseDir, "${baseName}TokenManager.java"),
+                new File(baseDir, "ParseException.java"),
+                new File(baseDir, "Token.java"),
+                new File(baseDir, "TokenMgrError.java")
+        ]
+    }
+
+    @TaskAction
+    def generate() {
+        if (!javaccFile || !javaccFile.exists()) {
+            throw new GradleException("Input file does not exist: ${javaccFile}")
+        }
+
+        def tempDir = this.getTemporaryDir()
+        tempDir.mkdirs()
+
+        // Clean temp dir of any previous .java files
+        fileOps.delete { it.delete(tempDir.listFiles()?.findAll { f -> f.name.endsWith(".java") } ?: []) }
+
+        def targetDir = javaccFile.parentFile
+        logger.lifecycle("Recompiling JavaCC: ${rootDir.toPath().relativize(javaccFile.toPath())}")
+
+        def output = new ByteArrayOutputStream()
+        def result = execOps.javaexec {
+            classpath = javaccClasspath
+
+            ignoreExitValue = true
+            standardOutput = output
+            errorOutput = output
+
+            mainClass.set("org.javacc.parser.Main")
+            args += [
+                    "-OUTPUT_DIRECTORY=${tempDir}",
+                    javaccFile
+            ]
+        }
+
+        if (result.exitValue != 0) {
+            throw new GradleException("JavaCC failed to compile ${javaccFile}, here is the compilation output:\n${output}")
+        }
+
+        if (output.toString(Charset.defaultCharset()).contains("Warning:")) {
+            throw new GradleException("JavaCC emitted warnings for ${javaccFile}, here is the compilation output:\n${output}")
+        }
+
+        // Apply any custom modifications using an ObjectFactory-based file tree
+        def generatedFiles = project.objects.fileTree().from(tempDir)
+
+        afterGenerate.each { closure ->
+            closure.call(generatedFiles)
+        }
+
+        // Copy back to mainline sources.
+        fileOps.copy {
+            from tempDir
+            into targetDir
+
+            // We don't need CharStream interface as we redirect to our own.
+            exclude "CharStream.java"
+        }
+    }
+}
+
+tasks.register('javaccParserZuliaFlexibleInternal', JavaCCTask) {
+    description = "Regenerate flexible query parser from ZuliaSyntaxParser.jj"
+    group = "generation"
+
+    javaccFile = file("src/main/java/io/zulia/server/search/queryparser/parser/ZuliaSyntaxParser.jj")
+    javaccClasspath = configurations.named("javacc").get()
+    rootDir = rootProject.projectDir
+
+    afterGenerate << commonCleanups
+    afterGenerate << { FileTree generatedFiles ->
+        generatedFiles.matching { include "ParseException.java" }.each { file ->
+            modifyFile(file, { text ->
+                text = text.replace(
+                        "class ParseException extends Exception",
+                        "class ParseException extends QueryNodeParseException")
+
+                text = text.replace(
+                        "package io.zulia.server.search.queryparser.parser;", '''\
             package io.zulia.server.search.queryparser.parser;
-  
+
             import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
             import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
             import org.apache.lucene.queryparser.flexible.messages.Message;
             import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
             ''')
 
-                    // Modify constructors and code bits
-                    text = text.replaceAll(
-                            /(?s)[ ]*public ParseException\(Token currentTokenVal[^}]+[}]/, '''\
+                text = text.replaceAll(
+                        /(?s)[ ]*public ParseException\(Token currentTokenVal[^}]+[}]/, '''\
             public ParseException(Token currentTokenVal,
-              int[][] expectedTokenSequencesVal, String[] tokenImageVal) 
+              int[][] expectedTokenSequencesVal, String[] tokenImageVal)
             {
               super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(
               currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));
@@ -155,142 +207,44 @@ configure(project(":zulia-query-parser")) {
             }
             ''')
 
-                    text = text.replaceAll(
-                            /(?s)[ ]*public ParseException\(String message\)[^}]+[}]/, '''\
-            public ParseException(Message message) 
+                text = text.replaceAll(
+                        /(?s)[ ]*public ParseException\(String message\)[^}]+[}]/, '''\
+            public ParseException(Message message)
             {
               super(message);
             }
             ''')
 
-                    text = text.replaceAll(
-                            /(?s)[ ]*public ParseException\(\)[^}]+[}]/, '''\
-            public ParseException() 
+                text = text.replaceAll(
+                        /(?s)[ ]*public ParseException\(\)[^}]+[}]/, '''\
+            public ParseException()
             {
               super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, "Error"));
             }
             ''')
-                    return text
-                })
-            }
+                return text
+            })
+        }
 
-            generatedFiles.matching { include "ZuliaSyntaxParser.java" }.each { file ->
-                modifyFile(file, { text ->
-                    // Remove redundant cast
-                    text = text.replace(
-                            "new java.util.ArrayList<int[]>",
-                            "new java.util.ArrayList<>")
-                    text = text.replace(
-                            "new ArrayList<QueryNode>()",
-                            "new ArrayList<>()")
-                    text = text.replace(
-                            "Collections.<QueryNode> singletonList",
-                            "Collections.singletonList")
-                    text = text.replace(
-                            "public class StandardSyntaxParser ",
-                            '@SuppressWarnings({"unused","null"}) public class StandardSyntaxParser ')
-                    return text
-                })
-            }
+        generatedFiles.matching { include "ZuliaSyntaxParser.java" }.each { file ->
+            modifyFile(file, { text ->
+                text = text.replace(
+                        "new java.util.ArrayList<int[]>",
+                        "new java.util.ArrayList<>")
+                text = text.replace(
+                        "new ArrayList<QueryNode>()",
+                        "new ArrayList<>()")
+                text = text.replace(
+                        "Collections.<QueryNode> singletonList",
+                        "Collections.singletonList")
+                return text
+            })
         }
     }
-
-    tasks.register('javacc', {
-        description = "Regenerate query parsers (javacc syntax definitions)."
-        group = "generation"
-    })
-
 }
 
-// We always regenerate, no need to declare outputs.
-class JavaCCTask extends DefaultTask {
-    @InputFile
-    File javaccFile
-
-    /**
-     * Apply closures to all generated files before they're copied back
-     * to mainline code.
-     */
-    // A subtle bug here is that this makes it not an input... should be a list of replacements instead?
-    @Internal
-    List<Closure<FileTree>> afterGenerate = new ArrayList<>()
-
-    @OutputFiles
-    List<File> getGeneratedSources() {
-        // Return the list of generated files.
-        def baseDir = javaccFile.parentFile
-        def baseName = javaccFile.name.replace(".jj", "")
-
-        return [
-                project.file("${baseDir}/${baseName}.java"),
-                project.file("${baseDir}/${baseName}Constants.java"),
-                project.file("${baseDir}/${baseName}TokenManager.java"),
-                project.file("${baseDir}/ParseException.java"),
-                project.file("${baseDir}/Token.java"),
-                project.file("${baseDir}/TokenMgrError.java")
-        ]
-    }
-
-    JavaCCTask() {
-        dependsOn(project.rootProject.configurations.javacc)
-    }
-
-    @TaskAction
-    def generate() {
-        if (!javaccFile || !javaccFile.exists()) {
-            throw new GradleException("Input file does not exist: ${javaccFile}")
-        }
-
-        // Run javacc generation into temporary folder so that we know all the generated files
-        // and can post-process them easily.
-        def tempDir = this.getTemporaryDir()
-        tempDir.mkdirs()
-        project.delete project.fileTree(tempDir, { include: "**/*.java" })
-
-        def targetDir = javaccFile.parentFile
-        logger.lifecycle("Recompiling JavaCC: ${project.rootDir.relativePath(javaccFile)}")
-
-        def output = new ByteArrayOutputStream()
-        def result = project.javaexec {
-            classpath {
-                project.rootProject.configurations.javacc
-            }
-
-            ignoreExitValue = true
-            standardOutput = output
-            errorOutput = output
-
-            main = "org.javacc.parser.Main"
-            args += [
-                    "-OUTPUT_DIRECTORY=${tempDir}",
-                    javaccFile
-            ]
-        }
-
-        // Unless we request verbose logging, don't emit javacc output.
-        if (result.exitValue != 0) {
-            throw new GradleException("JavaCC failed to compile ${javaccFile}, here is the compilation output:\n${output}")
-        }
-
-        // Make sure we don't have warnings.
-        if (output.toString(Charset.defaultCharset()).contains("Warning:")) {
-            throw new GradleException("JavaCC emitted warnings for ${javaccFile}, here is the compilation output:\n${output}")
-        }
-
-        // Apply any custom modifications.
-        def generatedFiles = project.fileTree(tempDir)
-
-        afterGenerate.each { closure ->
-            closure.call(generatedFiles)
-        }
-
-        // Copy back to mainline sources.
-        project.copy {
-            from tempDir
-            into targetDir
-
-            // We don't need CharStream interface as we redirect to our own.
-            exclude "CharStream.java"
-        }
-    }
+tasks.register('javacc') {
+    description = "Regenerate query parsers (javacc syntax definitions)."
+    group = "generation"
+    dependsOn "javaccParserZuliaFlexibleInternal"
 }

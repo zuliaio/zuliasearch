@@ -267,7 +267,11 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 			ZuliaIndex.FieldConfig.FieldType fieldType = sortMeta.sortFieldType();
 
 			ZuliaQuery.SortValue.Builder sortValueBuilder = ZuliaQuery.SortValue.newBuilder().setExists(true);
-			if (FieldTypeUtil.isHandledAsNumericFieldType(fieldType)) {
+			if (FieldTypeUtil.isGeoPointFieldType(fieldType)) {
+				// Lucene returns distance in meters as a Double; convert to km
+				sortValueBuilder.setDoubleValue(((Double) o) / 1000.0);
+			}
+			else if (FieldTypeUtil.isHandledAsNumericFieldType(fieldType)) {
 				if (FieldTypeUtil.isStoredAsInt(fieldType)) {
 					sortValueBuilder.setIntegerValue((Integer) o);
 				}

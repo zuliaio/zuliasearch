@@ -114,6 +114,21 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 			}
 			storedFields.add(builder.getStoredFieldName());
 
+			if (FieldTypeUtil.isGeoPointFieldType(builder.getFieldType())) {
+				if (builder.getIndexAsCount() == 0 && builder.getSortAsCount() == 0) {
+					throw new IllegalArgumentException("GEO_POINT field <" + builder.getStoredFieldName() + "> must have .index() and/or .sort()");
+				}
+				for (ZuliaIndex.IndexAs indexAs : builder.getIndexAsList()) {
+					if (indexAs.getIndexFieldName().isEmpty()) {
+						throw new IllegalArgumentException("GEO_POINT field <" + builder.getStoredFieldName()
+								+ "> must have a non-empty index field name. Use indexAsField(name) when storedFieldName is empty.");
+					}
+				}
+				if (builder.getFacetAsCount() > 0) {
+					throw new IllegalArgumentException("GEO_POINT field <" + builder.getStoredFieldName() + "> does not support faceting");
+				}
+			}
+
 			for (ZuliaIndex.IndexAs indexAs : builder.getIndexAsList()) {
 				if (indexAs.getIndexFieldName().contains(",")) {
 					throw new IllegalArgumentException(

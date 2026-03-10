@@ -1,3 +1,5 @@
+apply(from = "../javacc.gradle")
+
 description = "Zulia Query Parser"
 
 dependencies {

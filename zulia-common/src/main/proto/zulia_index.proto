@@ -145,6 +145,7 @@ message FieldConfig {
         BOOL = 6;
         UNIT_VECTOR = 7;
         VECTOR = 8;
+        GEO_POINT = 9;
     }
 
     FieldType fieldType = 1;
@@ -154,6 +155,12 @@ message FieldConfig {
     repeated SortAs sortAs = 5;
     string displayName = 7;
     string description = 8;
+    GeoPointConfig geoPointConfig = 9;
+}
+
+message GeoPointConfig {
+    string latitudeKey = 1;   // default "latitude"
+    string longitudeKey = 2;  // default "longitude"
 }
 
 
