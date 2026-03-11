@@ -5,25 +5,30 @@ import io.zulia.server.config.cluster.MongoConnectionString;
 import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.config.cluster.S3Config;
 import jakarta.inject.Singleton;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
 
 @Singleton
+@NullMarked
 public class ZuliaConfig {
 
 	private String dataPath = "data";
 	private boolean cluster = false;
 	private String clusterName = "zulia";
 	private String clusterStorageEngine = "gridfs";
-	private S3Config s3;
+	private @Nullable S3Config s3;
 	private List<MongoServer> mongoServers = Collections.singletonList(new MongoServer());
 
-	private MongoConnectionString mongoConnection;
-	private MongoAuth mongoAuth;
-	private String serverAddress = null; //null means autodetect
+	private @Nullable MongoConnectionString mongoConnection;
+	private @Nullable MongoAuth mongoAuth;
+	private @Nullable String serverAddress = null; //null means autodetect
 	private int servicePort = 32191;
 	private int restPort = 32192;
+
+	private HealthConfig health = new HealthConfig();
 
 	private boolean responseCompression;
 
@@ -68,11 +73,11 @@ public class ZuliaConfig {
 		this.clusterStorageEngine = clusterStorageEngine;
 	}
 
-	public S3Config getS3() {
+	public @Nullable S3Config getS3() {
 		return s3;
 	}
 
-	public void setS3(S3Config s3) {
+	public void setS3(@Nullable S3Config s3) {
 		this.s3 = s3;
 	}
 
@@ -84,27 +89,27 @@ public class ZuliaConfig {
 		this.mongoServers = mongoServers;
 	}
 
-	public MongoConnectionString getMongoConnection() {
+	public @Nullable MongoConnectionString getMongoConnection() {
 		return mongoConnection;
 	}
 
-	public void setMongoConnection(MongoConnectionString mongoConnection) {
+	public void setMongoConnection(@Nullable MongoConnectionString mongoConnection) {
 		this.mongoConnection = mongoConnection;
 	}
 
-	public MongoAuth getMongoAuth() {
+	public @Nullable MongoAuth getMongoAuth() {
 		return mongoAuth;
 	}
 
-	public void setMongoAuth(MongoAuth mongoAuth) {
+	public void setMongoAuth(@Nullable MongoAuth mongoAuth) {
 		this.mongoAuth = mongoAuth;
 	}
 
-	public String getServerAddress() {
+	public @Nullable String getServerAddress() {
 		return serverAddress;
 	}
 
-	public void setServerAddress(String serverAddress) {
+	public void setServerAddress(@Nullable String serverAddress) {
 		this.serverAddress = serverAddress;
 	}
 
@@ -156,11 +161,20 @@ public class ZuliaConfig {
 		this.debug = debug;
 	}
 
+	public HealthConfig getHealth() {
+		return health;
+	}
+
+	public void setHealth(HealthConfig health) {
+		this.health = health;
+	}
+
 	@Override
 	public String toString() {
 		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
 				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoConnection=" + mongoConnection + ", mongoAuth="
-				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", responseCompression="
-				+ responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + ", debug=" + debug + '}';
+				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", health=" + health
+				+ ", responseCompression=" + responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + ", debug="
+				+ debug + '}';
 	}
 }
