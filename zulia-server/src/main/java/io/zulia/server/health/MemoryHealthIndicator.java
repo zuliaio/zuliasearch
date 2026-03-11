@@ -48,7 +48,7 @@ public class MemoryHealthIndicator extends AbstractHealthIndicator<Map<String, O
 			healthStatus = HealthStatus.UP.describe("Memory usage within range");
 		}
 		else {
-			healthStatus = HealthStatus.DOWN.describe("Memory usage is too high");
+			healthStatus = new HealthStatus("DEGRADED", "Memory usage exceeded threshold values", true, 500);
 		}
 
 		detail.put("memoryUsed", readableMemorySize(memUsed));
