@@ -505,7 +505,7 @@ public class GeoPointTest {
 		Assertions.assertEquals("New York", results.getLast().getDocument().getString("name"));
 
 		search = new Search("geoSortAsTest").setAmount(10).setRealtime(true);
-		ScoredQuery sq = new ScoredQuery("*");
+		ScoredQuery sq = new ScoredQuery("*:*");
 		sq.setScoreFunction("1.0 / (1.0 + geodist(geoSort, " + NYC_LAT + ", " + NYC_LON + "))");
 		search.addQuery(sq);
 		result = zuliaWorkPool.search(search);
