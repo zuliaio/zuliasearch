@@ -31,6 +31,9 @@ public class HealthResultDTO {
 				var entryDetails = HealthResultDetailsDTO.fromMicronautHealthResultDetails(detailsResult);
 				if (entryDetails != null) {
 					result.details.put(entry.getKey(), entryDetails);
+					if (result.status.equalsIgnoreCase("UP") && !entryDetails.getStatus().equalsIgnoreCase("UP")) {
+						result.status = entryDetails.getStatus();
+					}
 				}
 			}
 		}
