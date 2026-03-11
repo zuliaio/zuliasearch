@@ -38,7 +38,7 @@ public class HealthMonitorMongoWriter extends AbstractScheduledService {
 		this.healthAggregator = healthAggregator;
 		this.healthIndicators = healthIndicators;
 		this.zuliaConfig = ZuliaNodeProvider.getZuliaNode().getZuliaConfig();
-		this.db = this.zuliaConfig.getHealth().getDb();
+		this.db = !this.zuliaConfig.getHealth().getDb().isEmpty() ? this.zuliaConfig.getHealth().getDb() : this.zuliaConfig.getClusterName();
 		this.collection = this.zuliaConfig.getHealth().getCollection();
 		this.ttl = this.zuliaConfig.getHealth().getTtlDays();
 		this.healthCollection = MongoProvider.getMongoClient().getDatabase(db).getCollection(collection, HealthResultDTO.class);

@@ -6,7 +6,7 @@ import org.jspecify.annotations.NullMarked;
 public class HealthConfig {
 	private Double memoryThresholdPercent = 90.0;
 	private Boolean writeToMongo = false;
-	private String db = "zulia";
+	private String db = "";
 	private String collection = "health";
 	private Long writeIntervalSeconds = 60L;
 	private Long ttlDays = 30L;
