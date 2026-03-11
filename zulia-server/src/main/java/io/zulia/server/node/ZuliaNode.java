@@ -1,6 +1,7 @@
 package io.zulia.server.node;
 
 import io.micronaut.context.ApplicationContext;
+import io.micronaut.context.annotation.Bean;
 import io.micronaut.runtime.Micronaut;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
@@ -17,6 +18,7 @@ import java.util.Timer;
 
 import static io.zulia.message.ZuliaBase.Node;
 
+@Bean
 public class ZuliaNode {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ZuliaNode.class);
