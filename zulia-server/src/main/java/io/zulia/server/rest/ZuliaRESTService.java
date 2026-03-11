@@ -1,6 +1,9 @@
 package io.zulia.server.rest;
 
+import io.micronaut.management.endpoint.health.HealthEndpoint;
+import io.micronaut.openapi.annotation.OpenAPIInclude;
 import io.micronaut.serde.annotation.SerdeImport;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.message.ZuliaBase;
 import io.zulia.rest.dto.*;
 import io.zulia.server.health.HealthResultDTO;
@@ -13,6 +16,7 @@ import io.zulia.server.serde.ShardCacheStatsModifier;
 import jakarta.inject.Singleton;
 
 @Singleton
+@OpenAPIInclude(classes = HealthEndpoint.class, tags = @Tag(name = "Health"))
 @SerdeImport(AnalysisDTO.class)
 @SerdeImport(AnalysisResultDTO.class)
 @SerdeImport(AssociatedController.Filenames.class)

@@ -568,6 +568,40 @@ paths:
             application/json;charset=utf-8:
               schema:
                 $ref: "#/components/schemas/FieldsDTO"
+  /health:
+    get:
+      tags:
+      - Health
+      operationId: getHealth
+      responses:
+        "200":
+          description: getHealth 200 response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealthResult"
+  /health/{selector}:
+    get:
+      tags:
+      - Health
+      operationId: getHealth_1
+      parameters:
+      - name: selector
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/HealthCheckType"
+      responses:
+        "200":
+          description: getHealth_1 200 response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealthResult"
   /index:
     get:
       tags:
@@ -1730,6 +1764,40 @@ components:
           type: array
           items:
             type: string
+    HealthCheckType:
+      type: string
+      enum:
+      - LIVENESS
+      - READINESS
+    HealthResult:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/HealthStatus"
+        details:
+          type: object
+    HealthStatus:
+      required:
+      - description
+      - name
+      - operational
+      - severity
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        operational:
+          type: boolean
+          nullable: true
+        severity:
+          type: integer
+          format: int32
+          nullable: true
     HighlightDTO:
       required:
       - field

@@ -6,7 +6,6 @@ import io.zulia.server.cmd.ZuliaD;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.node.ZuliaNode;
-import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.ZuliaVersion;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
@@ -59,8 +58,6 @@ public class StartNodeCmd implements Callable<Integer> {
 		LOG.info("Zulia ({}) based on Lucene {}", ZuliaVersion.getVersion(), Version.LATEST);
 		LOG.info("Running java {}", Runtime.version().version().getFirst());
 		ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, nodeService);
-
-		ZuliaNodeProvider.setZuliaNode(zuliaNode);
 		zuliaNode.start();
 
 		return 0;

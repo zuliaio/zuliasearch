@@ -7,6 +7,7 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.connection.server.ZuliaServiceServer;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.rest.ZuliaRESTService;
+import io.zulia.server.util.ZuliaNodeProvider;
 import io.zulia.util.ZuliaVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,7 @@ public class ZuliaNode {
 	}
 
 	public void start(boolean startREST) throws Exception {
+		ZuliaNodeProvider.setZuliaNode(this);
 		LOG.info("{}:{} starting", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		MembershipTask membershipTask = new MembershipTask(zuliaConfig, nodeService) {
 
