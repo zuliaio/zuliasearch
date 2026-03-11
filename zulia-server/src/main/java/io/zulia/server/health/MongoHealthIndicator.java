@@ -1,6 +1,7 @@
 package io.zulia.server.health;
 
 import com.mongodb.client.MongoClient;
+import io.micronaut.context.annotation.Requires;
 import io.micronaut.health.HealthStatus;
 import io.micronaut.management.health.indicator.AbstractHealthIndicator;
 import io.zulia.server.util.MongoProvider;
@@ -11,6 +12,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @Singleton
+@Requires(condition = ClusterModeCondition.class)
 @NullMarked
 public class MongoHealthIndicator extends AbstractHealthIndicator<Map<String, Object>> {
 
@@ -24,7 +26,7 @@ public class MongoHealthIndicator extends AbstractHealthIndicator<Map<String, Ob
 	protected Map<String, Object> getHealthInformation() {
 		try {
 			MongoClient client = MongoProvider.getMongoClient();
-			if(client.listDatabases().first() != null){
+			if (client.listDatabases().first() != null) {
 				healthStatus = HealthStatus.UP.describe("Able to connect to Mongo instance");
 				return Collections.singletonMap("statusDetails", "Able to connect to Mongo instance");
 			}

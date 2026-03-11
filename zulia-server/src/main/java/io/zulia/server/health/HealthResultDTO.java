@@ -13,10 +13,10 @@ import java.util.Map;
 @NullMarked
 public class HealthResultDTO {
 	private static final Logger LOG = LoggerFactory.getLogger(HealthResultDTO.class);
-	String name = "unknown";
-	String status = "UNKNOWN";
-	String host = "UNKNOWN";
 	@Nullable Map<String, HealthResultDetailsDTO> details;
+	private String name = "unknown";
+	private String status = "UNKNOWN";
+	private String host = "UNKNOWN";
 	private Instant timestamp = Instant.now();
 
 	public static @Nullable HealthResultDTO fromMicronautHealthResult(HealthResult healthResult) {

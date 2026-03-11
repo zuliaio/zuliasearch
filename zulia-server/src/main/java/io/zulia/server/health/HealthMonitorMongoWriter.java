@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.net.SocketException;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @NullMarked
@@ -30,6 +31,8 @@ public class HealthMonitorMongoWriter extends AbstractScheduledService {
 	private final String db;
 	private final String collection;
 	private final Long ttl;
+	private final MongoCollection<HealthResultDTO> healthCollection;
+	private final String serverAddress;
 
 	public HealthMonitorMongoWriter(HealthAggregator<HealthResult> healthAggregator, HealthIndicator[] healthIndicators) {
 		this.healthAggregator = healthAggregator;
@@ -38,26 +41,45 @@ public class HealthMonitorMongoWriter extends AbstractScheduledService {
 		this.db = this.zuliaConfig.getHealth().getDb();
 		this.collection = this.zuliaConfig.getHealth().getCollection();
 		this.ttl = this.zuliaConfig.getHealth().getTtlDays();
+		this.healthCollection = MongoProvider.getMongoClient().getDatabase(db).getCollection(collection, HealthResultDTO.class);
+		serverAddress = getServerAddress();
+	}
+
+	private String getServerAddress() {
+		String result;
+
+		if (zuliaConfig.getServerAddress() == null || zuliaConfig.getServerAddress().isEmpty()) {
+			try {
+				var localServer = ServerNameHelper.getLocalServer();
+				if (localServer != null) {
+					result = localServer + ":" + this.zuliaConfig.getServicePort();
+				}
+				else {
+					result = "UNKNOWN";
+				}
+			}
+			catch (SocketException e) {
+				result = "UNKNOWN";
+			}
+		}
+		else {
+			result = zuliaConfig.getServerAddress() + ":" + this.zuliaConfig.getServicePort();
+		}
+		return result;
 	}
 
 	@Override
-	protected void runOneIteration() throws SocketException {
+	protected void startUp() throws Exception {
+		var indexOptions = new IndexOptions().background(true).expireAfter(ttl, TimeUnit.DAYS);
+		this.healthCollection.createIndex(Indexes.descending("timestamp"), indexOptions);
+	}
+
+	@Override
+	protected void runOneIteration() {
 		var aggregatedResultsPublisher = Mono.from(healthAggregator.aggregate(healthIndicators, HealthLevelOfDetail.STATUS_DESCRIPTION_DETAILS));
-		var healthResult = aggregatedResultsPublisher.block();
+		var healthResult = aggregatedResultsPublisher.block(Duration.ofSeconds(30));
 
 		if (healthResult != null) {
-			MongoCollection<HealthResultDTO> healthCollection = MongoProvider.getMongoClient().getDatabase(db).getCollection(collection, HealthResultDTO.class);
-			var indexOptions = new IndexOptions().background(true).expireAfter(ttl, TimeUnit.DAYS);
-			healthCollection.createIndex(Indexes.descending("timestamp"), indexOptions);
-
-			String serverAddress = zuliaConfig.getServerAddress() + ":" + this.zuliaConfig.getServicePort();
-			if (zuliaConfig.getServerAddress() == null || zuliaConfig.getServerAddress().isEmpty()) {
-				serverAddress = ServerNameHelper.getLocalServer();
-			}
-			if (serverAddress == null || serverAddress.isEmpty()) {
-				serverAddress = "UNKNOWN";
-			}
-
 			var healthDto = HealthResultDTO.fromMicronautHealthResult(healthResult);
 
 			if (healthDto != null) {
