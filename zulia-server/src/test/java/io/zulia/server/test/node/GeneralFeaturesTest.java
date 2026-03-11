@@ -3,10 +3,12 @@ package io.zulia.server.test.node;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.BatchDelete;
 import io.zulia.client.command.BatchFetch;
+import io.zulia.client.command.DeleteFull;
 import io.zulia.client.command.FetchAllAssociated;
 import io.zulia.client.command.DeleteFromIndex;
 import io.zulia.client.command.Fetch;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.BatchDeleteGroupBuilder;
 import io.zulia.client.command.builder.BatchFetchGroupBuilder;
 import io.zulia.client.command.builder.CountFacet;
 import io.zulia.client.command.builder.FilterQuery;
@@ -15,6 +17,7 @@ import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.AssociatedResult;
+import io.zulia.client.result.BatchDeleteResult;
 import io.zulia.client.result.BatchFetchResult;
 import io.zulia.client.result.FetchResult;
 import io.zulia.client.result.SearchResult;
@@ -326,7 +329,7 @@ public class GeneralFeaturesTest {
 	public void batchDeleteTest() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
-		// Index extra documents to delete
+		// --- Individual addDelete (existing coverage) ---
 		indexRecord(100, "To Be Deleted 1", "temp", "article", 1.0);
 		indexRecord(101, "To Be Deleted 2", "temp", "article", 1.0);
 		indexRecord(102, "To Be Deleted 3", "temp", "article", 1.0);
@@ -335,26 +338,147 @@ public class GeneralFeaturesTest {
 		SearchResult searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(UNIQUE_DOCS + 3, searchResult.getTotalHits());
 
-		// Batch delete specific IDs
 		BatchDelete batchDelete = new BatchDelete();
 		batchDelete.addDelete(new DeleteFromIndex("100", INDEX_NAME));
 		batchDelete.addDelete(new DeleteFromIndex("101", INDEX_NAME));
 		batchDelete.addDelete(new DeleteFromIndex("102", INDEX_NAME));
-		zuliaWorkPool.batchDelete(batchDelete);
+		BatchDeleteResult result = zuliaWorkPool.batchDelete(batchDelete);
+		Assertions.assertEquals(3, result.getDeleteCount());
 
-		// Batch delete from search results
-		indexRecord(200, "Delete via search 1", "temp2", "article", 1.0);
-		indexRecord(201, "Delete via search 2", "temp2", "article", 1.0);
+		search = new Search(INDEX_NAME).setRealtime(true);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(UNIQUE_DOCS, searchResult.getTotalHits());
+
+		// --- BatchDeleteGroupBuilder: basic delete by group ---
+		indexRecord(200, "Group Delete 1", "grp", "article", 1.0);
+		indexRecord(201, "Group Delete 2", "grp", "article", 1.0);
+		indexRecord(202, "Group Delete 3", "grp", "article", 1.0);
+
+		BatchDeleteGroupBuilder groupBuilder = new BatchDeleteGroupBuilder(INDEX_NAME, List.of("200", "201", "202"));
+		BatchDelete groupDelete = new BatchDelete().addDeleteGroup(groupBuilder);
+		result = zuliaWorkPool.batchDelete(groupDelete);
+		Assertions.assertEquals(3, result.getDeleteCount());
+
+		search = new Search(INDEX_NAME).setRealtime(true);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(UNIQUE_DOCS, searchResult.getTotalHits());
+
+		// --- addDeleteDocumentsFromUniqueIds convenience method ---
+		indexRecord(300, "Convenience 1", "conv", "article", 1.0);
+		indexRecord(301, "Convenience 2", "conv", "article", 1.0);
+
+		result = zuliaWorkPool.batchDelete(new BatchDelete().addDeleteDocumentsFromUniqueIds(List.of("300", "301"), INDEX_NAME));
+		Assertions.assertEquals(2, result.getDeleteCount());
+
+		search = new Search(INDEX_NAME).setRealtime(true);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(UNIQUE_DOCS, searchResult.getTotalHits());
+
+		// --- Mix: individual addDelete + addDeleteGroup in same batch ---
+		indexRecord(400, "Mix Individual", "mix", "article", 1.0);
+		indexRecord(401, "Mix Group 1", "mix", "article", 1.0);
+		indexRecord(402, "Mix Group 2", "mix", "article", 1.0);
+
+		BatchDelete mixDelete = new BatchDelete();
+		mixDelete.addDelete(new DeleteFromIndex("400", INDEX_NAME));
+		mixDelete.addDeleteGroup(new BatchDeleteGroupBuilder(INDEX_NAME, List.of("401", "402")));
+		result = zuliaWorkPool.batchDelete(mixDelete);
+		Assertions.assertEquals(3, result.getDeleteCount());
+
+		search = new Search(INDEX_NAME).setRealtime(true);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(UNIQUE_DOCS, searchResult.getTotalHits());
+
+		// --- deleteDocumentFromQueryResult groups by index ---
+		indexRecord(500, "Search Delete 1", "srch", "article", 1.0);
+		indexRecord(501, "Search Delete 2", "srch", "article", 1.0);
 
 		search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
-		search.addQuery(new FilterQuery("category:temp2"));
+		search.addQuery(new FilterQuery("category:srch"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(2, searchResult.getTotalHits());
 
 		BatchDelete deleteFromResults = new BatchDelete().deleteDocumentFromQueryResult(searchResult);
-		zuliaWorkPool.batchDelete(deleteFromResults);
+		result = zuliaWorkPool.batchDelete(deleteFromResults);
+		Assertions.assertEquals(2, result.getDeleteCount());
 
-		// Verify the original documents remain after all batch deletes
+		search = new Search(INDEX_NAME).setRealtime(true);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(UNIQUE_DOCS, searchResult.getTotalHits());
+
+		// --- BatchDeleteGroupBuilder: delete associated documents by filename ---
+		// Doc 2 has notes.txt and summary.txt associated
+		FetchResult fetchResult = zuliaWorkPool.fetch(new FetchAllAssociated("2", INDEX_NAME));
+		Assertions.assertEquals(2, fetchResult.getAssociatedDocumentCount());
+
+		BatchDeleteGroupBuilder deleteAssocFile = new BatchDeleteGroupBuilder(INDEX_NAME, List.of("2")).setDeleteDocument(false)
+				.setFilename("summary.txt");
+		zuliaWorkPool.batchDelete(new BatchDelete().addDeleteGroup(deleteAssocFile));
+
+		fetchResult = zuliaWorkPool.fetch(new FetchAllAssociated("2", INDEX_NAME));
+		Assertions.assertEquals(1, fetchResult.getAssociatedDocumentCount());
+		Assertions.assertEquals("notes.txt", fetchResult.getFirstAssociatedDocument().getFilename());
+
+		// Doc 2 should still exist as a document
+		Fetch fetchDoc2 = new Fetch("2", INDEX_NAME);
+		fetchDoc2.setRealtime(true);
+		fetchResult = zuliaWorkPool.fetch(fetchDoc2);
+		Assertions.assertTrue(fetchResult.hasResultDocument());
+
+		// --- BatchDeleteGroupBuilder: deleteAllAssociated ---
+		// Doc 1 has notes.txt associated
+		fetchResult = zuliaWorkPool.fetch(new FetchAllAssociated("1", INDEX_NAME));
+		Assertions.assertEquals(1, fetchResult.getAssociatedDocumentCount());
+
+		BatchDeleteGroupBuilder deleteAllAssoc = new BatchDeleteGroupBuilder(INDEX_NAME, List.of("1")).setDeleteDocument(false)
+				.setDeleteAllAssociated(true);
+		zuliaWorkPool.batchDelete(new BatchDelete().addDeleteGroup(deleteAllAssoc));
+
+		fetchResult = zuliaWorkPool.fetch(new FetchAllAssociated("1", INDEX_NAME));
+		Assertions.assertEquals(0, fetchResult.getAssociatedDocumentCount());
+
+		// Doc 1 should still exist as a document
+		Fetch fetchDoc1 = new Fetch("1", INDEX_NAME);
+		fetchDoc1.setRealtime(true);
+		fetchResult = zuliaWorkPool.fetch(fetchDoc1);
+		Assertions.assertTrue(fetchResult.hasResultDocument());
+
+		// --- BatchDeleteGroupBuilder with DeleteFull via individual addDelete: delete doc + all associated ---
+		// Re-add associated for doc 2
+		Store store2 = new Store("2", INDEX_NAME);
+		store2.addAssociatedDocument(AssociatedBuilder.newBuilder().setFilename("notes.txt").setDocument("restored notes"));
+		zuliaWorkPool.store(store2);
+
+		fetchResult = zuliaWorkPool.fetch(new FetchAllAssociated("2", INDEX_NAME));
+		Assertions.assertEquals(1, fetchResult.getAssociatedDocumentCount());
+
+		// Use addDelete with DeleteFull alongside a group
+		indexRecord(600, "Full Delete Target", "full", "article", 1.0);
+
+		BatchDelete fullMix = new BatchDelete();
+		fullMix.addDelete(new DeleteFull("2", INDEX_NAME));
+		fullMix.addDeleteGroup(new BatchDeleteGroupBuilder(INDEX_NAME, List.of("600")));
+		result = zuliaWorkPool.batchDelete(fullMix);
+		Assertions.assertEquals(2, result.getDeleteCount());
+
+		// Doc 2 should be gone
+		Fetch fetchDoc2Again = new Fetch("2", INDEX_NAME);
+		fetchDoc2Again.setRealtime(true);
+		fetchResult = zuliaWorkPool.fetch(fetchDoc2Again);
+		Assertions.assertFalse(fetchResult.hasResultDocument());
+
+		// Associated docs for doc 2 should be gone
+		fetchResult = zuliaWorkPool.fetch(new FetchAllAssociated("2", INDEX_NAME));
+		Assertions.assertEquals(0, fetchResult.getAssociatedDocumentCount());
+
+		// Doc 600 should be gone
+		search = new Search(INDEX_NAME).setRealtime(true);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(UNIQUE_DOCS - 1, searchResult.getTotalHits());
+
+		// Restore doc 2 for downstream tests
+		indexRecord(2, "Python Basics", "tech", "book", 3.8);
+
 		search = new Search(INDEX_NAME).setRealtime(true);
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(UNIQUE_DOCS, searchResult.getTotalHits());

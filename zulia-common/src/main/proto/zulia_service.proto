@@ -15,6 +15,7 @@ service ZuliaService {
     rpc Delete (DeleteRequest) returns (DeleteResponse);
     rpc InternalDelete (DeleteRequest) returns (DeleteResponse);
     rpc BatchDelete (BatchDeleteRequest) returns (stream DeleteResponse);
+    rpc InternalBatchDelete (InternalBatchDeleteRequest) returns (BatchDeleteResponse);
     rpc Fetch (FetchRequest) returns (FetchResponse);
     rpc InternalFetch (FetchRequest) returns (FetchResponse);
     rpc BatchFetch (BatchFetchRequest) returns (stream FetchResponse);
@@ -122,11 +123,34 @@ message DeleteRequest {
 message DeleteResponse {
 }
 
+message BatchDeleteGroup {
+    string indexName = 1;
+    repeated string uniqueId = 2;
+    bool deleteDocument = 3;
+    bool deleteAllAssociated = 4;
+    string filename = 5;
+}
+
 message BatchDeleteRequest {
     repeated DeleteRequest request = 1;
+    repeated BatchDeleteGroup batchDeleteGroup = 2;
 }
 
 message BatchDeleteResponse {
+    repeated DeleteResponse deleteResponse = 1;
+}
+
+message InternalShardBatchDeleteRequest {
+    string indexName = 1;
+    uint32 shardNumber = 2;
+    repeated string uniqueId = 3;
+    bool deleteDocument = 4;
+    bool deleteAllAssociated = 5;
+    string filename = 6;
+}
+
+message InternalBatchDeleteRequest {
+    repeated InternalShardBatchDeleteRequest shardBatchDeleteRequest = 1;
 }
 
 message FetchRequest {

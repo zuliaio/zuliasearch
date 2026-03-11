@@ -17,6 +17,7 @@ import io.zulia.util.ShardUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,12 +88,16 @@ public class BatchFetchRequestFederator extends NodeRequestBase<InternalBatchFet
 		}
 		Map<ShardKey, List<String>> shardGroups = new LinkedHashMap<>();
 
+		Map<String, MasterSlaveSelector> selectorCache = new HashMap<>();
+
 		for (FetchRequest fetchRequest : fetchRequests) {
 			String indexName = fetchRequest.getIndexName();
-			ZuliaIndex index = indexCache.get(indexName);
-			MasterSlaveSelector selector = new MasterSlaveSelector(masterSlaveSettings, nodesAvailable, index.getIndexShardMapping());
+			MasterSlaveSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
+				ZuliaIndex index = indexCache.get(name);
+				return new MasterSlaveSelector(masterSlaveSettings, nodesAvailable, index.getIndexShardMapping());
+			});
 			Node targetNode = selector.getNodeForUniqueId(fetchRequest.getUniqueId());
-			int shardNumber = ShardUtil.findShardForUniqueId(fetchRequest.getUniqueId(), index.getNumberOfShards());
+			int shardNumber = ShardUtil.findShardForUniqueId(fetchRequest.getUniqueId(), indexCache.get(indexName).getNumberOfShards());
 			ShardKey key = new ShardKey(targetNode, indexName, shardNumber, fetchRequest.getResultFetchType(), fetchRequest.getDocumentFieldsList(),
 					fetchRequest.getDocumentMaskedFieldsList(), fetchRequest.getRealtime(), fetchRequest.getAssociatedFetchType(),
 					fetchRequest.getFilename());
@@ -101,11 +106,13 @@ public class BatchFetchRequestFederator extends NodeRequestBase<InternalBatchFet
 
 		for (BatchFetchGroup group : batchFetchGroups) {
 			String indexName = group.getIndexName();
-			ZuliaIndex index = indexCache.get(indexName);
-			MasterSlaveSelector selector = new MasterSlaveSelector(masterSlaveSettings, nodesAvailable, index.getIndexShardMapping());
+			MasterSlaveSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
+				ZuliaIndex index = indexCache.get(name);
+				return new MasterSlaveSelector(masterSlaveSettings, nodesAvailable, index.getIndexShardMapping());
+			});
 			for (String uniqueId : group.getUniqueIdList()) {
 				Node targetNode = selector.getNodeForUniqueId(uniqueId);
-				int shardNumber = ShardUtil.findShardForUniqueId(uniqueId, index.getNumberOfShards());
+				int shardNumber = ShardUtil.findShardForUniqueId(uniqueId, indexCache.get(indexName).getNumberOfShards());
 				ShardKey key = new ShardKey(targetNode, indexName, shardNumber, group.getResultFetchType(), group.getDocumentFieldsList(),
 						group.getDocumentMaskedFieldsList(), group.getRealtime(), group.getAssociatedFetchType(), group.getFilename());
 				shardGroups.computeIfAbsent(key, k -> new ArrayList<>()).add(uniqueId);

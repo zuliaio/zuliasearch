@@ -36,6 +36,7 @@ import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
 import io.zulia.server.filestorage.S3DocumentStorage;
+import io.zulia.server.index.federator.BatchDeleteRequestFederator;
 import io.zulia.server.index.federator.BatchFetchRequestFederator;
 import io.zulia.server.index.federator.ClearRequestFederator;
 import io.zulia.server.index.federator.CreateIndexAliasRequestFederator;
@@ -395,6 +396,53 @@ public class ZuliaIndexManager {
 	public DeleteResponse internalDelete(DeleteRequest request) throws Exception {
 		ZuliaIndex i = getIndexFromName(request.getIndexName());
 		return DeleteRequestRouter.internalDelete(i, request);
+	}
+
+	public void batchDelete(BatchDeleteRequest request, StreamObserver<DeleteResponse> responseObserver) throws Exception {
+		if (request.getRequestList().isEmpty() && request.getBatchDeleteGroupList().isEmpty()) {
+			return;
+		}
+
+		Set<String> indexNames = new HashSet<>();
+		for (DeleteRequest deleteRequest : request.getRequestList()) {
+			indexNames.add(deleteRequest.getIndexName());
+		}
+		for (BatchDeleteGroup group : request.getBatchDeleteGroupList()) {
+			indexNames.add(group.getIndexName());
+		}
+
+		Map<String, ZuliaIndex> indexCache = new HashMap<>();
+		for (String indexName : indexNames) {
+			indexCache.put(indexName, getIndexFromName(indexName));
+		}
+
+		BatchDeleteRequestFederator federator = new BatchDeleteRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient, indexCache);
+		List<DeleteResponse> responses = federator.send(request);
+		for (DeleteResponse response : responses) {
+			responseObserver.onNext(response);
+		}
+	}
+
+	public List<DeleteResponse> internalBatchDelete(InternalBatchDeleteRequest request) throws Exception {
+		List<InternalShardBatchDeleteRequest> shardRequests = request.getShardBatchDeleteRequestList();
+		if (shardRequests.size() == 1) {
+			ZuliaIndex index = getIndexFromName(shardRequests.getFirst().getIndexName());
+			return index.internalShardBatchDelete(shardRequests.getFirst());
+		}
+
+		List<Future<List<DeleteResponse>>> futures = new ArrayList<>(shardRequests.size());
+		for (InternalShardBatchDeleteRequest shardRequest : shardRequests) {
+			futures.add(pool.submit(() -> {
+				ZuliaIndex index = getIndexFromName(shardRequest.getIndexName());
+				return index.internalShardBatchDelete(shardRequest);
+			}));
+		}
+
+		List<DeleteResponse> allResponses = new ArrayList<>();
+		for (Future<List<DeleteResponse>> future : futures) {
+			allResponses.addAll(future.get());
+		}
+		return allResponses;
 	}
 
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {

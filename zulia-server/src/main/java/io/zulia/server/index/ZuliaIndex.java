@@ -353,8 +353,38 @@ public class ZuliaIndex {
 			documentStorage.deleteAssociatedDocument(uniqueId, fileName);
 		}
 
-		return DeleteResponse.newBuilder().build();
+		return DeleteResponse.getDefaultInstance();
 
+	}
+
+	public List<DeleteResponse> internalShardBatchDelete(InternalShardBatchDeleteRequest shardRequest) throws Exception {
+		int shardNumber = shardRequest.getShardNumber();
+		ZuliaShard shard = primaryShardMap.get(shardNumber);
+		if (shard == null) {
+			throw new ShardDoesNotExistException(indexName, shardNumber);
+		}
+
+		List<String> uniqueIds = shardRequest.getUniqueIdList();
+		boolean deleteDocument = shardRequest.getDeleteDocument();
+		boolean deleteAllAssociated = shardRequest.getDeleteAllAssociated();
+		String filename = shardRequest.getFilename();
+
+		List<DeleteResponse> responses = new ArrayList<>(uniqueIds.size());
+		for (String uniqueId : uniqueIds) {
+			if (deleteDocument) {
+				shard.deleteDocument(uniqueId);
+			}
+
+			if (deleteAllAssociated) {
+				documentStorage.deleteAssociatedDocuments(uniqueId);
+			}
+			else if (!filename.isEmpty()) {
+				documentStorage.deleteAssociatedDocument(uniqueId, filename);
+			}
+
+			responses.add(DeleteResponse.getDefaultInstance());
+		}
+		return responses;
 	}
 
 	public Query handleTermQuery(ZuliaQuery.Query query) {
