@@ -2,7 +2,6 @@ package io.zulia.server.connection.server.handler;
 
 import io.grpc.stub.StreamObserver;
 import io.zulia.message.ZuliaServiceOuterClass.BatchDeleteRequest;
-import io.zulia.message.ZuliaServiceOuterClass.DeleteRequest;
 import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 import io.zulia.server.index.ZuliaIndexManager;
 import org.slf4j.Logger;
@@ -19,11 +18,7 @@ public class BatchDeleteServerRequest {
 
 	public void handleRequest(BatchDeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
 		try {
-			for (DeleteRequest deleteRequest : request.getRequestList()) {
-				DeleteResponse deleteResponse = indexManager.delete(deleteRequest);
-				responseObserver.onNext(deleteResponse);
-			}
-
+			indexManager.batchDelete(request, responseObserver);
 			responseObserver.onCompleted();
 		}
 		catch (Exception e) {

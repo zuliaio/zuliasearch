@@ -2,6 +2,7 @@ package io.zulia.server.connection.client;
 
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.*;
+import io.zulia.server.connection.client.handler.InternalBatchDeleteHandler;
 import io.zulia.server.connection.client.handler.InternalBatchFetchHandler;
 import io.zulia.server.connection.client.handler.InternalClearHandler;
 import io.zulia.server.connection.client.handler.InternalCreateIndexAliasHandler;
@@ -35,6 +36,7 @@ public class InternalClient {
 	private final InternalDeleteHandler internalDeleteHandler;
 	private final InternalFetchHandler internalFetchHandler;
 	private final InternalBatchFetchHandler internalBatchFetchHandler;
+	private final InternalBatchDeleteHandler internalBatchDeleteHandler;
 	private final InternalGetNumberOfDocsHandler internalGetNumberOfDocsHandler;
 	private final InternalOptimizeHandler internalOptimizeHandler;
 	private final InternalGetFieldNamesHandler internalGetFieldNamesHandler;
@@ -56,6 +58,7 @@ public class InternalClient {
 		internalDeleteHandler = new InternalDeleteHandler(this);
 		internalFetchHandler = new InternalFetchHandler(this);
 		internalBatchFetchHandler = new InternalBatchFetchHandler(this);
+		internalBatchDeleteHandler = new InternalBatchDeleteHandler(this);
 		internalGetNumberOfDocsHandler = new InternalGetNumberOfDocsHandler(this);
 		internalOptimizeHandler = new InternalOptimizeHandler(this);
 		internalGetFieldNamesHandler = new InternalGetFieldNamesHandler(this);
@@ -144,6 +147,10 @@ public class InternalClient {
 
 	public BatchFetchResponse executeBatchFetch(Node node, InternalBatchFetchRequest request) throws Exception {
 		return internalBatchFetchHandler.handleRequest(node, request);
+	}
+
+	public BatchDeleteResponse executeBatchDelete(Node node, InternalBatchDeleteRequest request) throws Exception {
+		return internalBatchDeleteHandler.handleRequest(node, request);
 	}
 
 	public GetNumberOfDocsResponse getNumberOfDocs(Node node, InternalGetNumberOfDocsRequest request) throws Exception {

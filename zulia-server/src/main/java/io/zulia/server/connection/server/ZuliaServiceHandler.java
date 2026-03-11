@@ -15,6 +15,7 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	private final DeleteServerRequest deleteServerRequest;
 	private final InternalDeleteServerRequest internalDeleteServerRequest;
 	private final BatchDeleteServerRequest batchDeleteServerRequest;
+	private final InternalBatchDeleteServerRequest internalBatchDeleteServerRequest;
 	private final FetchServerRequest fetchServerServerRequest;
 	private final InternalFetchServerRequest internalFetchServerServerRequest;
 	private final BatchFetchServerRequest batchFetchServerRequest;
@@ -53,6 +54,7 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 		deleteServerRequest = new DeleteServerRequest(indexManager);
 		internalDeleteServerRequest = new InternalDeleteServerRequest(indexManager);
 		batchDeleteServerRequest = new BatchDeleteServerRequest(indexManager);
+		internalBatchDeleteServerRequest = new InternalBatchDeleteServerRequest(indexManager);
 		fetchServerServerRequest = new FetchServerRequest(indexManager);
 		internalFetchServerServerRequest = new InternalFetchServerRequest(indexManager);
 		batchFetchServerRequest = new BatchFetchServerRequest(indexManager);
@@ -116,6 +118,11 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	@Override
 	public void batchDelete(BatchDeleteRequest request, StreamObserver<DeleteResponse> responseObserver) {
 		batchDeleteServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalBatchDelete(InternalBatchDeleteRequest request, StreamObserver<BatchDeleteResponse> responseObserver) {
+		internalBatchDeleteServerRequest.handleRequest(request, responseObserver);
 	}
 
 	@Override
