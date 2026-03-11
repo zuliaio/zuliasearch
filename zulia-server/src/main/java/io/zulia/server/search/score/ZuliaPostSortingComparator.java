@@ -101,7 +101,7 @@ public class ZuliaPostSortingComparator implements Comparator<ScoredResult> {
 						compare = Comparator.nullsLast(Float::compareTo).compare(a, b);
 					}
 				}
-				else if (FieldTypeUtil.isNumericDoubleFieldType(sortType)) {
+				else if (FieldTypeUtil.isNumericDoubleFieldType(sortType) || FieldTypeUtil.isGeoPointFieldType(sortType)) {
 
 					Double a = sortValue1.getExists() ? sortValue1.getDoubleValue() : null;
 					Double b = sortValue2.getExists() ? sortValue2.getDoubleValue() : null;

@@ -80,6 +80,8 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaGeoDistanceQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaGeoBboxQueryNode;
 import io.zulia.server.search.queryparser.node.ZuliaNumericSetQueryNode;
 import io.zulia.server.search.queryparser.node.ZuliaTermsInSetQueryNode;
 import io.zulia.server.search.queryparser.node.ZuliaFieldableQueryNode;
@@ -176,6 +178,8 @@ PARSER_END(ZuliaSyntaxParser)
 <Zulia> TOKEN : {
       <NUMERIC_SET:       ("ns" | "numericSet") >
     | <TERM_SET:         ("tq" | "termQuery") >
+    | <GEO:              ("geo") >
+    | <GEO_BBOX:         ("geoBbox") >
 }
 
 <Function> TOKEN : {
@@ -382,7 +386,9 @@ private ZuliaFieldableQueryNode ZuliaExpr(CharSequence field) : {
 }
  {
    LOOKAHEAD(2) source = NumericsSetQuery(field)  { return source; } |
-   LOOKAHEAD(2) source = TermsInSetQuery(field)  { return source; }
+   LOOKAHEAD(2) source = TermsInSetQuery(field)  { return source; } |
+   LOOKAHEAD(2) source = GeoDistanceQuery(field)  { return source; } |
+   LOOKAHEAD(2) source = GeoBboxQuery(field)  { return source; }
  }
 
 private ZuliaNumericSetQueryNode NumericsSetQuery(CharSequence field) : {
@@ -407,6 +413,47 @@ private ZuliaTermsInSetQueryNode TermsInSetQuery(CharSequence field) : {
   <LPAREN> (value = TermText() { values.add(value); })+  <RPAREN>
   {
   return new ZuliaTermsInSetQueryNode(field, values);
+  }
+}
+
+private ZuliaGeoDistanceQueryNode GeoDistanceQuery(CharSequence field) : {
+  CharSequence geoField;
+  CharSequence lat;
+  CharSequence lon;
+  CharSequence distKm;
+}
+{
+  <ZL_PREFIX> <GEO>
+  <LPAREN> geoField = TermText() lat = SignedNumericValue() lon = SignedNumericValue() distKm = SignedNumericValue() <RPAREN>
+  {
+    return new ZuliaGeoDistanceQueryNode(geoField,
+        Double.parseDouble(lat.toString()), Double.parseDouble(lon.toString()), Double.parseDouble(distKm.toString()));
+  }
+}
+
+private ZuliaGeoBboxQueryNode GeoBboxQuery(CharSequence field) : {
+  CharSequence geoField;
+  CharSequence minLat;
+  CharSequence maxLat;
+  CharSequence minLon;
+  CharSequence maxLon;
+}
+{
+  <ZL_PREFIX> <GEO_BBOX>
+  <LPAREN> geoField = TermText() minLat = SignedNumericValue() maxLat = SignedNumericValue() minLon = SignedNumericValue() maxLon = SignedNumericValue() <RPAREN>
+  {
+    return new ZuliaGeoBboxQueryNode(geoField,
+        Double.parseDouble(minLat.toString()), Double.parseDouble(maxLat.toString()),
+        Double.parseDouble(minLon.toString()), Double.parseDouble(maxLon.toString()));
+  }
+}
+
+private CharSequence SignedNumericValue() : {
+  boolean negative = false;
+}
+{
+  (<MINUS> { negative = true; })? (<NUMBER>) {
+    return negative ? "-" + token.image : token.image;
   }
 }
 

@@ -35,6 +35,7 @@ import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
+import io.zulia.server.search.GeoDistUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.queryparser.SetQueryHelper;
@@ -620,34 +621,64 @@ public class ZuliaIndex {
 
 		SimpleBindings bindings = new SimpleBindings();
 
-		Expression expr = JavascriptCompiler.compile(scoreFunction);
+		// Pre-process geodist() expressions: replace with synthetic variable names
+		// JavascriptCompiler only supports variable names, not function calls
+		java.util.Map<String, GeoDistanceValuesSource> geoBindings = new java.util.HashMap<>();
+		java.util.regex.Matcher geoMatcher = GeoDistUtil.findGeoDist(scoreFunction);
+		StringBuilder processed = new StringBuilder();
+		int geoIndex = 0;
+		while (geoMatcher.find()) {
+			String syntheticVar = "__geodist_" + geoIndex++;
+			GeoDistUtil.GeoDistParsed parsed = GeoDistUtil.parseGeoDist(geoMatcher.group());
+			SortFieldInfo geoSortFieldInfo = indexConfig.getSortFieldInfo(parsed.field());
+			if (geoSortFieldInfo == null) {
+				throw new IllegalArgumentException(
+						"geodist() field <" + parsed.field() + "> is not a sortable field. Add .sort() or .sortAs() to the field config to use geodist().");
+			}
+			if (!FieldTypeUtil.isGeoPointFieldType(geoSortFieldInfo.getFieldType())) {
+				throw new IllegalArgumentException("geodist() field <" + parsed.field() + "> is not a GEO_POINT field");
+			}
+			geoBindings.put(syntheticVar,
+					new GeoDistanceValuesSource(geoSortFieldInfo.getInternalSortFieldName(), parsed.latitude(), parsed.longitude()));
+			// GeoDistanceValuesSource returns meters; convert to km for user-facing expressions
+			geoMatcher.appendReplacement(processed, "(" + syntheticVar + " / 1000.0)");
+		}
+		geoMatcher.appendTail(processed);
+		String compilableExpression = processed.toString();
+
+		Expression expr = JavascriptCompiler.compile(compilableExpression);
 		bindings.add(ZuliaFieldConstants.SCORE_FIELD, DoubleValuesSource.SCORES);
 		for (String var : expr.variables) {
-			if (!ZuliaFieldConstants.SCORE_FIELD.equals(var)) {
-				SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(var);
-				if (sortFieldInfo == null) {
-					throw new IllegalArgumentException("Score Function references unknown sort field <" + var + ">");
-				}
-				FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
-				String internalFieldName = sortFieldInfo.getInternalSortFieldName();
-				SortedNumericDoubleValuesSource valuesSource;
-				if (FieldTypeUtil.isStoredAsInt(fieldType)) {
-					valuesSource = SortedNumericDoubleValuesSource.fromInt(internalFieldName);
-				}
-				else if (FieldTypeUtil.isStoredAsLong(fieldType)) {
-					valuesSource = SortedNumericDoubleValuesSource.fromLong(internalFieldName);
-				}
-				else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-					valuesSource = SortedNumericDoubleValuesSource.fromFloat(internalFieldName);
-				}
-				else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-					valuesSource = SortedNumericDoubleValuesSource.fromDouble(internalFieldName);
-				}
-				else {
-					throw new IllegalArgumentException("Score Function references sort field that is not numeric or date type <" + var + ">");
-				}
-				bindings.add(var, valuesSource);
+			if (ZuliaFieldConstants.SCORE_FIELD.equals(var)) {
+				continue;
 			}
+			if (geoBindings.containsKey(var)) {
+				bindings.add(var, geoBindings.get(var));
+				continue;
+			}
+			SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(var);
+			if (sortFieldInfo == null) {
+				throw new IllegalArgumentException("Score Function references unknown sort field <" + var + ">");
+			}
+			FieldConfig.FieldType fieldType = sortFieldInfo.getFieldType();
+			String internalFieldName = sortFieldInfo.getInternalSortFieldName();
+			SortedNumericDoubleValuesSource valuesSource;
+			if (FieldTypeUtil.isStoredAsInt(fieldType)) {
+				valuesSource = SortedNumericDoubleValuesSource.fromInt(internalFieldName);
+			}
+			else if (FieldTypeUtil.isStoredAsLong(fieldType)) {
+				valuesSource = SortedNumericDoubleValuesSource.fromLong(internalFieldName);
+			}
+			else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
+				valuesSource = SortedNumericDoubleValuesSource.fromFloat(internalFieldName);
+			}
+			else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
+				valuesSource = SortedNumericDoubleValuesSource.fromDouble(internalFieldName);
+			}
+			else {
+				throw new IllegalArgumentException("Score Function references sort field that is not numeric or date type <" + var + ">");
+			}
+			bindings.add(var, valuesSource);
 		}
 
 		return new FunctionScoreQuery(query, expr.getDoubleValuesSource(bindings));

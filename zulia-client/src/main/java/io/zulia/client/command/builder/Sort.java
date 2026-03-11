@@ -3,12 +3,18 @@ package io.zulia.client.command.builder;
 import io.zulia.message.ZuliaQuery.FieldSort;
 import io.zulia.message.ZuliaQuery.FieldSort.Direction;
 
+import java.util.Locale;
+
 public class Sort implements SortBuilder {
 
 	private final FieldSort.Builder sortBuilder;
 
 	public Sort(String field) {
 		sortBuilder = FieldSort.newBuilder().setSortField(field).setDirection(Direction.ASCENDING);
+	}
+
+	public static Sort geoDistance(String field, double latitude, double longitude) {
+		return new Sort(String.format(Locale.ROOT, "geodist(%s, %s, %s)", field, latitude, longitude));
 	}
 
 	public Sort descending() {

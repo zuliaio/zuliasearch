@@ -354,8 +354,14 @@ public class QueryCombiner {
 			for (ZuliaIndex index : indexes) {
 				FieldConfig.FieldType currentSortType = sortTypeMap.get(sortField);
 
-				SortFieldInfo sortFieldInfo = index.getSortFieldType(sortField);
-				FieldConfig.FieldType indexSortType = sortFieldInfo.getFieldType();
+				FieldConfig.FieldType indexSortType;
+				if (GeoDistUtil.isGeoDist(sortField)) {
+					indexSortType = FieldConfig.FieldType.GEO_POINT;
+				}
+				else {
+					SortFieldInfo sortFieldInfo = index.getSortFieldType(sortField);
+					indexSortType = sortFieldInfo.getFieldType();
+				}
 
 				if (currentSortType == null) {
 					sortTypeMap.put(sortField, indexSortType);

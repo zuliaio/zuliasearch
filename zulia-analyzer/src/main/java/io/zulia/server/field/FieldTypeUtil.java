@@ -65,6 +65,10 @@ public class FieldTypeUtil {
 		return FieldConfig.FieldType.VECTOR.equals(fieldType) || FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType);
 	}
 
+	public static boolean isGeoPointFieldType(FieldConfig.FieldType fieldType) {
+		return FieldConfig.FieldType.GEO_POINT.equals(fieldType);
+	}
+
 	public static String getListLengthIndexField(String indexFieldName) {
 		return ZuliaFieldConstants.LIST_LENGTH_PREFIX + indexFieldName;
 	}
