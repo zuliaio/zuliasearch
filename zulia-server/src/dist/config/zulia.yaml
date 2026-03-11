@@ -66,11 +66,11 @@ defaultConcurrency: 1
 # "writeIntervalSeconds" seconds and will expire after "ttlDays" days.
 #
 #health:
-#  memoryThresholdPercent: 90.0
-#  writeToMongo: false
-#  db: "zulia"
-#  collection: "health"
-#  writeIntervalSeconds: 60
-#  ttlDays: 30
-#  systemCpuThresholdPercent: 80.0
-#  jvmCpuThresholdPercent: 90.0
+#  memoryThresholdPercent: 90.0        # Heap usage % above which memory reports DEGRADED (default: 90.0)
+#  systemCpuThresholdPercent: 80.0     # System cpu usage % above which memory reports DEGRADED (default: 80.0)
+#  jvmCpuThresholdPercent: 90.0        # JVM cpu usage % above which memory reports DEGRADED (default: 90.0)
+#  writeToMongo: false                 # If true, health status reports are written to mongo using the settings below (default: false)
+#  db: "zulia"                         # The Mongo database that health records are written to (default: clusterName)
+#  collection: "health"                # The Mongo collection that health records are written to (default: "health")
+#  writeIntervalSeconds: 60            # How often health records are written to Mongo (default: 60)
+#  ttlDays: 30                         # How many days the health records stay in Mongo (default: 30)
