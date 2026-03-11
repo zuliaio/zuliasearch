@@ -21,7 +21,7 @@ import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.TermDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,6 +44,11 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 @ExecuteOn(TaskExecutors.VIRTUAL)
 public class TermsController {
 
+	private final ZuliaNode zuliaNode;
+
+	public TermsController(ZuliaNode zuliaNode) {
+		this.zuliaNode = zuliaNode;
+	}
 
 	@Get(ZuliaRESTConstants.TERMS_URL)
 	@Produces({ ZuliaRESTConstants.UTF8_JSON })
@@ -62,7 +67,7 @@ public class TermsController {
 			@Parameter(description = "Fuzzy term configuration as JSON (protobuf FuzzyTerm format)") @Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson,
 			@Parameter(description = "If true, force a commit before reading to ensure latest terms are visible") @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) final Boolean realtime) throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		GetTermsRequest termsRequest = getTermsRequest(indexName, field, amount, minDocFreq, minTermFreq, startTerm, endTerm, termFilter, termMatch,
 				includeTerm, fuzzyTermJson, realtime);
@@ -93,7 +98,7 @@ public class TermsController {
 			@Nullable @QueryValue(ZuliaRESTConstants.FUZZY_TERM_JSON) final String fuzzyTermJson,
 			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) final Boolean realtime) throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		GetTermsRequest termsRequest = getTermsRequest(indexName, field, amount, minDocFreq, minTermFreq, startTerm, endTerm, termFilter, termMatch,
 				includeTerm, fuzzyTermJson,realtime);

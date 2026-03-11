@@ -23,7 +23,7 @@ import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.exceptions.AssociatedDocumentDoesNotExistException;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 import io.zulia.util.ZuliaUtil;
 import org.bson.Document;
 import org.reactivestreams.Publisher;
@@ -56,13 +56,18 @@ import java.util.zip.ZipOutputStream;
 public class AssociatedController {
 
 	private final static Logger LOG = LoggerFactory.getLogger(AssociatedController.class);
+	private final ZuliaNode zuliaNode;
+
+	public AssociatedController(ZuliaNode zuliaNode) {
+		this.zuliaNode = zuliaNode;
+	}
 
 	@Get("/{indexName}/{uniqueId}/{fileName}/metadata")
 	@ExecuteOn(TaskExecutors.VIRTUAL)
 	@Produces(MediaType.APPLICATION_JSON)
 	@Operation(summary = "Get associated document metadata", description = "Returns the metadata JSON for a specific associated file")
 	public String getAssociatedMetadata(String indexName, String uniqueId, String fileName) throws Exception {
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 		Document metadataDocument = indexManager.getAssociatedDocumentMeta(indexName, uniqueId, fileName);
 		if (metadataDocument == null) {
 			throw new AssociatedDocumentDoesNotExistException(indexName, uniqueId, fileName);
@@ -77,7 +82,7 @@ public class AssociatedController {
 	@Operation(summary = "Download associated file", description = "Downloads the associated file content as a binary stream")
 	public StreamedFile getAssociatedFile(String indexName, String uniqueId, String fileName) throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		InputStream is = indexManager.getAssociatedDocumentStream(indexName, uniqueId, fileName);
 		if (is == null) {
@@ -96,7 +101,7 @@ public class AssociatedController {
 	@Produces(MediaType.TEXT_JSON)
 	@Operation(summary = "List associated filenames", description = "Returns the list of associated filenames for a given document")
 	public Filenames getAssociatedFileNamesForId(final String uniqueId, String indexName) throws Exception {
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		List<String> associatedDocuments = indexManager.getAssociatedFilenames(indexName, uniqueId);
 		return new Filenames(associatedDocuments);
@@ -107,7 +112,7 @@ public class AssociatedController {
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
 	@Operation(summary = "Download associated files bundle", description = "Downloads all associated files for a document as a ZIP archive, including metadata")
 	public StreamedFile getAssociatedBundleForId(final String uniqueId, String indexName) throws Exception {
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		PipedOutputStream output = new PipedOutputStream();
 		PipedInputStream input = new PipedInputStream(output);
@@ -146,7 +151,7 @@ public class AssociatedController {
 	public Flux<AssociatedMetadataDTO> getAllAssociatedForIndex(String indexName, @Nullable @QueryValue(ZuliaRESTConstants.QUERY) String query)
 			throws Exception {
 		Document queryDoc = (query != null) ? Document.parse(query) : new Document();
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 		return Flux.fromStream(indexManager.getAssociatedFilenames(indexName, queryDoc));
 	}
 
@@ -157,7 +162,7 @@ public class AssociatedController {
 	public Publisher<HttpResponse<?>> storeAssociated(StreamingFileUpload file, String uniqueId, String fileName, String indexName, @Nullable String metaJson)
 			throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 		Document metaDoc = (metaJson != null) ? Document.parse(metaJson) : new Document();
 		OutputStream associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, uniqueId, fileName, metaDoc);
 		Publisher<Boolean> uploadPublisher = file.transferTo(associatedDocumentOutputStream);

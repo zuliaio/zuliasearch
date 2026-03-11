@@ -4,7 +4,7 @@ import com.sun.management.OperatingSystemMXBean;
 import io.micronaut.health.HealthStatus;
 import io.micronaut.management.health.indicator.AbstractHealthIndicator;
 import io.micronaut.management.health.indicator.HealthResult;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
 
@@ -16,8 +16,13 @@ import java.util.Map;
 @NullMarked
 public class CpuHealthIndicator extends AbstractHealthIndicator<Map<String, Object>> {
 	private final static String percentFormat = "%.2f%%";
-	private final Double systemThresholdCpu = ZuliaNodeProvider.getZuliaNode().getZuliaConfig().getHealth().getSystemCpuThresholdPercent();
-	private final Double jvmThresholdCpu = ZuliaNodeProvider.getZuliaNode().getZuliaConfig().getHealth().getJvmCpuThresholdPercent();
+	private final Double systemThresholdCpu;
+	private final Double jvmThresholdCpu;
+
+	public CpuHealthIndicator(ZuliaNode zuliaNode) {
+		this.systemThresholdCpu = zuliaNode.getZuliaConfig().getHealth().getSystemCpuThresholdPercent();
+		this.jvmThresholdCpu = zuliaNode.getZuliaConfig().getHealth().getJvmCpuThresholdPercent();
+	}
 
 	@Override
 	protected Map<String, Object> getHealthInformation() {

@@ -31,7 +31,7 @@ import io.zulia.rest.dto.SearchResultsDTO;
 import io.zulia.rest.dto.TermDTO;
 import io.zulia.server.exceptions.WrappedCheckedException;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 import io.zulia.util.CursorHelper;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.document.DocumentHelper;
@@ -70,6 +70,11 @@ import static io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 public class QueryController {
 
 	private final static Logger LOG = LoggerFactory.getLogger(QueryController.class);
+	private final ZuliaNode zuliaNode;
+
+	public QueryController(ZuliaNode zuliaNode) {
+		this.zuliaNode = zuliaNode;
+	}
 
 	@Get
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
@@ -101,7 +106,7 @@ public class QueryController {
 			@io.swagger.v3.oas.annotations.Parameter(description = "Number of concurrent shard queries") @Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency)
 			throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
 				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime,
@@ -135,7 +140,7 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.CURSOR) String cursor, @Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime,
 			@Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency) throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
 				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime,
@@ -176,7 +181,7 @@ public class QueryController {
 			@Nullable @QueryValue(ZuliaRESTConstants.REALTIME) Boolean realtime, @Nullable @QueryValue(ZuliaRESTConstants.CONCURRENCY) Integer concurrency)
 			throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, null, 0, facet, drillDowns,
 				defaultOperator, sort, mm, null, debug, null, start, null, null, null, cursor, realtime, concurrency);

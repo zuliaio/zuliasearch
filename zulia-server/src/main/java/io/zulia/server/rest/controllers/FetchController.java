@@ -18,7 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.server.exceptions.DocumentDoesNotExistException;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 import io.zulia.util.ResultHelper;
 import org.bson.Document;
 
@@ -33,6 +33,12 @@ import static io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 		@ApiResponse(responseCode = "503", content = { @Content(schema = @Schema(implementation = JsonError.class)) }) })
 @ExecuteOn(TaskExecutors.VIRTUAL)
 public class FetchController {
+
+	private final ZuliaNode zuliaNode;
+
+	public FetchController(ZuliaNode zuliaNode) {
+		this.zuliaNode = zuliaNode;
+	}
 
 	@Get(ZuliaRESTConstants.FETCH_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
@@ -54,8 +60,8 @@ public class FetchController {
 		return runFetch(uniqueId, indexName, realtime);
 	}
 
-	private static String runFetch(String uniqueId, String indexName, Boolean realtime) throws Exception {
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+	private String runFetch(String uniqueId, String indexName, Boolean realtime) throws Exception {
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		FetchRequest.Builder fetchRequest = FetchRequest.newBuilder();
 		fetchRequest.setIndexName(indexName);

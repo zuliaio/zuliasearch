@@ -16,7 +16,7 @@ import io.zulia.ZuliaRESTConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.NodeStats;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 import io.zulia.util.ZuliaVersion;
 
 import java.io.File;
@@ -36,17 +36,22 @@ import java.util.List;
 public class StatsController {
 
 	private static final int MB = 1024 * 1024;
+	private final ZuliaNode zuliaNode;
+
+	public StatsController(ZuliaNode zuliaNode) {
+		this.zuliaNode = zuliaNode;
+	}
 
 	@Get(ZuliaRESTConstants.STATS_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	@Operation(summary = "Get node statistics", description = "Returns JVM memory usage, disk space, Zulia version, and per-index statistics for the current node")
 	public NodeStats getStats() throws IOException {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		Runtime runtime = Runtime.getRuntime();
 
-		File dataDir = new File(ZuliaNodeProvider.getZuliaNode().getZuliaConfig().getDataPath());
+		File dataDir = new File(zuliaNode.getZuliaConfig().getDataPath());
 		double freeDataDirSpaceGB = dataDir.getFreeSpace() / (1024.0 * 1024 * 1024);
 		double totalDataDirSpaceGB = dataDir.getTotalSpace() / (1024.0 * 1024 * 1024);
 		double usedDataDirSpaceGB = totalDataDirSpaceGB - freeDataDirSpaceGB;

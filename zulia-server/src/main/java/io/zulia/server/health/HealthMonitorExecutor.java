@@ -4,10 +4,10 @@ import io.micronaut.context.annotation.Context;
 import io.micronaut.management.health.aggregator.HealthAggregator;
 import io.micronaut.management.health.indicator.HealthIndicator;
 import io.micronaut.management.health.indicator.HealthResult;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.config.ZuliaConfig;
+import io.zulia.server.node.ZuliaNode;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -24,15 +24,20 @@ public class HealthMonitorExecutor {
 	private static final Logger LOG = LoggerFactory.getLogger(HealthMonitorExecutor.class);
 	private @Nullable HealthMonitorMongoWriter writer = null;
 
-	@Inject
-	private HealthAggregator<HealthResult> healthAggregator;
-	@Inject
-	private HealthIndicator[] healthIndicators;
+	private final HealthAggregator<HealthResult> healthAggregator;
+	private final HealthIndicator[] healthIndicators;
+	private final ZuliaConfig zuliaConfig;
+
+	public HealthMonitorExecutor(ZuliaNode zuliaNode, HealthAggregator<HealthResult> healthAggregator, HealthIndicator[] healthIndicators) {
+		this.zuliaConfig = zuliaNode.getZuliaConfig();
+		this.healthAggregator = healthAggregator;
+		this.healthIndicators = healthIndicators;
+	}
 
 	@PostConstruct
 	public void init() {
-		if (ZuliaNodeProvider.getZuliaNode().getZuliaConfig().getHealth().getWriteToMongo()) {
-			writer = new HealthMonitorMongoWriter(this.healthAggregator, this.healthIndicators);
+		if (zuliaConfig.getHealth().getWriteToMongo()) {
+			writer = new HealthMonitorMongoWriter(zuliaConfig, this.healthAggregator, this.healthIndicators);
 			LOG.info("Zulia health monitor starting");
 			writer.startAsync();
 		}

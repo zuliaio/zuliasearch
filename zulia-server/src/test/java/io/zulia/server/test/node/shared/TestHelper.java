@@ -12,7 +12,6 @@ import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.test.mongo.MongoTestInstance;
 import io.zulia.server.util.MongoProvider;
-import io.zulia.server.util.ZuliaNodeProvider;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +100,6 @@ public class TestHelper {
 
 	public static ZuliaRESTClient createRESTClient() {
 		for (ZuliaNode zuliaNode : ZULIA_NODES) {
-			ZuliaNodeProvider.setZuliaNode(zuliaNode);
 			return new ZuliaRESTClient("http://" + zuliaNode.getZuliaConfig().getServerAddress() + ":" + zuliaNode.getZuliaConfig().getRestPort());
 		}
 		throw new RuntimeException("No nodes are defined, ");

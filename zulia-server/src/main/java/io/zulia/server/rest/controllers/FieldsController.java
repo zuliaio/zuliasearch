@@ -19,7 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.FieldsDTO;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 
 import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesRequest;
 import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
@@ -39,6 +39,12 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetFieldNamesResponse;
 @ExecuteOn(TaskExecutors.VIRTUAL)
 public class FieldsController {
 
+	private final ZuliaNode zuliaNode;
+
+	public FieldsController(ZuliaNode zuliaNode) {
+		this.zuliaNode = zuliaNode;
+	}
+
 	@Get(ZuliaRESTConstants.FIELDS_URL + "/{indexName}")
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	@Operation(summary = "Get field names", description = "Returns all field names that exist in the specified index")
@@ -57,8 +63,8 @@ public class FieldsController {
 		return runGetFields(indexName, realtime);
 	}
 
-	private static FieldsDTO runGetFields(String indexName, Boolean realtime) throws Exception {
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+	private FieldsDTO runGetFields(String indexName, Boolean realtime) throws Exception {
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 		GetFieldNamesRequest.Builder fieldNamesRequestBuilder = GetFieldNamesRequest.newBuilder().setIndexName(indexName);
 		if (realtime != null) {
 			fieldNamesRequestBuilder.setRealtime(realtime);

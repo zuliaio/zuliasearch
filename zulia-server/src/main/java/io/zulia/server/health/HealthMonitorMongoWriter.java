@@ -12,7 +12,6 @@ import io.micronaut.management.health.indicator.HealthResult;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.server.util.ServerNameHelper;
-import io.zulia.server.util.ZuliaNodeProvider;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +33,10 @@ public class HealthMonitorMongoWriter extends AbstractScheduledService {
 	private final MongoCollection<HealthResultDTO> healthCollection;
 	private final String serverAddress;
 
-	public HealthMonitorMongoWriter(HealthAggregator<HealthResult> healthAggregator, HealthIndicator[] healthIndicators) {
+	public HealthMonitorMongoWriter(ZuliaConfig zuliaConfig, HealthAggregator<HealthResult> healthAggregator, HealthIndicator[] healthIndicators) {
 		this.healthAggregator = healthAggregator;
 		this.healthIndicators = healthIndicators;
-		this.zuliaConfig = ZuliaNodeProvider.getZuliaNode().getZuliaConfig();
+		this.zuliaConfig = zuliaConfig;
 		this.db = !this.zuliaConfig.getHealth().getDb().isEmpty() ? this.zuliaConfig.getHealth().getDb() : this.zuliaConfig.getClusterName();
 		this.collection = this.zuliaConfig.getHealth().getCollection();
 		this.ttl = this.zuliaConfig.getHealth().getTtlDays();

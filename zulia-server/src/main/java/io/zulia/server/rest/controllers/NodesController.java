@@ -23,7 +23,6 @@ import io.zulia.rest.dto.NodeDTO;
 import io.zulia.rest.dto.NodesResponseDTO;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.node.ZuliaNode;
-import io.zulia.server.util.ZuliaNodeProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,13 +47,19 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetNodesResponse;
 @ExecuteOn(TaskExecutors.VIRTUAL)
 public class NodesController {
 
+	private final ZuliaNode zuliaNode;
+
+	public NodesController(ZuliaNode zuliaNode) {
+		this.zuliaNode = zuliaNode;
+	}
+
 	@Get(ZuliaRESTConstants.NODES_URL)
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
 	@Operation(summary = "Get cluster nodes", description = "Returns information about cluster nodes including their index shard mappings")
 	public NodesResponseDTO getNodes(
 			@Parameter(description = "If true, return only active nodes") @QueryValue(value = ZuliaRESTConstants.ACTIVE, defaultValue = "false") Boolean active) throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		GetNodesResponse getNodesResponse = indexManager.getNodes(GetNodesRequest.newBuilder().setActiveOnly(active).build());
 

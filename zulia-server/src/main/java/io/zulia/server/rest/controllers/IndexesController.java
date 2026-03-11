@@ -21,7 +21,7 @@ import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaServiceOuterClass;
 import io.zulia.rest.dto.IndexesResponseDTO;
 import io.zulia.server.index.ZuliaIndexManager;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +46,11 @@ import static io.zulia.message.ZuliaServiceOuterClass.GetIndexesResponse;
 @ExecuteOn(TaskExecutors.VIRTUAL)
 public class IndexesController {
 	private final static Logger LOG = LoggerFactory.getLogger(IndexesController.class);
+	private final ZuliaNode zuliaNode;
+
+	public IndexesController(ZuliaNode zuliaNode) {
+		this.zuliaNode = zuliaNode;
+	}
 
 	@Get(ZuliaRESTConstants.INDEXES_URL + "/{index}")
 	@Produces(ZuliaRESTConstants.UTF8_JSON)
@@ -66,7 +71,7 @@ public class IndexesController {
 	@Operation(summary = "List all indexes", description = "Returns a sorted list of all index names in the cluster")
 	public IndexesResponseDTO getIndexes() throws Exception {
 
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		GetIndexesResponse getIndexesResponse = indexManager.getIndexes(GetIndexesRequest.newBuilder().build());
 
@@ -79,8 +84,8 @@ public class IndexesController {
 		return indexesResponse;
 	}
 
-	public static ZuliaServiceOuterClass.RestIndexSettingsResponse getIndexResponse(String index) throws Exception {
-		ZuliaIndexManager indexManager = ZuliaNodeProvider.getZuliaNode().getIndexManager();
+	private ZuliaServiceOuterClass.RestIndexSettingsResponse getIndexResponse(String index) throws Exception {
+		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
 		ZuliaServiceOuterClass.GetIndexSettingsResponse getIndexSettingsResponse = indexManager.getIndexSettings(
 				ZuliaServiceOuterClass.GetIndexSettingsRequest.newBuilder().setIndexName(index).build());

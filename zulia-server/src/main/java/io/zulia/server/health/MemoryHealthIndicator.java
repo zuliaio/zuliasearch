@@ -3,7 +3,7 @@ package io.zulia.server.health;
 import io.micronaut.health.HealthStatus;
 import io.micronaut.management.health.indicator.AbstractHealthIndicator;
 import io.micronaut.management.health.indicator.HealthResult;
-import io.zulia.server.util.ZuliaNodeProvider;
+import io.zulia.server.node.ZuliaNode;
 import jakarta.inject.Singleton;
 import org.jspecify.annotations.NullMarked;
 
@@ -18,7 +18,11 @@ import java.util.Map;
 public class MemoryHealthIndicator extends AbstractHealthIndicator<Map<String, Object>> {
 	private final static String percentFormat = "%.2f%%";
 
-	private final Double memoryThreshold = ZuliaNodeProvider.getZuliaNode().getZuliaConfig().getHealth().getMemoryThresholdPercent();
+	private final Double memoryThreshold;
+
+	public MemoryHealthIndicator(ZuliaNode zuliaNode) {
+		this.memoryThreshold = zuliaNode.getZuliaConfig().getHealth().getMemoryThresholdPercent();
+	}
 
 	private static String readableMemorySize(long size) {
 		if (size <= 0)
