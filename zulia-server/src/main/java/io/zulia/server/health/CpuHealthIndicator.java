@@ -30,7 +30,7 @@ public class CpuHealthIndicator extends AbstractHealthIndicator<Map<String, Obje
 		if (systemCpu < systemThresholdCpu && jvmCpu < jvmThresholdCpu) {
 			healthStatus = HealthStatus.UP.describe("CPU usage within range");
 		} else {
-			healthStatus = HealthStatus.DOWN.describe("CPU usage exceeded threshold values");
+			healthStatus = new HealthStatus("DEGRADED", "CPU usage exceeded threshold values", true, 500);
 		}
 		detail.put("system", String.format(percentFormat, systemCpu));
 		detail.put("systemAlertThreshold", String.format(percentFormat, systemThresholdCpu));
