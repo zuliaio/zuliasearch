@@ -75,32 +75,37 @@ public class HealthMonitorMongoWriter extends AbstractScheduledService {
 
 	@Override
 	protected void runOneIteration() {
-		var aggregatedResultsPublisher = Mono.from(healthAggregator.aggregate(healthIndicators, HealthLevelOfDetail.STATUS_DESCRIPTION_DETAILS));
-		var healthResult = aggregatedResultsPublisher.block(Duration.ofSeconds(30));
+		try {
+			var aggregatedResultsPublisher = Mono.from(healthAggregator.aggregate(healthIndicators, HealthLevelOfDetail.STATUS_DESCRIPTION_DETAILS));
+			var healthResult = aggregatedResultsPublisher.block(Duration.ofSeconds(30));
 
-		if (healthResult != null) {
-			var healthDto = HealthResultDTO.fromMicronautHealthResult(healthResult);
+			if (healthResult != null) {
+				var healthDto = HealthResultDTO.fromMicronautHealthResult(healthResult);
 
-			if (healthDto != null) {
-				healthDto.setHost(serverAddress);
-				var insertResult = healthCollection.insertOne(healthDto);
-				if (!insertResult.wasAcknowledged()) {
-					LOG.warn("Unable to insert health result into {}.{}", db, collection);
+				if (healthDto != null) {
+					healthDto.setHost(serverAddress);
+					var insertResult = healthCollection.insertOne(healthDto);
+					if (!insertResult.wasAcknowledged()) {
+						LOG.warn("Unable to insert health result into {}.{}", db, collection);
+					}
+				}
+				else {
+					LOG.warn("Health DTO is null");
+				}
+
+				if (healthResult.getStatus().getName().equals(HealthStatus.UP.getName())) {
+					LOG.debug("{}: {}", healthResult.getName(), healthResult.getStatus());
+				}
+				else {
+					LOG.warn("{}: {}", healthResult.getName(), healthResult.getStatus());
 				}
 			}
 			else {
-				LOG.warn("Health DTO is null");
-			}
-
-			if (healthResult.getStatus().getName().equals(HealthStatus.UP.getName())) {
-				LOG.debug("{}: {}", healthResult.getName(), healthResult.getStatus());
-			}
-			else {
-				LOG.warn("{}: {}", healthResult.getName(), healthResult.getStatus());
+				LOG.warn("Health result is null");
 			}
 		}
-		else {
-			LOG.warn("Health result is null");
+		catch(Exception e) {
+			LOG.warn("Failed to update the mongo db health monitor: ", e);
 		}
 	}
 
