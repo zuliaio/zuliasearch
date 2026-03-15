@@ -12,8 +12,9 @@ public class DoubleMapStatOrdinalStorage extends MapStatOrdinalStorage<DoubleSta
 	}
 
 	@Override
-	protected TopStatsQueue<DoubleStats> getTopStatsQueue(TaxonomyReader taxonomyReader, TaxonomyReader.ChildrenIterator childrenIterator, int topN) {
-		TopStatsQueue<DoubleStats> q = new TopStatsQueue<>(Math.min(taxonomyReader.getSize(), topN));
+	protected TopStatsQueue<DoubleStats> getTopStatsQueue(TaxonomyReader taxonomyReader, TaxonomyReader.ChildrenIterator childrenIterator, int topN,
+			int dimChildCount) {
+		TopStatsQueue<DoubleStats> q = new TopStatsQueue<>(Math.min(dimChildCount, topN));
 		double doubleBottomValue = Double.NEGATIVE_INFINITY;
 
 		int child;

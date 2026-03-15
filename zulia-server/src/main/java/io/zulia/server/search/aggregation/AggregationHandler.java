@@ -47,9 +47,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
+import java.util.function.IntUnaryOperator;
 
 public class AggregationHandler {
 
@@ -64,9 +66,13 @@ public class AggregationHandler {
 
 	private final String facetField;
 	private final boolean individualFacet;
+	private final IntUnaryOperator dimensionChildCount;
 
 	public AggregationHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests,
-			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int requestedConcurrency) throws IOException {
+			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int requestedConcurrency,
+			IntUnaryOperator dimensionChildCount) throws IOException {
+
+		this.dimensionChildCount = dimensionChildCount;
 
 		this.taxoReader = taxoReader;
 		this.requestedConcurrency = requestedConcurrency;
@@ -263,6 +269,18 @@ public class AggregationHandler {
 		return fieldStats;
 	}
 
+	private record OrdAndCount(int ord, int count) {
+	}
+
+	private static final Comparator<OrdAndCount> COUNT_DESC_ORD_ASC = Comparator.comparingInt(OrdAndCount::count).reversed()
+			.thenComparingInt(OrdAndCount::ord);
+
+	// When topN is at least half the dimension cardinality, the priority queue has no meaningful advantage
+	// over collect-and-sort (log(topN) ≈ log(n)) and sort has much better cache locality
+	public static boolean shouldCollectAndSort(int topN, int dimensionChildCount) {
+		return topN >= dimensionChildCount / 2;
+	}
+
 	public ZuliaQuery.FacetGroup.Builder getTopChildren(int topN, String dim, String... path) throws IOException {
 		FacetLabel countPath = new FacetLabel(dim, path);
 		int dimOrd = taxoReader.getOrdinal(countPath);
@@ -277,45 +295,73 @@ public class AggregationHandler {
 			return ZuliaQuery.FacetGroup.newBuilder();
 		}
 
-		TaxonomyReader.ChildrenIterator childrenIterator = taxoReader.getChildren(dimOrd);
+		int dimChildCount = dimensionChildCount.applyAsInt(dimOrd);
 
-		TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(taxoReader.getSize(), topN));
-		int bottomValue = Integer.MIN_VALUE;
-		int bottomOrd = Integer.MAX_VALUE;
-		int child;
-		TopOrdAndIntQueue.OrdAndInt reuse = null;
-		while ((child = childrenIterator.next()) != TaxonomyReader.INVALID_ORDINAL) {
-			int count = globalFacetInfo.getOrdinalCount(child);
-			if (count != 0) {
-				if (count > bottomValue || (count == bottomValue && child < bottomOrd)) {
-					if (reuse == null) {
-						reuse = new TopOrdAndIntQueue.OrdAndInt();
-					}
-					reuse.ord = child;
-					reuse.value = count;
-					reuse = (TopOrdAndIntQueue.OrdAndInt) q.insertWithOverflow(reuse);
-					if (q.size() == topN) {
-						bottomValue = q.top().getValue().intValue();
-						bottomOrd = q.top().ord;
+		int[] ords;
+		long[] counts;
+
+		if (shouldCollectAndSort(topN, dimChildCount)) {
+			// Collect all non-zero entries and sort — avoids large priority queue allocation
+			List<OrdAndCount> collected = new ArrayList<>();
+			TaxonomyReader.ChildrenIterator childrenIterator = taxoReader.getChildren(dimOrd);
+			int child;
+			while ((child = childrenIterator.next()) != TaxonomyReader.INVALID_ORDINAL) {
+				int count = globalFacetInfo.getOrdinalCount(child);
+				if (count != 0) {
+					collected.add(new OrdAndCount(child, count));
+				}
+			}
+			collected.sort(COUNT_DESC_ORD_ASC);
+
+			int resultSize = Math.min(collected.size(), topN);
+			ords = new int[resultSize];
+			counts = new long[resultSize];
+			for (int i = 0; i < resultSize; i++) {
+				OrdAndCount entry = collected.get(i);
+				ords[i] = entry.ord;
+				counts[i] = entry.count;
+			}
+		}
+		else {
+			// Use priority queue — efficient when topN is small relative to cardinality
+			TaxonomyReader.ChildrenIterator childrenIterator = taxoReader.getChildren(dimOrd);
+			TopOrdAndIntQueue q = new TopOrdAndIntQueue(Math.min(dimChildCount, topN));
+			int bottomValue = Integer.MIN_VALUE;
+			int bottomOrd = Integer.MAX_VALUE;
+			int child;
+			TopOrdAndIntQueue.OrdAndInt reuse = null;
+			while ((child = childrenIterator.next()) != TaxonomyReader.INVALID_ORDINAL) {
+				int count = globalFacetInfo.getOrdinalCount(child);
+				if (count != 0) {
+					if (count > bottomValue || (count == bottomValue && child < bottomOrd)) {
+						if (reuse == null) {
+							reuse = new TopOrdAndIntQueue.OrdAndInt();
+						}
+						reuse.ord = child;
+						reuse.value = count;
+						reuse = (TopOrdAndIntQueue.OrdAndInt) q.insertWithOverflow(reuse);
+						if (q.size() == topN) {
+							bottomValue = q.top().getValue().intValue();
+							bottomOrd = q.top().ord;
+						}
 					}
 				}
 			}
 
-		}
-
-		int qSize = q.size();
-		int[] ords = new int[qSize];
-		long[] counts = new long[qSize];
-		for (int i = qSize - 1; i >= 0; i--) {
-			TopOrdAndIntQueue.OrdAndValue ordValue = q.pop();
-			ords[i] = ordValue.ord;
-			counts[i] = ordValue.getValue().longValue();
+			int qSize = q.size();
+			ords = new int[qSize];
+			counts = new long[qSize];
+			for (int i = qSize - 1; i >= 0; i--) {
+				TopOrdAndIntQueue.OrdAndValue ordValue = q.pop();
+				ords[i] = ordValue.ord;
+				counts[i] = ordValue.getValue().longValue();
+			}
 		}
 
 		FacetLabel[] paths = taxoReader.getBulkPath(ords);
 
-		List<ZuliaQuery.FacetCount> facetCounts = new ArrayList<>(qSize);
-		for (int i = 0; i < qSize; i++) {
+		List<ZuliaQuery.FacetCount> facetCounts = new ArrayList<>(ords.length);
+		for (int i = 0; i < ords.length; i++) {
 			String label = paths[i].components[countPath.length];
 			facetCounts.add(ZuliaQuery.FacetCount.newBuilder().setFacet(label).setCount(counts[i]).build());
 		}
@@ -348,7 +394,7 @@ public class AggregationHandler {
 		}
 
 		FacetLabel countPath = new FacetLabel(dim, path);
-		List<ZuliaQuery.FacetStatsInternal> facetStats = facetStatStorage.getFacetStats(taxoReader, countPath, topN);
+		List<ZuliaQuery.FacetStatsInternal> facetStats = facetStatStorage.getFacetStats(taxoReader, countPath, topN, dimensionChildCount);
 		if (facetStats == null) {
 			if (path.length == 0) {
 				LOG.warn("Facet {} has not been indexed but was requested by stat facet request", dim);
