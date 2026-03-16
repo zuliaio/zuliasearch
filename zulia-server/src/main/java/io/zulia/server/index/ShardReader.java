@@ -62,6 +62,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -83,6 +84,8 @@ public class ShardReader implements AutoCloseable {
 
 	private final AtomicInteger queryResultCacheSize = new AtomicInteger();
 	private final AtomicInteger pinnedQueryResultCacheSize = new AtomicInteger();
+
+	private final ConcurrentHashMap<Integer, Integer> dimensionChildCountCache = new ConcurrentHashMap<>();
 
 	private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
@@ -115,6 +118,22 @@ public class ShardReader implements AutoCloseable {
 
 	public int getTotalFacets() {
 		return taxoReader.getSize();
+	}
+
+	public int getDimensionChildCount(int dimOrd) {
+		return dimensionChildCountCache.computeIfAbsent(dimOrd, ord -> {
+			try {
+				int count = 0;
+				TaxonomyReader.ChildrenIterator it = taxoReader.getChildren(ord);
+				while (it.next() != TaxonomyReader.INVALID_ORDINAL) {
+					count++;
+				}
+				return count;
+			}
+			catch (IOException e) {
+				throw new RuntimeException("Failed to count children for dimension ordinal " + ord, e);
+			}
+		});
 	}
 
 	public ZuliaServiceOuterClass.GetFieldNamesResponse getFields() {
@@ -374,7 +393,7 @@ public class ShardReader implements AutoCloseable {
 			List<ZuliaQuery.CountRequest> countRequestList, FacetsCollector facetsCollector, int aggregrationConcurrency) throws IOException {
 
 		AggregationHandler aggregationHandler = new AggregationHandler(taxoReader, facetsCollector, statRequestList, countRequestList, indexConfig,
-				aggregrationConcurrency);
+				aggregrationConcurrency, this::getDimensionChildCount);
 
 		for (ZuliaQuery.CountRequest countRequest : countRequestList) {
 

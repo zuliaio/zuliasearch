@@ -12,8 +12,9 @@ public class LongMapStatOrdinalStorage extends MapStatOrdinalStorage<LongStats> 
 	}
 
 	@Override
-	protected TopStatsQueue<LongStats> getTopStatsQueue(TaxonomyReader taxonomyReader, TaxonomyReader.ChildrenIterator childrenIterator, int topN) {
-		TopStatsQueue<LongStats> q = new TopStatsQueue<>(Math.min(taxonomyReader.getSize(), topN));
+	protected TopStatsQueue<LongStats> getTopStatsQueue(TaxonomyReader taxonomyReader, TaxonomyReader.ChildrenIterator childrenIterator, int topN,
+			int dimChildCount) {
+		TopStatsQueue<LongStats> q = new TopStatsQueue<>(Math.min(dimChildCount, topN));
 		long longBottomValue = Long.MIN_VALUE;
 		int child;
 		while ((child = childrenIterator.next()) != TaxonomyReader.INVALID_ORDINAL) {
@@ -30,4 +31,5 @@ public class LongMapStatOrdinalStorage extends MapStatOrdinalStorage<LongStats> 
 		}
 		return q;
 	}
+
 }
