@@ -68,7 +68,7 @@ public class Zulia {
 
 	@CommandLine.Option(names = {
 			"--fetch" }, description = "Fetch type whether the full record is fetched or just Id or user defined meta data  (FULL, META, NONE, default: ${DEFAULT-VALUE}) ", scope = CommandLine.ScopeType.INHERIT)
-	private final ZuliaQuery.FetchType fetch = ZuliaQuery.FetchType.NONE;
+	private ZuliaQuery.FetchType fetch = ZuliaQuery.FetchType.NONE;
 
 	@CommandLine.Option(names = "--fl", description = "List of fields to return", scope = CommandLine.ScopeType.INHERIT)
 	private Set<String> fl;
