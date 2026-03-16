@@ -42,9 +42,6 @@ public class ZuliaRestore implements Callable<Integer> {
 			"--index" }, paramLabel = "index", description = "Index name. For multiple indexes, repeat arg or use commas to separate within a single arg", split = ",")
 	private Collection<String> indexes;
 
-	@CommandLine.Option(names = { "-o", "--out" }, description = "Full path to the output directory. (default: ${DEFAULT-VALUE})")
-	private String out = System.getProperty("user.dir");
-
 	@CommandLine.Option(names = "--idField", description = "Id field name (default: ${DEFAULT-VALUE})")
 	private String idField = "id";
 
