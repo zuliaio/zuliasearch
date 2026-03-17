@@ -1,9 +1,7 @@
 package io.zulia.server.search.aggregation.stats;
 
 import com.datadoghq.sketch.ddsketch.DDSketch;
-import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
 import com.datadoghq.sketch.ddsketch.DDSketches;
-import com.datadoghq.sketch.ddsketch.store.UnboundedSizeDenseStore;
 import io.zulia.message.ZuliaQuery.FacetStats;
 import io.zulia.message.ZuliaQuery.FacetStatsInternal;
 import io.zulia.message.ZuliaQuery.Percentile;
@@ -190,7 +188,7 @@ public class StatCombiner {
 			for (FacetStatsWithShardIndex fsi : internalStats) {
 				// Skip entries with no sketch (e.g. shards with 0 matching docs return default FacetStatsInternal)
 				if (fsi.facetStats().hasStatSketch() && fsi.facetStats().getStatSketch().getSerializedSize() > 0) {
-					DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.facetStats().getStatSketch());
+					DDSketch sketch = PreSizedDDSketchProtoBinding.fromProto(fsi.facetStats().getStatSketch());
 					combinedSketch.mergeWith(sketch);
 				}
 			}
