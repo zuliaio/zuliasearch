@@ -2,6 +2,10 @@ package io.zulia.server.search.aggregation.stats;
 
 import com.datadoghq.sketch.ddsketch.DDSketch;
 import com.datadoghq.sketch.ddsketch.DDSketches;
+import com.datadoghq.sketch.ddsketch.mapping.IndexMapping;
+import com.datadoghq.sketch.ddsketch.mapping.IndexMappingProtoBinding;
+import com.datadoghq.sketch.ddsketch.store.PreSizedUnboundedSizeDenseStore;
+import com.datadoghq.sketch.ddsketch.store.UnboundedSizeDenseStore;
 import io.zulia.message.ZuliaQuery.FacetStats;
 import io.zulia.message.ZuliaQuery.FacetStatsInternal;
 import io.zulia.message.ZuliaQuery.Percentile;
@@ -183,18 +187,19 @@ public class StatCombiner {
 		// Populate percentiles if they were requested correctly
 		List<Percentile> percentiles = new ArrayList<>();
 		if (statRequest.getPrecision() > 0.0 && !statRequest.getPercentilesList().isEmpty()) {
-			// Build initial sketch and merge other sketches into this one
-			DDSketch combinedSketch = DDSketches.unboundedDense(statRequest.getPrecision());
+			// Collect non empty sketch protos
+			List<com.datadoghq.sketch.ddsketch.proto.DDSketch> sketchProtos = new ArrayList<>();
 			for (FacetStatsWithShardIndex fsi : internalStats) {
 				// Skip entries with no sketch (e.g. shards with 0 matching docs return default FacetStatsInternal)
 				if (fsi.facetStats().hasStatSketch() && fsi.facetStats().getStatSketch().getSerializedSize() > 0) {
-					DDSketch sketch = PreSizedDDSketchProtoBinding.fromProto(fsi.facetStats().getStatSketch());
-					combinedSketch.mergeWith(sketch);
+					sketchProtos.add(fsi.facetStats().getStatSketch());
 				}
 			}
 
+			DDSketch combinedSketch = combineSketches(sketchProtos);
+
 			// Get all percentiles
-			if (!combinedSketch.isEmpty()) {
+			if (combinedSketch != null && !combinedSketch.isEmpty()) {
 				for (Double point : statRequest.getPercentilesList()) {
 					if (point >= 0.0 && point <= 100.0) {
 						percentiles.add(Percentile.newBuilder().setPoint(point).setValue(combinedSketch.getValueAtQuantile(point)).build());
@@ -218,6 +223,95 @@ public class StatCombiner {
 		return FacetStats.newBuilder().setFacet(facetName).setMin(carrier.getMin()).setMax(carrier.getMax()).setSum(carrier.getSum())
 				.setDocCount(carrier.docCount).setAllDocCount(carrier.allDocCount).setValueCount(carrier.valueCount).addAllPercentiles(percentiles)
 				.setHasError(hasError);
+	}
+
+	private record IndexRange(int minIndex, int maxIndex) {
+	}
+
+	/**
+	 * Combines multiple sketch protos into a single DDSketch by computing the global index range,
+	 * pre-sizing the stores, and adding all bin counts directly with no intermediate DDSketch allocations.
+	 */
+	private static DDSketch combineSketches(List<com.datadoghq.sketch.ddsketch.proto.DDSketch> sketchProtos) {
+		if (sketchProtos.isEmpty()) {
+			return null;
+		}
+
+		// First pass: find global index range across all sketches
+		int posMinIndex = Integer.MAX_VALUE;
+		int posMaxIndex = Integer.MIN_VALUE;
+		int negMinIndex = Integer.MAX_VALUE;
+		int negMaxIndex = Integer.MIN_VALUE;
+		boolean hasPositive = false;
+		boolean hasNegative = false;
+
+		for (com.datadoghq.sketch.ddsketch.proto.DDSketch proto : sketchProtos) {
+			IndexRange range = getStoreIndexRange(proto.getPositiveValues());
+			if (range != null) {
+				hasPositive = true;
+				posMinIndex = Math.min(posMinIndex, range.minIndex());
+				posMaxIndex = Math.max(posMaxIndex, range.maxIndex());
+			}
+			range = getStoreIndexRange(proto.getNegativeValues());
+			if (range != null) {
+				hasNegative = true;
+				negMinIndex = Math.min(negMinIndex, range.minIndex());
+				negMaxIndex = Math.max(negMaxIndex, range.maxIndex());
+			}
+		}
+
+		// Pre-size stores to cover the full range
+		UnboundedSizeDenseStore positiveStore = hasPositive ? PreSizedUnboundedSizeDenseStore.create(posMinIndex, posMaxIndex)
+				: new UnboundedSizeDenseStore();
+		UnboundedSizeDenseStore negativeStore = hasNegative ? PreSizedUnboundedSizeDenseStore.create(negMinIndex, negMaxIndex)
+				: new UnboundedSizeDenseStore();
+
+		// Second pass: add all bin counts directly into the pre-sized stores
+		double zeroCount = 0;
+		for (com.datadoghq.sketch.ddsketch.proto.DDSketch proto : sketchProtos) {
+			addStoreBins(positiveStore, proto.getPositiveValues());
+			addStoreBins(negativeStore, proto.getNegativeValues());
+			zeroCount += proto.getZeroCount();
+		}
+
+		IndexMapping indexMapping = IndexMappingProtoBinding.fromProto(sketchProtos.getFirst().getMapping());
+		return DDSketch.of(indexMapping, negativeStore, positiveStore, zeroCount);
+	}
+
+	private static void addStoreBins(UnboundedSizeDenseStore store, com.datadoghq.sketch.ddsketch.proto.Store protoStore) {
+		List<Double> contiguous = protoStore.getContiguousBinCountsList();
+		if (!contiguous.isEmpty()) {
+			int index = protoStore.getContiguousBinIndexOffset();
+			for (double count : contiguous) {
+				store.add(index++, count);
+			}
+		}
+		protoStore.getBinCountsMap().forEach(store::add);
+	}
+
+	private static IndexRange getStoreIndexRange(com.datadoghq.sketch.ddsketch.proto.Store store) {
+		List<Double> contiguous = store.getContiguousBinCountsList();
+		var sparse = store.getBinCountsMap();
+
+		if (contiguous.isEmpty() && sparse.isEmpty()) {
+			return null;
+		}
+
+		int minIndex = Integer.MAX_VALUE;
+		int maxIndex = Integer.MIN_VALUE;
+
+		if (!contiguous.isEmpty()) {
+			int offset = store.getContiguousBinIndexOffset();
+			minIndex = offset;
+			maxIndex = offset + contiguous.size() - 1;
+		}
+
+		for (int index : sparse.keySet()) {
+			minIndex = Math.min(minIndex, index);
+			maxIndex = Math.max(maxIndex, index);
+		}
+
+		return new IndexRange(minIndex, maxIndex);
 	}
 
 	private static class StatCarrier {
