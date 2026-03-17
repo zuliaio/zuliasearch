@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntConsumer;
 
 public class ShardDocumentIndexer {
@@ -66,6 +67,7 @@ public class ShardDocumentIndexer {
 	private final int majorVersion;
 	private final int minorVersion;
 	private final String idSortField;
+	private final Map<String, Integer> dimOrdinalCache = new ConcurrentHashMap<>();
 
 	public ShardDocumentIndexer(ServerIndexConfig indexConfig) {
 		this.indexConfig = indexConfig;
@@ -183,7 +185,13 @@ public class ShardDocumentIndexer {
 	}
 
 	private int getOrdinalForFacetField(DirectoryTaxonomyWriter taxoWriter, String facetField) throws IOException {
-		return taxoWriter.addCategory(new FacetLabel(facetField));
+		Integer cached = dimOrdinalCache.get(facetField);
+		if (cached != null) {
+			return cached;
+		}
+		int ordinal = taxoWriter.addCategory(new FacetLabel(facetField));
+		dimOrdinalCache.put(facetField, ordinal);
+		return ordinal;
 	}
 
 	private static void storeIndividualFacets(Document luceneDocument, String facetField, HashIntSet fieldOrdinals) {
