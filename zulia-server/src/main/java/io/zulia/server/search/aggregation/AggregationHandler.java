@@ -107,12 +107,16 @@ public class AggregationHandler {
 				return info;
 			});
 
+			// Only create DDSketches when percentiles are actually requested
+			// This avoids expensive sketch population and serialization on the shard side when only min/max/sum/count are needed (but user spuriously set precision)
+			double effectivePrecision = statRequest.getPercentilesList().isEmpty() ? 0.0 : statRequest.getPrecision();
+
 			if (facetLabel.isEmpty()) {
-				fieldStatInfo.enableGlobal(statRequest.getPrecision());
+				fieldStatInfo.enableGlobal(effectivePrecision);
 			}
 			else {
 				fieldStatInfo.addFacet(facetLabel, taxoReader.getOrdinal(new FacetLabel(facetLabel)));
-				fieldStatInfo.enableFacetWithPrecision(statRequest.getPrecision());
+				fieldStatInfo.enableFacetWithPrecision(effectivePrecision);
 				needsFacetLocal = true;
 			}
 		}
