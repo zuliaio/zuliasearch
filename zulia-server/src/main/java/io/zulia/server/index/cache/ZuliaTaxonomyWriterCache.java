@@ -15,14 +15,19 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 	private final Lock r = lock.readLock();
 	private final Lock w = lock.writeLock();
 
-	public ZuliaTaxonomyWriterCache() {
-		cache = HashObjIntMaps.getDefaultFactory().withDefaultValue(-1).newMutableMap();
+	public ZuliaTaxonomyWriterCache(int expectedSize) {
+		cache = HashObjIntMaps.getDefaultFactory().withDefaultValue(-1).newMutableMap(expectedSize);
 	}
 
 	@Override
 	public void close() {
-		clear();
-		cache = null;
+		w.lock();
+		try {
+			cache = null;
+		}
+		finally {
+			w.unlock();
+		}
 	}
 
 	@Override
@@ -55,7 +60,13 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
 	@Override
 	public void clear() {
-		cache.clear();
+		w.lock();
+		try {
+			cache.clear();
+		}
+		finally {
+			w.unlock();
+		}
 	}
 
 	@Override
