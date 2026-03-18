@@ -118,19 +118,11 @@ public class ShardWriteManager {
 	private DirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
-		int expectedSize = getExistingTaxonomySize(nrtCachingDirectory);
-		return new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new ZuliaTaxonomyWriterCache(expectedSize));
+
+		return new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND, new ZuliaTaxonomyWriterCache(16*1024));
 	}
 
-	private static int getExistingTaxonomySize(Directory directory) {
-		try (DirectoryTaxonomyReader reader = new DirectoryTaxonomyReader(directory)) {
-			return reader.getSize();
-		}
-		catch (IOException e) {
-			// New or empty taxonomy — use a reasonable default to avoid repeated rehashing
-			return 1024*64;
-		}
-	}
+
 
 	public long getSizeOnDiskBytes() throws IOException {
 		try (var indexFiles = Files.list(pathToIndex); var taxoFiles = Files.list(pathToTaxoIndex)) {

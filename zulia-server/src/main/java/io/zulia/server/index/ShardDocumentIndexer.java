@@ -38,7 +38,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
-import io.zulia.server.index.cache.CachedHashFacetLabel;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -190,7 +189,7 @@ public class ShardDocumentIndexer {
 		if (cached != null) {
 			return cached;
 		}
-		int ordinal = taxoWriter.addCategory(new CachedHashFacetLabel(facetField));
+		int ordinal = taxoWriter.addCategory(new FacetLabel(facetField));
 		dimOrdinalCache.put(facetField, ordinal);
 		return ordinal;
 	}
@@ -503,12 +502,12 @@ public class ShardDocumentIndexer {
 
 							if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
 								facetFieldsForField.add(
-										new CachedHashFacetLabel(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
+										new FacetLabel(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
 
 							}
 							else if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
 								facetFieldsForField.add(
-										new CachedHashFacetLabel(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
+										new FacetLabel(facetName, localDate.getYear() + "", localDate.getMonthValue() + "", localDate.getDayOfMonth() + ""));
 
 							}
 							else {
@@ -527,7 +526,7 @@ public class ShardDocumentIndexer {
 						String val = obj.toString();
 						if (!val.isEmpty()) {
 							List<String> path = facetPathSplitter.splitToList(val);
-							facetFieldsForField.add(new CachedHashFacetLabel(facetName, path.toArray(new String[0])));
+							facetFieldsForField.add(new FacetLabel(facetName, path.toArray(new String[0])));
 						}
 					});
 				}
@@ -542,12 +541,12 @@ public class ShardDocumentIndexer {
 
 							if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
 								String date = String.format("%02d%02d%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
-								facetFieldsForField.add(new CachedHashFacetLabel(facetName, date));
+								facetFieldsForField.add(new FacetLabel(facetName, date));
 
 							}
 							else if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYY_MM_DD.equals(dateHandling)) {
 								String date = String.format("%02d-%02d-%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
-								facetFieldsForField.add(new CachedHashFacetLabel(facetName, date));
+								facetFieldsForField.add(new FacetLabel(facetName, date));
 
 							}
 							else {
@@ -567,10 +566,10 @@ public class ShardDocumentIndexer {
 
 						int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
 						if (booleanInt == 1) {
-							facetFieldsForField.add(new CachedHashFacetLabel(facetName, "True"));
+							facetFieldsForField.add(new FacetLabel(facetName, "True"));
 						}
 						else if (booleanInt == 0) {
-							facetFieldsForField.add(new CachedHashFacetLabel(facetName, "False"));
+							facetFieldsForField.add(new FacetLabel(facetName, "False"));
 						}
 
 					});
@@ -579,7 +578,7 @@ public class ShardDocumentIndexer {
 					ZuliaUtil.handleListsUniqueValues(o, obj -> {
 						String val = obj.toString();
 						if (!val.isEmpty()) {
-							facetFieldsForField.add(new CachedHashFacetLabel(facetName, val));
+							facetFieldsForField.add(new FacetLabel(facetName, val));
 						}
 					});
 				}

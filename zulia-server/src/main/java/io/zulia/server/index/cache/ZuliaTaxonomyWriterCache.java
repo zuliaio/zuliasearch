@@ -25,7 +25,7 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 		this.concurrency = concurrency;
 		this.segments = new ObjIntMap[concurrency];
 		this.locks = new Lock[concurrency];
-		int segmentSize = Math.max(1, expectedSize / concurrency);
+		int segmentSize = Math.max(10, expectedSize / concurrency);
 		for (int i = 0; i < concurrency; i++) {
 			segments[i] = HashObjIntMaps.getDefaultFactory().withDefaultValue(-1).newMutableMap(segmentSize);
 			locks[i] = new ReentrantLock();
