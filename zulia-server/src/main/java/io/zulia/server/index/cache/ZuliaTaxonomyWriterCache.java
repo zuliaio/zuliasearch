@@ -6,49 +6,70 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
-	private ObjIntMap<FacetLabel> cache;
-	private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-	private final Lock r = lock.readLock();
-	private final Lock w = lock.writeLock();
+	private static final int DEFAULT_CONCURRENCY = 16;
+
+	private final int concurrency;
+	private final ObjIntMap<FacetLabel>[] segments;
+	private final Lock[] locks;
 
 	public ZuliaTaxonomyWriterCache(int expectedSize) {
-		cache = HashObjIntMaps.getDefaultFactory().withDefaultValue(-1).newMutableMap(expectedSize);
+		this(expectedSize, DEFAULT_CONCURRENCY);
+	}
+
+	@SuppressWarnings("unchecked")
+	public ZuliaTaxonomyWriterCache(int expectedSize, int concurrency) {
+		this.concurrency = concurrency;
+		this.segments = new ObjIntMap[concurrency];
+		this.locks = new Lock[concurrency];
+		int segmentSize = Math.max(1, expectedSize / concurrency);
+		for (int i = 0; i < concurrency; i++) {
+			segments[i] = HashObjIntMaps.getDefaultFactory().withDefaultValue(-1).newMutableMap(segmentSize);
+			locks[i] = new ReentrantLock();
+		}
+	}
+
+	private int segmentIndex(FacetLabel categoryPath) {
+		return Math.floorMod(categoryPath.hashCode(), concurrency);
 	}
 
 	@Override
 	public void close() {
-		w.lock();
-		try {
-			cache = null;
-		}
-		finally {
-			w.unlock();
+		for (int i = 0; i < concurrency; i++) {
+			locks[i].lock();
+			try {
+				segments[i] = null;
+			}
+			finally {
+				locks[i].unlock();
+			}
 		}
 	}
 
 	@Override
 	public int get(FacetLabel categoryPath) {
-		r.lock();
+		int idx = segmentIndex(categoryPath);
+		locks[idx].lock();
 		try {
-			return cache.getInt(categoryPath);
+			return segments[idx].getInt(categoryPath);
 		}
 		finally {
-			r.unlock();
+			locks[idx].unlock();
 		}
 	}
 
 	@Override
 	public boolean put(FacetLabel categoryPath, int ordinal) {
-		w.lock();
+		int idx = segmentIndex(categoryPath);
+		locks[idx].lock();
 		try {
-			cache.put(categoryPath, ordinal);
+			segments[idx].put(categoryPath, ordinal);
 		}
 		finally {
-			w.unlock();
+			locks[idx].unlock();
 		}
 		return false;
 	}
@@ -60,17 +81,29 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
 	@Override
 	public void clear() {
-		w.lock();
-		try {
-			cache.clear();
-		}
-		finally {
-			w.unlock();
+		for (int i = 0; i < concurrency; i++) {
+			locks[i].lock();
+			try {
+				segments[i].clear();
+			}
+			finally {
+				locks[i].unlock();
+			}
 		}
 	}
 
 	@Override
 	public int size() {
-		return cache.size();
+		int size = 0;
+		for (int i = 0; i < concurrency; i++) {
+			locks[i].lock();
+			try {
+				size += segments[i].size();
+			}
+			finally {
+				locks[i].unlock();
+			}
+		}
+		return size;
 	}
 }
