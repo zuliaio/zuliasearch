@@ -32,6 +32,9 @@ public class CachedHashFacetLabel extends FacetLabel {
 		if (length >= this.length || length < 0) {
 			return this;
 		}
+		else if (length == 1) {
+			return new CachedHashFacetLabel(components[0]);
+		}
 		String[] sub = new String[length];
 		System.arraycopy(components, 0, sub, 0, length);
 		return new CachedHashFacetLabel(sub);
