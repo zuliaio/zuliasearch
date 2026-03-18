@@ -70,7 +70,7 @@ public class AggregationHandler {
 
 	public AggregationHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests,
 			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int requestedConcurrency,
-			IntUnaryOperator dimensionChildCount) throws IOException {
+			IntUnaryOperator dimensionChildCount, boolean debug, long searchId) throws IOException {
 
 		this.dimensionChildCount = dimensionChildCount;
 
@@ -146,11 +146,22 @@ public class AggregationHandler {
 		if (facets.size() == 1 && serverIndexConfig.isStoredIndividually(facets.first())) {
 			this.facetField = ZuliaFieldConstants.FACET_STORAGE_INDIVIDUAL + facets.first();
 			this.individualFacet = true;
+			if (debug) {
+				LOG.info("Search id {} using individual facet storage for facet <{}>", searchId, facets.first());
+			}
 		}
 		else {
 			String facetGroup = serverIndexConfig.getFacetGroupForFacets(facets);
 			this.facetField = facetGroup != null ? ZuliaFieldConstants.FACET_STORAGE_GROUP + facetGroup : ZuliaFieldConstants.FACET_STORAGE;
 			this.individualFacet = false;
+			if (debug) {
+				if (facetGroup != null) {
+					LOG.info("Search id {} using facet group <{}> for facets {}", searchId, facetGroup, facets);
+				}
+				else {
+					LOG.info("Search id {} using default facet storage for facets {}", searchId, facets);
+				}
+			}
 		}
 
 		sumValues(fc.getMatchingDocs());

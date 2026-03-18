@@ -336,7 +336,8 @@ public class ShardReader implements AutoCloseable {
 
 				if (!filteredCountRequests.isEmpty() || !filteredStatRequests.isEmpty()) {
 					FacetsCollector facetsCollector = (FacetsCollector) results[1];
-					handleAggregations(shardQueryReponseBuilder, filteredStatRequests, filteredCountRequests, facetsCollector, aggregationConcurrency);
+					handleAggregations(shardQueryReponseBuilder, filteredStatRequests, filteredCountRequests, facetsCollector, aggregationConcurrency,
+							shardQuery.isDebug(), shardQuery.getSearchId());
 				}
 			}
 		}
@@ -390,10 +391,11 @@ public class ShardReader implements AutoCloseable {
 	}
 
 	private void handleAggregations(ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder, List<ZuliaQuery.StatRequest> statRequestList,
-			List<ZuliaQuery.CountRequest> countRequestList, FacetsCollector facetsCollector, int aggregrationConcurrency) throws IOException {
+			List<ZuliaQuery.CountRequest> countRequestList, FacetsCollector facetsCollector, int aggregrationConcurrency, boolean debug, long searchId)
+			throws IOException {
 
 		AggregationHandler aggregationHandler = new AggregationHandler(taxoReader, facetsCollector, statRequestList, countRequestList, indexConfig,
-				aggregrationConcurrency, this::getDimensionChildCount);
+				aggregrationConcurrency, this::getDimensionChildCount, debug, searchId);
 
 		for (ZuliaQuery.CountRequest countRequest : countRequestList) {
 
