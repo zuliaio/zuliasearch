@@ -55,6 +55,8 @@ import io.zulia.server.index.router.StoreRequestRouter;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.pool.TaskExecutor;
+import io.zulia.util.pool.WorkPool;
 import org.apache.lucene.search.Query;
 import org.bson.Document;
 import org.jetbrains.annotations.NotNull;
@@ -159,18 +161,19 @@ public class ZuliaIndexManager {
 
 	public void init() throws Exception {
 		List<IndexSettings> indexes = indexService.getIndexes();
-		for (IndexSettings indexSettings : indexes) {
-			pool.submit(() -> {
-				try {
-					loadIndex(indexSettings);
-				}
-				catch (Exception e) {
-					LOG.error("{}:", e.getClass().getSimpleName(), e);
-					throw new RuntimeException(e);
-				}
-			});
+		try (TaskExecutor initPool = WorkPool.nativePool(Runtime.getRuntime().availableProcessors(), "index-init")) {
+			for (IndexSettings indexSettings : indexes) {
+				initPool.execute(() -> {
+					try {
+						loadIndex(indexSettings);
+					}
+					catch (Exception e) {
+						LOG.error("{}:", e.getClass().getSimpleName(), e);
+						throw new RuntimeException(e);
+					}
+				});
+			}
 		}
-
 	}
 
 	private void loadIndex(String indexName) throws Exception {
