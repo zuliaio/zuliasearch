@@ -120,7 +120,7 @@ public class ShardWriteManager {
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
 
 		DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND,
-				new ZuliaTaxonomyWriterCache(16 * 1024));
+				new ZuliaTaxonomyWriterCache());
 		LOG.info("Opened taxonomy for {}:s{} with {} ordinals", indexName, shardNumber, writer.getSize());
 		return writer;
 	}

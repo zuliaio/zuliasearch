@@ -1,76 +1,64 @@
 package io.zulia.server.index.cache;
 
-import com.koloboke.collect.map.ObjIntMap;
-import com.koloboke.collect.map.hash.HashObjIntMaps;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
-	private static final int DEFAULT_CONCURRENCY = 16;
+	private static final int MAX_ORDINALS_PER_DIMENSION = 4096;
 
-	private final int concurrency;
-	private final ObjIntMap<FacetLabel>[] segments;
-	private final Lock[] locks;
+	private final ConcurrentHashMap<FacetLabel, Integer> topLevelCache;
+	private final ConcurrentHashMap<String, Cache<FacetLabel, Integer>> dimensionCaches;
 
-	public ZuliaTaxonomyWriterCache(int expectedSize) {
-		this(expectedSize, DEFAULT_CONCURRENCY);
+	public ZuliaTaxonomyWriterCache() {
+		this.topLevelCache = new ConcurrentHashMap<>();
+		this.dimensionCaches = new ConcurrentHashMap<>();
 	}
 
-	@SuppressWarnings("unchecked")
-	public ZuliaTaxonomyWriterCache(int expectedSize, int concurrency) {
-		this.concurrency = concurrency;
-		this.segments = new ObjIntMap[concurrency];
-		this.locks = new Lock[concurrency];
-		int segmentSize = Math.max(10, expectedSize / concurrency);
-		for (int i = 0; i < concurrency; i++) {
-			segments[i] = HashObjIntMaps.getDefaultFactory().withDefaultValue(-1).newMutableMap(segmentSize);
-			locks[i] = new ReentrantLock();
-		}
+	private Cache<FacetLabel, Integer> getOrCreateDimensionCache(String dimension) {
+		return dimensionCaches.computeIfAbsent(dimension,
+				k -> CacheBuilder.newBuilder().maximumSize(MAX_ORDINALS_PER_DIMENSION).build());
 	}
 
-	private int segmentIndex(FacetLabel categoryPath) {
-		return Math.floorMod(categoryPath.hashCode(), concurrency);
+	private String getDimension(FacetLabel categoryPath) {
+		return categoryPath.components[0];
 	}
 
 	@Override
 	public void close() {
-		for (int i = 0; i < concurrency; i++) {
-			locks[i].lock();
-			try {
-				segments[i] = null;
-			}
-			finally {
-				locks[i].unlock();
-			}
-		}
+		topLevelCache.clear();
+		dimensionCaches.values().forEach(Cache::invalidateAll);
+		dimensionCaches.clear();
 	}
 
 	@Override
 	public int get(FacetLabel categoryPath) {
-		int idx = segmentIndex(categoryPath);
-		locks[idx].lock();
-		try {
-			return segments[idx].getInt(categoryPath);
+		if (categoryPath.length <= 1) {
+			Integer ordinal = topLevelCache.get(categoryPath);
+			return ordinal != null ? ordinal : -1;
 		}
-		finally {
-			locks[idx].unlock();
+		String dimension = getDimension(categoryPath);
+		Cache<FacetLabel, Integer> cache = dimensionCaches.get(dimension);
+		if (cache == null) {
+			return -1;
 		}
+		Integer ordinal = cache.getIfPresent(categoryPath);
+		return ordinal != null ? ordinal : -1;
 	}
 
 	@Override
 	public boolean put(FacetLabel categoryPath, int ordinal) {
-		int idx = segmentIndex(categoryPath);
-		locks[idx].lock();
-		try {
-			segments[idx].put(categoryPath, ordinal);
+		if (categoryPath.length <= 1) {
+			topLevelCache.put(categoryPath, ordinal);
+			return false;
 		}
-		finally {
-			locks[idx].unlock();
-		}
+		String dimension = getDimension(categoryPath);
+		Cache<FacetLabel, Integer> cache = getOrCreateDimensionCache(dimension);
+		cache.put(categoryPath, ordinal);
 		return false;
 	}
 
@@ -81,29 +69,17 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
 	@Override
 	public void clear() {
-		for (int i = 0; i < concurrency; i++) {
-			locks[i].lock();
-			try {
-				segments[i].clear();
-			}
-			finally {
-				locks[i].unlock();
-			}
-		}
+		topLevelCache.clear();
+		dimensionCaches.values().forEach(Cache::invalidateAll);
+		dimensionCaches.clear();
 	}
 
 	@Override
 	public int size() {
-		int size = 0;
-		for (int i = 0; i < concurrency; i++) {
-			locks[i].lock();
-			try {
-				size += segments[i].size();
-			}
-			finally {
-				locks[i].unlock();
-			}
+		long size = topLevelCache.size();
+		for (Cache<FacetLabel, Integer> cache : dimensionCaches.values()) {
+			size += cache.size();
 		}
-		return size;
+		return (int) size;
 	}
 }
