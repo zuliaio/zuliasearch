@@ -49,6 +49,7 @@ public class QueryCombiner {
 	private final SortRequest sortRequest;
 	private final Collection<ZuliaIndex> indexes;
 	private final Map<String, Integer> indexToShardCount;
+	private final int vectorTopN;
 	private boolean isShort;
 
 	public QueryCombiner(Collection<ZuliaIndex> indexes, QueryRequest request, List<InternalQueryResponse> responses) {
@@ -70,6 +71,14 @@ public class QueryCombiner {
 		this.analysisRequestList = request.getAnalysisRequestList();
 
 		this.isShort = false;
+
+		int minVectorTopN = 0;
+		for (ZuliaQuery.Query query : request.getQueryList()) {
+			if (query.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR && query.getVectorTopN() > 0) {
+				minVectorTopN = minVectorTopN == 0 ? query.getVectorTopN() : Math.min(minVectorTopN, query.getVectorTopN());
+			}
+		}
+		this.vectorTopN = minVectorTopN;
 
 	}
 
@@ -141,13 +150,15 @@ public class QueryCombiner {
 		boolean fullyCached = shardsCached == shardResponses.size();
 
 		QueryResponse.Builder builder = QueryResponse.newBuilder();
-		builder.setTotalHits(totalHits);
 		builder.setFullyCached(fullyCached);
 		builder.setShardsCached(shardsCached);
 		builder.setShardsPinned(shardsPinned);
 		builder.setShardsQueried(shardResponses.size());
 
 		int resultsSize = Math.min(amount, (int) returnedHits);
+		if (vectorTopN > 0) {
+			resultsSize = Math.min(resultsSize, vectorTopN);
+		}
 
 		Map<CountRequest, FacetCombiner> facetCombinerMap = new HashMap<>();
 		Map<StatRequest, StatCombiner> statCombinerMap = new HashMap<>();
@@ -229,6 +240,11 @@ public class QueryCombiner {
 				lastIndexResultMap.get(shardQueryResponse.getIndexName())[shardQueryResponse.getShardNumber()] = results.get(results.size() - 1);
 			}
 		}
+
+		if (vectorTopN > 0) {
+			totalHits = results.size();
+		}
+		builder.setTotalHits(totalHits);
 
 		if (start == 0) {
 			builder.addAllResults(results);
