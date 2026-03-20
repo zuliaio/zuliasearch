@@ -20,7 +20,7 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 	private String indexName;
 	private String fileName;
 	private FetchType resultFetchType;
-	private FetchType associatedFetchType;
+	private FetchType associatedFetchType = FetchType.NONE;
 
 	private Set<String> documentFields = Collections.emptySet();
 	private Set<String> documentMaskedFields = Collections.emptySet();
