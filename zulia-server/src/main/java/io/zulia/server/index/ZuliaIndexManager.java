@@ -687,6 +687,10 @@ public class ZuliaIndexManager {
 				existingSettings.setDefaultConcurrency(updateIndexSettings.getDefaultConcurrency());
 			}
 
+			if (updateIndexSettings.getSetDescription()) {
+				existingSettings.setDescription(updateIndexSettings.getDescription());
+			}
+
 			Operation metaUpdateOperation = updateIndexSettings.getMetaUpdateOperation();
 			if (metaUpdateOperation.getEnable()) {
 				Document existingMeta = ZuliaUtil.byteStringToMongoDocument(existingSettings.getMeta());
