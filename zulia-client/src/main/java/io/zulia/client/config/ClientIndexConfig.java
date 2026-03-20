@@ -38,6 +38,7 @@ public class ClientIndexConfig {
 	private Integer ramBufferMB;
 	private Integer numberOfReplicas;
 	private Integer defaultConcurrency;
+	private String description;
 
 	private Boolean disableCompression;
 
@@ -134,6 +135,15 @@ public class ClientIndexConfig {
 
 	public ClientIndexConfig setDefaultConcurrency(Integer defaultConcurrency) {
 		this.defaultConcurrency = defaultConcurrency;
+		return this;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public ClientIndexConfig setDescription(String description) {
+		this.description = description;
 		return this;
 	}
 
@@ -370,6 +380,10 @@ public class ClientIndexConfig {
 			isb.setDefaultConcurrency(defaultConcurrency);
 		}
 
+		if (description != null) {
+			isb.setDescription(description);
+		}
+
 		if (meta != null) {
 			isb.setMeta(ZuliaUtil.mongoDocumentToByteString(meta));
 		}
@@ -429,6 +443,7 @@ public class ClientIndexConfig {
 		this.ramBufferMB = indexSettings.getRamBufferMB();
 		this.disableCompression = indexSettings.getDisableCompression();
 		this.defaultConcurrency = indexSettings.getDefaultConcurrency();
+		this.description = indexSettings.getDescription();
 
 		this.meta = ZuliaUtil.byteStringToMongoDocument(indexSettings.getMeta());
 
