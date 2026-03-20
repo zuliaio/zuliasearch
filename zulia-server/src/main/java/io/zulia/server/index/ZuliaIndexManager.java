@@ -100,6 +100,8 @@ public class ZuliaIndexManager {
 	private ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<String, String> indexAliasMap;
 
+	private static final int MONGO_DB_NAME_MAX_LENGTH = 63;
+
 	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
 		this.zuliaConfig = zuliaConfig;
@@ -203,14 +205,19 @@ public class ZuliaIndexManager {
 		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
 	}
 
-	private static final int MONGO_DB_NAME_MAX_LENGTH = 63;
-
 	@NotNull
 	private DocumentStorage getDocumentStorage(ServerIndexConfig serverIndexConfig) {
-		String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
-		
+
 		DocumentStorage documentStorage;
 		if (zuliaConfig.isCluster()) {
+			String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
+
+			if (dbName.length() > MONGO_DB_NAME_MAX_LENGTH) {
+				LOG.warn(
+						"Associated document storage for index <{}> is unavailable: MongoDB database name <{}> exceeds {} character limit ({} characters). Associated document operations will fail for this index.",
+						serverIndexConfig.getIndexName(), dbName, MONGO_DB_NAME_MAX_LENGTH, dbName.length());
+			}
+
 			documentStorage = switch (zuliaConfig.getClusterStorageEngine()) {
 				case "s3" -> new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false, zuliaConfig.getS3());
 				default -> new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
