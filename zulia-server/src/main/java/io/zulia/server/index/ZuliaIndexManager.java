@@ -203,17 +203,18 @@ public class ZuliaIndexManager {
 		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
 	}
 
+	private static final int MONGO_DB_NAME_MAX_LENGTH = 63;
+
 	@NotNull
 	private DocumentStorage getDocumentStorage(ServerIndexConfig serverIndexConfig) {
 		String dbName = zuliaConfig.getClusterName() + "_" + serverIndexConfig.getIndexName() + "_" + "fs";
-
+		
 		DocumentStorage documentStorage;
 		if (zuliaConfig.isCluster()) {
 			documentStorage = switch (zuliaConfig.getClusterStorageEngine()) {
 				case "s3" -> new S3DocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false, zuliaConfig.getS3());
 				default -> new MongoDocumentStorage(MongoProvider.getMongoClient(), serverIndexConfig.getIndexName(), dbName, false);
 			};
-			;
 		}
 		else {
 			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
@@ -247,12 +248,17 @@ public class ZuliaIndexManager {
 			return;
 		}
 
+		long startTime = System.currentTimeMillis();
+
 		Set<String> indexNames = new HashSet<>();
+		int requestedIds = 0;
 		for (FetchRequest fetchRequest : request.getFetchRequestList()) {
 			indexNames.add(fetchRequest.getIndexName());
+			requestedIds++;
 		}
 		for (BatchFetchGroup group : request.getBatchFetchGroupList()) {
 			indexNames.add(group.getIndexName());
+			requestedIds += group.getUniqueIdCount();
 		}
 
 		Map<String, ZuliaIndex> indexCache = new HashMap<>();
@@ -265,6 +271,9 @@ public class ZuliaIndexManager {
 		for (FetchResponse response : responses) {
 			responseObserver.onNext(response);
 		}
+
+		long endTime = System.currentTimeMillis();
+		LOG.info("Batch fetch for index(es) {}: requested <{}>, retrieved <{}> in {}ms", indexNames, requestedIds, responses.size(), (endTime - startTime));
 	}
 
 	public List<FetchResponse> internalBatchFetch(InternalBatchFetchRequest request) throws Exception {
