@@ -83,9 +83,7 @@ public class AggregationHandler {
 
 		boolean needsFacetLocal = false;
 		for (ZuliaQuery.StatRequest statRequest : statRequests) {
-			//global
 			String facetLabel = statRequest.getFacetField().getLabel();
-			facets.add(facetLabel);
 			String numericField = statRequest.getNumericField();
 
 			NumericFieldStatInfo fieldStatInfo = fieldToDimensions.computeIfAbsent(numericField, s -> {
@@ -115,6 +113,7 @@ public class AggregationHandler {
 				fieldStatInfo.enableGlobal(effectivePrecision);
 			}
 			else {
+				facets.add(facetLabel);
 				fieldStatInfo.addFacet(facetLabel, taxoReader.getOrdinal(new FacetLabel(facetLabel)));
 				fieldStatInfo.enableFacetWithPrecision(effectivePrecision);
 				needsFacetLocal = true;
