@@ -64,7 +64,7 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
 	@Override
 	public boolean isFull() {
-		return false;
+		return true;
 	}
 
 	@Override
