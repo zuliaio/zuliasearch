@@ -38,6 +38,8 @@ public class ZuliaConfig {
 
 	private boolean debug;
 
+	private int maxFacetsCachedPerDimension;
+
 	public ZuliaConfig() {
 	}
 
@@ -161,6 +163,14 @@ public class ZuliaConfig {
 		this.debug = debug;
 	}
 
+	public int getMaxFacetsCachedPerDimension() {
+		return maxFacetsCachedPerDimension;
+	}
+
+	public void setMaxFacetsCachedPerDimension(int maxFacetsCachedPerDimension) {
+		this.maxFacetsCachedPerDimension = maxFacetsCachedPerDimension;
+	}
+
 	public HealthConfig getHealth() {
 		return health;
 	}
@@ -175,6 +185,6 @@ public class ZuliaConfig {
 				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoConnection=" + mongoConnection + ", mongoAuth="
 				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", health=" + health
 				+ ", responseCompression=" + responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + ", debug="
-				+ debug + '}';
+				+ debug + ", maxFacetsCachedPerDimension=" + maxFacetsCachedPerDimension + '}';
 	}
 }

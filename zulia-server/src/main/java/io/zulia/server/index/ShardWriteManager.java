@@ -54,7 +54,7 @@ public class ShardWriteManager {
 	private final AtomicLong totalIndexedThrottled;
 
 	public ShardWriteManager(int shardNumber, Path pathToIndex, Path pathToTaxoIndex, ServerIndexConfig indexConfig,
-			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer) throws IOException {
+			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer, int maxFacetsCachedPerDimension) throws IOException {
 
 		this.shardNumber = shardNumber;
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
@@ -76,7 +76,7 @@ public class ShardWriteManager {
 		this.pathToIndex = pathToIndex;
 		this.pathToTaxoIndex = pathToTaxoIndex;
 		this.indexWriter = openIndexWriter(pathToIndex);
-		this.taxoWriter = openTaxoWriter(pathToTaxoIndex);
+		this.taxoWriter = openTaxoWriter(pathToTaxoIndex, maxFacetsCachedPerDimension);
 		this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
 
 		updateIndexSettings();
@@ -115,12 +115,12 @@ public class ShardWriteManager {
 
 	}
 
-	private DirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo) throws IOException {
+	private DirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo, int maxFacetsCachedPerDimension) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
 
 		DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND,
-				new ZuliaTaxonomyWriterCache());
+				new ZuliaTaxonomyWriterCache(maxFacetsCachedPerDimension));
 		LOG.info("Opened taxonomy for {}:s{} with {} ordinals", indexName, shardNumber, writer.getSize());
 		return writer;
 	}

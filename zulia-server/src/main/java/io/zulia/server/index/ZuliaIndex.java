@@ -236,7 +236,7 @@ public class ZuliaIndex {
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
 
 		ShardWriteManager shardWriteManager = new ShardWriteManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), indexConfig,
-				zuliaPerFieldAnalyzer);
+				zuliaPerFieldAnalyzer, zuliaConfig.getMaxFacetsCachedPerDimension());
 
 		ZuliaShard s = new ZuliaShard(shardWriteManager, primary);
 
