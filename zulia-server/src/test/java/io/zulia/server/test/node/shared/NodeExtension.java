@@ -1,6 +1,7 @@
 package io.zulia.server.test.node.shared;
 
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.server.config.ZuliaConfig;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -9,12 +10,20 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Consumer;
+
 public class NodeExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
 	private final static Logger LOG = LoggerFactory.getLogger(NodeExtension.class);
 	private final int nodeCount;
+	private final Consumer<ZuliaConfig> configCustomizer;
 
 	public NodeExtension(int nodeCount) {
+		this(nodeCount, null);
+	}
+
+	public NodeExtension(int nodeCount, Consumer<ZuliaConfig> configCustomizer) {
 		this.nodeCount = nodeCount;
+		this.configCustomizer = configCustomizer;
 	}
 
 	private ZuliaWorkPool zuliaWorkPool;
@@ -29,7 +38,7 @@ public class NodeExtension implements BeforeAllCallback, AfterAllCallback, Befor
 			LOG.info("Suite started: {}", context.getTestClass().get());
 		}
 		TestHelper.createNodes(nodeCount);
-		TestHelper.startNodes(false);
+		TestHelper.startNodes(false, configCustomizer);
 		Thread.sleep(2000);
 		zuliaWorkPool = TestHelper.createClient();
 	}

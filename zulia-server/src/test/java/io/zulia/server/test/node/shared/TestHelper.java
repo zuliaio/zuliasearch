@@ -117,6 +117,10 @@ public class TestHelper {
 	}
 
 	public static void startNodes(boolean startRest) throws Exception {
+		startNodes(startRest, null);
+	}
+
+	public static void startNodes(boolean startRest, java.util.function.Consumer<ZuliaConfig> configCustomizer) throws Exception {
 		LOG.info("Starting {} Nodes", NODE_SERVICE.getNodes().size());
 		int i = 0;
 		for (ZuliaBase.Node node : NODE_SERVICE.getNodes()) {
@@ -133,6 +137,11 @@ public class TestHelper {
 			zuliaConfig.setDataPath("/tmp/zuliaTest/node" + i);
 			zuliaConfig.setRestPort(node.getRestPort());
 			zuliaConfig.setServicePort(node.getServicePort());
+
+			if (configCustomizer != null) {
+				configCustomizer.accept(zuliaConfig);
+			}
+
 			i++;
 
 			ZuliaNode zuliaNode = new ZuliaNode(zuliaConfig, NODE_SERVICE);
