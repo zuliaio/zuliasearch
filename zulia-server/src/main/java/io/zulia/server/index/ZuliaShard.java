@@ -114,11 +114,16 @@ public class ZuliaShard {
 			if (!warmingSearches.isEmpty()) {
 				warmSearches(zuliaIndex, primary, warmingSearches, warmInfo, lastestShardTime);
 			}
+			else {
+				LOG.info("Refreshed index {}:s{} without warming searches", indexName, shardNumber);
+				shardWriteManager.searchesWarmed(System.currentTimeMillis());
+			}
 		}
 	}
 
 	private void warmSearches(ZuliaIndex zuliaIndex, boolean primary, List<ZuliaServiceOuterClass.QueryRequest> warmingSearches, WarmInfo warmInfo,
 			long lastestShardTime) {
+
 		LOG.info("Started warming searching for index {}:s{}", indexName, shardNumber);
 		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
 		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
