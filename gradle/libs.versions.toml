@@ -3,16 +3,16 @@ grpc = "1.78.0"
 lucene = "10.4.0"
 koloboke = "1.0.0"
 micronaut = "4.10.6" # used by the micronaut plugin configuration
-mongodb = "5.6.0"
+mongodb = "5.6.4"
 picocli = "4.7.7"
 poi = "5.5.1"
 protobuf = "4.33.2"
 unirest = '4.7.0'
 djl = "0.36.0"
-junit = "5.14.1"
+junit = "5.14.3"
 
 [libraries]
-annontations = { module = "org.jetbrains:annotations", version = "26.0.2-1" }
+annontations = { module = "org.jetbrains:annotations", version = "26.1.0" }
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
@@ -22,8 +22,8 @@ djl-pytorch-engine = { module = "ai.djl.pytorch:pytorch-engine", version.ref = "
 djl-basicdataset = { module = "ai.djl:basicdataset", version.ref = "djl" }
 djl-huggingface-tokenizers = { module = "ai.djl.huggingface:tokenizers", version.ref = "djl" }
 djl-onnxruntime-engine = { module = "ai.djl.onnxruntime:onnxruntime-engine", version.ref = "djl" }
-flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.22.0" }
-fast-csv = { module = "de.siegmar:fastcsv", version = "4.1.0" }
+flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.24.0" }
+fast-csv = { module = "de.siegmar:fastcsv", version = "4.1.1" }
 guava = { module = "com.google.guava:guava", version = "33.5.0-jre" }
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
@@ -42,7 +42,7 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 koloboke-api = { module = "com.koloboke:koloboke-api-jdk8", version.ref = "koloboke" }
 koloboke-impl = { module = "com.koloboke:koloboke-impl-jdk8", version.ref = "koloboke" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.25" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.32" }
 lucene-analysis-common = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "lucene" }
 lucene-backward-codecs = { module = "org.apache.lucene:lucene-backward-codecs", version.ref = "lucene" }
 lucene-expressions = { module = "org.apache.lucene:lucene-expressions", version.ref = "lucene" }
@@ -76,13 +76,13 @@ protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", versio
 simplemagic = { module = "com.j256.simplemagic:simplemagic", version = "1.17" }
 sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.3" }
 slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.17" }
-snake-yaml = { module = "org.yaml:snakeyaml", version = "2.5" }
+snake-yaml = { module = "org.yaml:snakeyaml", version = "2.6" }
 snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.8" }
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
 unirest-core = { module = "com.konghq:unirest-java-core", version.ref = "unirest" }
 unirest-gson = { module = "com.konghq:unirest-modules-gson", version.ref = "unirest" }
 unirest-java-bom = { module = "com.konghq:unirest-java-bom", version.ref = "unirest" }
-password4j = { module = "com.password4j:password4j", version = "1.8.2" }
+password4j = { module = "com.password4j:password4j", version = "1.8.4" }
 
 [bundles]
 poi = ["poi", "poi-ooxml"]
