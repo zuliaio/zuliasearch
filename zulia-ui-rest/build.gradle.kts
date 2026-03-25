@@ -56,7 +56,6 @@ dependencies {
     implementation(libs.commons.compress)
     implementation(libs.jakarta.validation)
     implementation(libs.jansi)
-    implementation(libs.json.io)
     implementation(libs.koloboke.api)
     implementation(libs.koloboke.impl)
     implementation(libs.logback.classic)
