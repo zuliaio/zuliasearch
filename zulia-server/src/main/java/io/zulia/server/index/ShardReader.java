@@ -26,6 +26,7 @@ import io.zulia.server.search.GeoDistUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.aggregation.AggregationHandler;
+import io.zulia.server.search.aggregation.AggregationSettings;
 import io.zulia.util.pool.SemaphoreLimitedVirtualPool;
 import io.zulia.util.pool.VirtualThreadPerTaskTaskExecutor;
 import org.apache.lucene.analysis.Analyzer;
@@ -81,6 +82,7 @@ public class ShardReader implements AutoCloseable {
 	private final ExecutorService segmentOpenExecutor;
 	private final AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> queryResultCache;
 	private final AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> pinnedQueryResultCache;
+	private final AggregationSettings aggregationSettings;
 
 	private final AtomicInteger queryResultCacheSize = new AtomicInteger();
 	private final AtomicInteger pinnedQueryResultCacheSize = new AtomicInteger();
@@ -90,7 +92,7 @@ public class ShardReader implements AutoCloseable {
 	private static final String[] EMPTY_STRING_ARRAY = new String[0];
 
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
-			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer, ExecutorService segmentOpenExecutor) {
+			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer, ExecutorService segmentOpenExecutor, AggregationSettings aggregationSettings) {
 		this.creationTime = System.currentTimeMillis();
 		this.shardNumber = shardNumber;
 		this.indexReader = indexReader;
@@ -99,6 +101,7 @@ public class ShardReader implements AutoCloseable {
 		this.indexName = indexConfig.getIndexName();
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.segmentOpenExecutor = segmentOpenExecutor;
+		this.aggregationSettings = aggregationSettings;
 		RemovalListener<@NotNull QueryCacheKey, ZuliaQuery.@NotNull ShardQueryResponse> removalListener = (key, value, cause) -> queryResultCacheSize.getAndAdd(
 				-value.getSerializedSize());
 		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).removalListener(removalListener)
@@ -395,7 +398,7 @@ public class ShardReader implements AutoCloseable {
 			throws IOException {
 
 		AggregationHandler aggregationHandler = new AggregationHandler(taxoReader, facetsCollector, statRequestList, countRequestList, indexConfig,
-				aggregrationConcurrency, this::getDimensionChildCount, debug, searchId);
+				aggregrationConcurrency, this::getDimensionChildCount, debug, searchId, aggregationSettings);
 
 		for (ZuliaQuery.CountRequest countRequest : countRequestList) {
 
@@ -777,7 +780,7 @@ public class ShardReader implements AutoCloseable {
 				tr = taxoReader;
 			}
 
-			return new ShardReader(shardNumber, r, tr, indexConfig, zuliaPerFieldAnalyzer, segmentOpenExecutor);
+			return new ShardReader(shardNumber, r, tr, indexConfig, zuliaPerFieldAnalyzer, segmentOpenExecutor, aggregationSettings);
 		}
 
 	}

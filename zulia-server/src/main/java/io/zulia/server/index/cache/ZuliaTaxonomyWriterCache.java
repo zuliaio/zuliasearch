@@ -13,8 +13,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
-	private static final int DEFAULT_MAX_ORDINALS_PER_DIMENSION = 4096;
-
 	private final int maxOrdinalsPerDimension;
 	private final int evictionsBetweenRefreshes;
 	private final ConcurrentHashMap<FacetLabel, Integer> topLevelCache;
@@ -23,7 +21,7 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 	private final ConcurrentHashMap<String, AtomicLong> evictionCounters;
 
 	public ZuliaTaxonomyWriterCache(int maxOrdinalsPerDimension) {
-		this.maxOrdinalsPerDimension = maxOrdinalsPerDimension > 0 ? maxOrdinalsPerDimension : DEFAULT_MAX_ORDINALS_PER_DIMENSION;
+		this.maxOrdinalsPerDimension = maxOrdinalsPerDimension;
 		this.evictionsBetweenRefreshes = Math.max(1, this.maxOrdinalsPerDimension / 4);
 		this.topLevelCache = new ConcurrentHashMap<>();
 		this.dimensionCaches = new ConcurrentHashMap<>();

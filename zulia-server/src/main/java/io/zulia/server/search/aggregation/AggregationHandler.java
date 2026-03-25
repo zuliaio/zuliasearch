@@ -67,12 +67,14 @@ public class AggregationHandler {
 	private final String facetField;
 	private final boolean individualFacet;
 	private final IntUnaryOperator dimensionChildCount;
+	private final AggregationSettings aggregationSettings;
 
 	public AggregationHandler(TaxonomyReader taxoReader, FacetsCollector fc, List<ZuliaQuery.StatRequest> statRequests,
 			List<ZuliaQuery.CountRequest> countRequests, ServerIndexConfig serverIndexConfig, int requestedConcurrency,
-			IntUnaryOperator dimensionChildCount, boolean debug, long searchId) throws IOException {
+			IntUnaryOperator dimensionChildCount, boolean debug, long searchId, AggregationSettings aggregationSettings) throws IOException {
 
 		this.dimensionChildCount = dimensionChildCount;
+		this.aggregationSettings = aggregationSettings;
 
 		this.taxoReader = taxoReader;
 		this.requestedConcurrency = requestedConcurrency;
@@ -178,7 +180,7 @@ public class AggregationHandler {
 			for (MatchingDocs matchingDoc : matchingDocs) {
 				totalHits += matchingDoc.totalHits();
 			}
-			int maxConcurrencyBasedOnHits = (totalHits / 10000) + 1; // max concurrency of 1 per 10,0000
+			int maxConcurrencyBasedOnHits = (totalHits / aggregationSettings.hitsPerConcurrentRequest()) + 1;
 			concurrency = Math.min(maxConcurrencyBasedOnHits, requestedConcurrency);
 			concurrency = Math.min(concurrency, matchingDocs.size()); // do not allow more concurrency than the number of segments
 		}

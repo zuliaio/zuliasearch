@@ -35,6 +35,7 @@ import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
+import io.zulia.server.search.aggregation.AggregationSettings;
 import io.zulia.server.search.GeoDistUtil;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
@@ -107,11 +108,13 @@ public class ZuliaIndex {
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 	private final IndexShardMapping indexShardMapping;
+	private final AggregationSettings aggregationSettings;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService,
 			IndexShardMapping indexShardMapping) {
 
 		this.zuliaConfig = zuliaConfig;
+		this.aggregationSettings = new AggregationSettings(zuliaConfig.getHitsPerConcurrentRequest(), zuliaConfig.getMaxFacetsCachedPerDimension());
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
 		this.numberOfShards = indexConfig.getNumberOfShards();
@@ -236,7 +239,7 @@ public class ZuliaIndex {
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
 
 		ShardWriteManager shardWriteManager = new ShardWriteManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), indexConfig,
-				zuliaPerFieldAnalyzer, zuliaConfig.getMaxFacetsCachedPerDimension());
+				zuliaPerFieldAnalyzer, aggregationSettings);
 
 		ZuliaShard s = new ZuliaShard(shardWriteManager, primary);
 

@@ -2,6 +2,7 @@ package io.zulia.server.index;
 
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
+import io.zulia.server.search.aggregation.AggregationSettings;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.index.cache.ZuliaTaxonomyWriterCache;
 import org.apache.lucene.document.Document;
@@ -52,14 +53,16 @@ public class ShardWriteManager {
 
 	private final AtomicLong totalIndexedUnthrottled;
 	private final AtomicLong totalIndexedThrottled;
+	private final AggregationSettings aggregationSettings;
 
 	public ShardWriteManager(int shardNumber, Path pathToIndex, Path pathToTaxoIndex, ServerIndexConfig indexConfig,
-			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer, int maxFacetsCachedPerDimension) throws IOException {
+			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer, AggregationSettings aggregationSettings) throws IOException {
 
 		this.shardNumber = shardNumber;
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.indexConfig = indexConfig;
 		this.indexName = indexConfig.getIndexName();
+		this.aggregationSettings = aggregationSettings;
 
 		this.shardDocumentIndexer = new ShardDocumentIndexer(indexConfig);
 
@@ -76,7 +79,7 @@ public class ShardWriteManager {
 		this.pathToIndex = pathToIndex;
 		this.pathToTaxoIndex = pathToTaxoIndex;
 		this.indexWriter = openIndexWriter(pathToIndex);
-		this.taxoWriter = openTaxoWriter(pathToTaxoIndex, maxFacetsCachedPerDimension);
+		this.taxoWriter = openTaxoWriter(pathToTaxoIndex, aggregationSettings.maxFacetsCachedPerDimension());
 		this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
 
 		updateIndexSettings();
@@ -154,7 +157,7 @@ public class ShardWriteManager {
 		DirectoryReader indexReader = DirectoryReader.open(indexWriter);
 		DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 		taxoReader.setCacheSize(128000);
-		return new ShardReader(shardNumber, indexReader, taxoReader, indexConfig, zuliaPerFieldAnalyzer, segmentOpenExecutor);
+		return new ShardReader(shardNumber, indexReader, taxoReader, indexConfig, zuliaPerFieldAnalyzer, segmentOpenExecutor, aggregationSettings);
 	}
 
 	public void commit() throws IOException {
