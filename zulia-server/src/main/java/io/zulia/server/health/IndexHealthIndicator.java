@@ -37,8 +37,7 @@ public class IndexHealthIndicator extends AbstractHealthIndicator<Map<String, Ob
 		List<String> offlineShards = new ArrayList<>();
 
 		try {
-			GetNodesResponse nodesResponse = zuliaNode.getIndexManager()
-					.getNodes(GetNodesRequest.newBuilder().setActiveOnly(true).build());
+			GetNodesResponse nodesResponse = zuliaNode.getIndexManager().getNodes(GetNodesRequest.newBuilder().setActiveOnly(true).build());
 			List<Node> onlineNodes = nodesResponse.getNodeList();
 
 			for (IndexShardMapping indexShardMapping : nodesResponse.getIndexShardMappingList()) {

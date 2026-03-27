@@ -97,7 +97,7 @@ public class ZuliaIndexManager {
 	private final NodeService nodeService;
 	private final Node thisNode;
 	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
-	private ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<String, String> indexAliasMap;
 
 	private static final int MONGO_DB_NAME_MAX_LENGTH = 63;
@@ -343,13 +343,16 @@ public class ZuliaIndexManager {
 
 	public GetNodesResponse getNodes(GetNodesRequest request) throws Exception {
 
-		List<IndexShardMapping> indexShardMappingList = indexService.getIndexShardMappings();
-		List<IndexAlias> indexAliasesList = indexService.getIndexAliases();
 		if ((request.getActiveOnly())) {
+			List<IndexShardMapping> indexShardMappingList = indexMap.values().stream().map(ZuliaIndex::getIndexShardMapping).toList();
+			List<IndexAlias> indexAliasesList = indexAliasMap.entrySet().stream()
+					.map(e -> IndexAlias.newBuilder().setAliasName(e.getKey()).setIndexName(e.getValue()).build()).toList();
 			return GetNodesResponse.newBuilder().addAllNode(currentOtherNodesActive).addNode(thisNode).addAllIndexShardMapping(indexShardMappingList)
 					.addAllIndexAlias(indexAliasesList).build();
 		}
 		else {
+			List<IndexShardMapping> indexShardMappingList = indexService.getIndexShardMappings();
+			List<IndexAlias> indexAliasesList = indexService.getIndexAliases();
 			return GetNodesResponse.newBuilder().addAllNode(nodeService.getNodes()).addAllIndexShardMapping(indexShardMappingList)
 					.addAllIndexAlias(indexAliasesList).build();
 		}
