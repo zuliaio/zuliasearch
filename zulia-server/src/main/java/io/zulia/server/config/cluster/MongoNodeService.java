@@ -15,6 +15,7 @@ import org.bson.conversions.Bson;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class MongoNodeService implements NodeService {
@@ -42,11 +43,15 @@ public class MongoNodeService implements NodeService {
 		return mongoClient.getDatabase(clusterName).getCollection(NODES);
 	}
 
+	private MongoCollection<Document> getCollectionWithTimeout() {
+		return getCollection().withTimeout(5, TimeUnit.SECONDS);
+	}
+
 	@Override
 	public Collection<Node> getNodes() {
 
 		List<Node> nodes = new ArrayList<>();
-		for (Document d : getCollection().find()) {
+		for (Document d : getCollectionWithTimeout().find()) {
 			Node node = documentToNode(d);
 			nodes.add(node);
 
@@ -80,7 +85,7 @@ public class MongoNodeService implements NodeService {
 
 		Bson update = Updates.currentDate(HEARTBEAT);
 
-		getCollection().updateOne(query, update);
+		getCollectionWithTimeout().updateOne(query, update);
 
 	}
 

@@ -85,6 +85,11 @@ public abstract class MembershipTask extends TimerTask {
 				ArrayList<Node> otherNodes = new ArrayList<>(otherNodeMap.values());
 
 				for (Node removedNode : removedNodesList) {
+					LOG.info(
+							"Removing expired node {}:{} - node heartbeat: {}, latest heartbeat: {}, current time: {}, lag: {}ms",
+							removedNode.getServerAddress(), removedNode.getServicePort(),
+							removedNode.getHeartbeat(), latest, System.currentTimeMillis(),
+							latest - removedNode.getHeartbeat());
 					handleNodeRemove(otherNodes, removedNode);
 				}
 
