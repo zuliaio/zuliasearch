@@ -3,7 +3,9 @@ package io.zulia.server.search.aggregation.facets;
 import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.MultiDimensionOrdinalBuffer;
 import io.zulia.server.search.aggregation.ordinal.NoOpHandler;
+import io.zulia.server.search.aggregation.ordinal.OrdinalBufferBase;
 import io.zulia.server.search.aggregation.ordinal.SingleDimensionOrdinalBuffer;
+
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.ConjunctionUtils;
@@ -14,11 +16,12 @@ import java.util.Arrays;
 
 public class BinaryFacetReader implements FacetsReader {
 	private final BinaryDocValues ordinalBinaryValues;
-	private final boolean individualFacet;
+	private final FacetHandler reusableHandler;
 
 	public BinaryFacetReader(LeafReader reader, String facetField, boolean individualFacet) throws IOException {
 		this.ordinalBinaryValues = reader.getBinaryDocValues(facetField);
-		this.individualFacet = individualFacet;
+		this.reusableHandler = ordinalBinaryValues == null ? NoOpHandler.INSTANCE :
+				individualFacet ? new SingleDimensionOrdinalBuffer() : new MultiDimensionOrdinalBuffer();
 	}
 
 	@Override
@@ -31,15 +34,10 @@ public class BinaryFacetReader implements FacetsReader {
 
 	@Override
 	public FacetHandler getFacetHandler() throws IOException {
-		if (ordinalBinaryValues == null) {
-			return NoOpHandler.INSTANCE;
+		if (reusableHandler instanceof OrdinalBufferBase buffer) {
+			buffer.reset(ordinalBinaryValues.binaryValue());
 		}
-		else if (individualFacet) {
-			return new SingleDimensionOrdinalBuffer(ordinalBinaryValues.binaryValue());
-		}
-		else {
-			return new MultiDimensionOrdinalBuffer(ordinalBinaryValues.binaryValue());
-		}
+		return reusableHandler;
 	}
 
 }
