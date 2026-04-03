@@ -4,6 +4,12 @@ plugins {
     signing
     `maven-publish`
     id("com.github.ben-manes.versions") version "0.53.0"
+    id("org.owasp.dependencycheck") version "12.2.0"
+}
+
+dependencyCheck {
+    failBuildOnCVSS = 7.0f
+    formats = listOf("HTML", "JSON")
 }
 
 
