@@ -2,11 +2,8 @@ package io.zulia.server.index;
 
 import com.google.common.base.Splitter;
 import com.google.common.primitives.Floats;
-import com.koloboke.collect.map.IntObjMap;
-import com.koloboke.collect.map.hash.HashIntObjMaps;
-import com.koloboke.collect.set.IntSet;
-import com.koloboke.collect.set.hash.HashIntSet;
-import com.koloboke.collect.set.hash.HashIntSets;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaIndex;
@@ -54,10 +51,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.IntConsumer;
 
 public class ShardDocumentIndexer {
 
@@ -132,7 +127,7 @@ public class ShardDocumentIndexer {
 	private void addFacets(Document luceneDocument, DirectoryTaxonomyWriter taxoWriter, Map<String, Set<FacetLabel>> facetFieldToFacetLabels)
 			throws IOException {
 
-		IntObjMap<IntSet> facetDimToOrdinal = HashIntObjMaps.newMutableMap();
+		IntObjectHashMap<IntHashSet> facetDimToOrdinal = new IntObjectHashMap<>();
 
 		int fieldOrdinalCount = 0;
 		for (String facetField : facetFieldToFacetLabels.keySet()) {
@@ -141,7 +136,7 @@ public class ShardDocumentIndexer {
 
 			int dimOridinal = getOrdinalForFacetField(taxoWriter, facetField);
 
-			HashIntSet fieldOrdinals = HashIntSets.newMutableSet();
+			IntHashSet fieldOrdinals = new IntHashSet();
 			facetDimToOrdinal.put(dimOridinal, fieldOrdinals);
 
 			for (FacetLabel facetLabel : facetLabels) {
@@ -171,16 +166,15 @@ public class ShardDocumentIndexer {
 		Map<String, Set<String>> facetGroupToFacets = indexConfig.getFacetGroups();
 		for (String facetGroup : facetGroupToFacets.keySet()) {
 			Set<String> facetsInGroup = facetGroupToFacets.get(facetGroup);
-			TreeSet<Integer> orderedDimOrdinalsForGroup = new TreeSet<>();
+			IntHashSet dimOrdinalsForGroup = new IntHashSet();
 			for (String facet : facetsInGroup) {
-				Integer i = getOrdinalForFacetField(taxoWriter, facet);
-				orderedDimOrdinalsForGroup.add(i);
+				dimOrdinalsForGroup.add(getOrdinalForFacetField(taxoWriter, facet));
 			}
-			storeOrderedFacetsAsDocValue(luceneDocument, orderedDimOrdinalsForGroup, fieldOrdinalCount, facetDimToOrdinal,
+			storeOrderedFacetsAsDocValue(luceneDocument, dimOrdinalsForGroup.toSortedArray(), fieldOrdinalCount, facetDimToOrdinal,
 					ZuliaFieldConstants.FACET_STORAGE_GROUP + facetGroup);
 		}
 
-		TreeSet<Integer> orderedDimOrdinals = new TreeSet<>(facetDimToOrdinal.keySet());
+		int[] orderedDimOrdinals = facetDimToOrdinal.keysView().toSortedArray();
 		storeOrderedFacetsAsDocValue(luceneDocument, orderedDimOrdinals, fieldOrdinalCount, facetDimToOrdinal, ZuliaFieldConstants.FACET_STORAGE);
 	}
 
@@ -194,25 +188,25 @@ public class ShardDocumentIndexer {
 		return ordinal;
 	}
 
-	private static void storeIndividualFacets(Document luceneDocument, String facetField, HashIntSet fieldOrdinals) {
+	private static void storeIndividualFacets(Document luceneDocument, String facetField, IntHashSet fieldOrdinals) {
 		ByteBuffer byteBuffer = ByteBuffer.allocate((fieldOrdinals.size() + 1) * 4);
 		IntBuffer ordinalBuffer = byteBuffer.asIntBuffer();
 		ordinalBuffer.put(fieldOrdinals.size());
-		fieldOrdinals.forEach((IntConsumer) ordinalBuffer::put);
+		fieldOrdinals.forEach(ordinalBuffer::put);
 		luceneDocument.add(new BinaryDocValuesField(ZuliaFieldConstants.FACET_STORAGE_INDIVIDUAL + facetField, new BytesRef(byteBuffer.array())));
 	}
 
-	private static void storeOrderedFacetsAsDocValue(Document luceneDocument, SortedSet<Integer> orderedDimOrdinals, int fieldOrdinalCount,
-			IntObjMap<IntSet> facetDimToOrdinal, String field) {
-		ByteBuffer byteBuffer = ByteBuffer.allocate(((orderedDimOrdinals.size() * 2) + fieldOrdinalCount) * 4);
+	private static void storeOrderedFacetsAsDocValue(Document luceneDocument, int[] sortedDimOrdinals, int fieldOrdinalCount,
+			IntObjectHashMap<IntHashSet> facetDimToOrdinal, String field) {
+		ByteBuffer byteBuffer = ByteBuffer.allocate(((sortedDimOrdinals.length * 2) + fieldOrdinalCount) * 4);
 
 		IntBuffer ordinalBuffer = byteBuffer.asIntBuffer();
-		for (int dimOrdinal : orderedDimOrdinals) {
-			IntSet fieldOrdinals = facetDimToOrdinal.get(dimOrdinal);
+		for (int dimOrdinal : sortedDimOrdinals) {
+			IntHashSet fieldOrdinals = facetDimToOrdinal.get(dimOrdinal);
 			ordinalBuffer.put(dimOrdinal);
 			if (fieldOrdinals != null) {
 				ordinalBuffer.put(fieldOrdinals.size());
-				fieldOrdinals.forEach((IntConsumer) ordinalBuffer::put);
+				fieldOrdinals.forEach(ordinalBuffer::put);
 			}
 			else {
 				ordinalBuffer.put(0);
