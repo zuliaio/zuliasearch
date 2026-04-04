@@ -56,8 +56,6 @@ dependencies {
     implementation(libs.commons.compress)
     implementation(libs.jakarta.validation)
     implementation(libs.jansi)
-    implementation(libs.koloboke.api)
-    implementation(libs.koloboke.impl)
     implementation(libs.logback.classic)
     implementation(libs.micronaut.http.base)
     implementation(libs.micronaut.http.server)

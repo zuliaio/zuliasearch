@@ -8,8 +8,7 @@ import ai.djl.training.dataset.RandomAccessDataset;
 import ai.djl.training.dataset.Record;
 import ai.djl.util.Progress;
 import com.google.gson.Gson;
-import com.koloboke.collect.map.IntIntMap;
-import com.koloboke.collect.map.hash.HashIntIntMaps;
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import io.zulia.ai.features.generator.ClassifierFeatureVector;
 import io.zulia.ai.features.scaler.FeatureScaler;
 import io.zulia.ai.features.stat.FeatureStat;
@@ -29,7 +28,7 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 	private final List<ClassifierFeatureVector> classifierFeatureVectors;
 	private final int categories;
 	private final FeatureStat[] featureStats;
-	private final IntIntMap categoryCountMap;
+	private final IntIntHashMap categoryCountMap;
 	private FeatureScaler featureScaler;
 	private boolean binary;
 
@@ -63,7 +62,7 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 		return categories;
 	}
 
-	public IntIntMap getCategoryCountMap() {
+	public IntIntHashMap getCategoryCountMap() {
 		return categoryCountMap;
 	}
 
@@ -118,7 +117,7 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 		private int categories;
 
 		private FeatureStat[] featureStats;
-		private IntIntMap categoryCountMap;
+		private IntIntHashMap categoryCountMap;
 
 		public Builder() {
 			super();
@@ -163,7 +162,7 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 			}
 			FeatureStatGenerator featureStatGenerator = new FeatureStatGenerator(featureCount);
 
-			this.categoryCountMap = HashIntIntMaps.newMutableMap();
+			this.categoryCountMap = new IntIntHashMap();
 			try (Stream<String> lines = Files.lines(Paths.get(filename))) {
 				lines.forEach(s -> {
 					ClassifierFeatureVector v = gson.fromJson(s, ClassifierFeatureVector.class);
@@ -185,7 +184,7 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 			ClassifierFeatureVector any = vectors.iterator().next();
 			// Set up how many features there are from a random value in the collection
 			FeatureStatGenerator featureStatGenerator = new FeatureStatGenerator(any.getFeatures().length);
-			this.categoryCountMap = HashIntIntMaps.newMutableMap();
+			this.categoryCountMap = new IntIntHashMap();
 			for (ClassifierFeatureVector v : vectors) {
 				handleVector(featureStatGenerator, v);
 			}
@@ -209,7 +208,7 @@ public class DenseFeatureAndCategoryDataset extends RandomAccessDataset {
 
 			classifierFeatureVectors.add(v);
 			featureStatGenerator.addExample(v.getFeatures());
-			categoryCountMap.addValue(v.getCategory(), 1);
+			categoryCountMap.addToValue(v.getCategory(), 1);
 		}
 
 	}

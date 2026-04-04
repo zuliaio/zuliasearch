@@ -1,8 +1,7 @@
 package io.zulia.server.search.aggregation.ordinal;
 
-import com.koloboke.collect.map.IntObjMap;
-import com.koloboke.collect.map.hash.HashIntObjMaps;
 import io.zulia.message.ZuliaQuery;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import io.zulia.server.search.aggregation.stats.Stats;
 import io.zulia.server.search.aggregation.stats.TopStatsQueue;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
@@ -14,28 +13,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.function.IntUnaryOperator;
 import java.util.function.Supplier;
 
 public abstract class MapStatOrdinalStorage<T extends Stats<T>> implements StatOrdinalStorage {
 
 	private final Supplier<T> statConstructor;
-	private final IntObjMap<T> ordinalToStat;
+	private final IntObjectHashMap<T> ordinalToStat;
 
 	public MapStatOrdinalStorage(Supplier<T> statConstructor) {
-		ordinalToStat = HashIntObjMaps.newMutableMap();
+		ordinalToStat = new IntObjectHashMap<>();
 		this.statConstructor = statConstructor;
 	}
 
 	public T getOrCreateStat(int ordinal) {
-
-		return ordinalToStat.computeIfAbsent(ordinal, i -> {
+		return ordinalToStat.getIfAbsentPut(ordinal, () -> {
 			T t = statConstructor.get();
 			t.setOrdinal(ordinal);
 			return t;
 		});
-
 	}
 
 	public T getStat(int ordinal) {
@@ -107,10 +103,7 @@ public abstract class MapStatOrdinalStorage<T extends Stats<T>> implements StatO
 	}
 
 	public synchronized void merge(MapStatOrdinalStorage<?> other) {
-		for (Map.Entry<Integer, ?> otherOrdinalToStatEntry : other.ordinalToStat.entrySet()) {
-			Stats<?> otherValue = (Stats<?>) otherOrdinalToStatEntry.getValue();
-			getOrCreateStat(otherOrdinalToStatEntry.getKey()).merge(otherValue);
-		}
+		other.ordinalToStat.forEachKeyValue((key, value) -> getOrCreateStat(key).merge(value));
 	}
 
 }

@@ -1,8 +1,7 @@
 package io.zulia.server.search.aggregation.facets;
 
-import com.koloboke.collect.map.hash.HashObjLongMap;
-import com.koloboke.collect.map.hash.HashObjLongMaps;
 import io.zulia.message.ZuliaQuery;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
 import java.util.ArrayList;
@@ -12,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 public class FacetCombiner {
 
@@ -46,7 +44,7 @@ public class FacetCombiner {
 		}
 		else {
 
-			HashObjLongMap<String> facetCounts = HashObjLongMaps.newMutableMap();
+			ObjectLongHashMap<String> facetCounts = new ObjectLongHashMap<>();
 			Map<String, BitSet> shardsReturned = new HashMap<>();
 			BitSet fullResults = new BitSet(shardReponses);
 			long[] minForShard = new long[shardReponses];
@@ -59,7 +57,7 @@ public class FacetCombiner {
 				for (FacetCount fc : facetCountList) {
 					String facet = fc.getFacet();
 					BitSet shardSet = shardsReturned.computeIfAbsent(facet, k -> new BitSet(shardReponses));
-					facetCounts.addValue(facet, fc.getCount());
+					facetCounts.addToValue(facet, fc.getCount());
 					shardSet.set(shardIndex);
 				}
 
@@ -87,8 +85,8 @@ public class FacetCombiner {
 			boolean computeError = countRequest.getMaxFacets() > 0 && countRequest.getShardFacets() > 0 && numberOfShards > 1;
 			boolean computePossibleMissing = computeError && (maxValuePossibleMissing != 0);
 
-			SortedSet<FacetCountResult> sortedFacetResults = facetCounts.entrySet().stream()
-					.map(entry -> new FacetCountResult(entry.getKey(), entry.getValue())).collect(Collectors.toCollection(TreeSet::new));
+			SortedSet<FacetCountResult> sortedFacetResults = new TreeSet<>();
+			facetCounts.forEachKeyValue((key, value) -> sortedFacetResults.add(new FacetCountResult(key, value)));
 
 			int maxCount = countRequest.getMaxFacets();
 
