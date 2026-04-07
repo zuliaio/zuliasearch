@@ -57,6 +57,18 @@ public class ServerIndexConfig {
 		return getIndexSettings().getRamBufferMB();
 	}
 
+	public int getMaxMergeThreads() {
+		return getIndexSettings().getMaxMergeThreads();
+	}
+
+	public int getMaxMergePending() {
+		return getIndexSettings().getMaxMergePending();
+	}
+
+	public int getIndexingThrottle() {
+		return getIndexSettings().getIndexingThrottle();
+	}
+
 	public boolean isCompressionEnabled() {
 		return !getIndexSettings().getDisableCompression();
 	}

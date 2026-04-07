@@ -39,7 +39,8 @@ public class ShardWriteManager {
 	private final String indexName;
 	private final AtomicLong counter;
 	private final ZuliaConcurrentMergeScheduler mergeScheduler;
-	private final Semaphore indexingThrottle;
+	private volatile Semaphore indexingThrottle;
+	private volatile int indexingThrottlePermits;
 
 	private final IndexWriter indexWriter;
 	private final DirectoryTaxonomyWriter taxoWriter;
@@ -73,9 +74,9 @@ public class ShardWriteManager {
 
 		this.totalIndexedUnthrottled = new AtomicLong();
 		this.totalIndexedThrottled = new AtomicLong();
+		this.indexingThrottlePermits = 1;
 		this.indexingThrottle = new Semaphore(1);
 		this.mergeScheduler = new ZuliaConcurrentMergeScheduler();
-
 		this.pathToIndex = pathToIndex;
 		this.pathToTaxoIndex = pathToTaxoIndex;
 		this.indexWriter = openIndexWriter(pathToIndex);
@@ -102,7 +103,6 @@ public class ShardWriteManager {
 		TieredMergePolicy tieredMergePolicy = new TieredMergePolicy();
 		tieredMergePolicy.setMaxCFSSegmentSizeMB(100);
 		tieredMergePolicy.setMaxMergedSegmentMB(10_000);
-		tieredMergePolicy.setMaxMergeAtOnce(4);
 		tieredMergePolicy.setDeletesPctAllowed(0.15);
 		config.setMergePolicy(tieredMergePolicy);
 		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
@@ -244,6 +244,24 @@ public class ShardWriteManager {
 	public void updateIndexSettings() {
 		int ramBufferMB = indexConfig.getRAMBufferMB() != 0 ? indexConfig.getRAMBufferMB() : 128;
 		indexWriter.getConfig().setRAMBufferSizeMB(ramBufferMB);
+
+		int maxMergeThreads = indexConfig.getMaxMergeThreads();
+		int maxMergePending = indexConfig.getMaxMergePending();
+		if (maxMergeThreads > 0) {
+			int pending = maxMergePending > 0 ? maxMergePending : 5;
+			mergeScheduler.setMaxMergesAndThreads(pending + maxMergeThreads, maxMergeThreads);
+		}
+		else {
+			mergeScheduler.setDefaultMaxMergesAndThreads(false);
+		}
+
+		int throttle = indexConfig.getIndexingThrottle();
+		int permits = throttle > 0 ? throttle : 1;
+		if (indexingThrottlePermits != permits) {
+			indexingThrottlePermits = permits;
+			indexingThrottle = new Semaphore(permits);
+		}
+
 		lastWarm = null;
 	}
 

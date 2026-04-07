@@ -45,6 +45,9 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private Integer indexWeight;
 	private Integer ramBufferMB;
 	private Integer numberOfReplicas;
+	private Integer maxMergeThreads;
+	private Integer maxMergePending;
+	private Integer indexingThrottle;
 
 	private Boolean disableCompression;
 	private Integer defaultConcurrency;
@@ -319,6 +322,33 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
+	public Integer getMaxMergeThreads() {
+		return maxMergeThreads;
+	}
+
+	public UpdateIndex setMaxMergeThreads(Integer maxMergeThreads) {
+		this.maxMergeThreads = maxMergeThreads;
+		return this;
+	}
+
+	public Integer getMaxMergePending() {
+		return maxMergePending;
+	}
+
+	public UpdateIndex setMaxMergePending(Integer maxMergePending) {
+		this.maxMergePending = maxMergePending;
+		return this;
+	}
+
+	public Integer getIndexingThrottle() {
+		return indexingThrottle;
+	}
+
+	public UpdateIndex setIndexingThrottle(Integer indexingThrottle) {
+		this.indexingThrottle = indexingThrottle;
+		return this;
+	}
+
 	public Boolean getDisableCompression() {
 		return disableCompression;
 	}
@@ -523,6 +553,21 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		if (ramBufferMB != null) {
 			updateIndexSettings.setSetRamBufferMB(true);
 			updateIndexSettings.setRamBufferMB(ramBufferMB);
+		}
+
+		if (maxMergeThreads != null) {
+			updateIndexSettings.setSetMaxMergeThreads(true);
+			updateIndexSettings.setMaxMergeThreads(maxMergeThreads);
+		}
+
+		if (maxMergePending != null) {
+			updateIndexSettings.setSetMaxMergePending(true);
+			updateIndexSettings.setMaxMergePending(maxMergePending);
+		}
+
+		if (indexingThrottle != null) {
+			updateIndexSettings.setSetIndexingThrottle(true);
+			updateIndexSettings.setIndexingThrottle(indexingThrottle);
 		}
 
 		if (disableCompression != null) {

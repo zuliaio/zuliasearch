@@ -60,6 +60,9 @@ public class IndexTest {
 			indexConfig.setNumberOfShards(1);
 			indexConfig.setDefaultConcurrency(12);
 			indexConfig.setDescription("A test index for verifying index settings");
+			indexConfig.setMaxMergeThreads(4);
+			indexConfig.setMaxMergePending(8);
+			indexConfig.setIndexingThrottle(2);
 
 			zuliaWorkPool.createIndex(indexConfig);
 		}
@@ -77,6 +80,9 @@ public class IndexTest {
 			Assertions.assertTrue(indexConfigFromServer.getDisableCompression());
 			Assertions.assertEquals(12, indexConfigFromServer.getDefaultConcurrency());
 			Assertions.assertEquals("A test index for verifying index settings", indexConfigFromServer.getDescription());
+			Assertions.assertEquals(4, indexConfigFromServer.getMaxMergeThreads());
+			Assertions.assertEquals(8, indexConfigFromServer.getMaxMergePending());
+			Assertions.assertEquals(2, indexConfigFromServer.getIndexingThrottle());
 			Assertions.assertEquals(4, indexConfigFromServer.getFieldConfigMap().size());
 
 			ZuliaIndex.FieldConfig idFieldConfig = indexConfigFromServer.getFieldConfig("id");
@@ -177,6 +183,9 @@ public class IndexTest {
 			updateIndex.setDisableCompression(true);
 			updateIndex.setDefaultConcurrency(5);
 			updateIndex.setDescription("Updated description for test index");
+			updateIndex.setMaxMergeThreads(6);
+			updateIndex.setMaxMergePending(10);
+			updateIndex.setIndexingThrottle(3);
 
 			FieldConfigBuilder newField = FieldConfigBuilder.createString("newField").indexAs(DefaultAnalyzers.LC_KEYWORD).sort();
 			updateIndex.mergeFieldConfig(newField);
@@ -193,6 +202,9 @@ public class IndexTest {
 			Assertions.assertTrue(indexConfigFromServer.getDisableCompression());
 			Assertions.assertEquals(5, indexConfigFromServer.getDefaultConcurrency());
 			Assertions.assertEquals("Updated description for test index", indexConfigFromServer.getDescription());
+			Assertions.assertEquals(6, indexConfigFromServer.getMaxMergeThreads());
+			Assertions.assertEquals(10, indexConfigFromServer.getMaxMergePending());
+			Assertions.assertEquals(3, indexConfigFromServer.getIndexingThrottle());
 			Assertions.assertEquals(4, indexConfigFromServer.getFieldConfigMap().size());
 			ZuliaIndex.FieldConfig newField = indexConfigFromServer.getFieldConfig("newField");
 			Assertions.assertEquals(1, newField.getSortAsCount());

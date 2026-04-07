@@ -694,6 +694,18 @@ public class ZuliaIndexManager {
 				existingSettings.setRamBufferMB(updateIndexSettings.getRamBufferMB());
 			}
 
+			if (updateIndexSettings.getSetMaxMergeThreads()) {
+				existingSettings.setMaxMergeThreads(updateIndexSettings.getMaxMergeThreads());
+			}
+
+			if (updateIndexSettings.getSetMaxMergePending()) {
+				existingSettings.setMaxMergePending(updateIndexSettings.getMaxMergePending());
+			}
+
+			if (updateIndexSettings.getSetIndexingThrottle()) {
+				existingSettings.setIndexingThrottle(updateIndexSettings.getIndexingThrottle());
+			}
+
 			if (updateIndexSettings.getSetIndexWeight()) {
 				existingSettings.setIndexWeight(updateIndexSettings.getIndexWeight());
 			}

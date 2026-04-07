@@ -39,6 +39,9 @@ public class ClientIndexConfig {
 	private Integer numberOfReplicas;
 	private Integer defaultConcurrency;
 	private String description;
+	private Integer maxMergeThreads;
+	private Integer maxMergePending;
+	private Integer indexingThrottle;
 
 	private Boolean disableCompression;
 
@@ -117,6 +120,33 @@ public class ClientIndexConfig {
 
 	public ClientIndexConfig setRamBufferMB(Integer ramBufferMB) {
 		this.ramBufferMB = ramBufferMB;
+		return this;
+	}
+
+	public Integer getMaxMergeThreads() {
+		return maxMergeThreads;
+	}
+
+	public ClientIndexConfig setMaxMergeThreads(Integer maxMergeThreads) {
+		this.maxMergeThreads = maxMergeThreads;
+		return this;
+	}
+
+	public Integer getMaxMergePending() {
+		return maxMergePending;
+	}
+
+	public ClientIndexConfig setMaxMergePending(Integer maxMergePending) {
+		this.maxMergePending = maxMergePending;
+		return this;
+	}
+
+	public Integer getIndexingThrottle() {
+		return indexingThrottle;
+	}
+
+	public ClientIndexConfig setIndexingThrottle(Integer indexingThrottle) {
+		this.indexingThrottle = indexingThrottle;
 		return this;
 	}
 
@@ -372,6 +402,18 @@ public class ClientIndexConfig {
 			isb.setRamBufferMB(ramBufferMB);
 		}
 
+		if (maxMergeThreads != null) {
+			isb.setMaxMergeThreads(maxMergeThreads);
+		}
+
+		if (maxMergePending != null) {
+			isb.setMaxMergePending(maxMergePending);
+		}
+
+		if (indexingThrottle != null) {
+			isb.setIndexingThrottle(indexingThrottle);
+		}
+
 		if (disableCompression != null) {
 			isb.setDisableCompression(disableCompression);
 		}
@@ -441,6 +483,9 @@ public class ClientIndexConfig {
 
 		this.indexWeight = indexSettings.getIndexWeight();
 		this.ramBufferMB = indexSettings.getRamBufferMB();
+		this.maxMergeThreads = indexSettings.getMaxMergeThreads();
+		this.maxMergePending = indexSettings.getMaxMergePending();
+		this.indexingThrottle = indexSettings.getIndexingThrottle();
 		this.disableCompression = indexSettings.getDisableCompression();
 		this.defaultConcurrency = indexSettings.getDefaultConcurrency();
 		this.description = indexSettings.getDescription();

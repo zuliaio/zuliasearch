@@ -64,6 +64,10 @@ message IndexSettings {
     uint32 defaultConcurrency = 23;
 
     string description = 24;
+
+    int32 maxMergeThreads = 25; // default -1 (auto detect)
+    int32 maxMergePending = 26; // default -1 (auto detect)
+    uint32 indexingThrottle = 27; // default 1
 }
 
 
@@ -131,6 +135,15 @@ message UpdateIndexSettings {
 
     bool setDescription = 35;
     string description = 36;
+
+    bool setMaxMergeThreads = 37;
+    int32 maxMergeThreads = 38;
+
+    bool setMaxMergePending = 39;
+    int32 maxMergePending = 40;
+
+    bool setIndexingThrottle = 41;
+    uint32 indexingThrottle = 42;
 
 }
 
