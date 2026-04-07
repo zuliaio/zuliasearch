@@ -1,24 +1,20 @@
 package io.zulia.server.search.aggregation.facets;
 
-import com.koloboke.collect.map.IntIntMap;
-import com.koloboke.collect.map.hash.HashIntIntMaps;
 import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.OrdinalConsumer;
-
-import java.util.Map;
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 
 public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 
-	private final IntIntMap countFacetInfo;
-
+	private final IntIntHashMap countFacetInfo;
 
 	public CountFacetInfo() {
-		countFacetInfo = HashIntIntMaps.newMutableMap();
+		countFacetInfo = new IntIntHashMap();
 	}
 
 	private CountFacetInfo(CountFacetInfo copyFacetInfo) {
 		super(copyFacetInfo);
-		countFacetInfo = HashIntIntMaps.newMutableMap();
+		countFacetInfo = new IntIntHashMap();
 	}
 
 	public CountFacetInfo cloneNewCounter() {
@@ -31,13 +27,11 @@ public class CountFacetInfo extends FacetInfo implements OrdinalConsumer {
 
 	@Override
 	public void handleOrdinal(int ordinal) {
-		countFacetInfo.addValue(ordinal, 1);
+		countFacetInfo.addToValue(ordinal, 1);
 	}
 
 	public synchronized void merge(CountFacetInfo other) {
-		for (Map.Entry<Integer, Integer> localKeyToValue : other.countFacetInfo.entrySet()) {
-			countFacetInfo.addValue(localKeyToValue.getKey(), localKeyToValue.getValue());
-		}
+		other.countFacetInfo.forEachKeyValue((key, value) -> countFacetInfo.addToValue(key, value));
 	}
 
 	public void maybeHandleFacets(FacetHandler facetHandler) {

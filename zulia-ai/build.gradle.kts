@@ -4,8 +4,7 @@ dependencies {
     api(projects.zuliaData)
 
     implementation(libs.sketches.java)
-    implementation(libs.koloboke.api)
-    implementation(libs.koloboke.impl)
+    implementation(libs.eclipse.collections)
     api(libs.djl.pytorch.engine)
     api(libs.djl.bom)
     api(libs.djl.huggingface.tokenizers)

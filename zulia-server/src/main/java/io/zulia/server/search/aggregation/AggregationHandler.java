@@ -17,8 +17,7 @@
 package io.zulia.server.search.aggregation;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.koloboke.collect.map.ObjObjMap;
-import com.koloboke.collect.map.hash.HashObjObjMaps;
+import org.eclipse.collections.impl.map.mutable.UnifiedMap;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.config.ServerIndexConfig;
@@ -79,7 +78,7 @@ public class AggregationHandler {
 		this.taxoReader = taxoReader;
 		this.requestedConcurrency = requestedConcurrency;
 
-		ObjObjMap<String, NumericFieldStatInfo> fieldToDimensions = HashObjObjMaps.newMutableMap();
+		UnifiedMap<String, NumericFieldStatInfo> fieldToDimensions = new UnifiedMap<>();
 
 		TreeSet<String> facets = new TreeSet<>();
 
