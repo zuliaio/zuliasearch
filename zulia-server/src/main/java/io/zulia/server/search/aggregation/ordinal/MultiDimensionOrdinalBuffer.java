@@ -1,21 +1,11 @@
 package io.zulia.server.search.aggregation.ordinal;
 
-import org.apache.lucene.util.BytesRef;
-
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
-
-public class MultiDimensionOrdinalBuffer implements FacetHandler {
-	private final IntBuffer ordinalBuffer;
-
-	public MultiDimensionOrdinalBuffer(BytesRef bytesRef) {
-		ordinalBuffer = ByteBuffer.wrap(bytesRef.bytes, bytesRef.offset, bytesRef.length).asIntBuffer();
-	}
+public class MultiDimensionOrdinalBuffer extends OrdinalBufferBase {
 
 	public void handleFacets(OrdinalConsumer ordinalConsumer) {
 		int[] requestDimensionOrdinals = ordinalConsumer.requestedDimensionOrdinals();
-		ordinalBuffer.position(0);
-		if (ordinalBuffer.hasRemaining()) {
+		pos = startPos;
+		if (hasRemaining()) {
 			int storedDimOrdinal = -1;
 			int storedOrdinalLengthForDim = 0;
 
@@ -23,20 +13,20 @@ public class MultiDimensionOrdinalBuffer implements FacetHandler {
 
 				while (storedDimOrdinal < requestedDimOrdinal) {
 					if (storedOrdinalLengthForDim != 0) {
-						ordinalBuffer.position(ordinalBuffer.position() + storedOrdinalLengthForDim);
+						skip(storedOrdinalLengthForDim);
 					}
 
-					if (!ordinalBuffer.hasRemaining()) {
+					if (!hasRemaining()) {
 						return;
 					}
 
-					storedDimOrdinal = ordinalBuffer.get();
-					storedOrdinalLengthForDim = ordinalBuffer.get();
+					storedDimOrdinal = readInt();
+					storedOrdinalLengthForDim = readInt();
 				}
 
 				if (requestedDimOrdinal == storedDimOrdinal) {
 					for (int i = 0; i < storedOrdinalLengthForDim; i++) {
-						ordinalConsumer.handleOrdinal(ordinalBuffer.get());
+						ordinalConsumer.handleOrdinal(readInt());
 					}
 					storedOrdinalLengthForDim = 0;
 				}
