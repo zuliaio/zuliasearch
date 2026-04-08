@@ -18,7 +18,7 @@ class TextEmbeddingModelTest {
 		try (TextEmbeddingModel model = TextEmbeddingModel.load(knownModel)) {
 			float[] embedding = model.embed("lung cancer immunotherapy");
 			assertNotNull(embedding);
-			assertEquals(knownModel.getConfig().dimensions(), embedding.length);
+			assertEquals(knownModel.getConfig().outputDimensions(), embedding.length);
 		}
 	}
 
@@ -69,8 +69,7 @@ class TextEmbeddingModelTest {
 	@EnumSource(KnownEmbeddingModel.class)
 	void testDimensions(KnownEmbeddingModel knownModel) throws Exception {
 		try (TextEmbeddingModel model = TextEmbeddingModel.load(knownModel)) {
-			assertEquals(knownModel.getConfig().dimensions(), model.getDimensions());
-			assertEquals(knownModel.getConfig().dimensions(), model.getConfig().dimensions());
+			assertEquals(knownModel.getConfig().outputDimensions(), model.getDimensions());
 		}
 	}
 

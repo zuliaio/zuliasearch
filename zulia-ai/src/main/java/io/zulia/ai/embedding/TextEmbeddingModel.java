@@ -9,6 +9,7 @@ import ai.djl.translate.TranslateException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TextEmbeddingModel implements AutoCloseable {
@@ -38,7 +39,7 @@ public class TextEmbeddingModel implements AutoCloseable {
 
 	public float[] embed(String text) throws TranslateException {
 		try (Predictor<String, float[]> predictor = model.newPredictor()) {
-			return predictor.predict(text);
+			return truncate(predictor.predict(text));
 		}
 	}
 
@@ -52,7 +53,11 @@ public class TextEmbeddingModel implements AutoCloseable {
 
 	public List<float[]> batchEmbed(List<String> texts) throws TranslateException {
 		try (Predictor<String, float[]> predictor = model.newPredictor()) {
-			return predictor.batchPredict(texts);
+			List<float[]> results = predictor.batchPredict(texts);
+			if (config.truncateDimensions() != null) {
+				return results.stream().map(this::truncate).toList();
+			}
+			return results;
 		}
 	}
 
@@ -77,11 +82,18 @@ public class TextEmbeddingModel implements AutoCloseable {
 	}
 
 	public int getDimensions() {
-		return config.dimensions();
+		return config.outputDimensions();
 	}
 
 	public EmbeddingModelConfig getConfig() {
 		return config;
+	}
+
+	private float[] truncate(float[] vector) {
+		if (config.truncateDimensions() != null && vector.length > config.truncateDimensions()) {
+			return Arrays.copyOf(vector, config.truncateDimensions());
+		}
+		return vector;
 	}
 
 	@Override
