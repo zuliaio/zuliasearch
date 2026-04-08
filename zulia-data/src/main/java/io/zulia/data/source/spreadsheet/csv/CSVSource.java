@@ -27,7 +27,7 @@ public class CSVSource extends DelimitedSource<CSVRecord, CSVSourceConfig> {
 	protected CsvReader.CsvReaderBuilder createParser(CSVSourceConfig csvSourceConfig) {
 		return CsvReader.builder().fieldSeparator(csvSourceConfig.getDelimiter()).quoteCharacter('"').commentStrategy(CommentStrategy.SKIP)
 				.commentCharacter('#').skipEmptyLines(true).allowExtraFields(false).allowMissingFields(false).allowExtraCharsAfterClosingQuote(false)
-				.detectBomHeader(false).maxBufferSize(16777216);
+				.detectBomHeader(true).maxBufferSize(16777216);
 
 	}
 
