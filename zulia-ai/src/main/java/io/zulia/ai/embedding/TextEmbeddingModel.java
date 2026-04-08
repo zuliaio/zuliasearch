@@ -1,6 +1,8 @@
 package io.zulia.ai.embedding;
 
 import ai.djl.MalformedModelException;
+import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
+import ai.djl.huggingface.translator.TextEmbeddingTranslator;
 import ai.djl.inference.Predictor;
 import ai.djl.repository.zoo.Criteria;
 import ai.djl.repository.zoo.ModelNotFoundException;
@@ -8,6 +10,7 @@ import ai.djl.repository.zoo.ZooModel;
 import ai.djl.translate.TranslateException;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,10 +30,39 @@ public class TextEmbeddingModel implements AutoCloseable {
 	}
 
 	public static TextEmbeddingModel load(EmbeddingModelConfig config) throws ModelNotFoundException, MalformedModelException, IOException {
+		if (config.modelUrl().startsWith("djl://")) {
+			return loadFromZoo(config);
+		}
+		return loadFromHuggingFace(config);
+	}
+
+	private static TextEmbeddingModel loadFromZoo(EmbeddingModelConfig config) throws ModelNotFoundException, MalformedModelException, IOException {
 		Criteria<String, float[]> criteria = Criteria.builder()
 				.setTypes(String.class, float[].class)
 				.optModelUrls(config.modelUrl())
 				.optEngine("OnnxRuntime")
+				.build();
+
+		ZooModel<String, float[]> model = criteria.loadModel();
+		return new TextEmbeddingModel(model, config);
+	}
+
+	private static TextEmbeddingModel loadFromHuggingFace(EmbeddingModelConfig config) throws ModelNotFoundException, MalformedModelException, IOException {
+		Path modelDir = HuggingFaceModelDownloader.downloadModel(config.modelUrl());
+
+		HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.newInstance(modelDir);
+
+		TextEmbeddingTranslator translator = TextEmbeddingTranslator.builder(tokenizer)
+				.optPoolingMode(config.poolingModeOrDefault())
+				.optNormalize(true)
+				.optIncludeTokenTypes(config.includeTokenTypes())
+				.build();
+
+		Criteria<String, float[]> criteria = Criteria.builder()
+				.setTypes(String.class, float[].class)
+				.optModelPath(modelDir)
+				.optEngine("OnnxRuntime")
+				.optTranslator(translator)
 				.build();
 
 		ZooModel<String, float[]> model = criteria.loadModel();
