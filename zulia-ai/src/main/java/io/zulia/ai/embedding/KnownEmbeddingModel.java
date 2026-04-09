@@ -59,7 +59,11 @@ public enum KnownEmbeddingModel {
 	// Snowflake Arctic Embed - retrieval-optimized, CLS pooling
 	SNOWFLAKE_ARCTIC_EMBED_M_V2(EmbeddingModelConfig.builder("https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0", 768)
 			.prefixes("Represent this sentence for searching relevant passages: ", "")
-			.poolingMode("cls").build());
+			.poolingMode("cls").build()),
+
+	// Bioclinical ModernBERT - biomedical/clinical domain, mean pooling, 8192 token context
+	BIOCLINICAL_MODERNBERT(EmbeddingModelConfig.builder("https://huggingface.co/zuliaio/bioclinical-modernbert-base-embeddings-onnx", 768)
+			.build());
 
 	private final EmbeddingModelConfig config;
 
