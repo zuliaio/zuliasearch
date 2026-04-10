@@ -106,7 +106,7 @@ public class SparseTranslator implements Translator<String, Map<String, Float>> 
 		}
 		return result;
 	}
-	
+
 	private static boolean isSpecialToken(String token) {
 		return SPECIAL_TOKENS.contains(token);
 	}
