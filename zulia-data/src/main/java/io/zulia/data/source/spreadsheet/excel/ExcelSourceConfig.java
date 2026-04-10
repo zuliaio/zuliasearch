@@ -34,7 +34,7 @@ public class ExcelSourceConfig {
 	}
 
 	public ExcelSourceConfig withStrictHeaders() {
-		return withHeaders(new HeaderConfig().allowBlanks(true).allowDuplicates(true));
+		return withHeaders(new HeaderConfig().allowBlanks(false).allowDuplicates(false));
 	}
 
 	public ExcelSourceConfig withHeaders(HeaderConfig headerConfig) {
