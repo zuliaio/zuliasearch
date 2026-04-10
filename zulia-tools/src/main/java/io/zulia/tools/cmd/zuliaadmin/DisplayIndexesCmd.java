@@ -1,5 +1,6 @@
 package io.zulia.tools.cmd.zuliaadmin;
 
+import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.GetIndexesResult;
 import io.zulia.client.result.GetNumberOfDocsResult;
@@ -49,11 +50,13 @@ public class DisplayIndexesCmd implements Callable<Integer> {
 
 			List<String> indexNames = indexes.getIndexNames();
 
-			ZuliaCommonCmd.printMagenta(String.format("%40s | %14s | %14s | %40s", "Index Name", "Docs", "Size (MB)", "Location"));
+			ZuliaCommonCmd.printMagenta(
+					String.format("%40s | %14s | %14s | %8s | %40s", "Index Name", "Docs", "Size (MB)", "Weight", "Location"));
 			for (String indexName : indexNames) {
 				GetNumberOfDocsResult docsResult = zuliaWorkPool.getNumberOfDocs(indexName);
-				System.out.printf("%40s | %14d | %14.2f | %40s\n", indexName, docsResult.getNumberOfDocs(), docsResult.getSizeOnDiskMB(),
-						indexLocation.get(indexName));
+				ClientIndexConfig indexConfig = zuliaWorkPool.getIndexConfig(indexName).getIndexConfig();
+				System.out.printf("%40s | %14d | %14.2f | %8d | %40s\n", indexName, docsResult.getNumberOfDocs(), docsResult.getSizeOnDiskMB(),
+						indexConfig.getIndexWeight(), indexLocation.get(indexName));
 			}
 		}
 		else {
