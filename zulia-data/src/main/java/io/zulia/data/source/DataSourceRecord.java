@@ -37,7 +37,7 @@ public interface DataSourceRecord {
 
 	Integer getInt(String field);
 
-	default int getDouble(String field, int defaultValue) {
+	default int getInt(String field, int defaultValue) {
 		Integer val = getInt(field);
 		return val != null ? val : defaultValue;
 	}
