@@ -26,6 +26,13 @@ public class SparseTranslator implements Translator<String, Map<String, Float>> 
 	private final int maxTerms;
 	private final boolean includeTokenTypes;
 
+	static final Set<String> SPECIAL_TOKENS = Set.of(
+			// BERT
+			"[CLS]", "[SEP]", "[PAD]", "[UNK]", "[MASK]",
+			// RoBERTa
+			"<s>", "</s>", "<pad>", "<unk>", "<mask>"
+	);
+
 	SparseTranslator(HuggingFaceTokenizer tokenizer, String[] vocabulary, float weightThreshold, int maxTerms,
 			boolean includeTokenTypes) {
 		this.tokenizer = tokenizer;
@@ -99,14 +106,7 @@ public class SparseTranslator implements Translator<String, Map<String, Float>> 
 		}
 		return result;
 	}
-
-	private static final Set<String> SPECIAL_TOKENS = Set.of(
-			// BERT
-			"[CLS]", "[SEP]", "[PAD]", "[UNK]", "[MASK]",
-			// RoBERTa
-			"<s>", "</s>", "<pad>", "<unk>", "<mask>"
-	);
-
+	
 	private static boolean isSpecialToken(String token) {
 		return SPECIAL_TOKENS.contains(token);
 	}
