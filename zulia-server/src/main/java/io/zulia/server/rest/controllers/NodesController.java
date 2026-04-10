@@ -90,6 +90,10 @@ public class NodesController {
 
 				}
 
+				if (primaryShards.isEmpty() && replicaShards.isEmpty()) {
+					continue;
+				}
+
 				IndexMappingDTO indexMappingDTO = new IndexMappingDTO();
 				indexMappingDTO.setName(indexShardMapping.getIndexName());
 
