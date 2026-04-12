@@ -57,7 +57,7 @@ public class ZuliaPoolConfig {
 		return this;
 	}
 
-	public ZuliaPoolConfig clearMembers() {
+	public ZuliaPoolConfig clearNodes() {
 		nodes.clear();
 		return this;
 	}
