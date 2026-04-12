@@ -59,4 +59,9 @@ public class JULLoggingConnectionListener implements ConnectionListener {
 						+ " with exception: " + exception.getMessage());
 	}
 
+	@Override
+	public void nodeUpdateException(Exception exception) {
+		LOG.log(Level.WARNING, "Failed to update nodes and routing", exception);
+	}
+
 }

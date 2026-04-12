@@ -23,15 +23,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static io.zulia.message.ZuliaBase.Node;
 import static io.zulia.message.ZuliaIndex.IndexShardMapping;
 
 public class ZuliaPool {
-
-	private static final Logger LOG = Logger.getLogger(ZuliaPool.class.getName());
 
 	private final int retries;
 	private final boolean routingEnabled;
@@ -81,7 +77,9 @@ public class ZuliaPool {
 				return;
 			}
 			catch (Exception e) {
-				LOG.log(Level.WARNING, "Failed to update nodes and routing", e);
+				if (connectionListener != null) {
+					connectionListener.nodeUpdateException(e);
+				}
 			}
 		}
 	}
