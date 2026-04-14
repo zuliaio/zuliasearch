@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-class HuggingFaceModelDownloader {
+public class HuggingFaceModelDownloader {
 
 	private static final String HF_BASE = "https://huggingface.co/";
 	private static final String[] ONNX_PATHS = { "onnx/model.onnx", "model.onnx" };
