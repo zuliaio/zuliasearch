@@ -70,8 +70,9 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
-	public void clearQueries() {
+	public Search clearQueries() {
 		queryRequest.clearQuery();
+		return this;
 	}
 
 	public int getAmount() {
@@ -110,7 +111,7 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
-	public int setStart() {
+	public int getStart() {
 		return queryRequest.getStart();
 	}
 
@@ -178,8 +179,9 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
-	public void clearLastResult() {
+	public Search clearLastResult() {
 		queryRequest.clearLastResult();
+		return this;
 	}
 
 	public Search addFieldSimilarity(String field, Similarity similarity) {

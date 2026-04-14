@@ -21,4 +21,6 @@ public interface ConnectionListener {
 	<R extends Result> void exceptionWithRetry(ZuliaBase.Node selectedNode, BaseCommand<R> command, Exception e, int tries);
 
 	<R extends Result> void exception(ZuliaBase.Node selectedNode, BaseCommand<R> command, Exception exception);
+
+	void nodeUpdateException(Exception exception);
 }

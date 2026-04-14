@@ -46,7 +46,7 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 		return this;
 	}
 
-	public String getFileFame() {
+	public String getFileName() {
 		return fileName;
 	}
 
