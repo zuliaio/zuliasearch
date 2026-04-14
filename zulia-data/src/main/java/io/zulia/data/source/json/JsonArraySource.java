@@ -78,8 +78,7 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 					}
 				}
 				catch (IOException e) {
-					System.out.println(e.getMessage());
-					//throw new RuntimeException(e);
+					throw new RuntimeException(e);
 				}
 				return jsonSourceRecord;
 			}
