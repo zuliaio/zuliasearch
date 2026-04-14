@@ -30,7 +30,7 @@ public class DisplayIndexCmd implements Callable<Integer> {
 	@CommandLine.Mixin
 	private MultipleIndexArgs multipleIndexArgs;
 
-	@CommandLine.Option(names = "--view", description = "Valid values: ${COMPLETION-CANDIDATES}")
+	@CommandLine.Option(names = "--view", required = true, description = "Valid values: ${COMPLETION-CANDIDATES}")
 	public IndexSettings view;
 
 	@Override
