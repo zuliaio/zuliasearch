@@ -45,4 +45,9 @@ public class NoOpConnectionListener implements ConnectionListener {
 
 	}
 
+	@Override
+	public void nodeUpdateException(Exception exception) {
+
+	}
+
 }

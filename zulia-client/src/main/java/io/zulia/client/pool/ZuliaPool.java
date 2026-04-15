@@ -29,35 +29,6 @@ import static io.zulia.message.ZuliaIndex.IndexShardMapping;
 
 public class ZuliaPool {
 
-	protected class ZuliaNodeUpdateThread extends Thread {
-
-		ZuliaNodeUpdateThread() {
-			setDaemon(true);
-			setName("ZuliaNodeUpdateThread" + hashCode());
-		}
-
-		@Override
-		public void run() {
-			while (!isClosed) {
-				try {
-					try {
-						Thread.sleep(nodeUpdateInterval);
-					}
-					catch (InterruptedException ignored) {
-
-					}
-					if (!isClosed) {
-						updateNodesAndRouting();
-					}
-
-				}
-				catch (Throwable ignored) {
-
-				}
-			}
-		}
-	}
-
 	private final int retries;
 	private final boolean routingEnabled;
 	private final int nodeUpdateInterval;
@@ -66,9 +37,9 @@ public class ZuliaPool {
 	private final ConcurrentHashMap<String, ZuliaRESTClient> zuliaRestPoolMap;
 	private final ConcurrentHashMap<String, Node> nodeKeyToNode;
 	private final ConnectionListener connectionListener;
-	private boolean isClosed;
-	private List<Node> nodes;
-	private IndexRouting indexRouting;
+	private volatile boolean isClosed;
+	private volatile List<Node> nodes;
+	private volatile IndexRouting indexRouting;
 
 	public ZuliaPool(final ZuliaPoolConfig zuliaPoolConfig) {
 		nodes = zuliaPoolConfig.getNodes();
@@ -88,8 +59,28 @@ public class ZuliaPool {
 		}
 
 		if (zuliaPoolConfig.isNodeUpdateEnabled()) {
-			ZuliaNodeUpdateThread mut = new ZuliaNodeUpdateThread();
-			mut.start();
+			Thread.ofVirtual().name("ZuliaNodeUpdateThread-" + hashCode()).start(this::nodeUpdateLoop);
+		}
+	}
+
+	private void nodeUpdateLoop() {
+		while (!isClosed) {
+			try {
+				//noinspection BusyWait
+				Thread.sleep(nodeUpdateInterval);
+				if (!isClosed) {
+					updateNodesAndRouting();
+				}
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
+			catch (Exception e) {
+				if (connectionListener != null) {
+					connectionListener.nodeUpdateException(e);
+				}
+			}
 		}
 	}
 
@@ -140,22 +131,19 @@ public class ZuliaPool {
 			Node selectedNode = null;
 			try {
 				if (routingEnabled && (indexRouting != null)) {
-					if (command instanceof ShardRoutableCommand) {
-						ShardRoutableCommand rc = (ShardRoutableCommand) command;
+					if (command instanceof ShardRoutableCommand rc) {
 						selectedNode = indexRouting.getNode(rc.getIndexName(), rc.getUniqueId());
 					}
-					else if (command instanceof SingleIndexRoutableCommand) {
-						SingleIndexRoutableCommand sirc = (SingleIndexRoutableCommand) command;
+					else if (command instanceof SingleIndexRoutableCommand sirc) {
 						selectedNode = indexRouting.getRandomNode(sirc.getIndexName());
 					}
-					else if (command instanceof MultiIndexRoutableCommand) {
-						MultiIndexRoutableCommand mirc = (MultiIndexRoutableCommand) command;
+					else if (command instanceof MultiIndexRoutableCommand mirc) {
 						selectedNode = indexRouting.getRandomNode(mirc.getIndexNames());
 					}
 				}
 
 				if (selectedNode == null) {
-					List<Node> tempList = nodes; //stop array index out bounds on updates without locking
+					List<Node> tempList = nodes;
 
 					if (tempList.isEmpty()) {
 						throw new IOException("There are no active nodes");
@@ -206,12 +194,12 @@ public class ZuliaPool {
 
 						Metadata trailers = e.getTrailers();
 						if (trailers != null && trailers.containsKey(MetaKeys.ERROR_KEY)) {
-							String errorMessage = trailers.get(MetaKeys.ERROR_KEY);
-							if (!Status.INVALID_ARGUMENT.equals(e.getStatus())) {
-								throw new Exception(grpcCommand.getClass().getSimpleName() + ": " + errorMessage);
+							String errorMessage = grpcCommand.getClass().getSimpleName() + ": " + trailers.get(MetaKeys.ERROR_KEY);
+							if (Status.INVALID_ARGUMENT.equals(e.getStatus())) {
+								throw new IllegalArgumentException(errorMessage);
 							}
 							else {
-								throw new IllegalArgumentException(grpcCommand.getClass().getSimpleName() + ": " + errorMessage);
+								throw new Exception(errorMessage);
 							}
 						}
 						else {
@@ -223,11 +211,15 @@ public class ZuliaPool {
 			}
 			catch (Exception e) {
 				if (tries >= retries) {
-					connectionListener.exception(selectedNode, command, e);
+					if (connectionListener != null) {
+						connectionListener.exception(selectedNode, command, e);
+					}
 					throw e;
 				}
 				tries++;
-				connectionListener.exceptionWithRetry(selectedNode, command, e, tries);
+				if (connectionListener != null) {
+					connectionListener.exceptionWithRetry(selectedNode, command, e, tries);
+				}
 			}
 		}
 

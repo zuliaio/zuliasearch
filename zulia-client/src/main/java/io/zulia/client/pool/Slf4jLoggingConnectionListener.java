@@ -56,4 +56,9 @@ public class Slf4jLoggingConnectionListener implements ConnectionListener {
 				selectedNode.getServicePort(), exception.getMessage());
 	}
 
+	@Override
+	public void nodeUpdateException(Exception exception) {
+		LOG.warn("Failed to update nodes and routing", exception);
+	}
+
 }
