@@ -1,8 +1,7 @@
 plugins {
     java
     idea
-    signing
-    `maven-publish`
+    alias(libs.plugins.maven.publish) apply false
     id("com.github.ben-manes.versions") version "0.53.0"
     id("org.owasp.dependencycheck") version "12.2.0"
 }
@@ -38,57 +37,52 @@ subprojects {
 
     plugins.apply("java")
     plugins.apply("idea")
-    plugins.apply("signing")
-    plugins.apply("maven-publish")
     plugins.apply("java-library")
+    plugins.apply("com.vanniktech.maven.publish")
 
     java {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
-        withSourcesJar()
-        withJavadocJar()
     }
 
     tasks.withType<AbstractArchiveTask>().configureEach {
         isPreserveFileTimestamps = true
     }
 
-    publishing {
-        publications {
-            create<MavenPublication>("mavenJava") {
-                from(components["java"])
-                pom {
-                    url.set("https://zulia.io")
-                    licenses {
-                        license {
-                            name.set("The Apache License, Version 2.0")
-                            url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                        }
-                    }
-                    developers {
-                        developer {
-                            id.set("mdavis")
-                            name.set("Matt Davis")
-                            email.set("matt.davis@ascend-tech.us")
-                            organization.set("Ascendant Software Technology, LLC")
-                            organizationUrl.set("https://www.ascend-tech.us")
-                        }
-                        developer {
-                            id.set("payam.meyer")
-                            name.set("Payam Mayer")
-                            email.set("payam.meyer@ascend-tech.us")
-                            organization.set("Ascendant Software Technology, LLC")
-                            organizationUrl.set("https://www.ascend-tech.us")
-                        }
-                    }
-                    scm {
-                        connection.set("git@github.com:zuliaio/zuliasearch.git")
-                        developerConnection.set("git@github.com:zuliaio/zuliasearch.git")
-                        url.set("https://github.com/zuliaio/zuliasearch")
-                    }
-                    name.set(project.name)
-                    description.set(project.name)
+    configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
+        publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+        signAllPublications()
+
+        pom {
+            name.set(project.name)
+            description.set(project.name)
+            url.set("https://zulia.io")
+            licenses {
+                license {
+                    name.set("The Apache License, Version 2.0")
+                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
                 }
+            }
+            developers {
+                developer {
+                    id.set("mdavis")
+                    name.set("Matt Davis")
+                    email.set("matt.davis@ascend-tech.us")
+                    organization.set("Ascendant Software Technology, LLC")
+                    organizationUrl.set("https://www.ascend-tech.us")
+                }
+                developer {
+                    id.set("payam.meyer")
+                    name.set("Payam Mayer")
+                    email.set("payam.meyer@ascend-tech.us")
+                    organization.set("Ascendant Software Technology, LLC")
+                    organizationUrl.set("https://www.ascend-tech.us")
+                }
+            }
+            scm {
+                connection.set("scm:git:https://github.com/zuliaio/zuliasearch.git")
+                developerConnection.set("scm:git:ssh://git@github.com/zuliaio/zuliasearch.git")
+                url.set("https://github.com/zuliaio/zuliasearch")
             }
         }
     }

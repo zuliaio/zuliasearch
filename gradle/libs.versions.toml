@@ -10,6 +10,7 @@ protobuf = "4.34.1"
 unirest = '4.7.0'
 djl = "0.36.0"
 junit = "5.14.3"
+maven-publish = "0.36.0"
 
 [libraries]
 annontations = { module = "org.jetbrains:annotations", version = "26.1.0" }
@@ -91,3 +92,4 @@ poi = ["poi", "poi-ooxml"]
 #reckon = { id = "org.ajoberstar.reckon", version = "0.19.2" }
 micronaut-application = { id = "io.micronaut.application", version = "4.6.2" }
 protobuf = { id = "com.google.protobuf", version = "0.9.6" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
