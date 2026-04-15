@@ -39,14 +39,20 @@ jobs:
           fi
           echo "NOTES_PATH=$NOTES" >> "$GITHUB_ENV"
 
-      - name: Build and test
-        run: ./gradlew clean build --no-configuration-cache
-
-      - name: Build distributions
-        run: ./gradlew :zulia-server:distTar :zulia-tools:distTar --no-configuration-cache
-
-      - name: Publish to Maven Central
-        run: ./gradlew publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+      # Must be a single Gradle invocation starting with `clean`. The
+      # copySwagger task (finalizer of `build`) writes into the tracked
+      # `zulia-swagger/ui/` path, which dirties the working tree. Any
+      # subsequent Gradle invocation after `build` sees that dirt and
+      # reckon falls back to `<next>-beta.0.0+<timestamp>` snapshot mode,
+      # at which point signing is skipped and publish fails with
+      # "no configured signatory". Combining clean + build + dist + publish
+      # keeps reckon's single evaluation on a clean tree.
+      - name: Build, sign, and publish
+        run: |
+          ./gradlew clean build \
+            :zulia-server:distTar :zulia-tools:distTar \
+            publishAllPublicationsToMavenCentralRepository \
+            --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}

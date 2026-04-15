@@ -28,6 +28,7 @@ public class DisplayIndexesCmd implements Callable<Integer> {
 		ZuliaWorkPool zuliaWorkPool = zuliaAdmin.getConnection();
 
 		GetIndexesResult indexes = zuliaWorkPool.getIndexes();
+		List<String> indexNames = indexes.getIndexNames().stream().sorted(String.CASE_INSENSITIVE_ORDER).toList();
 
 		if (detailed) {
 			HashMap<String, String> indexLocation = new HashMap<>();
@@ -48,8 +49,6 @@ public class DisplayIndexesCmd implements Callable<Integer> {
 				indexLocation.put(indexShardMapping.getIndexName(), sb.toString());
 			}
 
-			List<String> indexNames = indexes.getIndexNames();
-
 			ZuliaCommonCmd.printMagenta(
 					String.format("%40s | %14s | %14s | %8s | %40s", "Index Name", "Docs", "Size (MB)", "Weight", "Location"));
 			for (String indexName : indexNames) {
@@ -60,8 +59,6 @@ public class DisplayIndexesCmd implements Callable<Integer> {
 			}
 		}
 		else {
-			List<String> indexNames = indexes.getIndexNames();
-
 			for (String indexName : indexNames) {
 				System.out.println(indexName);
 			}

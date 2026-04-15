@@ -75,6 +75,7 @@ dependencies {
 
     testImplementation(projects.zuliaClient)
     testImplementation(libs.flapdoodle.mongo)
+    testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.micronaut.test.junit5)
     testImplementation(libs.micronaut.test.security)
     testImplementation(libs.jakarta.inject)
