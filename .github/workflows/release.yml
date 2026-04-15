@@ -16,13 +16,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      - uses: gradle/actions/setup-gradle@v4
+      # Warmup: the first Gradle invocation after reckon is downloaded
+      # computes a wrong snapshot version (`<next>-beta.0.0+<timestamp>`).
+      # A second invocation stamps the correct release. Running `help` first
+      # primes the daemon/plugin cache so the real build stamps the tag.
+      - name: Warmup Gradle and reckon
+        run: ./gradlew help -q
 
       - name: Verify release notes exist
         run: |
@@ -34,10 +40,10 @@ jobs:
           echo "NOTES_PATH=$NOTES" >> "$GITHUB_ENV"
 
       - name: Build and test
-        run: ./gradlew clean build
+        run: ./gradlew clean build --no-configuration-cache
 
       - name: Build distributions
-        run: ./gradlew :zulia-server:distTar :zulia-tools:distTar
+        run: ./gradlew :zulia-server:distTar :zulia-tools:distTar --no-configuration-cache
 
       - name: Publish to Maven Central
         run: ./gradlew publishAllPublicationsToMavenCentralRepository --no-configuration-cache
@@ -58,3 +64,5 @@ jobs:
           files: |
             zulia-server/build/distributions/*.tar
             zulia-tools/build/distributions/*.tar
+            zulia-server/build/distributions/*.zip
+            zulia-tools/build/distributions/*.zip

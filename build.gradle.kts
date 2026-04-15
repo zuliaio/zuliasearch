@@ -50,7 +50,7 @@ subprojects {
     }
 
     configure<com.vanniktech.maven.publish.MavenPublishBaseExtension> {
-        publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+        publishToMavenCentral(automaticRelease = true)
         signAllPublications()
 
         pom {

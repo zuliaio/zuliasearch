@@ -9,23 +9,17 @@ The release workflow (`.github/workflows/release.yml`) reads `release-notes/${TA
 1. Create `release-notes/<next-version>.md`
 2. Test the build locally at that version:
    ```bash
+   export SCOPE=minor # or patch or major
+   export STAGE=final
    ./gradlew clean build :zulia-server:distTar :zulia-tools:distTar \
-     -Preckon.scope=minor -Preckon.stage=final
-   ./gradlew publishToMavenLocal -Preckon.scope=minor -Preckon.stage=final
+     -Preckon.scope=$SCOPE -Preckon.stage=$STAGE
+   ./gradlew publishToMavenLocal -Preckon.scope=$SCOPE -Preckon.stage=$STAGE
+
    ```
 3. Commit the notes file (and any other release prep).
 4. Create and push the tag:
    ```bash
-    ./gradlew reckonTagCreate -Preckon.scope=patch -Preckon.stage=final
-   OR
-   ./gradlew reckonTagCreate -Preckon.scope=minor -Preckon.stage=final
-   OR 
-   ./gradlew reckonTagCreate -Preckon.scope=major -Preckon.stage=final
-   # build with tests
-   ./gradlew clean
-   ./gradlew
-   # push tag
-   
+    ./gradlew reckonTagPush -Preckon.scope=$SCOPE -Preckon.stage=$STAGE
    ```
 5. CI builds, publishes to Maven Central, and creates the GitHub Release with the server/tools tars attached.
 
