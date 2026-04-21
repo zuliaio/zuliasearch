@@ -142,7 +142,7 @@ public class ShardWriteManager {
 		segmentOpenExecutor.close();
 		{
 			Directory directory = indexWriter.getDirectory();
-			indexWriter.close();
+			indexWriter.rollback();
 			directory.close();
 		}
 		{
