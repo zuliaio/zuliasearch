@@ -83,6 +83,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -418,7 +419,7 @@ public class ZuliaIndexManager {
 	}
 
 	private List<String> expandWildcard(String pattern) {
-		java.util.regex.Pattern regex = globToRegex(pattern);
+		Pattern regex = globToRegex(pattern);
 		List<String> matches = new ArrayList<>();
 		for (String existingName : indexMap.keySet()) {
 			if (regex.matcher(existingName).matches()) {
@@ -428,7 +429,7 @@ public class ZuliaIndexManager {
 		return matches;
 	}
 
-	private static java.util.regex.Pattern globToRegex(String glob) {
+	private static Pattern globToRegex(String glob) {
 		StringBuilder sb = new StringBuilder(glob.length() + 4);
 		sb.append('^');
 		for (int i = 0; i < glob.length(); i++) {
@@ -441,7 +442,7 @@ public class ZuliaIndexManager {
 			}
 		}
 		sb.append('$');
-		return java.util.regex.Pattern.compile(sb.toString());
+		return Pattern.compile(sb.toString());
 	}
 
 	public StoreResponse store(StoreRequest request) throws Exception {
