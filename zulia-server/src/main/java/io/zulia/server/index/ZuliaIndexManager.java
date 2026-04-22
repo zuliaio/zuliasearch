@@ -83,6 +83,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -390,12 +391,58 @@ public class ZuliaIndexManager {
 
 		for (String indexName : queryRequest.getIndexList()) {
 
-			ZuliaIndex index = getIndexFromName(indexName);
-			indexes.add(index);
+			if (isWildcardPattern(indexName)) {
+				List<String> matches = expandWildcard(indexName);
+				if (matches.isEmpty()) {
+					throw new IndexDoesNotExistException(indexName);
+				}
+				for (String matched : matches) {
+					ZuliaIndex index = indexMap.get(matched);
+					indexes.add(index);
 
-			Query query = index.getQuery(queryRequest);
-			queryMap.put(handleAlias(indexName), query);
+					Query query = index.getQuery(queryRequest);
+					queryMap.put(matched, query);
+				}
+			}
+			else {
+				ZuliaIndex index = getIndexFromName(indexName);
+				indexes.add(index);
+
+				Query query = index.getQuery(queryRequest);
+				queryMap.put(handleAlias(indexName), query);
+			}
 		}
+	}
+
+	private static boolean isWildcardPattern(String indexName) {
+		return indexName.indexOf('*') >= 0 || indexName.indexOf('?') >= 0;
+	}
+
+	private List<String> expandWildcard(String pattern) {
+		Pattern regex = globToRegex(pattern);
+		List<String> matches = new ArrayList<>();
+		for (String existingName : indexMap.keySet()) {
+			if (regex.matcher(existingName).matches()) {
+				matches.add(existingName);
+			}
+		}
+		return matches;
+	}
+
+	private static Pattern globToRegex(String glob) {
+		StringBuilder sb = new StringBuilder(glob.length() + 4);
+		sb.append('^');
+		for (int i = 0; i < glob.length(); i++) {
+			char c = glob.charAt(i);
+			switch (c) {
+				case '*' -> sb.append(".*");
+				case '?' -> sb.append('.');
+				case '.', '\\', '+', '(', ')', '[', ']', '{', '}', '^', '$', '|' -> sb.append('\\').append(c);
+				default -> sb.append(c);
+			}
+		}
+		sb.append('$');
+		return Pattern.compile(sb.toString());
 	}
 
 	public StoreResponse store(StoreRequest request) throws Exception {
