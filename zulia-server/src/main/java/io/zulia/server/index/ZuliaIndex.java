@@ -54,6 +54,7 @@ import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldDoc;
@@ -598,6 +599,10 @@ public class ZuliaIndex {
 			luceneQuery = handleVectorQuery(query);
 			occur = BooleanClause.Occur.MUST;
 		}
+		else if (query.getQueryType() == QueryType.VECTOR_SHOULD) {
+			luceneQuery = handleVectorQuery(query);
+			occur = BooleanClause.Occur.SHOULD;
+		}
 		else {
 			luceneQuery = parseQueryToLucene(query);
 			if (query.getQueryType() == QueryType.SCORE_MUST) {
@@ -615,6 +620,11 @@ public class ZuliaIndex {
 		String scoreFunction = query.getScoreFunction();
 		if (!scoreFunction.isEmpty()) {
 			luceneQuery = handleScoreFunction(query.getScoreFunction(), luceneQuery);
+		}
+
+		float boost = query.getBoost();
+		if (boost != 0f && boost != 1f) {
+			luceneQuery = new BoostQuery(luceneQuery, boost);
 		}
 
 		return new BooleanClause(luceneQuery, occur);

@@ -35,4 +35,27 @@ public class VectorTopNQuery implements QueryBuilder {
 		return this;
 	}
 
+	public float getBoost() {
+		return builder.getBoost();
+	}
+
+	public VectorTopNQuery setBoost(float boost) {
+		builder.setBoost(boost);
+		return this;
+	}
+
+	public boolean isMust() {
+		return builder.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR;
+	}
+
+	/**
+	 * If true (default), the vector clause is required and constrains the result set to HNSW top-K matches.
+	 * If false, the vector clause contributes score but does not restrict matches - suitable for hybrid
+	 * retrieval alongside a SCORE_SHOULD clause.
+	 */
+	public VectorTopNQuery setMust(boolean must) {
+		builder.setQueryType(must ? ZuliaQuery.Query.QueryType.VECTOR : ZuliaQuery.Query.QueryType.VECTOR_SHOULD);
+		return this;
+	}
+
 }
