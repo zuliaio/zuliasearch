@@ -7,6 +7,8 @@ import io.zulia.message.ZuliaIndex.IndexAlias;
 import io.zulia.message.ZuliaServiceOuterClass.CreateIndexAliasRequest;
 import io.zulia.message.ZuliaServiceOuterClass.CreateIndexAliasResponse;
 
+import java.util.List;
+
 import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 
 /**
@@ -23,7 +25,19 @@ public class CreateIndexAlias extends SimpleCommand<CreateIndexAliasRequest, Cre
 	}
 
 	public CreateIndexAlias(String aliasName, String indexName) {
-		this.indexAlias = IndexAlias.newBuilder().setAliasName(aliasName).setIndexName(indexName).build();
+		this.indexAlias = IndexAlias.newBuilder().setAliasName(aliasName).addIndexNames(indexName).build();
+	}
+
+	public CreateIndexAlias(String aliasName, List<String> indexNames) {
+		this(aliasName, indexNames, null);
+	}
+
+	public CreateIndexAlias(String aliasName, List<String> indexNames, String writeIndex) {
+		IndexAlias.Builder builder = IndexAlias.newBuilder().setAliasName(aliasName).addAllIndexNames(indexNames);
+		if (writeIndex != null && !writeIndex.isEmpty()) {
+			builder.setWriteIndex(writeIndex);
+		}
+		this.indexAlias = builder.build();
 	}
 
 	@Override
