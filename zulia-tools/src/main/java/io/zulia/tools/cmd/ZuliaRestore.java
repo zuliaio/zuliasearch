@@ -1,6 +1,5 @@
 package io.zulia.tools.cmd;
 
-import com.google.common.base.Charsets;
 import com.google.protobuf.util.JsonFormat;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
@@ -16,6 +15,9 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,6 +25,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 @CommandLine.Command(name = "zuliarestore", versionProvider = ZuliaVersionProvider.class, scope = CommandLine.ScopeType.INHERIT)
 public class ZuliaRestore implements Callable<Integer> {
@@ -55,6 +58,9 @@ public class ZuliaRestore implements Callable<Integer> {
 			"--associatedFilesHandling" }, description = "Options for handling associated files if included in the dump. Options: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE})")
 	public ZuliaCmdUtil.AssociatedFilesHandling associatedFilesHandling = ZuliaCmdUtil.AssociatedFilesHandling.skip;
 
+	@CommandLine.Option(names = { "-gz", "--gzip" }, description = "Restore from gzip files.")
+	private boolean gzip = false;
+
 	@Override
 	public Integer call() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = connectionInfo.getConnection();
@@ -63,7 +69,7 @@ public class ZuliaRestore implements Callable<Integer> {
 
 		if (indexes != null) {
 			for (String index : indexes) {
-				restore(zuliaWorkPool, dir, index, idField, drop, threads, associatedFilesHandling);
+				restore(zuliaWorkPool, dir, index, idField, drop, threads, associatedFilesHandling, gzip);
 			}
 		}
 		else {
@@ -72,7 +78,7 @@ public class ZuliaRestore implements Callable<Integer> {
 				for (Path indexDir : list.toList()) {
 					try {
 						String ind = indexDir.getFileName().toString();
-						restore(zuliaWorkPool, dir, ind, idField, drop, threads, associatedFilesHandling);
+						restore(zuliaWorkPool, dir, ind, idField, drop, threads, associatedFilesHandling, gzip);
 					}
 					catch (Exception e) {
 						throw new Exception("There was a problem restoring index " + indexDir.getFileName());
@@ -85,10 +91,10 @@ public class ZuliaRestore implements Callable<Integer> {
 	}
 
 	private static void restore(ZuliaWorkPool workPool, String dir, String index, String idField, Boolean drop, Integer threads,
-			ZuliaCmdUtil.AssociatedFilesHandling associatedFilesHandling) throws Exception {
+			ZuliaCmdUtil.AssociatedFilesHandling associatedFilesHandling, boolean gzip) throws Exception {
 		String inputDir = dir + File.separator + index;
-		String recordsFilename = inputDir + File.separator + index + ".json";
-		String settingsFilename = inputDir + File.separator + index + "_settings.json";
+		String recordsFilename = inputDir + File.separator + index + (gzip ? ".json.gz" : ".json");
+		String settingsFilename = inputDir + File.separator + index + "_settings" + (gzip ? ".json.gz" : ".json");
 
 		Path settingsPath = Paths.get(settingsFilename);
 		if (Files.exists(settingsPath) && Files.exists(Paths.get(recordsFilename))) {
@@ -98,15 +104,22 @@ public class ZuliaRestore implements Callable<Integer> {
 
 			LOG.info("Creating index {}", index);
 			ZuliaIndex.IndexSettings.Builder indexSettingsBuilder = ZuliaIndex.IndexSettings.newBuilder();
-			JsonFormat.parser().merge(Files.readString(settingsPath, Charsets.UTF_8), indexSettingsBuilder);
-			ClientIndexConfig indexConfig = new ClientIndexConfig();
-			indexConfig.configure(indexSettingsBuilder.build());
-			workPool.createIndex(indexConfig);
-			LOG.info("Finished creating index {}", index);
+
+			try (InputStream inputStream = gzip ? new GZIPInputStream(new FileInputStream(settingsFilename)) : new FileInputStream(settingsFilename)) {
+				JsonFormat.parser().merge(new InputStreamReader(inputStream), indexSettingsBuilder);
+				ClientIndexConfig indexConfig = new ClientIndexConfig();
+				indexConfig.configure(indexSettingsBuilder.build());
+				workPool.createIndex(indexConfig);
+				LOG.info("Finished creating index {}", index);
+			}
+			catch (Throwable t) {
+				LOG.error("Failed to restore settings for index '{}'", index, t);
+				throw new RuntimeException(t);
+			}
 
 			AtomicInteger count = new AtomicInteger();
 			LOG.info("Starting to index records for index {}", index);
-			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count, threads, associatedFilesHandling);
+			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, workPool, count, threads, associatedFilesHandling, gzip);
 			LOG.info("Finished indexing for index {} with total records: {}", index, count);
 		}
 		else {
@@ -114,14 +127,13 @@ public class ZuliaRestore implements Callable<Integer> {
 				throw new Exception("Please provide the path to the parent directory in --dir option.");
 			}
 			else {
-				throw new Exception("Index " + index + " does not exist in the given dir " + dir
-						+ ", please provide the path to the parent directory in --dir option.");
+				throw new Exception("Index '" + index + "' does not exist in the given dir " + dir
+						+ ", please provide the path to the parent directory in --dir option. If the files are GZipped, either pass in the --gzip option or decompress the files and try again.");
 			}
 		}
 	}
 
 	public static void main(String[] args) {
-
 		ZuliaCommonCmd.runCommandLine(new ZuliaRestore(), args);
 	}
 
