@@ -53,7 +53,7 @@ public class ZuliaImport implements Callable<Integer> {
 			AtomicInteger count = new AtomicInteger();
 			LOG.info("Starting to index records for index {}", index);
 			ZuliaCmdUtil.index(inputDir, recordsFilename, idField, index, zuliaWorkPool, count, threadedArgs.getThreads(),
-					ZuliaCmdUtil.AssociatedFilesHandling.skip);
+					ZuliaCmdUtil.AssociatedFilesHandling.skip, false);
 			LOG.info("Finished indexing for index {} with total records: {}", index, count);
 		}
 		else {

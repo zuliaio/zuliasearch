@@ -79,7 +79,7 @@ public class ZuliaExport implements Callable<Integer> {
 
 		AtomicInteger count = new AtomicInteger();
 		LOG.info("Exporting from index {}", index);
-		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, uniqueIds);
+		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, uniqueIds, false);
 		LOG.info("Finished exporting from index {}, total: {}", index, count);
 
 	}
