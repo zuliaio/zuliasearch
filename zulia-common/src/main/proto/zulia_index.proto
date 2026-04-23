@@ -12,7 +12,9 @@ message IndexShardMapping {
 
 message IndexAlias {
     string aliasName = 1;
-    string indexName = 2;
+    string indexName = 2; // kept for backward compat - first/only index
+    repeated string indexNames = 3; // full list of indexes when alias is multi-index
+    string writeIndex = 4; // designated write target; must be one of indexNames. empty means reject single-index writes for multi-index aliases
 }
 
 message ShardMapping {

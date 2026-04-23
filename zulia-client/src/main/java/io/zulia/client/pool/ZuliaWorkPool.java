@@ -61,6 +61,14 @@ public class ZuliaWorkPool extends ZuliaBaseWorkPool {
 		return execute(new CreateIndexAlias(aliasName, indexName));
 	}
 
+	public CreateIndexAliasResult createIndexAlias(String aliasName, List<String> indexNames) throws Exception {
+		return execute(new CreateIndexAlias(aliasName, indexNames));
+	}
+
+	public CreateIndexAliasResult createIndexAlias(String aliasName, List<String> indexNames, String writeIndex) throws Exception {
+		return execute(new CreateIndexAlias(aliasName, indexNames, writeIndex));
+	}
+
 	public ListenableFuture<CreateIndexResult> createIndexAsync(CreateIndex createIndex) {
 		return executeAsync(createIndex);
 	}
