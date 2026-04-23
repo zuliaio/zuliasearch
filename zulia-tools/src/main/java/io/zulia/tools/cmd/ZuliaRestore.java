@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -58,7 +59,7 @@ public class ZuliaRestore implements Callable<Integer> {
 			"--associatedFilesHandling" }, description = "Options for handling associated files if included in the dump. Options: ${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE})")
 	public ZuliaCmdUtil.AssociatedFilesHandling associatedFilesHandling = ZuliaCmdUtil.AssociatedFilesHandling.skip;
 
-	@CommandLine.Option(names = { "-gz", "--gzip" }, description = "Restore from gzip files.")
+	@CommandLine.Option(names = { "-z", "--gzip" }, description = "Restore from gzip files.")
 	private boolean gzip = false;
 
 	@Override
@@ -105,7 +106,9 @@ public class ZuliaRestore implements Callable<Integer> {
 			LOG.info("Creating index {}", index);
 			ZuliaIndex.IndexSettings.Builder indexSettingsBuilder = ZuliaIndex.IndexSettings.newBuilder();
 
-			try (InputStream inputStream = gzip ? new GZIPInputStream(new FileInputStream(settingsFilename)) : new FileInputStream(settingsFilename)) {
+			try (InputStream inputStream = gzip ?
+					new GZIPInputStream(new BufferedInputStream(new FileInputStream(settingsFilename))) :
+					new BufferedInputStream(new FileInputStream(settingsFilename))) {
 				JsonFormat.parser().merge(new InputStreamReader(inputStream), indexSettingsBuilder);
 				ClientIndexConfig indexConfig = new ClientIndexConfig();
 				indexConfig.configure(indexSettingsBuilder.build());

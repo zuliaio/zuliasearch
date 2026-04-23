@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -54,7 +55,7 @@ public class ZuliaDump implements Callable<Integer> {
 	@CommandLine.Option(names = { "-a", "--includeAssociatedDocs" }, description = "Include Associated Documents in the dump (default: ${DEFAULT-VALUE})")
 	private boolean includeAssociatedDocs = false;
 
-	@CommandLine.Option(names = { "-gz", "--gzip" }, description = "Dump the output in a gzip format.")
+	@CommandLine.Option(names = { "-z", "--gzip" }, description = "Dump the output in a gzip format.")
 	private boolean gzip = false;
 
 	@Override
@@ -98,7 +99,9 @@ public class ZuliaDump implements Callable<Integer> {
 		ZuliaCmdUtil.writeOutput(recordsFilename, index, q, pageSize, workPool, count, uniqueIds, gzip);
 		LOG.info("Finished dumping index {}, total: {}", index, count);
 
-		try (OutputStream outputStream = gzip ? new GZIPOutputStream(new FileOutputStream(settingsFilename)) : new FileOutputStream(settingsFilename)) {
+		try (OutputStream outputStream = gzip ?
+				new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(settingsFilename))) :
+				new BufferedOutputStream(new FileOutputStream(settingsFilename))) {
 			LOG.info("Writing settings for index {}", index);
 			JsonFormat.Printer printer = JsonFormat.printer();
 			outputStream.write(

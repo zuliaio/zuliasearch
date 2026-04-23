@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,7 +60,9 @@ public class ZuliaCmdUtil {
 	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, Set<String> uniqueIds,
 			boolean gzip) throws Exception {
 
-		try (OutputStream outputStream = gzip ? new GZIPOutputStream(new FileOutputStream(recordsFilename)) : new FileOutputStream(recordsFilename)) {
+		try (OutputStream outputStream = gzip ?
+				new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(recordsFilename))) :
+				new BufferedOutputStream(new FileOutputStream(recordsFilename))) {
 
 			Search zuliaQuery = new Search(index).addQuery(new FilterQuery(q)).setAmount(rows);
 			zuliaQuery.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD));
@@ -107,8 +110,7 @@ public class ZuliaCmdUtil {
 	public static void index(String inputDir, String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count,
 			Integer threads, AssociatedFilesHandling associatedFilesHandling, boolean gzip) throws Exception {
 		try (TaskExecutor threadPool = WorkPool.nativePool(threads)) {
-			try (InputStream inputStream = gzip ?
-					new GZIPInputStream(new FileInputStream(recordsFilename)) :
+			try (InputStream inputStream = gzip ? new GZIPInputStream(new BufferedInputStream(new FileInputStream(recordsFilename))) :
 					new BufferedInputStream(new FileInputStream(recordsFilename)); BufferedReader b = new BufferedReader(new InputStreamReader(inputStream))) {
 				String line;
 				while ((line = b.readLine()) != null) {
