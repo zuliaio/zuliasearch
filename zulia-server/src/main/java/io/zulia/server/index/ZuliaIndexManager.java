@@ -84,6 +84,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -389,14 +390,60 @@ public class ZuliaIndexManager {
 	private void populateIndexesAndIndexMap(QueryRequest queryRequest, Map<String, Query> queryMap, Set<ZuliaIndex> indexes) throws Exception {
 
 		for (String indexName : queryRequest.getIndexList()) {
-			for (String resolvedName : resolveAlias(indexName)) {
-				ZuliaIndex index = lookupIndex(indexName, resolvedName);
-				if (indexes.add(index)) {
-					Query query = index.getQuery(queryRequest);
-					queryMap.put(resolvedName, query);
+			if (isWildcardPattern(indexName)) {
+				List<String> matches = expandWildcard(indexName);
+				if (matches.isEmpty()) {
+					throw new IndexDoesNotExistException(indexName);
+				}
+				for (String matched : matches) {
+					ZuliaIndex index = indexMap.get(matched);
+					if (indexes.add(index)) {
+						Query query = index.getQuery(queryRequest);
+						queryMap.put(matched, query);
+					}
+				}
+			}
+			else {
+				for (String resolvedName : resolveAlias(indexName)) {
+					ZuliaIndex index = lookupIndex(indexName, resolvedName);
+					if (indexes.add(index)) {
+						Query query = index.getQuery(queryRequest);
+						queryMap.put(resolvedName, query);
+					}
 				}
 			}
 		}
+	}
+
+	private static boolean isWildcardPattern(String indexName) {
+		return indexName.indexOf('*') >= 0 || indexName.indexOf('?') >= 0;
+	}
+
+	private List<String> expandWildcard(String pattern) {
+		Pattern regex = globToRegex(pattern);
+		List<String> matches = new ArrayList<>();
+		for (String existingName : indexMap.keySet()) {
+			if (regex.matcher(existingName).matches()) {
+				matches.add(existingName);
+			}
+		}
+		return matches;
+	}
+
+	private static Pattern globToRegex(String glob) {
+		StringBuilder sb = new StringBuilder(glob.length() + 4);
+		sb.append('^');
+		for (int i = 0; i < glob.length(); i++) {
+			char c = glob.charAt(i);
+			switch (c) {
+				case '*' -> sb.append(".*");
+				case '?' -> sb.append('.');
+				case '.', '\\', '+', '(', ')', '[', ']', '{', '}', '^', '$', '|' -> sb.append('\\').append(c);
+				default -> sb.append(c);
+			}
+		}
+		sb.append('$');
+		return Pattern.compile(sb.toString());
 	}
 
 	public StoreResponse store(StoreRequest request) throws Exception {
