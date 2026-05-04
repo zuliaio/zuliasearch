@@ -4,7 +4,7 @@ import com.google.protobuf.ProtocolStringList;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
@@ -755,7 +755,7 @@ public class ZuliaIndex {
 		Set<ZuliaShard> shardsForQuery = new HashSet<>();
 		for (IndexRouting indexRouting : internalQueryRequest.getIndexRoutingList()) {
 			if (indexRouting.getIndex().equals(indexName)) {
-				List<ZuliaShard> shardsFromRouting = getShardsFromRouting(indexRouting, queryRequest.getMasterSlaveSettings());
+				List<ZuliaShard> shardsFromRouting = getShardsFromRouting(indexRouting, queryRequest.getPrimaryReplicaSettings());
 				shardsForQuery.addAll(shardsFromRouting);
 			}
 		}
@@ -965,7 +965,7 @@ public class ZuliaIndex {
 
 		GetNumberOfDocsRequest getNumberOfDocsRequest = request.getGetNumberOfDocsRequest();
 
-		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getNumberOfDocsRequest.getMasterSlaveSettings());
+		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getNumberOfDocsRequest.getPrimaryReplicaSettings());
 
 		for (ZuliaShard shard : shardsForCommand) {
 			Future<ShardCountResponse> response = shardPool.submit(() -> shard.getNumberOfDocs(getNumberOfDocsRequest.getRealtime()));
@@ -999,17 +999,17 @@ public class ZuliaIndex {
 
 	}
 
-	private List<ZuliaShard> getShardsFromRouting(IndexRouting indexRouting, MasterSlaveSettings masterSlaveSettings) throws ShardDoesNotExistException {
+	private List<ZuliaShard> getShardsFromRouting(IndexRouting indexRouting, PrimaryReplicaSettings primaryReplicaSettings) throws ShardDoesNotExistException {
 		List<ZuliaShard> shardsForCommand = new ArrayList<>();
 
 		for (int shardNumber : indexRouting.getShardList()) {
 
 			ZuliaShard shard;
 
-			if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings)) {
+			if (PrimaryReplicaSettings.PRIMARY_ONLY.equals(primaryReplicaSettings)) {
 				shard = primaryShardMap.get(shardNumber);
 			}
-			else if (MasterSlaveSettings.SLAVE_ONLY.equals(masterSlaveSettings)) {
+			else if (PrimaryReplicaSettings.REPLICA_ONLY.equals(primaryReplicaSettings)) {
 				shard = replicaShardMap.get(shardNumber);
 			}
 			else {
@@ -1034,7 +1034,7 @@ public class ZuliaIndex {
 
 		GetFieldNamesRequest getFieldNamesRequest = request.getGetFieldNamesRequest();
 
-		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getFieldNamesRequest.getMasterSlaveSettings());
+		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getFieldNamesRequest.getPrimaryReplicaSettings());
 
 		for (final ZuliaShard shard : shardsForCommand) {
 
@@ -1136,7 +1136,7 @@ public class ZuliaIndex {
 		List<Future<GetTermsResponse>> responses = new ArrayList<>();
 
 		GetTermsRequest getTermsRequest = request.getGetTermsRequest();
-		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getTermsRequest.getMasterSlaveSettings());
+		List<ZuliaShard> shardsForCommand = getShardsFromRouting(request.getIndexRouting(), getTermsRequest.getPrimaryReplicaSettings());
 
 		for (final ZuliaShard shard : shardsForCommand) {
 

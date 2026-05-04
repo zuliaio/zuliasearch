@@ -75,7 +75,7 @@ message QueryRequest {
     repeated AnalysisRequest analysisRequest = 14;
     bool debug = 15;
     bool dontCache = 16;
-    MasterSlaveSettings masterSlaveSettings = 17;
+    PrimaryReplicaSettings primaryReplicaSettings = 17;
     bool pinToCache = 18;
     string searchLabel = 19;
     bool realtime = 20;
@@ -161,7 +161,7 @@ message FetchRequest {
     FetchType associatedFetchType = 5;
     repeated string documentFields = 6;
     repeated string documentMaskedFields = 7;
-    MasterSlaveSettings masterSlaveSettings = 8;
+    PrimaryReplicaSettings primaryReplicaSettings = 8;
     bool realtime = 9;
 }
 
@@ -275,7 +275,7 @@ message GetIndexesResponse {
 
 message GetNumberOfDocsRequest {
     string indexName = 1;
-    MasterSlaveSettings masterSlaveSettings = 2;
+    PrimaryReplicaSettings primaryReplicaSettings = 2;
     bool realtime = 3;
 }
 
@@ -308,7 +308,7 @@ message OptimizeResponse {
 
 message GetFieldNamesRequest {
     string indexName = 1;
-    MasterSlaveSettings masterSlaveSettings = 2;
+    PrimaryReplicaSettings primaryReplicaSettings = 2;
     bool realtime = 3;
 }
 
@@ -337,7 +337,7 @@ message GetTermsRequest {
     repeated string includeTerm = 10;
 
     FuzzyTerm fuzzyTerm = 11;
-    MasterSlaveSettings masterSlaveSettings = 12;
+    PrimaryReplicaSettings primaryReplicaSettings = 12;
     bool realtime = 13;
 }
 

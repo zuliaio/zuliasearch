@@ -10,7 +10,7 @@ import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
 import io.zulia.message.ZuliaServiceOuterClass.InternalBatchFetchRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalShardBatchFetchRequest;
 import io.zulia.server.connection.client.InternalClient;
-import io.zulia.server.index.MasterSlaveSelector;
+import io.zulia.server.index.PrimaryReplicaSelector;
 import io.zulia.server.index.NodeRequestBase;
 import io.zulia.server.index.ZuliaIndex;
 import io.zulia.util.ShardUtil;
@@ -75,8 +75,8 @@ public class BatchFetchRequestFederator extends NodeRequestBase<InternalBatchFet
 			return List.of();
 		}
 
-		ZuliaBase.MasterSlaveSettings masterSlaveSettings = !fetchRequests.isEmpty() ? fetchRequests.getFirst().getMasterSlaveSettings()
-				: ZuliaBase.MasterSlaveSettings.MASTER_ONLY;
+		ZuliaBase.PrimaryReplicaSettings primaryReplicaSettings = !fetchRequests.isEmpty() ? fetchRequests.getFirst().getPrimaryReplicaSettings()
+				: ZuliaBase.PrimaryReplicaSettings.PRIMARY_ONLY;
 
 		List<Node> nodesAvailable = new ArrayList<>();
 		nodesAvailable.add(thisNode);
@@ -88,13 +88,13 @@ public class BatchFetchRequestFederator extends NodeRequestBase<InternalBatchFet
 		}
 		Map<ShardKey, List<String>> shardGroups = new LinkedHashMap<>();
 
-		Map<String, MasterSlaveSelector> selectorCache = new HashMap<>();
+		Map<String, PrimaryReplicaSelector> selectorCache = new HashMap<>();
 
 		for (FetchRequest fetchRequest : fetchRequests) {
 			String indexName = fetchRequest.getIndexName();
-			MasterSlaveSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
+			PrimaryReplicaSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
 				ZuliaIndex index = indexCache.get(name);
-				return new MasterSlaveSelector(masterSlaveSettings, nodesAvailable, index.getIndexShardMapping());
+				return new PrimaryReplicaSelector(primaryReplicaSettings, nodesAvailable, index.getIndexShardMapping());
 			});
 			Node targetNode = selector.getNodeForUniqueId(fetchRequest.getUniqueId());
 			int shardNumber = ShardUtil.findShardForUniqueId(fetchRequest.getUniqueId(), indexCache.get(indexName).getNumberOfShards());
@@ -106,9 +106,9 @@ public class BatchFetchRequestFederator extends NodeRequestBase<InternalBatchFet
 
 		for (BatchFetchGroup group : batchFetchGroups) {
 			String indexName = group.getIndexName();
-			MasterSlaveSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
+			PrimaryReplicaSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
 				ZuliaIndex index = indexCache.get(name);
-				return new MasterSlaveSelector(masterSlaveSettings, nodesAvailable, index.getIndexShardMapping());
+				return new PrimaryReplicaSelector(primaryReplicaSettings, nodesAvailable, index.getIndexShardMapping());
 			});
 			for (String uniqueId : group.getUniqueIdList()) {
 				Node targetNode = selector.getNodeForUniqueId(uniqueId);

@@ -11,13 +11,13 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
-public class OptimizeRequestFederator extends MasterSlaveNodeRequestFederator<OptimizeRequest, OptimizeResponse> {
+public class OptimizeRequestFederator extends PrimaryReplicaNodeRequestFederator<OptimizeRequest, OptimizeResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public OptimizeRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
+	public OptimizeRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.PrimaryReplicaSettings primaryReplicaSettings, ZuliaIndex index,
 			ExecutorService pool, InternalClient internalClient) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
+		super(thisNode, otherNodesActive, primaryReplicaSettings, index, pool);
 		this.internalClient = internalClient;
 		this.index = index;
 	}

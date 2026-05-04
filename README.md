@@ -19,7 +19,7 @@ across servers.
 * [Storing associated files with the documents (images, pdfs, ...)](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#storing-associated-documents)
 * [Sorting](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#sorting)
 * [Facet Counts](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#count-facets)
-* [Statistics](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#numeric-stat) and [Facet Statistics](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#stat-facet)
+* [Statistics](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#numeric-stat) and [Facet Statistics](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#stat-facet)
 * [Vector Search](https://github.com/zuliaio/zuliasearch/wiki/Java-Client#Vector-Queries)
 * [Rich Query Syntax](https://github.com/zuliaio/zuliasearch/wiki/Query-Syntax)
 

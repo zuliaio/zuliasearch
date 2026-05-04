@@ -16,13 +16,13 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 
-public class GetFieldNamesRequestFederator extends MasterSlaveNodeRequestFederator<GetFieldNamesRequest, GetFieldNamesResponse> {
+public class GetFieldNamesRequestFederator extends PrimaryReplicaNodeRequestFederator<GetFieldNamesRequest, GetFieldNamesResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public GetFieldNamesRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
+	public GetFieldNamesRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.PrimaryReplicaSettings primaryReplicaSettings, ZuliaIndex index,
 			ExecutorService pool, InternalClient internalClient) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
+		super(thisNode, otherNodesActive, primaryReplicaSettings, index, pool);
 		this.internalClient = internalClient;
 		this.index = index;
 	}

@@ -1,7 +1,7 @@
 package io.zulia.server.index.federator;
 
 import io.zulia.message.ZuliaBase;
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaBase.Term;
 import io.zulia.message.ZuliaServiceOuterClass.GetTermsRequest;
@@ -20,13 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-public class GetTermsRequestFederator extends MasterSlaveNodeRequestFederator<GetTermsRequest, InternalGetTermsResponse> {
+public class GetTermsRequestFederator extends PrimaryReplicaNodeRequestFederator<GetTermsRequest, InternalGetTermsResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public GetTermsRequestFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
+	public GetTermsRequestFederator(Node thisNode, Collection<Node> otherNodesActive, PrimaryReplicaSettings primaryReplicaSettings, ZuliaIndex index,
 			ExecutorService pool, InternalClient internalClient) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
+		super(thisNode, otherNodesActive, primaryReplicaSettings, index, pool);
 		this.internalClient = internalClient;
 		this.index = index;
 	}

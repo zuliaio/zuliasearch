@@ -10,7 +10,12 @@ message IdInfo {
     bool compressedDoc = 5;
 }
 
-enum MasterSlaveSettings {
+enum PrimaryReplicaSettings {
+    option allow_alias = true;
+    PRIMARY_ONLY = 0;
+    REPLICA_ONLY = 1;
+    PRIMARY_IF_AVAILABLE = 2;
+    // Deprecated aliases for backward compatibility
     MASTER_ONLY = 0;
     SLAVE_ONLY = 1;
     MASTER_IF_AVAILABLE = 2;

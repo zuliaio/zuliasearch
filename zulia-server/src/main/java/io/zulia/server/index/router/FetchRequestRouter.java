@@ -1,6 +1,6 @@
 package io.zulia.server.index.router;
 
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
 import io.zulia.message.ZuliaServiceOuterClass.FetchResponse;
@@ -14,9 +14,9 @@ public class FetchRequestRouter extends NodeRequestRouter<FetchRequest, FetchRes
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public FetchRequestRouter(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, ZuliaIndex index, String uniqueId,
+	public FetchRequestRouter(Node thisNode, Collection<Node> otherNodesActive, PrimaryReplicaSettings primaryReplicaSettings, ZuliaIndex index, String uniqueId,
 			InternalClient internalClient) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, index, uniqueId);
+		super(thisNode, otherNodesActive, primaryReplicaSettings, index, uniqueId);
 		this.internalClient = internalClient;
 		this.index = index;
 	}

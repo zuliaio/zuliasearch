@@ -1,6 +1,6 @@
 package io.zulia.server.index.federator;
 
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.BatchDeleteGroup;
 import io.zulia.message.ZuliaServiceOuterClass.BatchDeleteRequest;
@@ -9,7 +9,7 @@ import io.zulia.message.ZuliaServiceOuterClass.DeleteResponse;
 import io.zulia.message.ZuliaServiceOuterClass.InternalBatchDeleteRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalShardBatchDeleteRequest;
 import io.zulia.server.connection.client.InternalClient;
-import io.zulia.server.index.MasterSlaveSelector;
+import io.zulia.server.index.PrimaryReplicaSelector;
 import io.zulia.server.index.NodeRequestBase;
 import io.zulia.server.index.ZuliaIndex;
 import io.zulia.util.ShardUtil;
@@ -83,13 +83,13 @@ public class BatchDeleteRequestFederator extends NodeRequestBase<InternalBatchDe
 		}
 		Map<ShardKey, List<String>> shardGroups = new LinkedHashMap<>();
 
-		Map<String, MasterSlaveSelector> selectorCache = new HashMap<>();
+		Map<String, PrimaryReplicaSelector> selectorCache = new HashMap<>();
 
 		for (DeleteRequest deleteRequest : deleteRequests) {
 			String indexName = deleteRequest.getIndexName();
-			MasterSlaveSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
+			PrimaryReplicaSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
 				ZuliaIndex index = indexCache.get(name);
-				return new MasterSlaveSelector(MasterSlaveSettings.MASTER_ONLY, nodesAvailable, index.getIndexShardMapping());
+				return new PrimaryReplicaSelector(PrimaryReplicaSettings.PRIMARY_ONLY, nodesAvailable, index.getIndexShardMapping());
 			});
 			Node targetNode = selector.getNodeForUniqueId(deleteRequest.getUniqueId());
 			int shardNumber = ShardUtil.findShardForUniqueId(deleteRequest.getUniqueId(), indexCache.get(indexName).getNumberOfShards());
@@ -100,9 +100,9 @@ public class BatchDeleteRequestFederator extends NodeRequestBase<InternalBatchDe
 
 		for (BatchDeleteGroup group : batchDeleteGroups) {
 			String indexName = group.getIndexName();
-			MasterSlaveSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
+			PrimaryReplicaSelector selector = selectorCache.computeIfAbsent(indexName, name -> {
 				ZuliaIndex index = indexCache.get(name);
-				return new MasterSlaveSelector(MasterSlaveSettings.MASTER_ONLY, nodesAvailable, index.getIndexShardMapping());
+				return new PrimaryReplicaSelector(PrimaryReplicaSettings.PRIMARY_ONLY, nodesAvailable, index.getIndexShardMapping());
 			});
 			for (String uniqueId : group.getUniqueIdList()) {
 				Node targetNode = selector.getNodeForUniqueId(uniqueId);

@@ -1,7 +1,7 @@
 package io.zulia.server.index;
 
 import io.zulia.message.ZuliaBase;
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaQuery.ShardQueryResponse;
@@ -125,10 +125,10 @@ public class ZuliaShard {
 			long lastestShardTime) {
 
 		LOG.info("Started warming searching for index {}:s{}", indexName, shardNumber);
-		EnumSet<MasterSlaveSettings> usesPrimary = EnumSet.of(MasterSlaveSettings.MASTER_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
-		EnumSet<MasterSlaveSettings> usesReplica = EnumSet.of(MasterSlaveSettings.SLAVE_ONLY, MasterSlaveSettings.MASTER_IF_AVAILABLE);
+		EnumSet<PrimaryReplicaSettings> usesPrimary = EnumSet.of(PrimaryReplicaSettings.PRIMARY_ONLY, PrimaryReplicaSettings.PRIMARY_IF_AVAILABLE);
+		EnumSet<PrimaryReplicaSettings> usesReplica = EnumSet.of(PrimaryReplicaSettings.REPLICA_ONLY, PrimaryReplicaSettings.PRIMARY_IF_AVAILABLE);
 		for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
-			MasterSlaveSettings primaryReplicaSettings = warmingSearch.getMasterSlaveSettings();
+			PrimaryReplicaSettings primaryReplicaSettings = warmingSearch.getPrimaryReplicaSettings();
 			boolean shardNeedsWarmForSearch = (primary ? usesPrimary : usesReplica).contains(primaryReplicaSettings);
 
 			if (unloaded) {
