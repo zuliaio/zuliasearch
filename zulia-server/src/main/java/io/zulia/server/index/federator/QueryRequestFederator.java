@@ -1,7 +1,7 @@
 package io.zulia.server.index.federator;
 
 import com.google.protobuf.util.JsonFormat;
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
 import io.zulia.message.ZuliaServiceOuterClass.InternalQueryRequest;
@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<QueryRequest, InternalQueryResponse> {
+public class QueryRequestFederator extends PrimaryReplicaNodeRequestFederator<QueryRequest, InternalQueryResponse> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(QueryRequestFederator.class);
 	private static final AtomicLong QUERY_NUMBER = new AtomicLong();
@@ -31,9 +31,9 @@ public class QueryRequestFederator extends MasterSlaveNodeRequestFederator<Query
 	private final Map<String, Query> queryMap;
 	private final long searchId;
 
-	public QueryRequestFederator(Node thisNode, Collection<Node> otherNodesActive, MasterSlaveSettings masterSlaveSettings, Collection<ZuliaIndex> indexes,
+	public QueryRequestFederator(Node thisNode, Collection<Node> otherNodesActive, PrimaryReplicaSettings primaryReplicaSettings, Collection<ZuliaIndex> indexes,
 			ExecutorService pool, InternalClient internalClient, Map<String, Query> queryMap) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, indexes, pool);
+		super(thisNode, otherNodesActive, primaryReplicaSettings, indexes, pool);
 		this.internalClient = internalClient;
 		this.indexes = indexes;
 		this.queryMap = queryMap;

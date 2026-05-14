@@ -11,13 +11,13 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
-public class ClearRequestFederator extends MasterSlaveNodeRequestFederator<ClearRequest, ClearResponse> {
+public class ClearRequestFederator extends PrimaryReplicaNodeRequestFederator<ClearRequest, ClearResponse> {
 	private final InternalClient internalClient;
 	private final ZuliaIndex index;
 
-	public ClearRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.MasterSlaveSettings masterSlaveSettings, ZuliaIndex index,
+	public ClearRequestFederator(Node thisNode, Collection<Node> otherNodesActive, ZuliaBase.PrimaryReplicaSettings primaryReplicaSettings, ZuliaIndex index,
 			ExecutorService pool, InternalClient internalClient) throws IOException {
-		super(thisNode, otherNodesActive, masterSlaveSettings, index, pool);
+		super(thisNode, otherNodesActive, primaryReplicaSettings, index, pool);
 		this.internalClient = internalClient;
 		this.index = index;
 	}

@@ -1,6 +1,6 @@
 package io.zulia.server.index;
 
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.message.ZuliaIndex.ShardMapping;
@@ -14,19 +14,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MasterSlaveSelector {
+public class PrimaryReplicaSelector {
 
-	private final MasterSlaveSettings masterSlaveSettings;
+	private final PrimaryReplicaSettings primaryReplicaSettings;
 	private final List<Node> nodes;
 	private final IndexShardMapping indexShardMapping;
 
 	/**
-	 * @param masterSlaveSettings - the master slave preference
+	 * @param primaryReplicaSettings - the master slave preference
 	 * @param nodes               - list of nodes to select from, order of the list determines secondary that is selected
 	 * @param indexShardMapping   -
 	 */
-	public MasterSlaveSelector(MasterSlaveSettings masterSlaveSettings, List<Node> nodes, IndexShardMapping indexShardMapping) {
-		this.masterSlaveSettings = masterSlaveSettings;
+	public PrimaryReplicaSelector(PrimaryReplicaSettings primaryReplicaSettings, List<Node> nodes, IndexShardMapping indexShardMapping) {
+		this.primaryReplicaSettings = primaryReplicaSettings;
 		this.nodes = nodes;
 		this.indexShardMapping = indexShardMapping;
 	}
@@ -57,25 +57,25 @@ public class MasterSlaveSelector {
 
 	protected Node getNodeFromShardMapping(ShardMapping shardMapping) throws ShardOfflineException {
 		Node selectedNode;
-		if (MasterSlaveSettings.MASTER_ONLY.equals(masterSlaveSettings)) {
+		if (PrimaryReplicaSettings.PRIMARY_ONLY.equals(primaryReplicaSettings)) {
 			selectedNode = getSelectMasterNode(shardMapping);
 			if (selectedNode == null) {
-				throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+				throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), primaryReplicaSettings);
 			}
 
 		}
-		else if (MasterSlaveSettings.SLAVE_ONLY.equals(masterSlaveSettings)) {
+		else if (PrimaryReplicaSettings.REPLICA_ONLY.equals(primaryReplicaSettings)) {
 			selectedNode = getSelectSlaveNode(shardMapping);
 			if (selectedNode == null) {
-				throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+				throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), primaryReplicaSettings);
 			}
 		}
-		else if (MasterSlaveSettings.MASTER_IF_AVAILABLE.equals(masterSlaveSettings)) {
+		else if (PrimaryReplicaSettings.PRIMARY_IF_AVAILABLE.equals(primaryReplicaSettings)) {
 			selectedNode = getSelectMasterNode(shardMapping);
 			if (selectedNode == null) {
 				selectedNode = getSelectSlaveNode(shardMapping);
 				if (selectedNode == null) {
-					throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), masterSlaveSettings);
+					throw new ShardOfflineException(indexShardMapping.getIndexName(), shardMapping.getShardNumber(), primaryReplicaSettings);
 				}
 			}
 		}

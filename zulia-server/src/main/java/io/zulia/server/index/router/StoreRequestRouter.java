@@ -1,6 +1,6 @@
 package io.zulia.server.index.router;
 
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.message.ZuliaServiceOuterClass.StoreRequest;
 import io.zulia.message.ZuliaServiceOuterClass.StoreResponse;
@@ -16,7 +16,7 @@ public class StoreRequestRouter extends NodeRequestRouter<StoreRequest, StoreRes
 
 	public StoreRequestRouter(Node thisNode, Collection<Node> otherNodesActive, ZuliaIndex index, String uniqueId, InternalClient internalClient)
 			throws IOException {
-		super(thisNode, otherNodesActive, MasterSlaveSettings.MASTER_ONLY, index, uniqueId);
+		super(thisNode, otherNodesActive, PrimaryReplicaSettings.PRIMARY_ONLY, index, uniqueId);
 		this.internalClient = internalClient;
 		this.index = index;
 	}

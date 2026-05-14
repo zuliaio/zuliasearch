@@ -5,7 +5,7 @@ import io.zulia.client.command.base.SimpleCommand;
 import io.zulia.client.command.factory.RangeFilter;
 import io.zulia.client.pool.ZuliaConnection;
 import io.zulia.client.result.SearchResult;
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Similarity;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.FetchType;
@@ -196,12 +196,12 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
-	public MasterSlaveSettings getMasterSlaveSettings() {
-		return queryRequest.getMasterSlaveSettings();
+	public PrimaryReplicaSettings getPrimaryReplicaSettings() {
+		return queryRequest.getPrimaryReplicaSettings();
 	}
 
-	public Search setMasterSlaveSettings(MasterSlaveSettings masterSlaveSettings) {
-		queryRequest.setMasterSlaveSettings(masterSlaveSettings);
+	public Search setPrimaryReplicaSettings(PrimaryReplicaSettings primaryReplicaSettings) {
+		queryRequest.setPrimaryReplicaSettings(primaryReplicaSettings);
 		return this;
 	}
 

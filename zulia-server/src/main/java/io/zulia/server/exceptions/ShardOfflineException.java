@@ -1,19 +1,19 @@
 package io.zulia.server.exceptions;
 
-import io.zulia.message.ZuliaBase.MasterSlaveSettings;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 
 public class ShardOfflineException extends NotFoundException {
 
 	private static final long serialVersionUID = 1L;
 	private final int shardNumber;
-	private final MasterSlaveSettings masterSlaveSettings;
+	private final PrimaryReplicaSettings primaryReplicaSettings;
 	private final String indexName;
 
-	public ShardOfflineException(String indexName, int shardNumber, MasterSlaveSettings masterSlaveSettings) {
-		super("Index <" + indexName + "> with shardNumber <" + shardNumber + "> is offline for <" + masterSlaveSettings + ">");
+	public ShardOfflineException(String indexName, int shardNumber, PrimaryReplicaSettings primaryReplicaSettings) {
+		super("Index <" + indexName + "> with shardNumber <" + shardNumber + "> is offline for <" + primaryReplicaSettings + ">");
 		this.indexName = indexName;
 		this.shardNumber = shardNumber;
-		this.masterSlaveSettings = masterSlaveSettings;
+		this.primaryReplicaSettings = primaryReplicaSettings;
 	}
 
 	public String getIndexName() {
@@ -24,7 +24,7 @@ public class ShardOfflineException extends NotFoundException {
 		return shardNumber;
 	}
 
-	public MasterSlaveSettings getMasterSlaveSettings() {
-		return masterSlaveSettings;
+	public PrimaryReplicaSettings getPrimaryReplicaSettings() {
+		return primaryReplicaSettings;
 	}
 }
