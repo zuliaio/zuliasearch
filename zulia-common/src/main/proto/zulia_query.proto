@@ -20,6 +20,7 @@ message Query {
         FILTER_NOT = 6;
         NUMERIC_SET = 7;
         NUMERIC_SET_NOT = 8;
+        VECTOR_SHOULD = 9; // vector clause that contributes score but does not constrain the result set to HNSW top-K
     }
 
     enum Operator {
@@ -45,6 +46,7 @@ message Query {
 
     NumericSet numericSet = 15;
 
+    float boost = 16; // score multiplier applied to this clause; 0 = unset (treated as 1.0); ignored for non-scoring clause types
 }
 
 message NumericSet {

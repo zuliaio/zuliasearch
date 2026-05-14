@@ -6,6 +6,7 @@ import io.zulia.message.ZuliaQuery.Query.QueryType;
 public class ScoredQuery extends StandardQuery<ScoredQuery> {
 	private boolean must;
 	private String scoreFunction;
+	private float boost;
 
 	public ScoredQuery(String query) {
 		this(query, true);
@@ -43,11 +44,23 @@ public class ScoredQuery extends StandardQuery<ScoredQuery> {
 		return this;
 	}
 
+	public float getBoost() {
+		return boost;
+	}
+
+	public ScoredQuery setBoost(float boost) {
+		this.boost = boost;
+		return this;
+	}
+
 	@Override
 	protected void completeQuery(ZuliaQuery.Query.Builder queryBuilder) {
 		queryBuilder.setQueryType(must ? QueryType.SCORE_MUST : QueryType.SCORE_SHOULD);
 		if (scoreFunction != null) {
 			queryBuilder.setScoreFunction(scoreFunction);
+		}
+		if (boost != 0f) {
+			queryBuilder.setBoost(boost);
 		}
 	}
 }

@@ -1,6 +1,5 @@
 package io.zulia.tools.cmd.common;
 
-import com.google.common.base.Charsets;
 import io.zulia.ZuliaConstants;
 import io.zulia.client.command.Fetch;
 import io.zulia.client.command.FetchAllAssociated;
@@ -21,13 +20,17 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +42,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipEntry;
 
 import static io.zulia.message.ZuliaQuery.FetchType.META;
@@ -52,9 +57,12 @@ public class ZuliaCmdUtil {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ZuliaCmdUtil.class);
 
-	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, Set<String> uniqueIds)
-			throws Exception {
-		try (FileWriter fileWriter = new FileWriter(recordsFilename, Charsets.UTF_8)) {
+	public static void writeOutput(String recordsFilename, String index, String q, int rows, ZuliaWorkPool workPool, AtomicInteger count, Set<String> uniqueIds,
+			boolean gzip) throws Exception {
+
+		try (OutputStream outputStream = gzip ?
+				new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(recordsFilename))) :
+				new BufferedOutputStream(new FileOutputStream(recordsFilename))) {
 
 			Search zuliaQuery = new Search(index).addQuery(new FilterQuery(q)).setAmount(rows);
 			zuliaQuery.addSort(new Sort(ZuliaConstants.ID_SORT_FIELD));
@@ -69,8 +77,8 @@ public class ZuliaCmdUtil {
 							if (uniqueIds != null) {
 								uniqueIds.add(completeResult.getUniqueId());
 							}
-							fileWriter.write(completeResult.getDocument().toJson());
-							fileWriter.write(System.lineSeparator());
+							outputStream.write(completeResult.getDocument().toJson().getBytes(StandardCharsets.UTF_8));
+							outputStream.write(System.lineSeparator().getBytes(StandardCharsets.UTF_8));
 
 							int c = count.incrementAndGet();
 							if (c % 1000 == 0) {
@@ -100,9 +108,10 @@ public class ZuliaCmdUtil {
 	}
 
 	public static void index(String inputDir, String recordsFilename, String idField, String index, ZuliaWorkPool workPool, AtomicInteger count,
-			Integer threads, AssociatedFilesHandling associatedFilesHandling) throws Exception {
+			Integer threads, AssociatedFilesHandling associatedFilesHandling, boolean gzip) throws Exception {
 		try (TaskExecutor threadPool = WorkPool.nativePool(threads)) {
-			try (BufferedReader b = new BufferedReader(new FileReader(recordsFilename))) {
+			try (InputStream inputStream = gzip ? new GZIPInputStream(new BufferedInputStream(new FileInputStream(recordsFilename))) :
+					new BufferedInputStream(new FileInputStream(recordsFilename)); BufferedReader b = new BufferedReader(new InputStreamReader(inputStream))) {
 				String line;
 				while ((line = b.readLine()) != null) {
 					final String record = line;
@@ -129,15 +138,16 @@ public class ZuliaCmdUtil {
 							store.setResultDocument(new ResultDocBuilder().setDocument(document));
 							workPool.store(store);
 
-							String fullPathToFile = inputDir + File.separator + id.replaceAll("/", "_") + ".zip";
+							String fullPathToFile = inputDir + File.separator + id.replace("/", "_") + ".zip";
 							if (Files.exists(Paths.get(fullPathToFile))) {
 
 								File destDir = new File(inputDir + File.separator + UUID.randomUUID() + "_tempWork");
 								byte[] buffer = new byte[1024];
-								try (ZipArchiveInputStream inputStream = new ZipArchiveInputStream(new FileInputStream(Paths.get(fullPathToFile).toFile()))) {
+								try (ZipArchiveInputStream zipArchiveInputStream = new ZipArchiveInputStream(
+										new FileInputStream(Paths.get(fullPathToFile).toFile()))) {
 									ZipArchiveEntry zipEntry;
-									while ((zipEntry = inputStream.getNextZipEntry()) != null) {
-										decompressZipEntryToDisk(destDir, buffer, inputStream, zipEntry);
+									while ((zipEntry = zipArchiveInputStream.getNextEntry()) != null) {
+										decompressZipEntryToDisk(destDir, buffer, zipArchiveInputStream, zipEntry);
 									}
 								}
 
@@ -196,10 +206,16 @@ public class ZuliaCmdUtil {
 
 									// clean up temp work
 									try (Stream<Path> walk = Files.walk(destDir.toPath())) {
-										walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
-										destDir.delete();
+										walk.sorted(Comparator.reverseOrder()).forEach(path -> {
+											try {
+												Files.delete(path);
+											}
+											catch (Throwable t) {
+												LOG.error("Could not delete path '{}'", path, t);
+											}
+										});
+										Files.deleteIfExists(destDir.toPath());
 									}
-
 								}
 								else {
 									//LOG.error("Could not extract file {}", fullPathToFile);

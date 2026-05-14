@@ -23,6 +23,12 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 	public QueryRequest validateAndSetDefault(QueryRequest request) {
 		QueryRequest.Builder queryRequestBuilder = request.toBuilder();
 
+		for (ZuliaQuery.Query query : queryRequestBuilder.getQueryList()) {
+			if (query.getBoost() < 0f) {
+				throw new IllegalArgumentException("Query boost must be >= 0, got " + query.getBoost());
+			}
+		}
+
 		ZuliaQuery.FetchType resultFetchType = queryRequestBuilder.getResultFetchType();
 		boolean fetchDocument = ZuliaQuery.FetchType.FULL.equals(resultFetchType) || ZuliaQuery.FetchType.ALL.equals(resultFetchType);
 

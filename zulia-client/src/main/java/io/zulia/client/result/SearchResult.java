@@ -48,6 +48,10 @@ public class SearchResult extends Result {
 		return queryResponse.getResultsList().stream().map(CompleteResult::new).toList();
 	}
 
+	public List<String> getUniqueIds() {
+		return queryResponse.getResultsList().stream().map(ScoredResult::getUniqueId).toList();
+	}
+
 	/**
 	 * use getFirstCompleteResult instead
 	 *
