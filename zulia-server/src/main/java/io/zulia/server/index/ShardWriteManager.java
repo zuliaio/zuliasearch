@@ -7,11 +7,12 @@ import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.index.cache.ZuliaTaxonomyWriterCache;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
+import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
@@ -43,10 +44,11 @@ public class ShardWriteManager {
 	private volatile int indexingThrottlePermits;
 
 	private final IndexWriter indexWriter;
-	private final DirectoryTaxonomyWriter taxoWriter;
+	private final SnapshotDirectoryTaxonomyWriter taxoWriter;
 	private final ExecutorService segmentOpenExecutor;
 	private final Path pathToIndex;
 	private final Path pathToTaxoIndex;
+	private final SnapshotDeletionPolicy snapshotDeletionPolicy;
 
 	private Long lastCommit;
 	private Long lastChange;
@@ -79,6 +81,7 @@ public class ShardWriteManager {
 		this.mergeScheduler = new ZuliaConcurrentMergeScheduler();
 		this.pathToIndex = pathToIndex;
 		this.pathToTaxoIndex = pathToTaxoIndex;
+		this.snapshotDeletionPolicy = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
 		this.indexWriter = openIndexWriter(pathToIndex);
 		this.taxoWriter = openTaxoWriter(pathToTaxoIndex, aggregationSettings.maxFacetsCachedPerDimension());
 		this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
@@ -105,7 +108,7 @@ public class ShardWriteManager {
 		tieredMergePolicy.setMaxMergedSegmentMB(10_000);
 		tieredMergePolicy.setDeletesPctAllowed(0.15);
 		config.setMergePolicy(tieredMergePolicy);
-		config.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+		config.setIndexDeletionPolicy(snapshotDeletionPolicy);
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
 		config.setRAMBufferSizeMB(128); // should be overwritten by ZuliaShard.updateIndexSettings()
 		config.setUseCompoundFile(false);
@@ -118,11 +121,11 @@ public class ShardWriteManager {
 
 	}
 
-	private DirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo, int maxFacetsCachedPerDimension) throws IOException {
+	private SnapshotDirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo, int maxFacetsCachedPerDimension) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
 		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
 
-		DirectoryTaxonomyWriter writer = new DirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND,
+		SnapshotDirectoryTaxonomyWriter writer = new SnapshotDirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND,
 				new ZuliaTaxonomyWriterCache(maxFacetsCachedPerDimension));
 		LOG.info("Opened taxonomy for {}:s{} with {} ordinals", indexName, shardNumber, writer.getSize());
 		return writer;
@@ -298,6 +301,36 @@ public class ShardWriteManager {
 			totalIndexedUnthrottled.incrementAndGet();
 		}
 
+	}
+
+	public Directory getIndexDirectory() {
+		return indexWriter.getDirectory();
+	}
+
+	public Directory getTaxoDirectory() {
+		return taxoWriter.getDirectory();
+	}
+
+	// Today the taxoWriter is always non-null. This is an extension point for a future facet backend where ordinals
+	// live outside Lucene and replication skips the taxo pass.
+	public boolean hasTaxonomy() {
+		return taxoWriter != null;
+	}
+
+	public IndexCommit snapshotIndex() throws IOException {
+		return snapshotDeletionPolicy.snapshot();
+	}
+
+	public void releaseSnapshot(IndexCommit commit) throws IOException {
+		snapshotDeletionPolicy.release(commit);
+	}
+
+	public IndexCommit snapshotTaxo() throws IOException {
+		return taxoWriter.getDeletionPolicy().snapshot();
+	}
+
+	public void releaseTaxoSnapshot(IndexCommit commit) throws IOException {
+		taxoWriter.getDeletionPolicy().release(commit);
 	}
 
 }

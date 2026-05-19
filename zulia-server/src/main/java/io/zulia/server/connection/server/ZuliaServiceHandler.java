@@ -45,6 +45,8 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	private final CreateIndexAliasServerRequest createIndexAliasServerRequest;
 	private final InternalCreateIndexAliasServerRequest internalCreateIndexAliasServerRequest;
 	private final InternalDeleteIndexAliasServerRequest internalDeleteIndexAliasServerRequest;
+	private final GetSegmentFileInfoServerRequest getSegmentFileInfoServerRequest;
+	private final SendSegmentFilesServerRequest sendSegmentFilesServerRequest;
 
 	public ZuliaServiceHandler(ZuliaIndexManager indexManager) {
 		internalQueryServerRequest = new InternalQueryServerRequest(indexManager);
@@ -83,6 +85,8 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 		createIndexAliasServerRequest = new CreateIndexAliasServerRequest(indexManager);
 		internalCreateIndexAliasServerRequest = new InternalCreateIndexAliasServerRequest(indexManager);
 		internalDeleteIndexAliasServerRequest = new InternalDeleteIndexAliasServerRequest(indexManager);
+		getSegmentFileInfoServerRequest = new GetSegmentFileInfoServerRequest(indexManager);
+		sendSegmentFilesServerRequest = new SendSegmentFilesServerRequest(indexManager);
 	}
 
 	@Override
@@ -263,5 +267,15 @@ public class ZuliaServiceHandler extends ZuliaServiceImplBase {
 	@Override
 	public void internalDeleteIndexAlias(DeleteIndexAliasRequest request, StreamObserver<DeleteIndexAliasResponse> responseObserver) {
 		internalDeleteIndexAliasServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public void internalGetSegmentFileInfo(GetSegmentFileInfoRequest request, StreamObserver<GetSegmentFileInfoResponse> responseObserver) {
+		getSegmentFileInfoServerRequest.handleRequest(request, responseObserver);
+	}
+
+	@Override
+	public StreamObserver<SegmentFileData> internalSendSegmentFiles(StreamObserver<SendSegmentFilesResponse> responseObserver) {
+		return sendSegmentFilesServerRequest.handleRequest(responseObserver);
 	}
 }

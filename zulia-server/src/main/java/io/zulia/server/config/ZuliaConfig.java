@@ -42,6 +42,14 @@ public class ZuliaConfig {
 
 	private int hitsPerConcurrentRequest;
 
+	// Minutes; deadline on the bidi segment-file stream. Raise if force-merges or vector segments produce
+	// files large enough that a 10-minute ship can't finish.
+	private int replicaResponseTimeout = 10;
+
+	// Aggregate cap across all replication streams leaving this node, in bytes/sec. 0 = unlimited. Prevents
+	// bootstrap of a large index from saturating the network and impacting query traffic. Default 60 MiB/s.
+	private long replicationMaxBytesPerSec = 60L * 1024 * 1024;
+
 	public ZuliaConfig() {
 	}
 
@@ -189,12 +197,29 @@ public class ZuliaConfig {
 		this.health = health;
 	}
 
+	public int getReplicaResponseTimeout() {
+		return replicaResponseTimeout;
+	}
+
+	public void setReplicaResponseTimeout(int replicaResponseTimeout) {
+		this.replicaResponseTimeout = replicaResponseTimeout;
+	}
+
+	public long getReplicationMaxBytesPerSec() {
+		return replicationMaxBytesPerSec;
+	}
+
+	public void setReplicationMaxBytesPerSec(long replicationMaxBytesPerSec) {
+		this.replicationMaxBytesPerSec = replicationMaxBytesPerSec;
+	}
+
 	@Override
 	public String toString() {
 		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
 				+ clusterStorageEngine + '\'' + ", s3=" + s3 + ", mongoServers=" + mongoServers + ", mongoConnection=" + mongoConnection + ", mongoAuth="
 				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", health=" + health
 				+ ", responseCompression=" + responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + ", debug="
-				+ debug + ", maxFacetsCachedPerDimension=" + maxFacetsCachedPerDimension + ", hitsPerConcurrentRequest=" + hitsPerConcurrentRequest + '}';
+				+ debug + ", maxFacetsCachedPerDimension=" + maxFacetsCachedPerDimension + ", hitsPerConcurrentRequest=" + hitsPerConcurrentRequest
+				+ ", replicaResponseTimeout=" + replicaResponseTimeout + ", replicationMaxBytesPerSec=" + replicationMaxBytesPerSec + '}';
 	}
 }

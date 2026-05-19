@@ -4,6 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.zulia.message.ZuliaServiceGrpc;
 import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
+import io.zulia.message.ZuliaServiceGrpc.ZuliaServiceStub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,7 @@ public class InternalRpcConnection {
 
 	private ManagedChannel channel;
 	private ZuliaServiceBlockingStub blockingStub;
+	private ZuliaServiceStub asyncStub;
 
 	public InternalRpcConnection(String memberAddress, int servicePort) {
 		this.memberAddress = memberAddress;
@@ -27,12 +29,17 @@ public class InternalRpcConnection {
 		channel = managedChannelBuilder.build();
 
 		blockingStub = ZuliaServiceGrpc.newBlockingStub(channel);
+		asyncStub = ZuliaServiceGrpc.newStub(channel);
 
 		LOG.info("Connecting to {}:{}", memberAddress, servicePort);
 	}
 
 	public ZuliaServiceBlockingStub getService() {
 		return blockingStub;
+	}
+
+	public ZuliaServiceStub getAsyncService() {
+		return asyncStub;
 	}
 
 	public void close() {
@@ -55,6 +62,7 @@ public class InternalRpcConnection {
 
 		channel = null;
 		blockingStub = null;
+		asyncStub = null;
 
 	}
 }

@@ -44,6 +44,8 @@ service ZuliaService {
     rpc GetIndexSettings (GetIndexSettingsRequest) returns (GetIndexSettingsResponse);
     rpc Reindex (ReindexRequest) returns (ReindexResponse);
     rpc InternalReindex (ReindexRequest) returns (ReindexResponse);
+    rpc InternalGetSegmentFileInfo (GetSegmentFileInfoRequest) returns (GetSegmentFileInfoResponse);
+    rpc InternalSendSegmentFiles (stream SegmentFileData) returns (SendSegmentFilesResponse);
 }
 
 message IndexRouting {
@@ -384,4 +386,38 @@ message ReindexResponse {
 message RestIndexSettingsResponse {
     IndexSettings indexSettings = 1;
     repeated QueryRequest warmingSearch = 2;
+}
+
+message GetSegmentFileInfoRequest {
+    string indexName = 1;
+    int32 shardNumber = 2;
+    bool taxonomy = 3;
+}
+
+message SegmentFileInfo {
+    string fileName = 1;
+    int64 length = 2;
+    string checksum = 3;
+}
+
+message GetSegmentFileInfoResponse {
+    int64 generation = 1;
+    string segmentsFileName = 2;
+    repeated SegmentFileInfo files = 3;
+    string luceneVersion = 4;
+}
+
+message SegmentFileData {
+    string indexName = 1;
+    int32 shardNumber = 2;
+    bool taxonomy = 3;
+    string fileName = 4;
+    bytes data = 5;
+    int64 generation = 6;
+    bool lastChunk = 7;
+}
+
+message SendSegmentFilesResponse {
+    bool success = 1;
+    int64 generation = 2;
 }

@@ -20,6 +20,7 @@ public interface ZuliaRESTConstants {
 	String INDEXES_URL = "/indexes";
 	String NODES_URL = "/nodes";
 	String STATS_URL = "/stats";
+	String REPLICATION_URL = "/replication";
 
 	String QUERY = "q";
 	String QUERY_FIELD = "qf";
