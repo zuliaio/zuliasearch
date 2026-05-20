@@ -31,8 +31,15 @@ import io.zulia.server.config.IndexService;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.config.SortFieldInfo;
 import io.zulia.server.config.ZuliaConfig;
+import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
+import io.zulia.server.index.replication.ReplicaDirectoryApplier;
+import io.zulia.server.index.replication.ReplicaFileInfo;
+import io.zulia.server.index.replication.ReplicationRateLimiter;
+import io.zulia.server.index.replication.ReplicationShardState;
+import io.zulia.server.index.replication.ReplicationUtil;
+import io.zulia.server.index.replication.SegmentReplicationManager;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.search.aggregation.AggregationSettings;
@@ -43,7 +50,6 @@ import io.zulia.server.search.queryparser.SetQueryHelper;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.util.ShardUtil;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -62,6 +68,7 @@ import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.bson.Document;
 import org.slf4j.Logger;
@@ -83,6 +90,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -106,13 +114,20 @@ public class ZuliaIndex {
 	private final TimerTask commitTask;
 	private final Timer warmTimer;
 	private final TimerTask warmTask;
+	private final Timer replicationWatchdogTimer;
+	private final TimerTask replicationWatchdogTask;
+
+	// Worst-case lag before a stale replica starts catching up; the per-shard generation gate makes each
+	// pass cheap when nothing has changed.
+	private static final long REPLICATION_WATCHDOG_INTERVAL_MS = 30_000;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 	private final IndexShardMapping indexShardMapping;
 	private final AggregationSettings aggregationSettings;
+	private final SegmentReplicationManager segmentReplicationManager;
 
 	public ZuliaIndex(ZuliaConfig zuliaConfig, ServerIndexConfig indexConfig, DocumentStorage documentStorage, IndexService indexService,
-			IndexShardMapping indexShardMapping) {
+			IndexShardMapping indexShardMapping, InternalClient internalClient, ReplicationRateLimiter replicationRateLimiter) {
 
 		this.zuliaConfig = zuliaConfig;
 		this.aggregationSettings = new AggregationSettings(zuliaConfig.getHitsPerConcurrentRequest(), zuliaConfig.getMaxFacetsCachedPerDimension());
@@ -121,6 +136,8 @@ public class ZuliaIndex {
 		this.numberOfShards = indexConfig.getNumberOfShards();
 		this.indexService = indexService;
 		this.indexShardMapping = indexShardMapping;
+		this.segmentReplicationManager = new SegmentReplicationManager(internalClient, indexShardMapping, indexName, zuliaConfig.getReplicaResponseTimeout(),
+				replicationRateLimiter);
 
 		this.documentStorage = documentStorage;
 
@@ -167,6 +184,20 @@ public class ZuliaIndex {
 
 		warmTimer.scheduleAtFixedRate(warmTask, 1000, 1000);
 
+		replicationWatchdogTimer = new Timer(indexName + "-ReplicationWatchdog", true);
+		replicationWatchdogTask = new TimerTask() {
+			@Override
+			public void run() {
+				try {
+					segmentReplicationManager.watchdogTick(primaryShardMap.values());
+				}
+				catch (Exception e) {
+					LOG.warn("Replication watchdog tick failed for {}", indexName, e);
+				}
+			}
+		};
+		replicationWatchdogTimer.scheduleAtFixedRate(replicationWatchdogTask, REPLICATION_WATCHDOG_INTERVAL_MS, REPLICATION_WATCHDOG_INTERVAL_MS);
+
 	}
 
 	public SortFieldInfo getSortFieldType(String fieldName) {
@@ -201,10 +232,16 @@ public class ZuliaIndex {
 		warmTask.cancel();
 		warmTimer.cancel();
 
+		replicationWatchdogTask.cancel();
+		replicationWatchdogTimer.cancel();
+
 		if (!terminate) {
 			LOG.info("Committing {}", indexName);
 			doCommit(true);
 		}
+
+		// After the final commit has fired its replication hook, await in-flight transfers before closing shards.
+		segmentReplicationManager.shutdown();
 
 		LOG.info("Shutting down shard pool for {}", indexName);
 		shardPool.shutdownNow();
@@ -238,21 +275,29 @@ public class ZuliaIndex {
 	}
 
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
-
-		ShardWriteManager shardWriteManager = new ShardWriteManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), indexConfig,
-				zuliaPerFieldAnalyzer, aggregationSettings);
-
-		ZuliaShard s = new ZuliaShard(shardWriteManager, primary);
-
 		if (primary) {
-			LOG.info("Loaded primary shard {}:s{}", indexName, shardNumber);
-			primaryShardMap.put(shardNumber, s);
+			loadPrimaryShard(shardNumber);
 		}
 		else {
-			LOG.info("Loaded replica shard {}:s{}", indexName, shardNumber);
-			replicaShardMap.put(shardNumber, s);
+			loadReplicaShard(shardNumber);
 		}
+	}
 
+	private void loadPrimaryShard(int shardNumber) throws Exception {
+		ShardWriteManager shardWriteManager = new ShardWriteManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), indexConfig,
+				zuliaPerFieldAnalyzer, aggregationSettings);
+		ZuliaShard s = new ZuliaShard(shardWriteManager);
+		s.setPostCommitHook(() -> segmentReplicationManager.replicateAfterCommit(s));
+		LOG.info("Loaded primary shard {}:s{}", indexName, shardNumber);
+		primaryShardMap.put(shardNumber, s);
+	}
+
+	private void loadReplicaShard(int shardNumber) throws Exception {
+		ShardReadManager shardReadManager = new ShardReadManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), indexConfig,
+				zuliaPerFieldAnalyzer, aggregationSettings);
+		ZuliaShard s = new ZuliaShard(shardReadManager);
+		LOG.info("Loaded replica shard {}:s{}", indexName, shardNumber);
+		replicaShardMap.put(shardNumber, s);
 	}
 
 	private Path getPathForIndex(int shardNumber) {
@@ -1271,6 +1316,36 @@ public class ZuliaIndex {
 		return indexName;
 	}
 
+	public ReplicaDirectoryApplier newReplicaApplier(int shardNumber) throws ShardDoesNotExistException {
+		return new ReplicaDirectoryApplier(requireReplicaShard(shardNumber));
+	}
+
+	public List<ReplicaFileInfo> listReplicaFileInfo(int shardNumber, boolean taxonomy) throws IOException {
+		ZuliaShard shard = requireReplicaShard(shardNumber);
+		ShardReadManager readManager = shard.getShardReadManager();
+		Directory directory = taxonomy ? readManager.getTaxoDirectory() : readManager.getIndexDirectory();
+		List<ReplicaFileInfo> result = new ArrayList<>();
+		for (String fileName : directory.listAll()) {
+			ReplicaFileInfo info = ReplicationUtil.readFileInfo(directory, fileName);
+			if (info != null) {
+				result.add(info);
+			}
+		}
+		return result;
+	}
+
+	private ZuliaShard requireReplicaShard(int shardNumber) throws ShardDoesNotExistException {
+		ZuliaShard shard = replicaShardMap.get(shardNumber);
+		if (shard == null || shard.getShardReadManager() == null) {
+			throw new ShardDoesNotExistException(indexName, shardNumber);
+		}
+		return shard;
+	}
+
+	public List<ReplicationShardState> getReplicationState() {
+		return segmentReplicationManager.getReplicationState();
+	}
+
 	public void loadShards(Predicate<Node> thisNodeTest) throws Exception {
 		List<ShardMapping> shardMappingList = indexShardMapping.getShardMappingList();
 		for (ShardMapping shardMapping : shardMappingList) {
@@ -1286,6 +1361,12 @@ public class ZuliaIndex {
 				}
 
 			}
+		}
+
+		// Catch up replicas that missed commits while this primary was down. replicateAfterCommit
+		// short-circuits when there are no replicas or nothing has changed, so this is cheap.
+		for (ZuliaShard primary : primaryShardMap.values()) {
+			segmentReplicationManager.replicateAfterCommit(primary);
 		}
 	}
 

@@ -49,6 +49,8 @@ import io.zulia.server.index.federator.GetTermsRequestFederator;
 import io.zulia.server.index.federator.OptimizeRequestFederator;
 import io.zulia.server.index.federator.QueryRequestFederator;
 import io.zulia.server.index.federator.ReindexRequestFederator;
+import io.zulia.server.index.replication.ReplicationRateLimiter;
+import io.zulia.server.index.replication.ReplicationShardState;
 import io.zulia.server.index.router.DeleteRequestRouter;
 import io.zulia.server.index.router.FetchRequestRouter;
 import io.zulia.server.index.router.StoreRequestRouter;
@@ -101,12 +103,14 @@ public class ZuliaIndexManager {
 	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
 	private final ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<String, IndexAlias> indexAliasMap;
+	private final ReplicationRateLimiter replicationRateLimiter;
 
 	private static final int MONGO_DB_NAME_MAX_LENGTH = 63;
 
 	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
 		this.zuliaConfig = zuliaConfig;
+		this.replicationRateLimiter = new ReplicationRateLimiter(zuliaConfig.getReplicationMaxBytesPerSec());
 
 		this.thisNode = ZuliaNode.nodeFromConfig(zuliaConfig);
 		this.nodeService = nodeService;
@@ -200,7 +204,8 @@ public class ZuliaIndexManager {
 
 		DocumentStorage documentStorage = getDocumentStorage(serverIndexConfig);
 
-		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping);
+		ZuliaIndex zuliaIndex = new ZuliaIndex(zuliaConfig, serverIndexConfig, documentStorage, indexService, indexShardMapping, internalClient,
+				replicationRateLimiter);
 
 		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
 
@@ -1004,7 +1009,11 @@ public class ZuliaIndexManager {
 		return null;
 	}
 
-	private ZuliaIndex getIndexFromName(String indexName) throws Exception {
+	public List<ReplicationShardState> getReplicationState(String indexName) throws Exception {
+		return getIndexFromName(indexName).getReplicationState();
+	}
+
+	public ZuliaIndex getIndexFromName(String indexName) throws Exception {
 		return lookupIndex(indexName, resolveSingleIndex(indexName));
 	}
 

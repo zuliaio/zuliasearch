@@ -41,14 +41,30 @@ public class ZuliaShard {
 	private HashSet<String> trackedIds;
 
 	private boolean unloaded;
+	private volatile boolean replicaNeedsWarming;
+	private volatile Runnable postCommitHook;
 
-	public ZuliaShard(ShardWriteManager shardWriteManager, boolean primary) throws Exception {
+	private final ShardReadManager shardReadManager;
 
-		this.primary = primary;
+	public ZuliaShard(ShardWriteManager shardWriteManager) throws Exception {
+
+		this.primary = true;
 		this.shardWriteManager = shardWriteManager;
+		this.shardReadManager = null;
 		this.shardNumber = shardWriteManager.getShardNumber();
 		this.indexName = shardWriteManager.getIndexConfig().getIndexName();
 		this.shardReaderManager = new ShardReaderManager(shardWriteManager.createShardReader());
+
+	}
+
+	public ZuliaShard(ShardReadManager shardReadManager) throws Exception {
+
+		this.primary = false;
+		this.shardWriteManager = null;
+		this.shardReadManager = shardReadManager;
+		this.shardNumber = shardReadManager.getShardNumber();
+		this.indexName = shardReadManager.getIndexConfig().getIndexName();
+		this.shardReaderManager = new ShardReaderManager(shardReadManager.createShardReader());
 
 	}
 
@@ -57,11 +73,13 @@ public class ZuliaShard {
 	}
 
 	public void updateIndexSettings() {
-		shardWriteManager.updateIndexSettings();
+		if (shardWriteManager != null) {
+			shardWriteManager.updateIndexSettings();
+		}
 	}
 
 	public int getShardNumber() {
-		return shardWriteManager.getShardNumber();
+		return shardNumber;
 	}
 
 	public ShardQueryResponse queryShard(ShardQuery shardQuery) throws Exception {
@@ -86,6 +104,15 @@ public class ZuliaShard {
 
 		shardWriteManager.commit();
 		shardReaderManager.maybeRefreshBlocking();
+
+		Runnable hook = postCommitHook;
+		if (hook != null) {
+			hook.run();
+		}
+	}
+
+	public void setPostCommitHook(Runnable postCommitHook) {
+		this.postCommitHook = postCommitHook;
 	}
 
 	public void tryIdleCommit() throws IOException {
@@ -98,6 +125,15 @@ public class ZuliaShard {
 
 	public void tryWarmSearches(ZuliaIndex zuliaIndex, boolean primary) {
 
+		if (shardWriteManager != null) {
+			tryWarmPrimary(zuliaIndex, primary);
+		}
+		else if (replicaNeedsWarming) {
+			tryWarmReplica(zuliaIndex);
+		}
+	}
+
+	private void tryWarmPrimary(ZuliaIndex zuliaIndex, boolean primary) {
 		long lastestShardTime = shardReaderManager.getLatestShardTime();
 		WarmInfo warmInfo = shardWriteManager.needsSearchWarming(lastestShardTime);
 		if (warmInfo.needsWarming()) {
@@ -112,7 +148,7 @@ public class ZuliaShard {
 
 			List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = shardWriteManager.getIndexConfig().getWarmingSearches();
 			if (!warmingSearches.isEmpty()) {
-				warmSearches(zuliaIndex, primary, warmingSearches, warmInfo, lastestShardTime);
+				warmPrimarySearches(zuliaIndex, primary, warmingSearches, warmInfo, lastestShardTime);
 			}
 			else {
 				LOG.info("Refreshed index {}:s{} without warming searches", indexName, shardNumber);
@@ -121,7 +157,41 @@ public class ZuliaShard {
 		}
 	}
 
-	private void warmSearches(ZuliaIndex zuliaIndex, boolean primary, List<ZuliaServiceOuterClass.QueryRequest> warmingSearches, WarmInfo warmInfo,
+	private void tryWarmReplica(ZuliaIndex zuliaIndex) {
+		replicaNeedsWarming = false;
+
+		List<ZuliaServiceOuterClass.QueryRequest> warmingSearches = zuliaIndex.getIndexConfig().getWarmingSearches();
+		if (warmingSearches.isEmpty()) {
+			return;
+		}
+
+		LOG.info("Started warming replica searches for index {}:s{}", indexName, shardNumber);
+		EnumSet<PrimaryReplicaSettings> usesReplica = EnumSet.of(PrimaryReplicaSettings.REPLICA_ONLY, PrimaryReplicaSettings.PRIMARY_IF_AVAILABLE);
+
+		for (ZuliaServiceOuterClass.QueryRequest warmingSearch : warmingSearches) {
+			if (unloaded || replicaNeedsWarming) {
+				return;
+			}
+
+			PrimaryReplicaSettings primaryReplicaSettings = warmingSearch.getPrimaryReplicaSettings();
+			if (usesReplica.contains(primaryReplicaSettings)) {
+				try {
+					LOG.info("Warming replica search for index {}:s{} with label {}", indexName, shardNumber, warmingSearch.getSearchLabel());
+					Query query = zuliaIndex.getQuery(warmingSearch);
+					ShardQuery shardQuery = zuliaIndex.getShardQuery(query, warmingSearch, -1);
+					queryShard(shardQuery);
+				}
+				catch (Exception e) {
+					LOG.error("Warming replica search for index {}:s{} with label {}: {}", indexName, shardNumber, warmingSearch.getSearchLabel(),
+							e.getMessage());
+				}
+			}
+		}
+
+		LOG.info("Finished warming replica searches for index {}:s{}", indexName, shardNumber);
+	}
+
+	private void warmPrimarySearches(ZuliaIndex zuliaIndex, boolean primary, List<ZuliaServiceOuterClass.QueryRequest> warmingSearches, WarmInfo warmInfo,
 			long lastestShardTime) {
 
 		LOG.info("Started warming searching for index {}:s{}", indexName, shardNumber);
@@ -247,7 +317,12 @@ public class ZuliaShard {
 	public void close() throws IOException {
 		unloaded = true;
 		shardReaderManager.close();
-		shardWriteManager.close();
+		if (shardWriteManager != null) {
+			shardWriteManager.close();
+		}
+		if (shardReadManager != null) {
+			shardReadManager.close();
+		}
 	}
 
 	public void index(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata) throws Exception {
@@ -381,6 +456,21 @@ public class ZuliaShard {
 		}
 		finally {
 			shardReaderManager.decRef(shardReader);
+		}
+	}
+
+	public ShardWriteManager getShardWriteManager() {
+		return shardWriteManager;
+	}
+
+	public ShardReadManager getShardReadManager() {
+		return shardReadManager;
+	}
+
+	public void refreshReaders() throws IOException {
+		shardReaderManager.maybeRefreshBlocking();
+		if (!primary) {
+			replicaNeedsWarming = true;
 		}
 	}
 
