@@ -210,6 +210,8 @@ public class ZuliaIndexManager {
 		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
 
 		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
+
+		zuliaIndex.startMaintenance();
 	}
 
 	@NotNull
