@@ -743,7 +743,6 @@ paths:
       - name: active
         in: query
         description: "If true, return only active nodes"
-        required: true
         explode: false
         schema:
           type: boolean
@@ -800,7 +799,6 @@ paths:
       - name: q
         in: query
         description: Query string in Lucene syntax
-        required: true
         explode: false
         schema:
           type: string
@@ -844,7 +842,6 @@ paths:
       - name: fetch
         in: query
         description: Whether to fetch full documents
-        required: true
         explode: false
         schema:
           type: boolean
@@ -852,7 +849,6 @@ paths:
       - name: rows
         in: query
         description: Number of results to return
-        required: true
         explode: false
         schema:
           type: integer
@@ -913,7 +909,6 @@ paths:
       - name: debug
         in: query
         description: Enable debug mode to return query explanation
-        required: true
         explode: false
         schema:
           type: boolean
@@ -921,7 +916,6 @@ paths:
       - name: dontCache
         in: query
         description: "If true, bypass query caching"
-        required: true
         explode: false
         schema:
           type: boolean
@@ -972,7 +966,6 @@ paths:
       - name: truncate
         in: query
         description: Truncate long field values in response
-        required: true
         explode: false
         schema:
           type: boolean
@@ -1037,7 +1030,6 @@ paths:
             type: string
       - name: q
         in: query
-        required: true
         explode: false
         schema:
           type: string
@@ -1076,14 +1068,12 @@ paths:
             type: string
       - name: fetch
         in: query
-        required: true
         explode: false
         schema:
           type: boolean
           default: true
       - name: rows
         in: query
-        required: true
         explode: false
         schema:
           type: integer
@@ -1136,14 +1126,12 @@ paths:
             type: string
       - name: debug
         in: query
-        required: true
         explode: false
         schema:
           type: boolean
           default: false
       - name: dontCache
         in: query
-        required: true
         explode: false
         schema:
           type: boolean
@@ -1181,14 +1169,12 @@ paths:
             type: string
       - name: batch
         in: query
-        required: true
         explode: false
         schema:
           type: boolean
           default: false
       - name: batchSize
         in: query
-        required: true
         explode: false
         schema:
           type: integer
@@ -1257,7 +1243,6 @@ paths:
             type: string
       - name: q
         in: query
-        required: true
         explode: false
         schema:
           type: string
@@ -1333,7 +1318,6 @@ paths:
           nullable: true
       - name: debug
         in: query
-        required: true
         explode: false
         schema:
           type: boolean
@@ -1389,6 +1373,54 @@ paths:
             text/csv;charset=utf-8:
               schema:
                 type: object
+  /replication/{indexName}:
+    get:
+      tags:
+      - Replication
+      summary: Get replication state
+      description: Per-shard and per-replica replication progress for the given index.
+        Only shards whose primary lives on this node have populated state.
+      operationId: getReplicationState
+      parameters:
+      - name: indexName
+        in: path
+        description: Index name
+        required: true
+        schema:
+          type: string
+      responses:
+        "400":
+          description: Bad Request
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "404":
+          description: Not Found
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "500":
+          description: Internal Server Error
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "503":
+          description: Service Unavailable
+          content:
+            application/json;charset=utf-8:
+              schema:
+                $ref: "#/components/schemas/JsonError"
+        "200":
+          description: getReplicationState 200 response
+          content:
+            application/json;charset=utf-8:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReplicationShardState"
   /stats:
     get:
       tags:
@@ -1656,15 +1688,9 @@ components:
       type: object
       properties:
         _links:
-          type: object
-          additionalProperties:
-            type: object
+          $ref: "#/components/schemas/OptionalMultiValues_Link_"
         _embedded:
-          type: object
-          additionalProperties:
-            type: array
-            items:
-              $ref: "#/components/schemas/Resource"
+          $ref: "#/components/schemas/OptionalMultiValues_Resource_"
     AnalysisDTO:
       required:
       - field
@@ -1844,23 +1870,15 @@ components:
       - type: object
         properties:
           _links:
-            type: object
-            additionalProperties:
-              type: object
+            $ref: "#/components/schemas/OptionalMultiValues_Link_"
           _embedded:
-            type: object
-            additionalProperties:
-              type: array
-              items:
-                $ref: "#/components/schemas/Resource"
+            $ref: "#/components/schemas/OptionalMultiValues_Resource_"
           message:
             type: string
           logref:
-            type: string
-            nullable: true
+            $ref: "#/components/schemas/JsonError"
           path:
-            type: string
-            nullable: true
+            $ref: "#/components/schemas/JsonError"
     NodeDTO:
       type: object
       properties:
@@ -1900,13 +1918,61 @@ components:
       properties:
         empty:
           type: boolean
-    Resource:
+    ReplicaReplicationState:
+      required:
+      - backoffUntilMs
+      - circuitOpen
+      - consecutiveFailures
+      - lagGenerations
+      - lastReplicatedGeneration
+      - lastSuccessMs
+      - msSinceLastSuccess
+      - serverAddress
+      - servicePort
       type: object
       properties:
-        _links:
-          $ref: "#/components/schemas/OptionalMultiValues_Link_"
-        _embedded:
-          $ref: "#/components/schemas/OptionalMultiValues_Resource_"
+        serverAddress:
+          type: string
+        servicePort:
+          type: integer
+          format: int32
+        lastReplicatedGeneration:
+          type: integer
+          format: int64
+        lagGenerations:
+          type: integer
+          format: int64
+        lastSuccessMs:
+          type: integer
+          format: int64
+        msSinceLastSuccess:
+          type: integer
+          format: int64
+        consecutiveFailures:
+          type: integer
+          format: int32
+        circuitOpen:
+          type: boolean
+        backoffUntilMs:
+          type: integer
+          format: int64
+    ReplicationShardState:
+      required:
+      - lastAttemptedGeneration
+      - replicas
+      - shardNumber
+      type: object
+      properties:
+        shardNumber:
+          type: integer
+          format: int32
+        lastAttemptedGeneration:
+          type: integer
+          format: int64
+        replicas:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReplicaReplicationState"
     ScoredResultDTO:
       type: object
       properties:
