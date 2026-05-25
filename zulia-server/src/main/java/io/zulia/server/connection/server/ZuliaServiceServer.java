@@ -69,13 +69,21 @@ public class ZuliaServiceServer {
 	}
 
 	public void shutdown() {
+		// Graceful shutdown first: stop accepting new RPCs and let in-flight ones drain.
 		server.shutdown();
 		executor.shutdown();
 		try {
-			server.awaitTermination(2, TimeUnit.SECONDS);
+			// Long-lived streams (e.g. segment replication) can outlast the grace period. If the server
+			// has not terminated, force-cancel the remaining RPCs so the listen socket is released and the
+			// port can be rebound (otherwise a fast restart, including back-to-back tests, fails to bind).
+			if (!server.awaitTermination(2, TimeUnit.SECONDS)) {
+				server.shutdownNow();
+				server.awaitTermination(2, TimeUnit.SECONDS);
+			}
 		}
 		catch (InterruptedException ignored) {
-
+			server.shutdownNow();
+			Thread.currentThread().interrupt();
 		}
 	}
 }
