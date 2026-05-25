@@ -147,6 +147,9 @@ message UpdateIndexSettings {
     bool setIndexingThrottle = 41;
     uint32 indexingThrottle = 42;
 
+    bool setNumberOfReplicas = 43;
+    uint32 numberOfReplicas = 44;
+
 }
 
 

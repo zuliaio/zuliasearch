@@ -540,36 +540,8 @@ public class ZuliaIndexManager {
 
 			indexSettings = indexSettings.toBuilder().setCreateTime(currentTimeMillis).build();
 
-			IndexShardMapping.Builder indexShardMapping = IndexShardMapping.newBuilder();
-			indexShardMapping.setIndexName(indexName);
-			indexShardMapping.setNumberOfShards(indexSettings.getNumberOfShards());
-
-			for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
-
-				List<Node> nodes = nodeWeightComputation.getNodesSortedByWeight();
-
-				ShardMapping.Builder shardMapping = ShardMapping.newBuilder();
-
-				Node primaryNode = nodes.removeFirst();
-				shardMapping.setPrimaryNode(primaryNode);
-				shardMapping.setShardNumber(i);
-				nodeWeightComputation.addShard(primaryNode, indexSettings, true);
-
-				for (int r = 0; r < nodes.size(); r++) {
-					if (r < indexSettings.getNumberOfReplicas()) {
-						Node replicaNode = nodes.get(r);
-						shardMapping.addReplicaNode(replicaNode);
-						nodeWeightComputation.addShard(replicaNode, indexSettings, false);
-					}
-					else {
-						break;
-					}
-				}
-
-				indexShardMapping.addShardMapping(shardMapping);
-			}
-
-			indexService.storeIndexShardMapping(indexShardMapping.build());
+			IndexShardMapping indexShardMapping = buildInitialShardMapping(indexSettings, nodeWeightComputation);
+			indexService.storeIndexShardMapping(indexShardMapping);
 		}
 		else {
 
@@ -584,9 +556,10 @@ public class ZuliaIndexManager {
 				throw new IllegalArgumentException("Cannot change shards for existing index");
 			}
 
-			//TODO handle changing of replication factor
 			if (existingIndex.getNumberOfReplicas() != indexSettings.getNumberOfReplicas()) {
-				throw new IllegalArgumentException("Cannot change replication factor for existing index yet");
+				IndexShardMapping existingShardMapping = indexService.getIndexShardMapping(indexName);
+				IndexShardMapping newShardMapping = adjustReplicaCount(existingShardMapping, indexSettings, nodeWeightComputation);
+				indexService.storeIndexShardMapping(newShardMapping);
 			}
 
 		}
@@ -775,6 +748,10 @@ public class ZuliaIndexManager {
 				existingSettings.setDescription(updateIndexSettings.getDescription());
 			}
 
+			if (updateIndexSettings.getSetNumberOfReplicas()) {
+				existingSettings.setNumberOfReplicas(updateIndexSettings.getNumberOfReplicas());
+			}
+
 			Operation metaUpdateOperation = updateIndexSettings.getMetaUpdateOperation();
 			if (metaUpdateOperation.getEnable()) {
 				Document existingMeta = ZuliaUtil.byteStringToMongoDocument(existingSettings.getMeta());
@@ -810,6 +787,13 @@ public class ZuliaIndexManager {
 
 			indexSettings = indexSettings.toBuilder().setUpdateTime(System.currentTimeMillis()).build();
 
+			if (indexSettings.getNumberOfReplicas() != originalIndexSettings.getNumberOfReplicas()) {
+				NodeWeightComputation nodeWeightComputation = new DefaultNodeWeightComputation(indexService, thisNode, currentOtherNodesActive);
+				IndexShardMapping existingShardMapping = indexService.getIndexShardMapping(indexName);
+				IndexShardMapping newShardMapping = adjustReplicaCount(existingShardMapping, indexSettings, nodeWeightComputation);
+				indexService.storeIndexShardMapping(newShardMapping);
+			}
+
 			indexService.storeIndex(indexSettings);
 
 			CreateOrUpdateIndexRequestFederator createOrUpdateIndexRequestFederator = new CreateOrUpdateIndexRequestFederator(thisNode, currentOtherNodesActive,
@@ -828,6 +812,71 @@ public class ZuliaIndexManager {
 		finally {
 			lock.unlock();
 		}
+	}
+
+	private static IndexShardMapping buildInitialShardMapping(IndexSettings indexSettings, NodeWeightComputation nodeWeightComputation) {
+		IndexShardMapping.Builder indexShardMapping = IndexShardMapping.newBuilder();
+		indexShardMapping.setIndexName(indexSettings.getIndexName());
+		indexShardMapping.setNumberOfShards(indexSettings.getNumberOfShards());
+
+		for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
+
+			List<Node> nodes = nodeWeightComputation.getNodesSortedByWeight();
+
+			ShardMapping.Builder shardMapping = ShardMapping.newBuilder().setShardNumber(i);
+
+			Node primaryNode = nodes.removeFirst();
+			shardMapping.setPrimaryNode(primaryNode);
+			nodeWeightComputation.addShard(primaryNode, indexSettings, true);
+
+			// remaining nodes are sorted by weight; take the least loaded ones as replicas
+			nodes.stream().limit(indexSettings.getNumberOfReplicas()).forEach(replicaNode -> {
+				shardMapping.addReplicaNode(replicaNode);
+				nodeWeightComputation.addShard(replicaNode, indexSettings, false);
+			});
+
+			indexShardMapping.addShardMapping(shardMapping);
+		}
+
+		return indexShardMapping.build();
+	}
+
+	private static IndexShardMapping adjustReplicaCount(IndexShardMapping existing, IndexSettings indexSettings, NodeWeightComputation nodeWeightComputation) {
+		int newReplicaCount = indexSettings.getNumberOfReplicas();
+
+		IndexShardMapping.Builder builder = IndexShardMapping.newBuilder();
+		builder.setIndexName(indexSettings.getIndexName());
+		builder.setNumberOfShards(indexSettings.getNumberOfShards());
+
+		for (ShardMapping currentShardMapping : existing.getShardMappingList()) {
+			Node primaryNode = currentShardMapping.getPrimaryNode();
+			List<Node> currentReplicas = currentShardMapping.getReplicaNodeList();
+
+			ShardMapping.Builder shardBuilder = ShardMapping.newBuilder().setShardNumber(currentShardMapping.getShardNumber()).setPrimaryNode(primaryNode);
+
+			if (newReplicaCount <= currentReplicas.size()) {
+				// shrinking: keep the lowest-indexed replicas, drop the rest
+				currentReplicas.stream().limit(newReplicaCount).forEach(shardBuilder::addReplicaNode);
+			}
+			else {
+				// growing: keep all existing replicas and pick additional least-loaded nodes not already assigned to this shard
+				currentReplicas.forEach(shardBuilder::addReplicaNode);
+
+				List<Node> alreadyAssigned = Stream.concat(Stream.of(primaryNode), currentReplicas.stream()).toList();
+				int toAdd = newReplicaCount - currentReplicas.size();
+
+				nodeWeightComputation.getNodesSortedByWeight().stream()
+						.filter(candidate -> alreadyAssigned.stream().noneMatch(assigned -> ZuliaNode.isEqual(assigned, candidate))).limit(toAdd)
+						.forEach(replica -> {
+							shardBuilder.addReplicaNode(replica);
+							nodeWeightComputation.addShard(replica, indexSettings, false);
+						});
+			}
+
+			builder.addShardMapping(shardBuilder);
+		}
+
+		return builder.build();
 	}
 
 	private static @NotNull String getJsonString(MessageOrBuilder request) throws InvalidProtocolBufferException {
@@ -881,12 +930,17 @@ public class ZuliaIndexManager {
 		ZuliaIndex zuliaIndex = indexMap.get(indexName);
 		if (zuliaIndex == null) {
 			loadIndex(indexName);
-		}
-		else {
-			zuliaIndex.reloadIndexSettings();
+			return InternalCreateOrUpdateIndexResponse.newBuilder().setLoaded(true).build();
 		}
 
-		return InternalCreateOrUpdateIndexResponse.newBuilder().setLoaded(zuliaIndex == null).build();
+		IndexShardMapping newShardMapping = indexService.getIndexShardMapping(indexName);
+		if (!zuliaIndex.getIndexShardMapping().equals(newShardMapping)) {
+			LOG.info("{}:{} applying shard mapping update for index {}", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort(), indexName);
+			zuliaIndex.applyShardMappingUpdate(newShardMapping, node -> ZuliaNode.isEqual(thisNode, node));
+		}
+
+		zuliaIndex.reloadIndexSettings();
+		return InternalCreateOrUpdateIndexResponse.newBuilder().setLoaded(false).build();
 
 	}
 

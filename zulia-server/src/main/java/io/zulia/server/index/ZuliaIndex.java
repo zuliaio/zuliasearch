@@ -122,7 +122,7 @@ public class ZuliaIndex {
 	private static final long REPLICATION_WATCHDOG_INTERVAL_MS = 30_000;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
-	private final IndexShardMapping indexShardMapping;
+	private volatile IndexShardMapping indexShardMapping;
 	private final AggregationSettings aggregationSettings;
 	private final SegmentReplicationManager segmentReplicationManager;
 
@@ -251,10 +251,7 @@ public class ZuliaIndex {
 			unloadShard(shardNumber);
 			LOG.info("Unloaded primary shard {}:s{}", indexName, shardNumber);
 			if (terminate) {
-				LOG.info("Deleting primary shard {}:s{}", indexName, shardNumber);
-				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
-				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
-				LOG.info("Deleted primary shard {}:s{}", indexName, shardNumber);
+				deleteShardData(shardNumber);
 			}
 		}
 
@@ -264,14 +261,18 @@ public class ZuliaIndex {
 			unloadShard(shardNumber);
 			LOG.info("Unloaded replica shard {}:s{}", indexName, shardNumber);
 			if (terminate) {
-				LOG.info("Deleting replica shard {}:s{}", indexName, shardNumber);
-				Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
-				Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
-				LOG.info("Deleted replica shard {}:s{}", indexName, shardNumber);
+				deleteShardData(shardNumber);
 			}
 		}
 		LOG.info("Shut down shard pool for {}", indexName);
 
+	}
+
+	private void deleteShardData(int shardNumber) throws IOException {
+		LOG.info("Deleting shard {}:s{} from disk", indexName, shardNumber);
+		Files.walkFileTree(getPathForIndex(shardNumber), new DeletingFileVisitor());
+		Files.walkFileTree(getPathForFacetsIndex(shardNumber), new DeletingFileVisitor());
+		LOG.info("Deleted shard {}:s{} from disk", indexName, shardNumber);
 	}
 
 	private void loadShard(int shardNumber, boolean primary) throws Exception {
@@ -1344,6 +1345,50 @@ public class ZuliaIndex {
 
 	public List<ReplicationShardState> getReplicationState() {
 		return segmentReplicationManager.getReplicationState();
+	}
+
+	public void applyShardMappingUpdate(IndexShardMapping newMapping, Predicate<Node> thisNodeTest) throws Exception {
+		for (ShardMapping shardMapping : newMapping.getShardMappingList()) {
+			int shardNumber = shardMapping.getShardNumber();
+			boolean shouldBePrimary = thisNodeTest.test(shardMapping.getPrimaryNode());
+			boolean shouldBeReplica = !shouldBePrimary && shardMapping.getReplicaNodeList().stream().anyMatch(thisNodeTest);
+
+			boolean hasPrimary = primaryShardMap.containsKey(shardNumber);
+			boolean hasReplica = replicaShardMap.containsKey(shardNumber);
+
+			if (shouldBePrimary && !hasPrimary) {
+				// promotion reuses the on-disk data, so unload the old replica role without deleting
+				if (hasReplica) {
+					unloadShard(shardNumber);
+				}
+				loadShard(shardNumber, true);
+			}
+			else if (shouldBeReplica && !hasReplica) {
+				// demotion reuses the on-disk data, so unload the old primary role without deleting
+				if (hasPrimary) {
+					unloadShard(shardNumber);
+				}
+				loadShard(shardNumber, false);
+			}
+			else if (!shouldBePrimary && !shouldBeReplica) {
+				if (hasReplica) {
+					// this node is no longer a replica; the primary is the source of truth, so the local copy is disposable
+					unloadShard(shardNumber);
+					deleteShardData(shardNumber);
+				}
+				else if (hasPrimary) {
+					// primary moved off this node entirely; keep the data on disk rather than risk losing the only copy
+					unloadShard(shardNumber);
+				}
+			}
+		}
+
+		this.indexShardMapping = newMapping;
+		segmentReplicationManager.updateShardMapping(newMapping);
+
+		for (ZuliaShard primary : primaryShardMap.values()) {
+			segmentReplicationManager.replicateAfterCommit(primary);
+		}
 	}
 
 	public void loadShards(Predicate<Node> thisNodeTest) throws Exception {
