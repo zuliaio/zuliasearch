@@ -26,7 +26,7 @@ message ShardMapping {
 message IndexSettings {
     string indexName = 1;
     uint32 numberOfShards = 2; // default 1
-    uint32 numberOfReplicas = 3; // default 1
+    uint32 numberOfReplicas = 3; // default 0
 
     //server populated
     int64 createTime = 4;
