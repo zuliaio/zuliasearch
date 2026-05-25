@@ -87,14 +87,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -110,16 +110,19 @@ public class ZuliaIndex {
 	private final String indexName;
 	private final DocumentStorage documentStorage;
 	private final ZuliaConfig zuliaConfig;
-	private final Timer commitTimer;
-	private final TimerTask commitTask;
-	private final Timer warmTimer;
-	private final TimerTask warmTask;
-	private final Timer replicationWatchdogTimer;
-	private final TimerTask replicationWatchdogTask;
+	private Thread commitThread;
+	private Thread warmThread;
+	private Thread replicationWatchdogThread;
+	private volatile boolean maintenanceRunning = true;
+	private final CountDownLatch maintenanceShutdownLatch = new CountDownLatch(1);
 
+	// How often the commit and warm loops check whether work is due (both checks are gated by timestamps).
+	private static final long MAINTENANCE_TICK_INTERVAL_MS = 1_000;
 	// Worst-case lag before a stale replica starts catching up; the per-shard generation gate makes each
 	// pass cheap when nothing has changed.
 	private static final long REPLICATION_WATCHDOG_INTERVAL_MS = 30_000;
+	// Best-effort wait for each maintenance thread to stop during unload before proceeding.
+	private static final long MAINTENANCE_SHUTDOWN_JOIN_MS = 5_000;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final IndexService indexService;
 	private final IndexShardMapping indexShardMapping;
@@ -150,54 +153,65 @@ public class ZuliaIndex {
 		this.primaryShardMap = new ConcurrentHashMap<>();
 		this.replicaShardMap = new ConcurrentHashMap<>();
 
-		commitTimer = new Timer(indexName + "-CommitTimer", true);
+	}
 
-		commitTask = new TimerTask() {
-
-			@Override
-			public void run() {
-				if (ZuliaIndex.this.indexConfig.getIndexSettings().getIdleTimeWithoutCommit() != 0) {
-					doCommit(false);
-				}
-
+	// Start the maintenance loops after the index is fully constructed and shards are loaded, so the virtual
+	// threads never observe a partially-constructed ZuliaIndex (avoids publishing `this` from the constructor).
+	public void startMaintenance() {
+		commitThread = Thread.ofVirtual().name(indexName + "-CommitTimer").start(() -> runMaintenanceLoop(MAINTENANCE_TICK_INTERVAL_MS, () -> {
+			if (indexConfig.getIndexSettings().getIdleTimeWithoutCommit() != 0) {
+				doCommit(false);
 			}
+		}));
 
-		};
-
-		commitTimer.scheduleAtFixedRate(commitTask, 1000, 1000);
-
-		warmTimer = new Timer(indexName + "-WarmTimer", true);
-
-		warmTask = new TimerTask() {
-
-			@Override
-			public void run() {
-				for (ZuliaShard shard : primaryShardMap.values()) {
-					shard.tryWarmSearches(ZuliaIndex.this, true);
-				}
-				for (ZuliaShard shard : replicaShardMap.values()) {
-					shard.tryWarmSearches(ZuliaIndex.this, false);
-				}
+		warmThread = Thread.ofVirtual().name(indexName + "-WarmTimer").start(() -> runMaintenanceLoop(MAINTENANCE_TICK_INTERVAL_MS, () -> {
+			for (ZuliaShard shard : primaryShardMap.values()) {
+				shard.tryWarmSearches(this, true);
 			}
+			for (ZuliaShard shard : replicaShardMap.values()) {
+				shard.tryWarmSearches(this, false);
+			}
+		}));
 
-		};
+		replicationWatchdogThread = Thread.ofVirtual().name(indexName + "-ReplicationWatchdog")
+				.start(() -> runMaintenanceLoop(REPLICATION_WATCHDOG_INTERVAL_MS, () -> segmentReplicationManager.watchdogTick(primaryShardMap.values())));
+	}
 
-		warmTimer.scheduleAtFixedRate(warmTask, 1000, 1000);
-
-		replicationWatchdogTimer = new Timer(indexName + "-ReplicationWatchdog", true);
-		replicationWatchdogTask = new TimerTask() {
-			@Override
-			public void run() {
-				try {
-					segmentReplicationManager.watchdogTick(primaryShardMap.values());
-				}
-				catch (Exception e) {
-					LOG.warn("Replication watchdog tick failed for {}", indexName, e);
+	// Runs task every intervalMs until unload(). Sleeps on the shutdown latch (not Thread.sleep) so unload()
+	// wakes the loop immediately via countDown() without interrupting a thread that may be mid-commit.
+	private void runMaintenanceLoop(long intervalMs, Runnable task) {
+		while (maintenanceRunning) {
+			try {
+				if (maintenanceShutdownLatch.await(intervalMs, TimeUnit.MILLISECONDS)) {
+					return; // latch released -> shutting down
 				}
 			}
-		};
-		replicationWatchdogTimer.scheduleAtFixedRate(replicationWatchdogTask, REPLICATION_WATCHDOG_INTERVAL_MS, REPLICATION_WATCHDOG_INTERVAL_MS);
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return;
+			}
+			try {
+				task.run();
+			}
+			catch (Exception e) {
+				LOG.warn("Maintenance task {} failed for {}", Thread.currentThread().getName(), indexName, e);
+			}
+		}
+	}
 
+	private void joinMaintenance(Thread thread) {
+		if (thread == null) {
+			return; // maintenance never started (e.g. load failed before startMaintenance)
+		}
+		try {
+			thread.join(MAINTENANCE_SHUTDOWN_JOIN_MS);
+			if (thread.isAlive()) {
+				LOG.warn("Maintenance thread {} did not stop within {}ms", thread.getName(), MAINTENANCE_SHUTDOWN_JOIN_MS);
+			}
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	public SortFieldInfo getSortFieldType(String fieldName) {
@@ -225,15 +239,12 @@ public class ZuliaIndex {
 
 	public void unload(boolean terminate) throws IOException {
 
-		LOG.info("Canceling timers for {}", indexName);
-		commitTask.cancel();
-		commitTimer.cancel();
-
-		warmTask.cancel();
-		warmTimer.cancel();
-
-		replicationWatchdogTask.cancel();
-		replicationWatchdogTimer.cancel();
+		LOG.info("Stopping maintenance threads for {}", indexName);
+		maintenanceRunning = false;
+		maintenanceShutdownLatch.countDown();
+		joinMaintenance(commitThread);
+		joinMaintenance(warmThread);
+		joinMaintenance(replicationWatchdogThread);
 
 		if (!terminate) {
 			LOG.info("Committing {}", indexName);
