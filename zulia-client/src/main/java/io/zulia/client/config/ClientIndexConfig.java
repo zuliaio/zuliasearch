@@ -42,6 +42,11 @@ public class ClientIndexConfig {
 	private Integer maxMergeThreads;
 	private Integer maxMergePending;
 	private Integer indexingThrottle;
+	private Integer nrtIndexMaxMergeSizeMB;
+	private Integer nrtIndexMaxCachedMB;
+	private Integer nrtTaxoMaxMergeSizeMB;
+	private Integer nrtTaxoMaxCachedMB;
+	private Boolean nrtCachingDisabled;
 
 	private Boolean disableCompression;
 
@@ -147,6 +152,51 @@ public class ClientIndexConfig {
 
 	public ClientIndexConfig setIndexingThrottle(Integer indexingThrottle) {
 		this.indexingThrottle = indexingThrottle;
+		return this;
+	}
+
+	public Integer getNrtIndexMaxMergeSizeMB() {
+		return nrtIndexMaxMergeSizeMB;
+	}
+
+	public ClientIndexConfig setNrtIndexMaxMergeSizeMB(Integer nrtIndexMaxMergeSizeMB) {
+		this.nrtIndexMaxMergeSizeMB = nrtIndexMaxMergeSizeMB;
+		return this;
+	}
+
+	public Integer getNrtIndexMaxCachedMB() {
+		return nrtIndexMaxCachedMB;
+	}
+
+	public ClientIndexConfig setNrtIndexMaxCachedMB(Integer nrtIndexMaxCachedMB) {
+		this.nrtIndexMaxCachedMB = nrtIndexMaxCachedMB;
+		return this;
+	}
+
+	public Integer getNrtTaxoMaxMergeSizeMB() {
+		return nrtTaxoMaxMergeSizeMB;
+	}
+
+	public ClientIndexConfig setNrtTaxoMaxMergeSizeMB(Integer nrtTaxoMaxMergeSizeMB) {
+		this.nrtTaxoMaxMergeSizeMB = nrtTaxoMaxMergeSizeMB;
+		return this;
+	}
+
+	public Integer getNrtTaxoMaxCachedMB() {
+		return nrtTaxoMaxCachedMB;
+	}
+
+	public ClientIndexConfig setNrtTaxoMaxCachedMB(Integer nrtTaxoMaxCachedMB) {
+		this.nrtTaxoMaxCachedMB = nrtTaxoMaxCachedMB;
+		return this;
+	}
+
+	public Boolean getNrtCachingDisabled() {
+		return nrtCachingDisabled;
+	}
+
+	public ClientIndexConfig setNrtCachingDisabled(Boolean nrtCachingDisabled) {
+		this.nrtCachingDisabled = nrtCachingDisabled;
 		return this;
 	}
 
@@ -414,6 +464,26 @@ public class ClientIndexConfig {
 			isb.setIndexingThrottle(indexingThrottle);
 		}
 
+		if (nrtIndexMaxMergeSizeMB != null) {
+			isb.setNrtIndexMaxMergeSizeMB(nrtIndexMaxMergeSizeMB);
+		}
+
+		if (nrtIndexMaxCachedMB != null) {
+			isb.setNrtIndexMaxCachedMB(nrtIndexMaxCachedMB);
+		}
+
+		if (nrtTaxoMaxMergeSizeMB != null) {
+			isb.setNrtTaxoMaxMergeSizeMB(nrtTaxoMaxMergeSizeMB);
+		}
+
+		if (nrtTaxoMaxCachedMB != null) {
+			isb.setNrtTaxoMaxCachedMB(nrtTaxoMaxCachedMB);
+		}
+
+		if (nrtCachingDisabled != null) {
+			isb.setNrtCachingDisabled(nrtCachingDisabled);
+		}
+
 		if (disableCompression != null) {
 			isb.setDisableCompression(disableCompression);
 		}
@@ -486,6 +556,11 @@ public class ClientIndexConfig {
 		this.maxMergeThreads = indexSettings.getMaxMergeThreads();
 		this.maxMergePending = indexSettings.getMaxMergePending();
 		this.indexingThrottle = indexSettings.getIndexingThrottle();
+		this.nrtIndexMaxMergeSizeMB = indexSettings.getNrtIndexMaxMergeSizeMB();
+		this.nrtIndexMaxCachedMB = indexSettings.getNrtIndexMaxCachedMB();
+		this.nrtTaxoMaxMergeSizeMB = indexSettings.getNrtTaxoMaxMergeSizeMB();
+		this.nrtTaxoMaxCachedMB = indexSettings.getNrtTaxoMaxCachedMB();
+		this.nrtCachingDisabled = indexSettings.getNrtCachingDisabled();
 		this.disableCompression = indexSettings.getDisableCompression();
 		this.defaultConcurrency = indexSettings.getDefaultConcurrency();
 		this.description = indexSettings.getDescription();
