@@ -759,6 +759,26 @@ public class ZuliaIndexManager {
 				existingSettings.setIndexingThrottle(updateIndexSettings.getIndexingThrottle());
 			}
 
+			if (updateIndexSettings.getSetNrtIndexMaxMergeSizeMB()) {
+				existingSettings.setNrtIndexMaxMergeSizeMB(updateIndexSettings.getNrtIndexMaxMergeSizeMB());
+			}
+
+			if (updateIndexSettings.getSetNrtIndexMaxCachedMB()) {
+				existingSettings.setNrtIndexMaxCachedMB(updateIndexSettings.getNrtIndexMaxCachedMB());
+			}
+
+			if (updateIndexSettings.getSetNrtTaxoMaxMergeSizeMB()) {
+				existingSettings.setNrtTaxoMaxMergeSizeMB(updateIndexSettings.getNrtTaxoMaxMergeSizeMB());
+			}
+
+			if (updateIndexSettings.getSetNrtTaxoMaxCachedMB()) {
+				existingSettings.setNrtTaxoMaxCachedMB(updateIndexSettings.getNrtTaxoMaxCachedMB());
+			}
+
+			if (updateIndexSettings.getSetNrtCachingDisabled()) {
+				existingSettings.setNrtCachingDisabled(updateIndexSettings.getNrtCachingDisabled());
+			}
+
 			if (updateIndexSettings.getSetIndexWeight()) {
 				existingSettings.setIndexWeight(updateIndexSettings.getIndexWeight());
 			}

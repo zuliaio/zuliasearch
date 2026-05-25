@@ -70,6 +70,13 @@ message IndexSettings {
     int32 maxMergeThreads = 25; // default -1 (auto detect)
     int32 maxMergePending = 26; // default -1 (auto detect)
     uint32 indexingThrottle = 27; // default 1
+
+    // NRT (near-real-time) RAM cache sizing for the index and taxonomy directories. 0 means use the default.
+    uint32 nrtIndexMaxMergeSizeMB = 28; // default 50
+    uint32 nrtIndexMaxCachedMB = 29; // default 150
+    uint32 nrtTaxoMaxMergeSizeMB = 30; // default 5
+    uint32 nrtTaxoMaxCachedMB = 31; // default 15
+    bool nrtCachingDisabled = 32; // when true, no new segments are cached in RAM (directory stays wrapped so it can be toggled live)
 }
 
 
@@ -146,6 +153,21 @@ message UpdateIndexSettings {
 
     bool setIndexingThrottle = 41;
     uint32 indexingThrottle = 42;
+
+    bool setNrtIndexMaxMergeSizeMB = 43;
+    uint32 nrtIndexMaxMergeSizeMB = 44;
+
+    bool setNrtIndexMaxCachedMB = 45;
+    uint32 nrtIndexMaxCachedMB = 46;
+
+    bool setNrtTaxoMaxMergeSizeMB = 47;
+    uint32 nrtTaxoMaxMergeSizeMB = 48;
+
+    bool setNrtTaxoMaxCachedMB = 49;
+    uint32 nrtTaxoMaxCachedMB = 50;
+
+    bool setNrtCachingDisabled = 51;
+    bool nrtCachingDisabled = 52;
 
 }
 

@@ -110,12 +110,13 @@ public class ShardWriteManager {
 		config.setMergePolicy(tieredMergePolicy);
 		config.setIndexDeletionPolicy(snapshotDeletionPolicy);
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
-		config.setRAMBufferSizeMB(128); // should be overwritten by ZuliaShard.updateIndexSettings()
+		config.setRAMBufferSizeMB(ServerIndexConfig.DEFAULT_RAM_BUFFER_MB); // overwritten by updateIndexSettings() in the constructor
 		config.setUseCompoundFile(false);
 
 		config.setMergeScheduler(mergeScheduler);
 
-		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 50, 150);
+		NRTCachingDirectory nrtCachingDirectory = new ZuliaNRTCachingDirectory(d, indexConfig::getNrtIndexMaxMergeSizeMB, indexConfig::getNrtIndexMaxCachedMB,
+				indexConfig::isNrtCachingDisabled);
 
 		return new IndexWriter(nrtCachingDirectory, config);
 
@@ -123,7 +124,8 @@ public class ShardWriteManager {
 
 	private SnapshotDirectoryTaxonomyWriter openTaxoWriter(Path pathToTaxo, int maxFacetsCachedPerDimension) throws IOException {
 		Directory d = MMapDirectory.open(pathToTaxo);
-		NRTCachingDirectory nrtCachingDirectory = new NRTCachingDirectory(d, 5, 15);
+		NRTCachingDirectory nrtCachingDirectory = new ZuliaNRTCachingDirectory(d, indexConfig::getNrtTaxoMaxMergeSizeMB, indexConfig::getNrtTaxoMaxCachedMB,
+				indexConfig::isNrtCachingDisabled);
 
 		SnapshotDirectoryTaxonomyWriter writer = new SnapshotDirectoryTaxonomyWriter(nrtCachingDirectory, IndexWriterConfig.OpenMode.CREATE_OR_APPEND,
 				new ZuliaTaxonomyWriterCache(maxFacetsCachedPerDimension));
@@ -245,8 +247,7 @@ public class ShardWriteManager {
 	}
 
 	public void updateIndexSettings() {
-		int ramBufferMB = indexConfig.getRAMBufferMB() != 0 ? indexConfig.getRAMBufferMB() : 128;
-		indexWriter.getConfig().setRAMBufferSizeMB(ramBufferMB);
+		indexWriter.getConfig().setRAMBufferSizeMB(indexConfig.getRAMBufferMB());
 
 		int maxMergeThreads = indexConfig.getMaxMergeThreads();
 		int maxMergePending = indexConfig.getMaxMergePending();
