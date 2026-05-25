@@ -48,6 +48,11 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private Integer maxMergeThreads;
 	private Integer maxMergePending;
 	private Integer indexingThrottle;
+	private Integer nrtIndexMaxMergeSizeMB;
+	private Integer nrtIndexMaxCachedMB;
+	private Integer nrtTaxoMaxMergeSizeMB;
+	private Integer nrtTaxoMaxCachedMB;
+	private Boolean nrtCachingDisabled;
 
 	private Boolean disableCompression;
 	private Integer defaultConcurrency;
@@ -322,6 +327,51 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
+	public Integer getNrtIndexMaxMergeSizeMB() {
+		return nrtIndexMaxMergeSizeMB;
+	}
+
+	public UpdateIndex setNrtIndexMaxMergeSizeMB(Integer nrtIndexMaxMergeSizeMB) {
+		this.nrtIndexMaxMergeSizeMB = nrtIndexMaxMergeSizeMB;
+		return this;
+	}
+
+	public Integer getNrtIndexMaxCachedMB() {
+		return nrtIndexMaxCachedMB;
+	}
+
+	public UpdateIndex setNrtIndexMaxCachedMB(Integer nrtIndexMaxCachedMB) {
+		this.nrtIndexMaxCachedMB = nrtIndexMaxCachedMB;
+		return this;
+	}
+
+	public Integer getNrtTaxoMaxMergeSizeMB() {
+		return nrtTaxoMaxMergeSizeMB;
+	}
+
+	public UpdateIndex setNrtTaxoMaxMergeSizeMB(Integer nrtTaxoMaxMergeSizeMB) {
+		this.nrtTaxoMaxMergeSizeMB = nrtTaxoMaxMergeSizeMB;
+		return this;
+	}
+
+	public Integer getNrtTaxoMaxCachedMB() {
+		return nrtTaxoMaxCachedMB;
+	}
+
+	public UpdateIndex setNrtTaxoMaxCachedMB(Integer nrtTaxoMaxCachedMB) {
+		this.nrtTaxoMaxCachedMB = nrtTaxoMaxCachedMB;
+		return this;
+	}
+
+	public Boolean getNrtCachingDisabled() {
+		return nrtCachingDisabled;
+	}
+
+	public UpdateIndex setNrtCachingDisabled(Boolean nrtCachingDisabled) {
+		this.nrtCachingDisabled = nrtCachingDisabled;
+		return this;
+	}
+
 	public Integer getMaxMergeThreads() {
 		return maxMergeThreads;
 	}
@@ -553,6 +603,31 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		if (ramBufferMB != null) {
 			updateIndexSettings.setSetRamBufferMB(true);
 			updateIndexSettings.setRamBufferMB(ramBufferMB);
+		}
+
+		if (nrtIndexMaxMergeSizeMB != null) {
+			updateIndexSettings.setSetNrtIndexMaxMergeSizeMB(true);
+			updateIndexSettings.setNrtIndexMaxMergeSizeMB(nrtIndexMaxMergeSizeMB);
+		}
+
+		if (nrtIndexMaxCachedMB != null) {
+			updateIndexSettings.setSetNrtIndexMaxCachedMB(true);
+			updateIndexSettings.setNrtIndexMaxCachedMB(nrtIndexMaxCachedMB);
+		}
+
+		if (nrtTaxoMaxMergeSizeMB != null) {
+			updateIndexSettings.setSetNrtTaxoMaxMergeSizeMB(true);
+			updateIndexSettings.setNrtTaxoMaxMergeSizeMB(nrtTaxoMaxMergeSizeMB);
+		}
+
+		if (nrtTaxoMaxCachedMB != null) {
+			updateIndexSettings.setSetNrtTaxoMaxCachedMB(true);
+			updateIndexSettings.setNrtTaxoMaxCachedMB(nrtTaxoMaxCachedMB);
+		}
+
+		if (nrtCachingDisabled != null) {
+			updateIndexSettings.setSetNrtCachingDisabled(true);
+			updateIndexSettings.setNrtCachingDisabled(nrtCachingDisabled);
 		}
 
 		if (maxMergeThreads != null) {

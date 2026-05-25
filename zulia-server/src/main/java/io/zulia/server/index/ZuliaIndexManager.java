@@ -210,6 +210,8 @@ public class ZuliaIndexManager {
 		indexMap.put(indexSettings.getIndexName(), zuliaIndex);
 
 		zuliaIndex.loadShards((node) -> ZuliaNode.isEqual(thisNode, node));
+
+		zuliaIndex.startMaintenance();
 	}
 
 	@NotNull
@@ -730,6 +732,26 @@ public class ZuliaIndexManager {
 
 			if (updateIndexSettings.getSetIndexingThrottle()) {
 				existingSettings.setIndexingThrottle(updateIndexSettings.getIndexingThrottle());
+			}
+
+			if (updateIndexSettings.getSetNrtIndexMaxMergeSizeMB()) {
+				existingSettings.setNrtIndexMaxMergeSizeMB(updateIndexSettings.getNrtIndexMaxMergeSizeMB());
+			}
+
+			if (updateIndexSettings.getSetNrtIndexMaxCachedMB()) {
+				existingSettings.setNrtIndexMaxCachedMB(updateIndexSettings.getNrtIndexMaxCachedMB());
+			}
+
+			if (updateIndexSettings.getSetNrtTaxoMaxMergeSizeMB()) {
+				existingSettings.setNrtTaxoMaxMergeSizeMB(updateIndexSettings.getNrtTaxoMaxMergeSizeMB());
+			}
+
+			if (updateIndexSettings.getSetNrtTaxoMaxCachedMB()) {
+				existingSettings.setNrtTaxoMaxCachedMB(updateIndexSettings.getNrtTaxoMaxCachedMB());
+			}
+
+			if (updateIndexSettings.getSetNrtCachingDisabled()) {
+				existingSettings.setNrtCachingDisabled(updateIndexSettings.getNrtCachingDisabled());
 			}
 
 			if (updateIndexSettings.getSetIndexWeight()) {
