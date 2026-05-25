@@ -660,6 +660,11 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 			updateIndexSettings.setDescription(description);
 		}
 
+		if (numberOfReplicas != null) {
+			updateIndexSettings.setSetNumberOfReplicas(true);
+			updateIndexSettings.setNumberOfReplicas(numberOfReplicas);
+		}
+
 		updateIndexSettings.setMetaUpdateOperation(metaDataOperation);
 		if (!metadata.isEmpty()) {
 			updateIndexSettings.setMetadata(ZuliaUtil.mongoDocumentToByteString(metadata));

@@ -30,10 +30,10 @@ public class SegmentReplicationManager {
 	private static final long CHILD_INTERRUPT_DRAIN_SECONDS = 5;
 
 	private final SegmentPublisher publisher;
-	private final IndexShardMapping indexShardMapping;
+	private volatile IndexShardMapping indexShardMapping;
 	private final String indexName;
-	private final boolean hasAnyReplicas;
-	private final Map<Integer, List<Node>> replicaNodesByShard;
+	private volatile boolean hasAnyReplicas;
+	private volatile Map<Integer, List<Node>> replicaNodesByShard;
 
 	private final Map<Integer, ShardState> shardStates = new ConcurrentHashMap<>();
 	private final Map<ReplicaShardKey, ReplicaState> replicaStates = new ConcurrentHashMap<>();
@@ -49,9 +49,17 @@ public class SegmentReplicationManager {
 
 	public SegmentReplicationManager(SegmentPublisher publisher, IndexShardMapping indexShardMapping, String indexName) {
 		this.publisher = publisher;
-		this.indexShardMapping = indexShardMapping;
 		this.indexName = indexName;
-		this.replicaNodesByShard = indexShardMapping.getShardMappingList().stream()
+		applyMapping(indexShardMapping);
+	}
+
+	public void updateShardMapping(IndexShardMapping newMapping) {
+		applyMapping(newMapping);
+	}
+
+	private void applyMapping(IndexShardMapping mapping) {
+		this.indexShardMapping = mapping;
+		this.replicaNodesByShard = mapping.getShardMappingList().stream()
 				.collect(Collectors.toUnmodifiableMap(ShardMapping::getShardNumber, ShardMapping::getReplicaNodeList));
 		this.hasAnyReplicas = replicaNodesByShard.values().stream().anyMatch(l -> !l.isEmpty());
 	}

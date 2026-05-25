@@ -12,10 +12,12 @@ import io.zulia.client.result.GetIndexConfigResult;
 import io.zulia.client.result.CreateIndexResult;
 import io.zulia.client.result.UpdateIndexResult;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings.Filter;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaServiceOuterClass;
+import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -25,7 +27,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class IndexTest {
@@ -639,6 +643,88 @@ public class IndexTest {
 
 	@Test
 	@Order(5)
+	public void changeReplicaCount() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		String indexName = "replicaCountTest";
+
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.setIndexName(indexName);
+		indexConfig.setNumberOfShards(2);
+		indexConfig.setNumberOfReplicas(0);
+		indexConfig.addDefaultSearchField("title");
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD));
+
+		zuliaWorkPool.createIndex(indexConfig);
+
+		// Sanity check: initial mapping has the configured shards and no replicas
+		List<ZuliaIndex.IndexShardMapping> mappings = zuliaWorkPool.getNodes().getIndexShardMappings();
+		ZuliaIndex.IndexShardMapping mapping = mappings.stream().filter(m -> m.getIndexName().equals(indexName)).findFirst().orElseThrow();
+		Assertions.assertEquals(2, mapping.getNumberOfShards());
+		Assertions.assertEquals(2, mapping.getShardMappingCount());
+		for (ZuliaIndex.ShardMapping sm : mapping.getShardMappingList()) {
+			Assertions.assertEquals(0, sm.getReplicaNodeCount(), "expected no replicas initially");
+		}
+
+		// Save the initial primary placement so we can verify it is preserved across replica changes
+		Map<Integer, ZuliaBase.Node> originalPrimaryByShard = new HashMap<>();
+		for (ZuliaIndex.ShardMapping sm : mapping.getShardMappingList()) {
+			originalPrimaryByShard.put(sm.getShardNumber(), sm.getPrimaryNode());
+		}
+
+		// Grow replica count from 0 to 2 via updateIndex
+		{
+			UpdateIndex updateIndex = new UpdateIndex(indexName);
+			updateIndex.setNumberOfReplicas(2);
+			UpdateIndexResult result = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertTrue(result.isChanged(), "Update changing replica count should report changed");
+			Assertions.assertEquals(2, result.getFullIndexSettings().getNumberOfReplicas());
+		}
+
+		{
+			List<ZuliaIndex.IndexShardMapping> afterGrow = zuliaWorkPool.getNodes().getIndexShardMappings();
+			ZuliaIndex.IndexShardMapping grown = afterGrow.stream().filter(m -> m.getIndexName().equals(indexName)).findFirst().orElseThrow();
+			for (ZuliaIndex.ShardMapping sm : grown.getShardMappingList()) {
+				Assertions.assertEquals(2, sm.getReplicaNodeCount(), "shard " + sm.getShardNumber() + " should have 2 replicas after grow");
+				Assertions.assertEquals(originalPrimaryByShard.get(sm.getShardNumber()), sm.getPrimaryNode(),
+						"primary node should be preserved across replica change");
+				for (ZuliaBase.Node replica : sm.getReplicaNodeList()) {
+					Assertions.assertFalse(ZuliaNode.isEqual(replica, sm.getPrimaryNode()), "replica must not equal primary");
+				}
+			}
+		}
+
+		// Shrink replica count from 2 to 1 - the first replica should be preserved, the second dropped
+		{
+			UpdateIndex updateIndex = new UpdateIndex(indexName);
+			updateIndex.setNumberOfReplicas(1);
+			UpdateIndexResult result = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertTrue(result.isChanged(), "Shrink update should report changed");
+			Assertions.assertEquals(1, result.getFullIndexSettings().getNumberOfReplicas());
+		}
+
+		{
+			List<ZuliaIndex.IndexShardMapping> afterShrink = zuliaWorkPool.getNodes().getIndexShardMappings();
+			ZuliaIndex.IndexShardMapping shrunk = afterShrink.stream().filter(m -> m.getIndexName().equals(indexName)).findFirst().orElseThrow();
+			for (ZuliaIndex.ShardMapping sm : shrunk.getShardMappingList()) {
+				Assertions.assertEquals(1, sm.getReplicaNodeCount(), "shard " + sm.getShardNumber() + " should have 1 replica after shrink");
+				Assertions.assertEquals(originalPrimaryByShard.get(sm.getShardNumber()), sm.getPrimaryNode(),
+						"primary node should be preserved across replica shrink");
+			}
+		}
+
+		// No-op: setting the same replica count again should report not changed
+		{
+			UpdateIndex updateIndex = new UpdateIndex(indexName);
+			updateIndex.setNumberOfReplicas(1);
+			UpdateIndexResult result = zuliaWorkPool.updateIndex(updateIndex);
+			Assertions.assertFalse(result.isChanged(), "Setting the same replica count should report not changed");
+		}
+	}
+
+	@Test
+	@Order(6)
 	public void giantIndex() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		{
