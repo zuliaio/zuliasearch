@@ -100,9 +100,19 @@ public class ZuliaNode {
 		indexManager.shutdown();
 		if (micronautService != null) {
 			try {
+				// Stop on a separate thread to preserve the context classloader, but wait for it to finish:
+				// until Micronaut actually stops, the REST port stays bound, and a fast restart on the same
+				// port (e.g. back-to-back tests) fails with "address already in use".
 				Thread thread = new Thread(this::stopMicronautServer);
 				thread.setContextClassLoader(getClass().getClassLoader());
 				thread.start();
+				thread.join(15_000L);
+				if (thread.isAlive()) {
+					LOG.warn("Micronaut REST server did not stop within 15s for {}:{}", zuliaConfig.getServerAddress(), zuliaConfig.getRestPort());
+				}
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 			catch (Exception e) {
 				LOG.error("Failed to stop Micronaut", e);
