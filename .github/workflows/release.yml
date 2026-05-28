@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 25
 
       # Warmup: the first Gradle invocation after reckon is downloaded
       # computes a wrong snapshot version (`<next>-beta.0.0+<timestamp>`).
