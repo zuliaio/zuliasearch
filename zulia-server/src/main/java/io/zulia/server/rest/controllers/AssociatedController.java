@@ -165,9 +165,9 @@ public class AssociatedController {
 		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 		Document metaDoc = (metaJson != null) ? Document.parse(metaJson) : new Document();
 		OutputStream associatedDocumentOutputStream = indexManager.getAssociatedDocumentOutputStream(indexName, uniqueId, fileName, metaDoc);
-		Publisher<Boolean> uploadPublisher = file.transferTo(associatedDocumentOutputStream);
+		Publisher<?> uploadPublisher = file.transferTo(associatedDocumentOutputStream);
 
-		return Mono.from(uploadPublisher).map(success -> {
+		return Mono.from(uploadPublisher).thenReturn(true).onErrorReturn(false).map(success -> {
 			if (success) {
 				return HttpResponse.ok();
 			}

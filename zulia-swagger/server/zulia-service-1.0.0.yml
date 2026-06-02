@@ -1685,6 +1685,9 @@ paths:
 components:
   schemas:
     AbstractResource_JsonError_:
+      required:
+      - _embedded
+      - _links
       type: object
       properties:
         _links:
@@ -1796,6 +1799,9 @@ components:
       - LIVENESS
       - READINESS
     HealthResult:
+      required:
+      - name
+      - status
       type: object
       properties:
         name:
@@ -1804,6 +1810,7 @@ components:
           $ref: "#/components/schemas/HealthStatus"
         details:
           type: object
+          nullable: true
     HealthStatus:
       required:
       - description
@@ -1816,14 +1823,11 @@ components:
           type: string
         description:
           type: string
-          nullable: true
         operational:
           type: boolean
-          nullable: true
         severity:
           type: integer
           format: int32
-          nullable: true
     HighlightDTO:
       required:
       - field
@@ -1863,7 +1867,11 @@ components:
             type: string
     JsonError:
       required:
+      - _embedded
+      - _links
+      - logref
       - message
+      - path
       type: object
       allOf:
       - $ref: "#/components/schemas/AbstractResource_JsonError_"
@@ -1909,11 +1917,15 @@ components:
     OptionalMultiValues_Resource_:
       $ref: "#/components/schemas/OptionalValues_List_Resource__"
     OptionalValues_List_Link__:
+      required:
+      - empty
       type: object
       properties:
         empty:
           type: boolean
     OptionalValues_List_Resource__:
+      required:
+      - empty
       type: object
       properties:
         empty:
