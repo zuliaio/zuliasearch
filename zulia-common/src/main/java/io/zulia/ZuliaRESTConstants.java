@@ -31,6 +31,7 @@ public interface ZuliaRESTConstants {
 
 	String ID = "id";
 	String FILE_NAME = "fileName";
+	String META_JSON = "metaJson";
 	String INDEX = "index";
 	String FACET = "facet";
 	String SORT = "sort";

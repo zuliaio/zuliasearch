@@ -18,6 +18,7 @@ import io.zulia.rest.dto.TermsResponseDTO;
 import kong.unirest.core.GenericType;
 import kong.unirest.core.GetRequest;
 import kong.unirest.core.HttpResponse;
+import kong.unirest.core.MultiPartBuilder;
 import kong.unirest.core.MultipartBody;
 import kong.unirest.core.Unirest;
 import kong.unirest.core.UnirestInstance;
@@ -117,10 +118,13 @@ public class ZuliaRESTClient implements AutoCloseable {
 			MultipartBody multipartBody = unirestInstance.post(ZuliaRESTConstants.ASSOCIATED_URL + "/{indexName}/{uniqueId}/{fileName}")
 					.routeParam("indexName", indexName).routeParam("uniqueId", uniqueId).routeParam("fileName", fileName).multiPartContent();
 
-			if (metadata != null) {
-				multipartBody.field("metaJson", metadata.toJson());
-			}
-			multipartBody.field("file", inputStream, fileName);
+			// metaJson must be sent before the file part: Micronaut 5 hands the StreamingFileUpload to the controller as
+			// soon as it is reached and does not read later parts, so any field after the file fails to bind. This relies
+			// on Unirest preserving field insertion order (4.10+ keeps order; earlier versions sorted parts alphabetically,
+			// which put "file" before "metaJson"). Always send it (empty JSON when absent) so the field is present
+			// regardless of caller metadata, keeping metadata in the body (no URL-length limit) while the file streams.
+			multipartBody.field(ZuliaRESTConstants.META_JSON, metadata != null ? metadata.toJson() : "{}");
+			multipartBody.field(MultiPartBuilder.named("file").value(inputStream).fileName(fileName));
 			HttpResponse<String> response = multipartBody.asString();
 			if (!response.isSuccess()) {
 				throw new Exception(response.getBody());

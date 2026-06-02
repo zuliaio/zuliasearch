@@ -3,7 +3,7 @@ info:
   title: zulia-ui-rest-service
   version: 1.0.0
 paths:
-  /zuliauirest/:
+  /:
     get:
       operationId: home
       responses:
@@ -13,7 +13,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /zuliauirest/create-user:
+  /create-user:
     post:
       operationId: createUser
       requestBody:
@@ -25,7 +25,7 @@ paths:
       responses:
         "200":
           description: createUser 200 response
-  /zuliauirest/forbidden-test:
+  /forbidden-test:
     get:
       operationId: forbiddenTest
       responses:
@@ -35,7 +35,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /zuliauirest/home-test:
+  /home-test:
     get:
       operationId: homeTest
       responses:
@@ -45,7 +45,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /zuliauirest/home-test-admin:
+  /home-test-admin:
     get:
       operationId: homeTestAdmin
       responses:
@@ -55,7 +55,7 @@ paths:
             text/plain:
               schema:
                 type: string
-  /zuliauirest/keys:
+  /keys:
     get:
       operationId: keys
       responses:
@@ -67,7 +67,7 @@ paths:
                 type: array
                 items:
                   type: string
-  /zuliauirest/login:
+  /login:
     post:
       operationId: login
       requestBody:
@@ -86,7 +86,7 @@ paths:
             application/json:
               schema:
                 type: object
-  /zuliauirest/logout:
+  /logout:
     get:
       operationId: indexGet
       responses:
@@ -105,7 +105,7 @@ paths:
             application/json:
               schema:
                 type: object
-  /zuliauirest/oauth/access_token:
+  /oauth/access_token:
     get:
       operationId: index_1
       parameters:
