@@ -1,10 +1,11 @@
 package io.zulia.data.source.json;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zulia.data.input.DataInputStream;
 import io.zulia.data.source.DataSource;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -14,8 +15,11 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 
 	private String next;
 	private JsonParser parser;
+	private boolean iterated;
 
-	private final ObjectMapper mapper = new ObjectMapper();
+	// Jackson 3 enables FAIL_ON_TRAILING_TOKENS by default; disable it so readTree can pull one object at a
+	// time out of the array without treating the next object's START_OBJECT as a disallowed trailing token.
+	private final JsonMapper mapper = JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).build();
 
 	public static JsonArraySource withConfig(JsonArraySourceConfig jsonArraySourceConfig) throws IOException {
 		return new JsonArraySource(jsonArraySourceConfig);
@@ -32,7 +36,7 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 
 	protected void open() throws IOException {
 
-		parser = mapper.getFactory().createParser(jsonArraySourceConfig.getDataInputStream().openInputStream());
+		parser = mapper.createParser(jsonArraySourceConfig.getDataInputStream().openInputStream());
 		if (parser.nextToken() != JsonToken.START_ARRAY) {
 			throw new IllegalStateException("Expected an array");
 		}
@@ -50,7 +54,10 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 	@Override
 	public Iterator<JsonSourceRecord> iterator() {
 
-		if (next == null) {
+		// open() already primed the first record in the constructor, so the first iterator() call must not
+		// reopen (an empty array legitimately leaves next == null). Re-iteration rewinds to the start, which
+		// only succeeds for resettable inputs because single-use streams cannot be read twice.
+		if (iterated) {
 			try {
 				reset();
 			}
@@ -58,6 +65,7 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 				throw new RuntimeException(e);
 			}
 		}
+		iterated = true;
 
 		return new Iterator<>() {
 
@@ -69,16 +77,11 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 			@Override
 			public JsonSourceRecord next() {
 				JsonSourceRecord jsonSourceRecord = new JsonSourceRecord(next);
-				try {
-					if (parser.nextToken() == JsonToken.START_OBJECT) {
-						next = mapper.readTree(parser).toString();
-					}
-					else {
-						next = null;
-					}
+				if (parser.nextToken() == JsonToken.START_OBJECT) {
+					next = mapper.readTree(parser).toString();
 				}
-				catch (IOException e) {
-					throw new RuntimeException(e);
+				else {
+					next = null;
 				}
 				return jsonSourceRecord;
 			}

@@ -97,6 +97,17 @@ subprojects {
         add("testImplementation", libs.findLibrary("junit-jupiter").get())
         add("testRuntimeOnly", libs.findLibrary("junit-platform-launcher").get())
 
+        // These are pulled in transitively only (POI, caffeine, guava, commons-compress, flapdoodle request
+        // different versions in different modules). Constrain them so every module / every published POM
+        // lands on the same version instead of drifting by whichever transitive chain a module happens to
+        // include. implementation constraints also reach the test classpaths (testImplementation extends it).
+        constraints {
+            add("implementation", libs.findLibrary("commons-codec").get())
+            add("implementation", libs.findLibrary("commons-io").get())
+            add("implementation", libs.findLibrary("error-prone-annotations").get())
+            add("implementation", libs.findLibrary("jna").get())
+            add("implementation", libs.findLibrary("log4j-api").get())
+        }
     }
 
     tasks.withType<Test> {
