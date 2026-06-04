@@ -18,9 +18,12 @@ import org.bson.json.JsonWriterSettings;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -243,6 +246,91 @@ public class ZuliaUtil {
 			vectorFloat[i] = vector.get(i);
 		}
 		return vectorFloat;
+
+	}
+
+	public static void filterDocument(org.bson.Document mongoDocument, Collection<String> returnFields) {
+		filterDocument(mongoDocument, new FieldAndSubFields(returnFields), FieldAndSubFields.NO_FIELDS);
+	}
+
+	public static void filterDocument(org.bson.Document mongoDocument, FieldAndSubFields returnFields) {
+		filterDocument(mongoDocument, returnFields, FieldAndSubFields.NO_FIELDS);
+	}
+
+	public static void filterDocument(org.bson.Document mongoDocument, Collection<String> returnFields, Collection<String> maskFields) {
+		filterDocument(mongoDocument, new FieldAndSubFields(returnFields), new FieldAndSubFields(maskFields));
+	}
+
+	public static void filterDocument(org.bson.Document mongoDocument, FieldAndSubFields returnFields, FieldAndSubFields maskFields) {
+
+		boolean hasReturn = !returnFields.getTopLevelFields().isEmpty();
+		boolean hasMask = !maskFields.getTopLevelFields().isEmpty();
+
+		if (!hasReturn && hasMask) {
+			Map<String, Set<String>> topLevelToChildren = maskFields.getTopLevelToChildren();
+			for (String topLevelField : maskFields.getTopLevelFields()) {
+				if (!topLevelToChildren.containsKey(topLevelField)) {
+					mongoDocument.remove(topLevelField);
+				}
+				else {
+					Object subDoc = mongoDocument.get(topLevelField);
+					ZuliaUtil.handleLists(subDoc, subDocItem -> {
+						if (subDocItem instanceof org.bson.Document) {
+
+							Collection<String> subFieldsToMask =
+									topLevelToChildren.get(topLevelField) != null ? topLevelToChildren.get(topLevelField) : Collections.emptyList();
+
+							filterDocument((org.bson.Document) subDocItem, FieldAndSubFields.NO_FIELDS, new FieldAndSubFields(subFieldsToMask));
+						}
+						else if (subDocItem == null) {
+
+						}
+						else {
+							//TODO: warn user?
+						}
+					});
+				}
+			}
+		}
+		else if (hasReturn) {
+			Set<String> topLevelFieldsToReturn = returnFields.getTopLevelFields();
+			Set<String> topLevelFieldsToMask = maskFields.getTopLevelFields();
+			Map<String, Set<String>> topLevelToChildrenToMask = maskFields.getTopLevelToChildren();
+			Map<String, Set<String>> topLevelToChildrenToReturn = returnFields.getTopLevelToChildren();
+
+			ArrayList<String> allDocumentKeys = new ArrayList<>(mongoDocument.keySet());
+			for (String topLevelField : allDocumentKeys) {
+
+				if ((!topLevelFieldsToReturn.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField))
+						|| topLevelFieldsToMask.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField)) {
+					mongoDocument.remove(topLevelField);
+				}
+
+				if (topLevelToChildrenToReturn.containsKey(topLevelField) || topLevelToChildrenToMask.containsKey(topLevelField)) {
+					Object subDoc = mongoDocument.get(topLevelField);
+					ZuliaUtil.handleLists(subDoc, subDocItem -> {
+						if (subDocItem instanceof org.bson.Document) {
+
+							Collection<String> subFieldsToReturn = topLevelToChildrenToReturn.get(topLevelField) != null ?
+									topLevelToChildrenToReturn.get(topLevelField) :
+									Collections.emptyList();
+
+							Collection<String> subFieldsToMask =
+									topLevelToChildrenToMask.get(topLevelField) != null ? topLevelToChildrenToMask.get(topLevelField) : Collections.emptyList();
+
+							filterDocument((org.bson.Document) subDocItem, new FieldAndSubFields(subFieldsToReturn), new FieldAndSubFields(subFieldsToMask));
+						}
+						else if (subDocItem == null) {
+
+						}
+						else {
+							//TODO: warn user?
+						}
+					});
+
+				}
+			}
+		}
 
 	}
 }

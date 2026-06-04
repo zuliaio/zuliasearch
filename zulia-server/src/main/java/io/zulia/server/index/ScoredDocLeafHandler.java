@@ -31,7 +31,7 @@ public abstract class ScoredDocLeafHandler<T> {
 			for (int i = 0; i < scoreDocs.length; i++) {
 				zuliaResults[i] = new IndexedScoreDoc(i, scoreDocs[i]);
 			}
-			Arrays.sort(zuliaResults, Comparator.comparing(IndexedScoreDoc::getDocId));
+			Arrays.sort(zuliaResults, Comparator.comparingInt(IndexedScoreDoc::getDocId));
 			T[] results = resultArrayConstructor.apply(zuliaResults.length);
 
 			int docId = zuliaResults[0].getDocId();
@@ -52,7 +52,6 @@ public abstract class ScoredDocLeafHandler<T> {
 				results[indexedScoreDoc.index] = handleDocument(currentLeaf, docId, currentLeaf.docBase, indexedScoreDoc.scoreDoc);
 			}
 
-			Arrays.sort(zuliaResults, Comparator.comparing(IndexedScoreDoc::index));
 			return results;
 		}
 		return resultArrayConstructor.apply(0);
