@@ -100,7 +100,7 @@ public class ZuliaIndexManager {
 	private final ZuliaConfig zuliaConfig;
 	private final NodeService nodeService;
 	private final Node thisNode;
-	private Collection<Node> currentOtherNodesActive = Collections.emptyList();
+	private volatile Collection<Node> currentOtherNodesActive = Collections.emptyList();
 	private final ConcurrentHashMap<String, Lock> indexUpdateMap = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<String, IndexAlias> indexAliasMap;
 	private final ReplicationRateLimiter replicationRateLimiter;
