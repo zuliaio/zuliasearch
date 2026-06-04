@@ -119,7 +119,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 		metadata.put(DOCUMENT_UNIQUE_ID_KEY, uniqueId);
 		metadata.put(FILE_UNIQUE_ID_KEY, getGridFsId(uniqueId, fileName));
 
-		return new GridFSUploadOptions().chunkSizeBytes(1024).metadata(metadata);
+		return new GridFSUploadOptions().metadata(metadata);
 	}
 
 	@Override
