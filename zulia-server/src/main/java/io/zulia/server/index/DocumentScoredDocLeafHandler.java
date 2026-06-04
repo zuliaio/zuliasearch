@@ -1,6 +1,7 @@
 package io.zulia.server.index;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnsafeByteOperations;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaIndex;
@@ -8,8 +9,7 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.server.analysis.highlight.ZuliaHighlighter;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.util.BytesRefUtil;
-import io.zulia.server.util.FieldAndSubFields;
-import io.zulia.util.ResultHelper;
+import io.zulia.util.FieldAndSubFields;
 import io.zulia.util.ZuliaUtil;
 import io.zulia.util.document.DocumentHelper;
 import org.apache.lucene.analysis.TokenStream;
@@ -23,18 +23,15 @@ import org.apache.lucene.util.BytesRef;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static io.zulia.ZuliaFieldConstants.STORED_DOC_FIELD;
 import static io.zulia.ZuliaFieldConstants.STORED_ID_FIELD;
 import static io.zulia.ZuliaFieldConstants.STORED_META_FIELD;
 
 public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuery.ScoredResult> {
+
+
 	private BinaryDocValues idDocValues;
 
 	private BinaryDocValues metaDocValues;
@@ -51,8 +48,8 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 
 	private final boolean needsAnalysis;
 
-	private final List<String> fieldsToReturn;
-	private final List<String> fieldsToMask;
+	private final FieldAndSubFields fieldsToReturnObj;
+	private final FieldAndSubFields fieldsToMaskObj;
 	private final List<SortMeta> sortMetas;
 	private final List<ZuliaHighlighter> highlighterList;
 	private final List<AnalysisHandler> analysisHandlerList;
@@ -64,8 +61,8 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 		this.shardNumber = shardNumber;
 		meta = ZuliaQuery.FetchType.META.equals(fetchType) || ZuliaQuery.FetchType.ALL.equals(fetchType);
 		full = ZuliaQuery.FetchType.FULL.equals(fetchType) || ZuliaQuery.FetchType.ALL.equals(fetchType);
-		this.fieldsToReturn = fieldsToReturn;
-		this.fieldsToMask = fieldsToMask;
+		this.fieldsToReturnObj = new FieldAndSubFields(fieldsToReturn);
+		this.fieldsToMaskObj = new FieldAndSubFields(fieldsToMask);
 		this.highlighterList = highlighterList;
 		this.analysisHandlerList = analysisHandlerList;
 		this.needsHighlight = !highlighterList.isEmpty();
@@ -118,40 +115,45 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 			rdBuilder.setIndexName(indexName);
 			rdBuilder.setUniqueId(idInfo.getId());
 			rdBuilder.setTimestamp(idInfo.getTimestamp());
+			boolean compressed = idInfo.getCompressedDoc();
+
 			if (meta) {
 				if (metaDocValues != null && metaDocValues.advanceExact(localDocId)) {
 					byte[] metaBytes = BytesRefUtil.getByteArray(metaDocValues.binaryValue());
-					if (idInfo.getCompressedDoc()) {
+					if (compressed) {
 						metaBytes = Snappy.uncompress(metaBytes);
 					}
-					rdBuilder.setMetadata(ByteString.copyFrom(metaBytes));
+					rdBuilder.setMetadata(storedByteString(metaBytes, compressed));
 				}
 			}
 
 			if (full) {
 				if (fullDocValues != null && fullDocValues.advanceExact(localDocId)) {
 					byte[] docBytes = BytesRefUtil.getByteArray(fullDocValues.binaryValue());
-					if (idInfo.getCompressedDoc()) {
+					if (compressed) {
 						docBytes = Snappy.uncompress(docBytes);
 					}
-					rdBuilder.setDocument(ByteString.copyFrom(docBytes));
 
 					if (needsHighlight || needsAnalysis || needsDocFiltering) {
-						org.bson.Document mongoDoc = ResultHelper.getDocumentFromResultDocument(rdBuilder);
-						if (mongoDoc != null) {
-							if (needsHighlight) {
-								handleHighlight(highlighterList, srBuilder, mongoDoc);
-							}
-							if (needsAnalysis) {
-								AnalysisHandler.handleDocument(mongoDoc, analysisHandlerList, srBuilder);
-							}
-
-							if (needsDocFiltering) {
-								filterDocument(fieldsToReturn, fieldsToMask, mongoDoc);
-								ByteString document = ZuliaUtil.mongoDocumentToByteString(mongoDoc);
-								rdBuilder.setDocument(document);
-							}
+						// Decode straight from the bytes in hand instead of round-tripping through a ByteString and back
+						org.bson.Document mongoDoc = ZuliaUtil.byteArrayToMongoDocument(docBytes);
+						if (needsHighlight) {
+							handleHighlight(highlighterList, srBuilder, mongoDoc);
 						}
+						if (needsAnalysis) {
+							AnalysisHandler.handleDocument(mongoDoc, analysisHandlerList, srBuilder);
+						}
+
+						if (needsDocFiltering) {
+							ZuliaUtil.filterDocument(mongoDoc, fieldsToReturnObj, fieldsToMaskObj);
+							rdBuilder.setDocument(ZuliaUtil.mongoDocumentToByteString(mongoDoc));
+						}
+						else {
+							rdBuilder.setDocument(storedByteString(docBytes, compressed));
+						}
+					}
+					else {
+						rdBuilder.setDocument(storedByteString(docBytes, compressed));
 					}
 				}
 
@@ -167,79 +169,12 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 		return srBuilder.build();
 	}
 
-	private void filterDocument(Collection<String> fieldsToReturn, Collection<String> fieldsToMask, org.bson.Document mongoDocument) {
-
-		if (fieldsToReturn.isEmpty() && !fieldsToMask.isEmpty()) {
-			FieldAndSubFields fieldsToMaskObj = new FieldAndSubFields(fieldsToMask);
-			for (String topLevelField : fieldsToMaskObj.getTopLevelFields()) {
-				Map<String, Set<String>> topLevelToChildren = fieldsToMaskObj.getTopLevelToChildren();
-				if (!topLevelToChildren.containsKey(topLevelField)) {
-					mongoDocument.remove(topLevelField);
-				}
-				else {
-					Object subDoc = mongoDocument.get(topLevelField);
-					ZuliaUtil.handleLists(subDoc, subDocItem -> {
-						if (subDocItem instanceof org.bson.Document) {
-
-							Collection<String> subFieldsToMask =
-									topLevelToChildren.get(topLevelField) != null ? topLevelToChildren.get(topLevelField) : Collections.emptyList();
-
-							filterDocument(Collections.emptyList(), subFieldsToMask, (org.bson.Document) subDocItem);
-						}
-						else if (subDocItem == null) {
-
-						}
-						else {
-							//TODO: warn user?
-						}
-					});
-				}
-			}
-		}
-		else if (!fieldsToReturn.isEmpty()) {
-			FieldAndSubFields fieldsToReturnObj = new FieldAndSubFields(fieldsToReturn);
-			FieldAndSubFields fieldsToMaskObj = new FieldAndSubFields(fieldsToMask);
-
-			Set<String> topLevelFieldsToReturn = fieldsToReturnObj.getTopLevelFields();
-			Set<String> topLevelFieldsToMask = fieldsToMaskObj.getTopLevelFields();
-			Map<String, Set<String>> topLevelToChildrenToMask = fieldsToMaskObj.getTopLevelToChildren();
-			Map<String, Set<String>> topLevelToChildrenToReturn = fieldsToReturnObj.getTopLevelToChildren();
-
-			ArrayList<String> allDocumentKeys = new ArrayList<>(mongoDocument.keySet());
-			for (String topLevelField : allDocumentKeys) {
-
-				if ((!topLevelFieldsToReturn.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField))
-						|| topLevelFieldsToMask.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField)) {
-					mongoDocument.remove(topLevelField);
-				}
-
-				if (topLevelToChildrenToReturn.containsKey(topLevelField) || topLevelToChildrenToMask.containsKey(topLevelField)) {
-					Object subDoc = mongoDocument.get(topLevelField);
-					ZuliaUtil.handleLists(subDoc, subDocItem -> {
-						if (subDocItem instanceof org.bson.Document) {
-
-							Collection<String> subFieldsToReturn = topLevelToChildrenToReturn.get(topLevelField) != null ?
-									topLevelToChildrenToReturn.get(topLevelField) :
-									Collections.emptyList();
-
-							Collection<String> subFieldsToMask =
-									topLevelToChildrenToMask.get(topLevelField) != null ? topLevelToChildrenToMask.get(topLevelField) : Collections.emptyList();
-
-							filterDocument(subFieldsToReturn, subFieldsToMask, (org.bson.Document) subDocItem);
-						}
-						else if (subDocItem == null) {
-
-						}
-						else {
-							//TODO: warn user?
-						}
-					});
-
-				}
-			}
-		}
-
+	private static ByteString storedByteString(byte[] storedBytes, boolean owned) {
+		// A freshly decompressed array is uniquely owned and safe to wrap; an uncompressed array may alias Lucene's reusable buffer
+		return owned ? UnsafeByteOperations.unsafeWrap(storedBytes) : ByteString.copyFrom(storedBytes);
 	}
+
+
 
 	private void handleSortValues(List<SortMeta> sortMetas, ScoreDoc scoreDoc, ZuliaQuery.ScoredResult.Builder srBuilder) {
 		FieldDoc result = (FieldDoc) scoreDoc;
