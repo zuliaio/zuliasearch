@@ -8,42 +8,44 @@ import io.zulia.util.ZuliaVersion;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SingleNodeService implements NodeService {
 
-	private Node node;
+	private final AtomicReference<Node> node = new AtomicReference<>();
 
 	public SingleNodeService(ZuliaConfig zuliaConfig) {
-		node = ZuliaNode.nodeFromConfig(zuliaConfig);
+		node.set(ZuliaNode.nodeFromConfig(zuliaConfig));
 	}
 
 	@Override
 	public List<Node> getNodes() {
 
-		return Collections.singletonList(node);
+		return Collections.singletonList(node.get());
 	}
 
 	@Override
 	public Node getNode(String serverAddress, int servicePort) {
-		if (node.getServerAddress().equals(serverAddress) && node.getServicePort() == servicePort) {
-			return node;
+		Node currentNode = node.get();
+		if (currentNode.getServerAddress().equals(serverAddress) && currentNode.getServicePort() == servicePort) {
+			return currentNode;
 		}
 		return null;
 	}
 
 	@Override
 	public void updateVersion(String serverAddress, int servicePort, String version) {
-		node = node.toBuilder().setVersion(ZuliaVersion.getVersion()).build();
+		node.updateAndGet(current -> current.toBuilder().setVersion(ZuliaVersion.getVersion()).build());
 	}
 
 	@Override
 	public void updateHeartbeat(String serverAddress, int servicePort) {
-		node = node.toBuilder().setHeartbeat(System.currentTimeMillis()).build();
+		node.updateAndGet(current -> current.toBuilder().setHeartbeat(System.currentTimeMillis()).build());
 	}
 
 	@Override
 	public void removeHeartbeat(String serverAddress, int servicePort) {
-		node = node.toBuilder().setHeartbeat(0).build();
+		node.updateAndGet(current -> current.toBuilder().setHeartbeat(0).build());
 	}
 
 	@Override
