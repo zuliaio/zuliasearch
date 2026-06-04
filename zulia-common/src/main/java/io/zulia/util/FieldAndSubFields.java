@@ -1,12 +1,15 @@
-package io.zulia.server.util;
+package io.zulia.util;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class FieldAndSubFields {
+
+	public static final FieldAndSubFields NO_FIELDS = new FieldAndSubFields(List.of());
 
 	private final Map<String, Set<String>> topLevelToChildren = new HashMap<>();
 	private final Set<String> topLevelFields = new HashSet<>();
