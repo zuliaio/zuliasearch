@@ -9,7 +9,7 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.server.analysis.highlight.ZuliaHighlighter;
 import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.util.BytesRefUtil;
-import io.zulia.server.util.FieldAndSubFields;
+import io.zulia.util.FieldAndSubFields;
 import io.zulia.util.ZuliaUtil;
 import io.zulia.util.document.DocumentHelper;
 import org.apache.lucene.analysis.TokenStream;
@@ -23,12 +23,7 @@ import org.apache.lucene.util.BytesRef;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static io.zulia.ZuliaFieldConstants.STORED_DOC_FIELD;
 import static io.zulia.ZuliaFieldConstants.STORED_ID_FIELD;
@@ -36,7 +31,6 @@ import static io.zulia.ZuliaFieldConstants.STORED_META_FIELD;
 
 public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuery.ScoredResult> {
 
-	private static final FieldAndSubFields NO_FIELDS = new FieldAndSubFields(List.of());
 
 	private BinaryDocValues idDocValues;
 
@@ -151,7 +145,7 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 						}
 
 						if (needsDocFiltering) {
-							filterDocument(fieldsToReturnObj, fieldsToMaskObj, mongoDoc);
+							ZuliaUtil.filterDocument(mongoDoc, fieldsToReturnObj, fieldsToMaskObj);
 							rdBuilder.setDocument(ZuliaUtil.mongoDocumentToByteString(mongoDoc));
 						}
 						else {
@@ -180,78 +174,7 @@ public class DocumentScoredDocLeafHandler extends ScoredDocLeafHandler<ZuliaQuer
 		return owned ? UnsafeByteOperations.unsafeWrap(storedBytes) : ByteString.copyFrom(storedBytes);
 	}
 
-	private void filterDocument(FieldAndSubFields returnFields, FieldAndSubFields maskFields, org.bson.Document mongoDocument) {
 
-		boolean hasReturn = !returnFields.getTopLevelFields().isEmpty();
-		boolean hasMask = !maskFields.getTopLevelFields().isEmpty();
-
-		if (!hasReturn && hasMask) {
-			Map<String, Set<String>> topLevelToChildren = maskFields.getTopLevelToChildren();
-			for (String topLevelField : maskFields.getTopLevelFields()) {
-				if (!topLevelToChildren.containsKey(topLevelField)) {
-					mongoDocument.remove(topLevelField);
-				}
-				else {
-					Object subDoc = mongoDocument.get(topLevelField);
-					ZuliaUtil.handleLists(subDoc, subDocItem -> {
-						if (subDocItem instanceof org.bson.Document) {
-
-							Collection<String> subFieldsToMask =
-									topLevelToChildren.get(topLevelField) != null ? topLevelToChildren.get(topLevelField) : Collections.emptyList();
-
-							filterDocument(NO_FIELDS, new FieldAndSubFields(subFieldsToMask), (org.bson.Document) subDocItem);
-						}
-						else if (subDocItem == null) {
-
-						}
-						else {
-							//TODO: warn user?
-						}
-					});
-				}
-			}
-		}
-		else if (hasReturn) {
-			Set<String> topLevelFieldsToReturn = returnFields.getTopLevelFields();
-			Set<String> topLevelFieldsToMask = maskFields.getTopLevelFields();
-			Map<String, Set<String>> topLevelToChildrenToMask = maskFields.getTopLevelToChildren();
-			Map<String, Set<String>> topLevelToChildrenToReturn = returnFields.getTopLevelToChildren();
-
-			ArrayList<String> allDocumentKeys = new ArrayList<>(mongoDocument.keySet());
-			for (String topLevelField : allDocumentKeys) {
-
-				if ((!topLevelFieldsToReturn.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField))
-						|| topLevelFieldsToMask.contains(topLevelField) && !topLevelToChildrenToMask.containsKey(topLevelField)) {
-					mongoDocument.remove(topLevelField);
-				}
-
-				if (topLevelToChildrenToReturn.containsKey(topLevelField) || topLevelToChildrenToMask.containsKey(topLevelField)) {
-					Object subDoc = mongoDocument.get(topLevelField);
-					ZuliaUtil.handleLists(subDoc, subDocItem -> {
-						if (subDocItem instanceof org.bson.Document) {
-
-							Collection<String> subFieldsToReturn = topLevelToChildrenToReturn.get(topLevelField) != null ?
-									topLevelToChildrenToReturn.get(topLevelField) :
-									Collections.emptyList();
-
-							Collection<String> subFieldsToMask =
-									topLevelToChildrenToMask.get(topLevelField) != null ? topLevelToChildrenToMask.get(topLevelField) : Collections.emptyList();
-
-							filterDocument(new FieldAndSubFields(subFieldsToReturn), new FieldAndSubFields(subFieldsToMask), (org.bson.Document) subDocItem);
-						}
-						else if (subDocItem == null) {
-
-						}
-						else {
-							//TODO: warn user?
-						}
-					});
-
-				}
-			}
-		}
-
-	}
 
 	private void handleSortValues(List<SortMeta> sortMetas, ScoreDoc scoreDoc, ZuliaQuery.ScoredResult.Builder srBuilder) {
 		FieldDoc result = (FieldDoc) scoreDoc;
