@@ -73,6 +73,7 @@ dependencies {
     implementation(libs.swagger.annotations)
 
     testImplementation(libs.flapdoodle.mongo)
+    testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.micronaut.http.client)
     testImplementation(libs.micronaut.test.junit5)
     testImplementation(project(":zulia-client"))

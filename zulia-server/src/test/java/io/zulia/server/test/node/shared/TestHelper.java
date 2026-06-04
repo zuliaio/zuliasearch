@@ -1,6 +1,5 @@
 package io.zulia.server.test.node.shared;
 
-import com.mongodb.client.MongoClients;
 import io.zulia.client.config.ZuliaPoolConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.rest.ZuliaRESTClient;
@@ -10,9 +9,8 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.config.cluster.MongoNodeService;
 import io.zulia.server.config.cluster.MongoServer;
 import io.zulia.server.node.ZuliaNode;
-import io.zulia.server.test.mongo.MongoTestInstance;
+import io.zulia.server.test.mongo.MongoTestLauncher;
 import io.zulia.server.util.MongoProvider;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,29 +28,17 @@ import java.util.stream.Stream;
 
 public class TestHelper {
 	private final static Logger LOG = LoggerFactory.getLogger(TestHelper.class);
-	private static final String MONGO_TEST_CONNECTION = "mongoTestConnection";
 	private static final String TEST_CLUSTER_NAME = "zuliaTest";
-	private static final String MONGO_TEST_CONNECTION_DEFAULT = "mongodb://127.0.0.1:27017";
 	private static final Pattern MONGO_URL_PATTERN = Pattern.compile("([^:]+)://([^:]+):(\\d+)");
 	private static final MongoNodeService NODE_SERVICE;
-	private static final MongoTestInstance MONGO_TEST_INSTANCE;
 	private static final List<ZuliaNode> ZULIA_NODES = new ArrayList<>();
 
 	static {
 
 		ZuliaDConfig.setLuceneStatic();
 
-		MONGO_TEST_INSTANCE = new MongoTestInstance();
-
-		if (isInMemoryMongoTestInstanceRequired()) {
-			MONGO_TEST_INSTANCE.start();
-			Runtime.getRuntime().addShutdownHook(new Thread(TestHelper::shutdownTestMongoInstance));
-		}
-
-		String mongoServer = getMongoServer();
-
-		MongoProvider.setMongoClient(MongoClients.create(mongoServer));
-
+		// Embedded MongoDB and the shared MongoClient are owned by MongoTestLauncher
+		// (a JUnit LauncherSessionListener); both are ready before the first test runs.
 		MongoProvider.getMongoClient().getDatabase(TEST_CLUSTER_NAME).drop();
 
 		NODE_SERVICE = new MongoNodeService(MongoProvider.getMongoClient(), TEST_CLUSTER_NAME);
@@ -78,24 +64,7 @@ public class TestHelper {
 	}
 
 	private static String getMongoServer() {
-
-		String mongoServer;
-
-		if (isInMemoryMongoTestInstanceRequired()) {
-
-			mongoServer = MONGO_TEST_INSTANCE.getInstanceUrl();
-
-		}
-		else {
-
-			mongoServer = System.getProperty(MONGO_TEST_CONNECTION);
-
-			if (StringUtils.isEmpty(mongoServer)) {
-				mongoServer = MONGO_TEST_CONNECTION_DEFAULT;
-			}
-		}
-
-		return mongoServer;
+		return System.getProperty(MongoTestLauncher.MONGO_SERVER_PROPERTY);
 	}
 
 	public static ZuliaRESTClient createRESTClient() {
@@ -175,15 +144,6 @@ public class TestHelper {
 		}
 		ZULIA_NODES.clear();
 
-	}
-
-	protected static void shutdownTestMongoInstance() {
-		MongoProvider.getMongoClient().close();
-		MONGO_TEST_INSTANCE.shutdown();
-	}
-
-	private static boolean isInMemoryMongoTestInstanceRequired() {
-		return StringUtils.isEmpty(System.getProperty(MONGO_TEST_CONNECTION));
 	}
 
 	private static Integer parseMongoPort(String mongoInstanceUrl) {
