@@ -36,7 +36,7 @@ public abstract class LongStats extends Stats<LongStats> implements Comparable<L
 	}
 
 	public int compareTo(LongStats o) {
-		int compare = Double.compare(longSum, o.longSum);
+		int compare = Long.compare(longSum, o.longSum);
 		if (compare == 0) {
 			return compareOrdinal(o);
 		}
