@@ -50,9 +50,9 @@ public class ShardWriteManager {
 	private final Path pathToTaxoIndex;
 	private final SnapshotDeletionPolicy snapshotDeletionPolicy;
 
-	private Long lastCommit;
-	private Long lastChange;
-	private Long lastWarm;
+	private volatile Long lastCommit;
+	private volatile Long lastChange;
+	private volatile Long lastWarm;
 
 	private final AtomicLong totalIndexedUnthrottled;
 	private final AtomicLong totalIndexedThrottled;
