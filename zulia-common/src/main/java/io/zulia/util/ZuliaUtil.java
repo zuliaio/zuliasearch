@@ -249,11 +249,19 @@ public class ZuliaUtil {
 
 	}
 
+	public static void filterDocument(org.bson.Document mongoDocument, Collection<String> returnFields) {
+		filterDocument(mongoDocument, new FieldAndSubFields(returnFields), FieldAndSubFields.NO_FIELDS);
+	}
+
 	public static void filterDocument(org.bson.Document mongoDocument, FieldAndSubFields returnFields) {
 		filterDocument(mongoDocument, returnFields, FieldAndSubFields.NO_FIELDS);
 	}
 
-	public static void filterDocument( org.bson.Document mongoDocument, FieldAndSubFields returnFields, FieldAndSubFields maskFields) {
+	public static void filterDocument(org.bson.Document mongoDocument, Collection<String> returnFields, Collection<String> maskFields) {
+		filterDocument(mongoDocument, new FieldAndSubFields(returnFields), new FieldAndSubFields(maskFields));
+	}
+
+	public static void filterDocument(org.bson.Document mongoDocument, FieldAndSubFields returnFields, FieldAndSubFields maskFields) {
 
 		boolean hasReturn = !returnFields.getTopLevelFields().isEmpty();
 		boolean hasMask = !maskFields.getTopLevelFields().isEmpty();
