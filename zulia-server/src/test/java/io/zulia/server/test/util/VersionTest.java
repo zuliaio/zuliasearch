@@ -11,7 +11,9 @@ public class VersionTest {
 		String version = ZuliaVersion.getVersion();
 		Assertions.assertNotNull(version);
 		Assertions.assertFalse(version.isEmpty());
-		Assertions.assertTrue(version.startsWith("4."));
+		// Validate the version format (major.minor.*) rather than a hard-coded major so this does not break on each major bump.
+		Assertions.assertTrue(version.matches("\\d+\\.\\d+\\..*"), "Unexpected version format: " + version);
+		Assertions.assertTrue(ZuliaVersion.getMajor() >= 5);
 	}
 
 }
