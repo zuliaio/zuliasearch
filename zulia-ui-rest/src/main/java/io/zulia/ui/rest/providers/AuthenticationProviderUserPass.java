@@ -21,7 +21,6 @@ public class AuthenticationProviderUserPass<B> implements HttpRequestAuthenticat
 
 	@Override
 	public @NonNull AuthenticationResponse authenticate(@Nullable HttpRequest<B> requestContext, @NonNull AuthenticationRequest<String, String> authRequest) {
-		System.out.println("trying to login with: " + authRequest.getIdentity() + " | " + authRequest.getSecret());
 
 		boolean userVerified = mongoUserPersistence.verifyUser(authRequest.getIdentity(), authRequest.getSecret());
 		return userVerified ?
