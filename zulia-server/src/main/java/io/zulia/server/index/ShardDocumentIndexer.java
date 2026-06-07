@@ -18,6 +18,7 @@ import io.zulia.server.index.field.IntFieldIndexer;
 import io.zulia.server.index.field.LongFieldIndexer;
 import io.zulia.server.index.field.StringFieldIndexer;
 import io.zulia.util.BooleanUtil;
+import io.zulia.util.ZuliaDateUtil;
 import io.zulia.util.ZuliaUtil;
 import io.zulia.util.ZuliaVersion;
 import io.zulia.util.document.DocumentHelper;
@@ -460,14 +461,9 @@ public class ShardDocumentIndexer {
 			}
 			else if (FieldTypeUtil.isDateFieldType(fieldType)) {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-					if (obj instanceof Date date) {
-						SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, date.getTime());
-						d.add(docValue);
-					}
-					else {
-						throw new RuntimeException(
-								"Expecting date for document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">, found <" + o.getClass()
-										+ ">");
+					Date date = ZuliaDateUtil.convertToDate(obj, "document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">");
+					if (date != null) {
+						d.add(new SortedNumericDocValuesField(sortFieldName, date.getTime()));
 					}
 				});
 			}
@@ -491,8 +487,10 @@ public class ShardDocumentIndexer {
 				if (FieldTypeUtil.isDateFieldType(fc.getFieldType())) {
 					ZuliaIndex.FacetAs.DateHandling dateHandling = fa.getDateHandling();
 					ZuliaUtil.handleListsUniqueValues(o, obj -> {
-						if (obj instanceof Date) {
-							LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
+						Date date = ZuliaDateUtil.convertToDate(obj,
+								"document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName() + ">");
+						if (date != null) {
+							LocalDate localDate = date.toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
 
 							if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
 								facetFieldsForField.add(
@@ -507,11 +505,6 @@ public class ShardDocumentIndexer {
 							else {
 								throw new RuntimeException("Not handled date handling <" + dateHandling + "> for facet <" + fa.getFacetName() + ">");
 							}
-
-						}
-						else {
-							throw new RuntimeException("Cannot facet date for document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName()
-									+ ">: excepted Date or Collection of Date, found <" + o.getClass().getSimpleName() + ">");
 						}
 					});
 				}
@@ -530,8 +523,10 @@ public class ShardDocumentIndexer {
 				if (FieldConfig.FieldType.DATE.equals(fc.getFieldType())) {
 					ZuliaIndex.FacetAs.DateHandling dateHandling = fa.getDateHandling();
 					ZuliaUtil.handleListsUniqueValues(o, obj -> {
-						if (obj instanceof Date) {
-							LocalDate localDate = ((Date) (obj)).toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
+						Date dateValue = ZuliaDateUtil.convertToDate(obj,
+								"document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName() + ">");
+						if (dateValue != null) {
+							LocalDate localDate = dateValue.toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
 
 							if (ZuliaIndex.FacetAs.DateHandling.DATE_YYYYMMDD.equals(dateHandling)) {
 								String date = String.format("%02d%02d%02d", localDate.getYear(), localDate.getMonthValue(), localDate.getDayOfMonth());
@@ -546,11 +541,6 @@ public class ShardDocumentIndexer {
 							else {
 								throw new RuntimeException("Not handled date handling <" + dateHandling + "> for facet <" + fa.getFacetName() + ">");
 							}
-
-						}
-						else {
-							throw new RuntimeException("Cannot facet date for document field <" + fc.getStoredFieldName() + "> / facet <" + fa.getFacetName()
-									+ ">: excepted Date or Collection of Date, found <" + o.getClass().getSimpleName() + ">");
 						}
 					});
 				}

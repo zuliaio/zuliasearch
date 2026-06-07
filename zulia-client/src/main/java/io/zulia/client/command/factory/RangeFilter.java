@@ -3,7 +3,7 @@ package io.zulia.client.command.factory;
 import io.zulia.client.command.builder.FilterQuery;
 
 /**
- * Templated class to handle range filters. Generates appropriate query to populate a FilterQuery object
+ * Templated class to handle range filters. Generates the appropriate query to populate a FilterQuery object
  *
  * @param <T> data type of value to filter on
  */
@@ -54,25 +54,39 @@ public class RangeFilter<T> {
 	}
 
 	/**
-	 * Convert contents to string for query
+	 * Builds the range query string without any exclusion, e.g. {@code field:[min TO max]}. The bracket style reflects
+	 * the endpoint behavior and a missing endpoint is written as {@code *}.
+	 *
+	 * @return the base range query string
+	 */
+	public String getBaseQuery() {
+		String minString = minValue == null ? "*" : getAsString(minValue);
+		String maxString = maxValue == null ? "*" : getAsString(maxValue);
+
+		// default to inclusive endpoints and flip to exclusive '{' / '}' per the endpoint behavior
+		char open = (minValue != null && (behavior == RangeBehavior.EXCLUSIVE || behavior == RangeBehavior.INCLUDE_MAX)) ? '{' : '[';
+		char close = (maxValue != null && (behavior == RangeBehavior.EXCLUSIVE || behavior == RangeBehavior.INCLUDE_MIN)) ? '}' : ']';
+
+		return field + ":" + open + minString + " TO " + maxString + close;
+	}
+
+	/**
+	 * Builds the full range query string, prefixing {@code -} when the range is excluded.
+	 *
+	 * @return the range query string, negated with a leading {@code -} when excluded
+	 */
+	public String toQueryString() {
+		return exclude ? "-" + getBaseQuery() : getBaseQuery();
+	}
+
+	/**
+	 * Convert contents to a FilterQuery for searching. Exclusion is applied as a FILTER_NOT query type rather than a
+	 * leading {@code -} on the query string.
 	 *
 	 * @return Filter Query matching these requirements
 	 */
 	public FilterQuery toQuery() {
-		String minString = minValue == null ? "*" : getAsString(minValue);
-		String maxString = maxValue == null ? "*" : getAsString(maxValue);
-		char open = '[';
-		char close = ']';
-
-		// Build endpoints if applicable
-		if (minValue != null && (behavior == RangeBehavior.EXCLUSIVE || behavior == RangeBehavior.INCLUDE_MAX)) {
-			open = '{';
-		}
-		// Build endpoints if applicable
-		if (maxValue != null && (behavior == RangeBehavior.EXCLUSIVE || behavior == RangeBehavior.INCLUDE_MIN)) {
-			close = '}';
-		}
-		FilterQuery query = new FilterQuery(field + ":" + open + minString + " TO " + maxString + close);
+		FilterQuery query = new FilterQuery(getBaseQuery());
 
 		if (exclude) {
 			query.exclude();
