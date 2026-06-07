@@ -2,6 +2,7 @@ package io.zulia.server.index.field;
 
 import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
 import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.util.ZuliaDateUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongPoint;
@@ -18,14 +19,9 @@ public class DateFieldIndexer extends FieldIndexer {
 
 	@Override
 	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) throws Exception {
-		if (value != null) {
-			if (value instanceof Date date) {
-				d.add(createField(date, indexedFieldName));
-			}
-			else {
-				throw new Exception(
-						"Expecting collection of Date or Date for field <" + storedFieldName + "> and found <" + value.getClass().getSimpleName() + ">");
-			}
+		Date date = ZuliaDateUtil.convertToDate(value, "field <" + storedFieldName + ">");
+		if (date != null) {
+			d.add(createField(date, indexedFieldName));
 		}
 	}
 
