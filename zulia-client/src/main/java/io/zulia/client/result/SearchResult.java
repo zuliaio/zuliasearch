@@ -16,7 +16,9 @@ import org.bson.Document;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class SearchResult extends Result {
@@ -188,6 +190,36 @@ public class SearchResult extends Result {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Facet counts for a field as a map of facet value to count, preserving the returned (count-descending) order.
+	 * Returns an empty map when the field was not faceted.
+	 */
+	public Map<String, Long> getFacetCountsAsMap(String fieldName) {
+		return toFacetCountMap(getFacetCounts(fieldName));
+	}
+
+	/**
+	 * Facet counts for a field and drill-down path as a map of facet value to count, preserving the returned
+	 * (count-descending) order. Returns an empty map when the field/path was not faceted.
+	 */
+	public Map<String, Long> getFacetCountsAsMap(String fieldName, String... paths) {
+		return toFacetCountMap(getFacetCountsForPath(fieldName, paths));
+	}
+
+	public Map<String, Long> getFacetCountsAsMap(String fieldName, List<String> paths) {
+		return toFacetCountMap(getFacetCountsForPath(fieldName, paths));
+	}
+
+	private static Map<String, Long> toFacetCountMap(List<FacetCount> facetCounts) {
+		Map<String, Long> counts = new LinkedHashMap<>();
+		if (facetCounts != null) {
+			for (FacetCount facetCount : facetCounts) {
+				counts.put(facetCount.getFacet(), facetCount.getCount());
+			}
+		}
+		return counts;
 	}
 
 	public int getFacetGroupCount() {

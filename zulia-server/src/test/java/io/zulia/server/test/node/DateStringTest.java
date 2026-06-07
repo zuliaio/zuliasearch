@@ -12,7 +12,6 @@ import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaIndex.FacetAs;
-import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.server.test.node.shared.NodeExtension;
 import io.zulia.util.ZuliaDateUtil;
 import org.bson.Document;
@@ -29,7 +28,6 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -133,7 +131,7 @@ public class DateStringTest {
 		SearchResult facetResult = zuliaWorkPool.search(
 				new Search(INDEX_NAME).setAmount(0).setRealtime(true).addCountFacet(new CountFacet("added").setTopN(20)));
 
-		Map<String, Long> counts = facetCounts(facetResult, "added");
+		Map<String, Long> counts = facetResult.getFacetCountsAsMap("added");
 
 		Assertions.assertEquals(2L, (long) counts.get("2024-06-17")); // id 0 (timestamp) + id 1 (date)
 		Assertions.assertEquals(1L, (long) counts.get("2024-06-18")); // id 2 (slash separator)
@@ -154,7 +152,7 @@ public class DateStringTest {
 		SearchResult facetResult = zuliaWorkPool.search(
 				new Search(INDEX_NAME).setAmount(0).setRealtime(true).addCountFacet(new CountFacet("addedHier").setTopN(20)));
 
-		Map<String, Long> yearCounts = facetCounts(facetResult, "addedHier");
+		Map<String, Long> yearCounts = facetResult.getFacetCountsAsMap("addedHier");
 
 		Assertions.assertEquals(4L, (long) yearCounts.get("2024")); // id 0, 1, 2, 7
 		Assertions.assertEquals(2L, (long) yearCounts.get("2022")); // id 3, 4
@@ -163,10 +161,7 @@ public class DateStringTest {
 
 		// drill into 2024 -> month 3 (offset-less timestamp) and month 6 (the rest)
 		SearchResult drill = zuliaWorkPool.search(new Search(INDEX_NAME).setAmount(0).setRealtime(true).addCountFacet(new CountFacet("addedHier", "2024")));
-		Map<String, Long> monthCounts = new HashMap<>();
-		for (FacetCount facetCount : drill.getFacetCountsForPath("addedHier", "2024")) {
-			monthCounts.put(facetCount.getFacet(), facetCount.getCount());
-		}
+		Map<String, Long> monthCounts = drill.getFacetCountsAsMap("addedHier", "2024");
 		Assertions.assertEquals(3L, (long) monthCounts.get("6")); // id 0, 1, 2
 		Assertions.assertEquals(1L, (long) monthCounts.get("3")); // id 7
 	}
@@ -217,14 +212,6 @@ public class DateStringTest {
 		IllegalArgumentException badType = Assertions.assertThrows(IllegalArgumentException.class,
 				() -> ZuliaDateUtil.convertToDate(List.of(1, 2), "field <added>"));
 		Assertions.assertTrue(badType.getMessage().contains("Expecting Date"), badType.getMessage());
-	}
-
-	private static Map<String, Long> facetCounts(SearchResult searchResult, String field) {
-		Map<String, Long> counts = new HashMap<>();
-		for (FacetCount facetCount : searchResult.getFacetCounts(field)) {
-			counts.put(facetCount.getFacet(), facetCount.getCount());
-		}
-		return counts;
 	}
 
 	private static void store(ZuliaWorkPool zuliaWorkPool, String id, Object added) throws Exception {
