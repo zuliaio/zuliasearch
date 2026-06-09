@@ -1,5 +1,7 @@
 package io.zulia.data.test;
 
+import io.zulia.data.common.DataStreamMeta;
+import io.zulia.data.input.DataInputStream;
 import io.zulia.data.input.SingleUseDataInputStream;
 import io.zulia.data.output.SingleUseDataOutputStream;
 import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
@@ -11,7 +13,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 public class DataSourceTest {
@@ -67,6 +73,86 @@ public class DataSourceTest {
 			Assertions.assertEquals("header1", dataSource.getHeaders().getFirst());
 		}
 
+	}
+
+	@Test
+	void trulyEmptyDelimitedSourceWithHeadersThrowsIOException() throws IOException {
+		// a file with no rows at all (not even a header line) should surface a clear IOException rather than letting
+		// FastCSV's NoSuchElementException escape when headers are required
+		SingleUseDataInputStream dataInputStream = SingleUseDataInputStream.from(new ByteArrayInputStream(new byte[0]), "test.csv");
+		Assertions.assertThrows(IOException.class, () -> SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream));
+	}
+
+	@Test
+	void reIterationDoesNotLeakStreams() throws IOException {
+		byte[] csv = "header1,header2\nvalue1,1\nvalue3,2\n".getBytes(StandardCharsets.UTF_8);
+		CountingDataInputStream dataInputStream = new CountingDataInputStream(csv, "test.csv");
+
+		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) {
+			Assertions.assertEquals(2, countRows(dataSource));
+			// fully consuming then iterating again triggers reset()/open(); the previous reader must be closed first
+			Assertions.assertEquals(2, countRows(dataSource));
+		}
+
+		Assertions.assertTrue(dataInputStream.openCount() >= 2, "re-iteration should have reopened the source");
+		Assertions.assertEquals(0, dataInputStream.unclosedCount(), "every opened underlying stream should be closed");
+	}
+
+	private static int countRows(SpreadsheetSource<?> dataSource) {
+		int rows = 0;
+		for (SpreadsheetRecord ignored : dataSource) {
+			rows++;
+		}
+		return rows;
+	}
+
+	/**
+	 * A DataInputStream that hands back a fresh, tracked stream over the same bytes on every openRawInputStream() call so a
+	 * test can assert how many streams were opened and that all of them were closed.
+	 */
+	private static final class CountingDataInputStream implements DataInputStream {
+		private final byte[] data;
+		private final DataStreamMeta meta;
+		private final List<CountingInputStream> opened = new ArrayList<>();
+
+		private CountingDataInputStream(byte[] data, String fileName) {
+			this.data = data;
+			this.meta = DataStreamMeta.fromFileName(fileName);
+		}
+
+		@Override
+		public InputStream openRawInputStream() {
+			CountingInputStream stream = new CountingInputStream(new ByteArrayInputStream(data));
+			opened.add(stream);
+			return stream;
+		}
+
+		@Override
+		public DataStreamMeta getMeta() {
+			return meta;
+		}
+
+		private int openCount() {
+			return opened.size();
+		}
+
+		private long unclosedCount() {
+			return opened.stream().filter(stream -> !stream.closed).count();
+		}
+	}
+
+	private static final class CountingInputStream extends FilterInputStream {
+		private boolean closed;
+
+		private CountingInputStream(InputStream in) {
+			super(in);
+		}
+
+		@Override
+		public void close() throws IOException {
+			closed = true;
+			super.close();
+		}
 	}
 
 }

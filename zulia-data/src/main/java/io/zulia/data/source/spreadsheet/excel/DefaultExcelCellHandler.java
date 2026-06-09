@@ -51,11 +51,11 @@ public class DefaultExcelCellHandler implements ExcelCellHandler {
 	public Integer cellToInt(Cell cell) {
 
 		if (isCellNumeric(cell)) {
-			return (int) cell.getNumericCellValue();
+			return Math.toIntExact((long) cell.getNumericCellValue());
 		}
 		else if (isCellFormula(cell)) {
 			if (cell.getCachedFormulaResultType().equals(CellType.NUMERIC)) {
-				return (int) cell.getNumericCellValue();
+				return Math.toIntExact((long) cell.getNumericCellValue());
 			}
 		}
 		else if (isCellString(cell)) {
@@ -152,7 +152,7 @@ public class DefaultExcelCellHandler implements ExcelCellHandler {
 	public String formatNumericCellAsString(Cell cell) {
 		Number numericCellValue = cell.getNumericCellValue();
 		if ((numericCellValue.doubleValue() == Math.floor(numericCellValue.doubleValue())) && !Double.isInfinite(numericCellValue.doubleValue())) {
-			return String.valueOf(numericCellValue.intValue());
+			return String.valueOf(numericCellValue.longValue());
 		}
 		else {
 			return String.valueOf(numericCellValue.doubleValue());

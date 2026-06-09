@@ -81,6 +81,9 @@ public class ExcelSource implements SpreadsheetSource<ExcelRecord>, AutoCloseabl
 
 	public ExcelSource switchSheet(String name) {
 		sheet = reader.getSheet(name);
+		if (sheet == null) {
+			throw new IllegalArgumentException("No sheet named " + name);
+		}
 		initializeSheet();
 		return this;
 	}
@@ -100,19 +103,19 @@ public class ExcelSource implements SpreadsheetSource<ExcelRecord>, AutoCloseabl
 	}
 
 	private void initializeSheet() {
-		numberOfRowsForSheet = sheet.getLastRowNum() + 1;
-		Row row = sheet.getRow(0);
+		// getLastRowNum() returns 0 for an empty sheet (ambiguous with a single row at index 0), so disambiguate on physical rows
+		numberOfRowsForSheet = (sheet.getPhysicalNumberOfRows() == 0) ? 0 : sheet.getLastRowNum() + 1;
+		Row firstRow = sheet.getRow(0);
 
-		int numberOfColumns = row.getLastCellNum();
+		int numberOfColumns = (firstRow == null) ? 0 : firstRow.getLastCellNum();
 
 		if (excelSourceConfig.hasHeaders()) {
 			ExcelCellHandler excelCellHandler = excelSourceConfig.getExcelCellHandler();
 
 			List<String> headerRow = new ArrayList<>();
-			Row header = sheet.getRow(0);
-			if (header != null) {
-				for (int i = 0; i < row.getLastCellNum(); i++) {
-					Cell cell = row.getCell(i);
+			if (firstRow != null) {
+				for (int i = 0; i < firstRow.getLastCellNum(); i++) {
+					Cell cell = firstRow.getCell(i);
 					headerRow.add(excelCellHandler.cellToString(cell));
 				}
 			}

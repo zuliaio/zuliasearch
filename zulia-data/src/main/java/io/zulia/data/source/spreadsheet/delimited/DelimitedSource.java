@@ -5,7 +5,6 @@ import de.siegmar.fastcsv.reader.CsvRecord;
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.source.spreadsheet.SpreadsheetSource;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -15,6 +14,7 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 	private final S delimitedSourceConfig;
 	private final CsvReader.CsvReaderBuilder csvReaderBuilder;
 	private CsvReader<CsvRecord> csvRecords;
+	private Iterator<CsvRecord> recordIterator;
 	private List<String> nextRow;
 	private HeaderMapping headerMapping;
 
@@ -27,23 +27,24 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 	protected abstract CsvReader.CsvReaderBuilder createParser(S delimitedSourceConfig);
 
 	public void reset() throws IOException {
-		//csvReaderBuilder.stopParsing();
+		close();
 		open();
 	}
 
 	protected void open() throws IOException {
-		csvRecords = csvReaderBuilder.ofCsvRecord(new BufferedInputStream(delimitedSourceConfig.getDataInputStream().openInputStream()));
+		// FileDataInputStream already returns a BufferedInputStream and FastCSV buffers internally, so no extra wrapping
+		csvRecords = csvReaderBuilder.ofCsvRecord(delimitedSourceConfig.getDataInputStream().openInputStream());
+		recordIterator = csvRecords.iterator();
 
 		if (delimitedSourceConfig.hasHeaders()) {
-
-			List<String> headerRow = csvRecords.iterator().next().getFields();
+			if (!recordIterator.hasNext()) {
+				throw new IOException("Headers are required but the delimited source is empty");
+			}
+			List<String> headerRow = recordIterator.next().getFields();
 			headerMapping = new HeaderMapping(delimitedSourceConfig.getHeaderConfig(), headerRow);
-
 		}
 
-		if (csvRecords.iterator().hasNext()) {
-			nextRow = csvRecords.iterator().next().getFields();
-		}
+		nextRow = recordIterator.hasNext() ? recordIterator.next().getFields() : null;
 	}
 
 	public boolean hasHeader(String field) {
@@ -83,12 +84,7 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 			@Override
 			public T next() {
 				T t = createRecord(delimitedSourceConfig, nextRow.toArray(new String[0]));
-				if (csvRecords.iterator().hasNext()) {
-					nextRow = csvRecords.iterator().next().getFields();
-				}
-				else {
-					nextRow = null;
-				}
+				nextRow = recordIterator.hasNext() ? recordIterator.next().getFields() : null;
 				return t;
 			}
 
@@ -107,11 +103,14 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 
 	@Override
 	public void close() {
-		try {
-			csvRecords.close();
-		}
-		catch (IOException e) {
-			throw new RuntimeException("Could not close the CSV Records", e);
+		if (csvRecords != null) {
+			try {
+				csvRecords.close();
+			}
+			catch (IOException e) {
+				throw new RuntimeException("Could not close the CSV Records", e);
+			}
+			csvRecords = null;
 		}
 	}
 }

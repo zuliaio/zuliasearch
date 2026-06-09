@@ -100,9 +100,12 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 		this.sheet.addMergedRegion(new CellRangeAddress(firstRow, lastRow, firstCol, lastCol));
 	}
 
+	@Override
 	public void close() throws IOException {
-		try (OutputStream stream = excelDataTargetConfig.getDataStream().openOutputStream()) {
-			this.workbook.write(stream);
+		// closing the SXSSFWorkbook deletes the temporary files it writes to disk and releases the underlying
+		// workbook resources
+		try (workbook; OutputStream stream = excelDataTargetConfig.getDataStream().openOutputStream()) {
+			workbook.write(stream);
 		}
 	}
 

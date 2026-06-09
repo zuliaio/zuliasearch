@@ -2,6 +2,7 @@ package io.zulia.data.input;
 
 import io.zulia.data.common.DataStreamMeta;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -22,13 +23,17 @@ public class SingleUseDataInputStream implements DataInputStream {
 		return new SingleUseDataInputStream(inputStream, new DataStreamMeta(contentType, filename));
 	}
 
+	public static SingleUseDataInputStream from(byte[] bytes, String filename) throws IOException {
+		return from(new ByteArrayInputStream(bytes), filename);
+	}
+
 	private SingleUseDataInputStream(InputStream inputStream, DataStreamMeta meta) {
 		this.inputStream = inputStream;
 		this.meta = meta;
 	}
 
 	@Override
-	public synchronized InputStream openInputStream() throws IOException {
+	public synchronized InputStream openRawInputStream() throws IOException {
 		if (inputStream == null) {
 			throw new IOException("SingleUseDataInputStream can only be used once");
 		}
