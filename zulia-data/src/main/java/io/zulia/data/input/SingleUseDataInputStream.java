@@ -28,7 +28,7 @@ public class SingleUseDataInputStream implements DataInputStream {
 	}
 
 	@Override
-	public synchronized InputStream openInputStream() throws IOException {
+	public synchronized InputStream openRawInputStream() throws IOException {
 		if (inputStream == null) {
 			throw new IOException("SingleUseDataInputStream can only be used once");
 		}

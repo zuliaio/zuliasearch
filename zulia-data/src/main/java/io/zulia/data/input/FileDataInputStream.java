@@ -2,7 +2,6 @@ package io.zulia.data.input;
 
 import io.zulia.data.common.DataStreamMeta;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -31,13 +30,14 @@ public class FileDataInputStream implements DataInputStream {
 	}
 
 	@Override
-	public InputStream openInputStream() throws IOException {
+	public InputStream openRawInputStream() throws IOException {
 
 		InputStream in = new FileInputStream(file);
 		if (DataStreamMeta.isGzipExtension(file.getName())) {
-			in = new GZIPInputStream(in);
+			// set the inflater's read buffer to 64KB chunks rather than the 512-byte default
+			in = new GZIPInputStream(in, 1 << 16);
 		}
-		return new BufferedInputStream(in);
+		return in;
 	}
 
 	@Override
