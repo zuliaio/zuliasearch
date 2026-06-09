@@ -2,6 +2,7 @@ package io.zulia.data.input;
 
 import io.zulia.data.common.DataStreamMeta;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -20,6 +21,10 @@ public class SingleUseDataInputStream implements DataInputStream {
 
 	public static SingleUseDataInputStream from(InputStream inputStream, String contentType, String filename) throws IOException {
 		return new SingleUseDataInputStream(inputStream, new DataStreamMeta(contentType, filename));
+	}
+
+	public static SingleUseDataInputStream from(byte[] bytes, String filename) throws IOException {
+		return from(new ByteArrayInputStream(bytes), filename);
 	}
 
 	private SingleUseDataInputStream(InputStream inputStream, DataStreamMeta meta) {
