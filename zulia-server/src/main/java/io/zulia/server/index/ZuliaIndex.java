@@ -1,5 +1,6 @@
 package io.zulia.server.index;
 
+import com.google.common.primitives.Floats;
 import com.google.protobuf.ProtocolStringList;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
@@ -44,6 +45,7 @@ import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.search.aggregation.AggregationSettings;
 import io.zulia.server.search.GeoDistUtil;
+import io.zulia.server.search.MoreLikeThisLazyQuery;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.queryparser.SetQueryHelper;
@@ -511,10 +513,7 @@ public class ZuliaIndex {
 			throw new IllegalArgumentException("Vector must not be empty for cosine sim query");
 		}
 
-		float[] vector = new float[query.getVectorCount()];
-		for (int i = 0; i < query.getVectorCount(); i++) {
-			vector[i] = query.getVector(i);
-		}
+		float[] vector = Floats.toArray(query.getVectorList());
 
 		if (query.getQfList().isEmpty()) {
 			throw new IllegalArgumentException("Cosine sim query must give at least one query field (qf)");
@@ -531,6 +530,67 @@ public class ZuliaIndex {
 			}
 			return booleanQueryBuilder.build();
 		}
+	}
+
+	public Query handleMoreLikeThisQuery(ZuliaQuery.Query query) {
+		ZuliaQuery.MoreLikeThisParams mltParams = query.getMoreLikeThisParams();
+		List<String> textFields = mltParams.getFieldList();
+		List<String> likeTexts = mltParams.getLikeTextList();
+		String vectorField = mltParams.getVectorField();
+		List<Float> resolvedVector = mltParams.getResolvedVectorList();
+
+		boolean hasLexical = !textFields.isEmpty() && !likeTexts.isEmpty();
+		boolean hasVector = !vectorField.isEmpty() && !resolvedVector.isEmpty();
+
+		if (!hasLexical && !hasVector) {
+			throw new IllegalArgumentException("More-like-this query must have either text fields with like text, or a vector field with vectors");
+		}
+
+		Query lexicalQuery = null;
+		if (hasLexical) {
+			int minTermFreq = mltParams.getMinTermFreq() > 0 ? mltParams.getMinTermFreq() : 2;
+			int maxQueryTerms = mltParams.getMaxQueryTerms() > 0 ? mltParams.getMaxQueryTerms() : 25;
+			int minDocFreq = mltParams.getMinDocFreq() > 0 ? mltParams.getMinDocFreq() : 5;
+			int maxNumTokensParsed = mltParams.getMaxNumTokensParsed() > 0 ? mltParams.getMaxNumTokensParsed() : 5000;
+			lexicalQuery = new MoreLikeThisLazyQuery(likeTexts, textFields, zuliaPerFieldAnalyzer, minTermFreq, maxQueryTerms, minDocFreq,
+					mltParams.getMaxDocFreq(), mltParams.getMinWordLen(), mltParams.getMaxWordLen(), maxNumTokensParsed, query.getMm());
+		}
+
+		Query vectorQuery = null;
+		if (hasVector) {
+			int vectorTopN = mltParams.getVectorTopN() > 0 ? mltParams.getVectorTopN() : 100;
+			vectorQuery = new KnnFloatVectorQuery(vectorField, Floats.toArray(resolvedVector), vectorTopN);
+		}
+
+		Query mltQuery;
+		if (lexicalQuery == null) {
+			mltQuery = vectorQuery;
+		}
+		else if (vectorQuery == null) {
+			mltQuery = lexicalQuery;
+		}
+		else {
+			BooleanQuery.Builder combined = new BooleanQuery.Builder();
+			combined.add(applyWeight(lexicalQuery, mltParams.getTextWeight()), BooleanClause.Occur.SHOULD);
+			combined.add(applyWeight(vectorQuery, mltParams.getVectorWeight()), BooleanClause.Occur.SHOULD);
+			mltQuery = combined.build();
+		}
+
+		List<String> sourceDocIds = mltParams.getDocumentIdList();
+		if (!sourceDocIds.isEmpty() && !mltParams.getIncludeSourceDocs()) {
+			BooleanQuery.Builder excludingSources = new BooleanQuery.Builder();
+			excludingSources.add(mltQuery, BooleanClause.Occur.MUST);
+			for (String docId : sourceDocIds) {
+				excludingSources.add(new TermQuery(new Term(ZuliaFieldConstants.ID_FIELD, docId)), BooleanClause.Occur.MUST_NOT);
+			}
+			mltQuery = excludingSources.build();
+		}
+
+		return mltQuery;
+	}
+
+	private static Query applyWeight(Query query, float weight) {
+		return weight > 0 && weight != 1.0f ? new BoostQuery(query, weight) : query;
 	}
 
 	private BooleanQuery getPreFilter(List<ZuliaQuery.Query> vectorPreQueryList) throws Exception {
@@ -659,6 +719,10 @@ public class ZuliaIndex {
 		else if (query.getQueryType() == QueryType.VECTOR_SHOULD) {
 			luceneQuery = handleVectorQuery(query);
 			occur = BooleanClause.Occur.SHOULD;
+		}
+		else if (query.getQueryType() == QueryType.MORE_LIKE_THIS) {
+			luceneQuery = handleMoreLikeThisQuery(query);
+			occur = BooleanClause.Occur.MUST;
 		}
 		else {
 			luceneQuery = parseQueryToLucene(query);
