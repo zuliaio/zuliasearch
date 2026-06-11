@@ -20,8 +20,10 @@ import io.zulia.message.ZuliaIndex.UpdateIndexSettings;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation;
 import io.zulia.message.ZuliaIndex.UpdateIndexSettings.Operation.OperationType;
 import io.zulia.message.ZuliaQuery;
+import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.message.ZuliaServiceOuterClass.*;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
+import io.zulia.server.config.IndexFieldInfo;
 import io.zulia.server.config.IndexService;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ServerIndexConfig;
@@ -32,6 +34,7 @@ import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.connection.server.validation.CreateIndexRequestValidator;
 import io.zulia.server.connection.server.validation.QueryRequestValidator;
 import io.zulia.server.exceptions.IndexDoesNotExistException;
+import io.zulia.server.field.FieldTypeUtil;
 import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.filestorage.FileDocumentStorage;
 import io.zulia.server.filestorage.MongoDocumentStorage;
@@ -57,7 +60,9 @@ import io.zulia.server.index.router.StoreRequestRouter;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.util.IndexAliasUtil;
+import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.document.DocumentHelper;
 import io.zulia.util.pool.TaskExecutor;
 import io.zulia.util.pool.WorkPool;
 import org.apache.lucene.search.Query;
@@ -106,6 +111,7 @@ public class ZuliaIndexManager {
 	private final ReplicationRateLimiter replicationRateLimiter;
 
 	private static final int MONGO_DB_NAME_MAX_LENGTH = 63;
+	private static final int MLT_MAX_SOURCE_DOCS = 100;
 
 	public ZuliaIndexManager(ZuliaConfig zuliaConfig, NodeService nodeService) throws Exception {
 
@@ -377,10 +383,19 @@ public class ZuliaIndexManager {
 	}
 
 	public QueryResponse query(QueryRequest request) throws Exception {
+		if (request.getIndexCount() == 0) {
+			throw new IllegalArgumentException("Query requires at least one index");
+		}
+
 		request = new QueryRequestValidator().validateAndSetDefault(request);
 
 		if (zuliaConfig.isDebug() && !request.getDebug()) {
 			request = request.toBuilder().setDebug(true).build();
+		}
+
+		if (hasMLTQuery(request)) {
+			// Validate MLT params and resolve document IDs into text + vectors before query building
+			request = processMoreLikeThisQueries(request);
 		}
 
 		Map<String, Query> queryMap = new HashMap<>();
@@ -394,32 +409,270 @@ public class ZuliaIndexManager {
 		return federator.getResponse(request);
 	}
 
+	private QueryRequest processMoreLikeThisQueries(QueryRequest request) throws Exception {
+		List<ZuliaQuery.Query> queryList = request.getQueryList();
+
+		Map<String, ZuliaIndex> queriedIndexes = resolveQueryIndexes(request.getIndexList());
+
+		// Validate every MLT query against every queried index, then collect all (docId, indexName) fetches
+		BatchFetchRequest.Builder batchBuilder = BatchFetchRequest.newBuilder();
+		for (ZuliaQuery.Query q : queryList) {
+			if (q.getQueryType() != ZuliaQuery.Query.QueryType.MORE_LIKE_THIS) {
+				continue;
+			}
+			validateMoreLikeThisParams(q.getMoreLikeThisParams(), queriedIndexes);
+			for (String docId : q.getMoreLikeThisParams().getDocumentIdList()) {
+				for (String indexName : queriedIndexes.keySet()) {
+					batchBuilder.addFetchRequest(FetchRequest.newBuilder().setUniqueId(docId).setIndexName(indexName).setResultFetchType(FetchType.FULL)
+							.setRealtime(request.getRealtime()).build());
+				}
+			}
+		}
+
+		// Map<docId, parsed source document>; if a doc ID exists in multiple queried indexes, the first index in request order wins
+		Map<String, Document> sourceDocs = new HashMap<>();
+		Map<String, Integer> sourceDocRanks = new HashMap<>();
+		List<String> indexOrder = List.copyOf(queriedIndexes.keySet());
+		List<FetchResponse> fetchResponses = batchBuilder.getFetchRequestCount() == 0
+				? List.of()
+				: new BatchFetchRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient, queriedIndexes).send(batchBuilder.build());
+		for (FetchResponse response : fetchResponses) {
+			if (!response.hasResultDocument()) {
+				continue;
+			}
+			ZuliaBase.ResultDocument rd = response.getResultDocument();
+			if (rd.getDocument().isEmpty()) {
+				continue;
+			}
+			int rank = indexOrder.indexOf(rd.getIndexName());
+			if (rank < 0) {
+				rank = indexOrder.size();
+			}
+			Integer existingRank = sourceDocRanks.get(rd.getUniqueId());
+			if (existingRank == null || rank < existingRank) {
+				sourceDocRanks.put(rd.getUniqueId(), rank);
+				sourceDocs.put(rd.getUniqueId(), ResultHelper.getDocumentFromResultDocument(rd));
+			}
+		}
+
+		QueryRequest.Builder requestBuilder = request.toBuilder().clearQuery();
+		for (ZuliaQuery.Query q : queryList) {
+			if (q.getQueryType() != ZuliaQuery.Query.QueryType.MORE_LIKE_THIS) {
+				requestBuilder.addQuery(q);
+				continue;
+			}
+			requestBuilder.addQuery(rewriteMoreLikeThisQuery(q, queriedIndexes, sourceDocs));
+		}
+
+		return requestBuilder.build();
+	}
+
+	private static boolean hasMLTQuery(QueryRequest queryRequest) {
+		return queryRequest.getQueryList().stream().anyMatch(q -> q.getQueryType() == ZuliaQuery.Query.QueryType.MORE_LIKE_THIS);
+	}
+
+	private void validateMoreLikeThisParams(ZuliaQuery.MoreLikeThisParams mltParams, Map<String, ZuliaIndex> queriedIndexes) {
+		String vectorField = mltParams.getVectorField();
+		List<String> textFields = mltParams.getFieldList();
+		boolean hasVectorField = !vectorField.isEmpty();
+
+		if (textFields.isEmpty() && !hasVectorField) {
+			throw new IllegalArgumentException("More-like-this query must specify text fields or a vector field");
+		}
+
+		if (mltParams.getDocumentIdCount() == 0 && mltParams.getLikeTextCount() == 0 && mltParams.getLikeVectorCount() == 0) {
+			throw new IllegalArgumentException("More-like-this query must specify at least one source: document ids, like text, or like vectors");
+		}
+
+		if (textFields.isEmpty() && mltParams.getLikeTextCount() > 0) {
+			throw new IllegalArgumentException("More-like-this query has like text but no text fields to analyze; specify text fields");
+		}
+
+		if (!hasVectorField && mltParams.getLikeVectorCount() > 0) {
+			throw new IllegalArgumentException("More-like-this query has like vectors but no vector field; specify a vector field");
+		}
+
+		if (mltParams.getDocumentIdCount() > MLT_MAX_SOURCE_DOCS) {
+			throw new IllegalArgumentException(
+					"More-like-this query exceeds the source document limit: got " + mltParams.getDocumentIdCount() + ", max " + MLT_MAX_SOURCE_DOCS);
+		}
+
+		FieldConfig.FieldType expectedVectorType = null;
+		String expectedVectorTypeIndex = null;
+		for (Map.Entry<String, ZuliaIndex> entry : queriedIndexes.entrySet()) {
+			String indexName = entry.getKey();
+			ServerIndexConfig indexConfig = entry.getValue().getIndexConfig();
+			for (String field : textFields) {
+				IndexFieldInfo info = indexConfig.getIndexFieldInfo(field);
+				if (info == null) {
+					throw new IllegalArgumentException("More-like-this text field <" + field + "> does not exist in index <" + indexName + ">");
+				}
+				if (!FieldTypeUtil.isStringFieldType(info.getFieldType())) {
+					throw new IllegalArgumentException(
+							"More-like-this text field <" + field + "> in index <" + indexName + "> must be a STRING field, got " + info.getFieldType());
+				}
+			}
+			if (hasVectorField) {
+				IndexFieldInfo info = indexConfig.getIndexFieldInfo(vectorField);
+				if (info == null) {
+					throw new IllegalArgumentException("More-like-this vector field <" + vectorField + "> does not exist in index <" + indexName + ">");
+				}
+				if (!FieldTypeUtil.isVectorFieldType(info.getFieldType())) {
+					throw new IllegalArgumentException(
+							"More-like-this vector field <" + vectorField + "> in index <" + indexName + "> must be VECTOR or UNIT_VECTOR, got "
+									+ info.getFieldType());
+				}
+				if (expectedVectorType == null) {
+					expectedVectorType = info.getFieldType();
+					expectedVectorTypeIndex = indexName;
+				}
+				else if (expectedVectorType != info.getFieldType()) {
+					throw new IllegalArgumentException(
+							"More-like-this vector field <" + vectorField + "> has inconsistent type across indexes: " + expectedVectorType + " in <"
+									+ expectedVectorTypeIndex + ">, " + info.getFieldType() + " in <" + indexName + ">");
+				}
+			}
+		}
+	}
+
+	private ZuliaQuery.Query rewriteMoreLikeThisQuery(ZuliaQuery.Query q, Map<String, ZuliaIndex> queriedIndexes, Map<String, Document> sourceDocs) {
+		ZuliaQuery.MoreLikeThisParams mltParams = q.getMoreLikeThisParams();
+		List<String> textFields = mltParams.getFieldList();
+		String vectorField = mltParams.getVectorField();
+		boolean hasVectorField = !vectorField.isEmpty();
+
+		List<String> resolvedTexts = new ArrayList<>(mltParams.getLikeTextList());
+		List<float[]> resolvedVectors = new ArrayList<>();
+		List<String> vectorSources = new ArrayList<>();
+
+		for (int i = 0; i < mltParams.getLikeVectorCount(); i++) {
+			ZuliaQuery.VectorInput vi = mltParams.getLikeVector(i);
+			float[] vec = new float[vi.getValuesCount()];
+			for (int j = 0; j < vi.getValuesCount(); j++) {
+				vec[j] = vi.getValues(j);
+			}
+			resolvedVectors.add(vec);
+			vectorSources.add("user-supplied likeVector[" + i + "]");
+		}
+
+		for (String docId : mltParams.getDocumentIdList()) {
+			Document bsonDoc = sourceDocs.get(docId);
+			if (bsonDoc == null) {
+				throw new IllegalArgumentException(
+						"More-like-this source document <" + docId + "> not found in any of the queried indexes " + queriedIndexes.keySet());
+			}
+			for (String field : textFields) {
+				Object value = DocumentHelper.getValueFromMongoDocument(bsonDoc, field);
+				if (value instanceof List<?> list) {
+					for (Object item : list) {
+						if (item != null) {
+							resolvedTexts.add(item.toString());
+						}
+					}
+				}
+				else if (value != null) {
+					resolvedTexts.add(value.toString());
+				}
+			}
+			if (hasVectorField) {
+				float[] vec = ZuliaUtil.getFloatArray(bsonDoc, vectorField, null);
+				if (vec != null) {
+					resolvedVectors.add(vec);
+					vectorSources.add("doc <" + docId + ">");
+				}
+			}
+		}
+
+		boolean hasLexical = !textFields.isEmpty() && !resolvedTexts.isEmpty();
+		boolean hasVector = hasVectorField && !resolvedVectors.isEmpty();
+		if (!hasLexical && !hasVector) {
+			List<String> missing = new ArrayList<>();
+			if (!textFields.isEmpty()) {
+				missing.add("text in fields " + textFields);
+			}
+			if (hasVectorField) {
+				missing.add("vectors in field <" + vectorField + ">");
+			}
+			throw new IllegalArgumentException(
+					"More-like-this source documents " + mltParams.getDocumentIdList() + " contained no " + String.join(" and no ", missing));
+		}
+
+		// documentId is kept so shards can exclude the source docs from results when includeSourceDocs is false
+		ZuliaQuery.MoreLikeThisParams.Builder resolvedParams = mltParams.toBuilder().clearLikeText().clearLikeVector().clearResolvedVector();
+		resolvedParams.addAllLikeText(resolvedTexts);
+
+		if (!resolvedVectors.isEmpty()) {
+			int dim = resolvedVectors.getFirst().length;
+			float[] centroid = new float[dim];
+			for (int i = 0; i < resolvedVectors.size(); i++) {
+				float[] vec = resolvedVectors.get(i);
+				if (vec.length != dim) {
+					throw new IllegalArgumentException(
+							"More-like-this vector dimension mismatch: " + vectorSources.get(i) + " has " + vec.length + " dims, expected " + dim);
+				}
+				for (int j = 0; j < dim; j++) {
+					centroid[j] += vec[j];
+				}
+			}
+			for (int i = 0; i < dim; i++) {
+				centroid[i] /= resolvedVectors.size();
+			}
+
+			boolean shouldNormalize = hasVectorField && queriedIndexes.values().iterator().next().getIndexConfig().getIndexFieldInfo(vectorField).getFieldType()
+					== FieldConfig.FieldType.UNIT_VECTOR;
+			if (shouldNormalize) {
+				float norm = 0f;
+				for (float v : centroid) {
+					norm += v * v;
+				}
+				norm = (float) Math.sqrt(norm);
+				if (norm > 0) {
+					for (int i = 0; i < dim; i++) {
+						centroid[i] /= norm;
+					}
+				}
+			}
+
+			for (float v : centroid) {
+				resolvedParams.addResolvedVector(v);
+			}
+		}
+
+		return q.toBuilder().setMoreLikeThisParams(resolvedParams).build();
+	}
+
 	private void populateIndexesAndIndexMap(QueryRequest queryRequest, Map<String, Query> queryMap, Set<ZuliaIndex> indexes) throws Exception {
 
-		for (String indexName : queryRequest.getIndexList()) {
+		for (Map.Entry<String, ZuliaIndex> entry : resolveQueryIndexes(queryRequest.getIndexList()).entrySet()) {
+			ZuliaIndex index = entry.getValue();
+			if (indexes.add(index)) {
+				queryMap.put(entry.getKey(), index.getQuery(queryRequest));
+			}
+		}
+	}
+
+	/**
+	 * Resolves the request's index names (expanding wildcard patterns and aliases) to a map of resolved index name to index, preserving request order.
+	 */
+	private Map<String, ZuliaIndex> resolveQueryIndexes(List<String> indexNames) throws IndexDoesNotExistException {
+		Map<String, ZuliaIndex> resolved = new LinkedHashMap<>();
+		for (String indexName : indexNames) {
 			if (isWildcardPattern(indexName)) {
 				List<String> matches = expandWildcard(indexName);
 				if (matches.isEmpty()) {
 					throw new IndexDoesNotExistException(indexName);
 				}
 				for (String matched : matches) {
-					ZuliaIndex index = indexMap.get(matched);
-					if (indexes.add(index)) {
-						Query query = index.getQuery(queryRequest);
-						queryMap.put(matched, query);
-					}
+					resolved.put(matched, indexMap.get(matched));
 				}
 			}
 			else {
 				for (String resolvedName : resolveAlias(indexName)) {
-					ZuliaIndex index = lookupIndex(indexName, resolvedName);
-					if (indexes.add(index)) {
-						Query query = index.getQuery(queryRequest);
-						queryMap.put(resolvedName, query);
-					}
+					resolved.put(resolvedName, lookupIndex(indexName, resolvedName));
 				}
 			}
 		}
+		return resolved;
 	}
 
 	private static boolean isWildcardPattern(String indexName) {

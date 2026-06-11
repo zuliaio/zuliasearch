@@ -6,6 +6,30 @@ import "DDSketch.proto";
 
 option java_package = "io.zulia.message";
 
+message VectorInput {
+    repeated float values = 1;
+}
+
+message MoreLikeThisParams {
+    repeated string documentId = 1;     // Source doc IDs (fetched server-side for text + vectors).  If an ID exists in multiple queried indexes, the first index in request order wins
+    repeated string likeText = 2;       // User-supplied raw text sources
+    repeated string field = 3;          // STRING fields used for lexical similarity.  The source text is read from these fields of each documentId doc, and the generated term query searches these same fields. Required when likeText/documentId text is used; omit for vector-only queries
+    string vectorField = 4;             // Vector field for semantic similarity (optional)
+    uint32 vectorTopN = 5;              // KNN top-N for vector search (default 100)
+    repeated VectorInput likeVector = 6;// User-supplied vectors (averaged with fetched doc vectors)
+    repeated float resolvedVector = 7;  // Server-resolved centroid (internal, set after fetch+average)
+    uint32 minTermFreq = 8;            // default 2
+    uint32 maxQueryTerms = 9;          // default 25
+    uint32 minDocFreq = 10;            // default 5
+    uint32 maxDocFreq = 11;            // 0 = unlimited
+    uint32 minWordLen = 12;            // default 0
+    uint32 maxWordLen = 13;            // 0 = unlimited
+    uint32 maxNumTokensParsed = 14;    // default 5000
+    float textWeight = 15;             // Boost on lexical clause in hybrid mode (0 = default 1.0)
+    float vectorWeight = 16;           // Boost on vector clause in hybrid mode (0 = default 1.0)
+    bool includeSourceDocs = 17;       // If false (default), documents referenced by documentId are excluded from results (by unique ID, across all queried indexes)
+}
+
 message Query {
 
     reserved 6, 7, 9, 12; //old dismax,dismaxTie,vectorSimilarity,legacy
@@ -21,6 +45,7 @@ message Query {
         NUMERIC_SET = 7;
         NUMERIC_SET_NOT = 8;
         VECTOR_SHOULD = 9; // vector clause that contributes score but does not constrain the result set to HNSW top-K
+        MORE_LIKE_THIS = 10;
     }
 
     enum Operator {
@@ -47,6 +72,7 @@ message Query {
     NumericSet numericSet = 15;
 
     float boost = 16; // score multiplier applied to this clause; 0 = unset (treated as 1.0); ignored for non-scoring clause types
+    MoreLikeThisParams moreLikeThisParams = 17;
 }
 
 message NumericSet {
