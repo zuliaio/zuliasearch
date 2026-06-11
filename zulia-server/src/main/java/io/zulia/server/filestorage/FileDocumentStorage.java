@@ -49,7 +49,7 @@ public class FileDocumentStorage implements DocumentStorage {
 
 		Document metadata = ZuliaUtil.byteArrayToMongoDocument(doc.getMetadata().toByteArray());
 		metadata.put(TIMESTAMP, doc.getTimestamp());
-		Files.write(Path.of(pathForUniqueId, doc.getFilename() + ".metadata"), Collections.singleton(doc.getMetadata().toString()));
+		Files.write(Path.of(pathForUniqueId, doc.getFilename() + ".metadata"), Collections.singleton(metadata.toJson()));
 	}
 
 	@Override
@@ -88,7 +88,7 @@ public class FileDocumentStorage implements DocumentStorage {
 			if (metadataPath.toFile().exists()) {
 				String metadataJson = Files.readString(metadataPath);
 				metadata = Document.parse(metadataJson);
-				long timestamp = (long) metadata.remove(TIMESTAMP);
+				long timestamp = ((Number) metadata.remove(TIMESTAMP)).longValue();
 				aBuilder.setTimestamp(timestamp);
 			}
 
