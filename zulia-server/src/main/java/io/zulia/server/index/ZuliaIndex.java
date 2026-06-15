@@ -558,8 +558,8 @@ public class ZuliaIndex {
 
 		Query vectorQuery = null;
 		if (hasVector) {
-			int vectorTopN = mltParams.getVectorTopN() > 0 ? mltParams.getVectorTopN() : 100;
-			vectorQuery = new KnnFloatVectorQuery(vectorField, Floats.toArray(resolvedVector), vectorTopN);
+			// vectorTopN is defaulted by QueryRequestValidator when a vector field is set
+			vectorQuery = new KnnFloatVectorQuery(vectorField, Floats.toArray(resolvedVector), mltParams.getVectorTopN());
 		}
 
 		Query mltQuery;

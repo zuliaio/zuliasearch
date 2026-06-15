@@ -3,6 +3,9 @@ package io.zulia.server.test.node;
 import com.google.common.primitives.Floats;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.builder.FilterQuery;
+import io.zulia.client.command.builder.MoreLikeThisQuery;
+import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.command.builder.VectorTopNQuery;
 import io.zulia.client.config.ClientIndexConfig;
@@ -161,14 +164,81 @@ public class ShardedVectorTest {
 
 	@Test
 	@Order(4)
+	public void mltVectorTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		float[] queryVector = { 1.0f, 0.0f, 0.0f, 0.0f };
+		int topN = 3;
+
+		// pure vector MLT: vectorTopN=3 across 5 shards should return exactly 3 results, not 5*3=15
+		Search search = new Search(SHARDED_VECTOR_TEST);
+		search.addQuery(new MoreLikeThisQuery().addLikeVector(queryVector).setVectorField("v").setVectorTopN(topN));
+		search.setAmount(DOC_COUNT);
+		SearchResult mltResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(topN, mltResult.getTotalHits(),
+				"Pure vector MLT with vectorTopN=" + topN + " and " + SHARD_COUNT + " shards should return " + topN + " total results, not " + SHARD_COUNT
+						+ "*" + topN);
+		Assertions.assertEquals(topN, mltResult.getCompleteResults().size());
+
+		// pure vector MLT should return the same documents as the equivalent VECTOR query
+		search = new Search(SHARDED_VECTOR_TEST);
+		search.addQuery(new VectorTopNQuery(queryVector, topN, "v"));
+		search.setAmount(DOC_COUNT);
+		SearchResult vectorResult = zuliaWorkPool.search(search);
+
+		Set<String> vectorIds = new HashSet<>();
+		for (var result : vectorResult.getCompleteResults()) {
+			vectorIds.add(result.getUniqueId());
+		}
+		for (var result : mltResult.getCompleteResults()) {
+			Assertions.assertTrue(vectorIds.contains(result.getUniqueId()),
+					"Pure vector MLT result " + result.getUniqueId() + " should also appear in the equivalent vector query results");
+		}
+
+		// hybrid MLT is not capped at vectorTopN because lexical matches extend beyond the KNN pool
+		search = new Search(SHARDED_VECTOR_TEST);
+		search.addQuery(new MoreLikeThisQuery("title").addLikeText("Document 5").addLikeVector(queryVector).setVectorField("v").setVectorTopN(topN)
+				.setMinTermFreq(1).setMinDocFreq(1));
+		search.setAmount(DOC_COUNT);
+		SearchResult hybridResult = zuliaWorkPool.search(search);
+		Assertions.assertTrue(hybridResult.getTotalHits() > topN,
+				"Hybrid MLT should not be capped at vectorTopN, got " + hybridResult.getTotalHits());
+	}
+
+	@Test
+	@Order(5)
+	public void normalQueryNotCappedTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// a regular scored query with no vector clause matches all docs across all shards, no top N cap applies
+		Search search = new Search(SHARDED_VECTOR_TEST);
+		search.addQuery(new ScoredQuery("title:document"));
+		search.setAmount(DOC_COUNT);
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(DOC_COUNT, searchResult.getTotalHits(), "Scored query without a vector clause should return all matching documents");
+		Assertions.assertEquals(DOC_COUNT, searchResult.getCompleteResults().size());
+
+		// same for a filter query
+		search = new Search(SHARDED_VECTOR_TEST);
+		search.addQuery(new FilterQuery("title:document"));
+		search.setAmount(DOC_COUNT);
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(DOC_COUNT, searchResult.getTotalHits(), "Filter query without a vector clause should return all matching documents");
+		Assertions.assertEquals(DOC_COUNT, searchResult.getCompleteResults().size());
+	}
+
+	@Test
+	@Order(6)
 	public void restart() throws Exception {
 		nodeExtension.restartNodes();
 	}
 
 	@Test
-	@Order(5)
+	@Order(7)
 	public void confirm() throws Exception {
 		searchTest();
+		mltVectorTest();
+		normalQueryNotCappedTest();
 	}
 
 }

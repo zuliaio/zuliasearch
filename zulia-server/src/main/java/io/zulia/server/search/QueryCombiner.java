@@ -72,15 +72,32 @@ public class QueryCombiner {
 
 		this.isShort = false;
 
-		int minVectorTopN = 0;
-		for (ZuliaQuery.Query query : request.getQueryList()) {
-			if (query.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR && query.getVectorTopN() > 0) {
-				minVectorTopN = minVectorTopN == 0 ? query.getVectorTopN() : Math.min(minVectorTopN, query.getVectorTopN());
-			}
-		}
-		this.vectorTopN = minVectorTopN;
+		this.vectorTopN = getMinVectorTopN(request);
 
 	}
+
+	private static int getMinVectorTopN(QueryRequest request) {
+		int minVectorTopN = 0;
+		for (ZuliaQuery.Query query : request.getQueryList()) {
+			int queryVectorTopN = 0;
+			if (query.getQueryType() == ZuliaQuery.Query.QueryType.VECTOR) {
+				queryVectorTopN = query.getVectorTopN();
+			}
+			else if (query.getQueryType() == ZuliaQuery.Query.QueryType.MORE_LIKE_THIS) {
+				ZuliaQuery.MoreLikeThisParams mltParams = query.getMoreLikeThisParams();
+				boolean hasLexical = !mltParams.getFieldList().isEmpty() && !mltParams.getLikeTextList().isEmpty();
+				boolean hasVector = !mltParams.getVectorField().isEmpty() && !mltParams.getResolvedVectorList().isEmpty();
+				if (hasVector && !hasLexical) {
+					queryVectorTopN = mltParams.getVectorTopN();
+				}
+			}
+			if (queryVectorTopN > 0) {
+				minVectorTopN = minVectorTopN == 0 ? queryVectorTopN : Math.min(minVectorTopN, queryVectorTopN);
+			}
+		}
+		return minVectorTopN;
+	}
+
 
 	private void validate() throws Exception {
 		for (InternalQueryResponse iqr : responses) {

@@ -23,9 +23,18 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 	public QueryRequest validateAndSetDefault(QueryRequest request) {
 		QueryRequest.Builder queryRequestBuilder = request.toBuilder();
 
-		for (ZuliaQuery.Query query : queryRequestBuilder.getQueryList()) {
-			if (query.getBoost() < 0f) {
-				throw new IllegalArgumentException("Query boost must be >= 0, got " + query.getBoost());
+		for (ZuliaQuery.Query.Builder queryBuilder : queryRequestBuilder.getQueryBuilderList()) {
+			if (queryBuilder.getBoost() < 0f) {
+				throw new IllegalArgumentException("Query boost must be >= 0, got " + queryBuilder.getBoost());
+			}
+			if (queryBuilder.getQueryType() == ZuliaQuery.Query.QueryType.MORE_LIKE_THIS) {
+				ZuliaQuery.MoreLikeThisParams mltParams = queryBuilder.getMoreLikeThisParams();
+				if (mltParams.getVectorTopN() < 0) {
+					throw new IllegalArgumentException("More-like-this vectorTopN must be >= 0, got " + mltParams.getVectorTopN());
+				}
+				if (!mltParams.getVectorField().isEmpty() && mltParams.getVectorTopN() == 0) {
+					queryBuilder.getMoreLikeThisParamsBuilder().setVectorTopN(100);
+				}
 			}
 		}
 
