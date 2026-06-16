@@ -80,6 +80,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -414,64 +415,73 @@ public class ZuliaIndexManager {
 
 		Map<String, ZuliaIndex> queriedIndexes = resolveQueryIndexes(request.getIndexList());
 
-		// Validate every MLT query against every queried index, then collect all (docId, indexName) fetches
-		BatchFetchRequest.Builder batchBuilder = BatchFetchRequest.newBuilder();
-		for (ZuliaQuery.Query q : queryList) {
-			if (q.getQueryType() != ZuliaQuery.Query.QueryType.MORE_LIKE_THIS) {
-				continue;
-			}
-			validateMoreLikeThisParams(q.getMoreLikeThisParams(), queriedIndexes);
-			for (String docId : q.getMoreLikeThisParams().getDocumentIdList()) {
-				for (String indexName : queriedIndexes.keySet()) {
-					batchBuilder.addFetchRequest(FetchRequest.newBuilder().setUniqueId(docId).setIndexName(indexName).setResultFetchType(FetchType.FULL)
-							.setRealtime(request.getRealtime()).build());
-				}
-			}
-		}
-
-		// Map<docId, parsed source document>; if a doc ID exists in multiple queried indexes, the first index in request order wins
-		Map<String, Document> sourceDocs = new HashMap<>();
-		Map<String, Integer> sourceDocRanks = new HashMap<>();
-		List<String> indexOrder = List.copyOf(queriedIndexes.keySet());
-		List<FetchResponse> fetchResponses = batchBuilder.getFetchRequestCount() == 0
-				? List.of()
-				: new BatchFetchRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient, queriedIndexes).send(batchBuilder.build());
-		for (FetchResponse response : fetchResponses) {
-			if (!response.hasResultDocument()) {
-				continue;
-			}
-			ZuliaBase.ResultDocument rd = response.getResultDocument();
-			if (rd.getDocument().isEmpty()) {
-				continue;
-			}
-			int rank = indexOrder.indexOf(rd.getIndexName());
-			if (rank < 0) {
-				rank = indexOrder.size();
-			}
-			Integer existingRank = sourceDocRanks.get(rd.getUniqueId());
-			if (existingRank == null || rank < existingRank) {
-				sourceDocRanks.put(rd.getUniqueId(), rank);
-				sourceDocs.put(rd.getUniqueId(), ResultHelper.getDocumentFromResultDocument(rd));
-			}
-		}
-
+		// For each MLT query: resolve its source indexes (its explicit sourceIndex list, or the queried indexes when none is given),
+		// validate, fetch the source docs, and rewrite the query with the resolved text/vectors.
 		QueryRequest.Builder requestBuilder = request.toBuilder().clearQuery();
 		for (ZuliaQuery.Query q : queryList) {
 			if (q.getQueryType() != ZuliaQuery.Query.QueryType.MORE_LIKE_THIS) {
 				requestBuilder.addQuery(q);
 				continue;
 			}
-			requestBuilder.addQuery(rewriteMoreLikeThisQuery(q, queriedIndexes, sourceDocs));
+			ZuliaQuery.MoreLikeThisParams mltParams = q.getMoreLikeThisParams();
+			Map<String, ZuliaIndex> sourceIndexes = mltParams.getSourceIndexCount() == 0
+					? queriedIndexes
+					: resolveQueryIndexes(mltParams.getSourceIndexList());
+			validateMoreLikeThisParams(mltParams, queriedIndexes, sourceIndexes);
+			Map<String, Document> sourceDocs = fetchSourceDocs(mltParams, sourceIndexes, request.getRealtime());
+			requestBuilder.addQuery(rewriteMoreLikeThisQuery(q, queriedIndexes, sourceIndexes, sourceDocs));
 		}
 
 		return requestBuilder.build();
+	}
+
+	/**
+	 * Fetches each documentId's source document, walking the source indexes in priority order: each index is queried only for the
+	 * document ids not yet resolved by a higher-priority index, so the first source index that has a document wins. Document ids
+	 * not found in any source index are simply absent from the result (the rewrite reports them).
+	 */
+	private Map<String, Document> fetchSourceDocs(ZuliaQuery.MoreLikeThisParams mltParams, Map<String, ZuliaIndex> sourceIndexes, boolean realtime)
+			throws Exception {
+		Map<String, Document> sourceDocs = new HashMap<>();
+		if (mltParams.getDocumentIdCount() == 0) {
+			return sourceDocs;
+		}
+
+		Set<String> remaining = new LinkedHashSet<>(mltParams.getDocumentIdList());
+		BatchFetchRequestFederator federator = new BatchFetchRequestFederator(thisNode, currentOtherNodesActive, pool, internalClient, sourceIndexes);
+
+		for (String indexName : sourceIndexes.keySet()) {
+			if (remaining.isEmpty()) {
+				break;
+			}
+			BatchFetchRequest.Builder batchBuilder = BatchFetchRequest.newBuilder();
+			for (String docId : remaining) {
+				batchBuilder.addFetchRequest(FetchRequest.newBuilder().setUniqueId(docId).setIndexName(indexName).setResultFetchType(FetchType.FULL)
+						.setRealtime(realtime).build());
+			}
+			for (FetchResponse response : federator.send(batchBuilder.build())) {
+				if (!response.hasResultDocument()) {
+					continue;
+				}
+				ZuliaBase.ResultDocument rd = response.getResultDocument();
+				if (rd.getDocument().isEmpty()) {
+					continue;
+				}
+				if (remaining.remove(rd.getUniqueId())) {
+					sourceDocs.put(rd.getUniqueId(), ResultHelper.getDocumentFromResultDocument(rd));
+				}
+			}
+		}
+
+		return sourceDocs;
 	}
 
 	private static boolean hasMLTQuery(QueryRequest queryRequest) {
 		return queryRequest.getQueryList().stream().anyMatch(q -> q.getQueryType() == ZuliaQuery.Query.QueryType.MORE_LIKE_THIS);
 	}
 
-	private void validateMoreLikeThisParams(ZuliaQuery.MoreLikeThisParams mltParams, Map<String, ZuliaIndex> queriedIndexes) {
+	private void validateMoreLikeThisParams(ZuliaQuery.MoreLikeThisParams mltParams, Map<String, ZuliaIndex> queriedIndexes,
+			Map<String, ZuliaIndex> sourceIndexes) {
 		String vectorField = mltParams.getVectorField();
 		List<String> textFields = mltParams.getFieldList();
 		boolean hasVectorField = !vectorField.isEmpty();
@@ -497,45 +507,72 @@ public class ZuliaIndexManager {
 					"More-like-this query exceeds the source document limit: got " + mltParams.getDocumentIdCount() + ", max " + MLT_MAX_SOURCE_DOCS);
 		}
 
+		if (mltParams.getSourceIndexCount() > 0 && mltParams.getDocumentIdCount() == 0) {
+			throw new IllegalArgumentException(
+					"More-like-this sourceIndex only affects document id sources; specify at least one document id or remove sourceIndex");
+		}
+
+		// The generated query runs against the queried indexes, so the text/vector fields must exist there with searchable types,
+		// and the vector field must be the same type across them (one centroid is built and one normalization decision is made).
 		FieldConfig.FieldType expectedVectorType = null;
 		String expectedVectorTypeIndex = null;
 		for (Map.Entry<String, ZuliaIndex> entry : queriedIndexes.entrySet()) {
 			String indexName = entry.getKey();
 			ServerIndexConfig indexConfig = entry.getValue().getIndexConfig();
-			for (String field : textFields) {
-				IndexFieldInfo info = indexConfig.getIndexFieldInfo(field);
-				if (info == null) {
-					throw new IllegalArgumentException("More-like-this text field <" + field + "> does not exist in index <" + indexName + ">");
-				}
-				if (!FieldTypeUtil.isStringFieldType(info.getFieldType())) {
-					throw new IllegalArgumentException(
-							"More-like-this text field <" + field + "> in index <" + indexName + "> must be a STRING field, got " + info.getFieldType());
-				}
-			}
+			validateMoreLikeThisFields(textFields, vectorField, hasVectorField, indexName, indexConfig, "index");
 			if (hasVectorField) {
-				IndexFieldInfo info = indexConfig.getIndexFieldInfo(vectorField);
-				if (info == null) {
-					throw new IllegalArgumentException("More-like-this vector field <" + vectorField + "> does not exist in index <" + indexName + ">");
-				}
-				if (!FieldTypeUtil.isVectorFieldType(info.getFieldType())) {
-					throw new IllegalArgumentException(
-							"More-like-this vector field <" + vectorField + "> in index <" + indexName + "> must be VECTOR or UNIT_VECTOR, got "
-									+ info.getFieldType());
-				}
+				FieldConfig.FieldType vectorType = indexConfig.getIndexFieldInfo(vectorField).getFieldType();
 				if (expectedVectorType == null) {
-					expectedVectorType = info.getFieldType();
+					expectedVectorType = vectorType;
 					expectedVectorTypeIndex = indexName;
 				}
-				else if (expectedVectorType != info.getFieldType()) {
+				else if (expectedVectorType != vectorType) {
 					throw new IllegalArgumentException(
 							"More-like-this vector field <" + vectorField + "> has inconsistent type across indexes: " + expectedVectorType + " in <"
-									+ expectedVectorTypeIndex + ">, " + info.getFieldType() + " in <" + indexName + ">");
+									+ expectedVectorTypeIndex + ">, " + vectorType + " in <" + indexName + ">");
 				}
+			}
+		}
+
+		// When source docs come from explicit source indexes, the source fields must exist there so their text/vectors can be read
+		if (mltParams.getSourceIndexCount() > 0) {
+			for (Map.Entry<String, ZuliaIndex> entry : sourceIndexes.entrySet()) {
+				validateMoreLikeThisFields(textFields, vectorField, hasVectorField, entry.getKey(), entry.getValue().getIndexConfig(), "source index");
 			}
 		}
 	}
 
-	private ZuliaQuery.Query rewriteMoreLikeThisQuery(ZuliaQuery.Query q, Map<String, ZuliaIndex> queriedIndexes, Map<String, Document> sourceDocs) {
+	/**
+	 * Validates that each more-like-this text field exists as a STRING field and the vector field exists as a vector field in the
+	 * given index. {@code role} labels the index in error messages (e.g. "index" or "source index").
+	 */
+	private static void validateMoreLikeThisFields(List<String> textFields, String vectorField, boolean hasVectorField, String indexName,
+			ServerIndexConfig indexConfig, String role) {
+		for (String field : textFields) {
+			IndexFieldInfo info = indexConfig.getIndexFieldInfo(field);
+			if (info == null) {
+				throw new IllegalArgumentException("More-like-this text field <" + field + "> does not exist in " + role + " <" + indexName + ">");
+			}
+			if (!FieldTypeUtil.isStringFieldType(info.getFieldType())) {
+				throw new IllegalArgumentException(
+						"More-like-this text field <" + field + "> in " + role + " <" + indexName + "> must be a STRING field, got " + info.getFieldType());
+			}
+		}
+		if (hasVectorField) {
+			IndexFieldInfo info = indexConfig.getIndexFieldInfo(vectorField);
+			if (info == null) {
+				throw new IllegalArgumentException("More-like-this vector field <" + vectorField + "> does not exist in " + role + " <" + indexName + ">");
+			}
+			if (!FieldTypeUtil.isVectorFieldType(info.getFieldType())) {
+				throw new IllegalArgumentException(
+						"More-like-this vector field <" + vectorField + "> in " + role + " <" + indexName + "> must be VECTOR or UNIT_VECTOR, got "
+								+ info.getFieldType());
+			}
+		}
+	}
+
+	private ZuliaQuery.Query rewriteMoreLikeThisQuery(ZuliaQuery.Query q, Map<String, ZuliaIndex> queriedIndexes, Map<String, ZuliaIndex> sourceIndexes,
+			Map<String, Document> sourceDocs) {
 		ZuliaQuery.MoreLikeThisParams mltParams = q.getMoreLikeThisParams();
 		List<String> textFields = mltParams.getFieldList();
 		String vectorField = mltParams.getVectorField();
@@ -559,7 +596,7 @@ public class ZuliaIndexManager {
 			Document bsonDoc = sourceDocs.get(docId);
 			if (bsonDoc == null) {
 				throw new IllegalArgumentException(
-						"More-like-this source document <" + docId + "> not found in any of the queried indexes " + queriedIndexes.keySet());
+						"More-like-this source document <" + docId + "> not found in any of the source indexes " + sourceIndexes.keySet());
 			}
 			for (String field : textFields) {
 				Object value = DocumentHelper.getValueFromMongoDocument(bsonDoc, field);
@@ -600,6 +637,12 @@ public class ZuliaIndexManager {
 		// documentId is kept so shards can exclude the source docs from results when includeSourceDocs is false
 		ZuliaQuery.MoreLikeThisParams.Builder resolvedParams = mltParams.toBuilder().clearLikeText().clearLikeVector().clearResolvedVector();
 		resolvedParams.addAllLikeText(resolvedTexts);
+
+		// but when the source docs are fetched only from non-queried indexes, they can never appear in the queried results, so
+		// keeping documentId would only suppress unrelated docs that happen to share an id. Drop it in that case.
+		if (mltParams.getSourceIndexCount() > 0 && Collections.disjoint(sourceIndexes.keySet(), queriedIndexes.keySet())) {
+			resolvedParams.clearDocumentId();
+		}
 
 		if (!resolvedVectors.isEmpty()) {
 			int dim = resolvedVectors.getFirst().length;

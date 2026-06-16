@@ -50,6 +50,15 @@ public class MoreLikeThisQuery implements QueryBuilder {
 		return this;
 	}
 
+	/**
+	 * Add an index to fetch documentId source docs from, in priority order (first index with the doc wins on collision).
+	 * When no source index is set, source docs are fetched from the queried indexes.
+	 */
+	public MoreLikeThisQuery addSourceIndex(String index) {
+		mltBuilder.addSourceIndex(index);
+		return this;
+	}
+
 	public MoreLikeThisQuery setVectorTopN(int topN) {
 		mltBuilder.setVectorTopN(topN);
 		return this;

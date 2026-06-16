@@ -11,7 +11,7 @@ message VectorInput {
 }
 
 message MoreLikeThisParams {
-    repeated string documentId = 1;     // Source doc IDs (fetched server-side for text + vectors).  If an ID exists in multiple queried indexes, the first index in request order wins
+    repeated string documentId = 1;     // Source doc IDs (fetched server-side for text + vectors).  If an ID exists in multiple source indexes, the first index in source order wins (source order is the queried indexes when sourceIndex is empty)
     repeated string likeText = 2;       // User-supplied raw text sources
     repeated string field = 3;          // STRING fields used for lexical similarity.  The source text is read from these fields of each documentId doc, and the generated term query searches these same fields. Required when likeText/documentId text is used; omit for vector-only queries
     string vectorField = 4;             // Vector field for semantic similarity (optional)
@@ -28,6 +28,7 @@ message MoreLikeThisParams {
     float textWeight = 15;             // Boost on lexical clause in hybrid mode (0 = default 1.0)
     float vectorWeight = 16;           // Boost on vector clause in hybrid mode (0 = default 1.0)
     bool includeSourceDocs = 17;       // If false (default), documents referenced by documentId are excluded from results (by unique ID, across all queried indexes)
+    repeated string sourceIndex = 18;  // Indexes to fetch documentId source docs from, in priority order (first index with the doc wins on collision).  If empty, source docs are fetched from the queried indexes (existing behavior)
 }
 
 message Query {

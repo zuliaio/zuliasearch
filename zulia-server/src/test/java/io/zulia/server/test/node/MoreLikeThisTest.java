@@ -779,6 +779,90 @@ public class MoreLikeThisTest {
 	}
 
 	@Test
+	@Order(34)
+	public void sourceIndexFetchesFromDifferentIndex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// doc "100" lives only in the secondary index; search the primary index for docs similar to it by pointing sourceIndex at the secondary
+		Search search = new Search(MLT_TEST).setRealtime(true);
+		search.addQuery(new MoreLikeThisQuery("content").addDocumentId("100").addSourceIndex(MLT_TEST_SECONDARY).setMinDocFreq(1).setMinTermFreq(1));
+		search.setAmount(10);
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		Assertions.assertTrue(searchResult.getTotalHits() > 0, "MLT with sourceIndex should fetch the source doc from the other index and return results");
+		// the search runs only on the queried index even though the source doc came from a different one
+		Assertions.assertEquals(Set.of(MLT_TEST), resultIndexes(searchResult), "Results should come only from the queried index, got: " + resultIndexes(searchResult));
+		// doc 100 is Kotlin/Java, so Java docs in the primary index should match
+		Assertions.assertTrue(resultCategories(searchResult).contains("java"),
+				"Docs similar to the Java/Kotlin source should include java, got: " + searchResult.getUniqueIds());
+	}
+
+	@Test
+	@Order(35)
+	public void sourceIndexIgnoresQueriedIndexesForFetch() {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// doc "1" exists in the queried index but not the source index; with sourceIndex set the queried index is not used for fetching, so it must fail
+		Search search = new Search(MLT_TEST).setRealtime(true);
+		search.addQuery(new MoreLikeThisQuery("content").addDocumentId("1").addSourceIndex(MLT_TEST_SECONDARY).setMinDocFreq(1).setMinTermFreq(1));
+		search.setAmount(5);
+
+		Exception ex = Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search));
+		Assertions.assertTrue(ex.getMessage() != null && ex.getMessage().contains("source indexes"),
+				"Error should reference the source indexes, got: " + ex.getMessage());
+	}
+
+	@Test
+	@Order(36)
+	public void sourceIndexPriorityOrder() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// same id in two indexes with different content; the first source index in the list wins
+		indexRecord(MLT_TEST, "shared1", "Shared Java", "java programming object oriented inheritance polymorphism design patterns", "java", null);
+		indexRecord(MLT_TEST_SECONDARY, "shared1", "Shared Python", "python scripting dynamic typing interpreted pandas numpy data science", "python", null);
+
+		// secondary first -> python source doc -> python-similar docs win
+		Search pythonFirst = new Search(MLT_TEST).setRealtime(true);
+		pythonFirst.addQuery(new MoreLikeThisQuery("content").addDocumentId("shared1").addSourceIndex(MLT_TEST_SECONDARY).addSourceIndex(MLT_TEST)
+				.setMinDocFreq(1).setMinTermFreq(1));
+		pythonFirst.setAmount(5);
+		SearchResult pythonResult = zuliaWorkPool.search(pythonFirst);
+		Assertions.assertTrue(resultCategories(pythonResult, 1).contains("python"),
+				"Secondary-first source order should use the python source doc, got: " + pythonResult.getUniqueIds());
+
+		// primary first -> java source doc -> java-similar docs win
+		Search javaFirst = new Search(MLT_TEST).setRealtime(true);
+		javaFirst.addQuery(new MoreLikeThisQuery("content").addDocumentId("shared1").addSourceIndex(MLT_TEST).addSourceIndex(MLT_TEST_SECONDARY)
+				.setMinDocFreq(1).setMinTermFreq(1));
+		javaFirst.setAmount(5);
+		SearchResult javaResult = zuliaWorkPool.search(javaFirst);
+		Assertions.assertTrue(resultCategories(javaResult, 1).contains("java"),
+				"Primary-first source order should use the java source doc, got: " + javaResult.getUniqueIds());
+	}
+
+	@Test
+	@Order(37)
+	public void sourceIndexDisjointDoesNotExcludeQueriedDoc() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// same id in the queried index and the (disjoint) source index, both Java content
+		indexRecord(MLT_TEST, "dup1", "Dup Java Primary", "java programming object oriented inheritance polymorphism design patterns concurrency", "java", null);
+		indexRecord(MLT_TEST_SECONDARY, "dup1", "Dup Java Secondary", "java programming object oriented inheritance polymorphism design patterns concurrency",
+				"java", null);
+
+		// source doc "dup1" is fetched only from the secondary index, which is not queried; with includeSourceDocs=false (default)
+		// the primary index's unrelated "dup1" must NOT be excluded, since it is a different document that only shares the id
+		Search search = new Search(MLT_TEST).setRealtime(true);
+		search.addQuery(new MoreLikeThisQuery("content").addDocumentId("dup1").addSourceIndex(MLT_TEST_SECONDARY).setMinDocFreq(1).setMinTermFreq(1));
+		search.setAmount(20);
+		SearchResult searchResult = zuliaWorkPool.search(search);
+
+		Assertions.assertTrue(searchResult.getUniqueIds().contains("dup1"),
+				"A same-id doc in the queried index must not be excluded when the source doc came from a disjoint source index, got: "
+						+ searchResult.getUniqueIds());
+	}
+
+	@Test
 	@Order(50)
 	public void restart() throws Exception {
 		nodeExtension.restartNodes();
@@ -792,5 +876,6 @@ public class MoreLikeThisTest {
 		lexicalMLTFromDocId();
 		vectorOnlyMLTFromDocIds();
 		hybridMLTFromDocId();
+		sourceIndexFetchesFromDifferentIndex();
 	}
 }
