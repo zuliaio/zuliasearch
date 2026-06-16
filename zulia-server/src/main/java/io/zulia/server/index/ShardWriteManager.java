@@ -172,8 +172,11 @@ public class ShardWriteManager {
 				indexedThrottled);
 
 		long currentTime = System.currentTimeMillis();
-		indexWriter.commit();
+		// Commit the taxonomy before the main index: the index references taxonomy ordinals, so the
+		// taxonomy must be durable first. A crash between the two commits then leaves at most a
+		// taxonomy superset (harmless), rather than index ordinals with no matching taxonomy entry.
 		taxoWriter.commit();
+		indexWriter.commit();
 
 		lastCommit = currentTime;
 	}
