@@ -55,7 +55,7 @@ public interface SpreadsheetRecord extends DataSourceRecord {
 
 	Integer getInt(int index);
 
-	default int getDouble(int index, int defaultValue) {
+	default int getInt(int index, int defaultValue) {
 		Integer val = getInt(index);
 		return val != null ? val : defaultValue;
 	}
