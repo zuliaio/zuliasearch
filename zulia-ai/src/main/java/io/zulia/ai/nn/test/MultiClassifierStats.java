@@ -9,6 +9,9 @@ public class MultiClassifierStats extends ClassifierStats<Integer> {
 
 	public MultiClassifierStats(int stats) {
 		this.stats = new ArrayList<>(stats);
+		for (int i = 0; i < stats; i++) {
+			this.stats.add(new BinaryClassifierStats());
+		}
 	}
 
 	@Override
@@ -57,7 +60,7 @@ public class MultiClassifierStats extends ClassifierStats<Integer> {
 	}
 
 	public float categoryRecall(int i) {
-		return stats.get(i).getPrecision();
+		return stats.get(i).getRecall();
 	}
 
 	public float categoryF1(int i) {

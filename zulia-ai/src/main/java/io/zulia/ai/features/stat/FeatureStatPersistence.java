@@ -46,6 +46,7 @@ public class FeatureStatPersistence {
 				featureStat.setP75(objectInputStream.readDouble());
 				featureStat.setP90(objectInputStream.readDouble());
 				featureStat.setP95(objectInputStream.readDouble());
+				featureStat.setMax(objectInputStream.readDouble());
 				featureStats[i] = featureStat;
 			}
 			return featureStats;

@@ -52,7 +52,7 @@ public class MultiClassifierModel extends ClassifierModel<float[]> {
 				List<float[]> outputs = predictor.batchPredict(batchedClassifierFeatureVector.featureList());
 				for (int batchIndex = 0; batchIndex < outputs.size(); batchIndex++) {
 					float[] output = outputs.get(batchIndex);
-					float max = Float.MIN_VALUE;
+					float max = Float.NEGATIVE_INFINITY;
 					int predicted = -1; // Max value
 					for (int i = 0; i < output.length; i++) {
 						if (output[i] > max) {
