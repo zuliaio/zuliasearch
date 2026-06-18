@@ -229,16 +229,57 @@ public class ShardedVectorTest {
 
 	@Test
 	@Order(6)
+	public void vectorTopNDecoupledFromAmountTest() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		float[] queryVector = { 1.0f, 0.0f, 0.0f, 0.0f };
+
+		// vectorTopN is the candidate-pool budget, not the page size: when amount is smaller than vectorTopN, only `amount`
+		// docs come back but totalHits reflects the KNN budget. 30 is above the per-shard doc count and below DOC_COUNT, so
+		// the budget (not the corpus) is the cap.
+		int vectorTopN = 30;
+		int amount = 5;
+
+		Search search = new Search(SHARDED_VECTOR_TEST);
+		search.addQuery(new VectorTopNQuery(queryVector, vectorTopN, "v"));
+		search.setAmount(amount);
+		SearchResult vectorResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(amount, vectorResult.getCompleteResults().size(), "Returned docs should be capped at amount");
+		Assertions.assertEquals(vectorTopN, vectorResult.getTotalHits(),
+				"totalHits should reflect the vectorTopN candidate pool (" + vectorTopN + "), not the page size (" + amount + ")");
+
+		// same decoupling for pure vector MLT
+		search = new Search(SHARDED_VECTOR_TEST);
+		search.addQuery(new MoreLikeThisQuery().addLikeVector(queryVector).setVectorField("v").setVectorTopN(vectorTopN));
+		search.setAmount(amount);
+		SearchResult mltResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(amount, mltResult.getCompleteResults().size(), "MLT returned docs should be capped at amount");
+		Assertions.assertEquals(vectorTopN, mltResult.getTotalHits(),
+				"MLT totalHits should reflect the vectorTopN candidate pool (" + vectorTopN + "), not the page size (" + amount + ")");
+
+		// when vectorTopN exceeds the corpus, totalHits reflects the available candidates, still decoupled from amount
+		search = new Search(SHARDED_VECTOR_TEST);
+		search.addQuery(new VectorTopNQuery(queryVector, 10_000, "v"));
+		search.setAmount(amount);
+		SearchResult largeBudget = zuliaWorkPool.search(search);
+		Assertions.assertEquals(amount, largeBudget.getCompleteResults().size());
+		Assertions.assertEquals(DOC_COUNT, largeBudget.getTotalHits(),
+				"With vectorTopN above the corpus size, totalHits should be the full candidate count, not the page size");
+	}
+
+	@Test
+	@Order(7)
 	public void restart() throws Exception {
 		nodeExtension.restartNodes();
 	}
 
 	@Test
-	@Order(7)
+	@Order(8)
 	public void confirm() throws Exception {
 		searchTest();
 		mltVectorTest();
 		normalQueryNotCappedTest();
+		vectorTopNDecoupledFromAmountTest();
 	}
 
 }

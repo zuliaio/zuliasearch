@@ -258,8 +258,11 @@ public class QueryCombiner {
 			}
 		}
 
+		// For vector queries each shard retrieves up to vectorTopN neighbors, so the raw cross-shard sum overcounts as
+		// numShards * vectorTopN. Cap the reported total at the global KNN budget rather than clamping it to the returned page
+		// size, so totalHits reflects the candidate pool (e.g. 10000) even when only `amount` (e.g. 100) docs are returned.
 		if (vectorTopN > 0) {
-			totalHits = results.size();
+			totalHits = Math.min(totalHits, vectorTopN);
 		}
 		builder.setTotalHits(totalHits);
 
