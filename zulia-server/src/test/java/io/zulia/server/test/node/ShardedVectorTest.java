@@ -195,10 +195,11 @@ public class ShardedVectorTest {
 					"Pure vector MLT result " + result.getUniqueId() + " should also appear in the equivalent vector query results");
 		}
 
-		// hybrid MLT is not capped at vectorTopN because lexical matches extend beyond the KNN pool
+		// hybrid MLT is not capped at vectorTopN because lexical matches extend beyond the KNN pool.
+		// Disable the maxDocFreqPct guard: the shared "document" term appears in every title and would otherwise be dropped.
 		search = new Search(SHARDED_VECTOR_TEST);
 		search.addQuery(new MoreLikeThisQuery("title").addLikeText("Document 5").addLikeVector(queryVector).setVectorField("v").setVectorTopN(topN)
-				.setMinTermFreq(1).setMinDocFreq(1));
+				.setMinTermFreq(1).setMinDocFreq(1).setMaxDocFreqPct(100));
 		search.setAmount(DOC_COUNT);
 		SearchResult hybridResult = zuliaWorkPool.search(search);
 		Assertions.assertTrue(hybridResult.getTotalHits() > topN,

@@ -36,13 +36,14 @@ public final class MoreLikeThisLazyQuery extends Query {
 	private final int maxQueryTerms;
 	private final int minDocFreq;
 	private final int maxDocFreq;
+	private final int maxDocFreqPct;
 	private final int minWordLen;
 	private final int maxWordLen;
 	private final int maxNumTokensParsed;
 	private final int minShouldMatch;
 
 	public MoreLikeThisLazyQuery(Collection<String> likeTexts, Collection<String> fields, Analyzer analyzer, int minTermFreq, int maxQueryTerms, int minDocFreq,
-			int maxDocFreq, int minWordLen, int maxWordLen, int maxNumTokensParsed, int minShouldMatch) {
+			int maxDocFreq, int maxDocFreqPct, int minWordLen, int maxWordLen, int maxNumTokensParsed, int minShouldMatch) {
 		this.likeTexts = List.copyOf(likeTexts);
 		this.fields = List.copyOf(fields);
 		this.analyzer = analyzer;
@@ -50,6 +51,7 @@ public final class MoreLikeThisLazyQuery extends Query {
 		this.maxQueryTerms = maxQueryTerms;
 		this.minDocFreq = minDocFreq;
 		this.maxDocFreq = maxDocFreq;
+		this.maxDocFreqPct = maxDocFreqPct;
 		this.minWordLen = minWordLen;
 		this.maxWordLen = maxWordLen;
 		this.maxNumTokensParsed = maxNumTokensParsed;
@@ -64,8 +66,16 @@ public final class MoreLikeThisLazyQuery extends Query {
 		mlt.setMinTermFreq(minTermFreq);
 		mlt.setMaxQueryTerms(maxQueryTerms);
 		mlt.setMinDocFreq(minDocFreq);
+		// Cap term selection by document frequency. An explicit absolute maxDocFreq wins. Otherwise, apply the
+		// percentage guard. Both feed the same Lucene threshold, so only one is applied. The percentage needs the
+		// reader's maxDoc, which is only known here at per-shard rewrite time. Floor the computed cap at 1 so a small
+		// shard (e.g. 25% of 3 docs == 0) does not drop every term and returns nothing.  Setting to 100% leaves it uncapped.
 		if (maxDocFreq > 0) {
 			mlt.setMaxDocFreq(maxDocFreq);
+		}
+		else if (maxDocFreqPct > 0 && maxDocFreqPct < 100) {
+			int maxDoc = indexSearcher.getIndexReader().maxDoc();
+			mlt.setMaxDocFreq(Math.max(1, Math.toIntExact((long) maxDocFreqPct * maxDoc / 100)));
 		}
 		mlt.setMinWordLen(minWordLen);
 		if (maxWordLen > 0) {
@@ -115,8 +125,8 @@ public final class MoreLikeThisLazyQuery extends Query {
 	@Override
 	public String toString(String field) {
 		return "MoreLikeThisLazyQuery{fields=" + fields + ", texts=" + likeTexts.size() + ", minTermFreq=" + minTermFreq + ", maxQueryTerms=" + maxQueryTerms
-				+ ", minDocFreq=" + minDocFreq + ", maxDocFreq=" + maxDocFreq + ", minWordLen=" + minWordLen + ", maxWordLen=" + maxWordLen
-				+ ", maxNumTokensParsed=" + maxNumTokensParsed + ", minShouldMatch=" + minShouldMatch + "}";
+				+ ", minDocFreq=" + minDocFreq + ", maxDocFreq=" + maxDocFreq + ", maxDocFreqPct=" + maxDocFreqPct + ", minWordLen=" + minWordLen
+				+ ", maxWordLen=" + maxWordLen + ", maxNumTokensParsed=" + maxNumTokensParsed + ", minShouldMatch=" + minShouldMatch + "}";
 	}
 
 	@Override
@@ -126,13 +136,14 @@ public final class MoreLikeThisLazyQuery extends Query {
 		if (!(o instanceof MoreLikeThisLazyQuery other))
 			return false;
 		return minTermFreq == other.minTermFreq && maxQueryTerms == other.maxQueryTerms && minDocFreq == other.minDocFreq && maxDocFreq == other.maxDocFreq
-				&& minWordLen == other.minWordLen && maxWordLen == other.maxWordLen && maxNumTokensParsed == other.maxNumTokensParsed
-				&& minShouldMatch == other.minShouldMatch && analyzer == other.analyzer && likeTexts.equals(other.likeTexts) && fields.equals(other.fields);
+				&& maxDocFreqPct == other.maxDocFreqPct && minWordLen == other.minWordLen && maxWordLen == other.maxWordLen
+				&& maxNumTokensParsed == other.maxNumTokensParsed && minShouldMatch == other.minShouldMatch && analyzer == other.analyzer
+				&& likeTexts.equals(other.likeTexts) && fields.equals(other.fields);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(likeTexts, fields, System.identityHashCode(analyzer), minTermFreq, maxQueryTerms, minDocFreq, maxDocFreq, minWordLen, maxWordLen,
-				maxNumTokensParsed, minShouldMatch);
+		return Objects.hash(likeTexts, fields, System.identityHashCode(analyzer), minTermFreq, maxQueryTerms, minDocFreq, maxDocFreq, maxDocFreqPct, minWordLen,
+				maxWordLen, maxNumTokensParsed, minShouldMatch);
 	}
 }

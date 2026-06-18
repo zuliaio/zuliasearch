@@ -20,8 +20,8 @@ message MoreLikeThisParams {
     repeated float resolvedVector = 7;  // Server-resolved centroid (internal, set after fetch+average)
     uint32 minTermFreq = 8;            // default 2
     uint32 maxQueryTerms = 9;          // default 25
-    uint32 minDocFreq = 10;            // default 5
-    uint32 maxDocFreq = 11;            // 0 = unlimited
+    uint32 minDocFreq = 10;            // Ignore terms appearing in fewer than this many docs (counted per shard). default 5
+    uint32 maxDocFreq = 11;            // Ignore terms appearing in more than this many docs, counted per shard (absolute, not scaled by shard count). 0 = unset.  When set it overrides maxDocFreqPct
     uint32 minWordLen = 12;            // default 0
     uint32 maxWordLen = 13;            // 0 = unlimited
     uint32 maxNumTokensParsed = 14;    // default 5000
@@ -29,6 +29,7 @@ message MoreLikeThisParams {
     float vectorWeight = 16;           // Boost on vector clause in hybrid mode (0 = default 1.0)
     bool includeSourceDocs = 17;       // If false (default), documents referenced by documentId are excluded from results (by unique ID, across all queried indexes)
     repeated string sourceIndex = 18;  // Indexes to fetch documentId source docs from, in priority order (first index with the doc wins on collision).  If empty, source docs are fetched from the queried indexes (existing behavior)
+    uint32 maxDocFreqPct = 19;         // Ignore terms appearing in more than this percent (1-100) of docs in the shard, guarding against common tokens. 0 = default 25; 100 disables the guard. This is ignored when maxDocFreq is set
 }
 
 message Query {

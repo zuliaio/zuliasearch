@@ -551,9 +551,10 @@ public class ZuliaIndex {
 			int minTermFreq = mltParams.getMinTermFreq() > 0 ? mltParams.getMinTermFreq() : 2;
 			int maxQueryTerms = mltParams.getMaxQueryTerms() > 0 ? mltParams.getMaxQueryTerms() : 25;
 			int minDocFreq = mltParams.getMinDocFreq() > 0 ? mltParams.getMinDocFreq() : 5;
+			int maxDocFreqPct = mltParams.getMaxDocFreqPct() > 0 ? mltParams.getMaxDocFreqPct() : 25;
 			int maxNumTokensParsed = mltParams.getMaxNumTokensParsed() > 0 ? mltParams.getMaxNumTokensParsed() : 5000;
 			lexicalQuery = new MoreLikeThisLazyQuery(likeTexts, textFields, zuliaPerFieldAnalyzer, minTermFreq, maxQueryTerms, minDocFreq,
-					mltParams.getMaxDocFreq(), mltParams.getMinWordLen(), mltParams.getMaxWordLen(), maxNumTokensParsed, query.getMm());
+					mltParams.getMaxDocFreq(), maxDocFreqPct, mltParams.getMinWordLen(), mltParams.getMaxWordLen(), maxNumTokensParsed, query.getMm());
 		}
 
 		Query vectorQuery = null;

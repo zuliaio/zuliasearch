@@ -142,6 +142,16 @@ public class MoreLikeThisQuery implements QueryBuilder {
 		return this;
 	}
 
+	/**
+	 * Ignore terms that appear in more than {@code maxDocFreqPct} percent (1-100) of the documents in a shard, guarding
+	 * against common boilerplate dominating term selection. 0 leaves the default of 25; 100 disables the guard. Ignored
+	 * when an absolute {@link #setMaxDocFreq(int)} is set.
+	 */
+	public MoreLikeThisQuery setMaxDocFreqPct(int maxDocFreqPct) {
+		mltBuilder.setMaxDocFreqPct(maxDocFreqPct);
+		return this;
+	}
+
 	public MoreLikeThisQuery setMinWordLen(int minWordLen) {
 		mltBuilder.setMinWordLen(minWordLen);
 		return this;

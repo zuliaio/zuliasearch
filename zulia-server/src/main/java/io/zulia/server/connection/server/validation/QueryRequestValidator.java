@@ -32,6 +32,9 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 				if (mltParams.getVectorTopN() < 0) {
 					throw new IllegalArgumentException("More-like-this vectorTopN must be >= 0, got " + mltParams.getVectorTopN());
 				}
+				if (mltParams.getMaxDocFreqPct() > 100) {
+					throw new IllegalArgumentException("More-like-this maxDocFreqPct must be in [0, 100], got " + mltParams.getMaxDocFreqPct());
+				}
 				if (!mltParams.getVectorField().isEmpty() && mltParams.getVectorTopN() == 0) {
 					queryBuilder.getMoreLikeThisParamsBuilder().setVectorTopN(100);
 				}

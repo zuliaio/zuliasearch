@@ -164,10 +164,11 @@ public class MoreLikeThisTest {
 	public void lexicalMLTFromText() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
-		// MLT from raw text about Java, so it should find Java-related docs
+		// MLT from raw text about Java, so it should find Java-related docs.
+		// Disable the maxDocFreqPct guard: on this tiny index the discriminating Java terms appear in >25% of docs.
 		Search search = new Search(MLT_TEST).setRealtime(true);
 		search.addQuery(MoreLikeThisQuery.forText(List.of("content"), "java programming object oriented development design patterns").setMinDocFreq(1)
-				.setMinTermFreq(1));
+				.setMinTermFreq(1).setMaxDocFreqPct(100));
 		search.setAmount(12);
 		SearchResult searchResult = zuliaWorkPool.search(search);
 
@@ -525,10 +526,11 @@ public class MoreLikeThisTest {
 		// Source doc 6 (Python Data Science) has opposing affinities: its vector is closest to doc 5 (python),
 		// but its text shares the rarest terms (machine, learning, data, analysis) with the ML docs
 
-		// With the vector clause dominant, the nearest vector wins
+		// With the vector clause dominant, the nearest vector wins.
+		// Disable the maxDocFreqPct guard: the discriminating terms (machine, learning, data) appear in >25% of this tiny index.
 		Search search = new Search(MLT_TEST);
 		search.addQuery(new MoreLikeThisQuery("content").addDocumentId("6").setVectorField("embedding").setVectorTopN(5).setMinDocFreq(1).setMinTermFreq(1)
-				.setTextWeight(0.01f).setVectorWeight(10.0f));
+				.setTextWeight(0.01f).setVectorWeight(10.0f).setMaxDocFreqPct(100));
 		search.setAmount(5);
 		SearchResult vectorHeavy = zuliaWorkPool.search(search);
 		Assertions.assertTrue(vectorHeavy.getTotalHits() > 0, "Vector-weighted hybrid MLT should return results");
@@ -538,7 +540,7 @@ public class MoreLikeThisTest {
 		// Same query with text dominant, the lexically closest ML docs win
 		search = new Search(MLT_TEST);
 		search.addQuery(new MoreLikeThisQuery("content").addDocumentId("6").setVectorField("embedding").setVectorTopN(5).setMinDocFreq(1).setMinTermFreq(1)
-				.setTextWeight(10.0f).setVectorWeight(0.01f));
+				.setTextWeight(10.0f).setVectorWeight(0.01f).setMaxDocFreqPct(100));
 		search.setAmount(5);
 		SearchResult textHeavy = zuliaWorkPool.search(search);
 		Assertions.assertTrue(textHeavy.getTotalHits() > 0, "Text-weighted hybrid MLT should return results");
@@ -666,16 +668,18 @@ public class MoreLikeThisTest {
 	public void mltMinShouldMatch() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
-		// Without mm, any single shared term matches (e.g. "programming" matches Python/JS docs)
+		// Without mm, any single shared term matches (e.g. "programming" matches Python/JS docs).
+		// Disable the maxDocFreqPct guard so all six terms survive on this tiny index; mm=4 needs them present.
 		Search search = new Search(MLT_TEST);
-		search.addQuery(MoreLikeThisQuery.forText(List.of("content"), "java programming object oriented design patterns").setMinDocFreq(1).setMinTermFreq(1));
+		search.addQuery(MoreLikeThisQuery.forText(List.of("content"), "java programming object oriented design patterns").setMinDocFreq(1).setMinTermFreq(1)
+				.setMaxDocFreqPct(100));
 		search.setAmount(12);
 		SearchResult noMmResult = zuliaWorkPool.search(search);
 
 		// With mm 4, a doc must match at least 4 of the selected terms so only the Java documents qualify
 		search = new Search(MLT_TEST);
 		search.addQuery(MoreLikeThisQuery.forText(List.of("content"), "java programming object oriented design patterns").setMinDocFreq(1).setMinTermFreq(1)
-				.setMinShouldMatch(4));
+				.setMinShouldMatch(4).setMaxDocFreqPct(100));
 		search.setAmount(12);
 		SearchResult mmResult = zuliaWorkPool.search(search);
 
@@ -783,9 +787,11 @@ public class MoreLikeThisTest {
 	public void sourceIndexFetchesFromDifferentIndex() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 
-		// doc "100" lives only in the secondary index; search the primary index for docs similar to it by pointing sourceIndex at the secondary
+		// doc "100" lives only in the secondary index; search the primary index for docs similar to it by pointing sourceIndex at the secondary.
+		// Disable the maxDocFreqPct guard: on this tiny index the shared Java terms exceed 25% df, especially after later tests add more Java docs.
 		Search search = new Search(MLT_TEST).setRealtime(true);
-		search.addQuery(new MoreLikeThisQuery("content").addDocumentId("100").addSourceIndex(MLT_TEST_SECONDARY).setMinDocFreq(1).setMinTermFreq(1));
+		search.addQuery(new MoreLikeThisQuery("content").addDocumentId("100").addSourceIndex(MLT_TEST_SECONDARY).setMinDocFreq(1).setMinTermFreq(1)
+				.setMaxDocFreqPct(100));
 		search.setAmount(10);
 		SearchResult searchResult = zuliaWorkPool.search(search);
 
@@ -860,6 +866,73 @@ public class MoreLikeThisTest {
 		Assertions.assertTrue(searchResult.getUniqueIds().contains("dup1"),
 				"A same-id doc in the queried index must not be excluded when the source doc came from a disjoint source index, got: "
 						+ searchResult.getUniqueIds());
+	}
+
+	@Test
+	@Order(38)
+	public void mltMaxDocFreqPct() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// Dedicated single-shard index with deterministic document frequencies: "report" is boilerplate in all 8 docs
+		// (100% df) while each topic term appears in at most 3 docs.
+		String pctIndex = "mltMaxDocFreqPct";
+		ClientIndexConfig indexConfig = new ClientIndexConfig();
+		indexConfig.addDefaultSearchField("content");
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).sort());
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("content").indexAs(DefaultAnalyzers.STANDARD));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("category").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
+		indexConfig.setIndexName(pctIndex);
+		indexConfig.setNumberOfShards(1);
+		indexConfig.setShardCommitInterval(20);
+		zuliaWorkPool.createIndex(indexConfig);
+
+		indexRecord(pctIndex, "a1", "A1", "report alpha apple apricot avocado", "alpha", null);
+		indexRecord(pctIndex, "a2", "A2", "report alpha apple apricot fruit", "alpha", null);
+		indexRecord(pctIndex, "a3", "A3", "report alpha apple harvest", "alpha", null);
+		indexRecord(pctIndex, "b1", "B1", "report beta banana blueberry blackberry", "beta", null);
+		indexRecord(pctIndex, "b2", "B2", "report beta banana blueberry market", "beta", null);
+		indexRecord(pctIndex, "b3", "B3", "report beta banana season", "beta", null);
+		indexRecord(pctIndex, "c1", "C1", "report gamma grape", "gamma", null);
+		indexRecord(pctIndex, "c2", "C2", "report delta date", "delta", null);
+
+		// Guard disabled (100): the boilerplate "report" is kept, so the query reaches docs in every category.
+		Search disabled = new Search(pctIndex).setRealtime(true);
+		disabled.addQuery(
+				MoreLikeThisQuery.forText(List.of("content"), "report alpha apple apricot").setMinDocFreq(1).setMinTermFreq(1).setMaxDocFreqPct(100));
+		disabled.setAmount(20);
+		SearchResult disabledResult = zuliaWorkPool.search(disabled);
+
+		Assertions.assertEquals(8, disabledResult.getTotalHits(), "With the guard disabled, the boilerplate term should match every doc");
+		Assertions.assertTrue(resultCategories(disabledResult).contains("beta"),
+				"Boilerplate term should pull in unrelated categories when the guard is disabled, got: " + resultCategories(disabledResult));
+
+		// Guard at 50%: "report" appears in 100% of docs and is dropped, leaving only the alpha-specific terms, so only alpha docs match.
+		Search guarded = new Search(pctIndex).setRealtime(true);
+		guarded.addQuery(
+				MoreLikeThisQuery.forText(List.of("content"), "report alpha apple apricot").setMinDocFreq(1).setMinTermFreq(1).setMaxDocFreqPct(50));
+		guarded.setAmount(20);
+		SearchResult guardedResult = zuliaWorkPool.search(guarded);
+
+		Assertions.assertTrue(guardedResult.getTotalHits() > 0, "Guarded MLT should still match on the topic-specific terms");
+		Assertions.assertTrue(guardedResult.getTotalHits() < disabledResult.getTotalHits(),
+				"maxDocFreqPct should drop the boilerplate term and reduce matches: guarded=" + guardedResult.getTotalHits() + " disabled="
+						+ disabledResult.getTotalHits());
+		Assertions.assertEquals(Set.of("alpha"), resultCategories(guardedResult),
+				"With the boilerplate term dropped, only the alpha-specific terms remain, so only alpha docs match, got: " + resultCategories(guardedResult));
+	}
+
+	@Test
+	@Order(39)
+	public void mltMaxDocFreqPctOutOfRangeFails() {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		Search search = new Search(MLT_TEST);
+		search.addQuery(MoreLikeThisQuery.forText(List.of("content"), "java programming").setMaxDocFreqPct(150));
+		search.setAmount(5);
+
+		Exception ex = Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(search));
+		Assertions.assertTrue(ex.getMessage() != null && ex.getMessage().contains("maxDocFreqPct"),
+				"Error should reference maxDocFreqPct, got: " + ex.getMessage());
 	}
 
 	@Test
