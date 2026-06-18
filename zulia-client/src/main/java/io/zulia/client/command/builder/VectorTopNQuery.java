@@ -9,19 +9,43 @@ public class VectorTopNQuery implements QueryBuilder {
 
 	private final ZuliaQuery.Query.Builder builder;
 
-	public VectorTopNQuery(float[] vector, int topN, String... field) {
-		this(vector, topN, List.of(field));
-
-	}
-
-	public VectorTopNQuery(float[] vector, int topN, Collection<String> field) {
+	private VectorTopNQuery(int topN, Collection<String> field) {
 		if (field.isEmpty()) {
 			throw new IllegalArgumentException("Field(s) must be not empty");
 		}
-
 		builder = ZuliaQuery.Query.newBuilder().setQueryType(ZuliaQuery.Query.QueryType.VECTOR).addAllQf(field).setVectorTopN(topN);
+	}
+
+	public VectorTopNQuery(float[] vector, int topN, String... field) {
+		this(vector, topN, List.of(field));
+	}
+
+	public VectorTopNQuery(float[] vector, int topN, Collection<String> field) {
+		this(topN, field);
 		for (float v : vector) {
 			builder.addVector(v);
+		}
+	}
+
+	public VectorTopNQuery(double[] vector, int topN, String... field) {
+		this(vector, topN, List.of(field));
+	}
+
+	public VectorTopNQuery(double[] vector, int topN, Collection<String> field) {
+		this(topN, field);
+		for (double v : vector) {
+			builder.addVector((float) v);
+		}
+	}
+
+	public VectorTopNQuery(Collection<? extends Number> vector, int topN, String... field) {
+		this(vector, topN, List.of(field));
+	}
+
+	public VectorTopNQuery(Collection<? extends Number> vector, int topN, Collection<String> field) {
+		this(topN, field);
+		for (Number v : vector) {
+			builder.addVector(v.floatValue());
 		}
 	}
 

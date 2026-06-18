@@ -45,6 +45,27 @@ public class MoreLikeThisQuery implements QueryBuilder {
 		return this;
 	}
 
+	public MoreLikeThisQuery addLikeVector(double[] vector) {
+		ZuliaQuery.VectorInput.Builder vi = ZuliaQuery.VectorInput.newBuilder();
+		for (double v : vector) {
+			vi.addValues((float) v);
+		}
+		mltBuilder.addLikeVector(vi);
+		return this;
+	}
+
+	/**
+	 * Add a source vector from any numeric collection (e.g. List&lt;Float&gt; or List&lt;Double&gt;). Values are stored as floats.
+	 */
+	public MoreLikeThisQuery addLikeVector(Collection<? extends Number> vector) {
+		ZuliaQuery.VectorInput.Builder vi = ZuliaQuery.VectorInput.newBuilder();
+		for (Number v : vector) {
+			vi.addValues(v.floatValue());
+		}
+		mltBuilder.addLikeVector(vi);
+		return this;
+	}
+
 	public MoreLikeThisQuery setVectorField(String field) {
 		mltBuilder.setVectorField(field);
 		return this;
@@ -78,6 +99,27 @@ public class MoreLikeThisQuery implements QueryBuilder {
 			q.addLikeText(text);
 		}
 		return q;
+	}
+
+	/**
+	 * Create a pure-vector MLT query against the given vector field with an explicit KNN vectorTopN.
+	 */
+	public static MoreLikeThisQuery forVector(String vectorField, float[] vector, int vectorTopN) {
+		return new MoreLikeThisQuery().setVectorField(vectorField).addLikeVector(vector).setVectorTopN(vectorTopN);
+	}
+
+	/**
+	 * Create a pure-vector MLT query against the given vector field with an explicit KNN vectorTopN
+	 */
+	public static MoreLikeThisQuery forVector(String vectorField, double[] vector, int vectorTopN) {
+		return new MoreLikeThisQuery().setVectorField(vectorField).addLikeVector(vector).setVectorTopN(vectorTopN);
+	}
+
+	/**
+	 * Create a pure-vector MLT query against the given vector field from any numeric collection with an explicit vectorTopN
+	 */
+	public static MoreLikeThisQuery forVector(String vectorField, Collection<? extends Number> vector, int vectorTopN) {
+		return new MoreLikeThisQuery().setVectorField(vectorField).addLikeVector(vector).setVectorTopN(vectorTopN);
 	}
 
 	public MoreLikeThisQuery setMinTermFreq(int minTermFreq) {
