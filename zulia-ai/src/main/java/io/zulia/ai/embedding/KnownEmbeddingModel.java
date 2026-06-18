@@ -43,6 +43,14 @@ public enum KnownEmbeddingModel {
 			.prefixes("Represent this sentence for searching relevant passages: ", "")
 			.includeTokenTypes(true).poolingMode("cls").build()),
 
+	BGE_LARGE_EN_V1_5(EmbeddingModelConfig.builder("https://huggingface.co/BAAI/bge-large-en-v1.5", 1024)
+			.prefixes("Represent this sentence for searching relevant passages: ", "")
+			.includeTokenTypes(true).poolingMode("cls").build()),
+
+	// GTE English v1.5 - retrieval-optimized, 8192 token context, CLS pooling, no prefixes, Apache 2.0 license
+	GTE_LARGE_EN_V1_5(EmbeddingModelConfig.builder("https://huggingface.co/Alibaba-NLP/gte-large-en-v1.5", 1024)
+			.includeTokenTypes(true).poolingMode("cls").build()),
+
 	// Nomic Embed - 8192 token context, Matryoshka support, Apache 2.0 license, mean pooling
 	NOMIC_EMBED_TEXT_V1_5(EmbeddingModelConfig.builder("https://huggingface.co/nomic-ai/nomic-embed-text-v1.5", 768)
 			.prefixes("search_query: ", "search_document: ")
