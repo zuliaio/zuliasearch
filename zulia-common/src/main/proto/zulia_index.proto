@@ -77,6 +77,11 @@ message IndexSettings {
     uint32 nrtTaxoMaxMergeSizeMB = 30; // default 5
     uint32 nrtTaxoMaxCachedMB = 31; // default 15
     bool nrtCachingDisabled = 32; // when true, no new segments are cached in RAM (directory stays wrapped so it can be toggled live)
+
+    // server populated: the index-creation version, stamped once at create time and never changed (see ZuliaIndexVersion).
+    // Lets new indexes adopt evolving built-in defaults (e.g. id-sort doc-values skip index, default vector quantization)
+    // that cannot be expressed per field and must not change for an index that already exists. 0 means legacy (pre-versioning).
+    uint32 createdIndexVersion = 33;
 }
 
 
@@ -201,6 +206,9 @@ message FieldConfig {
     string displayName = 7;
     string description = 8;
     GeoPointConfig geoPointConfig = 9;
+    // Build a Lucene doc-values skip index on this field's sort doc-values (enables block-skipping range queries and dynamic-pruning sorts).
+    // optional so we can tell "unset" (default on for new fields) apart from an explicit opt-out. Frozen once a field exists
+    optional bool docValueSkipIndex = 10;
 }
 
 message GeoPointConfig {

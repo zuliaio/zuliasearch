@@ -818,6 +818,39 @@ public class ZuliaIndexManager {
 		return allResponses;
 	}
 
+	/**
+	 * Resolves the per-field {@link FieldConfig#getDocValueSkipIndex()} flag before settings are persisted.
+	 * <p>
+	 * Any field that does not explicitly opt out defaults to on, whether it belongs to a brand-new index or is newly added
+	 * to an existing one, so new fields get block-skipping range queries and dynamic-pruning sorts by default. For fields that
+	 * already exist, the flag is frozen to whatever was persisted when it was first created.  Lucene treats
+	 * the doc-values skip index as part of the immutable field schema. The IndexWriter throws if it changes, so we can't
+	 * flip it on an existing field.
+	 * <p>
+	 */
+	static IndexSettings applyDocValueSkipIndexPolicy(IndexSettings requested, IndexSettings existingIndex) {
+		Map<String, Boolean> frozenByField = new HashMap<>();
+		if (existingIndex != null) {
+			for (FieldConfig fc : existingIndex.getFieldConfigList()) {
+				frozenByField.put(fc.getStoredFieldName(), fc.getDocValueSkipIndex());
+			}
+		}
+
+		IndexSettings.Builder builder = requested.toBuilder();
+		for (FieldConfig.Builder fc : builder.getFieldConfigBuilderList()) {
+			Boolean frozen = frozenByField.get(fc.getStoredFieldName());
+			if (frozen != null) {
+				// Existing field so keep the schema already on disk so the IndexWriter does not reject writes
+				fc.setDocValueSkipIndex(frozen);
+			}
+			else if (!fc.hasDocValueSkipIndex()) {
+				// New field (new index or added to an existing one) that did not opt out so default on.
+				fc.setDocValueSkipIndex(true);
+			}
+		}
+		return builder.build();
+	}
+
 	public CreateIndexResponse createIndex(CreateIndexRequest request) throws Exception {
 		//if existing index make sure not to allow changing number of shards
 
@@ -833,6 +866,8 @@ public class ZuliaIndexManager {
 		String indexName = indexSettings.getIndexName();
 		IndexSettings existingIndex = indexService.getIndex(indexName);
 
+		indexSettings = applyDocValueSkipIndexPolicy(indexSettings, existingIndex);
+
 		long currentTimeMillis = System.currentTimeMillis();
 		if (existingIndex == null) {
 
@@ -843,8 +878,8 @@ public class ZuliaIndexManager {
 		}
 		else {
 
-			IndexSettings existingComparable = existingIndex.toBuilder().clearCreateTime().clearUpdateTime().build();
-			IndexSettings requestComparable = indexSettings.toBuilder().clearCreateTime().clearUpdateTime().build();
+			IndexSettings existingComparable = existingIndex.toBuilder().clearCreateTime().clearUpdateTime().clearCreatedIndexVersion().build();
+			IndexSettings requestComparable = indexSettings.toBuilder().clearCreateTime().clearUpdateTime().clearCreatedIndexVersion().build();
 			if (existingComparable.equals(requestComparable)) {
 				LOG.info("No changes to existing index {}", indexName);
 				return CreateIndexResponse.newBuilder().build();
@@ -865,6 +900,11 @@ public class ZuliaIndexManager {
 		IndexSettings.Builder timestampBuilder = indexSettings.toBuilder().setUpdateTime(currentTimeMillis);
 		if (existingIndex != null) {
 			timestampBuilder.setCreateTime(existingIndex.getCreateTime());
+			// createdIndexVersion is stamped once at creation and frozen thereafter (server populated, like createTime).
+			timestampBuilder.setCreatedIndexVersion(existingIndex.getCreatedIndexVersion());
+		}
+		else {
+			timestampBuilder.setCreatedIndexVersion(ZuliaIndexVersion.CURRENT);
 		}
 		indexSettings = timestampBuilder.build();
 
@@ -1096,7 +1136,9 @@ public class ZuliaIndexManager {
 			}
 
 			CreateIndexRequestValidator.validateIndexSettingsAndSetDefaults(existingSettings);
-			indexSettings = existingSettings.build();
+			// Freeze the doc-values skip index flag to the persisted schema for fields that already exist. An update must
+			// never flip it on a live field (the IndexWriter would reject writes). New fields keep whatever was requested.
+			indexSettings = applyDocValueSkipIndexPolicy(existingSettings.build(), originalIndexSettings);
 
 			if (indexSettings.equals(originalIndexSettings)) {
 				LOG.info("No changes to index {} from update", indexName);
