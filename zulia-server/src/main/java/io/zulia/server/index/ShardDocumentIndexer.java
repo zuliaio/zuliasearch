@@ -76,7 +76,10 @@ public class ShardDocumentIndexer {
 			DirectoryTaxonomyWriter taxoWriter) throws Exception {
 		Document luceneDocument = new Document();
 		luceneDocument.add(new StringField(ZuliaFieldConstants.ID_FIELD, uniqueId, Field.Store.NO));
-		luceneDocument.add(new SortedSetDocValuesField(idSortField, new BytesRef(uniqueId)));
+		// The built-in id sort field is not a FieldConfig, so its skip index is gated on the index-creation version: new indexes
+		// get it, indexes created before the feature (version 0) keep the plain field so their immutable schema is unchanged.
+		boolean idSortDocValueSkipIndex = indexConfig.getIndexSettings().getCreatedIndexVersion() >= ZuliaIndexVersion.ID_SORT_DOC_VALUE_SKIP;
+		luceneDocument.add(sortedSetSortField(idSortField, new BytesRef(uniqueId), idSortDocValueSkipIndex));
 		luceneDocument.add(new LongPoint(ZuliaFieldConstants.TIMESTAMP_FIELD, timestamp));
 
 		boolean compressionEnabled = indexConfig.isCompressionEnabled();
@@ -290,9 +293,20 @@ public class ShardDocumentIndexer {
 		}
 	}
 
+	private static SortedNumericDocValuesField numericSortField(String name, long value, boolean docValueSkipIndex) {
+		return docValueSkipIndex ? SortedNumericDocValuesField.indexedField(name, value) : new SortedNumericDocValuesField(name, value);
+	}
+
+	private static SortedSetDocValuesField sortedSetSortField(String name, BytesRef value, boolean docValueSkipIndex) {
+		return docValueSkipIndex ? SortedSetDocValuesField.indexedField(name, value) : new SortedSetDocValuesField(name, value);
+	}
+
 	private void addSortForStoredField(Document d, String storedFieldName, FieldConfig fc, Object o) {
 
 		FieldConfig.FieldType fieldType = fc.getFieldType();
+
+		// When enabled, sort doc-values are written with a Lucene skip index so range queries block-skip and sorts can dynamically prune.
+		boolean docValueSkipIndex = fc.getDocValueSkipIndex();
 
 		if (FieldTypeUtil.isGeoPointFieldType(fieldType)) {
 			if (fc.getSortAsCount() > 0) {
@@ -370,7 +384,7 @@ public class ShardDocumentIndexer {
 								"Field " + sortAs.getSortFieldName() + " is too large to sort.  Must be less <= 32766 characters and is " + text.length());
 					}
 
-					SortedSetDocValuesField docValue = new SortedSetDocValuesField(sortFieldName, new BytesRef(text));
+					SortedSetDocValuesField docValue = sortedSetSortField(sortFieldName, new BytesRef(text), docValueSkipIndex);
 					d.add(docValue);
 				});
 			}
@@ -380,16 +394,16 @@ public class ShardDocumentIndexer {
 
 						SortedNumericDocValuesField docValue;
 						if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-							docValue = new SortedNumericDocValuesField(sortFieldName, number.intValue());
+							docValue = numericSortField(sortFieldName, number.intValue(), docValueSkipIndex);
 						}
 						else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-							docValue = new SortedNumericDocValuesField(sortFieldName, number.longValue());
+							docValue = numericSortField(sortFieldName, number.longValue(), docValueSkipIndex);
 						}
 						else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-							docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.floatToSortableInt(number.floatValue()));
+							docValue = numericSortField(sortFieldName, NumericUtils.floatToSortableInt(number.floatValue()), docValueSkipIndex);
 						}
 						else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-							docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.doubleToSortableLong(number.doubleValue()));
+							docValue = numericSortField(sortFieldName, NumericUtils.doubleToSortableLong(number.doubleValue()), docValueSkipIndex);
 						}
 						else {
 							throw new RuntimeException(
@@ -402,16 +416,16 @@ public class ShardDocumentIndexer {
 						SortedNumericDocValuesField docValue;
 						try {
 							if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, Integer.parseInt(value));
+								docValue = numericSortField(sortFieldName, Integer.parseInt(value), docValueSkipIndex);
 							}
 							else if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, Long.parseLong(value));
+								docValue = numericSortField(sortFieldName, Long.parseLong(value), docValueSkipIndex);
 							}
 							else if (FieldTypeUtil.isNumericFloatFieldType(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.floatToSortableInt(Float.parseFloat(value)));
+								docValue = numericSortField(sortFieldName, NumericUtils.floatToSortableInt(Float.parseFloat(value)), docValueSkipIndex);
 							}
 							else if (FieldTypeUtil.isNumericDoubleFieldType(fieldType)) {
-								docValue = new SortedNumericDocValuesField(sortFieldName, NumericUtils.doubleToSortableLong(Double.parseDouble(value)));
+								docValue = numericSortField(sortFieldName, NumericUtils.doubleToSortableLong(Double.parseDouble(value)), docValueSkipIndex);
 							}
 							else {
 								throw new RuntimeException(
@@ -435,17 +449,17 @@ public class ShardDocumentIndexer {
 			else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					if (obj instanceof Boolean) {
-						SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, (Boolean) obj ? 1 : 0);
+						SortedNumericDocValuesField docValue = numericSortField(sortFieldName, (Boolean) obj ? 1 : 0, docValueSkipIndex);
 						d.add(docValue);
 					}
 					else if (obj instanceof Number) {
 						Number num = (Number) (obj);
 						if (num.intValue() == 1) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 1);
+							SortedNumericDocValuesField docValue = numericSortField(sortFieldName, 1, docValueSkipIndex);
 							d.add(docValue);
 						}
 						else if (num.intValue() == 0) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, 0);
+							SortedNumericDocValuesField docValue = numericSortField(sortFieldName, 0, docValueSkipIndex);
 							d.add(docValue);
 						}
 					}
@@ -453,7 +467,7 @@ public class ShardDocumentIndexer {
 						String string = obj.toString();
 						int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
 						if (booleanInt >= 0) {
-							SortedNumericDocValuesField docValue = new SortedNumericDocValuesField(sortFieldName, booleanInt);
+							SortedNumericDocValuesField docValue = numericSortField(sortFieldName, booleanInt, docValueSkipIndex);
 							d.add(docValue);
 						}
 					}
@@ -463,7 +477,7 @@ public class ShardDocumentIndexer {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
 					Date date = ZuliaDateUtil.convertToDate(obj, "document field <" + storedFieldName + "> / sort field <" + sortFieldName + ">");
 					if (date != null) {
-						d.add(new SortedNumericDocValuesField(sortFieldName, date.getTime()));
+						d.add(numericSortField(sortFieldName, date.getTime(), docValueSkipIndex));
 					}
 				});
 			}
