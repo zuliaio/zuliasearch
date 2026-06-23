@@ -18,6 +18,7 @@ public class FieldConfigBuilder {
 	private GeoPointConfig geoPointConfig;
 	private String description;
 	private String displayName;
+	private Boolean docValueSkipIndex;
 
 	public FieldConfigBuilder(String storedFieldName, FieldConfig.FieldType fieldType) {
 		this.storedFieldName = storedFieldName;
@@ -223,6 +224,16 @@ public class FieldConfigBuilder {
 		return this;
 	}
 
+	/**
+	 * Builds (with {@code true}) or opts out of (with {@code false}) a Lucene doc-values skip index on this field's sort
+	 * doc-values - enabling block-skipping range queries and dynamic-pruning sorts. When left unset, the server defaults
+	 * it on for new fields. Once a field exists, its flag is frozen (Lucene treats the skip index as immutable schema).
+	 */
+	public FieldConfigBuilder docValueSkipIndex(boolean docValueSkipIndex) {
+		this.docValueSkipIndex = docValueSkipIndex;
+		return this;
+	}
+
 	public FieldConfig build() {
 		FieldConfig.Builder fcBuilder = FieldConfig.newBuilder();
 		fcBuilder.setStoredFieldName(storedFieldName);
@@ -238,6 +249,9 @@ public class FieldConfigBuilder {
 		}
 		if (displayName != null) {
 			fcBuilder.setDisplayName(displayName);
+		}
+		if (docValueSkipIndex != null) {
+			fcBuilder.setDocValueSkipIndex(docValueSkipIndex);
 		}
 		return fcBuilder.build();
 	}
