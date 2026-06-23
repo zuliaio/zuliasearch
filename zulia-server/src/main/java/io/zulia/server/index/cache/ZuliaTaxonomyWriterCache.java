@@ -81,13 +81,19 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 		// assigning duplicates. Refreshing on every eviction is extremely expensive under high-
 		// cardinality facets (each refresh reopens the NRT taxonomy reader). Instead, we batch
 		// refreshes: accumulate evictions and only trigger a refresh every evictionsBetweenRefreshes.
-		// This is safe because with an LRU cache of size N, a category cannot be evicted until N
-		// newer entries displace it, so the reader has at least N/evictionsBetweenRefreshes refreshes
-		// (at least 4 with the default ratio) before a re-encountered category could be missed by
-		// findCategory().
+		// At steady state this is safe because the LRU keeps a category cached until roughly
+		// maxOrdinalsPerDimension newer entries displace it, by which point several refreshes have run
+		// (about maxOrdinalsPerDimension/evictionsBetweenRefreshes), so a category re-encountered after
+		// eviction is already in the refreshed reader and findCategory() returns its existing ordinal.
 		if (evictedDimensions.remove(dimension)) {
 			AtomicLong counter = evictionCounters.computeIfAbsent(dimension, k -> new AtomicLong());
-			return counter.incrementAndGet() % evictionsBetweenRefreshes == 0;
+			long evictionCount = counter.incrementAndGet();
+			// The steady-state argument does not cover the cold start: the first maxOrdinalsPerDimension categories
+			// fill the cache with no eviction and therefore no refresh, so the reader holds none of them yet. The first
+			// eviction would then drop a category that is in neither the cache nor the reader, and re-encountering it
+			// before the evictionsBetweenRefreshes-th eviction assigns a duplicate ordinal. Force a refresh on that first
+			// eviction so the reader catches up, then fall back to batching.
+			return evictionCount == 1 || evictionCount % evictionsBetweenRefreshes == 0;
 		}
 		return false;
 	}
