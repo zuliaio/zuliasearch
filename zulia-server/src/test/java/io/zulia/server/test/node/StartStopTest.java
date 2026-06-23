@@ -61,16 +61,18 @@ public class StartStopTest {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addDefaultSearchField("title");
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("issn").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("eissn").indexAs(DefaultAnalyzers.LC_KEYWORD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("uid").indexAs(DefaultAnalyzers.LC_KEYWORD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("an").index().sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort());
-		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("testBool").index().facet().sort());
+		// The server defaults docValueSkipIndex on for every new field (see ZuliaIndexManager.applyDocValueSkipIndexPolicy),
+		// so set it on each field here too - otherwise the client-built config would not match the config read back below.
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD).docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("title").indexAs(DefaultAnalyzers.STANDARD).sort().docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("issn").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().sort().docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("eissn").indexAs(DefaultAnalyzers.LC_KEYWORD).docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("uid").indexAs(DefaultAnalyzers.LC_KEYWORD).docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createInt("an").index().sort().docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("country").indexAs(DefaultAnalyzers.LC_KEYWORD).facet().docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createDate("date").index().facetAs(DateHandling.DATE_YYYY_MM_DD).sort().docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createString("testList").indexAs(DefaultAnalyzers.STANDARD).docValueSkipIndex(true));
+		indexConfig.addFieldConfig(FieldConfigBuilder.createBool("testBool").index().facet().sort().docValueSkipIndex(true));
 		indexConfig.setIndexName(FACET_TEST_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20); //force some commits
