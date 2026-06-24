@@ -63,7 +63,8 @@ abstract class WriteVersion : DefaultTask() {
     }
 }
 
-val generateVersion by tasks.registering(WriteVersion::class) {
+val generateVersion = tasks.register<WriteVersion>("generateVersion") {
+    description = "Generates a version file in the build directory"
     outputFile.set(layout.buildDirectory.file("version"))
     // Lazily read the project version
     versionText.set(providers.provider { project.version.toString() })

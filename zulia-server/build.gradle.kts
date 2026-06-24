@@ -19,7 +19,8 @@ micronaut {
     }
 }
 
-val copySwagger by tasks.registering(Copy::class) {
+val copySwagger = tasks.register<Copy>("copySwagger") {
+    description = "Copys Zulia Server REST Swagger to zulia-swagger server directory\""
     val compileJava = tasks.named<JavaCompile>(JavaPlugin.COMPILE_JAVA_TASK_NAME)
     val swaggerDir = compileJava.flatMap { it.destinationDirectory.dir("META-INF/swagger") }
     from(swaggerDir)
@@ -76,8 +77,8 @@ dependencies {
     testImplementation(libs.junit.platform.launcher)
     testImplementation(libs.micronaut.http.client)
     testImplementation(libs.micronaut.test.junit5)
-    testImplementation(project(":zulia-client"))
-    testImplementation(project(":zulia-ai"))
+    testImplementation(projects.zuliaClient)
+    testImplementation(projects.zuliaAi)
 }
 tasks.withType<JavaCompile> {
     options.isFork = true
