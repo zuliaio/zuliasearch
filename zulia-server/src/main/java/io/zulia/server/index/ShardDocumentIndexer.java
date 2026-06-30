@@ -572,6 +572,14 @@ public class ShardDocumentIndexer {
 
 					});
 				}
+				else if (FieldTypeUtil.isNumericIntFieldType(fc.getFieldType()) || FieldTypeUtil.isNumericLongFieldType(fc.getFieldType())) {
+					ZuliaUtil.handleListsUniqueValues(o, obj -> {
+						String val = integralFacetLabel(obj, fc.getFieldType());
+						if (!val.isEmpty()) {
+							facetFieldsForField.add(new FacetLabel(facetName, val));
+						}
+					});
+				}
 				else {
 					ZuliaUtil.handleListsUniqueValues(o, obj -> {
 						String val = obj.toString();
@@ -584,6 +592,18 @@ public class ShardDocumentIndexer {
 			}
 
 		}
+	}
+
+	private static String integralFacetLabel(Object obj, FieldConfig.FieldType fieldType) {
+		if (obj instanceof Number number) {
+			if (FieldTypeUtil.isNumericIntFieldType(fieldType)) {
+				return Integer.toString(number.intValue());
+			}
+			if (FieldTypeUtil.isNumericLongFieldType(fieldType)) {
+				return Long.toString(number.longValue());
+			}
+		}
+		return obj.toString();
 	}
 
 	private static String getFoldedString(String text) {
