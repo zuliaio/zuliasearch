@@ -17,6 +17,7 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 	private Iterator<CsvRecord> recordIterator;
 	private List<String> nextRow;
 	private HeaderMapping headerMapping;
+	private boolean iterated;
 
 	public DelimitedSource(S delimitedSourceConfig) throws IOException {
 		this.delimitedSourceConfig = delimitedSourceConfig;
@@ -64,8 +65,10 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 	@Override
 	public Iterator<T> iterator() {
 
-		//handles multiple iterations with the same DataSources
-		if (nextRow == null) {
+		// open() already primed the first row in the constructor, so the first iterator() call must not
+		// reopen (a source with only a header row legitimately leaves nextRow == null). Reset only to
+		// re-iterate, which only succeeds for resettable inputs because single-use streams cannot be read twice.
+		if (iterated) {
 			try {
 				reset();
 			}
@@ -73,6 +76,7 @@ public abstract class DelimitedSource<T extends DelimitedRecord, S extends Delim
 				throw new RuntimeException(e);
 			}
 		}
+		iterated = true;
 
 		return new Iterator<>() {
 

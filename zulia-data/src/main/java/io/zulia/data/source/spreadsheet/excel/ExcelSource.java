@@ -107,17 +107,17 @@ public class ExcelSource implements SpreadsheetSource<ExcelRecord>, AutoCloseabl
 		numberOfRowsForSheet = (sheet.getPhysicalNumberOfRows() == 0) ? 0 : sheet.getLastRowNum() + 1;
 		Row firstRow = sheet.getRow(0);
 
-		int numberOfColumns = (firstRow == null) ? 0 : firstRow.getLastCellNum();
+		// POI's Row.getLastCellNum() returns -1 for a present-but-empty first row. Clamp to 0 so the column
+		// count never goes negative (a negative count later becomes new String[-1] in ExcelRecord.getRow()).
+		int numberOfColumns = (firstRow == null) ? 0 : Math.max(0, firstRow.getLastCellNum());
 
 		if (excelSourceConfig.hasHeaders()) {
 			ExcelCellHandler excelCellHandler = excelSourceConfig.getExcelCellHandler();
 
 			List<String> headerRow = new ArrayList<>();
-			if (firstRow != null) {
-				for (int i = 0; i < firstRow.getLastCellNum(); i++) {
-					Cell cell = firstRow.getCell(i);
-					headerRow.add(excelCellHandler.cellToString(cell));
-				}
+			for (int i = 0; i < numberOfColumns; i++) {
+				Cell cell = firstRow.getCell(i);
+				headerRow.add(excelCellHandler.cellToString(cell));
 			}
 			sheetInfo = new SheetInfo(numberOfColumns, numberOfRowsForSheet, new HeaderMapping(excelSourceConfig.getHeaderConfig(), headerRow));
 		}

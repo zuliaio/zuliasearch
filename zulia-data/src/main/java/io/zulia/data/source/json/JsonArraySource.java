@@ -40,10 +40,23 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 		if (parser.nextToken() != JsonToken.START_ARRAY) {
 			throw new IllegalStateException("Expected an array");
 		}
-		if (parser.nextToken() == JsonToken.START_OBJECT) {
+		advanceToNextElement();
+	}
+
+	private void advanceToNextElement() {
+		JsonToken token = parser.nextToken();
+		if (token == JsonToken.START_OBJECT) {
 			next = mapper.readTree(parser).toString();
 		}
-
+		else if (token == JsonToken.END_ARRAY || token == null) {
+			// End of the array (or end of input): iteration is complete.
+			next = null;
+		}
+		else {
+			// A non-object element (scalar, null literal, or nested array). Fail loudly rather than silently
+			// dropping this and every remaining element by mistaking it for the end of the array.
+			throw new IllegalStateException("Expected an object in the JSON array but found " + token);
+		}
 	}
 
 	public void reset() throws IOException {
@@ -77,12 +90,7 @@ public class JsonArraySource implements DataSource<JsonSourceRecord>, AutoClosea
 			@Override
 			public JsonSourceRecord next() {
 				JsonSourceRecord jsonSourceRecord = new JsonSourceRecord(next);
-				if (parser.nextToken() == JsonToken.START_OBJECT) {
-					next = mapper.readTree(parser).toString();
-				}
-				else {
-					next = null;
-				}
+				advanceToNextElement();
 				return jsonSourceRecord;
 			}
 

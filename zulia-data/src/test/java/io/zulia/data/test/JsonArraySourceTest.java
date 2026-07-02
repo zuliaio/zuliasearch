@@ -39,6 +39,27 @@ public class JsonArraySourceTest {
 		Assertions.assertTrue(readAll("[]").isEmpty());
 	}
 
+	@Test
+	public void nonObjectElementThrowsInsteadOfTruncating() {
+		// A null (or scalar) element used to be indistinguishable from the end of the array, so every object
+		// after it was silently dropped. It must now fail loudly rather than return a truncated result.
+		String json = """
+				[
+				  {"id": "a"},
+				  null,
+				  {"id": "c"}
+				]
+				""";
+
+		Assertions.assertThrows(IllegalStateException.class, () -> readAll(json));
+	}
+
+	@Test
+	public void scalarFirstElementThrows() {
+		// The same silent truncation applied to the very first element read during open().
+		Assertions.assertThrows(IllegalStateException.class, () -> readAll("[1, 2, 3]"));
+	}
+
 	private static List<JsonSourceRecord> readAll(String json) throws Exception {
 		var dataInputStream = SingleUseDataInputStream.from(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), "test.json");
 		List<JsonSourceRecord> records = new ArrayList<>();

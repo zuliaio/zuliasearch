@@ -14,6 +14,7 @@ public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoClo
 	private BufferedReader reader;
 
 	private String next;
+	private boolean iterated;
 
 	public static JsonLineDataSource withConfig(JsonLineSourceConfig jsonLineSourceConfig) throws IOException {
 		return new JsonLineDataSource(jsonLineSourceConfig);
@@ -42,7 +43,10 @@ public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoClo
 	@Override
 	public Iterator<JsonSourceRecord> iterator() {
 
-		if (next == null) {
+		// open() already primed the first line in the constructor, so the first iterator() call must not
+		// reopen (an empty source legitimately leaves next == null). Reset only to re-iterate, which only
+		// succeeds for resettable inputs because single-use streams cannot be read twice.
+		if (iterated) {
 			try {
 				reset();
 			}
@@ -50,6 +54,7 @@ public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoClo
 				throw new RuntimeException(e);
 			}
 		}
+		iterated = true;
 
 		return new Iterator<>() {
 
@@ -60,10 +65,22 @@ public class JsonLineDataSource implements DataSource<JsonSourceRecord>, AutoClo
 
 			@Override
 			public JsonSourceRecord next() {
+				// Advance the cursor before parsing so the current line is consumed exactly once.
+				// Otherwise, a malformed line that a non-throwing handler skips would be re-read forever.
+				String currentLine = next;
 				try {
-					JsonSourceRecord jsonSourceRecord = new JsonSourceRecord(next);
 					next = reader.readLine();
-					return jsonSourceRecord;
+				}
+				catch (IOException e) {
+					// The underlying stream failed. Terminate iteration (so a non-throwing handler does not
+					// retry the same broken position forever), then route the error through the configured
+					// handler: the default throwing handler surfaces it loudly, a logging handler skips quietly.
+					next = null;
+					return jsonLineSourceConfig.getExceptionHandler().handleException(e);
+				}
+
+				try {
+					return new JsonSourceRecord(currentLine);
 				}
 				catch (Exception e) {
 					return jsonLineSourceConfig.getExceptionHandler().handleException(e);

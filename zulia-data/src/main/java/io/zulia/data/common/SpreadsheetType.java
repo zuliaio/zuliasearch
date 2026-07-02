@@ -15,19 +15,21 @@ public enum SpreadsheetType {
 
 	public static SpreadsheetType getSpreadsheetType(DataStreamMeta dataStreamMeta) {
 
-		String contentType = dataStreamMeta.contentType().toLowerCase();
-		switch (contentType) {
-			case CSV_TYPE -> {
-				return SpreadsheetType.CSV;
-			}
-			case TSV_TYPE -> {
-				return SpreadsheetType.TSV;
-			}
-			case XLSX_TYPE -> {
-				return SpreadsheetType.XLSX;
-			}
-			case XLS_TYPE -> {
-				return SpreadsheetType.XLS;
+		String contentType = dataStreamMeta.contentType();
+		if (contentType != null) {
+			switch (contentType.toLowerCase()) {
+				case CSV_TYPE -> {
+					return SpreadsheetType.CSV;
+				}
+				case TSV_TYPE -> {
+					return SpreadsheetType.TSV;
+				}
+				case XLSX_TYPE -> {
+					return SpreadsheetType.XLSX;
+				}
+				case XLS_TYPE -> {
+					return SpreadsheetType.XLS;
+				}
 			}
 		}
 
