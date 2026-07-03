@@ -39,6 +39,30 @@ public class DocumentHelper {
 
 	}
 
+	public static Float getAsFloat(Document document, String field) {
+		return document.get(field) instanceof Number number ? number.floatValue() : null;
+	}
+
+	public static Double getAsDouble(Document document, String field) {
+		return document.get(field) instanceof Number number ? number.doubleValue() : null;
+	}
+
+	public static Integer getAsInt(Document document, String field) {
+		if (document.get(field) instanceof Number number) {
+			try {
+				return Math.toIntExact(number.longValue());
+			}
+			catch (ArithmeticException e) {
+				throw new ArithmeticException("Field <" + field + "> has value <" + number + "> that does not fit in an int");
+			}
+		}
+		return null;
+	}
+
+	public static Long getAsLong(Document document, String field) {
+		return document.get(field) instanceof Number number ? number.longValue() : null;
+	}
+
 	private static Object getChild(Object o, String field, boolean retainNullAndEmpty) {
 		if (o instanceof Document d) {
 			o = d.get(field);

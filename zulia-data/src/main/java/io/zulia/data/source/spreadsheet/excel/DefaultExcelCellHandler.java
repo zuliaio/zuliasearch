@@ -21,6 +21,9 @@ public class DefaultExcelCellHandler implements ExcelCellHandler {
 			return formatNumericCellAsString(cell);
 
 		}
+		else if (isCellBoolean(cell)) {
+			return String.valueOf(cell.getBooleanCellValue());
+		}
 		else if (isCellFormula(cell)) {
 			CellType cachedFormulaResultType = cell.getCachedFormulaResultType();
 			if (cachedFormulaResultType.equals(CellType.NUMERIC)) {
@@ -28,6 +31,9 @@ public class DefaultExcelCellHandler implements ExcelCellHandler {
 			}
 			else if (cachedFormulaResultType.equals(CellType.STRING)) {
 				return cell.getRichStringCellValue().getString();
+			}
+			else if (cachedFormulaResultType.equals(CellType.BOOLEAN)) {
+				return String.valueOf(cell.getBooleanCellValue());
 			}
 		}
 
@@ -42,6 +48,11 @@ public class DefaultExcelCellHandler implements ExcelCellHandler {
 		}
 		else if (isCellString(cell)) {
 			return Boolean.parseBoolean(cell.getStringCellValue());
+		}
+		else if (isCellFormula(cell)) {
+			if (cell.getCachedFormulaResultType().equals(CellType.BOOLEAN)) {
+				return cell.getBooleanCellValue();
+			}
 		}
 
 		return null;
@@ -150,13 +161,12 @@ public class DefaultExcelCellHandler implements ExcelCellHandler {
 
 	@Override
 	public String formatNumericCellAsString(Cell cell) {
-		Number numericCellValue = cell.getNumericCellValue();
-		if ((numericCellValue.doubleValue() == Math.floor(numericCellValue.doubleValue())) && !Double.isInfinite(numericCellValue.doubleValue())) {
-			return String.valueOf(numericCellValue.longValue());
+		double value = cell.getNumericCellValue();
+		// upper bound is strict because 2^63 is a valid double but overflows long
+		if (value == Math.floor(value) && !Double.isInfinite(value) && value >= -0x1p63 && value < 0x1p63) {
+			return String.valueOf((long) value);
 		}
-		else {
-			return String.valueOf(numericCellValue.doubleValue());
-		}
+		return String.valueOf(value);
 	}
 
 	@Override

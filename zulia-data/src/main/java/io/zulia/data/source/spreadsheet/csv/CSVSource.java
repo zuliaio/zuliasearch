@@ -2,6 +2,7 @@ package io.zulia.data.source.spreadsheet.csv;
 
 import de.siegmar.fastcsv.reader.CommentStrategy;
 import de.siegmar.fastcsv.reader.CsvReader;
+import de.siegmar.fastcsv.reader.FieldMismatchStrategy;
 import io.zulia.data.input.DataInputStream;
 import io.zulia.data.source.spreadsheet.delimited.DelimitedSource;
 
@@ -26,8 +27,8 @@ public class CSVSource extends DelimitedSource<CSVRecord, CSVSourceConfig> {
 	@Override
 	protected CsvReader.CsvReaderBuilder createParser(CSVSourceConfig csvSourceConfig) {
 		return CsvReader.builder().fieldSeparator(csvSourceConfig.getDelimiter()).quoteCharacter('"').commentStrategy(CommentStrategy.SKIP)
-				.commentCharacter('#').skipEmptyLines(true).allowExtraFields(false).allowMissingFields(false).allowExtraCharsAfterClosingQuote(false)
-				.detectBomHeader(true).maxBufferSize(16777216);
+				.commentCharacter('#').skipEmptyLines(true).extraFieldStrategy(FieldMismatchStrategy.STRICT).missingFieldStrategy(FieldMismatchStrategy.STRICT)
+				.allowExtraCharsAfterClosingQuote(false).detectBomHeader(true).maxBufferSize(16777216);
 
 	}
 

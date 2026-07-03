@@ -45,7 +45,10 @@ public class ExcelRecord implements SpreadsheetRecord {
 	}
 
 	public Cell getCell(int i) {
-		return row.getCell(i);
+		// POI's Sheet.getRow returns null for a blank row (one with no cells), and that null Row is wrapped
+		// in an ExcelRecord. A blank row simply has no cells, so return null here. The cell handlers already
+		// treat a null Cell as empty, which keeps every accessor null-safe instead of throwing on a blank row.
+		return row == null ? null : row.getCell(i);
 	}
 
 	public Cell getCell(String field) {
@@ -102,43 +105,43 @@ public class ExcelRecord implements SpreadsheetRecord {
 
 	@Override
 	public String getString(int index) {
-		return excelCellHandler.cellToString(row.getCell(index));
+		return excelCellHandler.cellToString(getCell(index));
 	}
 
 	@Override
 	public Boolean getBoolean(int index) {
-		return excelCellHandler.cellToBoolean(row.getCell(index));
+		return excelCellHandler.cellToBoolean(getCell(index));
 	}
 
 	@Override
 	public Float getFloat(int index) {
-		return excelCellHandler.cellToFloat(row.getCell(index));
+		return excelCellHandler.cellToFloat(getCell(index));
 	}
 
 	@Override
 	public Double getDouble(int index) {
-		return excelCellHandler.cellToDouble(row.getCell(index));
+		return excelCellHandler.cellToDouble(getCell(index));
 	}
 
 	@Override
 	public Integer getInt(int index) {
-		return excelCellHandler.cellToInt(row.getCell(index));
+		return excelCellHandler.cellToInt(getCell(index));
 	}
 
 	@Override
 	public Long getLong(int index) {
-		return excelCellHandler.cellToLong(row.getCell(index));
+		return excelCellHandler.cellToLong(getCell(index));
 	}
 
 	@Override
 	public Date getDate(int index) {
-		return excelCellHandler.cellToDate(row.getCell(index));
+		return excelCellHandler.cellToDate(getCell(index));
 	}
 
 	public String[] getRow() {
 		String[] values = new String[sheetInfo.numberOfColumns()];
 		for (int i = 0; i < sheetInfo.numberOfColumns(); i++) {
-			Cell cell = row.getCell(i);
+			Cell cell = getCell(i);
 			values[i] = excelCellHandler.cellToString(cell);
 		}
 		return values;

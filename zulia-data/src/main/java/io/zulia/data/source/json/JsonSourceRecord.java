@@ -32,27 +32,22 @@ public class JsonSourceRecord implements DataSourceRecord {
 
 	@Override
 	public Float getFloat(String field) {
-		Double val = document.getDouble(field);
-		if (val != null) {
-			return val.floatValue();
-		}
-		return null;
+		return DocumentHelper.getAsFloat(document, field);
 	}
 
 	@Override
 	public Double getDouble(String field) {
-		return document.getDouble(field);
+		return DocumentHelper.getAsDouble(document, field);
 	}
 
 	@Override
 	public Integer getInt(String field) {
-		return document.getInteger(field);
-
+		return DocumentHelper.getAsInt(document, field);
 	}
 
 	@Override
 	public Long getLong(String field) {
-		return document.getLong(field);
+		return DocumentHelper.getAsLong(document, field);
 	}
 
 	@Override

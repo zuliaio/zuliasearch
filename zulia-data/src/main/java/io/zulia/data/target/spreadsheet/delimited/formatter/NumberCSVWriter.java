@@ -30,11 +30,14 @@ public class NumberCSVWriter<T extends List<String>> implements SpreadsheetTypeH
 	@Override
 	public void writeType(T reference, Number value) {
 		switch (value) {
+			case null -> reference.add(null);
 			case Integer i -> reference.add(String.valueOf(i));
 			case Long l -> reference.add(String.valueOf(l));
 			case Float f -> reference.add(String.format(doubleFormatter, f));
 			case Double d -> reference.add(String.format(doubleFormatter, d));
-			case null, default -> reference.add(null);
+			// Any other Number subtype (Decimal128, BigDecimal, BigInteger, Short, Byte, AtomicInteger, ...).
+			// Write its exact value rather than dropping it as an empty cell or forcing a lossy doubleValue().
+			default -> reference.add(value.toString());
 		}
 	}
 }
