@@ -8,12 +8,14 @@ import com.mongodb.client.model.Updates;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
 import io.zulia.util.ZuliaVersion;
+import io.zulia.util.document.DocumentHelper;
 import jakarta.inject.Singleton;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -122,9 +124,10 @@ public class MongoNodeService implements NodeService {
 			if (version == null) {
 				version = "";
 			}
-			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(d.getInteger(SERVICE_PORT))
-					.setRestPort(d.getInteger(REST_PORT)).setHeartbeat(d.getDate(HEARTBEAT) != null ? d.getDate(HEARTBEAT).getTime() : 0).setVersion(version)
-					.build();
+			Date heartbeatDate = d.getDate(HEARTBEAT);
+			return Node.newBuilder().setServerAddress(d.getString(SERVER_ADDRESS)).setServicePort(DocumentHelper.getAsInt(d, SERVICE_PORT, 0))
+					.setRestPort(DocumentHelper.getAsInt(d, REST_PORT, 0)).setHeartbeat(heartbeatDate != null ? heartbeatDate.getTime() : 0)
+					.setVersion(version).build();
 		}
 		return null;
 	}

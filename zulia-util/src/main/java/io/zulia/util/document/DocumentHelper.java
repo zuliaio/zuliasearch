@@ -43,8 +43,28 @@ public class DocumentHelper {
 		return document.get(field) instanceof Number number ? number.floatValue() : null;
 	}
 
+	public static Float getAsFloat(Document document, String field, Float defaultValue) {
+		Float value = getAsFloat(document, field);
+		return value != null ? value : defaultValue;
+	}
+
+	public static float getAsFloat(Document document, String field, float defaultValue) {
+		Float value = getAsFloat(document, field);
+		return value != null ? value : defaultValue;
+	}
+
 	public static Double getAsDouble(Document document, String field) {
 		return document.get(field) instanceof Number number ? number.doubleValue() : null;
+	}
+
+	public static Double getAsDouble(Document document, String field, Double defaultValue) {
+		Double value = getAsDouble(document, field);
+		return value != null ? value : defaultValue;
+	}
+
+	public static double getAsDouble(Document document, String field, double defaultValue) {
+		Double value = getAsDouble(document, field);
+		return value != null ? value : defaultValue;
 	}
 
 	public static Integer getAsInt(Document document, String field) {
@@ -59,8 +79,28 @@ public class DocumentHelper {
 		return null;
 	}
 
+	public static Integer getAsInt(Document document, String field, Integer defaultValue) {
+		Integer value = getAsInt(document, field);
+		return value != null ? value : defaultValue;
+	}
+
+	public static int getAsInt(Document document, String field, int defaultValue) {
+		Integer value = getAsInt(document, field);
+		return value != null ? value : defaultValue;
+	}
+
 	public static Long getAsLong(Document document, String field) {
 		return document.get(field) instanceof Number number ? number.longValue() : null;
+	}
+
+	public static Long getAsLong(Document document, String field, Long defaultValue) {
+		Long value = getAsLong(document, field);
+		return value != null ? value : defaultValue;
+	}
+
+	public static long getAsLong(Document document, String field, long defaultValue) {
+		Long value = getAsLong(document, field);
+		return value != null ? value : defaultValue;
 	}
 
 	private static Object getChild(Object o, String field, boolean retainNullAndEmpty) {

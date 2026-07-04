@@ -5,6 +5,7 @@ import io.micronaut.context.annotation.Requires;
 import io.micronaut.health.HealthStatus;
 import io.micronaut.management.health.indicator.AbstractHealthIndicator;
 import io.zulia.server.util.MongoProvider;
+import io.zulia.util.document.DocumentHelper;
 import jakarta.inject.Singleton;
 import org.bson.Document;
 import org.jspecify.annotations.NullMarked;
@@ -29,7 +30,7 @@ public class MongoHealthIndicator extends AbstractHealthIndicator<Map<String, Ob
 		try {
 			MongoClient client = MongoProvider.getMongoClient();
 			Document pingResult = client.getDatabase("admin").withTimeout(10, TimeUnit.SECONDS).runCommand(new Document("ping", 1));
-			if (pingResult.containsKey("ok") && pingResult.getDouble("ok") == 1.0) {
+			if (DocumentHelper.getAsDouble(pingResult, "ok", 0.0) == 1.0) {
 				healthStatus = HealthStatus.UP.describe("Able to connect to Mongo instance");
 				return Collections.singletonMap("statusDetails", "Able to connect to Mongo instance");
 			}

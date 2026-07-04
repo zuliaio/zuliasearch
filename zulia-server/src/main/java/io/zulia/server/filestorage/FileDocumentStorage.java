@@ -7,6 +7,7 @@ import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.config.ZuliaConfig;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.document.DocumentHelper;
 import org.bson.Document;
 
 import java.io.BufferedInputStream;
@@ -88,7 +89,8 @@ public class FileDocumentStorage implements DocumentStorage {
 			if (metadataPath.toFile().exists()) {
 				String metadataJson = Files.readString(metadataPath);
 				metadata = Document.parse(metadataJson);
-				long timestamp = ((Number) metadata.remove(TIMESTAMP)).longValue();
+				long timestamp = DocumentHelper.getAsLong(metadata, TIMESTAMP, 0L);
+				metadata.remove(TIMESTAMP);
 				aBuilder.setTimestamp(timestamp);
 			}
 

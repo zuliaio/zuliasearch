@@ -16,6 +16,7 @@ import io.zulia.rest.dto.AssociatedMetadataDTO;
 import io.zulia.server.config.cluster.S3Config;
 import io.zulia.server.filestorage.io.S3OutputStream;
 import io.zulia.util.ZuliaUtil;
+import io.zulia.util.document.DocumentHelper;
 import org.bson.Document;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
@@ -326,7 +327,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 		Document meta = doc.get("metadata", Document.class);
 		aBuilder.setDocumentUniqueId(meta.getString(DOCUMENT_UNIQUE_ID_KEY));
-		aBuilder.setTimestamp(meta.getLong(TIMESTAMP));
+		aBuilder.setTimestamp(DocumentHelper.getAsLong(meta, TIMESTAMP, 0L));
 		aBuilder.setIndexName(indexName);
 		meta.remove(TIMESTAMP);
 		meta.remove(DOCUMENT_UNIQUE_ID_KEY);
