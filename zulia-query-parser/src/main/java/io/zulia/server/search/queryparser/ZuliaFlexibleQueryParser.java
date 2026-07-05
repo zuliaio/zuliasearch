@@ -36,14 +36,16 @@ public class ZuliaFlexibleQueryParser implements ZuliaParser {
 
 			Float boost = null;
 			if (field.contains("^")) {
-				boost = Float.parseFloat(field.substring(field.indexOf("^") + 1));
+				int boostIndex = field.indexOf('^');
+				String boostText = field.substring(boostIndex + 1);
 				try {
-					field = field.substring(0, field.indexOf("^"));
-
+					boost = Float.parseFloat(boostText);
 				}
-				catch (Exception e) {
-					throw new IllegalArgumentException("Invalid queryText field boost " + field);
+				catch (NumberFormatException e) {
+					throw new IllegalArgumentException(
+							"Invalid boost <" + boostText + "> for query field <" + field + ">. Boost must be a number, for example title^2");
 				}
+				field = field.substring(0, boostIndex);
 			}
 
 			Set<String> fieldNames = indexConfig.getMatchingFields(field);
