@@ -17,6 +17,7 @@ import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryBui
 import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSortSortedNumericDocValuesRangeQuery;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
 
@@ -53,6 +54,9 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 				lower = Integer.MIN_VALUE;
 			}
 			if (!minInclusive) {
+				if (lower == Integer.MAX_VALUE) {
+					return new MatchNoDocsQuery("Exclusive lower bound at Integer.MAX_VALUE matches nothing");
+				}
 				lower = lower + 1;
 			}
 
@@ -61,6 +65,9 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 				upper = Integer.MAX_VALUE;
 			}
 			if (!maxInclusive) {
+				if (upper == Integer.MIN_VALUE) {
+					return new MatchNoDocsQuery("Exclusive upper bound at Integer.MIN_VALUE matches nothing");
+				}
 				upper = upper - 1;
 			}
 			Query pointQuery = IntPoint.newRangeQuery(field, lower, upper);
@@ -78,6 +85,9 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 				lower = Long.MIN_VALUE;
 			}
 			if (!minInclusive) {
+				if (lower == Long.MAX_VALUE) {
+					return new MatchNoDocsQuery("Exclusive lower bound at Long.MAX_VALUE matches nothing");
+				}
 				lower = lower + 1;
 			}
 
@@ -86,6 +96,9 @@ public class ZuliaPointRangeQueryNodeBuilder implements StandardQueryBuilder {
 				upper = Long.MAX_VALUE;
 			}
 			if (!maxInclusive) {
+				if (upper == Long.MIN_VALUE) {
+					return new MatchNoDocsQuery("Exclusive upper bound at Long.MIN_VALUE matches nothing");
+				}
 				upper = upper - 1;
 			}
 			Query pointQuery = LongPoint.newRangeQuery(field, lower, upper);

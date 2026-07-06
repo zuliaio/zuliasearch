@@ -24,8 +24,8 @@ import org.apache.lucene.search.Query;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class ZuliaNumericSetQueryNode extends ZuliaFieldableQueryNode {
 	private final List<CharSequence> terms;
@@ -42,19 +42,32 @@ public class ZuliaNumericSetQueryNode extends ZuliaFieldableQueryNode {
 	}
 
 	public Supplier<List<Integer>> intTerms() {
-		return () -> terms.stream().map(Object::toString).map(Integer::parseInt).collect(Collectors.toList());
+		return () -> parseTerms(Integer::parseInt, "int");
 	}
 
 	public Supplier<List<Long>> longTerms() {
-		return () -> terms.stream().map(Object::toString).map(Long::parseLong).collect(Collectors.toList());
+		return () -> parseTerms(Long::parseLong, "long");
 	}
 
 	public Supplier<List<Float>> floatTerms() {
-		return () -> terms.stream().map(Object::toString).map(Float::parseFloat).collect(Collectors.toList());
+		return () -> parseTerms(Float::parseFloat, "float");
 	}
 
 	public Supplier<List<Double>> doubleTerms() {
-		return () -> terms.stream().map(Object::toString).map(Double::parseDouble).collect(Collectors.toList());
+		return () -> parseTerms(Double::parseDouble, "double");
+	}
+
+	private <T> List<T> parseTerms(Function<String, T> parser, String typeName) {
+		return terms.stream().map(Object::toString).map(term -> {
+			try {
+				return parser.apply(term);
+			}
+			catch (NumberFormatException e) {
+				throw new IllegalArgumentException(
+						"Invalid value <" + term + "> for numeric set query on " + typeName + " field <" + getField() + ">. Every value must be a valid "
+								+ typeName);
+			}
+		}).toList();
 	}
 
 	@Override

@@ -122,8 +122,13 @@ public class ZuliaSyntaxParser implements SyntaxParser {
     return Float.parseFloat(token.image);
   }
 
-  public static int parseInt(Token token) {
-    return Integer.parseInt(token.image);
+  public static int parseInt(Token token) throws ParseException {
+    try {
+      return Integer.parseInt(token.image);
+    } catch (NumberFormatException e) {
+      throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX,
+          "Expected a whole number but got '" + token.image + "'"));
+    }
   }
 }
 PARSER_END(ZuliaSyntaxParser)

@@ -96,7 +96,7 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 					return new MatchNoDocsQueryNode();
 				}
 
-				fieldNode.setField(fields.get(0));
+				fieldNode.setField(fields.getFirst());
 
 				if (fields.size() == 1) {
 					return fieldNode;
@@ -107,14 +107,16 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 			}
 			else if (fieldNode.getField() == null) {
 
-				List<String> fields = FieldTypeUtil.expandFields(serverIndexConfig, getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS));
+				CharSequence[] multiFields = getQueryConfigHandler().get(ConfigurationKeys.MULTI_FIELDS);
 
-				if (fields == null) {
+				if (multiFields == null) {
 					throw new IllegalArgumentException("StandardQueryConfigHandler.ConfigurationKeys.MULTI_FIELDS should be set on the QueryConfigHandler");
 				}
 
-				if (fields.size() > 0) {
-					fieldNode.setField((fields.get(0)));
+				List<String> fields = FieldTypeUtil.expandFields(serverIndexConfig, multiFields);
+
+				if (!fields.isEmpty()) {
+					fieldNode.setField((fields.getFirst()));
 
 					if (fields.size() == 1) {
 						return fieldNode;
