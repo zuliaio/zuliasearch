@@ -1,7 +1,6 @@
 package io.zulia.server.index;
 
 import com.google.common.base.Splitter;
-import com.google.common.primitives.Floats;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import io.zulia.ZuliaFieldConstants;
@@ -248,9 +247,17 @@ public class ShardDocumentIndexer {
 				StringFieldIndexer.INSTANCE.index(luceneDocument, storedFieldName, o, indexedFieldName);
 			}
 			else if (FieldTypeUtil.isVectorFieldType(fieldType)) {
-				if (o instanceof Collection collection) {
-					luceneDocument.add(new KnnFloatVectorField(indexedFieldName, Floats.toArray(collection),
-							FieldConfig.FieldType.UNIT_VECTOR.equals(fieldType) ? VectorSimilarityFunction.DOT_PRODUCT : VectorSimilarityFunction.COSINE));
+				if (o instanceof Collection<?> collection) {
+					float[] vector = ZuliaUtil.toFloatArrayUnchecked(collection);
+					ZuliaIndex.VectorDescription vectorDescription = fc.getVectorDescription();
+					if (vectorDescription.getDimensions() > 0 && vector.length != vectorDescription.getDimensions()) {
+						throw new IllegalArgumentException(
+								"Vector field <" + storedFieldName + "> is configured for " + vectorDescription.getDimensions() + " dimensions but document <"
+										+ indexedFieldName + "> has " + vector.length);
+					}
+					// Quantization is purely a codec concern. The indexed field stays a plain KnnFloatVectorField.
+					VectorSimilarityFunction similarity = VectorFieldResolver.resolveSimilarity(vectorDescription, fieldType);
+					luceneDocument.add(new KnnFloatVectorField(indexedFieldName, vector, similarity));
 				}
 			}
 			else if (FieldTypeUtil.isGeoPointFieldType(fieldType)) {

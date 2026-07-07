@@ -59,6 +59,16 @@ public class VectorTopNQuery implements QueryBuilder {
 		return this;
 	}
 
+	/**
+	 * Oversampling for quantized vector fields: fetch {@code ceil(topN * oversample)} candidates from the quantized
+	 * graph, then rerank with full-precision vectors. 0 (unset) uses the encoding's default (BBQ rescores by default,
+	 * INT8/FLOAT32 do not), 1.0 forces rescoring off, higher values are capped server-side at 32x
+	 */
+	public VectorTopNQuery oversample(float oversample) {
+		builder.setVectorOversample(oversample);
+		return this;
+	}
+
 	public float getBoost() {
 		return builder.getBoost();
 	}

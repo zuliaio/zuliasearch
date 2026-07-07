@@ -75,6 +75,10 @@ message Query {
 
     float boost = 16; // score multiplier applied to this clause; 0 = unset (treated as 1.0); ignored for non-scoring clause types
     MoreLikeThisParams moreLikeThisParams = 17;
+
+    // Oversampling for quantized vector fields: fetch ceil(vectorTopN * vectorOversample) candidates, rescore with
+    // full-precision vectors, keep vectorTopN. 0 = encoding default (BBQ rescores, INT8/FLOAT32 do not), 1.0 = off, capped server-side at 32x
+    float vectorOversample = 18;
 }
 
 message NumericSet {

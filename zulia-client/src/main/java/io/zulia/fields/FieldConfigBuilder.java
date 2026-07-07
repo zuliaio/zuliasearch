@@ -8,6 +8,8 @@ import static io.zulia.message.ZuliaIndex.FieldConfig;
 import static io.zulia.message.ZuliaIndex.GeoPointConfig;
 import static io.zulia.message.ZuliaIndex.IndexAs;
 import static io.zulia.message.ZuliaIndex.SortAs;
+import static io.zulia.message.ZuliaIndex.VectorDescription;
+import static io.zulia.message.ZuliaIndex.VectorIndexingConfig;
 
 public class FieldConfigBuilder {
 	private final FieldConfig.FieldType fieldType;
@@ -16,6 +18,8 @@ public class FieldConfigBuilder {
 	private final List<FacetAs> facetAsList;
 	private final List<SortAs> sortAsList;
 	private GeoPointConfig geoPointConfig;
+	private VectorDescription.Builder vectorDescription;
+	private VectorIndexingConfigBuilder vectorIndexingConfig;
 	private String description;
 	private String displayName;
 	private Boolean docValueSkipIndex;
@@ -60,10 +64,15 @@ public class FieldConfigBuilder {
 		return create(storedFieldName, FieldConfig.FieldType.NUMERIC_DOUBLE);
 	}
 
+	/**
+	 * Creates a VECTOR (cosine) field with no explicit encoding. The server picks one by index-creation version:
+	 * INT8 scalar quantization for new indexes, raw float32 for legacy. Pin one with {@link #quantization(VectorIndexingConfig.Encoding)}.
+	 */
 	public static FieldConfigBuilder createVector(String storedFieldName) {
 		return create(storedFieldName, FieldConfig.FieldType.VECTOR);
 	}
 
+	/** Creates a UNIT_VECTOR (dot-product) field. The encoding resolves as in {@link #createVector}. */
 	public static FieldConfigBuilder createUnitVector(String storedFieldName) {
 		return create(storedFieldName, FieldConfig.FieldType.UNIT_VECTOR);
 	}
@@ -86,6 +95,85 @@ public class FieldConfigBuilder {
 	 */
 	public static FieldConfigBuilder createGeoPointTopLevel(String latitudeKey, String longitudeKey) {
 		return createGeoPoint("", latitudeKey, longitudeKey);
+	}
+
+	private VectorDescription.Builder vectorDescriptionBuilder() {
+		if (vectorDescription == null) {
+			vectorDescription = VectorDescription.newBuilder();
+		}
+		return vectorDescription;
+	}
+
+	private VectorIndexingConfigBuilder vectorIndexingConfigBuilder() {
+		if (vectorIndexingConfig == null) {
+			vectorIndexingConfig = VectorIndexingConfigBuilder.create();
+		}
+		return vectorIndexingConfig;
+	}
+
+	/** Vector encoding for every indexed representation of this field that does not set its own via {@link #indexAs(String, VectorIndexingConfig.Encoding)}. */
+	public FieldConfigBuilder quantization(VectorIndexingConfig.Encoding encoding) {
+		vectorIndexingConfigBuilder().quantization(encoding);
+		return this;
+	}
+
+	/** HNSW graph tuning (m = max connections, efConstruction = build beam width) for representations without their own config. */
+	public FieldConfigBuilder hnsw(int m, int efConstruction) {
+		vectorIndexingConfigBuilder().hnsw(m, efConstruction);
+		return this;
+	}
+
+	/** Overrides the similarity (otherwise derived from field type: VECTOR=cosine, UNIT_VECTOR=dot-product). */
+	public FieldConfigBuilder similarity(VectorDescription.Similarity similarity) {
+		vectorDescriptionBuilder().setSimilarity(similarity);
+		return this;
+	}
+
+	/** Expected vector dimensions, validated on store when set. */
+	public FieldConfigBuilder dimensions(int dimensions) {
+		vectorDescriptionBuilder().setDimensions(dimensions);
+		return this;
+	}
+
+	/** Exact brute-force (flat) index instead of the default HNSW graph, for representations without their own config. */
+	public FieldConfigBuilder flat() {
+		vectorIndexingConfigBuilder().flat();
+		return this;
+	}
+
+	/** Records the embedding model that produces this field's vectors (provenance only). */
+	public FieldConfigBuilder model(String modelName) {
+		vectorDescriptionBuilder().setModelName(modelName);
+		return this;
+	}
+
+	public FieldConfigBuilder model(String modelName, String modelDescription) {
+		vectorDescriptionBuilder().setModelName(modelName).setModelDescription(modelDescription);
+		return this;
+	}
+
+	/** Replaces the vector description (dimensions, similarity, model provenance). */
+	public FieldConfigBuilder vectorDescription(VectorDescription vectorDescription) {
+		this.vectorDescription = vectorDescription.toBuilder();
+		return this;
+	}
+
+	/**
+	 * Indexes this vector field under an additional name with its own encoding, e.g.
+	 * {@code createVector("v").dimensions(384).indexAs("vBBQ", Encoding.BBQ).indexAs("vExact", Encoding.FLOAT32)}.
+	 */
+	public FieldConfigBuilder indexAs(String indexedFieldName, VectorIndexingConfig.Encoding encoding) {
+		return indexAs(indexedFieldName, VectorIndexingConfig.newBuilder().setEncoding(encoding).build());
+	}
+
+	/** Indexes this vector field under an additional name with its own config, e.g. {@code indexAs("v8", VectorIndexingConfigBuilder.create().quantization(INT8).hnsw(24, 200))}. */
+	public FieldConfigBuilder indexAs(String indexedFieldName, VectorIndexingConfigBuilder vectorIndexingConfigBuilder) {
+		return indexAs(indexedFieldName, vectorIndexingConfigBuilder.build());
+	}
+
+	/** Indexes this vector field under an additional name with its own {@link VectorIndexingConfig}. */
+	public FieldConfigBuilder indexAs(String indexedFieldName, VectorIndexingConfig vectorIndexingConfig) {
+		return indexAs(IndexAs.newBuilder().setIndexFieldName(indexedFieldName).setVectorIndexingConfig(vectorIndexingConfig).build());
 	}
 
 	public FieldConfigBuilder index() {
@@ -238,7 +326,19 @@ public class FieldConfigBuilder {
 		FieldConfig.Builder fcBuilder = FieldConfig.newBuilder();
 		fcBuilder.setStoredFieldName(storedFieldName);
 		fcBuilder.setFieldType(fieldType);
-		fcBuilder.addAllIndexAs(indexAsList);
+		if (vectorIndexingConfig != null) {
+			// the field-wide indexing config is the default for representations that did not set their own
+			VectorIndexingConfig defaultIndexingConfig = vectorIndexingConfig.build();
+			for (IndexAs indexAs : indexAsList) {
+				fcBuilder.addIndexAs(indexAs.hasVectorIndexingConfig() ? indexAs : indexAs.toBuilder().setVectorIndexingConfig(defaultIndexingConfig).build());
+			}
+		}
+		else {
+			fcBuilder.addAllIndexAs(indexAsList);
+		}
+		if (vectorDescription != null) {
+			fcBuilder.setVectorDescription(vectorDescription);
+		}
 		fcBuilder.addAllFacetAs(facetAsList);
 		fcBuilder.addAllSortAs(sortAsList);
 		if (geoPointConfig != null) {

@@ -221,32 +221,52 @@ public class ZuliaUtil {
 		return document.toJson();
 	}
 
+	/** Converts a collection of numbers to a {@code float[]}, accepting any {@link Number} subtype. */
+	public static float[] toFloatArray(Collection<? extends Number> collection) {
+		float[] result = new float[collection.size()];
+		int i = 0;
+		for (Number element : collection) {
+			result[i++] = element.floatValue();
+		}
+		return result;
+	}
+
+	/** {@link #toFloatArray(Collection)} for an erased collection. Elements must be {@link Number} or iteration throws ClassCastException. */
+	@SuppressWarnings("unchecked")
+	public static float[] toFloatArrayUnchecked(Collection<?> collection) {
+		return toFloatArray((Collection<? extends Number>) collection);
+	}
+
+	/** Converts a collection of numbers to a {@code double[]}, accepting any {@link Number} subtype. */
+	public static double[] toDoubleArray(Collection<? extends Number> collection) {
+		double[] result = new double[collection.size()];
+		int i = 0;
+		for (Number element : collection) {
+			result[i++] = element.doubleValue();
+		}
+		return result;
+	}
+
+	/** {@link #toDoubleArray(Collection)} for an erased collection. Elements must be {@link Number} or iteration throws ClassCastException. */
+	@SuppressWarnings("unchecked")
+	public static double[] toDoubleArrayUnchecked(Collection<?> collection) {
+		return toDoubleArray((Collection<? extends Number>) collection);
+	}
+
 	public static float[] getFloatArray(Document document, String fieldName, float[] defaultValue) {
-		List<Double> vector = document.getList(fieldName, Double.class);
+		List<Number> vector = document.getList(fieldName, Number.class);
 		if (vector == null) {
 			return defaultValue;
 		}
-
-		float[] vectorFloat = new float[vector.size()];
-		for (int i = 0; i < vector.size(); i++) {
-			vectorFloat[i] = vector.get(i).floatValue();
-		}
-		return vectorFloat;
-
+		return toFloatArray(vector);
 	}
 
 	public static double[] getDoubleArray(Document document, String fieldName, double[] defaultValue) {
-		List<Double> vector = document.getList(fieldName, Double.class);
+		List<Number> vector = document.getList(fieldName, Number.class);
 		if (vector == null) {
 			return defaultValue;
 		}
-
-		double[] vectorFloat = new double[vector.size()];
-		for (int i = 0; i < vector.size(); i++) {
-			vectorFloat[i] = vector.get(i);
-		}
-		return vectorFloat;
-
+		return toDoubleArray(vector);
 	}
 
 	public static void filterDocument(org.bson.Document mongoDocument, Collection<String> returnFields) {
