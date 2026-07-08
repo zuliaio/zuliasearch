@@ -12,7 +12,12 @@ public class VectorUtil {
 			normA += a[i] * a[i];
 			normB += b[i] * b[i];
 		}
-		return (float) (dot / (Math.sqrt(normA) * Math.sqrt(normB)));
+		double denom = Math.sqrt(normA) * Math.sqrt(normB);
+		// A zero-magnitude vector has no direction, so cosine is undefined, but returning 0 is numerically safer
+		if (denom == 0.0) {
+			return 0f;
+		}
+		return (float) (dot / denom);
 	}
 
 }

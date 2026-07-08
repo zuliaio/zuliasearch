@@ -14,6 +14,7 @@ import io.zulia.message.ZuliaIndex.FieldConfig;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.message.ZuliaIndex.ShardMapping;
+import io.zulia.message.ZuliaIndex.VectorIndexingConfig;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.Facet;
 import io.zulia.message.ZuliaQuery.FacetRequest;
@@ -69,6 +70,7 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RescoreTopNQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -518,18 +520,44 @@ public class ZuliaIndex {
 		if (query.getQfList().isEmpty()) {
 			throw new IllegalArgumentException("Cosine sim query must give at least one query field (qf)");
 		}
-		else if (query.getQfList().size() == 1) {
-			return new KnnFloatVectorQuery(query.getQfList().getFirst(), vector, query.getVectorTopN(), getPreFilter(query.getVectorPreQueryList()));
+
+		int topN = query.getVectorTopN();
+		float requestedOversample = query.getVectorOversample();
+		// A NaN or negative oversample is a client error. 0 means "let the field's encoding pick a default".
+		if (Float.isNaN(requestedOversample) || requestedOversample < 0f) {
+			throw new IllegalArgumentException("vectorOversample must be >= 0 (0 selects the field's default), got " + requestedOversample);
 		}
-		else {
-			BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
-			BooleanQuery preFilter = getPreFilter(query.getVectorPreQueryList());
-			for (String field : query.getQfList()) {
-				KnnFloatVectorQuery knnVectorQuery = new KnnFloatVectorQuery(field, vector, query.getVectorTopN(), preFilter);
-				booleanQueryBuilder.add(knnVectorQuery, BooleanClause.Occur.SHOULD);
+		BooleanQuery preFilter = getPreFilter(query.getVectorPreQueryList());
+
+		if (query.getQfList().size() == 1) {
+			return buildKnnQuery(query.getQfList().getFirst(), vector, topN, requestedOversample, preFilter);
+		}
+
+		BooleanQuery.Builder booleanQueryBuilder = new BooleanQuery.Builder();
+		for (String field : query.getQfList()) {
+			booleanQueryBuilder.add(buildKnnQuery(field, vector, topN, requestedOversample, preFilter), BooleanClause.Occur.SHOULD);
+		}
+		return booleanQueryBuilder.build();
+	}
+
+	private Query buildKnnQuery(String field, float[] vector, int topN, float requestedOversample, BooleanQuery preFilter) {
+		// oversampling pulls extra candidates from the quantized graph and reranks them with full-precision vectors.
+		// The rescore runs per shard, so the cross-shard merge keeps comparing exact-similarity scores
+		VectorIndexingConfig vectorIndexingConfig = VectorFieldResolver.resolve(indexConfig, field);
+		if (VectorFieldResolver.isQuantized(vectorIndexingConfig)) {
+			float oversample;
+			if (requestedOversample > 0f)
+				oversample = requestedOversample;
+			else
+				oversample = VectorFieldResolver.defaultOversample(vectorIndexingConfig);
+			oversample = Math.min(oversample, VectorFieldResolver.MAX_OVERSAMPLE);
+			if (oversample > 1.0f) {
+				int candidates = (int) Math.ceil(topN * (double) oversample);
+				KnnFloatVectorQuery knnVectorQuery = new KnnFloatVectorQuery(field, vector, candidates, preFilter);
+				return RescoreTopNQuery.createFullPrecisionRescorerQuery(knnVectorQuery, vector, field, topN);
 			}
-			return booleanQueryBuilder.build();
 		}
+		return new KnnFloatVectorQuery(field, vector, topN, preFilter);
 	}
 
 	public Query handleMoreLikeThisQuery(ZuliaQuery.Query query) {

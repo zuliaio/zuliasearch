@@ -1,6 +1,6 @@
 [versions]
 grpc = "1.82.1"
-lucene = "10.4.0"
+lucene = "10.5.0"
 eclipse-collections = "13.0.0"
 graalvm = "25.0.3"
 micronaut = "5.0.2" # micronaut platform BOM version, applied via micronaut { version(...) }

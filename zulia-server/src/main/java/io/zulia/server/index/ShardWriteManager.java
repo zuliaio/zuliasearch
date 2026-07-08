@@ -109,6 +109,8 @@ public class ShardWriteManager {
 		tieredMergePolicy.setDeletesPctAllowed(0.15);
 		config.setMergePolicy(tieredMergePolicy);
 		config.setIndexDeletionPolicy(snapshotDeletionPolicy);
+		// per-field vector codec, encodes each vector field representation per its VectorIndexingConfig
+		config.setCodec(ZuliaCodec.currentWriteCodec(indexConfig));
 		config.setMaxBufferedDocs(Integer.MAX_VALUE);
 		config.setRAMBufferSizeMB(ServerIndexConfig.DEFAULT_RAM_BUFFER_MB); // overwritten by updateIndexSettings() in the constructor
 		config.setUseCompoundFile(false);

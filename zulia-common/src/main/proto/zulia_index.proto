@@ -209,11 +209,56 @@ message FieldConfig {
     // Build a Lucene doc-values skip index on this field's sort doc-values (enables block-skipping range queries and dynamic-pruning sorts).
     // optional so we can tell "unset" (default on for new fields) apart from an explicit opt-out. Frozen once a field exists
     optional bool docValueSkipIndex = 10;
+    VectorDescription vectorDescription = 11; // for VECTOR / UNIT_VECTOR fields: dimensions, similarity, model provenance
 }
 
 message GeoPointConfig {
     string latitudeKey = 1;   // default "latitude"
     string longitudeKey = 2;  // default "longitude"
+}
+
+// Properties of the vector data itself, shared by every indexed representation of the field.
+// Per-representation indexing choices (quantization, HNSW) live in VectorIndexingConfig on each IndexAs.
+message VectorDescription {
+    enum Similarity {
+        DEFAULT = 0;            // derive from field type (VECTOR=COSINE, UNIT_VECTOR=DOT_PRODUCT)
+        COSINE = 1;
+        DOT_PRODUCT = 2;
+        EUCLIDEAN = 3;
+        MAX_INNER_PRODUCT = 4;
+    }
+
+    Similarity similarity = 1;
+    uint32 dimensions = 2;          // 0 = infer at index time. When set, vector length is validated on store
+
+    // Provenance only. Records which embedding model produced these vectors. The server does not run inference
+    string modelName = 3;           // e.g. "BAAI/bge-large-en-v1.5"
+    string modelDescription = 4;    // optional free-text notes about the model/vectors
+}
+
+// How one indexed representation of a dense-vector field is encoded on disk. Lives on IndexAs, so one stored field
+// indexed under multiple names can carry a different encoding per name. With no config the encoding resolves by
+// createdIndexVersion (INT8 for new indexes, FLOAT32 for legacy).
+message VectorIndexingConfig {
+    enum Encoding {
+        ENCODING_UNSPECIFIED = 0; // no explicit choice, the server applies the index-creation-version default
+        FLOAT32 = 1;   // raw float32 HNSW (Lucene99HnswVectorsFormat). Explicit opt-out of quantization
+        INT8 = 2;      // 8-bit scalar quant (UNSIGNED_BYTE)
+        INT7 = 3;      // 7-bit scalar quant (SEVEN_BIT)
+        INT4 = 4;      // 4-bit scalar quant (PACKED_NIBBLE)
+        BBQ = 5;       // 1-bit Better Binary Quantization (SINGLE_BIT_QUERY_NIBBLE)
+        BBQ_2BIT = 6;  // 2-bit binary quant (DIBIT_QUERY_NIBBLE)
+    }
+
+    enum IndexType {
+        HNSW = 0;   // approximate nearest neighbor graph
+        FLAT = 1;   // exact brute force (quantized flat)
+    }
+
+    Encoding encoding = 1;          // an explicit value (incl FLOAT32) is authoritative
+    IndexType indexType = 2;
+    uint32 hnswM = 3;               // 0 means 16
+    uint32 hnswEfConstruction = 4;  // 0 means 100
 }
 
 
@@ -265,6 +310,7 @@ message AnalyzerSettings {
 message IndexAs {
     string indexFieldName = 1;
     string analyzerName = 2;
+    VectorIndexingConfig vectorIndexingConfig = 3; // for VECTOR / UNIT_VECTOR fields: quantization and HNSW graph for this representation
 }
 
 message Superbit {
