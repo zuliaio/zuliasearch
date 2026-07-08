@@ -7,11 +7,12 @@ import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.security.annotation.Secured;
-import io.micronaut.security.rules.SecurityRule;
 import io.zulia.ui.rest.beans.UserEntity;
 import io.zulia.ui.rest.persistence.MongoUserPersistence;
 
-@Secured(SecurityRule.IS_ANONYMOUS)
+// User provisioning requires an authenticated ADMIN. The first user must be bootstrapped
+// offline via UserCreator; an anonymous create endpoint would let anyone self-provision admin.
+@Secured("ADMIN")
 @Controller
 @Requires(beans = MongoUserPersistence.class)
 public class UserController {

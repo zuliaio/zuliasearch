@@ -10,7 +10,6 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.List;
 import java.util.Optional;
 
 import static io.micronaut.security.errors.IssuingAnAccessTokenErrorCode.INVALID_GRANT;
@@ -19,9 +18,11 @@ import static io.micronaut.security.errors.IssuingAnAccessTokenErrorCode.INVALID
 public class MongoRefreshTokenPersistence implements RefreshTokenPersistence {
 
 	private final RefreshTokenRepository refreshTokenRepository;
+	private final MongoUserPersistence userPersistence;
 
-	public MongoRefreshTokenPersistence(RefreshTokenRepository refreshTokenRepository) {
+	public MongoRefreshTokenPersistence(RefreshTokenRepository refreshTokenRepository, MongoUserPersistence userPersistence) {
 		this.refreshTokenRepository = refreshTokenRepository;
+		this.userPersistence = userPersistence;
 	}
 
 	@Override
@@ -42,7 +43,8 @@ public class MongoRefreshTokenPersistence implements RefreshTokenPersistence {
 					emitter.error(new OauthErrorResponseException(INVALID_GRANT, "refresh token revoked", null));
 				}
 				else {
-					emitter.next(Authentication.build(token.getUsername(), List.of("ADMIN")));
+					// Rebuild with the user's current stored roles, not a hardcoded ADMIN grant.
+					emitter.next(Authentication.build(token.getUsername(), userPersistence.getRoles(token.getUsername())));
 					emitter.complete();
 				}
 			}
