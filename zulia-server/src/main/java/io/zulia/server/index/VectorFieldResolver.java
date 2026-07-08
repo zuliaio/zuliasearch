@@ -97,12 +97,9 @@ public final class VectorFieldResolver {
 	}
 
 	/**
-	 * Null (the codec read path) or explicit FLOAT32 maps to the raw float32 HNSW format used before quantization existed.
+	 * FLOAT32 maps to the raw float32 HNSW format used before quantization existed.
 	 */
 	public static KnnVectorsFormat buildFormat(VectorIndexingConfig vectorIndexingConfig) {
-		if (vectorIndexingConfig == null) {
-			return new Lucene99HnswVectorsFormat(DEFAULT_HNSW_M, DEFAULT_HNSW_EF_CONSTRUCTION);
-		}
 		if (!isQuantized(vectorIndexingConfig)) {
 			return new Lucene99HnswVectorsFormat(hnswM(vectorIndexingConfig), hnswEfConstruction(vectorIndexingConfig));
 		}

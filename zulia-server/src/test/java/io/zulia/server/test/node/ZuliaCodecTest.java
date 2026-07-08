@@ -7,6 +7,7 @@ import io.zulia.message.ZuliaIndex.VectorIndexingConfig;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.index.ZuliaIndexVersion;
 import io.zulia.server.index.ZuliaLucene104Codec;
+import io.zulia.server.index.ZuliaLucene104WriteCodec;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.codecs.lucene104.Lucene104Codec;
 import org.apache.lucene.codecs.lucene104.Lucene104HnswScalarQuantizedVectorsFormat;
@@ -86,6 +87,15 @@ public class ZuliaCodecTest {
 	}
 
 	@Test
+	public void spiCodecIsReadOnly() {
+		// the SPI instance has no index config, so writing through it must fail fast rather than pick default formats
+		ZuliaLucene104Codec codec = new ZuliaLucene104Codec();
+		PerFieldKnnVectorsFormat perFieldFormat = (PerFieldKnnVectorsFormat) codec.knnVectorsFormat();
+		IllegalStateException exception = Assertions.assertThrows(IllegalStateException.class, () -> perFieldFormat.getKnnVectorsFormatForField(FIELD));
+		Assertions.assertTrue(exception.getMessage().contains("read-only"), "unexpected message: " + exception.getMessage());
+	}
+
+	@Test
 	public void configlessFieldFollowsIndexVersion() throws Exception {
 		// a config-less field inherits the index-creation-version default: float32 below VECTOR_DEFAULT_INT8, INT8 at/after
 		Assertions.assertEquals(HNSW_FLOAT_NAME, generateIndexAndGetFormatName(buildConfig(null, false, ZuliaIndexVersion.VECTOR_DEFAULT_INT8 - 1), FIELD),
@@ -160,7 +170,7 @@ public class ZuliaCodecTest {
 			fields = new String[] { FIELD };
 		}
 		IndexWriterConfig writerConfig = new IndexWriterConfig(new StandardAnalyzer());
-		writerConfig.setCodec(new ZuliaLucene104Codec(config));
+		writerConfig.setCodec(new ZuliaLucene104WriteCodec(config));
 		try (IndexWriter writer = new IndexWriter(directory, writerConfig)) {
 			Random random = new Random(42); // deterministic so comparable across runs
 			for (int i = 0; i < DOCS; i++) {
