@@ -20,10 +20,11 @@ micronaut:
         signatures:
           secret:
             generator:
-              secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:ZuliaUISecretGeneratorPassword}"'
+              # Test-only default so the suite runs offline. Production (application.yml) has no default.
+              secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:test-only-secret-do-not-use-in-production}"'
         generator:
           refresh-token:
-            secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:ZuliaUISecretGeneratorPassword}"'
+            secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:test-only-secret-do-not-use-in-production}"'
             enabled: true
       generator:
         access-token:

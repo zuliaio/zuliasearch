@@ -11,8 +11,6 @@ import io.zulia.ui.rest.persistence.MongoUserPersistence;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import java.util.List;
-
 @Singleton
 public class AuthenticationProviderUserPass<B> implements HttpRequestAuthenticationProvider<B> {
 
@@ -22,9 +20,10 @@ public class AuthenticationProviderUserPass<B> implements HttpRequestAuthenticat
 	@Override
 	public @NonNull AuthenticationResponse authenticate(@Nullable HttpRequest<B> requestContext, @NonNull AuthenticationRequest<String, String> authRequest) {
 
-		boolean userVerified = mongoUserPersistence.verifyUser(authRequest.getIdentity(), authRequest.getSecret());
+		String username = authRequest.getIdentity();
+		boolean userVerified = mongoUserPersistence.verifyUser(username, authRequest.getSecret());
 		return userVerified ?
-				AuthenticationResponse.success(authRequest.getIdentity(), List.of("ADMIN")) :
+				AuthenticationResponse.success(username, mongoUserPersistence.getRoles(username)) :
 				AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
 	}
 }

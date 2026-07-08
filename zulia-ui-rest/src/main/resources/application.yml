@@ -20,10 +20,12 @@ micronaut:
         signatures:
           secret:
             generator:
-              secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:ZuliaUISecretGeneratorPassword}"'
+              # No default: the app must fail fast if JWT_GENERATOR_SIGNATURE_SECRET is unset.
+              # A committed fallback secret would let anyone forge admin tokens.
+              secret: '"${JWT_GENERATOR_SIGNATURE_SECRET}"'
         generator:
           refresh-token:
-            secret: '"${JWT_GENERATOR_SIGNATURE_SECRET:ZuliaUISecretGeneratorPassword}"'
+            secret: '"${JWT_GENERATOR_SIGNATURE_SECRET}"'
             enabled: true
       generator:
         access-token:
