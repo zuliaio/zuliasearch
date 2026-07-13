@@ -7,6 +7,7 @@ import io.micronaut.runtime.server.EmbeddedServer;
 import io.micronaut.security.authentication.UsernamePasswordCredentials;
 import io.micronaut.security.token.render.BearerAccessRefreshToken;
 import io.zulia.ui.rest.beans.UserEntity;
+import io.zulia.ui.rest.persistence.MongoUserPersistence;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
@@ -26,11 +27,7 @@ public class DeclarativeHttpClientWithJwtTest {
 	@Test
 	void verifyJwtAuthenticationWorksWithDeclarativeClient() throws ParseException {
 
-		// create user
-		UserEntity user = new UserEntity();
-		user.setUsername("zulia-test");
-		user.setPassword("password");
-		appClient.createUser(user);
+		TestUsers.ensureTestUser(embeddedServer);
 
 		UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
 		BearerAccessRefreshToken loginRsp = appClient.login(creds);
