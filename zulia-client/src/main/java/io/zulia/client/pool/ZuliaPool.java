@@ -128,6 +128,9 @@ public class ZuliaPool {
 
 		int tries = 0;
 		while (true) {
+			if (isClosed) {
+				throw new IllegalStateException("Cannot execute " + command.getClass().getSimpleName() + " because the pool is closed");
+			}
 			Node selectedNode = null;
 			try {
 				if (routingEnabled && (indexRouting != null)) {
@@ -210,7 +213,8 @@ public class ZuliaPool {
 
 			}
 			catch (Exception e) {
-				if (tries >= retries) {
+				// a closed pool must not retry: the retry would surface a pool-closed error and hide this one
+				if (tries >= retries || isClosed) {
 					if (connectionListener != null) {
 						connectionListener.exception(selectedNode, command, e);
 					}
@@ -243,15 +247,25 @@ public class ZuliaPool {
 	}
 
 	public void close() {
-		for (ZuliaConnection connection : zuliaConnectionMap.values()) {
-			closeConnection(connection);
-		}
-
-		for (ZuliaRESTClient restClient : zuliaRestPoolMap.values()) {
-			restClient.close();
-		}
-
+		// reject new work before draining so a connection cannot be created after its bucket was drained
 		isClosed = true;
+
+		// drain by remove, repeating while non-empty.  An execute() that raced past the isClosed check may
+		// still insert a connection mid-drain, and it must be closed too rather than leak its channel
+		while (!zuliaConnectionMap.isEmpty() || !zuliaRestPoolMap.isEmpty()) {
+			for (String nodeKey : zuliaConnectionMap.keySet()) {
+				ZuliaConnection connection = zuliaConnectionMap.remove(nodeKey);
+				if (connection != null) {
+					closeConnection(connection);
+				}
+			}
+			for (String nodeKey : zuliaRestPoolMap.keySet()) {
+				ZuliaRESTClient restClient = zuliaRestPoolMap.remove(nodeKey);
+				if (restClient != null) {
+					restClient.close();
+				}
+			}
+		}
 	}
 
 }
