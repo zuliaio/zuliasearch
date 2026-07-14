@@ -69,6 +69,9 @@ public class UpdateIndexCmd implements Callable<Integer> {
 	@CommandLine.Option(names = "--disableCompression", arity = "1", paramLabel = "true|false", description = "When true, disables compression of stored documents (default false)")
 	private Boolean disableCompression;
 
+	@CommandLine.Option(names = "--transientIndex", arity = "1", paramLabel = "true|false", description = "When true the index loads lazily and can be unloaded when idle or over the node's transient cache bound (default false)")
+	private Boolean transientIndex;
+
 	@Override
 	public Integer call() throws Exception {
 
@@ -142,6 +145,9 @@ public class UpdateIndexCmd implements Callable<Integer> {
 		}
 		if (disableCompression != null) {
 			updateIndex.setDisableCompression(disableCompression);
+		}
+		if (transientIndex != null) {
+			updateIndex.setTransientIndex(transientIndex);
 		}
 
 		return updateIndex;

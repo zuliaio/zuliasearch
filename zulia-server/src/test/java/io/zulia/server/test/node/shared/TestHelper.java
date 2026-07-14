@@ -85,6 +85,10 @@ public class TestHelper {
 
 	}
 
+	public static List<ZuliaNode> getZuliaNodes() {
+		return List.copyOf(ZULIA_NODES);
+	}
+
 	public static void startNodes(boolean startRest) throws Exception {
 		startNodes(startRest, null);
 	}

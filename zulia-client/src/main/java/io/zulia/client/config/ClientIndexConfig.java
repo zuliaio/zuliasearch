@@ -47,6 +47,7 @@ public class ClientIndexConfig {
 	private Integer nrtTaxoMaxMergeSizeMB;
 	private Integer nrtTaxoMaxCachedMB;
 	private Boolean nrtCachingDisabled;
+	private Boolean transientIndex;
 
 	private Boolean disableCompression;
 
@@ -197,6 +198,19 @@ public class ClientIndexConfig {
 
 	public ClientIndexConfig setNrtCachingDisabled(Boolean nrtCachingDisabled) {
 		this.nrtCachingDisabled = nrtCachingDisabled;
+		return this;
+	}
+
+	public Boolean getTransientIndex() {
+		return transientIndex;
+	}
+
+	/**
+	 * When true, the index loads lazily and may be unloaded from memory after idle time or under the node's
+	 * transient cache bound, then reloaded on demand. Default false: the index loads at startup and stays resident.
+	 */
+	public ClientIndexConfig setTransientIndex(Boolean transientIndex) {
+		this.transientIndex = transientIndex;
 		return this;
 	}
 
@@ -484,6 +498,10 @@ public class ClientIndexConfig {
 			isb.setNrtCachingDisabled(nrtCachingDisabled);
 		}
 
+		if (transientIndex != null) {
+			isb.setTransientIndex(transientIndex);
+		}
+
 		if (disableCompression != null) {
 			isb.setDisableCompression(disableCompression);
 		}
@@ -561,6 +579,7 @@ public class ClientIndexConfig {
 		this.nrtTaxoMaxMergeSizeMB = indexSettings.getNrtTaxoMaxMergeSizeMB();
 		this.nrtTaxoMaxCachedMB = indexSettings.getNrtTaxoMaxCachedMB();
 		this.nrtCachingDisabled = indexSettings.getNrtCachingDisabled();
+		this.transientIndex = indexSettings.getTransientIndex();
 		this.disableCompression = indexSettings.getDisableCompression();
 		this.defaultConcurrency = indexSettings.getDefaultConcurrency();
 		this.description = indexSettings.getDescription();

@@ -7,6 +7,7 @@ import io.zulia.message.ZuliaServiceOuterClass.SendSegmentFilesResponse;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.index.replication.ReplicaDirectoryApplier;
 import io.zulia.server.index.replication.ReplicationLimits;
+import io.zulia.server.index.resident.IndexLease;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,10 +21,11 @@ public class ReplicaStreamObserver implements StreamObserver<SegmentFileData> {
 	private final StreamObserver<SendSegmentFilesResponse> responseObserver;
 	private final Semaphore inboundSemaphore;
 
+	private IndexLease lease;
 	private ReplicaDirectoryApplier applier;
 	private long generation;
 	private boolean terminated;
-	private boolean permitReleased;
+	private boolean streamResourcesReleased;
 
 	public ReplicaStreamObserver(ZuliaIndexManager indexManager, StreamObserver<SendSegmentFilesResponse> responseObserver, Semaphore inboundSemaphore) {
 		this.indexManager = indexManager;
@@ -38,7 +40,9 @@ public class ReplicaStreamObserver implements StreamObserver<SegmentFileData> {
 		}
 		try {
 			if (applier == null) {
-				applier = indexManager.getIndexFromName(data.getIndexName()).newReplicaApplier(data.getShardNumber());
+				// the lease spans the whole inbound stream so the index cannot be unloaded while segment files are applied
+				lease = indexManager.leaseIndexFromName(data.getIndexName());
+				applier = lease.getIndex().newReplicaApplier(data.getShardNumber());
 			}
 
 			generation = data.getGeneration();
@@ -67,13 +71,13 @@ public class ReplicaStreamObserver implements StreamObserver<SegmentFileData> {
 		if (applier != null) {
 			applier.abort();
 		}
-		releasePermit();
+		releaseStreamResources();
 	}
 
 	@Override
 	public void onCompleted() {
 		if (terminated) {
-			releasePermit();
+			releaseStreamResources();
 			return;
 		}
 		try {
@@ -97,7 +101,7 @@ public class ReplicaStreamObserver implements StreamObserver<SegmentFileData> {
 			}
 		}
 		finally {
-			releasePermit();
+			releaseStreamResources();
 		}
 	}
 
@@ -113,14 +117,17 @@ public class ReplicaStreamObserver implements StreamObserver<SegmentFileData> {
 			}
 			catch (IllegalStateException ignored) {
 			}
-			releasePermit();
+			releaseStreamResources();
 		}
 	}
 
-	private void releasePermit() {
-		if (!permitReleased) {
-			permitReleased = true;
+	private void releaseStreamResources() {
+		if (!streamResourcesReleased) {
+			streamResourcesReleased = true;
 			inboundSemaphore.release();
+			if (lease != null) {
+				lease.close();
+			}
 		}
 	}
 }

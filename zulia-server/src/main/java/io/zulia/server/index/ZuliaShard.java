@@ -72,6 +72,18 @@ public class ZuliaShard {
 		return primary;
 	}
 
+	/**
+	 * True when this primary shard has changes that are not yet committed. Always false for replicas.
+	 */
+	public boolean isDirty() {
+		if (shardWriteManager == null) {
+			return false;
+		}
+		Long lastChange = shardWriteManager.getLastChanged();
+		Long lastCommit = shardWriteManager.getLastCommit();
+		return lastChange != null && (lastCommit == null || lastChange > lastCommit);
+	}
+
 	public void updateIndexSettings() {
 		if (shardWriteManager != null) {
 			shardWriteManager.updateIndexSettings();
