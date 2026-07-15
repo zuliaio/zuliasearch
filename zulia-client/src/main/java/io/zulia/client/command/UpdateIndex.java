@@ -53,6 +53,7 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private Integer nrtTaxoMaxMergeSizeMB;
 	private Integer nrtTaxoMaxCachedMB;
 	private Boolean nrtCachingDisabled;
+	private Boolean transientIndex;
 
 	private Boolean disableCompression;
 	private Integer defaultConcurrency;
@@ -372,6 +373,19 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		return this;
 	}
 
+	public Boolean getTransientIndex() {
+		return transientIndex;
+	}
+
+	/**
+	 * When true the index loads lazily and may be unloaded from memory after idle time or under the node's
+	 * transient cache bound, then reloaded on demand. When false the index stays resident once loaded.
+	 */
+	public UpdateIndex setTransientIndex(Boolean transientIndex) {
+		this.transientIndex = transientIndex;
+		return this;
+	}
+
 	public Integer getMaxMergeThreads() {
 		return maxMergeThreads;
 	}
@@ -628,6 +642,11 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		if (nrtCachingDisabled != null) {
 			updateIndexSettings.setSetNrtCachingDisabled(true);
 			updateIndexSettings.setNrtCachingDisabled(nrtCachingDisabled);
+		}
+
+		if (transientIndex != null) {
+			updateIndexSettings.setSetTransientIndex(true);
+			updateIndexSettings.setTransientIndex(transientIndex);
 		}
 
 		if (maxMergeThreads != null) {

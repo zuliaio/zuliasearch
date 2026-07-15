@@ -16,9 +16,11 @@ public class InternalRpcConnection {
 	private final String memberAddress;
 	private final int internalServicePort;
 
-	private ManagedChannel channel;
-	private ZuliaServiceBlockingStub blockingStub;
-	private ZuliaServiceStub asyncStub;
+	// final so a concurrent close() can never surface a null stub to an in-flight request. Calls on a
+	// shutdown channel fail with a clean retriable StatusRuntimeException instead of an NPE.
+	private final ManagedChannel channel;
+	private final ZuliaServiceBlockingStub blockingStub;
+	private final ZuliaServiceStub asyncStub;
 
 	public InternalRpcConnection(String memberAddress, int servicePort) {
 		this.memberAddress = memberAddress;
@@ -44,25 +46,22 @@ public class InternalRpcConnection {
 
 	public void close() {
 		try {
-			if (channel != null) {
-				LOG.info("Closing connection to {}:{}", memberAddress, internalServicePort);
-				channel.shutdown();
-				try {
-					channel.awaitTermination(15, TimeUnit.SECONDS);
+			LOG.info("Closing connection to {}:{}", memberAddress, internalServicePort);
+			channel.shutdown();
+			try {
+				if (!channel.awaitTermination(15, TimeUnit.SECONDS)) {
+					LOG.warn("Connection to {}:{} did not terminate within 15s on close, forcing shutdown", memberAddress, internalServicePort);
+					channel.shutdownNow();
 				}
-				catch (InterruptedException ex) {
-					LOG.warn("connection to {}:{} timed out on close", memberAddress, internalServicePort);
-				}
-
+			}
+			catch (InterruptedException ex) {
+				LOG.warn("Interrupted while closing connection to {}:{}, forcing shutdown", memberAddress, internalServicePort);
+				channel.shutdownNow();
+				Thread.currentThread().interrupt();
 			}
 		}
 		catch (Exception e) {
-			LOG.error("Close Failed", e);
+			LOG.error("Close failed: ", e);
 		}
-
-		channel = null;
-		blockingStub = null;
-		asyncStub = null;
-
 	}
 }

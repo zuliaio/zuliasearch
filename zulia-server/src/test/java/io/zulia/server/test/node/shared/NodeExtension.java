@@ -68,7 +68,7 @@ public class NodeExtension implements BeforeAllCallback, AfterAllCallback, Befor
 	public void restartNodes() throws Exception {
 		TestHelper.stopNodes();
 		Thread.sleep(2000);
-		TestHelper.startNodes(false); // micronaut does not like starting again on the same port
+		TestHelper.startNodes(false, configCustomizer); // micronaut does not like starting again on the same port
 		Thread.sleep(2000);
 	}
 }

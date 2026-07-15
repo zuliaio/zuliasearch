@@ -163,9 +163,10 @@ public class FSIndexService implements IndexService {
 			throw new IndexConfigDoesNotExistException(indexSettingsFile.getName());
 		}
 
-		JsonFormat.Parser parser = JsonFormat.parser();
 		ZuliaIndex.IndexSettings.Builder indexSettingsBuilder = ZuliaIndex.IndexSettings.newBuilder();
-		parser.merge(new FileReader(indexSettingsFile), indexSettingsBuilder);
+		try (FileReader fileReader = new FileReader(indexSettingsFile)) {
+			JsonFormat.parser().merge(fileReader, indexSettingsBuilder);
+		}
 		return indexSettingsBuilder.build();
 	}
 
@@ -175,7 +176,9 @@ public class FSIndexService implements IndexService {
 		}
 
 		IndexShardMapping.Builder indexMappingBuilder = IndexShardMapping.newBuilder();
-		JsonFormat.parser().merge(new FileReader(indexMappingFile), indexMappingBuilder);
+		try (FileReader fileReader = new FileReader(indexMappingFile)) {
+			JsonFormat.parser().merge(fileReader, indexMappingBuilder);
+		}
 		return indexMappingBuilder.build();
 	}
 
@@ -185,7 +188,9 @@ public class FSIndexService implements IndexService {
 		}
 
 		IndexAlias.Builder indexAliasBuilder = IndexAlias.newBuilder();
-		JsonFormat.parser().merge(new FileReader(indexAliasFile), indexAliasBuilder);
+		try (FileReader fileReader = new FileReader(indexAliasFile)) {
+			JsonFormat.parser().merge(fileReader, indexAliasBuilder);
+		}
 		return indexAliasBuilder.build();
 	}
 

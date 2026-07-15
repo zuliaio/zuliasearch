@@ -16,6 +16,7 @@ import io.zulia.ZuliaRESTConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.NodeStats;
 import io.zulia.server.index.ZuliaIndexManager;
+import io.zulia.server.index.resident.LoadedIndexCache;
 import io.zulia.server.node.ZuliaNode;
 import io.zulia.util.ZuliaVersion;
 
@@ -69,6 +70,11 @@ public class StatsController {
 
 		List<ZuliaBase.IndexStats> stats = indexManager.getIndexStats();
 		nodeStats.addAllIndexStat(stats);
+
+		LoadedIndexCache loadedIndexCache = indexManager.getLoadedIndexCache();
+		nodeStats.setResidentIndexCount(loadedIndexCache.getResidentCount());
+		nodeStats.setIndexLoadCount(loadedIndexCache.getLoadCount());
+		nodeStats.setIndexEvictionCount(loadedIndexCache.getEvictionCount());
 
 		return nodeStats.build();
 

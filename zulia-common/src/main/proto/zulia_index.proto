@@ -82,6 +82,11 @@ message IndexSettings {
     // Lets new indexes adopt evolving built-in defaults (e.g. id-sort doc-values skip index, default vector quantization)
     // that cannot be expressed per field and must not change for an index that already exists. 0 means legacy (pre-versioning).
     uint32 createdIndexVersion = 33;
+
+    // when true the index loads lazily and may be unloaded from memory after idle time or under the node's
+    // transient cache bound, then reloaded on demand. By default false which means the index loads at startup and stays
+    // resident, which is the behavior of all indexes created before this flag existed.
+    bool transientIndex = 34;
 }
 
 
@@ -176,6 +181,9 @@ message UpdateIndexSettings {
 
     bool setNumberOfReplicas = 53;
     uint32 numberOfReplicas = 54;
+
+    bool setTransientIndex = 55;
+    bool transientIndex = 56;
 
 }
 

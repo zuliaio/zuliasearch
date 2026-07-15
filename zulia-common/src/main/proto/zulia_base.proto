@@ -95,11 +95,17 @@ message NodeStats {
     double usedDataDirSpaceGB = 8;
     string zuliaVersion = 9;
     repeated IndexStats indexStat = 10;
+    // residency and churn stats for transient indexes on this node
+    uint32 residentIndexCount = 11;
+    uint64 indexLoadCount = 12;
+    uint64 indexEvictionCount = 13;
 }
 
 message IndexStats {
     string indexName = 1;
     repeated ShardCacheStats shardCacheStat = 2;
+    // false for a transient index currently unloaded from memory, and such entries carry no shard cache stats
+    bool resident = 3;
 }
 
 message ShardCacheStats {

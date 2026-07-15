@@ -5,8 +5,8 @@ import com.google.protobuf.ProtocolStringList;
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.AssociatedDocument;
-import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.ResultDocument;
 import io.zulia.message.ZuliaBase.ShardCountResponse;
 import io.zulia.message.ZuliaBase.Similarity;
@@ -36,19 +36,19 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.connection.client.InternalClient;
 import io.zulia.server.exceptions.IndexDoesNotExistException;
 import io.zulia.server.exceptions.ShardDoesNotExistException;
+import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.server.filestorage.DocumentStorage;
 import io.zulia.server.index.replication.ReplicaDirectoryApplier;
 import io.zulia.server.index.replication.ReplicaFileInfo;
 import io.zulia.server.index.replication.ReplicationRateLimiter;
 import io.zulia.server.index.replication.ReplicationShardState;
 import io.zulia.server.index.replication.ReplicationUtil;
 import io.zulia.server.index.replication.SegmentReplicationManager;
-import io.zulia.server.field.FieldTypeUtil;
-import io.zulia.server.filestorage.DocumentStorage;
-import io.zulia.server.search.aggregation.AggregationSettings;
 import io.zulia.server.search.GeoDistUtil;
 import io.zulia.server.search.MoreLikeThisLazyQuery;
 import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
+import io.zulia.server.search.aggregation.AggregationSettings;
 import io.zulia.server.search.queryparser.SetQueryHelper;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.util.DeletingFileVisitor;
@@ -302,7 +302,20 @@ public class ZuliaIndex {
 	private void loadPrimaryShard(int shardNumber) throws Exception {
 		ShardWriteManager shardWriteManager = new ShardWriteManager(shardNumber, getPathForIndex(shardNumber), getPathForFacetsIndex(shardNumber), indexConfig,
 				zuliaPerFieldAnalyzer, aggregationSettings);
-		ZuliaShard s = new ZuliaShard(shardWriteManager);
+		ZuliaShard s;
+		try {
+			s = new ZuliaShard(shardWriteManager);
+		}
+		catch (Exception e) {
+			// reader creation failed, so close the fully opened write manager or its write.lock stays held until JVM restart
+			try {
+				shardWriteManager.close();
+			}
+			catch (Exception cleanup) {
+				e.addSuppressed(cleanup);
+			}
+			throw e;
+		}
 		s.setPostCommitHook(() -> segmentReplicationManager.replicateAfterCommit(s));
 		LOG.info("Loaded primary shard {}:s{}", indexName, shardNumber);
 		primaryShardMap.put(shardNumber, s);
@@ -316,12 +329,20 @@ public class ZuliaIndex {
 		replicaShardMap.put(shardNumber, s);
 	}
 
-	private Path getPathForIndex(int shardNumber) {
+	public static Path getPathForIndex(ZuliaConfig zuliaConfig, String indexName, int shardNumber) {
 		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_idx");
 	}
 
-	private Path getPathForFacetsIndex(int shardNumber) {
+	public static Path getPathForFacetsIndex(ZuliaConfig zuliaConfig, String indexName, int shardNumber) {
 		return Paths.get(zuliaConfig.getDataPath(), "indexes", indexName + "_" + shardNumber + "_facets");
+	}
+
+	private Path getPathForIndex(int shardNumber) {
+		return getPathForIndex(zuliaConfig, indexName, shardNumber);
+	}
+
+	private Path getPathForFacetsIndex(int shardNumber) {
+		return getPathForFacetsIndex(zuliaConfig, indexName, shardNumber);
 	}
 
 	protected void unloadShard(int shardNumber) throws IOException {
@@ -1417,6 +1438,18 @@ public class ZuliaIndex {
 		return indexShardMapping;
 	}
 
+	/**
+	 * True when any local primary shard has uncommitted changes. Used to avoid evicting actively written indexes.
+	 */
+	public boolean isDirty() {
+		for (ZuliaShard shard : primaryShardMap.values()) {
+			if (shard.isDirty()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public String getIndexName() {
 		return indexName;
 	}
@@ -1576,6 +1609,7 @@ public class ZuliaIndex {
 
 		ZuliaBase.IndexStats.Builder indexStats = ZuliaBase.IndexStats.newBuilder();
 		indexStats.setIndexName(indexName);
+		indexStats.setResident(true);
 		for (ZuliaShard zuliaShard : primaryShardMap.values()) {
 			indexStats.addShardCacheStat(zuliaShard.getShardCacheStats());
 		}

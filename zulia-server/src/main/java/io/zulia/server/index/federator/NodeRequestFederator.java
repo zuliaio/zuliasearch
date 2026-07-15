@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -40,23 +41,30 @@ public abstract class NodeRequestFederator<I, O> extends NodeRequestBase<I, O> {
 			futureResponses.add(futureResponse);
 		}
 
+		// Join every subtask before reporting a failure. Abandoning still-running subtasks would let them
+		// outlive the caller's index lease, so an eviction could unload the index under a live operation.
 		ArrayList<O> results = new ArrayList<>();
+		Exception firstFailure = null;
 		for (Future<O> response : futureResponses) {
 			try {
-				O result = response.get();
-				results.add(result);
+				results.add(response.get());
 			}
 			catch (InterruptedException e) {
 				throw e;
 			}
-			catch (Exception e) {
-				Throwable cause = e.getCause();
-				if (cause instanceof Exception) {
-					throw (Exception) cause;
+			catch (ExecutionException e) {
+				Exception failure = e.getCause() instanceof Exception cause ? cause : e;
+				if (firstFailure == null) {
+					firstFailure = failure;
 				}
-
-				throw e;
+				else if (firstFailure != failure) {
+					firstFailure.addSuppressed(failure);
+				}
 			}
+		}
+
+		if (firstFailure != null) {
+			throw firstFailure;
 		}
 
 		return results;

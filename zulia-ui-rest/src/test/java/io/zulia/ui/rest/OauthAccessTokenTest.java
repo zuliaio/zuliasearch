@@ -30,14 +30,7 @@ public class OauthAccessTokenTest {
 	@Test
 	void verifyJWTAccessTokenRefreshWorks() throws InterruptedException {
 
-		{
-			// create user
-			UserEntity user = new UserEntity();
-			user.setUsername("zulia-test");
-			user.setPassword("password");
-			HttpRequest<?> request = HttpRequest.POST("/zuliauirest/create-user", user); // <4>
-			HttpResponse<BearerAccessRefreshToken> rsp = client.toBlocking().exchange(request, BearerAccessRefreshToken.class);
-		}
+		TestUsers.ensureTestUser(embeddedServer);
 
 		UsernamePasswordCredentials creds = new UsernamePasswordCredentials(USERNAME, PASSWORD);
 		HttpRequest<?> request = HttpRequest.POST("/zuliauirest/login", creds);

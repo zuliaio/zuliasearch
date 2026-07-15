@@ -3,7 +3,7 @@ package io.zulia.server.connection.server.handler;
 import io.zulia.message.ZuliaServiceOuterClass.GetSegmentFileInfoRequest;
 import io.zulia.message.ZuliaServiceOuterClass.GetSegmentFileInfoResponse;
 import io.zulia.message.ZuliaServiceOuterClass.SegmentFileInfo;
-import io.zulia.server.index.ZuliaIndex;
+import io.zulia.server.index.resident.IndexLease;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.index.replication.ReplicaFileInfo;
 import org.apache.lucene.util.Version;
@@ -22,8 +22,10 @@ public class GetSegmentFileInfoServerRequest extends ServerRequestHandler<GetSeg
 
 	@Override
 	protected GetSegmentFileInfoResponse handleCall(ZuliaIndexManager indexManager, GetSegmentFileInfoRequest request) throws Exception {
-		ZuliaIndex zuliaIndex = indexManager.getIndexFromName(request.getIndexName());
-		List<ReplicaFileInfo> files = zuliaIndex.listReplicaFileInfo(request.getShardNumber(), request.getTaxonomy());
+		List<ReplicaFileInfo> files;
+		try (IndexLease lease = indexManager.leaseIndexFromName(request.getIndexName())) {
+			files = lease.getIndex().listReplicaFileInfo(request.getShardNumber(), request.getTaxonomy());
+		}
 		GetSegmentFileInfoResponse.Builder responseBuilder = GetSegmentFileInfoResponse.newBuilder().setLuceneVersion(Version.LATEST.toString());
 		for (ReplicaFileInfo info : files) {
 			responseBuilder.addFiles(SegmentFileInfo.newBuilder().setFileName(info.name()).setLength(info.length()).setChecksum(info.checksum()).build());

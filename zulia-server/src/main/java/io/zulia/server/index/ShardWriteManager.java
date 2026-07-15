@@ -2,9 +2,9 @@ package io.zulia.server.index;
 
 import io.zulia.ZuliaFieldConstants;
 import io.zulia.server.analysis.ZuliaPerFieldAnalyzer;
-import io.zulia.server.search.aggregation.AggregationSettings;
 import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.index.cache.ZuliaTaxonomyWriterCache;
+import io.zulia.server.search.aggregation.AggregationSettings;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.index.DirectoryReader;
@@ -18,6 +18,7 @@ import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NRTCachingDirectory;
+import org.apache.lucene.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,10 +84,26 @@ public class ShardWriteManager {
 		this.pathToTaxoIndex = pathToTaxoIndex;
 		this.snapshotDeletionPolicy = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
 		this.indexWriter = openIndexWriter(pathToIndex);
-		this.taxoWriter = openTaxoWriter(pathToTaxoIndex, aggregationSettings.maxFacetsCachedPerDimension());
-		this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
+		SnapshotDirectoryTaxonomyWriter openedTaxoWriter = null;
+		try {
+			openedTaxoWriter = openTaxoWriter(pathToTaxoIndex, aggregationSettings.maxFacetsCachedPerDimension());
+			this.taxoWriter = openedTaxoWriter;
+			this.segmentOpenExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(indexName + ":s" + shardNumber + "-segment-", 0).factory());
 
-		updateIndexSettings();
+			updateIndexSettings();
+		}
+		catch (Exception e) {
+			// a failure after the IndexWriter opens must not leak it because a leaked writer holds the shard's
+			// write.lock in-process, blocking every reload of this shard until a JVM restart
+			try {
+				IOUtils.close(indexWriter::rollback, indexWriter.getDirectory(), openedTaxoWriter,
+						openedTaxoWriter == null ? null : openedTaxoWriter.getDirectory());
+			}
+			catch (Exception cleanup) {
+				e.addSuppressed(cleanup);
+			}
+			throw e;
+		}
 
 	}
 
@@ -147,17 +164,9 @@ public class ShardWriteManager {
 
 	public void close() throws IOException {
 		segmentOpenExecutor.close();
-		{
-			Directory directory = indexWriter.getDirectory();
-			indexWriter.rollback();
-			directory.close();
-		}
-		{
-			Directory directory = taxoWriter.getDirectory();
-			taxoWriter.close();
-			directory.close();
-
-		}
+		// close everything even when an earlier step fails: a leaked writer or directory holds mmap handles
+		// and lock files that block reopening this shard
+		IOUtils.close(indexWriter::rollback, indexWriter.getDirectory(), taxoWriter, taxoWriter.getDirectory());
 	}
 
 	public ShardReader createShardReader() throws IOException {

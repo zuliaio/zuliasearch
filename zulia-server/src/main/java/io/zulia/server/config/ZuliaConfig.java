@@ -50,6 +50,20 @@ public class ZuliaConfig {
 	// bootstrap of a large index from saturating the network and impacting query traffic. Default 60 MiB/s.
 	private long replicationMaxBytesPerSec = 60L * 1024 * 1024;
 
+	// Maximum number of indexes kept loaded in memory on this node. 0 = unlimited (every index stays
+	// resident, the historical behavior). When exceeded, the longest-idle evictable index is unloaded to
+	// disk and reloaded on demand.
+	private int transientIndexCacheSize = 0;
+
+	// Unload an index after it has gone unaccessed for this long, independent of the cache size bound.
+	// 0 = disabled. Setting either this or transientIndexCacheSize enables lazy loading and eviction.
+	private int transientIndexIdleTimeoutSeconds = 0;
+
+	// Whether indexes that have replicas are eligible for eviction. Off by default: evicting a replicated
+	// primary pauses its replication push until reload, and inbound pushes reload evicted replicas, so
+	// write-active replicated indexes would cycle in and out of memory.
+	private boolean transientIndexEvictReplicated = false;
+
 	public ZuliaConfig() {
 	}
 
@@ -213,6 +227,30 @@ public class ZuliaConfig {
 		this.replicationMaxBytesPerSec = replicationMaxBytesPerSec;
 	}
 
+	public int getTransientIndexCacheSize() {
+		return transientIndexCacheSize;
+	}
+
+	public void setTransientIndexCacheSize(int transientIndexCacheSize) {
+		this.transientIndexCacheSize = transientIndexCacheSize;
+	}
+
+	public int getTransientIndexIdleTimeoutSeconds() {
+		return transientIndexIdleTimeoutSeconds;
+	}
+
+	public void setTransientIndexIdleTimeoutSeconds(int transientIndexIdleTimeoutSeconds) {
+		this.transientIndexIdleTimeoutSeconds = transientIndexIdleTimeoutSeconds;
+	}
+
+	public boolean isTransientIndexEvictReplicated() {
+		return transientIndexEvictReplicated;
+	}
+
+	public void setTransientIndexEvictReplicated(boolean transientIndexEvictReplicated) {
+		this.transientIndexEvictReplicated = transientIndexEvictReplicated;
+	}
+
 	@Override
 	public String toString() {
 		return "ZuliaConfig{" + "dataPath='" + dataPath + '\'' + ", cluster=" + cluster + ", clusterName='" + clusterName + '\'' + ", clusterStorageEngine='"
@@ -220,6 +258,8 @@ public class ZuliaConfig {
 				+ mongoAuth + ", serverAddress='" + serverAddress + '\'' + ", servicePort=" + servicePort + ", restPort=" + restPort + ", health=" + health
 				+ ", responseCompression=" + responseCompression + ", rpcWorkers=" + rpcWorkers + ", defaultConcurrency=" + defaultConcurrency + ", debug="
 				+ debug + ", maxFacetsCachedPerDimension=" + maxFacetsCachedPerDimension + ", hitsPerConcurrentRequest=" + hitsPerConcurrentRequest
-				+ ", replicaResponseTimeout=" + replicaResponseTimeout + ", replicationMaxBytesPerSec=" + replicationMaxBytesPerSec + '}';
+				+ ", replicaResponseTimeout=" + replicaResponseTimeout + ", replicationMaxBytesPerSec=" + replicationMaxBytesPerSec
+				+ ", transientIndexCacheSize=" + transientIndexCacheSize + ", transientIndexIdleTimeoutSeconds=" + transientIndexIdleTimeoutSeconds
+				+ ", transientIndexEvictReplicated=" + transientIndexEvictReplicated + '}';
 	}
 }
