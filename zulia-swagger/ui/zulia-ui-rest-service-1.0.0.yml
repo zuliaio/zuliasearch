@@ -169,6 +169,11 @@ components:
         dateCreated:
           type: string
           format: date-time
+        roles:
+          type: array
+          nullable: true
+          items:
+            type: string
     UsernamePasswordCredentials:
       required:
       - password
