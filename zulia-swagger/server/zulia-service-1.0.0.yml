@@ -2090,6 +2090,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ZuliaBase.ShardCacheStats"
+        resident:
+          type: boolean
     ZuliaBase.NodeStats:
       type: object
       properties:
@@ -2120,6 +2122,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ZuliaBase.IndexStats"
+        residentIndexCount:
+          type: integer
+          format: int32
+        indexLoadCount:
+          type: integer
+          format: int64
+        indexEvictionCount:
+          type: integer
+          format: int64
     ZuliaBase.ShardCacheStats:
       type: object
       properties:
