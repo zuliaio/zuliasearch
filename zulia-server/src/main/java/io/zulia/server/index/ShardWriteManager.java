@@ -176,17 +176,32 @@ public class ShardWriteManager {
 		return new ShardReader(shardNumber, indexReader, taxoReader, indexConfig, zuliaPerFieldAnalyzer, segmentOpenExecutor, aggregationSettings);
 	}
 
-	public void commit() throws IOException {
+	public synchronized void commit() throws IOException {
 		long indexedThrottled = totalIndexedThrottled.get();
 		long indexedUntrottled = totalIndexedUnthrottled.get();
 		LOG.info("Committing index {}:s{} with {} total indexed ({} indexed throttled)", indexName, shardNumber, indexedUntrottled + indexedThrottled,
 				indexedThrottled);
 
 		long currentTime = System.currentTimeMillis();
-		// Commit the taxonomy before the main index: the index references taxonomy ordinals, so the
-		// taxonomy must be durable first. A crash between the two commits then leaves at most a
-		// taxonomy superset (harmless), rather than index ordinals with no matching taxonomy entry.
-		taxoWriter.commit();
+		// Two phase ordering keeps the commit pair crash consistent under concurrent stores:
+		// freeze the index commit's document set, make the taxonomy durable, then publish the
+		// frozen set. Every ordinal referenced by a frozen document was created before that
+		// document was added, so the committed taxonomy is always a superset of what the
+		// committed index references. Committing the taxonomy first without freezing left a
+		// window where a store landing between the two commits could add a new ordinal and
+		// document, and a crash then produced a committed index referencing an ordinal missing
+		// from the committed taxonomy. Synchronized because prepareCommit forbids a second
+		// pending commit, so concurrent forceCommit callers must serialize here.
+		indexWriter.prepareCommit();
+		try {
+			taxoWriter.commit();
+		}
+		catch (IOException | RuntimeException e) {
+			// rolling back would discard acknowledged documents, so leave the prepared commit
+			// pending and surface the storage fault, further commits fail until the shard reloads
+			LOG.error("Taxonomy commit failed for index {}:s{} with an index commit prepared, shard requires reload", indexName, shardNumber, e);
+			throw e;
+		}
 		indexWriter.commit();
 
 		lastCommit = currentTime;
