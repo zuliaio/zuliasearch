@@ -1,5 +1,7 @@
 import io.zulia.task.PicoCLITask
 
+import java.time.Duration
+
 plugins {
     application
     alias(libs.plugins.micronaut.application)
@@ -37,6 +39,25 @@ tasks.withType<Test> {
     this.testLogging {
         this.showStandardStreams = true
     }
+}
+
+tasks.test {
+    useJUnitPlatform {
+        excludeTags("soak")
+    }
+}
+
+tasks.register<Test>("soakTest") {
+    description = "Runs hour-scale soak tests tagged 'soak', which the regular test task excludes. Duration via -Dzulia.soak.minutes (default 60)."
+    group = "verification"
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("soak")
+    }
+    systemProperty("zulia.soak.minutes", providers.systemProperty("zulia.soak.minutes").getOrElse("60"))
+    timeout = Duration.ofHours(2)
+    outputs.upToDateWhen { false }
 }
 
 dependencies {
