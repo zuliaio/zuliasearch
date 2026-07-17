@@ -1487,7 +1487,10 @@ public class ZuliaIndexManager {
 		Lock lock = loadedIndexCache.getUpdateLock(indexName);
 		lock.lock();
 		try {
-			IndexLease lease = loadedIndexCache.tryLease(indexName);
+			// a plain tryLease can misread an eviction mark that this very lease attempt reverts, and
+			// treating the still-resident index as unloaded would skip the settings reload and shard
+			// role changes, so wait out a draining handle before concluding the index is not resident
+			IndexLease lease = loadedIndexCache.tryLeaseResident(indexName);
 			if (lease != null) {
 				try (lease) {
 					applyIndexUpdateToResident(lease.getIndex(), indexName);

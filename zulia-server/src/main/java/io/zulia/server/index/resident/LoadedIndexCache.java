@@ -102,6 +102,24 @@ public class LoadedIndexCache {
 	}
 
 	/**
+	 * Leases the resident index without loading, waiting out a draining handle first. A single failed
+	 * acquire does not mean the index is gone: the evictor can observe this very lease attempt and
+	 * revert its DRAINING mark to ACTIVE. Returns null only when the index is genuinely not resident,
+	 * meaning it was never loaded or the drain completed. May wait like leaseOrLoad's drain path does.
+	 */
+	public IndexLease tryLeaseResident(String indexName) throws Exception {
+		IndexHandle handle = residentIndexMap.get(indexName);
+		if (handle == null) {
+			return null;
+		}
+		IndexLease lease = handle.tryAcquire();
+		if (lease != null) {
+			return lease;
+		}
+		return awaitDrainOutcome(handle);
+	}
+
+	/**
 	 * Leases the resident index, loading it first when it is registered but not resident. Returns null when
 	 * the index is not registered.
 	 */
