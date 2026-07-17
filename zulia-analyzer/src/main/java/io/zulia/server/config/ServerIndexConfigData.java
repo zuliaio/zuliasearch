@@ -44,6 +44,7 @@ public class ServerIndexConfigData {
 	private final Map<String, Set<String>> fieldMappingToFields;
 	private final LinkedHashMap<String, Set<String>> facetGroupToFacets;
 	private final Set<String> individualFacets;
+	private final Set<String> userIndexedFieldNames;
 
 	public ServerIndexConfigData(IndexSettings indexSettings) {
 		this.indexSettings = indexSettings;
@@ -53,6 +54,7 @@ public class ServerIndexConfigData {
 		this.facetAsMap = new HashMap<>();
 		HashMap<String, Set<String>> facetGroupToFacetsTemp = new HashMap<>();
 		this.individualFacets = new HashSet<>();
+		this.userIndexedFieldNames = new HashSet<>();
 
 		for (FieldConfig fc : indexSettings.getFieldConfigList()) {
 			String storedFieldName = fc.getStoredFieldName();
@@ -116,6 +118,7 @@ public class ServerIndexConfigData {
 				String indexField = FieldTypeUtil.getIndexField(indexFieldName, fieldType);
 				IndexFieldInfo indexFieldInfo = new IndexFieldInfo(storedFieldName, indexField, internalSortFieldName, fieldType, indexAs);
 				indexFieldMapping.put(indexFieldName, indexFieldInfo);
+				userIndexedFieldNames.add(indexFieldName);
 			}
 
 			for (FacetAs facetAs : fc.getFacetAsList()) {
@@ -229,7 +232,10 @@ public class ServerIndexConfigData {
 			Set<String> matchingFieldNames = new TreeSet<>();
 
 			Pattern pattern = Pattern.compile(field);
-			for (String indexFieldName : indexFieldMapping.keySet()) {
+			// expand only against user-indexed fields: indexFieldMapping also holds internal bookkeeping
+			// fields (zuliaId, _ztsf_, _zflf_, drill-down) and the char/list length-wrap keys, and matching
+			// those turns an all-field search into false hits on every document
+			for (String indexFieldName : userIndexedFieldNames) {
 				if (pattern.matcher(indexFieldName).matches()) {
 					matchingFieldNames.add(indexFieldName);
 				}
