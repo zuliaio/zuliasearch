@@ -22,6 +22,7 @@ import org.apache.lucene.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,6 +55,9 @@ public class ShardWriteManager {
 	private volatile Long lastCommit;
 	private volatile Long lastChange;
 	private volatile Long lastWarm;
+
+	// written only inside synchronized commit(), true while a prepared index commit is pending its taxonomy commit
+	private boolean indexCommitPrepared;
 
 	private final AtomicLong totalIndexedUnthrottled;
 	private final AtomicLong totalIndexedThrottled;
@@ -182,6 +186,16 @@ public class ShardWriteManager {
 		LOG.info("Committing index {}:s{} with {} total indexed ({} indexed throttled)", indexName, shardNumber, indexedUntrottled + indexedThrottled,
 				indexedThrottled);
 
+		if (indexCommitPrepared) {
+			// an earlier taxonomy commit failure left a prepared index commit pending, and Lucene
+			// forbids preparing another until it is completed. Finish that pair first, the fresh
+			// cycle below then picks up everything indexed since the failed attempt.
+			LOG.warn("Completing the commit pair left pending by an earlier taxonomy commit failure for index {}:s{}", indexName, shardNumber);
+			taxoWriter.commit();
+			indexWriter.commit();
+			indexCommitPrepared = false;
+		}
+
 		long currentTime = System.currentTimeMillis();
 		// Two phase ordering keeps the commit pair crash consistent under concurrent stores:
 		// freeze the index commit's document set, make the taxonomy durable, then publish the
@@ -193,16 +207,20 @@ public class ShardWriteManager {
 		// from the committed taxonomy. Synchronized because prepareCommit forbids a second
 		// pending commit, so concurrent forceCommit callers must serialize here.
 		indexWriter.prepareCommit();
+		indexCommitPrepared = true;
 		try {
 			taxoWriter.commit();
 		}
 		catch (IOException | RuntimeException e) {
 			// rolling back would discard acknowledged documents, so leave the prepared commit
-			// pending and surface the storage fault, further commits fail until the shard reloads
-			LOG.error("Taxonomy commit failed for index {}:s{} with an index commit prepared, shard requires reload", indexName, shardNumber, e);
+			// pending and surface the storage fault, the next commit() retries the taxonomy
+			// commit and completes the pair once the fault clears
+			LOG.error("Taxonomy commit failed for index {}:s{} with an index commit prepared, the pair will be completed on the next commit", indexName,
+					shardNumber, e);
 			throw e;
 		}
 		indexWriter.commit();
+		indexCommitPrepared = false;
 
 		lastCommit = currentTime;
 	}
