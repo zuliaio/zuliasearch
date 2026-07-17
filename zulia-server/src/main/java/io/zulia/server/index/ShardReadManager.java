@@ -14,6 +14,7 @@ import org.apache.lucene.store.MMapDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,7 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ShardReadManager {
+public class ShardReadManager implements Closeable {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ShardReadManager.class);
 

@@ -261,26 +261,46 @@ public class ZuliaIndex {
 		LOG.info("Shutting down shard pool for {}", indexName);
 		shardPool.shutdownNow();
 
+		// keep unloading the remaining shards when one fails, an abandoned shard leaks an open
+		// IndexWriter whose write.lock blocks every reload of this index until the JVM restarts
+		List<Exception> unloadFailures = new ArrayList<>();
 		for (Integer shardNumber : primaryShardMap.keySet()) {
 			LOG.info("Unloading primary shard {}:s{}", indexName, shardNumber);
-			unloadShard(shardNumber);
-			LOG.info("Unloaded primary shard {}:s{}", indexName, shardNumber);
-			if (terminate) {
-				deleteShardData(shardNumber);
+			try {
+				unloadShard(shardNumber);
+				LOG.info("Unloaded primary shard {}:s{}", indexName, shardNumber);
+				if (terminate) {
+					deleteShardData(shardNumber);
+				}
+			}
+			catch (Exception e) {
+				LOG.error("Failed to unload primary shard {}:s{}", indexName, shardNumber, e);
+				unloadFailures.add(e);
 			}
 		}
 
 		LOG.info("Deleting replicas");
 		for (Integer shardNumber : replicaShardMap.keySet()) {
 			LOG.info("Unloading replica shard {}:s{}", indexName, shardNumber);
-			unloadShard(shardNumber);
-			LOG.info("Unloaded replica shard {}:s{}", indexName, shardNumber);
-			if (terminate) {
-				deleteShardData(shardNumber);
+			try {
+				unloadShard(shardNumber);
+				LOG.info("Unloaded replica shard {}:s{}", indexName, shardNumber);
+				if (terminate) {
+					deleteShardData(shardNumber);
+				}
+			}
+			catch (Exception e) {
+				LOG.error("Failed to unload replica shard {}:s{}", indexName, shardNumber, e);
+				unloadFailures.add(e);
 			}
 		}
 		LOG.info("Shut down shard pool for {}", indexName);
 
+		if (!unloadFailures.isEmpty()) {
+			IOException failure = new IOException("Failed to unload " + unloadFailures.size() + " shard(s) for index " + indexName, unloadFailures.getFirst());
+			unloadFailures.stream().skip(1).forEach(failure::addSuppressed);
+			throw failure;
+		}
 	}
 
 	private void deleteShardData(int shardNumber) throws IOException {

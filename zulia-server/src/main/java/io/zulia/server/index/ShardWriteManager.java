@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ShardWriteManager {
+public class ShardWriteManager implements Closeable {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ShardWriteManager.class);
 
@@ -155,8 +155,6 @@ public class ShardWriteManager {
 		LOG.info("Opened taxonomy for {}:s{} with {} ordinals", indexName, shardNumber, writer.getSize());
 		return writer;
 	}
-
-
 
 	public long getSizeOnDiskBytes() throws IOException {
 		try (var indexFiles = Files.list(pathToIndex); var taxoFiles = Files.list(pathToTaxoIndex)) {

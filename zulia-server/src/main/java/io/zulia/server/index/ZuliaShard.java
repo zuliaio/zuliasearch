@@ -12,6 +12,7 @@ import io.zulia.message.ZuliaServiceOuterClass.GetTermsResponse;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.util.BytesRefUtil;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.Snappy;
@@ -328,13 +329,9 @@ public class ZuliaShard {
 
 	public void close() throws IOException {
 		unloaded = true;
-		shardReaderManager.close();
-		if (shardWriteManager != null) {
-			shardWriteManager.close();
-		}
-		if (shardReadManager != null) {
-			shardReadManager.close();
-		}
+		// close every manager even when an earlier close fails, a skipped ShardWriteManager close
+		// leaks an open IndexWriter whose write.lock blocks reopening this shard until JVM restart
+		IOUtils.close(shardReaderManager, shardWriteManager, shardReadManager);
 	}
 
 	public void index(String uniqueId, long timestamp, DocumentContainer mongoDocument, DocumentContainer metadata) throws Exception {
