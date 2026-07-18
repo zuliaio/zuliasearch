@@ -75,13 +75,20 @@ public class ZuliaNode {
 				indexManager.handleNodeAdded(currentOtherNodesActive, newNode);
 			}
 		};
-		//force membership to run
+		// read-only membership pass: learn the cluster for internal routing, but do not advertise
+		// this node until it can actually serve. Publishing the heartbeat before indexes load and
+		// the service port binds makes peers route to a dead port, failing every federated request
+		// that touches this node's shards instead of letting replicas on live nodes answer.
 		membershipTask.run();
 
 		membershipTimer.scheduleAtFixedRate(membershipTask, 1000, 1000);
 
 		indexManager.init();
 		zuliaServiceServer.start();
+
+		// indexes are loaded and the service port is listening, now advertise to the cluster
+		membershipTask.startAdvertising();
+		membershipTask.run();
 		if (startREST) {
 			Map<String, Object> properties = Map.of("micronaut.server.host", zuliaConfig.getServerAddress(), "micronaut.server.port",
 					zuliaConfig.getRestPort());
