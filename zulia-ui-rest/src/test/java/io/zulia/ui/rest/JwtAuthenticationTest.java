@@ -25,7 +25,6 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.runtime.server.EmbeddedServer;
 import io.micronaut.security.authentication.UsernamePasswordCredentials;
 import io.micronaut.security.token.render.BearerAccessRefreshToken;
-import io.zulia.ui.rest.beans.UserEntity;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
@@ -37,6 +36,7 @@ import static io.micronaut.http.MediaType.TEXT_PLAIN;
 import static io.zulia.ui.rest.TestConstants.PASSWORD;
 import static io.zulia.ui.rest.TestConstants.USERNAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -91,6 +91,6 @@ public class JwtAuthenticationTest {
 		// thrown NPE into the same 401 at the HTTP layer, but the fast exception path skips the
 		// bcrypt check, so login timing would still reveal whether the username exists
 		var persistence = embeddedServer.getApplicationContext().getBean(io.zulia.ui.rest.persistence.MongoUserPersistence.class);
-		org.junit.jupiter.api.Assertions.assertFalse(persistence.verifyUser("noSuchUser", "anyPassword"));
+		assertFalse(persistence.verifyUser("noSuchUser", "anyPassword"));
 	}
 }
