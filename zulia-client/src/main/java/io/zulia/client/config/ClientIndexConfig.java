@@ -13,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.TreeMap;
 
@@ -24,7 +23,7 @@ import static io.zulia.message.ZuliaIndex.IndexSettings;
 
 public class ClientIndexConfig {
 
-	private List<String> defaultSearchFields = Collections.emptyList();
+	private List<String> defaultSearchFields = new ArrayList<>();
 	private Double requestFactor;
 	private Integer minShardRequest;
 	private Integer numberOfShards;
@@ -69,17 +68,11 @@ public class ClientIndexConfig {
 	}
 
 	public ClientIndexConfig addDefaultSearchField(String defaultSearchField) {
-		if (defaultSearchFields.isEmpty()) {
-			defaultSearchFields = new ArrayList<>();
-		}
 		defaultSearchFields.add(defaultSearchField);
 		return this;
 	}
 
 	public ClientIndexConfig addDefaultSearchFields(String... defaultSearchField) {
-		if (defaultSearchFields.isEmpty()) {
-			defaultSearchFields = new ArrayList<>();
-		}
 		defaultSearchFields.addAll(Arrays.asList(defaultSearchField));
 		return this;
 	}
@@ -89,7 +82,8 @@ public class ClientIndexConfig {
 	}
 
 	public ClientIndexConfig setDefaultSearchFields(List<String> defaultSearchFields) {
-		this.defaultSearchFields = defaultSearchFields;
+		// copy at every assignment so the field is always mutable for the add methods
+		this.defaultSearchFields = new ArrayList<>(defaultSearchFields);
 		return this;
 	}
 
@@ -332,7 +326,8 @@ public class ClientIndexConfig {
 	}
 
 	public ClientIndexConfig setWarmingSearches(List<QueryRequest> warmingSearches) {
-		this.warmingSearches = warmingSearches;
+		// copy at every assignment so the field is always mutable for addWarmingSearch
+		this.warmingSearches = warmingSearches == null ? new ArrayList<>() : new ArrayList<>(warmingSearches);
 		return this;
 	}
 
@@ -549,7 +544,7 @@ public class ClientIndexConfig {
 		this.indexName = indexSettings.getIndexName();
 		this.numberOfShards = indexSettings.getNumberOfShards();
 		this.numberOfReplicas = indexSettings.getNumberOfReplicas();
-		this.defaultSearchFields = indexSettings.getDefaultSearchFieldList();
+		this.defaultSearchFields = new ArrayList<>(indexSettings.getDefaultSearchFieldList());
 
 		this.analyzerSettingsMap = new TreeMap<>();
 		for (AnalyzerSettings analyzerSettings : indexSettings.getAnalyzerSettingsList()) {

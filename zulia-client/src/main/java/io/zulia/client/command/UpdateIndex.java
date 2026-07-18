@@ -82,9 +82,8 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		this.analyzerSettingsOperation.setEnable(false);
 		this.analyzerSettingsOperation.setOperationType(OperationType.MERGE);
 		this.analyzerSettingsOperation.clearRemovedKeys();
-		if (!this.analyzerSettingsList.isEmpty()) {
-			this.analyzerSettingsList.clear();
-		}
+		// reassign instead of clear: merge and replace store caller-provided or unmodifiable lists
+		this.analyzerSettingsList = Collections.emptyList();
 		return this;
 	}
 
@@ -132,9 +131,8 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		this.fieldConfigOperation.setEnable(false);
 		this.fieldConfigOperation.setOperationType(OperationType.MERGE);
 		this.fieldConfigOperation.clearRemovedKeys();
-		if (!this.fieldConfigList.isEmpty()) {
-			this.fieldConfigList.clear();
-		}
+		// reassign instead of clear: merge and replace store caller-provided or unmodifiable lists
+		this.fieldConfigList = Collections.emptyList();
 		return this;
 	}
 
@@ -493,9 +491,8 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		warmingSearchOperation.setEnable(false);
 		warmingSearchOperation.setOperationType(OperationType.MERGE);
 		warmingSearchOperation.clearRemovedKeys();
-		if (!warmingSearches.isEmpty()) {
-			warmingSearches.clear();
-		}
+		// reassign instead of clear: merge and replace store caller-provided or unmodifiable lists
+		this.warmingSearches = Collections.emptyList();
 		return this;
 	}
 
