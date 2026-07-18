@@ -22,6 +22,7 @@ public class ReplicaStreamObserver implements StreamObserver<SegmentFileData> {
 	private final Semaphore inboundSemaphore;
 
 	private IndexLease lease;
+	private Semaphore applyLock;
 	private ReplicaDirectoryApplier applier;
 	private long generation;
 	private boolean terminated;
@@ -42,6 +43,12 @@ public class ReplicaStreamObserver implements StreamObserver<SegmentFileData> {
 			if (applier == null) {
 				// the lease spans the whole inbound stream so the index cannot be unloaded while segment files are applied
 				lease = indexManager.leaseIndexFromName(data.getIndexName());
+				// serialize applies per index and shard: without this, a stream from a primary evicted
+				// mid-push can overlap the reloaded primary's next push, and interleaved writes or
+				// cleanup tear the replica directory (a published segments_N referencing deleted files)
+				Semaphore shardApplyLock = indexManager.getReplicaApplyLock(data.getIndexName(), data.getShardNumber());
+				shardApplyLock.acquire();
+				applyLock = shardApplyLock;
 				applier = lease.getIndex().newReplicaApplier(data.getShardNumber());
 			}
 
@@ -124,6 +131,10 @@ public class ReplicaStreamObserver implements StreamObserver<SegmentFileData> {
 	private void releaseStreamResources() {
 		if (!streamResourcesReleased) {
 			streamResourcesReleased = true;
+			if (applyLock != null) {
+				applyLock.release();
+				applyLock = null;
+			}
 			inboundSemaphore.release();
 			if (lease != null) {
 				lease.close();

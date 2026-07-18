@@ -26,6 +26,10 @@ public abstract class MembershipTask extends TimerTask {
 	private final NodeService nodeService;
 	private final ZuliaConfig zuliaConfig;
 	private Map<String, Node> otherNodeMap;
+	// heartbeat publishing is deferred until the node can actually serve
+	// advertising during index loading makes peers route to a port that is not yet listening, failing every federated request
+	// that touches this node's shards instead of letting replicas elsewhere answer
+	private volatile boolean advertise;
 
 	public MembershipTask(ZuliaConfig zuliaConfig, NodeService nodeService) {
 		this.nodeService = nodeService;
@@ -33,12 +37,22 @@ public abstract class MembershipTask extends TimerTask {
 		this.otherNodeMap = new HashMap<>();
 	}
 
+	/**
+	 * Starts publishing this node's heartbeat. Until this is called the task runs read-only,
+	 * keeping the local view of other cluster members current without advertising this node.
+	 */
+	public void startAdvertising() {
+		advertise = true;
+	}
+
 	@Override
 	public void run() {
 
 		try {
-			//update this node's heartbeat
-			nodeService.updateHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
+			if (advertise) {
+				//update this node's heartbeat
+				nodeService.updateHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
+			}
 
 			//get list of other cluster members and sort by heartbeat time descending
 			//members never start with have heartbeat time of 0
@@ -47,8 +61,14 @@ public abstract class MembershipTask extends TimerTask {
 
 			Map<String, Node> newOtherNodeMap = new HashMap<>();
 
-			long latest = nodesList.getFirst().getHeartbeat();
+			// the list can be empty before this node advertises on a freshly bootstrapped cluster
+			long latest = nodesList.isEmpty() ? 0 : nodesList.getFirst().getHeartbeat();
 			for (Node node : nodesList) {
+				// registered but never started, previously filtered only by lag against this node's own
+				// fresh heartbeat, which deferred advertising no longer guarantees is in the list
+				if (node.getHeartbeat() == 0) {
+					continue;
+				}
 				if (latest - node.getHeartbeat() < MAX_HEARTBEAT_LAG_SECONDS * 1000) {
 					if (node.getServerAddress().equals(zuliaConfig.getServerAddress()) && (node.getServicePort() == zuliaConfig.getServicePort())) {
 						//skip this server

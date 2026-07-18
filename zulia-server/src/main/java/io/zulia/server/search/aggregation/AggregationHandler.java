@@ -143,7 +143,18 @@ public class AggregationHandler {
 			}
 		}
 
-		if (facets.size() == 1 && serverIndexConfig.isStoredIndividually(facets.first())) {
+		// individual facet storage is sparse: only documents carrying the facet have the binary value,
+		// and the segment loop computes global stats inside the facet-intersected iteration, so a
+		// co-requested global stat must use the dense default or group storage to see every matching doc
+		boolean globalStatRequested = false;
+		for (NumericFieldStatInfo field : fields) {
+			if (field.hasGlobal()) {
+				globalStatRequested = true;
+				break;
+			}
+		}
+
+		if (facets.size() == 1 && !globalStatRequested && serverIndexConfig.isStoredIndividually(facets.first())) {
 			this.facetField = ZuliaFieldConstants.FACET_STORAGE_INDIVIDUAL + facets.first();
 			this.individualFacet = true;
 			if (debug) {

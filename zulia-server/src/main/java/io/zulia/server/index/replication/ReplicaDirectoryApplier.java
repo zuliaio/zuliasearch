@@ -12,12 +12,13 @@ import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 
+import static io.zulia.server.index.replication.ReplicationUtil.PENDING_PREFIX;
+
 public class ReplicaDirectoryApplier {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ReplicaDirectoryApplier.class);
 
-	// Not "segments-" so SegmentInfos cannot pick a half-written pending file as a candidate commit.
-	private static final String PENDING_PREFIX = "pending-";
+
 
 	private final ZuliaShard replicaShard;
 
@@ -48,11 +49,13 @@ public class ReplicaDirectoryApplier {
 		finally {
 			currentOutput = null;
 		}
-		if (ReplicationUtil.isSegmentsFile(currentLogicalName)) {
-			currentDirectory.sync(List.of(currentWriteName));
-			currentDirectory.rename(currentWriteName, currentLogicalName);
-			currentDirectory.syncMetaData();
-		}
+		// every file lands via sync + atomic rename: writing a re-shipped data file under its real name
+		// would delete a file the replica's live commit still references, and a concurrent reader refresh
+		// in that window fails with NoSuchFileException. The rename replaces atomically, so a referenced
+		// file is never absent, and the sync makes the data durable before any commit references it
+		currentDirectory.sync(List.of(currentWriteName));
+		currentDirectory.rename(currentWriteName, currentLogicalName);
+		currentDirectory.syncMetaData();
 		currentLogicalName = null;
 		currentWriteName = null;
 		currentDirectory = null;
@@ -97,10 +100,9 @@ public class ReplicaDirectoryApplier {
 
 		ShardReadManager readManager = replicaShard.getShardReadManager();
 		Directory directory = taxonomy ? readManager.getTaxoDirectory() : readManager.getIndexDirectory();
-		boolean segmentsFile = ReplicationUtil.isSegmentsFile(fileName);
-		String writeName = segmentsFile ? PENDING_PREFIX + fileName : fileName;
+		String writeName = PENDING_PREFIX + fileName;
 
-		// createOutput is CREATE_NEW; clear any stale pending file or bootstrap segment with the same name.
+		// createOutput is CREATE_NEW; clear any stale pending file with the same name.
 		deleteIfExists(directory, writeName);
 
 		currentDirectory = directory;

@@ -14,6 +14,12 @@ public class ReplicationUtil {
 
 	private final static Logger LOG = LoggerFactory.getLogger(ReplicationUtil.class);
 
+	// Prefix for in-flight replication writes. Not "segments-" so SegmentInfos cannot pick a
+	// half-written pending file as a candidate commit. Applies and cleanup are serialized per shard by
+	// the replica apply lock and finishFile renames before commit, so any pending file cleanup sees is
+	// a stale leftover from an aborted stream and is collected as garbage.
+	public static final String PENDING_PREFIX = "pending-";
+
 	private ReplicationUtil() {
 	}
 

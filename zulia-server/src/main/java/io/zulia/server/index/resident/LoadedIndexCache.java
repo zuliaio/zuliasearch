@@ -336,6 +336,12 @@ public class LoadedIndexCache {
 			handle.compareAndSetState(HandleState.DRAINING, HandleState.ACTIVE);
 			return false;
 		}
+		// re-check dirtiness after the mark: a store can complete entirely between isEvictable's dirty
+		// read and the CAS, and evicting it would lean on the unload-time commit as the only safety net
+		if (handle.getIndex().isDirty()) {
+			handle.compareAndSetState(HandleState.DRAINING, HandleState.ACTIVE);
+			return false;
+		}
 		return true;
 	}
 
@@ -354,6 +360,17 @@ public class LoadedIndexCache {
 	private void startUnloadThread(String indexName, IndexHandle handle, long idleSeconds) {
 		Thread.ofVirtual().name("evict-" + indexName).start(() -> {
 			long start = System.currentTimeMillis();
+			try {
+				// Commit with error propagation before the destructive unload.
+				// Its close path rolls back, so commit failure here must abort the eviction
+				// rather than discard acknowledged stores
+				handle.getIndex().commitBeforeUnload();
+			}
+			catch (Exception e) {
+				LOG.error("Aborting eviction of index {}, the pre-unload commit failed", indexName, e);
+				handle.compareAndSetState(HandleState.DRAINING, HandleState.ACTIVE);
+				return;
+			}
 			try {
 				handle.getIndex().unload(false);
 				evictionCount.increment();

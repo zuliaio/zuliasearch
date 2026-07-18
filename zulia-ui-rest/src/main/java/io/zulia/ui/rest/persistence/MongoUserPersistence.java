@@ -17,6 +17,9 @@ public class MongoUserPersistence implements UserService {
 	// New users default to the least-privilege role. Admins are granted explicitly (see UserCreator).
 	private static final List<String> DEFAULT_ROLES = List.of("USER");
 	private static final BcryptFunction BCRYPT_FUNCTION = BcryptFunction.getInstance(Bcrypt.B, 12);
+	// Checked for unknown usernames so a login attempt costs the same bcrypt work whether or not
+	// the user exists, keeping response timing from revealing which usernames are registered
+	private static final String UNKNOWN_USER_HASH = Password.hash("unknown-user-placeholder").withBcrypt().getResult();
 	private final MongoUserConfiguration mongoConf;
 	private final MongoClient mongoClient;
 
@@ -33,6 +36,11 @@ public class MongoUserPersistence implements UserService {
 	@Override
 	public boolean verifyUser(String username, String password) {
 		UserEntity user = getUser(username);
+		if (user == null || user.getHashedPassword() == null) {
+			// same bcrypt cost as a real check, then fail like any wrong password
+			Password.check(password, UNKNOWN_USER_HASH).withBcrypt();
+			return false;
+		}
 		return Password.check(password, user.getHashedPassword()).withBcrypt();
 	}
 

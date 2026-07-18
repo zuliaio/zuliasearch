@@ -241,6 +241,17 @@ public class ZuliaIndex {
 
 	}
 
+	/**
+	 * Force commits every primary shard, propagating the first failure. Eviction runs this before
+	 * unload because unload's close path rolls back, so a commit fault must abort the eviction
+	 * instead of discarding acknowledged stores.
+	 */
+	public void commitBeforeUnload() throws IOException {
+		for (ZuliaShard shard : primaryShardMap.values()) {
+			shard.forceCommit();
+		}
+	}
+
 	public void unload(boolean terminate) throws IOException {
 
 		LOG.info("Stopping maintenance threads for {}", indexName);

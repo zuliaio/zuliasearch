@@ -271,7 +271,7 @@ public class Zulia {
 			for (ZuliaQuery.FacetGroup fg : searchResult.getFacetGroups()) {
 				StringBuilder label = new StringBuilder(fg.getCountRequest().getFacetField().getLabel());
 				for (String path : fg.getCountRequest().getFacetField().getPathList()) {
-					label.append(label).append("/").append(path);
+					label.append("/").append(path);
 				}
 				for (ZuliaQuery.FacetCount fc : fg.getFacetCountList()) {
 					System.out.printf("%25s | %25s | %12s | %12s", label, fc.getFacet(), fc.getCount(), fc.getMaxError());
@@ -290,7 +290,7 @@ public class Zulia {
 			for (ZuliaQuery.StatGroup sg : searchResult.getFacetFieldStats()) {
 				StringBuilder label = new StringBuilder(sg.getStatRequest().getFacetField().getLabel());
 				for (String path : sg.getStatRequest().getFacetField().getPathList()) {
-					label.append(label).append("/").append(path);
+					label.append("/").append(path);
 				}
 
 				for (ZuliaQuery.FacetStats fs : sg.getFacetStatsList()) {

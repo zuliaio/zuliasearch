@@ -174,4 +174,50 @@ public class FieldWildcardTest {
 		Assertions.assertEquals(2, searchResult.getTotalHits());
 	}
 
+	@Test
+	@Order(4)
+	public void internalFieldsExcludedFromWildcardExpansion() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// every stored document lists docTitle in the internal fields-list field, so expanding * into
+		// that field would match all 4 documents even though no field's content contains "doctitle"
+		Search search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("*:docTitle"));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		// every document has 2-element docLanguage lists and 2-character language codes, so expanding *
+		// into the list-length and char-length wrap fields would match all 4 documents. Only documentId
+		// "2" legitimately contains the term.
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("*:2"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		// every document was just indexed, so expanding * into the internal timestamp field would match
+		// all 4 documents for the current year
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("*:" + java.time.Year.now().getValue()));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		// explicit references to internal fields are not expansion and must keep working
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("zuliaId:1"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		// explicit char-length query: only "Search Blog" is 11 characters
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|docTitle|:11"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		// explicit list-length query: every document has a 2-element docLanguage list
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|||docLanguage|||:2"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+	}
+
 }
