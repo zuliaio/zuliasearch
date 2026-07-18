@@ -264,12 +264,12 @@ public class ZuliaCmdUtil {
 			}
 
 			// write file content
-			FileOutputStream fos = new FileOutputStream(newFile);
-			int len;
-			while ((len = inputStream.read(buffer)) > 0) {
-				fos.write(buffer, 0, len);
+			try (FileOutputStream fos = new FileOutputStream(newFile)) {
+				int len;
+				while ((len = inputStream.read(buffer)) > 0) {
+					fos.write(buffer, 0, len);
+				}
 			}
-			fos.close();
 		}
 	}
 
