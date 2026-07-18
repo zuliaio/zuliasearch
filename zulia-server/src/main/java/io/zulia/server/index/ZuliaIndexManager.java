@@ -97,6 +97,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
@@ -116,6 +117,7 @@ public class ZuliaIndexManager {
 	private final Node thisNode;
 	private volatile Collection<Node> currentOtherNodesActive = Collections.emptyList();
 	private final ConcurrentHashMap<String, IndexAlias> indexAliasMap;
+	private final ConcurrentHashMap<String, Semaphore> replicaApplyLockMap = new ConcurrentHashMap<>();
 	private final ReplicationRateLimiter replicationRateLimiter;
 
 	private static final int MONGO_DB_NAME_MAX_LENGTH = 63;
@@ -1767,6 +1769,18 @@ public class ZuliaIndexManager {
 
 	public LoadedIndexCache getLoadedIndexCache() {
 		return loadedIndexCache;
+	}
+
+	/**
+	 * Binary semaphore serializing inbound segment replication applies per index and shard on this node.
+	 * Owned at the node level, so it survives index eviction and reload. The primary's per-shard push
+	 * lock dies with its SegmentReplicationManager on eviction, so a stream from a pre-eviction primary
+	 * can overlap the reloaded primary's next push to the same replica shard, and interleaved writes or
+	 * cleanup tear the replica directory. A semaphore rather than a lock because gRPC stream callbacks
+	 * are not pinned to one thread, so acquire and release happen on different threads.
+	 */
+	public Semaphore getReplicaApplyLock(String indexName, int shardNumber) {
+		return replicaApplyLockMap.computeIfAbsent(indexName + ":" + shardNumber, k -> new Semaphore(1));
 	}
 
 	public IndexLease leaseIndexFromName(String indexName) throws Exception {
