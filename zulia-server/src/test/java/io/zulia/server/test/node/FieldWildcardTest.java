@@ -218,6 +218,19 @@ public class FieldWildcardTest {
 		search.addQuery(new ScoredQuery("|||docLanguage|||:2"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		// string length wildcard patterns expand against the length-wrap fields: |*Title| covers
+		// |docTitle| and |altTitle|, and both "Search Blog" and "Bouncy Blog" are 11 characters
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|*Title|:11"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(2, searchResult.getTotalHits());
+
+		// list length wrap pattern: |||docL*||| expands to |||docLanguage|||
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("|||docL*|||:2"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
 	}
 
 }

@@ -45,6 +45,7 @@ public class ServerIndexConfigData {
 	private final LinkedHashMap<String, Set<String>> facetGroupToFacets;
 	private final Set<String> individualFacets;
 	private final Set<String> userIndexedFieldNames;
+	private final Set<String> wrapIndexFieldNames;
 
 	public ServerIndexConfigData(IndexSettings indexSettings) {
 		this.indexSettings = indexSettings;
@@ -55,6 +56,7 @@ public class ServerIndexConfigData {
 		HashMap<String, Set<String>> facetGroupToFacetsTemp = new HashMap<>();
 		this.individualFacets = new HashSet<>();
 		this.userIndexedFieldNames = new HashSet<>();
+		this.wrapIndexFieldNames = new HashSet<>();
 
 		for (FieldConfig fc : indexSettings.getFieldConfigList()) {
 			String storedFieldName = fc.getStoredFieldName();
@@ -76,6 +78,7 @@ public class ServerIndexConfigData {
 
 				indexFieldMapping.put(listLengthWrap,
 						new IndexFieldInfo(storedFieldName, listLengthIndexField, listLengthSortField, FieldType.NUMERIC_INT, indexAs));
+				wrapIndexFieldNames.add(listLengthWrap);
 				sortFieldMapping.put(listLengthWrap, new SortFieldInfo(listLengthSortField, FieldType.NUMERIC_INT, null));
 
 				String internalSortFieldName = null;
@@ -86,6 +89,7 @@ public class ServerIndexConfigData {
 					String charLengthSortField = FieldTypeUtil.getCharLengthSortField(indexFieldName);
 					indexFieldMapping.put(charLengthWrap,
 							new IndexFieldInfo(storedFieldName, charLengthIndexField, charLengthSortField, FieldType.NUMERIC_INT, indexAs));
+					wrapIndexFieldNames.add(charLengthWrap);
 					sortFieldMapping.put(charLengthWrap, new SortFieldInfo(charLengthSortField, FieldType.NUMERIC_INT, null));
 
 					//only optimize a keyword analyzer with a standard (no-op) string handling sort field
@@ -227,15 +231,21 @@ public class ServerIndexConfigData {
 	protected Set<String> getMatchingIndexFields(String field, boolean includeAliases) {
 		if (field.contains("*")) {
 
+			// a wrap-shaped pattern (|x*| char length, |||x*||| list length) targets the queryable
+			// length-wrap fields, which are deliberately excluded from bare-pattern expansion
+			boolean wrapPattern = field.startsWith("|") && field.endsWith("|");
+
 			field = ("\\Q" + field + "\\E").replace("*", "\\E.*\\Q");
 
 			Set<String> matchingFieldNames = new TreeSet<>();
 
 			Pattern pattern = Pattern.compile(field);
-			// expand only against user-indexed fields: indexFieldMapping also holds internal bookkeeping
-			// fields (zuliaId, _ztsf_, _zflf_, drill-down) and the char/list length-wrap keys, and matching
-			// those turns an all-field search into false hits on every document
-			for (String indexFieldName : userIndexedFieldNames) {
+			// bare patterns expand only against user-indexed fields: indexFieldMapping also holds internal
+			// bookkeeping fields (zuliaId, _ztsf_, _zflf_, drill-down), and matching those turns an
+			// all-field search into false hits on every document. Wrap-shaped patterns expand against the
+			// queryable length-wrap fields instead
+			Set<String> expansionFields = wrapPattern ? wrapIndexFieldNames : userIndexedFieldNames;
+			for (String indexFieldName : expansionFields) {
 				if (pattern.matcher(indexFieldName).matches()) {
 					matchingFieldNames.add(indexFieldName);
 				}
