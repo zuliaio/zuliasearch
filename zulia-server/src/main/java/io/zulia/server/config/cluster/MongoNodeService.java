@@ -2,8 +2,10 @@ package io.zulia.server.config.cluster;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Updates;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
@@ -27,6 +29,7 @@ public class MongoNodeService implements NodeService {
 	private static final String SERVICE_PORT = "servicePort";
 	private static final String REST_PORT = "restPort";
 	private static final String HEARTBEAT = "heartbeat";
+	private static final String CLUSTER_TIME_PROBE = "clusterTimeProbe";
 	private static final String VERSION = "version";
 
 	private final MongoClient mongoClient;
@@ -89,6 +92,16 @@ public class MongoNodeService implements NodeService {
 
 		getCollectionWithTimeout().updateOne(query, update);
 
+	}
+
+	@Override
+	public long getClusterTime(String serverAddress, int servicePort) {
+		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
+		Document updated = getCollectionWithTimeout().findOneAndUpdate(query, Updates.currentDate(CLUSTER_TIME_PROBE),
+				new FindOneAndUpdateOptions().returnDocument(ReturnDocument.AFTER));
+		Date probe = updated != null ? updated.getDate(CLUSTER_TIME_PROBE) : null;
+		// the document is missing only when this node was never registered, fall back to the local clock
+		return probe != null ? probe.getTime() : System.currentTimeMillis();
 	}
 
 	@Override
