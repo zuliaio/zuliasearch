@@ -18,7 +18,7 @@ public interface SpreadsheetRecord extends DataSourceRecord {
 
 	default <T> T parseFromString(String field, Function<String, T> parser, T defaultValue) {
 		String strVal = getString(field);
-		if (strVal == null) {
+		if (strVal == null || strVal.isEmpty()) {
 			return defaultValue;
 		}
 		return parser.apply(strVal);
@@ -26,7 +26,7 @@ public interface SpreadsheetRecord extends DataSourceRecord {
 
 	default <T> T parseFromString(int index, Function<String, T> parser, T defaultValue) {
 		String strVal = getString(index);
-		if (strVal == null) {
+		if (strVal == null || strVal.isEmpty()) {
 			return defaultValue;
 		}
 		return parser.apply(strVal);
