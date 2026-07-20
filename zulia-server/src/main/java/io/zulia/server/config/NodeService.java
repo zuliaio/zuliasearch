@@ -27,6 +27,16 @@ public interface NodeService {
 	void updateHeartbeat(String serverAddress, int servicePort);
 
 	/**
+	 * Returns the current time in the same clock domain that stamps heartbeats.
+	 * Cluster mode stamps heartbeats with the database clock, so membership lag
+	 * comparisons must never mix in a node's local clock.
+	 *
+	 * @param serverAddress server address of this node
+	 * @param servicePort   service port of this node
+	 */
+	long getClusterTime(String serverAddress, int servicePort);
+
+	/**
 	 * Update version for a cluster node
 	 *
 	 * @param version - version of node

@@ -98,7 +98,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -1515,7 +1517,31 @@ public class ZuliaIndex {
 		return segmentReplicationManager.getReplicationState();
 	}
 
-	public void applyShardMappingUpdate(IndexShardMapping newMapping, Predicate<Node> thisNodeTest) throws Exception {
+	private enum RoleTransition {
+		BECOME_PRIMARY,
+		BECOME_REPLICA,
+		DROP_REPLICA,
+		RELEASE_PRIMARY,
+		NONE
+	}
+
+	private static RoleTransition roleTransition(boolean shouldBePrimary, boolean shouldBeReplica, boolean hasPrimary, boolean hasReplica) {
+		if (shouldBePrimary) {
+			return hasPrimary ? RoleTransition.NONE : RoleTransition.BECOME_PRIMARY;
+		}
+		if (shouldBeReplica) {
+			return hasReplica ? RoleTransition.NONE : RoleTransition.BECOME_REPLICA;
+		}
+		if (hasReplica) {
+			return RoleTransition.DROP_REPLICA;
+		}
+		if (hasPrimary) {
+			return RoleTransition.RELEASE_PRIMARY;
+		}
+		return RoleTransition.NONE;
+	}
+
+	public void applyShardMappingUpdate(IndexShardMapping newMapping, Predicate<Node> thisNodeTest, IntFunction<Semaphore> shardApplyLock) throws Exception {
 		for (ShardMapping shardMapping : newMapping.getShardMappingList()) {
 			int shardNumber = shardMapping.getShardNumber();
 			boolean shouldBePrimary = thisNodeTest.test(shardMapping.getPrimaryNode());
@@ -1524,29 +1550,52 @@ public class ZuliaIndex {
 			boolean hasPrimary = primaryShardMap.containsKey(shardNumber);
 			boolean hasReplica = replicaShardMap.containsKey(shardNumber);
 
-			if (shouldBePrimary && !hasPrimary) {
-				// promotion reuses the on-disk data, so unload the old replica role without deleting
-				if (hasReplica) {
-					unloadShard(shardNumber);
-				}
-				loadShard(shardNumber, true);
+			RoleTransition transition = roleTransition(shouldBePrimary, shouldBeReplica, hasPrimary, hasReplica);
+			if (transition == RoleTransition.NONE) {
+				continue;
 			}
-			else if (shouldBeReplica && !hasReplica) {
-				// demotion reuses the on-disk data, so unload the old primary role without deleting
-				if (hasPrimary) {
-					unloadShard(shardNumber);
-				}
-				loadShard(shardNumber, false);
+
+			// role transitions close and reopen the shard directories, so take the same per shard apply
+			// lock the inbound replication stream holds, or the transition races a mid-flight apply on
+			// the very directory it is unloading. Bounded wait: streams have deadlines, but a stuck one
+			// must not wedge a mapping update forever, and past the timeout the stream dies on the
+			// designed AlreadyClosedException no-ack path anyway
+			Semaphore applyLock = shardApplyLock.apply(shardNumber);
+			boolean locked = applyLock.tryAcquire(60, TimeUnit.SECONDS);
+			if (!locked) {
+				LOG.warn("Applying shard mapping update for {}:s{} without the apply lock after a 60s wait on an in-flight replication stream", indexName,
+						shardNumber);
 			}
-			else if (!shouldBePrimary && !shouldBeReplica) {
-				if (hasReplica) {
-					// this node is no longer a replica; the primary is the source of truth, so the local copy is disposable
-					unloadShard(shardNumber);
-					deleteShardData(shardNumber);
+			try {
+				switch (transition) {
+					case BECOME_PRIMARY -> {
+						// promotion reuses the on-disk data, so unload the old replica role without deleting
+						if (hasReplica) {
+							unloadShard(shardNumber);
+						}
+						loadShard(shardNumber, true);
+					}
+					case BECOME_REPLICA -> {
+						// demotion reuses the on-disk data, so unload the old primary role without deleting
+						if (hasPrimary) {
+							unloadShard(shardNumber);
+						}
+						loadShard(shardNumber, false);
+					}
+					case DROP_REPLICA -> {
+						// this node is no longer a replica; the primary is the source of truth, so the local copy is disposable
+						unloadShard(shardNumber);
+						deleteShardData(shardNumber);
+					}
+					case RELEASE_PRIMARY ->
+						// primary moved off this node entirely; keep the data on disk rather than risk losing the only copy
+							unloadShard(shardNumber);
+					case NONE -> throw new IllegalStateException("NONE is filtered before locking");
 				}
-				else if (hasPrimary) {
-					// primary moved off this node entirely; keep the data on disk rather than risk losing the only copy
-					unloadShard(shardNumber);
+			}
+			finally {
+				if (locked) {
+					applyLock.release();
 				}
 			}
 		}

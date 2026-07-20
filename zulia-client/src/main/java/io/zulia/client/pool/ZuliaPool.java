@@ -17,6 +17,7 @@ import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.result.GetNodesResult;
 import io.zulia.client.result.Result;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.util.NodeKey;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -33,9 +34,9 @@ public class ZuliaPool {
 	private final boolean routingEnabled;
 	private final int nodeUpdateInterval;
 	private final boolean compressedConnection;
-	private final ConcurrentHashMap<String, ZuliaConnection> zuliaConnectionMap;
-	private final ConcurrentHashMap<String, ZuliaRESTClient> zuliaRestPoolMap;
-	private final ConcurrentHashMap<String, Node> nodeKeyToNode;
+	private final ConcurrentHashMap<NodeKey, ZuliaConnection> zuliaConnectionMap;
+	private final ConcurrentHashMap<NodeKey, ZuliaRESTClient> zuliaRestPoolMap;
+	private final ConcurrentHashMap<NodeKey, Node> nodeKeyToNode;
 	private final ConnectionListener connectionListener;
 	private volatile boolean isClosed;
 	private volatile List<Node> nodes;
@@ -55,7 +56,7 @@ public class ZuliaPool {
 		nodeKeyToNode = new ConcurrentHashMap<>();
 
 		for (Node node : nodes) {
-			nodeKeyToNode.put(getNodeKey(node), node);
+			nodeKeyToNode.put(NodeKey.of(node), node);
 		}
 
 		if (zuliaPoolConfig.isNodeUpdateEnabled()) {
@@ -86,17 +87,17 @@ public class ZuliaPool {
 
 	public void updateNodes(List<Node> nodes) {
 
-		Set<String> newKeys = new HashSet<>();
+		Set<NodeKey> newKeys = new HashSet<>();
 		for (Node node : nodes) {
-			String nodeKey = getNodeKey(node);
+			NodeKey nodeKey = NodeKey.of(node);
 			newKeys.add(nodeKey);
 			nodeKeyToNode.put(nodeKey, node);
 		}
 
-		Set<String> removedNodes = new HashSet<>(zuliaConnectionMap.keySet());
+		Set<NodeKey> removedNodes = new HashSet<>(zuliaConnectionMap.keySet());
 		removedNodes.addAll(zuliaRestPoolMap.keySet());
 		removedNodes.removeAll(newKeys);
-		for (String removedNode : removedNodes) {
+		for (NodeKey removedNode : removedNodes) {
 			ZuliaConnection connection = zuliaConnectionMap.remove(removedNode);
 			if (connection != null) {
 				closeConnection(connection);
@@ -108,10 +109,6 @@ public class ZuliaPool {
 		}
 
 		this.nodes = nodes;
-	}
-
-	private String getNodeKey(Node node) {
-		return node.getServerAddress() + ":" + node.getServicePort();
 	}
 
 	public void updateIndexMappings(List<IndexShardMapping> indexShardMappings, List<ZuliaIndex.IndexAlias> indexAliases) {
@@ -156,7 +153,7 @@ public class ZuliaPool {
 					selectedNode = tempList.get(randomNodeIndex);
 				}
 
-				String nodeKey = getNodeKey(selectedNode);
+				NodeKey nodeKey = NodeKey.of(selectedNode);
 				if (command instanceof RESTCommand) {
 					int restPort = selectedNode.getRestPort();
 
@@ -172,13 +169,13 @@ public class ZuliaPool {
 
 					int finalRestPort = restPort;
 					final String finalServer = selectedNode.getServerAddress();
-					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey, s -> new ZuliaRESTClient(finalServer, finalRestPort));
+					ZuliaRESTClient restClient = zuliaRestPoolMap.computeIfAbsent(nodeKey, _ -> new ZuliaRESTClient(finalServer, finalRestPort));
 					return ((RESTCommand<R>) command).execute(restClient);
 				}
 				else {
 					GrpcCommand<R> grpcCommand = (GrpcCommand<R>) command;
 					final Node finalSelectedNode = selectedNode;
-					ZuliaConnection zuliaConnection = zuliaConnectionMap.computeIfAbsent(nodeKey, (String key) -> {
+					ZuliaConnection zuliaConnection = zuliaConnectionMap.computeIfAbsent(nodeKey, _ -> {
 						ZuliaConnection conn = new ZuliaConnection(finalSelectedNode, compressedConnection);
 						if (connectionListener != null) {
 							connectionListener.connectionBeforeOpen(conn);
@@ -253,13 +250,13 @@ public class ZuliaPool {
 		// drain by remove, repeating while non-empty.  An execute() that raced past the isClosed check may
 		// still insert a connection mid-drain, and it must be closed too rather than leak its channel
 		while (!zuliaConnectionMap.isEmpty() || !zuliaRestPoolMap.isEmpty()) {
-			for (String nodeKey : zuliaConnectionMap.keySet()) {
+			for (NodeKey nodeKey : zuliaConnectionMap.keySet()) {
 				ZuliaConnection connection = zuliaConnectionMap.remove(nodeKey);
 				if (connection != null) {
 					closeConnection(connection);
 				}
 			}
-			for (String nodeKey : zuliaRestPoolMap.keySet()) {
+			for (NodeKey nodeKey : zuliaRestPoolMap.keySet()) {
 				ZuliaRESTClient restClient = zuliaRestPoolMap.remove(nodeKey);
 				if (restClient != null) {
 					restClient.close();

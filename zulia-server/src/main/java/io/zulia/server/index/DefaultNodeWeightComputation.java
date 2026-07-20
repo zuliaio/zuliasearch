@@ -6,6 +6,7 @@ import io.zulia.message.ZuliaIndex;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.IndexShardMapping;
 import io.zulia.server.config.IndexService;
+import io.zulia.util.NodeKey;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,7 +23,7 @@ public class DefaultNodeWeightComputation implements NodeWeightComputation {
 
 	public static final double REPLICA_WEIGHT_DELTA = 0.01;
 
-	private final HashMap<Node, AtomicDouble> nodeWeightMap;
+	private final HashMap<NodeKey, AtomicDouble> nodeWeightMap;
 
 	public DefaultNodeWeightComputation(IndexService indexService, Node thisNode, Collection<Node> currentOtherNodesActive) throws Exception {
 
@@ -48,43 +49,40 @@ public class DefaultNodeWeightComputation implements NodeWeightComputation {
 			}
 			double indexShardWeight = weightForIndex / (double) indexShardMapping.getNumberOfShards();
 			for (ZuliaIndex.ShardMapping shardMapping : indexShardMapping.getShardMappingList()) {
-				nodeWeightMap.computeIfAbsent(getNodeKey(shardMapping.getPrimaryNode()), k -> new AtomicDouble()).addAndGet(indexShardWeight);
+				nodeWeightMap.computeIfAbsent(NodeKey.of(shardMapping.getPrimaryNode()), _ -> new AtomicDouble()).addAndGet(indexShardWeight);
 
 				for (Node node : shardMapping.getReplicaNodeList()) {
-					nodeWeightMap.computeIfAbsent(getNodeKey(node), k -> new AtomicDouble()).addAndGet(indexShardWeight - REPLICA_WEIGHT_DELTA);
+					nodeWeightMap.computeIfAbsent(NodeKey.of(node), _ -> new AtomicDouble()).addAndGet(indexShardWeight - REPLICA_WEIGHT_DELTA);
 				}
 			}
 		}
 
 		for (Node node : activeNodes) {
-			nodeWeightMap.computeIfAbsent(getNodeKey(node), k -> new AtomicDouble());
+			nodeWeightMap.computeIfAbsent(NodeKey.of(node), _ -> new AtomicDouble());
 		}
 
-		nodeWeightMap.keySet().retainAll(activeNodes.stream().map(this::getNodeKey).collect(Collectors.toSet()));
+		nodeWeightMap.keySet().retainAll(activeNodes.stream().map(NodeKey::of).collect(Collectors.toSet()));
 
 	}
 
 	@Override
-	public List<Node> getNodesSortedByWeight() {
-		List<Map.Entry<Node, AtomicDouble>> entries = new ArrayList<>(nodeWeightMap.entrySet());
+	public List<NodeKey> getNodesSortedByWeight() {
+		List<Map.Entry<NodeKey, AtomicDouble>> entries = new ArrayList<>(nodeWeightMap.entrySet());
 		Collections.shuffle(entries);
 		entries.sort(Map.Entry.comparingByValue(Comparator.comparingDouble(AtomicDouble::get)));
-		return entries.stream().map(Map.Entry::getKey).collect(Collectors.toList());
-	}
-
-	private Node getNodeKey(Node primaryNode) {
-		return Node.newBuilder().setServerAddress(primaryNode.getServerAddress()).setServicePort(primaryNode.getServicePort()).build();
+		// callers mutate the returned list (removeFirst), so guarantee a mutable one
+		return entries.stream().map(Map.Entry::getKey).collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	@Override
-	public void addShard(Node node, IndexSettings indexSettings, boolean primary) {
+	public void addShard(NodeKey nodeKey, IndexSettings indexSettings, boolean primary) {
 
 		int indexWeight = indexSettings.getIndexWeight() != 0 ? indexSettings.getIndexWeight() : 1;
 		double indexShardWeight = (double) indexWeight / indexSettings.getNumberOfShards();
 		if (!primary) {
 			indexShardWeight = Math.max(0, indexShardWeight - REPLICA_WEIGHT_DELTA);
 		}
-		nodeWeightMap.computeIfAbsent(node, k -> new AtomicDouble()).addAndGet(indexShardWeight);
+		nodeWeightMap.computeIfAbsent(nodeKey, _ -> new AtomicDouble()).addAndGet(indexShardWeight);
 
 	}
 }

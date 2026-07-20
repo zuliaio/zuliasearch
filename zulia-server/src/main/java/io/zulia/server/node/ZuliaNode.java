@@ -8,6 +8,7 @@ import io.zulia.server.config.ZuliaConfig;
 import io.zulia.server.connection.server.ZuliaServiceServer;
 import io.zulia.server.index.ZuliaIndexManager;
 import io.zulia.server.rest.ZuliaRESTService;
+import io.zulia.util.NodeKey;
 import io.zulia.util.ZuliaVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,7 @@ public class ZuliaNode {
 	}
 
 	public static boolean isEqual(Node node1, Node node2) {
-		return (node1.getServerAddress().equals(node2.getServerAddress()) && node1.getServicePort() == node2.getServicePort());
+		return NodeKey.of(node1).equals(NodeKey.of(node2));
 	}
 
 	public static Node nodeFromConfig(ZuliaConfig zuliaConfig) {

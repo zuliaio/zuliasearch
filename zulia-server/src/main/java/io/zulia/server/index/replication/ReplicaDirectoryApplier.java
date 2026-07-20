@@ -85,6 +85,15 @@ public class ReplicaDirectoryApplier {
 			}
 			currentOutput = null;
 		}
+		// delete the pending file: on a replica the next successful stream's cleanup would collect it,
+		// but a node promoted to primary for this shard never runs that cleanup and Lucene ignores
+		// non-Lucene file names, so the file would persist indefinitely. Checked outside the output
+		// guard because finishFile clears currentOutput before sync and rename, so a failure there
+		// arrives here with only currentWriteName still set. A rename that already succeeded is safe,
+		// the delete on the pending name is then a swallowed NoSuchFileException
+		if (currentDirectory != null && currentWriteName != null) {
+			deleteIfExists(currentDirectory, currentWriteName);
+		}
 		currentLogicalName = null;
 		currentWriteName = null;
 		currentDirectory = null;

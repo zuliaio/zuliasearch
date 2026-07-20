@@ -49,6 +49,12 @@ public class SingleNodeService implements NodeService {
 	}
 
 	@Override
+	public long getClusterTime(String serverAddress, int servicePort) {
+		// single node heartbeats are stamped with the local clock, so the domains already match
+		return System.currentTimeMillis();
+	}
+
+	@Override
 	public void addNode(Node node) {
 		throw new UnsupportedOperationException("Add node is only available in cluster mode");
 	}

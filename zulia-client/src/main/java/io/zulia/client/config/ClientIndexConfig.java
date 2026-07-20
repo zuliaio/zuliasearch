@@ -82,8 +82,8 @@ public class ClientIndexConfig {
 	}
 
 	public ClientIndexConfig setDefaultSearchFields(List<String> defaultSearchFields) {
-		// copy at every assignment so the field is always mutable for the add methods
-		this.defaultSearchFields = new ArrayList<>(defaultSearchFields);
+		// copy at every assignment so the field is always mutable for the add methods, and accept null
+		this.defaultSearchFields = defaultSearchFields == null ? new ArrayList<>() : new ArrayList<>(defaultSearchFields);
 		return this;
 	}
 

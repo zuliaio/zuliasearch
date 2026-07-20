@@ -3,6 +3,7 @@ package io.zulia.server.node;
 import io.zulia.message.ZuliaBase.Node;
 import io.zulia.server.config.NodeService;
 import io.zulia.server.config.ZuliaConfig;
+import io.zulia.util.NodeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimerTask;
-import java.util.stream.Collectors;
 
 public abstract class MembershipTask extends TimerTask {
 
@@ -25,7 +25,8 @@ public abstract class MembershipTask extends TimerTask {
 	public static final int MAX_HEARTBEAT_LAG_SECONDS = 30;
 	private final NodeService nodeService;
 	private final ZuliaConfig zuliaConfig;
-	private Map<String, Node> otherNodeMap;
+	private final NodeKey thisNodeKey;
+	private Map<NodeKey, Node> otherNodeMap;
 	// heartbeat publishing is deferred until the node can actually serve
 	// advertising during index loading makes peers route to a port that is not yet listening, failing every federated request
 	// that touches this node's shards instead of letting replicas elsewhere answer
@@ -34,6 +35,7 @@ public abstract class MembershipTask extends TimerTask {
 	public MembershipTask(ZuliaConfig zuliaConfig, NodeService nodeService) {
 		this.nodeService = nodeService;
 		this.zuliaConfig = zuliaConfig;
+		this.thisNodeKey = new NodeKey(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		this.otherNodeMap = new HashMap<>();
 	}
 
@@ -46,7 +48,10 @@ public abstract class MembershipTask extends TimerTask {
 	}
 
 	@Override
-	public void run() {
+	public synchronized void run() {
+		// synchronized: the startup thread calls run() directly (initial read-only pass and the
+		// post-advertise publish) while the timer thread runs the scheduled ticks, and the body
+		// mutates otherNodeMap and fires add/remove callbacks assuming single-threaded execution
 
 		try {
 			if (advertise) {
@@ -59,22 +64,32 @@ public abstract class MembershipTask extends TimerTask {
 			ArrayList<Node> nodesList = new ArrayList<>(nodeService.getNodes());
 			nodesList.sort(Comparator.comparingLong(Node::getHeartbeat).reversed());
 
-			Map<String, Node> newOtherNodeMap = new HashMap<>();
+			Map<NodeKey, Node> newOtherNodeMap = new HashMap<>();
+			Map<NodeKey, Node> currentNodesByKey = new HashMap<>();
 
-			// the list can be empty before this node advertises on a freshly bootstrapped cluster
-			long latest = nodesList.isEmpty() ? 0 : nodesList.getFirst().getHeartbeat();
+			// anchor the lag filter in the heartbeat clock domain. While advertising, this node's own
+			// publish at the top of this tick keeps the list maximum fresh. In the read-only startup
+			// window a whole-cluster crash leaves only stale heartbeats, where the newest crashed peer
+			// would read as active (lag 0 against its own anchor), so probe the database for a fresh
+			// timestamp instead. In cluster mode, the local clock never participates in cluster mode and
+			// Heartbeats are stamped with the database clock, and an anchor from this node's clock would
+			// expire every peer whenever it ran more than the lag window ahead of the database
+			long listMax = nodesList.isEmpty() ? 0 : nodesList.getFirst().getHeartbeat();
+			long anchor = advertise ? listMax : Math.max(nodeService.getClusterTime(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort()), listMax);
 			for (Node node : nodesList) {
+				NodeKey nodeKey = NodeKey.of(node);
+				currentNodesByKey.put(nodeKey, node);
 				// registered but never started, previously filtered only by lag against this node's own
 				// fresh heartbeat, which deferred advertising no longer guarantees is in the list
 				if (node.getHeartbeat() == 0) {
 					continue;
 				}
-				if (latest - node.getHeartbeat() < MAX_HEARTBEAT_LAG_SECONDS * 1000) {
-					if (node.getServerAddress().equals(zuliaConfig.getServerAddress()) && (node.getServicePort() == zuliaConfig.getServicePort())) {
+				if (anchor - node.getHeartbeat() < MAX_HEARTBEAT_LAG_SECONDS * 1000) {
+					if (nodeKey.equals(thisNodeKey)) {
 						//skip this server
 					}
 					else {
-						newOtherNodeMap.put(node.getServerAddress() + ":" + node.getServicePort(), node);
+						newOtherNodeMap.put(nodeKey, node);
 					}
 				}
 			}
@@ -83,14 +98,14 @@ public abstract class MembershipTask extends TimerTask {
 			List<Node> newNodesList = Collections.emptyList();
 
 			{
-				Set<String> removedNodes = new HashSet<>(otherNodeMap.keySet());
+				Set<NodeKey> removedNodes = new HashSet<>(otherNodeMap.keySet());
 				removedNodes.removeAll(newOtherNodeMap.keySet());
 
 				if (!removedNodes.isEmpty()) {
 					removedNodesList = removedNodes.stream().map(otherNodeMap::get).toList();
 				}
 
-				Set<String> newNodes = new HashSet<>(newOtherNodeMap.keySet());
+				Set<NodeKey> newNodes = new HashSet<>(newOtherNodeMap.keySet());
 				newNodes.removeAll(otherNodeMap.keySet());
 
 				if (!newNodes.isEmpty()) {
@@ -105,11 +120,17 @@ public abstract class MembershipTask extends TimerTask {
 				ArrayList<Node> otherNodes = new ArrayList<>(otherNodeMap.values());
 
 				for (Node removedNode : removedNodesList) {
-					LOG.info(
-							"Removing expired node {}:{} - node heartbeat: {}, latest heartbeat: {}, current time: {}, lag: {}ms",
-							removedNode.getServerAddress(), removedNode.getServicePort(),
-							removedNode.getHeartbeat(), latest, System.currentTimeMillis(),
-							latest - removedNode.getHeartbeat());
+					// judge against the node's current registry entry: the otherNodeMap snapshot always
+					// holds the last heartbeat this node saw while the peer was alive, never 0
+					Node current = currentNodesByKey.get(NodeKey.of(removedNode));
+					if (current == null || current.getHeartbeat() == 0) {
+						LOG.info("Removing node {}:{} that shut down cleanly or was deregistered", removedNode.getServerAddress(),
+								removedNode.getServicePort());
+					}
+					else {
+						LOG.info("Removing expired node {}:{} - node heartbeat: {}, anchor: {}, lag: {}ms", removedNode.getServerAddress(),
+								removedNode.getServicePort(), current.getHeartbeat(), anchor, anchor - current.getHeartbeat());
+					}
 					handleNodeRemove(otherNodes, removedNode);
 				}
 

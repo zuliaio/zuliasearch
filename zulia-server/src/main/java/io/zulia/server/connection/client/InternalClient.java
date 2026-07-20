@@ -18,6 +18,7 @@ import io.zulia.server.connection.client.handler.InternalOptimizeHandler;
 import io.zulia.server.connection.client.handler.InternalQueryHandler;
 import io.zulia.server.connection.client.handler.InternalReindexHandler;
 import io.zulia.server.connection.client.handler.InternalStoreHandler;
+import io.zulia.util.NodeKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +30,7 @@ public class InternalClient {
 
 	private static final int CONNECTIONS_PER_NODE = 3;
 
-	private final ConcurrentHashMap<String, InternalRpcConnection[]> internalConnectionMap;
+	private final ConcurrentHashMap<NodeKey, InternalRpcConnection[]> internalConnectionMap;
 	private final AtomicInteger roundRobin;
 	private final InternalQueryHandler internalQueryHandler;
 	private final InternalStoreHandler internalStoreHandler;
@@ -80,7 +81,7 @@ public class InternalClient {
 	}
 
 	public void addNode(Node node) {
-		String nodeKey = getNodeKey(node);
+		NodeKey nodeKey = NodeKey.of(node);
 
 		if (!internalConnectionMap.containsKey(nodeKey)) {
 
@@ -99,7 +100,7 @@ public class InternalClient {
 	}
 
 	public void removeNode(Node node) {
-		String nodeKey = getNodeKey(node);
+		NodeKey nodeKey = NodeKey.of(node);
 
 		LOG.info("Removing connections for node {}", nodeKey);
 		InternalRpcConnection[] connections = internalConnectionMap.remove(nodeKey);
@@ -115,12 +116,8 @@ public class InternalClient {
 
 	}
 
-	private String getNodeKey(Node node) {
-		return node.getServerAddress() + ":" + node.getServicePort();
-	}
-
 	public InternalRpcConnection getConnection(Node node) throws Exception {
-		String nodeKey = getNodeKey(node);
+		NodeKey nodeKey = NodeKey.of(node);
 		InternalRpcConnection[] connections = internalConnectionMap.get(nodeKey);
 		if (connections != null) {
 			int index = Math.floorMod(roundRobin.getAndIncrement(), connections.length);
