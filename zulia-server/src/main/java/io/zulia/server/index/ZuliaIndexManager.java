@@ -66,6 +66,7 @@ import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.util.IndexAliasUtil;
+import io.zulia.util.NodeKey;
 import io.zulia.util.ResultHelper;
 import io.zulia.util.ZuliaUtil;
 import io.zulia.util.document.DocumentHelper;
@@ -117,7 +118,7 @@ public class ZuliaIndexManager {
 	private final Node thisNode;
 	private volatile Collection<Node> currentOtherNodesActive = Collections.emptyList();
 	private final ConcurrentHashMap<String, IndexAlias> indexAliasMap;
-	private final ConcurrentHashMap<String, Semaphore> replicaApplyLockMap = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<IndexShardKey, Semaphore> replicaApplyLockMap = new ConcurrentHashMap<>();
 	private final ReplicationRateLimiter replicationRateLimiter;
 
 	private static final int MONGO_DB_NAME_MAX_LENGTH = 63;
@@ -261,7 +262,8 @@ public class ZuliaIndexManager {
 			if (!previouslyApplied.equals(currentMapping)) {
 				LOG.info("{}:{} applying shard mapping update for index {} during load", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort(),
 						indexName);
-				zuliaIndex.applyShardMappingUpdate(currentMapping, node -> ZuliaNode.isEqual(thisNode, node));
+				zuliaIndex.applyShardMappingUpdate(currentMapping, node -> ZuliaNode.isEqual(thisNode, node),
+						shardNumber -> getReplicaApplyLock(indexName, shardNumber));
 			}
 
 			zuliaIndex.startMaintenance();
@@ -1378,17 +1380,19 @@ public class ZuliaIndexManager {
 
 		for (int i = 0; i < indexSettings.getNumberOfShards(); i++) {
 
-			List<Node> nodes = nodeWeightComputation.getNodesSortedByWeight();
+			List<NodeKey> nodes = nodeWeightComputation.getNodesSortedByWeight();
 
 			ShardMapping.Builder shardMapping = ShardMapping.newBuilder().setShardNumber(i);
 
-			Node primaryNode = nodes.removeFirst();
-			shardMapping.setPrimaryNode(primaryNode);
+			NodeKey primaryNode = nodes.removeFirst();
+			// mappings persist identity-only nodes: mutable fields like heartbeat would make
+			// mapping equality checks flap and spuriously reapply shard mappings
+			shardMapping.setPrimaryNode(primaryNode.toIdentityNode());
 			nodeWeightComputation.addShard(primaryNode, indexSettings, true);
 
 			// remaining nodes are sorted by weight; take the least loaded ones as replicas
 			nodes.stream().limit(indexSettings.getNumberOfReplicas()).forEach(replicaNode -> {
-				shardMapping.addReplicaNode(replicaNode);
+				shardMapping.addReplicaNode(replicaNode.toIdentityNode());
 				nodeWeightComputation.addShard(replicaNode, indexSettings, false);
 			});
 
@@ -1419,13 +1423,12 @@ public class ZuliaIndexManager {
 				// growing: keep all existing replicas and pick additional least-loaded nodes not already assigned to this shard
 				currentReplicas.forEach(shardBuilder::addReplicaNode);
 
-				List<Node> alreadyAssigned = Stream.concat(Stream.of(primaryNode), currentReplicas.stream()).toList();
+				Set<NodeKey> alreadyAssigned = Stream.concat(Stream.of(primaryNode), currentReplicas.stream()).map(NodeKey::of).collect(Collectors.toSet());
 				int toAdd = newReplicaCount - currentReplicas.size();
 
-				nodeWeightComputation.getNodesSortedByWeight().stream()
-						.filter(candidate -> alreadyAssigned.stream().noneMatch(assigned -> ZuliaNode.isEqual(assigned, candidate))).limit(toAdd)
+				nodeWeightComputation.getNodesSortedByWeight().stream().filter(candidate -> !alreadyAssigned.contains(candidate)).limit(toAdd)
 						.forEach(replica -> {
-							shardBuilder.addReplicaNode(replica);
+							shardBuilder.addReplicaNode(replica.toIdentityNode());
 							nodeWeightComputation.addShard(replica, indexSettings, false);
 						});
 			}
@@ -1533,7 +1536,8 @@ public class ZuliaIndexManager {
 		IndexShardMapping newShardMapping = indexService.getIndexShardMapping(indexName);
 		if (!zuliaIndex.getIndexShardMapping().equals(newShardMapping)) {
 			LOG.info("{}:{} applying shard mapping update for index {}", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort(), indexName);
-			zuliaIndex.applyShardMappingUpdate(newShardMapping, node -> ZuliaNode.isEqual(thisNode, node));
+			zuliaIndex.applyShardMappingUpdate(newShardMapping, node -> ZuliaNode.isEqual(thisNode, node),
+					shardNumber -> getReplicaApplyLock(indexName, shardNumber));
 		}
 
 		zuliaIndex.reloadIndexSettings();
@@ -1609,6 +1613,9 @@ public class ZuliaIndexManager {
 				deleteShardDataDirectlyFromDisk(indexName);
 				loadedIndexCache.removeDeleted(indexName);
 			}
+			// safe only after the index is unregistered: a late inbound stream now fails at lease time,
+			// so dropping the semaphores cannot reopen the overlapping-apply window they exist to close
+			removeReplicaApplyLocks(indexName);
 		}
 		finally {
 			lock.unlock();
@@ -1780,7 +1787,16 @@ public class ZuliaIndexManager {
 	 * are not pinned to one thread, so acquire and release happen on different threads.
 	 */
 	public Semaphore getReplicaApplyLock(String indexName, int shardNumber) {
-		return replicaApplyLockMap.computeIfAbsent(indexName + ":" + shardNumber, k -> new Semaphore(1));
+		return replicaApplyLockMap.computeIfAbsent(new IndexShardKey(indexName, shardNumber), k -> new Semaphore(1));
+	}
+
+	// otherwise every uniquely named index ever replicated through this node leaks a permanent map entry
+	private void removeReplicaApplyLocks(String indexName) {
+		replicaApplyLockMap.keySet().removeIf(key -> key.indexName().equals(indexName));
+	}
+
+	private record IndexShardKey(String indexName, int shardNumber) {
+
 	}
 
 	public IndexLease leaseIndexFromName(String indexName) throws Exception {
