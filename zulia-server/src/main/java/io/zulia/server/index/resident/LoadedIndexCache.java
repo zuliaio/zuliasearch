@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -38,6 +39,13 @@ public class LoadedIndexCache {
 
 	// A just-loaded index cannot be evicted until this old, so size pressure never unloads it before first use
 	private static final long MIN_RESIDENCY_MILLIS = 10_000;
+
+	// A failed pre-unload commit backs the handle off this long so a persistent storage fault is not
+	// re-selected on every evictor pass, spinning the fault and starving other eviction candidates.
+	private static final long EVICTION_ABORT_BACKOFF_MILLIS = 60_000;
+
+	// Bound for claiming and unloading every resident index at shutdown.
+	private static final long SHUTDOWN_WAIT_MILLIS = 30_000;
 
 	// Bound for waiting on a draining handle to finish closing before a fresh load of the same index.
 	private static final long DRAIN_WAIT_MILLIS = 120_000;
@@ -305,6 +313,9 @@ public class LoadedIndexCache {
 		if (now - handle.getLoadedMillis() < MIN_RESIDENCY_MILLIS) {
 			return false;
 		}
+		if (now < handle.getEvictionBackoffUntilMillis()) {
+			return false;
+		}
 		if (handle.getLeaseCount() > 0) {
 			return false;
 		}
@@ -366,9 +377,15 @@ public class LoadedIndexCache {
 				// rather than discard acknowledged stores
 				handle.getIndex().commitBeforeUnload();
 			}
-			catch (Exception e) {
-				LOG.error("Aborting eviction of index {}, the pre-unload commit failed", indexName, e);
+			catch (Throwable t) {
+				LOG.error("Aborting eviction of index {}, the pre-unload commit failed", indexName, t);
+				handle.backoffEviction(System.currentTimeMillis() + EVICTION_ABORT_BACKOFF_MILLIS);
 				handle.compareAndSetState(HandleState.DRAINING, HandleState.ACTIVE);
+				if (t instanceof Error error) {
+					// the handle has left DRAINING, so surface the Error instead of swallowing it:
+					// a swallowed catch here previously stranded the handle in DRAINING forever
+					throw error;
+				}
 				return;
 			}
 			try {
@@ -404,25 +421,42 @@ public class LoadedIndexCache {
 
 		residentIndexMap.values().parallelStream().forEach(handle -> {
 			// winning the CAS gives this thread sole ownership of the unload, so a still-running evictor
-			// pass or a second shutdown call can never unload the same handle twice
-			if (handle.compareAndSetState(HandleState.ACTIVE, HandleState.CLOSED)) {
-				try {
-					handle.getIndex().unload(false);
+			// pass or a second shutdown call can never unload the same handle twice. An eviction can also
+			// abort its pre-unload commit and revert DRAINING to ACTIVE, so keep retrying the claim with
+			// short waits instead of skipping the index after one long timeout
+			long deadline = System.currentTimeMillis() + SHUTDOWN_WAIT_MILLIS;
+			boolean settled = false;
+			while (!settled && System.currentTimeMillis() < deadline) {
+				if (handle.compareAndSetState(HandleState.ACTIVE, HandleState.CLOSED)) {
+					try {
+						handle.getIndex().unload(false);
+					}
+					catch (IOException e) {
+						LOG.error("Failed to unload index: {}", handle.getIndex().getIndexName(), e);
+					}
+					finally {
+						handle.markClosedComplete();
+					}
+					settled = true;
 				}
-				catch (IOException e) {
-					LOG.error("Failed to unload index: {}", handle.getIndex().getIndexName(), e);
-				}
-				finally {
-					handle.markClosedComplete();
+				else {
+					try {
+						handle.waitForClosed(1, TimeUnit.SECONDS);
+						settled = true;
+					}
+					catch (TimeoutException stillDraining) {
+					}
+					catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						break;
+					}
+					catch (ExecutionException e) {
+						settled = true;
+					}
 				}
 			}
-			else {
-				try {
-					handle.waitForClosed(30, TimeUnit.SECONDS);
-				}
-				catch (Exception e) {
-					LOG.warn("Index {} did not finish unloading during shutdown", handle.getIndex().getIndexName());
-				}
+			if (!settled) {
+				LOG.warn("Index {} did not finish unloading during shutdown", handle.getIndex().getIndexName());
 			}
 		});
 	}

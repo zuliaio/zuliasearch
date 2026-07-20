@@ -33,6 +33,7 @@ class IndexHandle {
 	private final AtomicInteger leaseCount = new AtomicInteger();
 	private final AtomicReference<HandleState> state = new AtomicReference<>(HandleState.ACTIVE);
 	private volatile long lastAccessMillis;
+	private volatile long evictionBackoffUntilMillis;
 	private final long loadedMillis;
 	private final CompletableFuture<Void> closed = new CompletableFuture<>();
 
@@ -48,6 +49,14 @@ class IndexHandle {
 
 	long getLastAccessMillis() {
 		return lastAccessMillis;
+	}
+
+	long getEvictionBackoffUntilMillis() {
+		return evictionBackoffUntilMillis;
+	}
+
+	void backoffEviction(long untilMillis) {
+		this.evictionBackoffUntilMillis = untilMillis;
 	}
 
 	ZuliaIndex getIndex() {
