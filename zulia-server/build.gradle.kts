@@ -48,7 +48,7 @@ tasks.test {
 }
 
 tasks.register<Test>("soakTest") {
-    description = "Runs hour-scale soak tests tagged 'soak', which the regular test task excludes. Duration via -Dzulia.soak.minutes (default 60)."
+    description = "Runs hour-scale soak tests tagged 'soak', which the regular test task excludes. Duration via -Dzulia.soak.minutes (default 60). Node count for TransientIndexSoakTest via -Dzulia.soak.nodes (default 1, up to 3)."
     group = "verification"
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
@@ -56,6 +56,7 @@ tasks.register<Test>("soakTest") {
         includeTags("soak")
     }
     systemProperty("zulia.soak.minutes", providers.systemProperty("zulia.soak.minutes").getOrElse("60"))
+    systemProperty("zulia.soak.nodes", providers.systemProperty("zulia.soak.nodes").getOrElse("1"))
     timeout = Duration.ofHours(2)
     outputs.upToDateWhen { false }
 }

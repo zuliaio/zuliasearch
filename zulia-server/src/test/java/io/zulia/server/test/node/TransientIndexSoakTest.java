@@ -26,21 +26,26 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
- * Hour-scale soak test that tests 5000 transient indexes against a residency cap of 100, hammered by paced writers
- * and readers whose access pattern is ~50x wider than the cap, so nearly every operation pays a cold
+ * Hour-scale soak test that tests 5000 transient indexes against a per-node residency cap of 100, hammered by paced
+ * writers and readers whose access pattern is ~50x wider than the cap, so nearly every operation pays a cold
  * load while the evictor runs continuously. Victim indexes rotate through delete and recreate, and
  * rotating 100-index wildcard windows fan cold loads in bursts. Excluded from the regular test task,
  * run with: ./gradlew :zulia-server:soakTest (duration knob: -Dzulia.soak.minutes, default 60).
+ * The node-count knob -Dzulia.soak.nodes (default 1, up to 3) runs the same workload against a
+ * multi-node cluster where the indexes scatter across nodes and each node runs its own evictor.
  * <p>
  * Invariants asserted throughout: single-writer indexes always count exactly, racing readers always
  * observe counts inside [expected-before, expected-after + 1], wildcard windows stay inside summed
- * bounds, residency stays under a thrash ceiling while hammering, and after quiescing the node
- * converges back to the cap with every one of the 5000 indexes still counting exactly.
+ * bounds, residency on every node stays under a thrash ceiling while hammering, and after quiescing
+ * every node converges back to the cap with every one of the 5000 indexes still counting exactly.
  * <p>
  * A 90 minute run at this sizing (~5M seeded documents) passed on 2026-07-14 with 167300 cold loads,
  * 166872 evictions, peak residency 535, and an exact final sweep of all 5000 indexes.
+ * A 30 minute 2-node run passed on 2026-07-21 with 28050 cold loads, 27790 evictions, peak per-node
+ * residency 369, convergence back under the cap on both nodes, and an exact final sweep.
  */
 @Tag("soak")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -59,22 +64,58 @@ public class TransientIndexSoakTest {
 	private static final int READER_THREADS = 4;
 	private static final long WRITER_PAUSE_MS = 200;
 	private static final long READER_PAUSE_MS = 150;
-	// paced load rate times the 10s minimum residency bounds the soft-cap overshoot, and far above it means thrash
+	// paced load rate times the 10s minimum residency bounds the per-node soft-cap overshoot, and far above it means thrash
 	private static final int RESIDENT_CEILING = 2500;
 	// setup, convergence, and the final 5000-index sweep get this slice of the total budget
 	private static final long RESERVE_MS = 8 * 60_000;
 
 	private static final long SUITE_START_MS = System.currentTimeMillis();
 	private static final long TOTAL_BUDGET_MS = Long.parseLong(System.getProperty("zulia.soak.minutes", "60")) * 60_000;
+	private static final int NODE_COUNT = parseNodeCount();
 
 	private static final AtomicIntegerArray EXPECTED = new AtomicIntegerArray(WRITABLE_COUNT);
 	private static final AtomicIntegerArray VICTIM_EXPECTED = new AtomicIntegerArray(VICTIM_COUNT);
 
 	@RegisterExtension
-	static final NodeExtension nodeExtension = new NodeExtension(1, zuliaConfig -> zuliaConfig.setTransientIndexCacheSize(CACHE_SIZE));
+	static final NodeExtension nodeExtension = new NodeExtension(NODE_COUNT, zuliaConfig -> zuliaConfig.setTransientIndexCacheSize(CACHE_SIZE));
 
-	private static LoadedIndexCache cache() {
-		return TestHelper.getZuliaNodes().getFirst().getIndexManager().getLoadedIndexCache();
+	private static int parseNodeCount() {
+		String configured = System.getProperty("zulia.soak.nodes", "1");
+		int nodes;
+		try {
+			nodes = Integer.parseInt(configured);
+		}
+		catch (NumberFormatException e) {
+			throw new IllegalArgumentException("zulia.soak.nodes was <" + configured + "> but must be an integer between 1 and 3", e);
+		}
+		if (nodes < 1 || nodes > 3) {
+			throw new IllegalArgumentException("zulia.soak.nodes was <" + configured + "> but this soak test supports 1 to 3 nodes");
+		}
+		return nodes;
+	}
+
+	private static List<LoadedIndexCache> caches() {
+		return TestHelper.getZuliaNodes().stream().map(node -> node.getIndexManager().getLoadedIndexCache()).toList();
+	}
+
+	private static long totalLoads() {
+		return caches().stream().mapToLong(LoadedIndexCache::getLoadCount).sum();
+	}
+
+	private static long totalEvictions() {
+		return caches().stream().mapToLong(LoadedIndexCache::getEvictionCount).sum();
+	}
+
+	private static int totalResident() {
+		return caches().stream().mapToInt(LoadedIndexCache::getResidentCount).sum();
+	}
+
+	private static int maxResidentOnAnyNode() {
+		return caches().stream().mapToInt(LoadedIndexCache::getResidentCount).max().orElse(0);
+	}
+
+	private static String residentCountsByNode() {
+		return caches().stream().map(cache -> String.valueOf(cache.getResidentCount())).collect(Collectors.joining(", "));
 	}
 
 	private static String indexName(int i) {
@@ -92,7 +133,7 @@ public class TransientIndexSoakTest {
 		for (int i = 0; i < WRITABLE_COUNT; i++) {
 			createIndex(zuliaWorkPool, indexName(i));
 			if (i % 500 == 499) {
-				LOG.info("Soak: created {} of {} indexes ({} resident)", i + 1, WRITABLE_COUNT, cache().getResidentCount());
+				LOG.info("Soak: created {} of {} indexes ({} resident)", i + 1, WRITABLE_COUNT, totalResident());
 			}
 		}
 		for (int v = 0; v < VICTIM_COUNT; v++) {
@@ -142,15 +183,14 @@ public class TransientIndexSoakTest {
 	@Order(3)
 	public void hammer() throws Exception {
 		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
-		LoadedIndexCache cache = cache();
 
 		long deadline = SUITE_START_MS + TOTAL_BUDGET_MS - RESERVE_MS;
 		long hammerMillis = Math.max(60_000, deadline - System.currentTimeMillis());
 		deadline = System.currentTimeMillis() + hammerMillis;
-		LOG.info("Soak: hammering for {} minutes", hammerMillis / 60_000);
+		LOG.info("Soak: hammering for {} minutes on {} nodes", hammerMillis / 60_000, NODE_COUNT);
 
-		long loadsBefore = cache.getLoadCount();
-		long evictionsBefore = cache.getEvictionCount();
+		long loadsBefore = totalLoads();
+		long evictionsBefore = totalEvictions();
 
 		AtomicBoolean stop = new AtomicBoolean();
 		AtomicReference<Throwable> failure = new AtomicReference<>();
@@ -172,10 +212,10 @@ public class TransientIndexSoakTest {
 				Thread.sleep(15_000);
 				tick++;
 
-				int resident = cache.getResidentCount();
+				int resident = maxResidentOnAnyNode();
 				peakResident = Math.max(peakResident, resident);
 				Assertions.assertTrue(resident <= RESIDENT_CEILING,
-						"resident count " + resident + " exceeded the thrash ceiling " + RESIDENT_CEILING + " during the hammer phase");
+						"resident count " + resident + " on a node exceeded the thrash ceiling " + RESIDENT_CEILING + " during the hammer phase");
 
 				if (tick % 2 == 0) {
 					wildcardWindowSweep(zuliaWorkPool, tick / 2, failure);
@@ -184,8 +224,8 @@ public class TransientIndexSoakTest {
 					rotateVictim(zuliaWorkPool, (tick / 4) % VICTIM_COUNT);
 				}
 				if (tick % 8 == 0) {
-					LOG.info("Soak: {} min in, {} resident (peak {}), {} loads, {} evictions", tick / 4, resident, peakResident,
-							cache.getLoadCount() - loadsBefore, cache.getEvictionCount() - evictionsBefore);
+					LOG.info("Soak: {} min in, {} resident by node (peak on a node {}), {} loads, {} evictions", tick / 4, residentCountsByNode(), peakResident,
+							totalLoads() - loadsBefore, totalEvictions() - evictionsBefore);
 				}
 			}
 		}
@@ -198,9 +238,9 @@ public class TransientIndexSoakTest {
 
 		Assertions.assertNull(failure.get(), () -> "soak hammer failed: " + failure.get());
 
-		long loads = cache.getLoadCount() - loadsBefore;
-		long evictions = cache.getEvictionCount() - evictionsBefore;
-		LOG.info("Soak: hammer finished with {} loads and {} evictions, peak resident {}", loads, evictions, peakResident);
+		long loads = totalLoads() - loadsBefore;
+		long evictions = totalEvictions() - evictionsBefore;
+		LOG.info("Soak: hammer finished with {} loads and {} evictions, peak resident on a node {}", loads, evictions, peakResident);
 		// the paced workload sustains ~40 cold loads per second; 5 per second is the churn floor at any duration
 		long minExpected = Math.max(500, hammerMillis / 1000 * 5);
 		Assertions.assertTrue(loads >= minExpected, "expected at least " + minExpected + " cold loads over the hammer phase but only saw " + loads);
@@ -210,13 +250,12 @@ public class TransientIndexSoakTest {
 	@Test
 	@Order(4)
 	public void convergesToCap() throws Exception {
-		LoadedIndexCache cache = cache();
 		long deadline = System.currentTimeMillis() + 300_000;
-		while (System.currentTimeMillis() < deadline && cache.getResidentCount() > CACHE_SIZE) {
+		while (System.currentTimeMillis() < deadline && maxResidentOnAnyNode() > CACHE_SIZE) {
 			Thread.sleep(2000);
 		}
-		Assertions.assertTrue(cache.getResidentCount() <= CACHE_SIZE,
-				"expected convergence to " + CACHE_SIZE + " resident after quiescing but found " + cache.getResidentCount());
+		Assertions.assertTrue(maxResidentOnAnyNode() <= CACHE_SIZE,
+				"expected every node to converge to " + CACHE_SIZE + " resident after quiescing but found " + residentCountsByNode() + " by node");
 	}
 
 	@Test
