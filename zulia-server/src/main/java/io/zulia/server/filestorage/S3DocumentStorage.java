@@ -62,6 +62,9 @@ public class S3DocumentStorage implements DocumentStorage {
 	private final S3Client s3;
 	private final String region;
 	private final boolean propWait;
+	private final boolean sharded;
+
+	private volatile boolean inited = false;
 
 	public S3DocumentStorage(MongoClient mongoClient, String indexName, String dbName, boolean sharded, S3Config s3Config) {
 		if (null == s3Config)
@@ -76,6 +79,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		this.client = mongoClient;
 		this.indexName = indexName;
 		this.dbName = dbName;
+		this.sharded = sharded;
 
 		ProfileCredentialsProvider profileCredProvider = (s3Config.getProfile() != null) ?
 				ProfileCredentialsProvider.create((s3Config.getProfile())) :
@@ -86,25 +90,34 @@ public class S3DocumentStorage implements DocumentStorage {
 						ContainerCredentialsProvider.create(), InstanceProfileCredentialsProvider.create()).build();
 
 		this.s3 = S3Client.builder().region(Region.of(this.region)).credentialsProvider(credentialsProvider).build();
+	}
 
-		Thread.startVirtualThread(() -> {
-			MongoDatabase db = client.getDatabase(dbName);
-			MongoCollection<Document> coll = db.getCollection(COLLECTION);
-			coll.createIndex(new Document("metadata." + DOCUMENT_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
-			coll.createIndex(new Document("metadata." + FILE_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
-			if (sharded) {
-				MongoDatabase adminDb = client.getDatabase("admin");
-				Document enableCommand = new Document();
-				enableCommand.put("enablesharding", dbName);
-				adminDb.runCommand(enableCommand);
+	// createIndex materializes the collection and its database, so this runs only on the write paths.
+	// Reads and deletes against a collection that does not exist are no-ops in MongoDB.
+	private void ensureIndexes() {
+		if (inited) {
+			return;
+		}
+		synchronized (this) {
+			if (!inited) {
+				MongoDatabase db = client.getDatabase(dbName);
+				MongoCollection<Document> coll = db.getCollection(COLLECTION);
+				coll.createIndex(new Document("metadata." + DOCUMENT_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
+				coll.createIndex(new Document("metadata." + FILE_UNIQUE_ID_KEY, 1), new IndexOptions().background(true));
+				if (sharded) {
+					MongoDatabase adminDb = client.getDatabase("admin");
+					Document enableCommand = new Document();
+					enableCommand.put("enablesharding", dbName);
+					adminDb.runCommand(enableCommand);
 
-				Document shardCommand = new Document();
-				MongoCollection<Document> collection = db.getCollection(COLLECTION);
-				shardCommand.put("shardcollection", collection.getNamespace().getFullName());
-				shardCommand.put("key", new BasicDBObject("_id", 1));
-				adminDb.runCommand(shardCommand);
+					Document shardCommand = new Document();
+					shardCommand.put("shardcollection", coll.getNamespace().getFullName());
+					shardCommand.put("key", new BasicDBObject("_id", 1));
+					adminDb.runCommand(shardCommand);
+				}
+				inited = true;
 			}
-		});
+		}
 	}
 
 	@Override
@@ -179,6 +192,7 @@ public class S3DocumentStorage implements DocumentStorage {
 
 	@Override
 	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) {
+		ensureIndexes();
 		deleteAssociatedDocument(uniqueId, fileName);
 
 		Document TOC = new Document();
@@ -260,6 +274,7 @@ public class S3DocumentStorage implements DocumentStorage {
 	 */
 	@Override
 	public void registerExternalDocument(ZuliaBase.ExternalDocument registration) {
+		ensureIndexes();
 		Document reg = ZuliaUtil.byteArrayToMongoDocument(registration.getRegistration().toByteArray());
 		assert (reg.containsKey("location"));
 		assert (reg.containsKey("metadata"));
@@ -288,6 +303,7 @@ public class S3DocumentStorage implements DocumentStorage {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find();
 		deleteAllKeys(found);
 		client.getDatabase(dbName).drop();
+		inited = false;
 	}
 
 	@Override
@@ -296,6 +312,8 @@ public class S3DocumentStorage implements DocumentStorage {
 		FindIterable<Document> found = client.getDatabase(dbName).getCollection(COLLECTION).find(Filters.ne("metadata." + FILE_EXTERNAL, true));
 		deleteAllKeys(found);
 		client.getDatabase(dbName).getCollection(COLLECTION).drop();
+		// the drop removed the metadata indexes, the next store must recreate them
+		inited = false;
 	}
 
 	private void deleteAllKeys(FindIterable<Document> found) {

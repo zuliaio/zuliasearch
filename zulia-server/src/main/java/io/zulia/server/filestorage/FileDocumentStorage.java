@@ -26,6 +26,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -125,7 +126,11 @@ public class FileDocumentStorage implements DocumentStorage {
 		Path p = Path.of(pathForUniqueId);
 		if (Files.exists(p)) {
 			try (Stream<Path> files = Files.list(p)) {
-				return files.map(Path::toFile).map(File::getName).collect(Collectors.toList());
+				// Every store writes a metadata sidecar next to the document, so a document file is
+				// exactly an entry whose ".metadata" sibling exists. This also hides sidecars orphaned
+				// by deletes from before the sidecar was removed with its document.
+				Set<String> names = files.map(Path::getFileName).map(Path::toString).collect(Collectors.toSet());
+				return names.stream().filter(name -> names.contains(name + ".metadata")).sorted().collect(Collectors.toList());
 			}
 		}
 		return Collections.emptyList();
@@ -134,7 +139,8 @@ public class FileDocumentStorage implements DocumentStorage {
 	@Override
 	public void deleteAssociatedDocument(String uniqueId, String fileName) throws IOException {
 		String pathForUniqueId = getFullPathToUniqueId(uniqueId);
-		Files.delete(Path.of(pathForUniqueId, fileName));
+		Files.deleteIfExists(Path.of(pathForUniqueId, fileName));
+		Files.deleteIfExists(Path.of(pathForUniqueId, fileName + ".metadata"));
 	}
 
 	@Override
@@ -150,10 +156,7 @@ public class FileDocumentStorage implements DocumentStorage {
 
 	@Override
 	public void drop() throws Exception {
-		Path p = Path.of(filesPath, indexName);
-		if (Files.exists(p)) {
-			deletePath(p);
-		}
+		deletePath(Path.of(filesPath, indexName));
 	}
 
 	@Override
@@ -184,6 +187,9 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	private void deletePath(Path pathToBeDeleted) throws IOException {
+		if (!Files.exists(pathToBeDeleted)) {
+			return;
+		}
 		Files.walkFileTree(pathToBeDeleted, new SimpleFileVisitor<>() {
 			@Override
 			public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
@@ -204,7 +210,13 @@ public class FileDocumentStorage implements DocumentStorage {
 	}
 
 	private static String getPathToUniqueId(String uniqueId) {
+		// Integer.toHexString drops leading zeros. Hashes shorter than five digits crashed the
+		// substring math below before any file could be stored, so padding only those to five
+		// keeps every layout that ever held data unchanged.
 		String hexHash = Integer.toHexString(uniqueId.hashCode());
+		if (hexHash.length() < 5) {
+			hexHash = "0".repeat(5 - hexHash.length()) + hexHash;
+		}
 		String piece1 = hexHash.substring(0, 2);
 		String piece2 = hexHash.substring(2, 5);
 		String piece3 = hexHash.substring(5);

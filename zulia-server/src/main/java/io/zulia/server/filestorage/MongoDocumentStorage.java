@@ -62,7 +62,17 @@ public class MongoDocumentStorage implements DocumentStorage {
 		adminDb.runCommand(shardCommand);
 	}
 
-	private GridFSBucket createGridFSConnection() {
+	private GridFSBucket getGridFSBucket() {
+		MongoDatabase db = mongoClient.getDatabase(database);
+		return GridFSBuckets.create(db, ASSOCIATED_FILES);
+	}
+
+	// createIndex materializes the collection and its database, so this runs only on the store path.
+	// Reads and deletes against a collection that does not exist are no-ops in MongoDB.
+	private void ensureIndexes() {
+		if (inited) {
+			return;
+		}
 		synchronized (this) {
 			if (!inited) {
 				MongoDatabase storageDb = mongoClient.getDatabase(database);
@@ -82,26 +92,27 @@ public class MongoDocumentStorage implements DocumentStorage {
 				inited = true;
 			}
 		}
-
-		MongoDatabase db = mongoClient.getDatabase(database);
-		return GridFSBuckets.create(db, ASSOCIATED_FILES);
 	}
 
 	@Override
 	public void deleteAllDocuments() {
-		GridFSBucket gridFS = createGridFSConnection();
+		GridFSBucket gridFS = getGridFSBucket();
 		gridFS.drop();
+		// the drop removed the metadata indexes, the next store must recreate them
+		inited = false;
 	}
 
 	@Override
 	public void drop() {
 		MongoDatabase db = mongoClient.getDatabase(database);
 		db.drop();
+		inited = false;
 	}
 
 	@Override
 	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadata) {
-		GridFSBucket gridFS = createGridFSConnection();
+		ensureIndexes();
+		GridFSBucket gridFS = getGridFSBucket();
 
 		deleteAssociatedDocument(uniqueId, fileName);
 
@@ -142,7 +153,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 	@Override
 	public List<AssociatedDocument> getAssociatedMetadataForUniqueId(String uniqueId, FetchType fetchType) throws Exception {
-		GridFSBucket gridFS = createGridFSConnection();
+		GridFSBucket gridFS = getGridFSBucket();
 		List<AssociatedDocument> assocDocs = new ArrayList<>();
 		if (!FetchType.NONE.equals(fetchType)) {
 			GridFSFindIterable files = gridFS.find(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, uniqueId));
@@ -161,7 +172,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 	@Override
 	public InputStream getAssociatedDocumentStream(String uniqueId, String fileName) throws Exception {
-		GridFSBucket gridFS = createGridFSConnection();
+		GridFSBucket gridFS = getGridFSBucket();
 		GridFSFile file = gridFS.find(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, getGridFsId(uniqueId, fileName))).first();
 
 		if (file == null) {
@@ -173,7 +184,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 	@Override
 	public AssociatedDocument getAssociatedDocument(String uniqueId, String fileName, FetchType fetchType) throws Exception {
-		GridFSBucket gridFS = createGridFSConnection();
+		GridFSBucket gridFS = getGridFSBucket();
 		if (!FetchType.NONE.equals(fetchType)) {
 			GridFSFile file = gridFS.find(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, getGridFsId(uniqueId, fileName))).first();
 			if (null != file) {
@@ -208,7 +219,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 	public Stream<AssociatedMetadataDTO> getAssociatedMetadataForQuery(Document query) {
 
-		GridFSBucket gridFS = createGridFSConnection();
+		GridFSBucket gridFS = getGridFSBucket();
 		GridFSFindIterable gridFSFiles = gridFS.find(query);
 
 		return StreamSupport.stream(gridFSFiles.map(gridFSFile -> {
@@ -228,7 +239,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 	@Override
 	public List<String> getAssociatedFilenames(String uniqueId) {
-		GridFSBucket gridFS = createGridFSConnection();
+		GridFSBucket gridFS = getGridFSBucket();
 		ArrayList<String> fileNames = new ArrayList<>();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, uniqueId))
 				.forEach((Consumer<GridFSFile>) gridFSFile -> fileNames.add(gridFSFile.getFilename()));
@@ -238,7 +249,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 	@Override
 	public void deleteAssociatedDocument(String uniqueId, String fileName) {
-		GridFSBucket gridFS = createGridFSConnection();
+		GridFSBucket gridFS = getGridFSBucket();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + FILE_UNIQUE_ID_KEY, getGridFsId(uniqueId, fileName)))
 				.forEach((Consumer<? super GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
 
@@ -246,7 +257,7 @@ public class MongoDocumentStorage implements DocumentStorage {
 
 	@Override
 	public void deleteAssociatedDocuments(String uniqueId) {
-		GridFSBucket gridFS = createGridFSConnection();
+		GridFSBucket gridFS = getGridFSBucket();
 		gridFS.find(new Document(ASSOCIATED_METADATA + "." + DOCUMENT_UNIQUE_ID_KEY, uniqueId))
 				.forEach((Consumer<? super GridFSFile>) gridFSFile -> gridFS.delete(gridFSFile.getObjectId()));
 	}
