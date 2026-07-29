@@ -1,6 +1,7 @@
 package io.zulia.data.source.json;
 
 import io.zulia.data.source.DataSourceRecord;
+import io.zulia.util.BooleanUtil;
 import io.zulia.util.document.DocumentHelper;
 import org.bson.Document;
 
@@ -27,7 +28,7 @@ public class JsonSourceRecord implements DataSourceRecord {
 
 	@Override
 	public Boolean getBoolean(String field) {
-		return document.getBoolean(field);
+		return BooleanUtil.parseBoolean(document.get(field));
 	}
 
 	@Override

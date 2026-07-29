@@ -1,5 +1,6 @@
 package io.zulia.data.source.spreadsheet.excel;
 
+import io.zulia.util.BooleanUtil;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -47,11 +48,21 @@ public class DefaultExcelCellHandler implements ExcelCellHandler {
 			return cell.getBooleanCellValue();
 		}
 		else if (isCellString(cell)) {
-			return Boolean.parseBoolean(cell.getStringCellValue());
+			return BooleanUtil.parseBoolean(cell.getStringCellValue());
+		}
+		else if (isCellNumeric(cell)) {
+			return BooleanUtil.parseBoolean(cell.getNumericCellValue());
 		}
 		else if (isCellFormula(cell)) {
-			if (cell.getCachedFormulaResultType().equals(CellType.BOOLEAN)) {
+			CellType cachedFormulaResultType = cell.getCachedFormulaResultType();
+			if (cachedFormulaResultType.equals(CellType.BOOLEAN)) {
 				return cell.getBooleanCellValue();
+			}
+			else if (cachedFormulaResultType.equals(CellType.STRING)) {
+				return BooleanUtil.parseBoolean(cell.getRichStringCellValue().getString());
+			}
+			else if (cachedFormulaResultType.equals(CellType.NUMERIC)) {
+				return BooleanUtil.parseBoolean(cell.getNumericCellValue());
 			}
 		}
 

@@ -4,6 +4,7 @@ import io.zulia.data.common.HeaderConfig;
 import io.zulia.data.input.DataInputStream;
 import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
+import io.zulia.util.BooleanUtil;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -24,14 +25,7 @@ public class DelimitedSourceConfig {
 
 	public DelimitedSourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
-		this.booleanParser = (s) -> {
-			String lowerCase = s.toLowerCase();
-			return switch (lowerCase) {
-				case "true", "t", "yes", "y", "1" -> true;
-				case "false", "f", "no", "n", "0" -> false;
-				default -> null;
-			};
-		};
+		this.booleanParser = BooleanUtil::parseBoolean;
 
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneId.systemDefault());
 		this.dateParser = (s) -> Date.from(Instant.from(formatter.parse(s)));
