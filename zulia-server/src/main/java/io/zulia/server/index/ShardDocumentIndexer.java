@@ -455,28 +455,9 @@ public class ShardDocumentIndexer {
 			}
 			else if (FieldTypeUtil.isBooleanFieldType(fieldType)) {
 				ZuliaUtil.handleListsUniqueValues(o, obj -> {
-					if (obj instanceof Boolean) {
-						SortedNumericDocValuesField docValue = numericSortField(sortFieldName, (Boolean) obj ? 1 : 0, docValueSkipIndex);
-						d.add(docValue);
-					}
-					else if (obj instanceof Number) {
-						Number num = (Number) (obj);
-						if (num.intValue() == 1) {
-							SortedNumericDocValuesField docValue = numericSortField(sortFieldName, 1, docValueSkipIndex);
-							d.add(docValue);
-						}
-						else if (num.intValue() == 0) {
-							SortedNumericDocValuesField docValue = numericSortField(sortFieldName, 0, docValueSkipIndex);
-							d.add(docValue);
-						}
-					}
-					else {
-						String string = obj.toString();
-						int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
-						if (booleanInt >= 0) {
-							SortedNumericDocValuesField docValue = numericSortField(sortFieldName, booleanInt, docValueSkipIndex);
-							d.add(docValue);
-						}
+					Boolean boolVal = BooleanUtil.parseBoolean(obj);
+					if (boolVal != null) {
+						d.add(numericSortField(sortFieldName, boolVal ? 1 : 0, docValueSkipIndex));
 					}
 				});
 			}
@@ -567,16 +548,10 @@ public class ShardDocumentIndexer {
 				}
 				else if (FieldConfig.FieldType.BOOL.equals(fc.getFieldType())) {
 					ZuliaUtil.handleListsUniqueValues(o, obj -> {
-						String string = obj.toString();
-
-						int booleanInt = BooleanUtil.getStringAsBooleanInt(string);
-						if (booleanInt == 1) {
-							facetFieldsForField.add(new FacetLabel(facetName, "True"));
+						Boolean boolVal = BooleanUtil.parseBoolean(obj);
+						if (boolVal != null) {
+							facetFieldsForField.add(new FacetLabel(facetName, boolVal ? "True" : "False"));
 						}
-						else if (booleanInt == 0) {
-							facetFieldsForField.add(new FacetLabel(facetName, "False"));
-						}
-
 					});
 				}
 				else if (FieldTypeUtil.isNumericIntFieldType(fc.getFieldType()) || FieldTypeUtil.isNumericLongFieldType(fc.getFieldType())) {
