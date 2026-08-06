@@ -9,6 +9,8 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
+
 import static io.zulia.message.ZuliaQuery.FetchType;
 import static io.zulia.message.ZuliaServiceGrpc.ZuliaServiceBlockingStub;
 import static io.zulia.message.ZuliaServiceOuterClass.FetchRequest;
@@ -26,6 +28,7 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 	private Set<String> documentMaskedFields = Collections.emptySet();
 
 	private Boolean realtime;
+	private PrimaryReplicaSettings primaryReplicaSettings;
 
 	public Fetch(String uniqueId, String indexName) {
 		this.uniqueId = uniqueId;
@@ -93,6 +96,15 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 		return this;
 	}
 
+	public PrimaryReplicaSettings getPrimaryReplicaSettings() {
+		return primaryReplicaSettings;
+	}
+
+	public Fetch setPrimaryReplicaSettings(PrimaryReplicaSettings primaryReplicaSettings) {
+		this.primaryReplicaSettings = primaryReplicaSettings;
+		return this;
+	}
+
 	public Boolean getRealtime() {
 		return realtime;
 	}
@@ -122,6 +134,9 @@ public class Fetch extends SimpleCommand<FetchRequest, FetchResult> implements S
 		}
 		if (realtime != null) {
 			fetchRequestBuilder.setRealtime(realtime);
+		}
+		if (primaryReplicaSettings != null) {
+			fetchRequestBuilder.setPrimaryReplicaSettings(primaryReplicaSettings);
 		}
 
 		fetchRequestBuilder.addAllDocumentFields(documentFields);

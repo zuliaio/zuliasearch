@@ -1,15 +1,18 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
+import io.zulia.client.command.Fetch;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
+import io.zulia.client.result.FetchResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
+import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.server.test.node.shared.RestNodeExtension;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -122,6 +125,22 @@ public class ReplicationTest {
 
 	@Test
 	@Order(6)
+	public void fetchByIdFromReplicaServesDocument() throws Exception {
+		// fetch execution used to consult only the primary shard map, so a fetch routed to the replica node
+		// failed with ShardDoesNotExistException for a shard the node actually hosts
+		Fetch fetch = new Fetch("42", INDEX).setResultFetchType(FetchType.FULL).setPrimaryReplicaSettings(PrimaryReplicaSettings.REPLICA_ONLY);
+		FetchResult result = nodeExtension.getGrpcClient().fetch(fetch);
+		Assertions.assertTrue(result.hasResultDocument(), "replica must serve the fetched document");
+		Assertions.assertEquals(42, result.getDocument().getInteger("seq"), "replica fetch must return the right document");
+
+		// the fallback mode must work from either role too
+		Fetch fallback = new Fetch("42", INDEX).setResultFetchType(FetchType.FULL)
+				.setPrimaryReplicaSettings(PrimaryReplicaSettings.PRIMARY_IF_AVAILABLE);
+		Assertions.assertTrue(nodeExtension.getGrpcClient().fetch(fallback).hasResultDocument(), "primary-if-available fetch must return the document");
+	}
+
+	@Test
+	@Order(7)
 	public void replicationStateEndpointReportsProgress() throws Exception {
 		// Both nodes return the full shard mapping, but only the primary has lastAttemptedGeneration set.
 		// Find the node that actually owns the primary by matching that field in the body.
