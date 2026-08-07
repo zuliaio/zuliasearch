@@ -5,6 +5,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.ReturnDocument;
 import com.mongodb.client.model.Updates;
 import io.zulia.message.ZuliaBase.Node;
@@ -80,7 +81,11 @@ public class MongoNodeService implements NodeService {
 
 		Document query = new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort());
 
-		getCollection().replaceOne(query, nodeToDocument(node), new ReplaceOptions().upsert(true));
+		// only set the registration fields: replacing the whole document erased a live node's heartbeat,
+		// and every peer then expelled the healthy node through the clean-shutdown path within a second
+		Bson update = Updates.combine(Updates.set(SERVER_ADDRESS, node.getServerAddress()), Updates.set(SERVICE_PORT, node.getServicePort()),
+				Updates.set(REST_PORT, node.getRestPort()), Updates.set(VERSION, node.getVersion()));
+		getCollection().updateOne(query, update, new UpdateOptions().upsert(true));
 
 	}
 
@@ -107,7 +112,7 @@ public class MongoNodeService implements NodeService {
 	@Override
 	public void updateVersion(String serverAddress, int servicePort, String version) {
 		Document query = new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort);
-		getCollection().updateOne(query, new Document("version", ZuliaVersion.getVersion()));
+		getCollection().updateOne(query, Updates.set(VERSION, version));
 	}
 
 	@Override
@@ -124,11 +129,6 @@ public class MongoNodeService implements NodeService {
 	public void removeNode(String serverAddress, int servicePort) {
 
 		getCollection().deleteOne(new Document(SERVER_ADDRESS, serverAddress).append(SERVICE_PORT, servicePort));
-	}
-
-	private Document nodeToDocument(Node node) {
-		return new Document(SERVER_ADDRESS, node.getServerAddress()).append(SERVICE_PORT, node.getServicePort()).append(SERVICE_PORT, node.getServicePort())
-				.append(REST_PORT, node.getRestPort()).append(VERSION, node.getVersion());
 	}
 
 	private Node documentToNode(Document d) {

@@ -26,6 +26,7 @@ public class ZuliaNode {
 	private final ZuliaIndexManager indexManager;
 	private final ZuliaServiceServer zuliaServiceServer;
 	private final Timer membershipTimer;
+	private volatile MembershipTask membershipTask;
 	private final NodeService nodeService;
 	private final ZuliaConfig zuliaConfig;
 	private ApplicationContext micronautService;
@@ -64,7 +65,7 @@ public class ZuliaNode {
 
 	public void start(boolean startREST) throws Exception {
 		LOG.info("{}:{} starting", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
-		MembershipTask membershipTask = new MembershipTask(zuliaConfig, nodeService) {
+		membershipTask = new MembershipTask(zuliaConfig, nodeService) {
 
 			@Override
 			protected void handleNodeRemove(Collection<Node> currentOtherNodesActive, Node removedNode) {
@@ -103,6 +104,10 @@ public class ZuliaNode {
 	public void shutdown() {
 		LOG.info("{}:{} stopping", zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		membershipTimer.cancel();
+		if (membershipTask != null) {
+			// waits out an in-flight tick so its heartbeat write cannot land after the removal below
+			membershipTask.stopAdvertising();
+		}
 		nodeService.removeHeartbeat(zuliaConfig.getServerAddress(), zuliaConfig.getServicePort());
 		zuliaServiceServer.shutdown();
 		indexManager.shutdown();

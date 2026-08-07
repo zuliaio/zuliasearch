@@ -47,6 +47,15 @@ public abstract class MembershipTask extends TimerTask {
 		advertise = true;
 	}
 
+	/**
+	 * Stops heartbeat publishing and, because run() is synchronized, waits out any in-flight tick. The
+	 * caller can then remove the heartbeat without a tick that already started re-publishing it behind the
+	 * removal, which left a cleanly stopped node advertised for a full expiry window.
+	 */
+	public synchronized void stopAdvertising() {
+		advertise = false;
+	}
+
 	@Override
 	public synchronized void run() {
 		// synchronized: the startup thread calls run() directly (initial read-only pass and the
