@@ -2,8 +2,8 @@ plugins {
     java
     idea
     alias(libs.plugins.maven.publish) apply false
-    id("com.github.ben-manes.versions") version "0.54.0"
-    id("org.owasp.dependencycheck") version "12.2.2"
+    id("com.github.ben-manes.versions") version "0.61.0"
+    id("org.owasp.dependencycheck") version "13.0.0"
 }
 
 dependencyCheck {
