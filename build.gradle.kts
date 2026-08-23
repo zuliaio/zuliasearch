@@ -105,6 +105,7 @@ subprojects {
             add("implementation", libs.findLibrary("commons-codec").get())
             add("implementation", libs.findLibrary("commons-io").get())
             add("implementation", libs.findLibrary("error-prone-annotations").get())
+            add("implementation", libs.findLibrary("httpclient5").get())
             add("implementation", libs.findLibrary("jackson-databind").get())
             add("implementation", libs.findLibrary("jna").get())
             add("implementation", libs.findLibrary("jsoup").get())
