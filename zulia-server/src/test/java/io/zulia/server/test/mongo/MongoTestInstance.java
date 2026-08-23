@@ -8,8 +8,8 @@ import de.flapdoodle.embed.process.io.ImmutableProcessOutput;
 import de.flapdoodle.embed.process.io.ProcessOutput;
 import de.flapdoodle.embed.process.io.Processors;
 import de.flapdoodle.embed.process.io.Slf4jLevel;
-import de.flapdoodle.reverse.TransitionWalker;
-import de.flapdoodle.reverse.transitions.Start;
+import de.flapdoodle.commons.reverse.TransitionWalker;
+import de.flapdoodle.commons.reverse.transitions.Start;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +44,7 @@ public class MongoTestInstance {
 			ImmutableProcessOutput processOutput = ImmutableProcessOutput.builder().output(Processors.logTo(LOG, Slf4jLevel.DEBUG))
 					.error(Processors.logTo(LOG, Slf4jLevel.ERROR)).commands(Processors.named("[console>]", Processors.logTo(LOG, Slf4jLevel.DEBUG))).build();
 
-			port = de.flapdoodle.net.Net.freeServerPort(de.flapdoodle.net.Net.getLocalHost());
+			port = de.flapdoodle.commons.net.Net.freeServerPort(de.flapdoodle.commons.net.Net.getLocalHost());
 			running = Mongod.builder().processOutput(Start.to(ProcessOutput.class).initializedWith(processOutput))
 					.net(Start.to(Net.class).initializedWith(Net.defaults().withPort(port))).build().start(Version.Main.V7_0);
 			testInstanceUrl = buildTestInstanceUrl();

@@ -26,7 +26,7 @@ djl-pytorch-engine = { module = "ai.djl.pytorch:pytorch-engine", version.ref = "
 djl-basicdataset = { module = "ai.djl:basicdataset", version.ref = "djl" }
 djl-huggingface-tokenizers = { module = "ai.djl.huggingface:tokenizers", version.ref = "djl" }
 djl-onnxruntime-engine = { module = "ai.djl.onnxruntime:onnxruntime-engine", version.ref = "djl" }
-flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "4.33.0" }
+flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "5.0.0" }
 fast-csv = { module = "de.siegmar:fastcsv", version = "4.4.0" }
 guava = { module = "com.google.guava:guava", version = "33.7.1-jre" }
 httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version = "5.6.3" }
