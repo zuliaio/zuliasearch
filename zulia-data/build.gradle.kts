@@ -8,7 +8,6 @@ dependencies {
     api(libs.jackson.databind)
 
     testRuntimeClasspath(libs.logback.classic)
-    testRuntimeClasspath(libs.jansi)
 }
 
 

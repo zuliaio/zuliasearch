@@ -24,6 +24,12 @@ val zuliaScriptTask = tasks.getByName<CreateStartScripts>("startScripts")
 zuliaScriptTask.applicationName = "zulia"
 zuliaScriptTask.mainClass.set("io.zulia.tools.cmd.Zulia")
 
+// gRPC's shaded Netty loads its native epoll transport on the first connection. On Java 24+ that is a restricted
+// method and warns unless native access is granted (zuliad passes the same flag). Applies to all seven start scripts.
+tasks.withType<CreateStartScripts>().configureEach {
+    defaultJvmOpts = listOf("--enable-native-access=ALL-UNNAMED")
+}
+
 
 val zuliaAdminScriptTask = tasks.register<CreateStartScripts>("createZuliaAdminScript") {
     applicationName = "zuliaadmin"

@@ -80,7 +80,6 @@ dependencies {
     implementation(libs.caffeine)
     implementation(libs.commons.compress)
     implementation(libs.jakarta.validation)
-    implementation(libs.jansi)
     implementation(libs.eclipse.collections)
     implementation(libs.logback.classic)
     implementation(libs.micronaut.http.base)

@@ -25,7 +25,7 @@ public class TSVSource extends DelimitedSource<TSVRecord, TSVSourceConfig> {
 	@Override
 	protected CsvReader.CsvReaderBuilder createParser(TSVSourceConfig tsvSourceConfig) {
 		return CsvReader.builder().fieldSeparator("\t").quoteCharacter('"').commentStrategy(CommentStrategy.SKIP).commentCharacter('#').skipEmptyLines(true)
-				.extraFieldStrategy(FieldMismatchStrategy.STRICT).missingFieldStrategy(FieldMismatchStrategy.STRICT).allowExtraCharsAfterClosingQuote(false)
+				.extraFieldStrategy(FieldMismatchStrategy.STRICT).missingFieldStrategy(FieldMismatchStrategy.STRICT)
 				.detectBomHeader(true).maxBufferSize(16777216);
 	}
 

@@ -56,7 +56,6 @@ dependencies {
     implementation(libs.caffeine)
     implementation(libs.commons.compress)
     implementation(libs.jakarta.validation)
-    implementation(libs.jansi)
     implementation(libs.logback.classic)
     implementation(libs.micronaut.http.base)
     implementation(libs.micronaut.http.server)

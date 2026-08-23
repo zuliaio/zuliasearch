@@ -6,6 +6,5 @@ dependencies {
     implementation(libs.graalvm.polyglot)
     implementation(libs.graalvm.js)
     implementation(libs.logback.classic)
-    implementation(libs.jansi)
 }
 

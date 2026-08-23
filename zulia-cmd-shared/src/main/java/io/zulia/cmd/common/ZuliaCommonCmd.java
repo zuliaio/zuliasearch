@@ -1,5 +1,6 @@
 package io.zulia.cmd.common;
 
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import picocli.CommandLine;
 import picocli.CommandLine.Help.Ansi.Style;
 import picocli.CommandLine.Help.ColorScheme;
@@ -29,6 +30,11 @@ public class ZuliaCommonCmd {
 	}
 
 	public static void runCommandLine(Object object, String[] args) {
+
+		// gRPC logs through java.util.logging. Route it into slf4j/logback so it gets the same format and level
+		// control as everything else instead of leaking raw two line JUL records to the console.
+		SLF4JBridgeHandler.removeHandlersForRootLogger();
+		SLF4JBridgeHandler.install();
 
 		int exitCode = new CommandLine(object).setAbbreviatedSubcommandsAllowed(true).setAbbreviatedOptionsAllowed(true)
 				.setCaseInsensitiveEnumValuesAllowed(true)
