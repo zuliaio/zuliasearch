@@ -39,7 +39,7 @@ public class MongoTestInstance {
 					.processOutput(Start.to(ProcessOutput.class).initializedWith(processOutput))
 					.net(Start.to(Net.class).initializedWith(Net.defaults().withPort(port)))
 					.build()
-					.start(Version.Main.V7_0);
+					.start(Version.Main.V8_0);
 			testInstanceUrl = LOCAL_INSTANCE_URL_HOST + ":" + port;
 		}
 		catch (Exception ex) {
