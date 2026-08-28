@@ -456,6 +456,26 @@ public class ZuliaIndex {
 		return zuliaShard;
 	}
 
+	/**
+	 * Read-path lookup: routing already chose this node under the request's primary/replica settings, and a
+	 * node holds a shard in at most one role, so serve from whichever role this node has. Writes must keep
+	 * using {@link #findShardFromUniqueId}, which is primary-only.
+	 */
+	private ZuliaShard findShardForRead(int shardNumber) throws ShardDoesNotExistException {
+		ZuliaShard zuliaShard = primaryShardMap.get(shardNumber);
+		if (zuliaShard == null) {
+			zuliaShard = replicaShardMap.get(shardNumber);
+		}
+		if (zuliaShard == null) {
+			throw new ShardDoesNotExistException(indexName, shardNumber);
+		}
+		return zuliaShard;
+	}
+
+	private ZuliaShard findShardForReadFromUniqueId(String uniqueId) throws ShardDoesNotExistException {
+		return findShardForRead(ShardUtil.findShardForUniqueId(uniqueId, numberOfShards));
+	}
+
 	public DeleteResponse deleteDocument(DeleteRequest deleteRequest) throws Exception {
 
 		String uniqueId = deleteRequest.getUniqueId();
@@ -1402,17 +1422,14 @@ public class ZuliaIndex {
 	private ResultDocument getSourceDocument(String uniqueId, FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
 			boolean realtime) throws Exception {
 
-		ZuliaShard s = findShardFromUniqueId(uniqueId);
+		ZuliaShard s = findShardForReadFromUniqueId(uniqueId);
 		return s.getSourceDocument(uniqueId, resultFetchType, fieldsToReturn, fieldsToMask, realtime);
 
 	}
 
 	public List<FetchResponse> internalShardBatchFetch(InternalShardBatchFetchRequest shardRequest) throws Exception {
 		int shardNumber = shardRequest.getShardNumber();
-		ZuliaShard shard = primaryShardMap.get(shardNumber);
-		if (shard == null) {
-			throw new ShardDoesNotExistException(indexName, shardNumber);
-		}
+		ZuliaShard shard = findShardForRead(shardNumber);
 
 		List<String> uniqueIds = shardRequest.getUniqueIdList();
 		FetchType resultFetchType = shardRequest.getResultFetchType();
