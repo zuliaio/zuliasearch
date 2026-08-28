@@ -8,6 +8,8 @@ import io.zulia.data.output.SingleUseDataOutputStream;
 import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
 import io.zulia.data.source.spreadsheet.SpreadsheetSource;
 import io.zulia.data.source.spreadsheet.SpreadsheetSourceFactory;
+import io.zulia.data.source.spreadsheet.csv.CSVSource;
+import io.zulia.data.source.spreadsheet.csv.CSVSourceConfig;
 import io.zulia.data.source.spreadsheet.tsv.TSVRecord;
 import io.zulia.data.source.spreadsheet.tsv.TSVSource;
 import io.zulia.data.target.spreadsheet.SpreadsheetTargetFactory;
@@ -20,7 +22,9 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class DataSourceTest {
@@ -139,6 +143,34 @@ public class DataSourceTest {
 
 		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) {
 			Assertions.assertEquals(0, countRows(dataSource));
+		}
+	}
+
+	@Test
+	void csvDelimitedListsOfDatesAndBooleans() throws IOException {
+		// the first date is the form the date target handlers write, the second has no zone id
+		String csv = "dates,flags\n\"2024-12-18T08:00:00Z[Etc/UTC]; 2024-12-19T00:00:00Z\",\"true;no;1\"\n";
+		List<Date> expectedDates = List.of(Date.from(Instant.parse("2024-12-18T08:00:00Z")), Date.from(Instant.parse("2024-12-19T00:00:00Z")));
+
+		SingleUseDataInputStream dataInputStream = SingleUseDataInputStream.from(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)), "test.csv");
+		try (SpreadsheetSource<?> dataSource = SpreadsheetSourceFactory.fromStreamWithHeaders(dataInputStream)) {
+			int rows = 0;
+			for (SpreadsheetRecord row : dataSource) {
+				Assertions.assertEquals(expectedDates, row.getList("dates", Date.class));
+				Assertions.assertEquals(List.of(true, false, true), row.getList("flags", Boolean.class));
+				rows++;
+			}
+			Assertions.assertEquals(1, rows);
+		}
+
+		// a parser set on the config reaches the list handler too
+		SingleUseDataInputStream secondInputStream = SingleUseDataInputStream.from(new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)), "test.csv");
+		CSVSourceConfig config = CSVSourceConfig.from(secondInputStream);
+		config.withHeaders().withBooleanParser(s -> "1".equals(s));
+		try (CSVSource dataSource = CSVSource.withConfig(config)) {
+			for (SpreadsheetRecord row : dataSource) {
+				Assertions.assertEquals(List.of(false, false, true), row.getList("flags", Boolean.class));
+			}
 		}
 	}
 

@@ -8,6 +8,7 @@ import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.streaming.SXSSFCell;
 import org.apache.poi.xssf.streaming.SXSSFRow;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.util.LocaleUtil;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 
 import java.io.IOException;
@@ -45,6 +46,9 @@ public class ExcelTarget extends SpreadsheetTarget<CellReference, ExcelTargetCon
 	protected ExcelTarget(ExcelTargetConfig excelDataTargetConfig) {
 		super(excelDataTargetConfig);
 		this.excelDataTargetConfig = excelDataTargetConfig;
+		// POI converts a Date to a cell serial in its thread local user time zone. ExcelSource reads in UTC, so write in UTC as well
+		// or a typed date shifts by the writer's offset when it is read back.
+		LocaleUtil.setUserTimeZone(LocaleUtil.TIMEZONE_UTC);
 		this.workbook = new SXSSFWorkbook();
 		if (excelDataTargetConfig.getPrimarySheetName() != null) {
 			this.sheet = this.workbook.createSheet(excelDataTargetConfig.getPrimarySheetName());

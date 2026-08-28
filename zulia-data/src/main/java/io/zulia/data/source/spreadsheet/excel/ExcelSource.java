@@ -46,6 +46,8 @@ public class ExcelSource implements SpreadsheetSource<ExcelRecord>, AutoCloseabl
 
 	protected ExcelSource(ExcelSourceConfig excelSourceConfig) throws IOException {
 		this.excelSourceConfig = excelSourceConfig;
+		// the static block covers the thread that loaded the class, this covers the thread that opens the workbook
+		LocaleUtil.setUserTimeZone(LocaleUtil.TIMEZONE_UTC);
 		open();
 
 		if (Objects.equals(ExcelSourceConfig.OpenHandling.ACTIVE_SHEET, excelSourceConfig.getOpenHandling())) {

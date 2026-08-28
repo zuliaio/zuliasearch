@@ -2,42 +2,31 @@ package io.zulia.data.source.spreadsheet.delimited;
 
 import io.zulia.data.common.HeaderConfig;
 import io.zulia.data.input.DataInputStream;
-import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
-import io.zulia.util.BooleanUtil;
+import io.zulia.data.source.spreadsheet.DelimitedListSettings;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.function.Function;
 
 public class DelimitedSourceConfig {
 
-	private Function<String, Boolean> booleanParser;
-	private Function<String, Date> dateParser;
-
 	private final DataInputStream dataInputStream;
 
 	private HeaderConfig headerConfig;
 
-	private DelimitedListHandler delimitedListHandler = new DefaultDelimitedListHandler(';');
+	private final DelimitedListSettings listSettings = new DelimitedListSettings();
 
 	public DelimitedSourceConfig(DataInputStream dataInputStream) {
 		this.dataInputStream = dataInputStream;
-		this.booleanParser = BooleanUtil::parseBoolean;
-
-		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneId.systemDefault());
-		this.dateParser = (s) -> Date.from(Instant.from(formatter.parse(s)));
 	}
 
 	public DelimitedSourceConfig withListDelimiter(char listDelimiter) {
-		this.delimitedListHandler = new DefaultDelimitedListHandler(listDelimiter);
+		listSettings.withListDelimiter(listDelimiter);
 		return this;
 	}
 
 	public DelimitedSourceConfig withDelimitedListHandler(DelimitedListHandler delimitedListHandler) {
-		this.delimitedListHandler = delimitedListHandler;
+		listSettings.withHandler(delimitedListHandler);
 		return this;
 	}
 
@@ -68,7 +57,7 @@ public class DelimitedSourceConfig {
 	}
 
 	public DelimitedListHandler getDelimitedListHandler() {
-		return delimitedListHandler;
+		return listSettings.getHandler();
 	}
 
 	public HeaderConfig getHeaderConfig() {
@@ -76,20 +65,20 @@ public class DelimitedSourceConfig {
 	}
 
 	public Function<String, Boolean> getBooleanParser() {
-		return booleanParser;
+		return listSettings.getParsers().booleanParser();
 	}
 
 	public DelimitedSourceConfig withBooleanParser(Function<String, Boolean> booleanParser) {
-		this.booleanParser = booleanParser;
+		listSettings.withParsers(listSettings.getParsers().withBooleanParser(booleanParser));
 		return this;
 	}
 
 	public Function<String, Date> getDateParser() {
-		return dateParser;
+		return listSettings.getParsers().dateParser();
 	}
 
 	public DelimitedSourceConfig withDateParser(Function<String, Date> dateParser) {
-		this.dateParser = dateParser;
+		listSettings.withParsers(listSettings.getParsers().withDateParser(dateParser));
 		return this;
 	}
 }
