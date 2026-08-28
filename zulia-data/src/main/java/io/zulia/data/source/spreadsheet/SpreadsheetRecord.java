@@ -16,20 +16,27 @@ public interface SpreadsheetRecord extends DataSourceRecord {
 		return val != null ? val : defaultValue;
 	}
 
+	/**
+	 * Reads the cell as text and applies the parser to it. A null or blank cell returns the default value without calling the parser,
+	 * and the text is trimmed before the parser sees it, so a parser never receives leading or trailing whitespace.
+	 */
 	default <T> T parseFromString(String field, Function<String, T> parser, T defaultValue) {
 		String strVal = getString(field);
-		if (strVal == null || strVal.isEmpty()) {
+		if (strVal == null || strVal.isBlank()) {
 			return defaultValue;
 		}
-		return parser.apply(strVal);
+		return parser.apply(strVal.trim());
 	}
 
+	/**
+	 * Same as {@link #parseFromString(String, Function, Object)} for a column index.
+	 */
 	default <T> T parseFromString(int index, Function<String, T> parser, T defaultValue) {
 		String strVal = getString(index);
-		if (strVal == null || strVal.isEmpty()) {
+		if (strVal == null || strVal.isBlank()) {
 			return defaultValue;
 		}
-		return parser.apply(strVal);
+		return parser.apply(strVal.trim());
 	}
 
 	Boolean getBoolean(int index);

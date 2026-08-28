@@ -2,8 +2,12 @@ package io.zulia.data.source.spreadsheet.excel;
 
 import io.zulia.data.common.HeaderConfig;
 import io.zulia.data.input.DataInputStream;
-import io.zulia.data.source.spreadsheet.DefaultDelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
+import io.zulia.data.source.spreadsheet.DelimitedListSettings;
+
+import java.util.Date;
+import java.util.Objects;
+import java.util.function.Function;
 
 public class ExcelSourceConfig {
 
@@ -11,14 +15,17 @@ public class ExcelSourceConfig {
 		return new ExcelSourceConfig(dataStream);
 	}
 
-	private DelimitedListHandler delimitedListHandler = new DefaultDelimitedListHandler(';');
+	// the parsers reach text cells through the default cell handler and list elements through the list handler
+	private final DelimitedListSettings listSettings = new DelimitedListSettings();
 
 	private final DataInputStream dataInputStream;
 	private HeaderConfig headerConfig;
 
 	private OpenHandling openHandling = OpenHandling.FIRST_SHEET;
 
-	private ExcelCellHandler excelCellHandler = new DefaultExcelCellHandler();
+	// the cell handler is either one set explicitly or the default handler built from the parsers
+	private ExcelCellHandler explicitCellHandler;
+	private DefaultExcelCellHandler builtCellHandler;
 
 	public enum OpenHandling {
 		ACTIVE_SHEET,
@@ -48,17 +55,41 @@ public class ExcelSourceConfig {
 	}
 
 	public ExcelSourceConfig withListDelimiter(char listDelimiter) {
-		this.delimitedListHandler = new DefaultDelimitedListHandler(listDelimiter);
+		listSettings.withListDelimiter(listDelimiter);
 		return this;
 	}
 
 	public ExcelSourceConfig withDelimitedListHandler(DelimitedListHandler delimitedListHandler) {
-		this.delimitedListHandler = delimitedListHandler;
+		listSettings.withHandler(delimitedListHandler);
 		return this;
 	}
 
+	/**
+	 * Replaces the default cell handler. A handler set here reads cells its own way and is not affected by {@link #withBooleanParser}
+	 * or {@link #withDateParser}, which still apply to delimited lists inside a cell.
+	 */
 	public ExcelSourceConfig withExcelCellHandler(ExcelCellHandler excelCellHandler) {
-		this.excelCellHandler = excelCellHandler;
+		this.explicitCellHandler = Objects.requireNonNull(excelCellHandler, "excelCellHandler");
+		return this;
+	}
+
+	/**
+	 * Parses boolean text, both a text cell read with getBoolean and each element of a delimited list read with getList.
+	 * Typed boolean cells are read from the cell type and do not go through the parser.
+	 */
+	public ExcelSourceConfig withBooleanParser(Function<String, Boolean> booleanParser) {
+		listSettings.withParsers(listSettings.getParsers().withBooleanParser(booleanParser));
+		builtCellHandler = null;
+		return this;
+	}
+
+	/**
+	 * Parses date text, both a text cell read with getDate and each element of a delimited list read with getList.
+	 * Date formatted numeric cells are read from the cell type and do not go through the parser.
+	 */
+	public ExcelSourceConfig withDateParser(Function<String, Date> dateParser) {
+		listSettings.withParsers(listSettings.getParsers().withDateParser(dateParser));
+		builtCellHandler = null;
 		return this;
 	}
 
@@ -80,14 +111,28 @@ public class ExcelSourceConfig {
 	}
 
 	public DelimitedListHandler getDelimitedListHandler() {
-		return delimitedListHandler;
+		return listSettings.getHandler();
 	}
 
 	public ExcelCellHandler getExcelCellHandler() {
-		return excelCellHandler;
+		if (explicitCellHandler != null) {
+			return explicitCellHandler;
+		}
+		if (builtCellHandler == null) {
+			builtCellHandler = new DefaultExcelCellHandler(listSettings.getParsers());
+		}
+		return builtCellHandler;
 	}
 
 	public HeaderConfig getHeaderConfig() {
 		return headerConfig;
+	}
+
+	public Function<String, Boolean> getBooleanParser() {
+		return listSettings.getParsers().booleanParser();
+	}
+
+	public Function<String, Date> getDateParser() {
+		return listSettings.getParsers().dateParser();
 	}
 }
