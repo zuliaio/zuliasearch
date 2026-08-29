@@ -71,7 +71,17 @@ public enum KnownEmbeddingModel {
 
 	// Bioclinical ModernBERT - biomedical/clinical domain, mean pooling, 8192 token context
 	BIOCLINICAL_MODERNBERT(EmbeddingModelConfig.builder("https://huggingface.co/zuliaio/bioclinical-modernbert-base-embeddings-onnx", 768)
-			.build());
+			.build()),
+
+	// SPECTER - scientific document similarity trained on citation links, symmetric, CLS pooling, 512 token context
+	// Trained on "title[SEP]abstract" input. Pass the title and abstract joined by the tokenizer separator for best results.
+	SPECTER(EmbeddingModelConfig.builder("https://huggingface.co/sentence-transformers/allenai-specter", 768)
+			.includeTokenTypes(true).poolingMode("cls").build()),
+
+	// SPECTER2 with the proximity adapter - successor to SPECTER for document similarity, symmetric, CLS pooling, 512 token context
+	// Same "title[SEP]abstract" input convention as SPECTER. The export script lives in the Hugging Face repo next to the model.
+	SPECTER2(EmbeddingModelConfig.builder("https://huggingface.co/zuliaio/specter2-proximity-onnx", 768)
+			.includeTokenTypes(true).poolingMode("cls").build());
 
 	private final EmbeddingModelConfig config;
 
