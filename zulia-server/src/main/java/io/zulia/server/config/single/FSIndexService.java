@@ -182,9 +182,11 @@ public class FSIndexService implements IndexService {
 		return indexMappingBuilder.build();
 	}
 
+
 	private IndexAlias getIndexAlias(File indexAliasFile) throws IOException {
 		if (!indexAliasFile.exists()) {
-			throw new IndexConfigDoesNotExistException(indexAliasFile.getName());
+			// Absent means null, matching MongoIndexService. Callers create or update an alias by reading it first.
+			return null;
 		}
 
 		IndexAlias.Builder indexAliasBuilder = IndexAlias.newBuilder();
