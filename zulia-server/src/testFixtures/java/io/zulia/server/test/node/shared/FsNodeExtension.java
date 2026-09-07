@@ -21,19 +21,23 @@ import java.util.function.Consumer;
 
 /**
  * Starts a single Zulia node in filesystem mode (cluster false): FSIndexService for index metadata,
- * FileDocumentStorage for associated documents, and no MongoDB. Complements {@link NodeExtension},
- * which only covers cluster mode. Data persists across {@link #restartNode()} within one suite and is
- * wiped before the suite starts.
+ * FileDocumentStorage for associated documents, and no MongoDB. Complements NodeExtension, which
+ * only covers cluster mode. Data persists across {@link #restartNode()} within one suite and is
+ * wiped before the suite starts. Each node owns {@code basePath/node-fs-<servicePort>} and only that
+ * directory is wiped, so suites that may run in parallel (other modules under a parallel build) just
+ * pick their own ports and can share the base path.
  */
 public class FsNodeExtension implements BeforeAllCallback, AfterAllCallback {
 
 	private final static Logger LOG = LoggerFactory.getLogger(FsNodeExtension.class);
 
-	private static final String BASE_PATH = "/tmp/zuliaTestFs";
-	private static final String DATA_PATH = BASE_PATH + "/node0";
-	private static final int SERVICE_PORT = 21191;
-	private static final int REST_PORT = 21192;
+	public static final String DEFAULT_BASE_PATH = "/tmp/zuliaTestFs";
+	public static final int DEFAULT_SERVICE_PORT = 21191;
+	public static final int DEFAULT_REST_PORT = 21192;
 
+	private final String dataPath;
+	private final int servicePort;
+	private final int restPort;
 	private final Consumer<ZuliaConfig> configCustomizer;
 
 	private ZuliaNode zuliaNode;
@@ -44,6 +48,17 @@ public class FsNodeExtension implements BeforeAllCallback, AfterAllCallback {
 	}
 
 	public FsNodeExtension(Consumer<ZuliaConfig> configCustomizer) {
+		this(DEFAULT_SERVICE_PORT, DEFAULT_REST_PORT, DEFAULT_BASE_PATH, configCustomizer);
+	}
+
+	public FsNodeExtension(int servicePort, int restPort, Consumer<ZuliaConfig> configCustomizer) {
+		this(servicePort, restPort, DEFAULT_BASE_PATH, configCustomizer);
+	}
+
+	public FsNodeExtension(int servicePort, int restPort, String basePath, Consumer<ZuliaConfig> configCustomizer) {
+		this.servicePort = servicePort;
+		this.restPort = restPort;
+		this.dataPath = basePath + "/node-fs-" + servicePort;
 		this.configCustomizer = configCustomizer;
 	}
 
@@ -56,19 +71,19 @@ public class FsNodeExtension implements BeforeAllCallback, AfterAllCallback {
 	}
 
 	public String getDataPath() {
-		return DATA_PATH;
+		return dataPath;
 	}
 
 	@Override
 	public void beforeAll(ExtensionContext context) throws Exception {
 		LOG.info("FS mode suite started: {}", context.getTestClass().orElse(null));
-		deleteBaseDir();
-		Files.createDirectories(Path.of(DATA_PATH));
+		deleteNodeDir();
+		Files.createDirectories(Path.of(dataPath));
 		startNode();
 		Thread.sleep(2000);
 
 		ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig();
-		zuliaPoolConfig.addNode(ZuliaBase.Node.newBuilder().setServerAddress("localhost").setServicePort(SERVICE_PORT).setRestPort(REST_PORT).build());
+		zuliaPoolConfig.addNode(ZuliaBase.Node.newBuilder().setServerAddress("localhost").setServicePort(servicePort).setRestPort(restPort).build());
 		zuliaWorkPool = new ZuliaWorkPool(zuliaPoolConfig);
 	}
 
@@ -94,9 +109,9 @@ public class FsNodeExtension implements BeforeAllCallback, AfterAllCallback {
 		ZuliaConfig zuliaConfig = new ZuliaConfig();
 		zuliaConfig.setServerAddress("localhost");
 		zuliaConfig.setCluster(false);
-		zuliaConfig.setDataPath(DATA_PATH);
-		zuliaConfig.setServicePort(SERVICE_PORT);
-		zuliaConfig.setRestPort(REST_PORT);
+		zuliaConfig.setDataPath(dataPath);
+		zuliaConfig.setServicePort(servicePort);
+		zuliaConfig.setRestPort(restPort);
 		if (configCustomizer != null) {
 			configCustomizer.accept(zuliaConfig);
 		}
@@ -104,10 +119,11 @@ public class FsNodeExtension implements BeforeAllCallback, AfterAllCallback {
 		zuliaNode.start(false);
 	}
 
-	private void deleteBaseDir() throws IOException {
-		Path basePath = Path.of(BASE_PATH);
-		if (Files.exists(basePath)) {
-			try (var paths = Files.walk(basePath)) {
+	// Only this node's directory, so another suite's node under the same base path is untouched.
+	private void deleteNodeDir() throws IOException {
+		Path nodeDir = Path.of(dataPath);
+		if (Files.exists(nodeDir)) {
+			try (var paths = Files.walk(nodeDir)) {
 				paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 			}
 		}
