@@ -4,6 +4,7 @@ import java.time.Duration
 
 plugins {
     application
+    `java-test-fixtures`
     alias(libs.plugins.micronaut.application)
 }
 
@@ -146,3 +147,14 @@ distributions {
     }
 }
 
+// FsNodeExtension ships as a test fixture so satellite modules can start an in-process single node in their own tests
+dependencies {
+    testFixturesApi(projects.zuliaClient)
+    testFixturesApi(platform(libs.junit.bom))
+    testFixturesApi(libs.junit.jupiter)
+}
+
+// test fixtures are for this build only, never published with the server artifact
+val javaComponent = components["java"] as AdhocComponentWithVariants
+javaComponent.withVariantsFromConfiguration(configurations["testFixturesApiElements"]) { skip() }
+javaComponent.withVariantsFromConfiguration(configurations["testFixturesRuntimeElements"]) { skip() }
