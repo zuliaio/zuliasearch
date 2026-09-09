@@ -158,3 +158,7 @@ dependencies {
 val javaComponent = components["java"] as AdhocComponentWithVariants
 javaComponent.withVariantsFromConfiguration(configurations["testFixturesApiElements"]) { skip() }
 javaComponent.withVariantsFromConfiguration(configurations["testFixturesRuntimeElements"]) { skip() }
+// the publish plugin adds a fixture sources variant in afterEvaluate, so it can only be skipped after that
+afterEvaluate {
+    javaComponent.withVariantsFromConfiguration(configurations["testFixturesSourcesElements"]) { skip() }
+}
