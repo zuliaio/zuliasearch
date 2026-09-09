@@ -204,21 +204,27 @@ public class ShardWriteManager implements Closeable {
 		// document, and a crash then produced a committed index referencing an ordinal missing
 		// from the committed taxonomy. Synchronized because prepareCommit forbids a second
 		// pending commit, so concurrent forceCommit callers must serialize here.
-		indexWriter.prepareCommit();
-		indexCommitPrepared = true;
+		// prepareCommit returns -1 and leaves nothing pending when the index has no changes, which
+		// happens whenever store threads trigger commits back to back. commit() would then run a
+		// fresh prepare of its own and publish documents stored after the taxonomy commit below,
+		// so the index commit is only finished when a prepared set actually exists.
+		boolean prepared = indexWriter.prepareCommit() != -1;
+		indexCommitPrepared = prepared;
 		try {
 			taxoWriter.commit();
 		}
 		catch (IOException | RuntimeException e) {
-			// rolling back would discard acknowledged documents, so leave the prepared commit
+			// rolling back would discard acknowledged documents, so leave any prepared commit
 			// pending and surface the storage fault, the next commit() retries the taxonomy
 			// commit and completes the pair once the fault clears
-			LOG.error("Taxonomy commit failed for index {}:s{} with an index commit prepared, the pair will be completed on the next commit", indexName,
+			LOG.error("Taxonomy commit failed for index {}:s{}, any prepared index commit stays pending until the next commit completes the pair", indexName,
 					shardNumber, e);
 			throw e;
 		}
-		indexWriter.commit();
-		indexCommitPrepared = false;
+		if (prepared) {
+			indexWriter.commit();
+			indexCommitPrepared = false;
+		}
 
 		lastCommit = currentTime;
 	}
