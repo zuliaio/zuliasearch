@@ -1,6 +1,7 @@
 package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
+import io.zulia.ZuliaFieldConstants;
 import io.zulia.client.command.Store;
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.ScoredQuery;
@@ -12,6 +13,7 @@ import io.zulia.client.result.CompleteResult;
 import io.zulia.client.result.SearchResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
+import io.zulia.message.ZuliaIndex.FieldConfig.MalformedValueHandling;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.server.test.node.shared.NodeExtension;
 import org.bson.Document;
@@ -170,8 +172,7 @@ public class GeoPointTest {
 		}
 
 		double londonDistAsc = results.getLast().getSortValues().getSortValue(0).getDoubleValue();
-		Assertions.assertTrue(londonDistAsc > 5000 && londonDistAsc < 6000,
-				"London distance from NYC should be ~5570 km, was " + londonDistAsc);
+		Assertions.assertTrue(londonDistAsc > 5000 && londonDistAsc < 6000, "London distance from NYC should be ~5570 km, was " + londonDistAsc);
 
 		search = new Search(GEO_TEST_INDEX).setAmount(10).setRealtime(true);
 		search.addSort(Sort.geoDistance("location", NYC_LAT, NYC_LON).descending());
@@ -191,8 +192,7 @@ public class GeoPointTest {
 		double nycDistDesc = results.getLast().getSortValues().getSortValue(0).getDoubleValue();
 		Assertions.assertTrue(nycDistDesc < 1.0, "Descending NYC distance from NYC should be < 1 km, was " + nycDistDesc);
 
-		Assertions.assertEquals(londonDistAsc, londonDistDesc, 1.0,
-				"Ascending and descending should report same distance for London");
+		Assertions.assertEquals(londonDistAsc, londonDistDesc, 1.0, "Ascending and descending should report same distance for London");
 	}
 
 	@Test
@@ -216,10 +216,8 @@ public class GeoPointTest {
 		Assertions.assertTrue(firstScore > 0.9, "NYC score should be ~1.0 (distance ~0 km), was " + firstScore);
 
 		// 1/(1+5570) ≈ 0.00018 — verifies geodist() returns km not meters
-		Assertions.assertTrue(lastScore > 0.0001,
-				"London score should be ~0.00018 (geodist in km), was " + lastScore);
-		Assertions.assertTrue(lastScore < 0.001,
-				"London score should be ~0.00018 (geodist in km), was " + lastScore);
+		Assertions.assertTrue(lastScore > 0.0001, "London score should be ~0.00018 (geodist in km), was " + lastScore);
+		Assertions.assertTrue(lastScore < 0.001, "London score should be ~0.00018 (geodist in km), was " + lastScore);
 	}
 
 	@Test
@@ -315,7 +313,8 @@ public class GeoPointTest {
 
 		ClientIndexConfig indexConfig = new ClientIndexConfig();
 		indexConfig.addFieldConfig(FieldConfigBuilder.createString("id").indexAs(DefaultAnalyzers.LC_KEYWORD));
-		indexConfig.addFieldConfig(FieldConfigBuilder.createGeoPoint("location").index());
+		// a malformed point rejects the document under the default FAIL handling, this index opts into skipping it
+		indexConfig.addFieldConfig(FieldConfigBuilder.createGeoPoint("location").index().onMalformed(MalformedValueHandling.SKIP));
 		indexConfig.setIndexName(GEO_GEOJSON_INDEX);
 		indexConfig.setNumberOfShards(1);
 		indexConfig.setShardCommitInterval(20);
@@ -342,7 +341,7 @@ public class GeoPointTest {
 		s.setResultDocument(ResultDocBuilder.newBuilder().setDocument(doc));
 		zuliaWorkPool.store(s);
 
-		// Malformed GeoJSON (coordinates as string) — should skip indexing, not throw
+		// Malformed GeoJSON (coordinates as string) is skipped under SKIP and the document is marked
 		doc = new Document();
 		doc.put("id", "3");
 		Document badGeoJson = new Document();
@@ -363,6 +362,12 @@ public class GeoPointTest {
 		search.addQuery(new FilterQuery("location:zl:geo(location " + NYC_LAT + " " + NYC_LON + " 10000)"));
 		result = zuliaWorkPool.search(search);
 		Assertions.assertEquals(2, result.getTotalHits());
+
+		search = new Search(GEO_GEOJSON_INDEX).setAmount(10).setRealtime(true);
+		search.addQuery(new FilterQuery(ZuliaFieldConstants.MALFORMED_FIELDS_LIST_FIELD + ":location"));
+		result = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, result.getTotalHits());
+		Assertions.assertEquals("3", result.getFirstDocument().getString("id"));
 
 		zuliaWorkPool.deleteIndex(GEO_GEOJSON_INDEX);
 	}
@@ -468,11 +473,11 @@ public class GeoPointTest {
 		for (Object[] city : new Object[][] { { "1", "New York", NYC_LAT, NYC_LON }, { "2", "Los Angeles", LA_LAT, LA_LON },
 				{ "3", "Chicago", CHICAGO_LAT, CHICAGO_LON }, { "4", "London", LONDON_LAT, LONDON_LON } }) {
 			Document doc = new Document();
-			doc.put("id", (String) city[0]);
-			doc.put("name", (String) city[1]);
+			doc.put("id", city[0]);
+			doc.put("name", city[1]);
 			Document loc = new Document();
-			loc.put("latitude", (double) city[2]);
-			loc.put("longitude", (double) city[3]);
+			loc.put("latitude", city[2]);
+			loc.put("longitude", city[3]);
 			doc.put("location", loc);
 			Store s = new Store((String) city[0], "geoSortAsTest");
 			s.setResultDocument(ResultDocBuilder.newBuilder().setDocument(doc));
@@ -494,8 +499,7 @@ public class GeoPointTest {
 		Assertions.assertEquals("London", results.getLast().getDocument().getString("name"));
 
 		double londonDist = results.getLast().getSortValues().getSortValue(0).getDoubleValue();
-		Assertions.assertTrue(londonDist > 5000 && londonDist < 6000,
-				"London distance from NYC should be ~5570 km, was " + londonDist);
+		Assertions.assertTrue(londonDist > 5000 && londonDist < 6000, "London distance from NYC should be ~5570 km, was " + londonDist);
 
 		search = new Search("geoSortAsTest").setAmount(10).setRealtime(true);
 		search.addSort(Sort.geoDistance("geoSort", NYC_LAT, NYC_LON).descending());
@@ -509,8 +513,7 @@ public class GeoPointTest {
 		sq.setScoreFunction("1.0 / (1.0 + geodist(geoSort, " + NYC_LAT + ", " + NYC_LON + "))");
 		search.addQuery(sq);
 		result = zuliaWorkPool.search(search);
-		Assertions.assertTrue(result.getCompleteResults().getFirst().getScore() > 0.9,
-				"NYC score should be ~1.0");
+		Assertions.assertTrue(result.getCompleteResults().getFirst().getScore() > 0.9, "NYC score should be ~1.0");
 
 		zuliaWorkPool.deleteIndex("geoSortAsTest");
 	}
@@ -560,8 +563,7 @@ public class GeoPointTest {
 		// Filtering should fail (no LatLonPoint BKD without .index())
 		Search filterSearch = new Search("geoSortOnlyTest").setAmount(10).setRealtime(true);
 		filterSearch.addQuery(new FilterQuery("location:zl:geo(location " + NYC_LAT + " " + NYC_LON + " 100)"));
-		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(filterSearch),
-				"zl:geo() should fail without .index() on field config");
+		Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(filterSearch), "zl:geo() should fail without .index() on field config");
 
 		zuliaWorkPool.deleteIndex("geoSortOnlyTest");
 	}
@@ -610,8 +612,7 @@ public class GeoPointTest {
 		sortSearch.addSort(Sort.geoDistance("location", NYC_LAT, NYC_LON));
 		Exception sortError = Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(sortSearch),
 				"geodist() sort should fail without .sort() on field config");
-		Assertions.assertTrue(sortError.getMessage().contains("not a sortable field"),
-				"Error should mention not sortable, was: " + sortError.getMessage());
+		Assertions.assertTrue(sortError.getMessage().contains("not a sortable field"), "Error should mention not sortable, was: " + sortError.getMessage());
 
 		// geodist() score function should also fail without .sort()
 		Search scoreSearch = new Search("geoNoSortTest").setAmount(10).setRealtime(true);
@@ -620,8 +621,7 @@ public class GeoPointTest {
 		scoreSearch.addQuery(sq);
 		Exception scoreError = Assertions.assertThrows(Exception.class, () -> zuliaWorkPool.search(scoreSearch),
 				"geodist() score function should fail without .sort() on field config");
-		Assertions.assertTrue(scoreError.getMessage().contains("not a sortable field"),
-				"Error should mention not sortable, was: " + scoreError.getMessage());
+		Assertions.assertTrue(scoreError.getMessage().contains("not a sortable field"), "Error should mention not sortable, was: " + scoreError.getMessage());
 
 		zuliaWorkPool.deleteIndex("geoNoSortTest");
 	}

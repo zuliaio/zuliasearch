@@ -14,6 +14,7 @@ import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaQuery.FetchType;
 import io.zulia.server.test.node.shared.RestNodeExtension;
+import io.zulia.server.test.node.shared.TestHelper;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
@@ -134,8 +135,7 @@ public class ReplicationTest {
 		Assertions.assertEquals(42, result.getDocument().getInteger("seq"), "replica fetch must return the right document");
 
 		// the fallback mode must work from either role too
-		Fetch fallback = new Fetch("42", INDEX).setResultFetchType(FetchType.FULL)
-				.setPrimaryReplicaSettings(PrimaryReplicaSettings.PRIMARY_IF_AVAILABLE);
+		Fetch fallback = new Fetch("42", INDEX).setResultFetchType(FetchType.FULL).setPrimaryReplicaSettings(PrimaryReplicaSettings.PRIMARY_IF_AVAILABLE);
 		Assertions.assertTrue(nodeExtension.getGrpcClient().fetch(fallback).hasResultDocument(), "primary-if-available fetch must return the document");
 	}
 
@@ -172,8 +172,7 @@ public class ReplicationTest {
 
 	private String fetchReplicationStateFromPrimary() throws Exception {
 		HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(2)).build();
-		// TestHelper assigns ports starting at 20001 (service) / 20002 (rest), incrementing per node.
-		int[] restPorts = { 20002, 20004 };
+		int[] restPorts = { TestHelper.restPort(0), TestHelper.restPort(1) };
 		String fallback = null;
 		for (int port : restPorts) {
 			HttpRequest req = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/replication/" + INDEX)).timeout(Duration.ofSeconds(5)).GET()

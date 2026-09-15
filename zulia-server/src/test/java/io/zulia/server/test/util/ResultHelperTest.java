@@ -55,7 +55,8 @@ public class ResultHelperTest {
 		Assertions.assertEquals(List.of(1, 2, 3), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "listField"));
 
 		Assertions.assertEquals("1", DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield"));
-		Assertions.assertEquals(List.of("1", "2", "3"), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield2"));
+		// an empty string inside a nested list is a value, as it is in a top-level list
+		Assertions.assertEquals(List.of("1", "2", "3", ""), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield2"));
 		Assertions.assertEquals(List.of("1", "2", "3", ""), DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield2", true));
 		Assertions.assertNull(DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield2.otherfield1"));
 		Assertions.assertNull(DocumentHelper.getValueFromMongoDocument(testMongoDocument, "field2.subfield1.otherfield"));

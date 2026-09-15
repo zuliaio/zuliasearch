@@ -284,6 +284,7 @@ public class ZuliaShard {
 					throw new RuntimeException("Reindex for " + indexName + ":s" + shardNumber + " interrupted by another reindex");
 				}
 
+				String uniqueId = null;
 				try {
 
 					byte[] idInfoBytes = BytesRefUtil.getByteArray(d.idInfo());
@@ -291,7 +292,7 @@ public class ZuliaShard {
 
 					long timestamp = idInfo.getTimestamp();
 
-					String uniqueId = idInfo.getId();
+					uniqueId = idInfo.getId();
 
 					DocumentContainer metadata;
 					DocumentContainer mongoDocument;
@@ -310,7 +311,8 @@ public class ZuliaShard {
 					count.getAndIncrement();
 				}
 				catch (Exception e) {
-					throw new RuntimeException(e);
+					throw new RuntimeException(
+							"Reindex for " + indexName + ":s" + shardNumber + " failed on document <" + uniqueId + ">: " + e.getMessage(), e);
 				}
 			});
 			synchronized (this) {

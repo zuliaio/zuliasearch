@@ -156,7 +156,7 @@ public class TransientIndexLoaderTest {
 
 		zuliaWorkPool.deleteIndex(TRANSIENT_B);
 
-		Path shardDir = Path.of("/tmp/zuliaTest/node0/indexes/" + TRANSIENT_B + "_0_idx");
+		Path shardDir = Path.of(TestHelper.dataPath() + "/node0/indexes/" + TRANSIENT_B + "_0_idx");
 		Assertions.assertFalse(Files.exists(shardDir), "deleting an unloaded transient index must remove its on-disk shard data");
 		Assertions.assertFalse(zuliaWorkPool.getIndexes().getIndexNames().contains(TRANSIENT_B));
 

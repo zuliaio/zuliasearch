@@ -3,6 +3,7 @@ package io.zulia.server.config;
 import io.zulia.message.ZuliaIndex.AnalyzerSettings;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
+import io.zulia.server.field.FieldDefault;
 
 import java.util.Collection;
 import java.util.List;
@@ -51,6 +52,10 @@ public class ServerIndexConfig {
 
 	public Collection<String> getIndexedFields() {
 		return serverIndexConfigData.getIndexedFields();
+	}
+
+	public FieldDefault getFieldDefault(String storedFieldName) {
+		return serverIndexConfigData.getFieldDefault(storedFieldName);
 	}
 
 	public int getNumberOfShards() {
