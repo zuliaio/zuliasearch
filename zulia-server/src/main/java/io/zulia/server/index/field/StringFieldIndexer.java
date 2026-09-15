@@ -27,8 +27,8 @@ public class StringFieldIndexer extends FieldIndexer {
 	@Override
 	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) {
 
-		if (value != null) {
-			String val = value.toString();
+		// the resolver already converted these to strings
+		if (value instanceof String val) {
 			d.add((new Field(FieldTypeUtil.getIndexField(indexedFieldName, FieldConfig.FieldType.STRING), val, notStoredTextField)));
 			int length = val.length();
 			d.add(new IntPoint(FieldTypeUtil.getCharLengthIndexField(indexedFieldName), length));

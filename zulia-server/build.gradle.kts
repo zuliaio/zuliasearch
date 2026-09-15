@@ -46,10 +46,13 @@ tasks.test {
     useJUnitPlatform {
         excludeTags("soak")
     }
+    systemProperty("zulia.test.basePort", providers.systemProperty("zulia.test.basePort").getOrElse("20000"))
+    systemProperty("zulia.test.dataPath", providers.systemProperty("zulia.test.dataPath").getOrElse("/tmp/zuliaTest"))
 }
 
 tasks.register<Test>("soakTest") {
-    description = "Runs hour-scale soak tests tagged 'soak', which the regular test task excludes. Duration via -Dzulia.soak.minutes (default 60). Node count for TransientIndexSoakTest via -Dzulia.soak.nodes (default 1, up to 3)."
+    description =
+        "Runs hour-scale soak tests tagged 'soak', which the regular test task excludes. Duration via -Dzulia.soak.minutes (default 60). Node count for TransientIndexSoakTest via -Dzulia.soak.nodes (default 1, up to 3)."
     group = "verification"
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
@@ -110,7 +113,7 @@ tasks.withType<JavaCompile> {
 application {
     applicationName = "zuliad"
     mainClass.set("io.zulia.server.cmd.ZuliaD")
-    applicationDefaultJvmArgs = listOf( "--add-modules", "jdk.incubator.vector", "--enable-native-access=ALL-UNNAMED")
+    applicationDefaultJvmArgs = listOf("--add-modules", "jdk.incubator.vector", "--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.named<CreateStartScripts>("startScripts") {

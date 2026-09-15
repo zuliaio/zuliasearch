@@ -875,8 +875,7 @@ public class ZuliaIndex {
 			if (!FieldTypeUtil.isGeoPointFieldType(geoSortFieldInfo.getFieldType())) {
 				throw new IllegalArgumentException("geodist() field <" + parsed.field() + "> is not a GEO_POINT field");
 			}
-			geoBindings.put(syntheticVar,
-					new GeoDistanceValuesSource(geoSortFieldInfo.getInternalSortFieldName(), parsed.latitude(), parsed.longitude()));
+			geoBindings.put(syntheticVar, new GeoDistanceValuesSource(geoSortFieldInfo.getInternalSortFieldName(), parsed.latitude(), parsed.longitude()));
 			// GeoDistanceValuesSource returns meters; convert to km for user-facing expressions
 			geoMatcher.appendReplacement(processed, "(" + syntheticVar + " / 1000.0)");
 		}
@@ -1303,6 +1302,7 @@ public class ZuliaIndex {
 		fields.remove(ZuliaFieldConstants.STORED_META_FIELD);
 		fields.remove(ZuliaFieldConstants.ID_FIELD);
 		fields.remove(ZuliaFieldConstants.FIELDS_LIST_FIELD);
+		fields.remove(ZuliaFieldConstants.MALFORMED_FIELDS_LIST_FIELD);
 
 		List<String> toRemove = new ArrayList<>();
 		for (String field : fields) {

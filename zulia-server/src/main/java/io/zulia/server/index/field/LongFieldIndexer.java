@@ -18,9 +18,4 @@ public class LongFieldIndexer extends NumericFieldIndexer {
 		return new LongPoint(FieldTypeUtil.getIndexField(indexedFieldName, FieldType.NUMERIC_LONG), o.longValue());
 	}
 
-	@Override
-	protected Number parseString(String value) {
-		return Long.parseLong(value);
-	}
-
 }

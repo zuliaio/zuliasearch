@@ -218,6 +218,44 @@ message FieldConfig {
     // optional so we can tell "unset" (default on for new fields) apart from an explicit opt-out. Frozen once a field exists
     optional bool docValueSkipIndex = 10;
     VectorDescription vectorDescription = 11; // for VECTOR / UNIT_VECTOR fields: dimensions, similarity, model provenance
+
+    enum MalformedValueHandling {
+        FAIL = 0;        // reject the whole document (the default)
+        SKIP = 1;        // drop the bad value and index the rest of the document
+        USE_DEFAULT = 2; // index defaultValue in place of the bad value. Requires defaultValue to be set, so not available for vector fields
+    }
+
+    // Index-only default used when the stored path resolves to nothing (absent or null). The stored document is never
+    // modified. Unset means no default. Not supported for VECTOR or UNIT_VECTOR fields
+    DefaultValue defaultValue = 12;
+    MalformedValueHandling malformedValueHandling = 13;
+}
+
+// A typed default for one FieldConfig. Exactly one case is valid per field type and the server does not widen or narrow:
+// STRING takes stringValue, NUMERIC_INT intValue, NUMERIC_LONG longValue, NUMERIC_FLOAT floatValue, NUMERIC_DOUBLE doubleValue,
+// BOOL boolValue, DATE dateValue (epoch milliseconds) and GEO_POINT geoPointValue
+message DefaultValue {
+    enum Fill {
+        WHOLE_VALUE = 0;   // only when the stored path resolves to nothing for the whole document
+        EACH_ELEMENT = 1;  // also each list element (or list element sub-field) that is null or absent
+    }
+    oneof value {
+        string stringValue = 1;
+        int32 intValue = 2;
+        int64 longValue = 3;
+        float floatValue = 4;
+        double doubleValue = 5;
+        bool boolValue = 6;
+        int64 dateValue = 7;
+        GeoPointValue geoPointValue = 9;
+    }
+    Fill fill = 8;
+}
+
+// A GEO_POINT default in degrees
+message GeoPointValue {
+    double latitude = 1;
+    double longitude = 2;
 }
 
 message GeoPointConfig {

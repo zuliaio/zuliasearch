@@ -139,6 +139,21 @@ public class ZuliaDateUtil {
 	 * @throws IllegalArgumentException if the value is not a Date, Number, or parseable date String
 	 */
 	public static Date convertToDate(Object value, String fieldContext) {
+		return convertToDate(value, fieldContext, null);
+	}
+
+	/**
+	 * The same parse, but the field is named in the message only when one has to be thrown.
+	 */
+	public static Date convertToDateForField(Object value, String storedFieldName) {
+		return convertToDate(value, null, storedFieldName);
+	}
+
+	private static String describe(String fieldContext, String storedFieldName) {
+		return fieldContext != null ? fieldContext : "field <" + storedFieldName + ">";
+	}
+
+	private static Date convertToDate(Object value, String fieldContext, String storedFieldName) {
 		return switch (value) {
 			case null -> null;
 			case Date date -> date;
@@ -149,13 +164,15 @@ public class ZuliaDateUtil {
 				}
 				Long epochMilli = parseToEpochMilli(dateString);
 				if (epochMilli == null) {
-					throw new IllegalArgumentException("String value <" + dateString + "> for date " + fieldContext + " cannot be parsed. Supported formats: "
-							+ SUPPORTED_DATE_STRING_FORMATS);
+					throw new IllegalArgumentException(
+							"String value <" + dateString + "> for date " + describe(fieldContext, storedFieldName) + " cannot be parsed. Supported formats: "
+									+ SUPPORTED_DATE_STRING_FORMATS);
 				}
 				yield new Date(epochMilli);
 			}
 			default -> throw new IllegalArgumentException(
-					"Expecting Date, epoch milliseconds Number, or date String for " + fieldContext + " and found <" + value.getClass().getSimpleName() + ">");
+					"Expecting Date, epoch milliseconds Number, or date String for " + describe(fieldContext, storedFieldName) + " and found <"
+							+ value.getClass().getSimpleName() + ">");
 		};
 	}
 

@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 public class TestHelper {
 	private final static Logger LOG = LoggerFactory.getLogger(TestHelper.class);
 	private static final String TEST_CLUSTER_NAME = "zuliaTest";
+	private static final int BASE_PORT = Integer.getInteger("zulia.test.basePort", 20000);
+	private static final String DATA_PATH = System.getProperty("zulia.test.dataPath", "/tmp/zuliaTest");
 	private static final Pattern MONGO_URL_PATTERN = Pattern.compile("([^:]+)://([^:]+):(\\d+)");
 	private static final MongoNodeService NODE_SERVICE;
 	private static final List<ZuliaNode> ZULIA_NODES = new ArrayList<>();
@@ -49,14 +51,14 @@ public class TestHelper {
 
 	private static void clearData() {
 		try {
-			Path dataPath = Paths.get("/tmp/zuliaTest");
+			Path dataPath = Paths.get(DATA_PATH);
 
 			if (Files.exists(dataPath)) {
 				try (Stream<Path> walk = Files.walk(dataPath)) {
 					walk.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
 				}
 			}
-			Files.createDirectory(dataPath);
+			Files.createDirectories(dataPath);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -107,7 +109,7 @@ public class TestHelper {
 			String mongoServerUrl = getMongoServer();
 			zuliaConfig.setMongoServers(Collections.singletonList(new MongoServer(mongoServerUrl, parseMongoPort(mongoServerUrl))));
 
-			zuliaConfig.setDataPath("/tmp/zuliaTest/node" + i);
+			zuliaConfig.setDataPath(DATA_PATH + "/node" + i);
 			zuliaConfig.setRestPort(node.getRestPort());
 			zuliaConfig.setServicePort(node.getServicePort());
 
@@ -126,16 +128,36 @@ public class TestHelper {
 
 	}
 
+	/**
+	 * Root directory the test nodes write their data under.
+	 */
+	public static String dataPath() {
+		return DATA_PATH;
+	}
+
+	/**
+	 * Service port of the node at the given index. Nodes take two consecutive ports each, service first.
+	 */
+	public static int servicePort(int nodeIndex) {
+		return BASE_PORT + 1 + (nodeIndex * 2);
+	}
+
+	/**
+	 * REST port of the node at the given index.
+	 */
+	public static int restPort(int nodeIndex) {
+		return BASE_PORT + 2 + (nodeIndex * 2);
+	}
+
 	public static void createNodes(int nodeCount) {
 		clearData();
 		LOG.info("Creating {} Nodes", nodeCount);
-		int port = 20000;
 
 		//drop nodes and index configs
 		MongoProvider.getMongoClient().getDatabase(TEST_CLUSTER_NAME).drop();
 
 		for (int i = 0; i < nodeCount; i++) {
-			ZuliaBase.Node node = ZuliaBase.Node.newBuilder().setServerAddress("localhost").setServicePort(++port).setRestPort(++port).build();
+			ZuliaBase.Node node = ZuliaBase.Node.newBuilder().setServerAddress("localhost").setServicePort(servicePort(i)).setRestPort(restPort(i)).build();
 			NODE_SERVICE.addNode(node);
 		}
 	}

@@ -37,7 +37,12 @@ public class ZuliaUtil {
 			fromProviders(PojoCodecProvider.builder().automatic(true).build()));
 
 	public static void handleListsUniqueValues(Object o, Consumer<? super Object> action) {
-		handleListsUniqueValues(o, action, new AtomicInteger(), new AtomicInteger());
+		Set<Object> objects = new LinkedHashSet<>();
+		handleLists(o, objects::add, false);
+
+		for (Object object : objects) {
+			action.accept(object);
+		}
 	}
 
 	public static void handleListsUniqueValues(Object o, Consumer<? super Object> action, AtomicInteger listSize, AtomicInteger setSize) {
@@ -60,6 +65,10 @@ public class ZuliaUtil {
 
 	public static void handleLists(Object o, Consumer<? super Object> action, AtomicInteger listSize) {
 		handleLists(o, action, listSize, false);
+	}
+
+	public static void handleLists(Object o, Consumer<? super Object> action, boolean retainNullAndEmpty) {
+		handleLists(o, action, new AtomicInteger(), retainNullAndEmpty);
 	}
 
 	public static void handleLists(Object o, Consumer<? super Object> action, AtomicInteger listSize, boolean retainNullAndEmpty) {
@@ -127,8 +136,8 @@ public class ZuliaUtil {
 
 	public static int computeLevenshteinDistance(String string1, String string2) {
 
-		char str1[] = string1.toCharArray();
-		char str2[] = string2.toCharArray();
+		char[] str1 = string1.toCharArray();
+		char[] str2 = string2.toCharArray();
 
 		int insert = 40;
 		int delete = 40;
@@ -138,7 +147,7 @@ public class ZuliaUtil {
 		if (string1.length() < string2.length()) {
 			insert = 2;
 		}
-		int distance[][] = new int[str1.length + 1][str2.length + 1];
+		int[][] distance = new int[str1.length + 1][str2.length + 1];
 
 		for (int i = 0; i <= str1.length; i++) {
 			distance[i][0] = i * delete;
@@ -221,7 +230,9 @@ public class ZuliaUtil {
 		return document.toJson();
 	}
 
-	/** Converts a collection of numbers to a {@code float[]}, accepting any {@link Number} subtype. */
+	/**
+	 * Converts a collection of numbers to a {@code float[]}, accepting any {@link Number} subtype.
+	 */
 	public static float[] toFloatArray(Collection<? extends Number> collection) {
 		float[] result = new float[collection.size()];
 		int i = 0;
@@ -231,13 +242,17 @@ public class ZuliaUtil {
 		return result;
 	}
 
-	/** {@link #toFloatArray(Collection)} for an erased collection. Elements must be {@link Number} or iteration throws ClassCastException. */
+	/**
+	 * {@link #toFloatArray(Collection)} for an erased collection. Elements must be {@link Number} or iteration throws ClassCastException.
+	 */
 	@SuppressWarnings("unchecked")
 	public static float[] toFloatArrayUnchecked(Collection<?> collection) {
 		return toFloatArray((Collection<? extends Number>) collection);
 	}
 
-	/** Converts a collection of numbers to a {@code double[]}, accepting any {@link Number} subtype. */
+	/**
+	 * Converts a collection of numbers to a {@code double[]}, accepting any {@link Number} subtype.
+	 */
 	public static double[] toDoubleArray(Collection<? extends Number> collection) {
 		double[] result = new double[collection.size()];
 		int i = 0;
@@ -247,7 +262,9 @@ public class ZuliaUtil {
 		return result;
 	}
 
-	/** {@link #toDoubleArray(Collection)} for an erased collection. Elements must be {@link Number} or iteration throws ClassCastException. */
+	/**
+	 * {@link #toDoubleArray(Collection)} for an erased collection. Elements must be {@link Number} or iteration throws ClassCastException.
+	 */
 	@SuppressWarnings("unchecked")
 	public static double[] toDoubleArrayUnchecked(Collection<?> collection) {
 		return toDoubleArray((Collection<? extends Number>) collection);
