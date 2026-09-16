@@ -11,6 +11,7 @@ public final class SingleValuedStoredFieldHandler implements StoredFieldHandler 
 	private final boolean existsMarker;
 	private final boolean malformed;
 	private final boolean defaulted;
+	private boolean representationSkipped;
 
 	/**
 	 * The resolver never produces a null value, so no consumer here has to check for one.
@@ -55,5 +56,15 @@ public final class SingleValuedStoredFieldHandler implements StoredFieldHandler 
 	@Override
 	public boolean hasDefaultedValues() {
 		return defaulted;
+	}
+
+	@Override
+	public void skipRepresentation() {
+		representationSkipped = true;
+	}
+
+	@Override
+	public boolean representationSkipped() {
+		return representationSkipped;
 	}
 }

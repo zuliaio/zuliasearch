@@ -33,6 +33,7 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -117,10 +118,11 @@ public class ShardDocumentIndexer {
 			FieldDefault fieldDefault = indexConfig.getFieldDefault(storedFieldName);
 			StoredFieldHandler handler = StoredFieldValueResolver.resolve(mongoDocument, fc, fieldDefault);
 			if (handler.isPresent()) {
-				addMarkers(luceneDocument, fc, handler);
+				// facets and sorts go first because a value one of them cannot hold is skipped and marked like a malformed one
 				generateFacetLabels(fc, handler, facetFieldToFacetLabels);
 				addSortForStoredField(luceneDocument, storedFieldName, fc, handler);
 				addIndexingForStoredField(luceneDocument, storedFieldName, fc, fieldType, handler);
+				addMarkers(luceneDocument, fc, handler);
 			}
 
 		}
@@ -227,7 +229,7 @@ public class ShardDocumentIndexer {
 				luceneDocument.add(new StringField(ZuliaFieldConstants.FIELDS_LIST_FIELD, indexAs.getIndexFieldName(), Field.Store.NO));
 			}
 		}
-		if (handler.hasMalformedValues()) {
+		if (handler.hasMalformedValues() || handler.representationSkipped()) {
 			luceneDocument.add(new StringField(ZuliaFieldConstants.MALFORMED_FIELDS_LIST_FIELD, malformedMarkerName(fc), Field.Store.NO));
 			luceneDocument.add(new StringField(ZuliaFieldConstants.FIELDS_LIST_FIELD, ZuliaFieldConstants.MALFORMED_FIELDS_LIST_FIELD, Field.Store.NO));
 		}
@@ -359,12 +361,18 @@ public class ShardDocumentIndexer {
 											+ sortFieldName);
 					}
 
-					if (text.length() > 32766) {
-						throw new IllegalArgumentException(
-								"Field " + sortAs.getSortFieldName() + " is too large to sort.  Must be less <= 32766 characters and is " + text.length());
+					BytesRef bytes = new BytesRef(text);
+					if (bytes.length > IndexWriter.MAX_TERM_LENGTH) {
+						if (failsOnMalformed(fc)) {
+							throw new IllegalArgumentException(
+									"Field <" + storedFieldName + "> sort <" + sortAs.getSortFieldName() + "> value is too long to sort. It must be <= "
+											+ IndexWriter.MAX_TERM_LENGTH + " bytes and is " + bytes.length);
+						}
+						handler.skipRepresentation();
+						return;
 					}
 
-					SortedSetDocValuesField docValue = sortedSetSortField(sortFieldName, new BytesRef(text), docValueSkipIndex);
+					SortedSetDocValuesField docValue = sortedSetSortField(sortFieldName, bytes, docValueSkipIndex);
 					d.add(docValue);
 				});
 			}
@@ -459,7 +467,12 @@ public class ShardDocumentIndexer {
 						String val = obj.toString();
 						if (!val.isEmpty()) {
 							List<String> path = facetPathSplitter.splitToList(val);
-							facetFieldsForField.add(new FacetLabel(facetName, path.toArray(new String[0])));
+							if (fitsFacetLabel(fc, facetName, facetPathLength(facetName, path))) {
+								facetFieldsForField.add(new FacetLabel(facetName, path.toArray(new String[0])));
+							}
+							else {
+								handler.skipRepresentation();
+							}
 						}
 					});
 				}
@@ -499,7 +512,12 @@ public class ShardDocumentIndexer {
 					handler.onUniqueValues(obj -> {
 						String val = integralFacetLabel(obj, fc.getFieldType());
 						if (!val.isEmpty()) {
-							facetFieldsForField.add(new FacetLabel(facetName, val));
+							if (fitsFacetLabel(fc, facetName, facetName.length() + 1 + val.length())) {
+								facetFieldsForField.add(new FacetLabel(facetName, val));
+							}
+							else {
+								handler.skipRepresentation();
+							}
 						}
 					});
 				}
@@ -507,7 +525,12 @@ public class ShardDocumentIndexer {
 					handler.onUniqueValues(obj -> {
 						String val = obj.toString();
 						if (!val.isEmpty()) {
-							facetFieldsForField.add(new FacetLabel(facetName, val));
+							if (fitsFacetLabel(fc, facetName, facetName.length() + 1 + val.length())) {
+								facetFieldsForField.add(new FacetLabel(facetName, val));
+							}
+							else {
+								handler.skipRepresentation();
+							}
 						}
 					});
 				}
@@ -515,6 +538,40 @@ public class ShardDocumentIndexer {
 			}
 
 		}
+	}
+
+	/**
+	 * The dimension, every component, and one separator between each, which is how Lucene measures a label.
+	 */
+	private static int facetPathLength(String facetName, List<String> components) {
+		int length = facetName.length();
+		for (String component : components) {
+			length += component.length() + 1;
+		}
+		return length;
+	}
+
+	/**
+	 * Lucene caps a facet label at FacetLabel.MAX_CATEGORY_PATH_LENGTH characters. Under FAIL a longer value rejects the
+	 * document naming the field, otherwise the label is skipped and the document marked.
+	 */
+	private static boolean fitsFacetLabel(FieldConfig fc, String facetName, int pathLength) {
+		if (pathLength <= FacetLabel.MAX_CATEGORY_PATH_LENGTH) {
+			return true;
+		}
+		if (failsOnMalformed(fc)) {
+			throw new IllegalArgumentException(
+					"Field <" + fc.getStoredFieldName() + "> facet <" + facetName + "> value is too long to facet. The label must be <= "
+							+ FacetLabel.MAX_CATEGORY_PATH_LENGTH + " characters including the facet name and is " + pathLength);
+		}
+		return false;
+	}
+
+	private static boolean failsOnMalformed(FieldConfig fc) {
+		return switch (fc.getMalformedValueHandling()) {
+			case SKIP, USE_DEFAULT -> false;
+			case FAIL, UNRECOGNIZED -> true;
+		};
 	}
 
 	private static String integralFacetLabel(Object obj, FieldConfig.FieldType fieldType) {

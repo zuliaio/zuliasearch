@@ -40,4 +40,11 @@ public sealed interface StoredFieldHandler permits MissingStoredFieldHandler, Si
 	boolean hasMalformedValues();
 
 	boolean hasDefaultedValues();
+
+	/**
+	 * Called by a facet or sort that could not hold a value, so the document is marked the same way as a malformed one.
+	 */
+	void skipRepresentation();
+
+	boolean representationSkipped();
 }

@@ -16,6 +16,7 @@ public final class MultiValuedStoredFieldHandler implements StoredFieldHandler {
 	private final boolean existsMarker;
 	private final boolean malformed;
 	private final boolean defaulted;
+	private boolean representationSkipped;
 	private Collection<Object> unique;
 
 	/**
@@ -65,5 +66,15 @@ public final class MultiValuedStoredFieldHandler implements StoredFieldHandler {
 	@Override
 	public boolean hasDefaultedValues() {
 		return defaulted;
+	}
+
+	@Override
+	public void skipRepresentation() {
+		representationSkipped = true;
+	}
+
+	@Override
+	public boolean representationSkipped() {
+		return representationSkipped;
 	}
 }

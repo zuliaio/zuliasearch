@@ -41,4 +41,14 @@ public enum MissingStoredFieldHandler implements StoredFieldHandler {
 	public boolean hasDefaultedValues() {
 		return false;
 	}
+
+	@Override
+	public void skipRepresentation() {
+		throw new IllegalStateException("a missing field reaches no facet or sort, so nothing can be skipped");
+	}
+
+	@Override
+	public boolean representationSkipped() {
+		return false;
+	}
 }
