@@ -10,11 +10,51 @@ import java.util.List;
  */
 public class DocumentHelper {
 
-	public static Object getValueFromMongoDocument(Document mongoDocument, String storedFieldName) {
-		return getValueFromMongoDocument(mongoDocument, storedFieldName, false);
+	/**
+	 * How list elements met while resolving a dotted path are treated. Every other value is returned as stored.
+	 */
+	public enum ListElements {
+		/**
+		 * drop null elements and elements lacking the sub-field, the plain lookup
+		 */
+		DROP_NULL,
+		/**
+		 * keep a null placeholder for each null element and each element lacking the sub-field, and carry that
+		 * placeholder through every deeper level of the path, so parallel lists stay aligned
+		 */
+		RETAIN_NULL,
+		/**
+		 * RETAIN_NULL, and a nested list met on the way down stays one entry holding its own values instead of being
+		 * flattened, so the result has one entry per outer element and lines up with a sibling path one level up
+		 */
+		RETAIN_NULL_NESTED;
+
+		boolean retainsNull() {
+			return this != DROP_NULL;
+		}
+
+		boolean keepsNesting() {
+			return this == RETAIN_NULL_NESTED;
+		}
 	}
 
-	public static Object getValueFromMongoDocument(Document mongoDocument, String storedFieldName, boolean retainNullAndEmpty) {
+	public static Object getValueFromMongoDocument(Document mongoDocument, String storedFieldName) {
+		return getValueFromMongoDocument(mongoDocument, storedFieldName, ListElements.DROP_NULL);
+	}
+
+	/**
+	 * @deprecated use {@link #getValueFromMongoDocument(Document, String, ListElements)}, {@code true} is {@link ListElements#RETAIN_NULL}
+	 */
+	@Deprecated
+	public static Object getValueFromMongoDocument(Document mongoDocument, String storedFieldName, boolean retainNull) {
+		return getValueFromMongoDocument(mongoDocument, storedFieldName, retainNull ? ListElements.RETAIN_NULL : ListElements.DROP_NULL);
+	}
+
+	/**
+	 * Resolves a dotted path into the document, treating the list elements met on the way as {@code listElements} says.
+	 * Returns null when the path resolves to nothing.
+	 */
+	public static Object getValueFromMongoDocument(Document mongoDocument, String storedFieldName, ListElements listElements) {
 
 		int next = storedFieldName.indexOf('.');
 		if (next >= 0) {
@@ -24,14 +64,14 @@ public class DocumentHelper {
 			while (next != -1) {
 				String field = storedFieldName.substring(off, next);
 				off = next + 1;
-				o = getChild(o, field, retainNullAndEmpty);
+				o = getChild(o, field, listElements);
 				if (o == null) {
 					return null;
 				}
 				next = storedFieldName.indexOf('.', off);
 			}
 			String field = storedFieldName.substring(off);
-			return getChild(o, field, retainNullAndEmpty);
+			return getChild(o, field, listElements);
 		}
 		else {
 			return mongoDocument.get(storedFieldName);
@@ -103,21 +143,14 @@ public class DocumentHelper {
 		return value != null ? value : defaultValue;
 	}
 
-	private static Object getChild(Object o, String field, boolean retainNullAndEmpty) {
+	private static Object getChild(Object o, String field, ListElements listElements) {
 		if (o instanceof Document d) {
 			o = d.get(field);
-			if (!retainNullAndEmpty && o instanceof List<?>) {
-				List<Object> values = new ArrayList<>();
-				for (Object item : (List<?>) o) {
-					if (item != null) {
-						if (item instanceof String) {
-							if (!((String) item).isEmpty()) {
-								values.add(item);
-							}
-						}
-						else {
-							values.add(item);
-						}
+			if (o instanceof List<?> list) {
+				List<Object> values = new ArrayList<>(list.size());
+				for (Object item : list) {
+					if (item != null || listElements.retainsNull()) {
+						values.add(item);
 					}
 				}
 				o = values;
@@ -125,28 +158,54 @@ public class DocumentHelper {
 		}
 		else if (o instanceof List<?> list) {
 			List<Object> values = new ArrayList<>(list.size());
-			for (Object item : list) {
-				if (item instanceof Document d) {
-					Object object = d.get(field);
-					if (retainNullAndEmpty) {
-						values.add(object);
-					}
-					else if (object != null) {
-						values.add(object);
-					}
-				}
-			}
-			if (!values.isEmpty()) {
-				o = values;
-			}
-			else {
-				o = null;
-			}
+			collectFromListElements(list, field, listElements, values);
+			o = values.isEmpty() ? null : values;
 		}
 		else {
 			o = null;
 		}
 		return o;
+	}
+
+	/**
+	 * A list met on the way down holds documents to take the field from, nested lists to descend into (a list of
+	 * documents that each hold a list of documents), null placeholders to carry through, and scalars to skip. A nested
+	 * list is flattened, matching how the index and result paths consume list values, unless the mode keeps nesting, in
+	 * which case it becomes one entry holding its own values.
+	 */
+	private static void collectFromListElements(List<?> list, String field, ListElements listElements, List<Object> values) {
+		for (Object item : list) {
+			switch (item) {
+				case Document d -> {
+					Object object = d.get(field);
+					if (object != null || listElements.retainsNull()) {
+						values.add(object);
+					}
+				}
+				case List<?> nested -> {
+					if (listElements.keepsNesting()) {
+						List<Object> inner = new ArrayList<>(nested.size());
+						collectFromListElements(nested, field, listElements, inner);
+						values.add(inner);
+					}
+					else {
+						collectFromListElements(nested, field, listElements, values);
+					}
+				}
+				case null -> {
+					if (listElements.retainsNull()) {
+						values.add(null);
+					}
+				}
+				default -> {
+					// a scalar where sibling elements are sub-documents. It has no sub-field, so under a retaining mode it
+					// still holds a place and the result lines up with the list one level up
+					if (listElements.retainsNull()) {
+						values.add(null);
+					}
+				}
+			}
+		}
 	}
 
 }

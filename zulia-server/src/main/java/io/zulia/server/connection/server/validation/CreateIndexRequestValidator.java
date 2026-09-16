@@ -3,10 +3,13 @@ package io.zulia.server.connection.server.validation;
 import com.google.protobuf.ByteString;
 import io.zulia.DefaultAnalyzers;
 import io.zulia.message.ZuliaIndex;
+import io.zulia.message.ZuliaIndex.FieldConfig.FieldType;
+import io.zulia.message.ZuliaIndex.FieldConfig.MalformedValueHandling;
 import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.util.DefaultValueUtil;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,6 +28,22 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 		IndexSettings.Builder indexSettings = requestBuilder.getIndexSettingsBuilder();
 		validateIndexSettingsAndSetDefaults(indexSettings);
 		return requestBuilder.build();
+	}
+
+	private static void validateDefaultAndMalformedHandling(ZuliaIndex.FieldConfig.Builder builder) {
+		String storedFieldName = builder.getStoredFieldName();
+		FieldType fieldType = builder.getFieldType();
+
+		if (builder.hasDefaultValue()) {
+			DefaultValueUtil.validate(storedFieldName, fieldType, builder.getDefaultValue());
+		}
+
+		MalformedValueHandling handling = builder.getMalformedValueHandling();
+		if (MalformedValueHandling.UNRECOGNIZED.equals(handling)) {
+			throw new IllegalArgumentException(
+					"Field <" + storedFieldName + "> has an unrecognized malformedValueHandling <" + builder.getMalformedValueHandlingValue() + ">");
+		}
+		DefaultValueUtil.validateMalformedValueHandling(storedFieldName, fieldType, handling, builder.hasDefaultValue());
 	}
 
 	public static void validateIndexSettingsAndSetDefaults(IndexSettings.Builder indexSettings) {
@@ -114,6 +133,12 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 			}
 			storedFields.add(builder.getStoredFieldName());
 
+			if (ZuliaIndex.FieldConfig.FieldType.UNRECOGNIZED.equals(builder.getFieldType())) {
+				// nothing downstream can index it, so refuse the config rather than failing every document
+				throw new IllegalArgumentException(
+						"Field <" + builder.getStoredFieldName() + "> has an unrecognized fieldType <" + builder.getFieldTypeValue() + ">");
+			}
+
 			if (FieldTypeUtil.isGeoPointFieldType(builder.getFieldType())) {
 				if (builder.getIndexAsCount() == 0 && builder.getSortAsCount() == 0) {
 					throw new IllegalArgumentException("GEO_POINT field <" + builder.getStoredFieldName() + "> must have .index() and/or .sort()");
@@ -128,6 +153,19 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 					throw new IllegalArgumentException("GEO_POINT field <" + builder.getStoredFieldName() + "> does not support faceting");
 				}
 			}
+
+			if (FieldTypeUtil.isVectorFieldType(builder.getFieldType())) {
+				// a vector has no orderable or label-able value, so a facet would write one meaningless label per document
+				// and a sort would fail every document at index time
+				if (builder.getFacetAsCount() > 0) {
+					throw new IllegalArgumentException(builder.getFieldType() + " field <" + builder.getStoredFieldName() + "> does not support faceting");
+				}
+				if (builder.getSortAsCount() > 0) {
+					throw new IllegalArgumentException(builder.getFieldType() + " field <" + builder.getStoredFieldName() + "> does not support sorting");
+				}
+			}
+
+			validateDefaultAndMalformedHandling(builder);
 
 			for (ZuliaIndex.IndexAs indexAs : builder.getIndexAsList()) {
 				if (indexAs.getIndexFieldName().contains(",")) {

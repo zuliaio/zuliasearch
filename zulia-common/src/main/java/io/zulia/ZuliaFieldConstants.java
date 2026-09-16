@@ -11,6 +11,7 @@ public interface ZuliaFieldConstants {
 	String STORED_DOC_FIELD = "_zsdf_";
 
 	String FIELDS_LIST_FIELD = "_zflf_";
+	String MALFORMED_FIELDS_LIST_FIELD = "_zmff_";
 	String CHAR_LENGTH_PREFIX = "_zcl_";
 	String LIST_LENGTH_PREFIX = "_zll_";
 	String SORT_SUFFIX = "_zss_";

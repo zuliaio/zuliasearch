@@ -10,28 +10,13 @@ public abstract class NumericFieldIndexer extends FieldIndexer {
 	}
 
 	@Override
-	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) throws Exception {
-		if (value != null) {
-			if (value instanceof Number) {
-				d.add(createField((Number) value, indexedFieldName));
-			}
-			else if (value instanceof String) {
-				try {
-					d.add(createField(parseString((String) value), indexedFieldName));
-				}
-				catch (NumberFormatException e) {
-					throw new Exception("String value <" + value + "> for field <" + storedFieldName + "> cannot be parsed as a the defined numeric type");
-				}
-			}
-			else {
-				throw new Exception("Expecting collection of Number, collection of numeric String, Number, or numeric String for field <" + storedFieldName
-						+ "> and found <" + value.getClass().getSimpleName() + ">");
-			}
+	protected void handleValue(Document d, String storedFieldName, Object value, String indexedFieldName) {
+		// the resolver already parsed numeric strings and rejected anything that is not a number
+		if (value instanceof Number number) {
+			d.add(createField(number, indexedFieldName));
 		}
 	}
 
 	protected abstract Field createField(Number o, String indexedFieldName);
-
-	protected abstract Number parseString(String value);
 
 }

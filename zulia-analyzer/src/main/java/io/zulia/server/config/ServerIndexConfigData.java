@@ -15,6 +15,7 @@ import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaIndex.SortAs;
 import io.zulia.message.ZuliaIndex.SortAs.StringHandling;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
+import io.zulia.server.field.FieldDefault;
 import io.zulia.server.field.FieldTypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ public class ServerIndexConfigData {
 	private final Set<String> individualFacets;
 	private final Set<String> userIndexedFieldNames;
 	private final Set<String> wrapIndexFieldNames;
+	private final Map<String, FieldDefault> fieldDefaults;
 
 	public ServerIndexConfigData(IndexSettings indexSettings) {
 		this.indexSettings = indexSettings;
@@ -57,10 +59,16 @@ public class ServerIndexConfigData {
 		this.individualFacets = new HashSet<>();
 		this.userIndexedFieldNames = new HashSet<>();
 		this.wrapIndexFieldNames = new HashSet<>();
+		this.fieldDefaults = new HashMap<>();
 
 		for (FieldConfig fc : indexSettings.getFieldConfigList()) {
 			String storedFieldName = fc.getStoredFieldName();
 			FieldType fieldType = fc.getFieldType();
+
+			FieldDefault fieldDefault = FieldDefault.from(fc);
+			if (fieldDefault != null) {
+				fieldDefaults.put(storedFieldName, fieldDefault);
+			}
 
 			List<SortFieldInfo> sortFieldInfos = new ArrayList<>(fc.getSortAsCount());
 			for (SortAs sortAs : fc.getSortAsList()) {
@@ -146,6 +154,8 @@ public class ServerIndexConfigData {
 				new IndexFieldInfo(null, ZuliaFieldConstants.FACET_DRILL_DOWN_FIELD, null, FieldType.STRING, null));
 		indexFieldMapping.put(ZuliaFieldConstants.FIELDS_LIST_FIELD,
 				new IndexFieldInfo(null, ZuliaFieldConstants.FIELDS_LIST_FIELD, null, FieldType.STRING, null));
+		indexFieldMapping.put(ZuliaFieldConstants.MALFORMED_FIELDS_LIST_FIELD,
+				new IndexFieldInfo(null, ZuliaFieldConstants.MALFORMED_FIELDS_LIST_FIELD, null, FieldType.STRING, null));
 		sortFieldMapping.put(ZuliaFieldConstants.SCORE_FIELD, new SortFieldInfo(null, FieldType.NUMERIC_FLOAT, null));
 		sortFieldMapping.put(ZuliaFieldConstants.ID_SORT_FIELD,
 				new SortFieldInfo(FieldTypeUtil.getSortField(ZuliaFieldConstants.ID_SORT_FIELD, FieldConfig.FieldType.STRING), FieldType.STRING,
@@ -291,6 +301,10 @@ public class ServerIndexConfigData {
 
 	public Collection<String> getIndexedFields() {
 		return indexFieldMapping.keySet();
+	}
+
+	public FieldDefault getFieldDefault(String storedFieldName) {
+		return fieldDefaults.get(storedFieldName);
 	}
 
 	public List<QueryRequest> getWarmingSearches() {

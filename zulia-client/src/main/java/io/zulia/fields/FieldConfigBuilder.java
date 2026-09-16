@@ -1,11 +1,16 @@
 package io.zulia.fields;
 
+import io.zulia.util.DefaultValueUtil;
+
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
+import static io.zulia.message.ZuliaIndex.DefaultValue;
 import static io.zulia.message.ZuliaIndex.FacetAs;
 import static io.zulia.message.ZuliaIndex.FieldConfig;
 import static io.zulia.message.ZuliaIndex.GeoPointConfig;
+import static io.zulia.message.ZuliaIndex.GeoPointValue;
 import static io.zulia.message.ZuliaIndex.IndexAs;
 import static io.zulia.message.ZuliaIndex.SortAs;
 import static io.zulia.message.ZuliaIndex.VectorDescription;
@@ -23,6 +28,8 @@ public class FieldConfigBuilder {
 	private String description;
 	private String displayName;
 	private Boolean docValueSkipIndex;
+	private DefaultValue defaultValue;
+	private FieldConfig.MalformedValueHandling malformedValueHandling;
 
 	public FieldConfigBuilder(String storedFieldName, FieldConfig.FieldType fieldType) {
 		this.storedFieldName = storedFieldName;
@@ -72,7 +79,9 @@ public class FieldConfigBuilder {
 		return create(storedFieldName, FieldConfig.FieldType.VECTOR);
 	}
 
-	/** Creates a UNIT_VECTOR (dot-product) field. The encoding resolves as in {@link #createVector}. */
+	/**
+	 * Creates a UNIT_VECTOR (dot-product) field. The encoding resolves as in {@link #createVector}.
+	 */
 	public static FieldConfigBuilder createUnitVector(String storedFieldName) {
 		return create(storedFieldName, FieldConfig.FieldType.UNIT_VECTOR);
 	}
@@ -111,37 +120,49 @@ public class FieldConfigBuilder {
 		return vectorIndexingConfig;
 	}
 
-	/** Vector encoding for every indexed representation of this field that does not set its own via {@link #indexAs(String, VectorIndexingConfig.Encoding)}. */
+	/**
+	 * Vector encoding for every indexed representation of this field that does not set its own via {@link #indexAs(String, VectorIndexingConfig.Encoding)}.
+	 */
 	public FieldConfigBuilder quantization(VectorIndexingConfig.Encoding encoding) {
 		vectorIndexingConfigBuilder().quantization(encoding);
 		return this;
 	}
 
-	/** HNSW graph tuning (m = max connections, efConstruction = build beam width) for representations without their own config. */
+	/**
+	 * HNSW graph tuning (m = max connections, efConstruction = build beam width) for representations without their own config.
+	 */
 	public FieldConfigBuilder hnsw(int m, int efConstruction) {
 		vectorIndexingConfigBuilder().hnsw(m, efConstruction);
 		return this;
 	}
 
-	/** Overrides the similarity (otherwise derived from field type: VECTOR=cosine, UNIT_VECTOR=dot-product). */
+	/**
+	 * Overrides the similarity (otherwise derived from field type: VECTOR=cosine, UNIT_VECTOR=dot-product).
+	 */
 	public FieldConfigBuilder similarity(VectorDescription.Similarity similarity) {
 		vectorDescriptionBuilder().setSimilarity(similarity);
 		return this;
 	}
 
-	/** Expected vector dimensions, validated on store when set. */
+	/**
+	 * Expected vector dimensions, validated on store when set.
+	 */
 	public FieldConfigBuilder dimensions(int dimensions) {
 		vectorDescriptionBuilder().setDimensions(dimensions);
 		return this;
 	}
 
-	/** Exact brute-force (flat) index instead of the default HNSW graph, for representations without their own config. */
+	/**
+	 * Exact brute-force (flat) index instead of the default HNSW graph, for representations without their own config.
+	 */
 	public FieldConfigBuilder flat() {
 		vectorIndexingConfigBuilder().flat();
 		return this;
 	}
 
-	/** Records the embedding model that produces this field's vectors (provenance only). */
+	/**
+	 * Records the embedding model that produces this field's vectors (provenance only).
+	 */
 	public FieldConfigBuilder model(String modelName) {
 		vectorDescriptionBuilder().setModelName(modelName);
 		return this;
@@ -152,7 +173,9 @@ public class FieldConfigBuilder {
 		return this;
 	}
 
-	/** Replaces the vector description (dimensions, similarity, model provenance). */
+	/**
+	 * Replaces the vector description (dimensions, similarity, model provenance).
+	 */
 	public FieldConfigBuilder vectorDescription(VectorDescription vectorDescription) {
 		this.vectorDescription = vectorDescription.toBuilder();
 		return this;
@@ -166,12 +189,16 @@ public class FieldConfigBuilder {
 		return indexAs(indexedFieldName, VectorIndexingConfig.newBuilder().setEncoding(encoding).build());
 	}
 
-	/** Indexes this vector field under an additional name with its own config, e.g. {@code indexAs("v8", VectorIndexingConfigBuilder.create().quantization(INT8).hnsw(24, 200))}. */
+	/**
+	 * Indexes this vector field under an additional name with its own config, e.g. {@code indexAs("v8", VectorIndexingConfigBuilder.create().quantization(INT8).hnsw(24, 200))}.
+	 */
 	public FieldConfigBuilder indexAs(String indexedFieldName, VectorIndexingConfigBuilder vectorIndexingConfigBuilder) {
 		return indexAs(indexedFieldName, vectorIndexingConfigBuilder.build());
 	}
 
-	/** Indexes this vector field under an additional name with its own {@link VectorIndexingConfig}. */
+	/**
+	 * Indexes this vector field under an additional name with its own {@link VectorIndexingConfig}.
+	 */
 	public FieldConfigBuilder indexAs(String indexedFieldName, VectorIndexingConfig vectorIndexingConfig) {
 		return indexAs(IndexAs.newBuilder().setIndexFieldName(indexedFieldName).setVectorIndexingConfig(vectorIndexingConfig).build());
 	}
@@ -322,6 +349,124 @@ public class FieldConfigBuilder {
 		return this;
 	}
 
+	/**
+	 * Index-only default for a STRING field, see {@link #defaultValue(DefaultValue)}.
+	 */
+	public FieldConfigBuilder defaultValue(String value) {
+		return defaultValue(value, DefaultValue.Fill.WHOLE_VALUE);
+	}
+
+	public FieldConfigBuilder defaultValue(String value, DefaultValue.Fill fill) {
+		return defaultValue(DefaultValue.newBuilder().setStringValue(required(value, "value")).setFill(required(fill, "fill")).build());
+	}
+
+	/**
+	 * Index-only default for a NUMERIC_INT field, see {@link #defaultValue(DefaultValue)}.
+	 */
+	public FieldConfigBuilder defaultValue(int value) {
+		return defaultValue(value, DefaultValue.Fill.WHOLE_VALUE);
+	}
+
+	public FieldConfigBuilder defaultValue(int value, DefaultValue.Fill fill) {
+		return defaultValue(DefaultValue.newBuilder().setIntValue(value).setFill(required(fill, "fill")).build());
+	}
+
+	/**
+	 * Index-only default for a NUMERIC_LONG field, see {@link #defaultValue(DefaultValue)}.
+	 */
+	public FieldConfigBuilder defaultValue(long value) {
+		return defaultValue(value, DefaultValue.Fill.WHOLE_VALUE);
+	}
+
+	public FieldConfigBuilder defaultValue(long value, DefaultValue.Fill fill) {
+		return defaultValue(DefaultValue.newBuilder().setLongValue(value).setFill(required(fill, "fill")).build());
+	}
+
+	/**
+	 * Index-only default for a NUMERIC_FLOAT field, see {@link #defaultValue(DefaultValue)}.
+	 */
+	public FieldConfigBuilder defaultValue(float value) {
+		return defaultValue(value, DefaultValue.Fill.WHOLE_VALUE);
+	}
+
+	public FieldConfigBuilder defaultValue(float value, DefaultValue.Fill fill) {
+		return defaultValue(DefaultValue.newBuilder().setFloatValue(value).setFill(required(fill, "fill")).build());
+	}
+
+	/**
+	 * Index-only default for a NUMERIC_DOUBLE field, see {@link #defaultValue(DefaultValue)}.
+	 */
+	public FieldConfigBuilder defaultValue(double value) {
+		return defaultValue(value, DefaultValue.Fill.WHOLE_VALUE);
+	}
+
+	public FieldConfigBuilder defaultValue(double value, DefaultValue.Fill fill) {
+		return defaultValue(DefaultValue.newBuilder().setDoubleValue(value).setFill(required(fill, "fill")).build());
+	}
+
+	/**
+	 * Index-only default for a BOOL field, see {@link #defaultValue(DefaultValue)}.
+	 */
+	public FieldConfigBuilder defaultValue(boolean value) {
+		return defaultValue(value, DefaultValue.Fill.WHOLE_VALUE);
+	}
+
+	public FieldConfigBuilder defaultValue(boolean value, DefaultValue.Fill fill) {
+		return defaultValue(DefaultValue.newBuilder().setBoolValue(value).setFill(required(fill, "fill")).build());
+	}
+
+	/**
+	 * Index-only default for a GEO_POINT field in degrees, see {@link #defaultValue(DefaultValue)}.
+	 */
+	public FieldConfigBuilder defaultValue(double latitude, double longitude) {
+		return defaultValue(latitude, longitude, DefaultValue.Fill.WHOLE_VALUE);
+	}
+
+	public FieldConfigBuilder defaultValue(double latitude, double longitude, DefaultValue.Fill fill) {
+		GeoPointValue point = GeoPointValue.newBuilder().setLatitude(latitude).setLongitude(longitude).build();
+		return defaultValue(DefaultValue.newBuilder().setGeoPointValue(point).setFill(required(fill, "fill")).build());
+	}
+
+	/**
+	 * Index-only default for a DATE field, see {@link #defaultValue(DefaultValue)}.
+	 */
+	public FieldConfigBuilder defaultValue(Date value) {
+		return defaultValue(value, DefaultValue.Fill.WHOLE_VALUE);
+	}
+
+	public FieldConfigBuilder defaultValue(Date value, DefaultValue.Fill fill) {
+		return defaultValue(DefaultValue.newBuilder().setDateValue(required(value, "value").getTime()).setFill(required(fill, "fill")).build());
+	}
+
+	private <T> T required(T value, String what) {
+		if (value == null) {
+			throw new IllegalArgumentException("Field <" + storedFieldName + "> defaultValue " + what + " cannot be null");
+		}
+		return value;
+	}
+
+	/**
+	 * Index-only default used when the stored path resolves to nothing. The case must match the field type exactly, so a
+	 * NUMERIC_LONG field takes {@code 0L}, not {@code 0}, and a GEO_POINT field takes a latitude and longitude. Vector fields
+	 * take no default. The one-argument overloads use {@link DefaultValue.Fill#WHOLE_VALUE}, and
+	 * {@link DefaultValue.Fill#EACH_ELEMENT} also fills null or absent list elements.
+	 */
+	public FieldConfigBuilder defaultValue(DefaultValue defaultValue) {
+		DefaultValueUtil.validate(storedFieldName, fieldType, defaultValue);
+		this.defaultValue = defaultValue;
+		return this;
+	}
+
+	/**
+	 * Per-element handling of a value that cannot be parsed for the field type. FAIL rejects the document, SKIP drops
+	 * the value, USE_DEFAULT indexes the field default, so it is not available for vector fields. Marked documents match
+	 * {@code _zmff_:storedFieldName} ({@link io.zulia.ZuliaFieldConstants#MALFORMED_FIELDS_LIST_FIELD}).
+	 */
+	public FieldConfigBuilder onMalformed(FieldConfig.MalformedValueHandling malformedValueHandling) {
+		this.malformedValueHandling = malformedValueHandling;
+		return this;
+	}
+
 	public FieldConfig build() {
 		FieldConfig.Builder fcBuilder = FieldConfig.newBuilder();
 		fcBuilder.setStoredFieldName(storedFieldName);
@@ -352,6 +497,13 @@ public class FieldConfigBuilder {
 		}
 		if (docValueSkipIndex != null) {
 			fcBuilder.setDocValueSkipIndex(docValueSkipIndex);
+		}
+		if (defaultValue != null) {
+			fcBuilder.setDefaultValue(defaultValue);
+		}
+		if (malformedValueHandling != null) {
+			DefaultValueUtil.validateMalformedValueHandling(storedFieldName, fieldType, malformedValueHandling, defaultValue != null);
+			fcBuilder.setMalformedValueHandling(malformedValueHandling);
 		}
 		return fcBuilder.build();
 	}

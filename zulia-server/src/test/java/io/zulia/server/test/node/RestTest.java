@@ -10,7 +10,6 @@ import io.zulia.client.rest.ZuliaRESTClient;
 import io.zulia.client.rest.options.SearchREST;
 import io.zulia.client.rest.options.TermsRESTOptions;
 import io.zulia.fields.FieldConfigBuilder;
-import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.NodeStats;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
 import io.zulia.rest.dto.AssociatedMetadataDTO;
@@ -26,6 +25,7 @@ import io.zulia.rest.dto.ScoredResultDTO;
 import io.zulia.rest.dto.SearchResultsDTO;
 import io.zulia.rest.dto.TermsResponseDTO;
 import io.zulia.server.test.node.shared.RestNodeExtension;
+import io.zulia.server.test.node.shared.TestHelper;
 import io.zulia.util.ZuliaVersion;
 import org.bson.Document;
 import org.junit.jupiter.api.Assertions;
@@ -125,8 +125,8 @@ public class RestTest {
 		List<NodeDTO> members = nodesResponseDTO.getMembers();
 		Assertions.assertEquals(1, members.size());
 		NodeDTO member = members.getFirst();
-		Assertions.assertEquals(20001, member.getServicePort());
-		Assertions.assertEquals(20002, member.getRestPort());
+		Assertions.assertEquals(TestHelper.servicePort(0), member.getServicePort());
+		Assertions.assertEquals(TestHelper.restPort(0), member.getRestPort());
 		Assertions.assertEquals("localhost", member.getServerAddress());
 
 		List<IndexMappingDTO> memberIndexMappings = member.getIndexMappings();
