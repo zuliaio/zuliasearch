@@ -190,8 +190,7 @@ public class ShardWriteManager implements Closeable {
 			// cycle below then picks up everything indexed since the failed attempt.
 			LOG.warn("Completing the commit pair left pending by an earlier taxonomy commit failure for index {}:s{}", indexName, shardNumber);
 			taxoWriter.commit();
-			indexWriter.commit();
-			indexCommitPrepared = false;
+			finishPreparedIndexCommit();
 		}
 
 		long currentTime = System.currentTimeMillis();
@@ -222,11 +221,19 @@ public class ShardWriteManager implements Closeable {
 			throw e;
 		}
 		if (prepared) {
-			indexWriter.commit();
-			indexCommitPrepared = false;
+			finishPreparedIndexCommit();
 		}
 
 		lastCommit = currentTime;
+	}
+
+	private void finishPreparedIndexCommit() throws IOException {
+		try {
+			indexWriter.commit();
+		}
+		finally {
+			indexCommitPrepared = false;
+		}
 	}
 
 	public boolean needsIdleCommit() {
