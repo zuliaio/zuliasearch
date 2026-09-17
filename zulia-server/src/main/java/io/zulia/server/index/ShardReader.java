@@ -188,6 +188,12 @@ public class ShardReader implements AutoCloseable {
 		return indexReader.numDocs();
 	}
 
+	/** Drops cached query results so that settings changes such as field mappings are visible without a reader reopen. */
+	public void clearQueryCaches() {
+		queryResultCache.synchronous().invalidateAll();
+		pinnedQueryResultCache.synchronous().invalidateAll();
+	}
+
 	public ZuliaQuery.ShardQueryResponse queryShard(ShardQuery shardQuery) throws Exception {
 
 		QueryCacheKey queryCacheKey = shardQuery.getQueryCacheKey(); //null when don't cache is set

@@ -2,6 +2,7 @@ package io.zulia.server.test.node;
 
 import io.zulia.DefaultAnalyzers;
 import io.zulia.client.command.Store;
+import io.zulia.client.command.UpdateIndex;
 import io.zulia.client.command.builder.FieldMapping;
 import io.zulia.client.command.builder.ScoredQuery;
 import io.zulia.client.command.builder.Search;
@@ -229,6 +230,87 @@ public class FieldWildcardTest {
 		// list length wrap pattern: |||docL*||| expands to |||docLanguage|||
 		search = new Search(WILDCARD_JSON_TEST_INDEX);
 		search.addQuery(new ScoredQuery("|||docL*|||:2"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+	}
+
+	@Test
+	@Order(5)
+	public void aliasWithoutIncludeSelfShadowsField() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// the altTitle alias includes itself, so the real altTitle field still answers
+		Search search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("altTitle:blog"));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		// an alias with the same name as an indexed field wins over the field, so dropping includeSelf
+		// hides the real altTitle data even though it is still in the schema and the index
+		UpdateIndex updateIndex = new UpdateIndex(WILDCARD_JSON_TEST_INDEX);
+		updateIndex.mergeFieldMapping(new FieldMapping("altTitle").addMappedFields("altTitle2"));
+		zuliaWorkPool.updateIndex(updateIndex);
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("altTitle:blog"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("altTitle:something"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, searchResult.getTotalHits());
+
+		// restoring includeSelf brings the real field back without a reindex
+		updateIndex = new UpdateIndex(WILDCARD_JSON_TEST_INDEX);
+		updateIndex.mergeFieldMapping(new FieldMapping("altTitle").addMappedFields("altTitle2").includeSelf());
+		zuliaWorkPool.updateIndex(updateIndex);
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("altTitle:blog"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+	}
+
+	@Test
+	@Order(6)
+	public void aliasAddedAndRemovedOnLiveIndex() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// docAuthor is a plain indexed field with no alias, and no author contains "blog"
+		Search search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("docAuthor:blog"));
+		SearchResult searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		// adding an alias named docAuthor over docTitle takes effect on the live index for the same query string
+		UpdateIndex updateIndex = new UpdateIndex(WILDCARD_JSON_TEST_INDEX);
+		updateIndex.mergeFieldMapping(new FieldMapping("docAuthor").addMappedFields("docTitle").includeSelf());
+		zuliaWorkPool.updateIndex(updateIndex);
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("docAuthor:blog"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		// includeSelf keeps the real docAuthor field searchable through the alias
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("docAuthor:zone"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(4, searchResult.getTotalHits());
+
+		// removing the alias returns the name to the plain field, again without a reindex
+		updateIndex = new UpdateIndex(WILDCARD_JSON_TEST_INDEX);
+		updateIndex.removeFieldMappingByAlias("docAuthor");
+		zuliaWorkPool.updateIndex(updateIndex);
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("docAuthor:blog"));
+		searchResult = zuliaWorkPool.search(search);
+		Assertions.assertEquals(0, searchResult.getTotalHits());
+
+		search = new Search(WILDCARD_JSON_TEST_INDEX);
+		search.addQuery(new ScoredQuery("docAuthor:zone"));
 		searchResult = zuliaWorkPool.search(search);
 		Assertions.assertEquals(4, searchResult.getTotalHits());
 	}

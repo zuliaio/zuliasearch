@@ -85,9 +85,18 @@ public class ZuliaShard {
 		return lastChange != null && (lastCommit == null || lastChange > lastCommit);
 	}
 
-	public void updateIndexSettings() {
+	public void updateIndexSettings() throws IOException {
 		if (shardWriteManager != null) {
 			shardWriteManager.updateIndexSettings();
+		}
+
+		// cached results were computed against the old settings, for example, the old field mappings
+		ShardReader shardReader = shardReaderManager.acquire();
+		try {
+			shardReader.clearQueryCaches();
+		}
+		finally {
+			shardReaderManager.decRef(shardReader);
 		}
 	}
 
