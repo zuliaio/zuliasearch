@@ -109,6 +109,8 @@ class SignalEnricherTest {
 		Assertions.assertNotEquals("zulia-agent", actorId);
 		Assertions.assertEquals(mapper.map("search-app", "u1"), doc.getString(SignalField.DELEGATED_BY.fieldName()));
 		Assertions.assertNotEquals(mapper.map("curation-app", "u1"), doc.getString(SignalField.DELEGATED_BY.fieldName()), "pseudonyms are per app");
+		Assertions.assertEquals(actorId, new SignalEnricher(CLOCK, ZoneOffset.UTC, mapper).storedActorId("search-app", "zulia-agent"),
+				"reports filter on the same pseudonym");
 	}
 
 	@Test

@@ -246,6 +246,11 @@ public final class SignalsClient implements AutoCloseable {
 		return signals;
 	}
 
+	/** The actor id as this client stores it, a pseudonym under a mapping {@link ActorIdMapper}. */
+	public String storedActorId(String app, String actorId) {
+		return enricher.storedActorId(app, actorId);
+	}
+
 	public SignalsIndexConfig config() {
 		return config;
 	}

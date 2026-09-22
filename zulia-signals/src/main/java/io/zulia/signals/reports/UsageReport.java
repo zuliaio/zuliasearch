@@ -14,9 +14,13 @@ import io.zulia.signals.model.Actions;
 import io.zulia.signals.model.ActorType;
 import io.zulia.signals.storage.SignalField;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 /** One app over one range, from {@link UsageReports#of(String, TimeRange)}. SYSTEM actors are excluded unless {@link #includingSystem()}. */
@@ -26,12 +30,17 @@ public final class UsageReport {
 	private final String app;
 	private final TimeRange range;
 	private final boolean includeSystem;
+	private final List<Filter> filters;
+	private final int maxFacetValues;
 
-	UsageReport(SignalsClient client, String app, TimeRange range) {
-		this(client, app, range, false);
+	private record Filter(SignalField field, String value) {
 	}
 
-	private UsageReport(SignalsClient client, String app, TimeRange range, boolean includeSystem) {
+	UsageReport(SignalsClient client, String app, TimeRange range, int maxFacetValues) {
+		this(client, app, range, false, List.of(), maxFacetValues);
+	}
+
+	private UsageReport(SignalsClient client, String app, TimeRange range, boolean includeSystem, List<Filter> filters, int maxFacetValues) {
 		if (app == null || app.isBlank()) {
 			throw new IllegalArgumentException("App is required for a usage report but was " + (app == null ? "null" : "blank"));
 		}
@@ -42,11 +51,77 @@ public final class UsageReport {
 		this.app = app;
 		this.range = range;
 		this.includeSystem = includeSystem;
+		this.filters = filters;
+		this.maxFacetValues = maxFacetValues;
 	}
 
 	/** The same report with SYSTEM actors counted, for seeing platform load next to usage. */
 	public UsageReport includingSystem() {
-		return new UsageReport(client, app, range, true);
+		return new UsageReport(client, app, range, true, filters, maxFacetValues);
+	}
+
+	/** The same report narrowed to one activity. A report narrows to one activity once. */
+	public UsageReport forActivity(Activity activity) {
+		if (activity == null) {
+			throw new IllegalArgumentException("Activity is required to narrow the report of " + app + " but was null");
+		}
+		Filter action = new Filter(SignalField.ACTION_TYPE, activity.actionType());
+		return narrowedBy(activity.targetType() == null ? List.of(action) : List.of(action, new Filter(SignalField.TARGET_TYPE, activity.targetType())));
+	}
+
+	/** The same report narrowed to one actor. Takes the real actor id and maps it the way the client stored it. */
+	public UsageReport forActor(String actorId) {
+		requireText(actorId, "Actor id");
+		return narrowedBy(List.of(new Filter(SignalField.ACTOR_ID, client.storedActorId(app, actorId))));
+	}
+
+	/**
+	 * Signal counts per actor and activity, by total descending. Only actors with at least one tallied signal get a row. One search per activity,
+	 * so the cost does not grow with the actors. Counts are signals, so a bulk counts once. Keep the activities disjoint, an activity without a
+	 * target type overlaps every activity of that action and the total sums the columns.
+	 */
+	public List<ActorActivity> tally(List<Activity> activities) {
+		if (activities == null || activities.isEmpty() || activities.stream().anyMatch(Objects::isNull)) {
+			throw new IllegalArgumentException("Activities are required for a tally of " + app + " but were " + activities);
+		}
+		if (activities.stream().distinct().count() < activities.size()) {
+			throw new IllegalArgumentException("Activities of a tally must be distinct but were " + activities);
+		}
+		Map<String, Map<Activity, Long>> countsByActor = new HashMap<>();
+		for (Activity activity : activities) {
+			List<DimensionCount> actors = forActivity(activity).by(SignalField.ACTOR_ID);
+			if (actors.size() >= maxFacetValues) {
+				throw new IllegalStateException("At least " + maxFacetValues + " actors did " + activity + " in app " + app + " over " + range
+						+ ", the tally would drop some. Raise UsageReports.maxFacetValues to count them");
+			}
+			for (DimensionCount actor : actors) {
+				countsByActor.computeIfAbsent(actor.value(), actorId -> new HashMap<>()).put(activity, actor.count());
+			}
+		}
+
+		List<ActorActivity> list = new ArrayList<>();
+		for (Map.Entry<String, Map<Activity, Long>> entry : countsByActor.entrySet()) {
+			ActorActivity actorActivity = new ActorActivity(entry.getKey(), entry.getValue());
+			list.add(actorActivity);
+		}
+		list.sort(Comparator.comparingLong(ActorActivity::total).reversed().thenComparing(ActorActivity::actorId));
+		return list;
+	}
+
+	public List<ActorActivity> tally(Activity... activities) {
+		return tally(activities == null ? null : Arrays.asList(activities));
+	}
+
+	private UsageReport narrowedBy(List<Filter> added) {
+		for (Filter filter : added) {
+			filters.stream().filter(existing -> existing.field() == filter.field()).findFirst().ifPresent(existing -> {
+				throw new IllegalArgumentException("Report of " + app + " is already narrowed to " + existing.field().fieldName() + " " + existing.value()
+						+ ", it cannot also be narrowed to " + filter.value());
+			});
+		}
+		List<Filter> narrowed = new ArrayList<>(filters);
+		narrowed.addAll(added);
+		return new UsageReport(client, app, range, includeSystem, List.copyOf(narrowed), maxFacetValues);
 	}
 
 	public String app() {
@@ -132,7 +207,7 @@ public final class UsageReport {
 			throw new IllegalArgumentException("Action type is required here but was " + (actionType == null ? "null" : "blank")
 					+ ", use distinct(targetType) to count across all actions");
 		}
-		FilterQuery action = new FilterQuery(fieldEquals(SignalField.ACTION_TYPE.fieldName(), actionType));
+		TermQuery action = createTermQuery(SignalField.ACTION_TYPE, actionType);
 		return distinctCount(search(search -> targets(search, targetType).addQuery(action)), SignalField.TARGET_ID.fieldName());
 	}
 
@@ -142,7 +217,8 @@ public final class UsageReport {
 
 	private SearchResult search(Consumer<Search> report) {
 		return rangeSearch(client, range, includeSystem, search -> {
-			search.addQuery(new FilterQuery(fieldEquals(SignalField.APP.fieldName(), app)));
+			search.addQuery(createTermQuery(SignalField.APP, app));
+			filters.forEach(filter -> search.addQuery(createTermQuery(filter.field(), filter.value())));
 			report.accept(search);
 		});
 	}
@@ -150,19 +226,19 @@ public final class UsageReport {
 	// a distinct count is the size of a facet, so past the facet limit it would silently truncate
 	private long distinctCount(SearchResult result, String field) {
 		List<FacetCount> counts = facetCounts(result, field);
-		if (counts.size() >= UsageReports.MAX_FACET_VALUES) {
-			throw new IllegalStateException("More than " + UsageReports.MAX_FACET_VALUES + " distinct " + field + " values for app " + app + " in " + range
-					+ ", the count would be truncated");
+		if (counts.size() >= maxFacetValues) {
+			throw new IllegalStateException("At least " + maxFacetValues + " distinct " + field + " values for app " + app + " in " + range
+					+ ", the count would be truncated. Raise UsageReports.maxFacetValues to count them");
 		}
 		return counts.size();
 	}
 
-	private static FilterQuery searches() {
-		return new FilterQuery(fieldEquals(SignalField.ACTION_TYPE.fieldName(), Actions.SEARCH));
+	private static TermQuery searches() {
+		return createTermQuery(SignalField.ACTION_TYPE, Actions.SEARCH);
 	}
 
-	private static Search targets(Search search, String targetType) {
-		return search.addQuery(new FilterQuery(fieldEquals(SignalField.TARGET_TYPE.fieldName(), targetType)))
+	private Search targets(Search search, String targetType) {
+		return search.addQuery(createTermQuery(SignalField.TARGET_TYPE, targetType))
 				.addCountFacet(topN(SignalField.TARGET_ID.fieldName()));
 	}
 
@@ -179,7 +255,7 @@ public final class UsageReport {
 				search.addQuery(new InstantRangeFilter(SignalField.TIMESTAMP.fieldName()).setRange(range.from(), range.to())
 						.setEndpointBehavior(RangeBehavior.INCLUDE_MIN));
 				if (!includeSystem) {
-					search.addQuery(new FilterQuery(SignalField.ACTOR_TYPE.fieldName() + ":" + ActorType.SYSTEM).exclude());
+					search.addQuery(createTermQuery(SignalField.ACTOR_TYPE, ActorType.SYSTEM.name()).exclude());
 				}
 				report.accept(search);
 			});
@@ -189,16 +265,21 @@ public final class UsageReport {
 		}
 	}
 
-	static CountFacet topN(String field) {
-		return new CountFacet(field).setTopN(UsageReports.MAX_FACET_VALUES);
+	private CountFacet topN(String field) {
+		return topN(field, maxFacetValues);
+	}
+
+	static CountFacet topN(String field, int maxFacetValues) {
+		return new CountFacet(field).setTopN(maxFacetValues);
 	}
 
 	static List<DimensionCount> counts(SearchResult result, String field) {
 		return facetCounts(result, field).stream().map(count -> new DimensionCount(count.getFacet(), count.getCount())).toList();
 	}
 
-	private static String fieldEquals(String field, String value) {
-		return field + ":\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+	// a TERMS query matches the stored keyword directly and never goes through the query parser, so values need no escaping
+	private static TermQuery createTermQuery(SignalField field, String value) {
+		return new TermQuery(field.fieldName()).addTerm(value);
 	}
 
 	private static List<FacetCount> facetCounts(SearchResult result, String field) {
