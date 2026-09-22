@@ -2,14 +2,16 @@ package io.zulia.data.source.spreadsheet.excel;
 
 import io.zulia.data.common.HeaderConfig;
 import io.zulia.data.input.DataInputStream;
+import io.zulia.data.source.spreadsheet.CellParsers;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListSettings;
+import io.zulia.data.source.spreadsheet.SpreadsheetSourceConfig;
 
 import java.util.Date;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class ExcelSourceConfig {
+public class ExcelSourceConfig implements SpreadsheetSourceConfig {
 
 	public static ExcelSourceConfig from(DataInputStream dataStream) {
 		return new ExcelSourceConfig(dataStream);
@@ -70,6 +72,16 @@ public class ExcelSourceConfig {
 	 */
 	public ExcelSourceConfig withExcelCellHandler(ExcelCellHandler excelCellHandler) {
 		this.explicitCellHandler = Objects.requireNonNull(excelCellHandler, "excelCellHandler");
+		return this;
+	}
+
+	/**
+	 * Replaces the boolean parser, the date parser and the date formatter in one call, for text cells and for the elements of a
+	 * delimited list. Typed cells are read from the cell type and do not go through the parsers.
+	 */
+	public ExcelSourceConfig withParsers(CellParsers parsers) {
+		listSettings.withParsers(parsers);
+		builtCellHandler = null;
 		return this;
 	}
 

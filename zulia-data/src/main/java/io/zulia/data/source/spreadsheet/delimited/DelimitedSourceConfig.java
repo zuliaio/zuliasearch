@@ -2,13 +2,15 @@ package io.zulia.data.source.spreadsheet.delimited;
 
 import io.zulia.data.common.HeaderConfig;
 import io.zulia.data.input.DataInputStream;
+import io.zulia.data.source.spreadsheet.CellParsers;
 import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListSettings;
+import io.zulia.data.source.spreadsheet.SpreadsheetSourceConfig;
 
 import java.util.Date;
 import java.util.function.Function;
 
-public class DelimitedSourceConfig {
+public class DelimitedSourceConfig implements SpreadsheetSourceConfig {
 
 	private final DataInputStream dataInputStream;
 
@@ -27,6 +29,15 @@ public class DelimitedSourceConfig {
 
 	public DelimitedSourceConfig withDelimitedListHandler(DelimitedListHandler delimitedListHandler) {
 		listSettings.withHandler(delimitedListHandler);
+		return this;
+	}
+
+	/**
+	 * Replaces the boolean parser, the date parser and the date formatter in one call, for cells and for the elements of a
+	 * delimited list.
+	 */
+	public DelimitedSourceConfig withParsers(CellParsers parsers) {
+		listSettings.withParsers(parsers);
 		return this;
 	}
 

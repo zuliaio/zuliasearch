@@ -14,6 +14,8 @@ import io.zulia.data.source.spreadsheet.tsv.TSVSourceConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 public class SpreadsheetSourceFactory {
 
@@ -37,6 +39,13 @@ public class SpreadsheetSourceFactory {
 
 	public static SpreadsheetSource<?> fromFile(String filePath, HeaderOptions headerOptions) throws IOException {
 		return fromStream(FileDataInputStream.from(filePath), headerOptions);
+	}
+
+	/**
+	 * Same as {@link #fromFile(String, HeaderOptions)} with the configurer applied to the source's config.
+	 */
+	public static SpreadsheetSource<?> fromFile(String filePath, HeaderOptions headerOptions, Consumer<SpreadsheetSourceConfig> configurer) throws IOException {
+		return fromStream(FileDataInputStream.from(filePath), headerOptions, configurer);
 	}
 
 	public static SpreadsheetSource<?> fromStreamWithoutHeaders(DataInputStream dataInputStream) throws IOException {
@@ -63,50 +72,53 @@ public class SpreadsheetSourceFactory {
 		return fromStream(SingleUseDataInputStream.from(inputStream, dataStreamMeta), HeaderOptions.STRICT);
 	}
 
-
 	public static SpreadsheetSource<?> fromSingleUseStream(InputStream inputStream, DataStreamMeta dataStreamMeta, HeaderOptions headerOptions) throws IOException {
 		return fromStream(SingleUseDataInputStream.from(inputStream, dataStreamMeta), headerOptions);
 	}
 
+	/**
+	 * Same as {@link #fromSingleUseStream(InputStream, DataStreamMeta, HeaderOptions)} with the configurer applied to the source's config.
+	 */
+	public static SpreadsheetSource<?> fromSingleUseStream(InputStream inputStream, DataStreamMeta dataStreamMeta, HeaderOptions headerOptions,
+			Consumer<SpreadsheetSourceConfig> configurer) throws IOException {
+		return fromStream(SingleUseDataInputStream.from(inputStream, dataStreamMeta), headerOptions, configurer);
+	}
 
 	public static SpreadsheetSource<?> fromStream(DataInputStream dataInputStream, HeaderOptions headerOptions) throws IOException {
-		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataInputStream.getMeta());
+		return fromStream(dataInputStream, headerOptions, null);
+	}
 
-		if (SpreadsheetType.CSV.equals(spreadsheetType)) {
-			CSVSourceConfig csvSourceConfig = CSVSourceConfig.from(dataInputStream);
-			if (HeaderOptions.STRICT.equals(headerOptions)) {
-				csvSourceConfig.withStrictHeaders();
-			}
-			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
-				csvSourceConfig.withHeaders();
-			}
-			return CSVSource.withConfig(csvSourceConfig);
-		}
-		else if (SpreadsheetType.TSV.equals(spreadsheetType)) {
-			TSVSourceConfig tsvSourceConfig = TSVSourceConfig.from(dataInputStream);
-			if (HeaderOptions.STRICT.equals(headerOptions)) {
-				tsvSourceConfig.withStrictHeaders();
-			}
-			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
-				tsvSourceConfig.withHeaders();
-			}
-			return TSVSource.withConfig(tsvSourceConfig);
-		}
-		else if (SpreadsheetType.XLSX.equals(spreadsheetType) || SpreadsheetType.XLS.equals(spreadsheetType)) {
-			ExcelSourceConfig excelSourceConfig = ExcelSourceConfig.from(dataInputStream);
-			if (HeaderOptions.STRICT.equals(headerOptions)) {
-				excelSourceConfig.withStrictHeaders();
-			}
-			else if (HeaderOptions.STANDARD.equals(headerOptions)) {
-				excelSourceConfig.withHeaders();
-			}
-			return ExcelSource.withConfig(excelSourceConfig);
-		}
-		else {
+	/**
+	 * Creates the source for the stream's spreadsheet type. The header options are applied first and then the configurer, so a
+	 * caller can set the cell parsers, the list delimiter or a list handler without knowing which type-specific config was built.
+	 * A null configurer keeps the config's defaults.
+	 */
+	public static SpreadsheetSource<?> fromStream(DataInputStream dataInputStream, HeaderOptions headerOptions, Consumer<SpreadsheetSourceConfig> configurer)
+			throws IOException {
+		Objects.requireNonNull(headerOptions, "headerOptions");
+		SpreadsheetType spreadsheetType = SpreadsheetType.getSpreadsheetType(dataInputStream.getMeta());
+		if (spreadsheetType == null) {
 			throw new IllegalArgumentException(
 					"Failed to determine file type from content type <" + dataInputStream.getMeta().contentType() + "> with filename <"
 							+ dataInputStream.getMeta().fileName() + ">");
 		}
+		return switch (spreadsheetType) {
+			case CSV -> CSVSource.withConfig(configure(CSVSourceConfig.from(dataInputStream), headerOptions, configurer));
+			case TSV -> TSVSource.withConfig(configure(TSVSourceConfig.from(dataInputStream), headerOptions, configurer));
+			case XLSX, XLS -> ExcelSource.withConfig(configure(ExcelSourceConfig.from(dataInputStream), headerOptions, configurer));
+		};
+	}
+
+	private static <C extends SpreadsheetSourceConfig> C configure(C config, HeaderOptions headerOptions, Consumer<SpreadsheetSourceConfig> configurer) {
+		switch (headerOptions) {
+			case STRICT -> config.withStrictHeaders();
+			case STANDARD -> config.withHeaders();
+			case NONE -> config.withoutHeaders();
+		}
+		if (configurer != null) {
+			configurer.accept(config);
+		}
+		return config;
 	}
 
 }
