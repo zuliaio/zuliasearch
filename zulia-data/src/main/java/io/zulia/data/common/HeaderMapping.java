@@ -1,5 +1,6 @@
 package io.zulia.data.common;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.SequencedSet;
@@ -11,8 +12,10 @@ public class HeaderMapping {
 
 	private final LinkedHashMap<String, Integer> headersMap;
 
-	public HeaderMapping(HeaderConfig headerConfig, List<String> headers) {
-		this.headers = headers;
+	public HeaderMapping(HeaderConfig headerConfig, List<String> headerRow) {
+		List<String> headers = headerConfig.isIgnoreTrailingBlanks() ? withoutTrailingBlanks(headerRow) : headerRow;
+		// read only for every source type
+		this.headers = Collections.unmodifiableList(headers);
 		this.headerConfig = headerConfig;
 		this.headersMap = new LinkedHashMap<>();
 
@@ -40,6 +43,18 @@ public class HeaderMapping {
 			}
 			headersMap.put(header, i);
 		}
+	}
+
+	private static List<String> withoutTrailingBlanks(List<String> headers) {
+		int end = headers.size();
+		while (end > 0 && isBlank(headers.get(end - 1))) {
+			end--;
+		}
+		return headers.subList(0, end);
+	}
+
+	private static boolean isBlank(String header) {
+		return header == null || header.isBlank();
 	}
 
 	public boolean hasHeader(String field) {
