@@ -47,6 +47,11 @@ public final class SignalEnricher {
 		this.dimensions = Map.copyOf(dimensions);
 	}
 
+	/** The actor id as it is stored, so reports can filter on a real id under a mapping {@link ActorIdMapper}. */
+	public String storedActorId(String app, String actorId) {
+		return actorIdMapper.map(app, actorId);
+	}
+
 	public Document toDocument(Signal signal) {
 		LocalDate eventDate = signal.timestamp().atZone(bucketZone).toLocalDate();
 		Map<String, Object> fields = new LinkedHashMap<>();

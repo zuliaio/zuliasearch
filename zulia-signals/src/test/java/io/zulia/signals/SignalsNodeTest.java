@@ -17,6 +17,8 @@ import io.zulia.signals.model.Actor;
 import io.zulia.signals.model.ActorType;
 import io.zulia.signals.model.Signal;
 import io.zulia.signals.model.Targets;
+import io.zulia.signals.reports.Activity;
+import io.zulia.signals.reports.ActorActivity;
 import io.zulia.signals.reports.Bucket;
 import io.zulia.signals.reports.DimensionCount;
 import io.zulia.signals.reports.TimeRange;
@@ -34,12 +36,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Clock;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * End to end against a single node started in this JVM (filesystem mode, no MongoDB). Own ports so it can run alongside
@@ -136,8 +141,61 @@ class SignalsNodeTest {
 			Assertions.assertEquals(1, reports.of("curation-app", lastWeek).distinct(Targets.PROJECT, Actions.CREATE), "p1 only");
 			Assertions.assertThrows(IllegalArgumentException.class, () -> reports.of("curation-app", lastWeek).distinct(Targets.PROJECT, " "));
 			Assertions.assertEquals(3, reports.of("curation-app", lastWeek).distinct(Targets.RECORD, Actions.ANNOTATE), "a bulk counts each record once");
+			Assertions.assertEquals(3, reports.maxFacetValues(4).of("curation-app", lastWeek).distinct(Targets.RECORD, Actions.ANNOTATE), "under the cap");
+			Assertions.assertThrows(IllegalStateException.class, () -> reports.maxFacetValues(3).of("curation-app", lastWeek).distinct(Targets.RECORD, Actions.ANNOTATE),
+					"a distinct count at the cap would be truncated");
+			Assertions.assertEquals(List.of(new DimensionCount("u3", 5)), reports.maxFacetValues(1).of("curation-app", lastWeek).by(SignalField.ACTOR_ID),
+					"a grouped report just truncates to the top values");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> reports.maxFacetValues(0));
 			Assertions.assertTrue(reports.of("curation-app", lastWeek).by(SignalField.ACTION_TYPE).contains(new DimensionCount(Actions.ANNOTATE, 1)),
 					"and the action once");
+
+			Activity projectsCreated = Activity.of(Actions.CREATE, Targets.PROJECT);
+			Activity projectsVisited = Activity.of(Actions.VISIT, Targets.PROJECT);
+			Activity recordsCoded = Activity.of(Actions.ANNOTATE, Targets.RECORD);
+			Activity logouts = Activity.of(Actions.LOGOUT);
+			UsageReport curation = reports.of("curation-app", lastWeek);
+			List<ActorActivity> tally = curation.tally(projectsCreated, projectsVisited, recordsCoded, logouts);
+			Assertions.assertEquals(List.of("u3", "u4"), tally.stream().map(ActorActivity::actorId).toList(), "by total descending: " + tally);
+			ActorActivity u3 = tally.getFirst();
+			Assertions.assertEquals(1, u3.count(projectsCreated));
+			Assertions.assertEquals(1, u3.count(projectsVisited));
+			Assertions.assertEquals(1, u3.count(recordsCoded), "a bulk is one signal");
+			Assertions.assertEquals(1, u3.count(logouts), "an activity without a target type");
+			Assertions.assertEquals(4, u3.total(), "the page view is not a tallied activity");
+			Assertions.assertEquals(0, tally.getLast().count(projectsCreated), "u4 only visited");
+			Assertions.assertEquals(List.of(new DimensionCount("u3", 1), new DimensionCount("u4", 1)),
+					curation.forActivity(projectsVisited).by(SignalField.ACTOR_ID).stream().sorted(Comparator.comparing(DimensionCount::value)).toList());
+			Assertions.assertEquals(List.of(new ActorActivity("u4", Map.of(projectsVisited, 1L))), curation.forActor("u4").tally(projectsCreated, projectsVisited),
+					"one actor's row");
+			Assertions.assertEquals(3, curation.forActor("u3").distinct(Targets.RECORD, Actions.ANNOTATE), "distinct records for one actor");
+			Assertions.assertEquals(0, curation.forActor("u4").distinct(Targets.RECORD, Actions.ANNOTATE));
+			Assertions.assertEquals(1, curation.forActor("u3").activeUsers());
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.tally(List.of()));
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.tally(logouts, logouts), "duplicate activities");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forActor(" "));
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forActivity(projectsVisited).tally(projectsCreated),
+					"a report narrows to one activity once");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forActor("u3").forActor("u4"), "and to one actor once");
+			Assertions.assertThrows(IllegalStateException.class, () -> reports.maxFacetValues(2).of("curation-app", lastWeek).tally(projectsVisited),
+					"two visitors at a cap of two would truncate");
+			Assertions.assertEquals(List.of("u3", "u4"), reports.maxFacetValues(3).of("curation-app", lastWeek).tally(projectsVisited).stream()
+					.map(ActorActivity::actorId).toList(), "under the cap");
+			Activity pageViews = Activity.of(Actions.VIEW, Targets.PAGE);
+			Assertions.assertTrue(reports.of("search-app", lastWeek).includingSystem().tally(pageViews).stream().map(ActorActivity::actorId).toList()
+					.contains(Actor.SYSTEM_ID), "the system view tallies when included");
+			Assertions.assertFalse(reports.of("search-app", lastWeek).tally(pageViews).stream().map(ActorActivity::actorId).toList().contains(Actor.SYSTEM_ID),
+					"and not by default");
+
+			String quotedApp = "data \"coding\" app";
+			SignalsClient pseudonymous = new SignalsClient(pool, config, ActorIdMapper.hmacSha256("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8)));
+			pseudonymous.record(view(quotedApp, Actor.user("u9"), now));
+			refresh(config.indexName());
+			UsageReport quoted = new UsageReports(pseudonymous).of(quotedApp, lastWeek);
+			String pseudonym = pseudonymous.storedActorId(quotedApp, "u9");
+			Assertions.assertNotEquals("u9", pseudonym);
+			Assertions.assertEquals(1, quoted.forActor("u9").activeUsers(), "the real id filters through the mapper, the app name needs no escaping");
+			Assertions.assertEquals(List.of(new ActorActivity(pseudonym, Map.of(pageViews, 1L))), quoted.tally(pageViews), "rows carry the pseudonym");
 
 			List<DimensionCount> byDivision = reports.of("curation-app", lastWeek).by("division");
 			Assertions.assertEquals(List.of(new DimensionCount("alpha", 1), new DimensionCount("beta", 1)), reports.of("curation-app", lastWeek).by("labels"),
