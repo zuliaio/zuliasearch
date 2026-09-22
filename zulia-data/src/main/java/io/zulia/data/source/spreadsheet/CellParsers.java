@@ -1,10 +1,16 @@
 package io.zulia.data.source.spreadsheet;
 
 import io.zulia.util.BooleanUtil;
+import io.zulia.util.ZuliaDateUtil;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
+import java.time.temporal.ChronoField;
 import java.util.Date;
 import java.util.Objects;
 import java.util.function.Function;
@@ -54,11 +60,65 @@ public record CellParsers(Function<String, Boolean> booleanParser, Function<Stri
 	}
 
 	/**
+	 * ISO date time as {@link #isoDateParser(ZoneId)} reads it, or a plain ISO date such as 2024-05-01 that is read as the start of
+	 * that day in the given zone.
+	 *
+	 */
+	public static Function<String, Date> flexibleIsoDateParser(ZoneId zoneId) {
+		// mirrors how the JDK builds ISO_DATE_TIME, with the time section optional. STRICT keeps SMART from turning Feb 30 into Feb 29
+		DateTimeFormatter formatter = new DateTimeFormatterBuilder().parseCaseInsensitive().append(DateTimeFormatter.ISO_LOCAL_DATE).optionalStart()
+				.appendLiteral('T').append(DateTimeFormatter.ISO_LOCAL_TIME).optionalEnd().optionalStart().appendOffsetId().optionalEnd().optionalStart()
+				.appendLiteral('[').parseCaseSensitive().appendZoneRegionId().appendLiteral(']').optionalEnd().parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
+				.toFormatter().withResolverStyle(ResolverStyle.STRICT).withZone(zoneId);
+		return (s) -> Date.from(Instant.from(formatter.parse(s)));
+	}
+
+	/**
 	 * ISO date time with the offset and zone id, for example 2024-12-18T08:00:00Z[Etc/UTC], which {@link #isoDateParser(ZoneId)} reads.
 	 */
 	public static Function<Date, String> isoDateFormatter(ZoneId zoneId) {
 		DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME.withZone(zoneId);
 		return (date) -> formatter.format(date.toInstant());
+	}
+
+	/**
+	 * Handles every date text form a Zulia date field accepts, listed in {@link ZuliaDateUtil#SUPPORTED_DATE_STRING_FORMATS}. A value
+	 * without an offset is read as UTC, and a date, year month or year is read as the start of that period in UTC. Use this
+	 * where the values are indexed into Zulia, so a cell is read the way the index would read it. Text that ends in a bracketed
+	 * zone id, which is what {@link #isoDateFormatter(ZoneId)} writes and no Zulia form can end in, is read as ISO date time
+	 * instead, so files written with the default formatter still read.
+	 * A day past the end of its month is moved to the last day, as the index does, where {@link #flexibleIsoDateParser(ZoneId)} rejects it.
+	 * The year always comes first. A month first or day first date such as 5/1/2024 is refused on purpose, since both readings
+	 * are valid dates and a guess would store the wrong one without an error.
+	 */
+	public static Function<String, Date> zuliaDateParser() {
+		Function<String, Date> isoDateParser = isoDateParser(ZoneOffset.UTC);
+		return (s) -> {
+			if (s.endsWith("]")) {
+				return isoDateParser.apply(s);
+			}
+			try {
+				return ZuliaDateUtil.convertToDate(s, "cell");
+			}
+			catch (IllegalArgumentException e) {
+				// the other date parsers throw DateTimeParseException, so callers keep one failure type
+				throw new DateTimeParseException(e.getMessage(), s, 0, e);
+			}
+		};
+	}
+
+	/**
+	 * ISO instant in UTC, for example 2024-12-18T08:00:00Z, which {@link #zuliaDateParser()} reads.
+	 */
+	public static Function<Date, String> zuliaDateFormatter() {
+		return (date) -> DateTimeFormatter.ISO_INSTANT.format(date.toInstant());
+	}
+
+	/**
+	 * The default boolean parser with {@link #zuliaDateParser()} and {@link #zuliaDateFormatter()}, read and written.
+	 */
+	public static CellParsers zuliaDates() {
+		return new CellParsers(BooleanUtil::parseBoolean, zuliaDateParser(), zuliaDateFormatter());
 	}
 
 	public CellParsers withBooleanParser(Function<String, Boolean> booleanParser) {
