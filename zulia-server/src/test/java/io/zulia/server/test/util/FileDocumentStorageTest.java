@@ -126,6 +126,77 @@ public class FileDocumentStorageTest {
 		}
 	}
 
+	@Test
+	public void traversalFilenameIsRejectedOnEveryEntryPoint() throws Exception {
+		FileDocumentStorage storage = new FileDocumentStorage(dataPath.toString(), "testIndex");
+		String escaping = "../../../../../../escaped.txt";
+
+		IllegalArgumentException stored = Assertions.assertThrows(IllegalArgumentException.class,
+				() -> storage.storeAssociatedDocument(buildDocument("docTraversal", escaping)));
+		Assertions.assertTrue(stored.getMessage().contains(escaping) && stored.getMessage().contains("testIndex"), stored.getMessage());
+
+		Assertions.assertThrows(IllegalArgumentException.class,
+				() -> storage.getAssociatedDocumentOutputStream("docTraversal", escaping, 1L, new Document()));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> storage.getAssociatedDocument("docTraversal", escaping, FetchType.FULL));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> storage.getAssociatedDocumentStream("docTraversal", escaping));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> storage.deleteAssociatedDocument("docTraversal", escaping));
+
+		try (Stream<Path> walk = Files.walk(dataPath)) {
+			Assertions.assertTrue(walk.map(Path::getFileName).map(Path::toString).noneMatch(name -> name.startsWith("escaped.txt")),
+					"nothing may be written for a rejected filename");
+		}
+	}
+
+	@Test
+	public void traversalUniqueIdIsRejectedOnEveryEntryPoint() {
+		FileDocumentStorage storage = new FileDocumentStorage(dataPath.toString(), "testIndex");
+		String escaping = "../../../../../../escapedDir";
+
+		IllegalArgumentException stored = Assertions.assertThrows(IllegalArgumentException.class,
+				() -> storage.storeAssociatedDocument(buildDocument(escaping, "notes.txt")));
+		Assertions.assertTrue(stored.getMessage().contains(escaping), stored.getMessage());
+
+		Assertions.assertThrows(IllegalArgumentException.class, () -> storage.getAssociatedDocument(escaping, "notes.txt", FetchType.META));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> storage.getAssociatedFilenames(escaping));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> storage.deleteAssociatedDocument(escaping, "notes.txt"));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> storage.deleteAssociatedDocuments(escaping));
+		Assertions.assertFalse(Files.exists(dataPath.resolve("escapedDir")));
+	}
+
+	@Test
+	public void absoluteAndInvalidFilenamesAreRejected() {
+		FileDocumentStorage storage = new FileDocumentStorage(dataPath.toString(), "testIndex");
+
+		Assertions.assertThrows(IllegalArgumentException.class,
+				() -> storage.storeAssociatedDocument(buildDocument("docAbs", dataPath.resolve("outside.txt").toString())));
+
+		IllegalArgumentException nul = Assertions.assertThrows(IllegalArgumentException.class,
+				() -> storage.storeAssociatedDocument(buildDocument("docNul", "notes\u0000.txt")));
+		Assertions.assertTrue(nul.getMessage().contains("not a valid path"), nul.getMessage());
+
+		IllegalArgumentException blank = Assertions.assertThrows(IllegalArgumentException.class,
+				() -> storage.storeAssociatedDocument(buildDocument("docBlank", " ")));
+		Assertions.assertTrue(blank.getMessage().contains("must not be blank"), blank.getMessage());
+	}
+
+	@Test
+	public void uniqueIdWithSeparatorStaysInsideTheIndexRoot() throws Exception {
+		FileDocumentStorage storage = new FileDocumentStorage(dataPath.toString(), "testIndex");
+		String doi = "10.1000/journal.2024.17";
+
+		storage.storeAssociatedDocument(buildDocument(doi, "paper.pdf"));
+
+		Assertions.assertEquals(List.of("paper.pdf"), storage.getAssociatedFilenames(doi));
+		Assertions.assertArrayEquals("paper.pdf".getBytes(StandardCharsets.UTF_8),
+				storage.getAssociatedDocument(doi, "paper.pdf", FetchType.FULL).getDocument().toByteArray());
+		try (Stream<Path> walk = Files.walk(dataPath.resolve("files").resolve("testIndex"))) {
+			Assertions.assertTrue(walk.anyMatch(path -> path.getFileName().toString().equals("paper.pdf")));
+		}
+
+		storage.deleteAssociatedDocuments(doi);
+		Assertions.assertEquals(List.of(), storage.getAssociatedFilenames(doi));
+	}
+
 	private static AssociatedDocument buildDocument(String uniqueId, String filename) {
 		return AssociatedDocument.newBuilder().setDocumentUniqueId(uniqueId).setFilename(filename).setIndexName("testIndex")
 				.setDocument(ByteString.copyFrom(filename.getBytes(StandardCharsets.UTF_8))).setTimestamp(1L).build();

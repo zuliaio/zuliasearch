@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -33,7 +34,7 @@ import java.util.stream.Stream;
 public class FileDocumentStorage implements DocumentStorage {
 	private static final String TIMESTAMP = "_tstamp_";
 	private final String indexName;
-	private final String filesPath;
+	private final Path indexRoot;
 
 	public FileDocumentStorage(ZuliaConfig zuliaConfig, String indexName) {
 		this(zuliaConfig.getDataPath(), indexName);
@@ -41,26 +42,26 @@ public class FileDocumentStorage implements DocumentStorage {
 
 	public FileDocumentStorage(String dataPath, String indexName) {
 		this.indexName = indexName;
-		this.filesPath = dataPath + File.separator + "files";
+		this.indexRoot = Path.of(dataPath, "files", indexName).toAbsolutePath().normalize();
 	}
 
 	@Override
 	public void storeAssociatedDocument(AssociatedDocument doc) throws Exception {
-		String pathForUniqueId = createPathForUniqueIdIfNotExists(doc.getDocumentUniqueId());
-		Files.write(Path.of(pathForUniqueId, doc.getFilename()), doc.getDocument().toByteArray());
+		Path pathForUniqueId = createPathForUniqueIdIfNotExists(doc.getDocumentUniqueId());
+		Files.write(fileIn(pathForUniqueId, doc.getFilename()), doc.getDocument().toByteArray());
 
 		Document metadata = ZuliaUtil.byteArrayToMongoDocument(doc.getMetadata().toByteArray());
 		metadata.put(TIMESTAMP, doc.getTimestamp());
-		Files.write(Path.of(pathForUniqueId, doc.getFilename() + ".metadata"), Collections.singleton(metadata.toJson()));
+		Files.write(metadataIn(pathForUniqueId, doc.getFilename()), Collections.singleton(metadata.toJson()));
 	}
 
 	@Override
 	public OutputStream getAssociatedDocumentOutputStream(String uniqueId, String fileName, long timestamp, Document metadataMap) throws Exception {
-		String pathForUniqueId = createPathForUniqueIdIfNotExists(uniqueId);
+		Path pathForUniqueId = createPathForUniqueIdIfNotExists(uniqueId);
 		metadataMap.put(TIMESTAMP, timestamp);
-		Files.write(Path.of(pathForUniqueId, fileName + ".metadata"), Collections.singleton(metadataMap.toJson()));
+		Files.write(metadataIn(pathForUniqueId, fileName), Collections.singleton(metadataMap.toJson()));
 
-		return new FileOutputStream(Path.of(pathForUniqueId, fileName).toFile());
+		return new FileOutputStream(fileIn(pathForUniqueId, fileName).toFile());
 
 	}
 
@@ -85,9 +86,9 @@ public class FileDocumentStorage implements DocumentStorage {
 			aBuilder.setFilename(filename);
 
 			Document metadata = new Document();
-			String pathForUniqueId = getFullPathToUniqueId(uniqueId);
-			Path metadataPath = Path.of(pathForUniqueId, filename + ".metadata");
-			if (metadataPath.toFile().exists()) {
+			Path pathForUniqueId = pathForUniqueId(uniqueId);
+			Path metadataPath = metadataIn(pathForUniqueId, filename);
+			if (Files.exists(metadataPath)) {
 				String metadataJson = Files.readString(metadataPath);
 				metadata = Document.parse(metadataJson);
 				long timestamp = DocumentHelper.getAsLong(metadata, TIMESTAMP, 0L);
@@ -99,7 +100,7 @@ public class FileDocumentStorage implements DocumentStorage {
 			aBuilder.setMetadata(ZuliaUtil.mongoDocumentToByteString(metadata));
 
 			if (FetchType.FULL.equals(fetchType)) {
-				byte[] fileBytes = Files.readAllBytes(Path.of(pathForUniqueId, filename));
+				byte[] fileBytes = Files.readAllBytes(fileIn(pathForUniqueId, filename));
 				aBuilder.setDocument(ByteString.copyFrom(fileBytes));
 			}
 			aBuilder.setIndexName(indexName);
@@ -115,15 +116,13 @@ public class FileDocumentStorage implements DocumentStorage {
 
 	@Override
 	public InputStream getAssociatedDocumentStream(String uniqueId, String filename) throws FileNotFoundException {
-		String pathForUniqueId = getFullPathToUniqueId(uniqueId);
-		return new BufferedInputStream(new FileInputStream(Path.of(pathForUniqueId, filename).toFile()));
+		Path file = fileIn(pathForUniqueId(uniqueId), filename);
+		return new BufferedInputStream(new FileInputStream(file.toFile()));
 	}
 
 	@Override
 	public List<String> getAssociatedFilenames(String uniqueId) throws Exception {
-		String pathForUniqueId = getFullPathToUniqueId(uniqueId);
-
-		Path p = Path.of(pathForUniqueId);
+		Path p = pathForUniqueId(uniqueId);
 		if (Files.exists(p)) {
 			try (Stream<Path> files = Files.list(p)) {
 				// Every store writes a metadata sidecar next to the document, so a document file is
@@ -138,15 +137,14 @@ public class FileDocumentStorage implements DocumentStorage {
 
 	@Override
 	public void deleteAssociatedDocument(String uniqueId, String fileName) throws IOException {
-		String pathForUniqueId = getFullPathToUniqueId(uniqueId);
-		Files.deleteIfExists(Path.of(pathForUniqueId, fileName));
-		Files.deleteIfExists(Path.of(pathForUniqueId, fileName + ".metadata"));
+		Path pathForUniqueId = pathForUniqueId(uniqueId);
+		Files.deleteIfExists(fileIn(pathForUniqueId, fileName));
+		Files.deleteIfExists(metadataIn(pathForUniqueId, fileName));
 	}
 
 	@Override
 	public void deleteAssociatedDocuments(String uniqueId) throws IOException {
-		String pathForUniqueId = getFullPathToUniqueId(uniqueId);
-		deletePath(Path.of(pathForUniqueId));
+		deletePath(pathForUniqueId(uniqueId));
 	}
 
 	@Override
@@ -156,18 +154,18 @@ public class FileDocumentStorage implements DocumentStorage {
 
 	@Override
 	public void drop() throws Exception {
-		deletePath(Path.of(filesPath, indexName));
+		deletePath(indexRoot);
 	}
 
 	@Override
 	public void deleteAllDocuments() throws Exception {
-		deletePath(Path.of(filesPath, indexName));
-		new File(filesPath + File.separator + indexName).mkdirs();
+		deletePath(indexRoot);
+		Files.createDirectories(indexRoot);
 	}
 
-	private String createPathForUniqueIdIfNotExists(String uniqueId) throws Exception {
-		String pathForUniqueId = getFullPathToUniqueId(uniqueId);
-		File f = new File(pathForUniqueId);
+	private Path createPathForUniqueIdIfNotExists(String uniqueId) throws Exception {
+		Path pathForUniqueId = pathForUniqueId(uniqueId);
+		File f = pathForUniqueId.toFile();
 		if (!f.exists()) {
 			boolean created = f.mkdirs();
 			if (!created) {
@@ -205,8 +203,42 @@ public class FileDocumentStorage implements DocumentStorage {
 		});
 	}
 
-	private String getFullPathToUniqueId(String uniqueId) {
-		return filesPath + File.separator + indexName + File.separator + getPathToUniqueId(uniqueId);
+	/** Directory holding the associated documents of one unique id, verified to lie under the index root. */
+	private Path pathForUniqueId(String uniqueId) {
+		return contained(indexRoot, getPathToUniqueId(uniqueId), "unique id", uniqueId);
+	}
+
+	/** The document file for a filename, verified to lie under the unique id's directory. */
+	private Path fileIn(Path pathForUniqueId, String filename) {
+		if (filename == null || filename.isBlank()) {
+			throw new IllegalArgumentException("Associated document filename must not be blank for index <" + indexName + ">");
+		}
+		return contained(pathForUniqueId, filename, "filename", filename);
+	}
+
+	/** The metadata sidecar for a filename, subject to the same containment check as the document. */
+	private Path metadataIn(Path pathForUniqueId, String filename) {
+		Path file = fileIn(pathForUniqueId, filename);
+		return file.resolveSibling(file.getFileName() + ".metadata");
+	}
+
+	// The unique id and filename arrive as free strings on the store request and Path.resolve does not
+	// normalize, so a ".." segment in either would let a store, fetch or delete escape the data directory.
+	// Values containing a separator are allowed (the other backends accept them), only escaping is rejected.
+	private Path contained(Path base, String relative, String what, String value) {
+		Path resolved;
+		try {
+			resolved = base.resolve(relative).normalize();
+		}
+		catch (InvalidPathException e) {
+			throw new IllegalArgumentException(
+					"Associated document " + what + " <" + value + "> is not a valid path for index <" + indexName + ">: " + e.getReason(), e);
+		}
+		if (!resolved.startsWith(base) || resolved.equals(base)) {
+			throw new IllegalArgumentException(
+					"Associated document " + what + " <" + value + "> resolves outside the storage directory for index <" + indexName + ">");
+		}
+		return resolved;
 	}
 
 	private static String getPathToUniqueId(String uniqueId) {
