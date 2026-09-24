@@ -302,7 +302,7 @@ public class ZuliaIndexManager {
 			};
 		}
 		else {
-			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName());
+			documentStorage = new FileDocumentStorage(zuliaConfig, serverIndexConfig.getIndexName(), serverIndexConfig.getIndexSettings().getCreatedIndexVersion());
 		}
 		return documentStorage;
 	}
