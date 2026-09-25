@@ -32,7 +32,7 @@ public enum KnownEmbeddingModel {
 	JINA_SMALL_EN_V2(EmbeddingModelConfig.builder("djl://ai.djl.huggingface.onnxruntime/jinaai/jina-embeddings-v2-small-en", 512).build()),
 
 	JINA_BASE_EN_V2(EmbeddingModelConfig.builder("https://huggingface.co/jinaai/jina-embeddings-v2-base-en", 768)
-			.includeTokenTypes(true).build()),
+			.includeTokenTypes(true).maxTokens(8192).build()),
 
 	// BGE English models - instruction-tuned, CLS pooling
 	BGE_SMALL_EN_V1_5(EmbeddingModelConfig.builder("https://huggingface.co/BAAI/bge-small-en-v1.5", 384)
@@ -49,29 +49,29 @@ public enum KnownEmbeddingModel {
 
 	// GTE English v1.5 - retrieval-optimized, 8192 token context, CLS pooling, no prefixes, Apache 2.0 license
 	GTE_LARGE_EN_V1_5(EmbeddingModelConfig.builder("https://huggingface.co/Alibaba-NLP/gte-large-en-v1.5", 1024)
-			.includeTokenTypes(true).poolingMode("cls").build()),
+			.includeTokenTypes(true).poolingMode("cls").maxTokens(8192).build()),
 
 	// Nomic Embed - 8192 token context, Matryoshka support, Apache 2.0 license, mean pooling
 	NOMIC_EMBED_TEXT_V1_5(EmbeddingModelConfig.builder("https://huggingface.co/nomic-ai/nomic-embed-text-v1.5", 768)
 			.prefixes("search_query: ", "search_document: ")
-			.includeTokenTypes(true).build()),
+			.includeTokenTypes(true).maxTokens(8192).build()),
 
 	NOMIC_EMBED_TEXT_V1_5_512(EmbeddingModelConfig.builder("https://huggingface.co/nomic-ai/nomic-embed-text-v1.5", 768)
 			.prefixes("search_query: ", "search_document: ")
-			.includeTokenTypes(true).truncateDimensions(512).build()),
+			.includeTokenTypes(true).maxTokens(8192).truncateDimensions(512).build()),
 
 	NOMIC_EMBED_TEXT_V1_5_256(EmbeddingModelConfig.builder("https://huggingface.co/nomic-ai/nomic-embed-text-v1.5", 768)
 			.prefixes("search_query: ", "search_document: ")
-			.includeTokenTypes(true).truncateDimensions(256).build()),
+			.includeTokenTypes(true).maxTokens(8192).truncateDimensions(256).build()),
 
-	// Snowflake Arctic Embed - retrieval-optimized, CLS pooling
+	// Snowflake Arctic Embed - retrieval-optimized, CLS pooling, 8192 token context
 	SNOWFLAKE_ARCTIC_EMBED_M_V2(EmbeddingModelConfig.builder("https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0", 768)
 			.prefixes("Represent this sentence for searching relevant passages: ", "")
-			.poolingMode("cls").build()),
+			.poolingMode("cls").maxTokens(8192).build()),
 
 	// Bioclinical ModernBERT - biomedical/clinical domain, mean pooling, 8192 token context
 	BIOCLINICAL_MODERNBERT(EmbeddingModelConfig.builder("https://huggingface.co/zuliaio/bioclinical-modernbert-base-embeddings-onnx", 768)
-			.build()),
+			.maxTokens(8192).build()),
 
 	// SPECTER - scientific document similarity trained on citation links, symmetric, CLS pooling, 512 token context
 	// Trained on "title[SEP]abstract" input. Pass the title and abstract joined by the tokenizer separator for best results.

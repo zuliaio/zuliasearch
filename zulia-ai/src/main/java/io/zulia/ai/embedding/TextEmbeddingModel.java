@@ -50,7 +50,7 @@ public class TextEmbeddingModel implements AutoCloseable {
 	private static TextEmbeddingModel loadFromHuggingFace(EmbeddingModelConfig config) throws ModelNotFoundException, MalformedModelException, IOException {
 		Path modelDir = HuggingFaceModelDownloader.downloadModel(config.modelUrl());
 
-		HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.newInstance(modelDir);
+		HuggingFaceTokenizer tokenizer = ModelTokenizers.forModel(modelDir, config.maxTokens());
 
 		TextEmbeddingTranslator translator = TextEmbeddingTranslator.builder(tokenizer)
 				.optPoolingMode(config.poolingModeOrDefault())
