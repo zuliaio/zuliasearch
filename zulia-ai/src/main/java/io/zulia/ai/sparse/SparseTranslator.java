@@ -54,13 +54,17 @@ public class SparseTranslator implements Translator<String, Map<String, Float>> 
 		long[] attentionMask = encoding.getAttentionMask();
 
 		NDManager manager = ctx.getNDManager();
+		// named so OnnxRuntime binds by name rather than by the position DJL happens to emit
 		NDArray ids = manager.create(inputIds);          // [seq_len]
+		ids.setName("input_ids");
 		NDArray mask = manager.create(attentionMask);    // [seq_len]
+		mask.setName(ATTENTION_MASK_KEY);
 
 		ctx.setAttachment(ATTENTION_MASK_KEY, mask);
 
 		if (includeTokenTypes) {
 			NDArray types = manager.zeros(ids.getShape(), DataType.INT64);
+			types.setName("token_type_ids");
 			return new NDList(ids, mask, types);
 		}
 		return new NDList(ids, mask);

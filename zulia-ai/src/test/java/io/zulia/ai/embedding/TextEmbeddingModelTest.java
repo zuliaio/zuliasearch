@@ -1,6 +1,7 @@
 package io.zulia.ai.embedding;
 
 import io.zulia.util.VectorUtil;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -73,4 +74,27 @@ class TextEmbeddingModelTest {
 		}
 	}
 
+
+	@Test
+	void longContextModelsSeePastFiveHundredTwelveTokens() throws Exception {
+		try (TextEmbeddingModel model = TextEmbeddingModel.load(KnownEmbeddingModel.GTE_LARGE_EN_V1_5)) {
+			String prefix = "immunotherapy trial ".repeat(300);
+			float[] prefixOnly = model.embed(prefix);
+			float[] withTail = model.embed(prefix + " unrelated renaissance painting in florence ".repeat(40));
+			assertTrue(VectorUtil.cosineSimilarity(prefixOnly, withTail) < 0.9999f, "text past 512 tokens must change the embedding");
+		}
+	}
+
+	@Test
+	void matryoshkaSlicesAreUnitVectors() throws Exception {
+		try (TextEmbeddingModel model = TextEmbeddingModel.load(KnownEmbeddingModel.NOMIC_EMBED_TEXT_V1_5_256)) {
+			float[] embedding = model.embedPassage("A study on non-small cell lung cancer therapy options.");
+			assertEquals(256, embedding.length);
+			double norm = 0;
+			for (float v : embedding) {
+				norm += v * v;
+			}
+			assertEquals(1.0, Math.sqrt(norm), 1e-4);
+		}
+	}
 }

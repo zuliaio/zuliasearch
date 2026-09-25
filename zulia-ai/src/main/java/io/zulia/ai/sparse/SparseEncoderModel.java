@@ -11,6 +11,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.zulia.ai.embedding.HuggingFaceModelDownloader;
+import io.zulia.ai.embedding.ModelTokenizers;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -43,7 +44,7 @@ public class SparseEncoderModel implements AutoCloseable {
 	@SuppressWarnings("unchecked")
 	public static SparseEncoderModel loadFromDirectory(Path modelDir, SparseModelConfig config)
 			throws ModelNotFoundException, MalformedModelException, IOException {
-		HuggingFaceTokenizer tokenizer = HuggingFaceTokenizer.newInstance(modelDir);
+		HuggingFaceTokenizer tokenizer = ModelTokenizers.forModel(modelDir, config.maxTokens());
 		String[] vocabulary = loadVocabulary(modelDir);
 
 		boolean includeTokenTypes = config.includeTokenTypes() != null ? config.includeTokenTypes()

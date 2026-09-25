@@ -11,10 +11,8 @@ public class MinMaxFeatureScaler extends FeatureStatScaler {
 	@Override
 	protected double scaleFeature(FeatureStat featureStat, double value) {
 		double retVal = ((value - featureStat.getMin()) / (featureStat.getMax() - featureStat.getMin()));
-		if (Double.isNaN(retVal)) {
-			retVal = 0;
-		}
-		return retVal;
+		// a constant feature divides by zero, which is an infinity unless the numerator is zero too
+		return Double.isFinite(retVal) ? retVal : 0;
 	}
 
 	@Override

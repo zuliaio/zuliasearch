@@ -36,7 +36,7 @@ public class PercentileClippingFeatureScaler extends FeatureStatScaler {
 		}
 
 		double retVal = ((value - featureStat.getAvg()) / range);
-		if (Double.isNaN(retVal)) {
+		if (!Double.isFinite(retVal)) {
 			retVal = 0;
 		}
 		if (clip != null) {

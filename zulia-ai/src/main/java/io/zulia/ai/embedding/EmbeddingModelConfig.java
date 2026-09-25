@@ -1,7 +1,10 @@
 package io.zulia.ai.embedding;
 
 public record EmbeddingModelConfig(String modelUrl, int dimensions, String queryPrefix, String passagePrefix, Integer truncateDimensions,
-		boolean includeTokenTypes, String poolingMode) {
+		boolean includeTokenTypes, String poolingMode, int maxTokens) {
+
+	/** Sequence length most BERT style encoders were trained with, and the DJL tokenizer default. */
+	public static final int DEFAULT_MAX_TOKENS = 512;
 
 	public static Builder builder(String modelUrl, int dimensions) {
 		return new Builder(modelUrl, dimensions);
@@ -24,6 +27,7 @@ public record EmbeddingModelConfig(String modelUrl, int dimensions, String query
 		private Integer truncateDimensions;
 		private boolean includeTokenTypes;
 		private String poolingMode;
+		private int maxTokens = DEFAULT_MAX_TOKENS;
 
 		private Builder(String modelUrl, int dimensions) {
 			this.modelUrl = modelUrl;
@@ -51,8 +55,14 @@ public record EmbeddingModelConfig(String modelUrl, int dimensions, String query
 			return this;
 		}
 
+		/** Longest input in tokens the model accepts. Longer inputs are truncated to this length. */
+		public Builder maxTokens(int maxTokens) {
+			this.maxTokens = maxTokens;
+			return this;
+		}
+
 		public EmbeddingModelConfig build() {
-			return new EmbeddingModelConfig(modelUrl, dimensions, queryPrefix, passagePrefix, truncateDimensions, includeTokenTypes, poolingMode);
+			return new EmbeddingModelConfig(modelUrl, dimensions, queryPrefix, passagePrefix, truncateDimensions, includeTokenTypes, poolingMode, maxTokens);
 		}
 	}
 }

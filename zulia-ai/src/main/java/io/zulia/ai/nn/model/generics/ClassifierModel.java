@@ -28,23 +28,29 @@ public abstract class ClassifierModel<K> implements AutoCloseable {
 	public ClassifierModel(String modelBaseDir, String modelUuid, String modelName, String modelSuffix,
 			Function<FeatureStat[], FeatureScaler> featureScalerGenerator) throws IOException, MalformedModelException {
 		model = Model.newInstance(modelName);
+		// the model owns a native NDManager, so a failure while reading the files must release it
+		try {
+			Gson gson = new Gson();
 
-		Gson gson = new Gson();
+			Path modelPath = Path.of(modelBaseDir, modelUuid);
+			String paramsName = modelName + "_" + modelSuffix;
+			Path featureStatPath = modelPath.resolve(modelName + "_" + ClassifierTrainer.FEATURE_STATS_JSON);
+			FeatureStat[] featureStats = gson.fromJson(Files.readString(featureStatPath), FeatureStat[].class);
+			featureScaler = featureScalerGenerator.apply(featureStats);
 
-		Path modelPath = Path.of(modelBaseDir, modelUuid);
-		String paramsName = modelName + "_" + modelSuffix;
-		Path featureStatPath = modelPath.resolve(modelName + "_" + ClassifierTrainer.FEATURE_STATS_JSON);
-		FeatureStat[] featureStats = gson.fromJson(Files.readString(featureStatPath), FeatureStat[].class);
-		featureScaler = featureScalerGenerator.apply(featureStats);
+			Path fullConfigPath = modelPath.resolve(modelName + "_" + ClassifierTrainer.FULL_NETWORK_CONFIG_JSON);
+			FullyConnectedConfiguration fullyConnectedConfiguration = gson.fromJson(Files.readString(fullConfigPath), FullyConnectedConfiguration.class);
 
-		Path fullConfigPath = modelPath.resolve(modelName + "_" + ClassifierTrainer.FULL_NETWORK_CONFIG_JSON);
-		FullyConnectedConfiguration fullyConnectedConfiguration = gson.fromJson(Files.readString(fullConfigPath), FullyConnectedConfiguration.class);
-
-		Block evaluationNetwork = fullyConnectedConfiguration.getEvaluationNetwork();
-		try (DataInputStream is = new DataInputStream(new FileInputStream(modelPath.resolve(paramsName).toFile()))) {
-			evaluationNetwork.loadParameters(model.getNDManager(), is);
+			Block evaluationNetwork = fullyConnectedConfiguration.getEvaluationNetwork();
+			try (DataInputStream is = new DataInputStream(new FileInputStream(modelPath.resolve(paramsName).toFile()))) {
+				evaluationNetwork.loadParameters(model.getNDManager(), is);
+			}
+			model.setBlock(evaluationNetwork);
 		}
-		model.setBlock(evaluationNetwork);
+		catch (IOException | MalformedModelException | RuntimeException e) {
+			model.close();
+			throw e;
+		}
 	}
 
 	public ClassifierModel(Model model, FeatureScaler featureScaler) {

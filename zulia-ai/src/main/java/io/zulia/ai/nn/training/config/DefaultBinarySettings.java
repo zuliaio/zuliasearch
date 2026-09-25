@@ -3,6 +3,7 @@ package io.zulia.ai.nn.training.config;
 import ai.djl.training.evaluator.Evaluator;
 import ai.djl.training.loss.L2Loss;
 import ai.djl.training.loss.Loss;
+import io.zulia.ai.nn.test.BinaryClassifierAccuracy;
 import io.zulia.ai.nn.test.BinaryClassifierF1;
 import io.zulia.ai.nn.test.BinaryClassifierPrecision;
 import io.zulia.ai.nn.test.BinaryClassifierRecall;
@@ -26,8 +27,8 @@ public class DefaultBinarySettings extends DefaultTrainingSettings {
 
 	@Override
 	public Collection<Evaluator> getEvaluators() {
-		return List.of(new BinaryClassifierPrecision(threshold) {
-		}, new BinaryClassifierRecall(threshold), new BinaryClassifierF1(threshold));
+		return List.of(new BinaryClassifierAccuracy(threshold), new BinaryClassifierPrecision(threshold), new BinaryClassifierRecall(threshold),
+				new BinaryClassifierF1(threshold));
 	}
 
 }

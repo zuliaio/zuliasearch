@@ -6,6 +6,7 @@ import io.zulia.ai.features.stat.FeatureStat;
 import io.zulia.ai.nn.config.FullyConnectedConfiguration;
 import io.zulia.ai.nn.model.generics.ClassifierEpochResult;
 import io.zulia.ai.nn.model.generics.ClassifierTrainer;
+import io.zulia.ai.nn.test.BinaryClassifierAccuracy;
 import io.zulia.ai.nn.test.BinaryClassifierF1;
 import io.zulia.ai.nn.test.BinaryClassifierPrecision;
 import io.zulia.ai.nn.test.BinaryClassifierRecall;
@@ -27,11 +28,11 @@ public class BinaryClassifierTrainer extends ClassifierTrainer {
 
 	@Override
 	protected ClassifierEpochResult logResults(Metrics metrics, int iteration, SpreadsheetTarget<?, ?> spreadsheetTarget, String featureScalerDesc) {
-		// Grabs unique training metrics specific to binary classifier
-		float testingAccuracy = metrics.getMetric("validate_epoch_Accuracy").getLast().getValue().floatValue();
-		float testingF1 = metrics.getMetric("validate_epoch_" + BinaryClassifierF1.BCF1).getLast().getValue().floatValue();
-		float testingPrecision = metrics.getMetric("validate_epoch_" + BinaryClassifierPrecision.BC_PRECISION).getLast().getValue().floatValue();
-		float testingRecall = metrics.getMetric("validate_epoch_" + BinaryClassifierRecall.BC_RECALL).getLast().getValue().floatValue();
+		// the binary evaluators from DefaultBinarySettings, any of which custom settings may leave out
+		Float testingAccuracy = latestMetric(metrics, BinaryClassifierAccuracy.BC_ACCURACY);
+		Float testingF1 = latestMetric(metrics, BinaryClassifierF1.BCF1);
+		Float testingPrecision = latestMetric(metrics, BinaryClassifierPrecision.BC_PRECISION);
+		Float testingRecall = latestMetric(metrics, BinaryClassifierRecall.BC_RECALL);
 
 		String suffix = String.format("%.3f", testingF1) + "_" + iteration;
 
@@ -42,6 +43,14 @@ public class BinaryClassifierTrainer extends ClassifierTrainer {
 					epochResult.modelSuffix(), featureScalerDesc);
 		}
 		return epochResult;
+	}
+
+	private static Float latestMetric(Metrics metrics, String evaluatorName) {
+		String metricName = "validate_epoch_" + evaluatorName;
+		if (!metrics.hasMetric(metricName)) {
+			return null;
+		}
+		return metrics.getMetric(metricName).getLast().getValue().floatValue();
 	}
 
 	@Override
