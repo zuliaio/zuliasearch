@@ -43,7 +43,7 @@ public class ClassifierTrainingResults {
 	public ClassifierEpochResult getBestF1Epoch() {
 		ClassifierEpochResult bestEpochResult = null;
 		for (ClassifierEpochResult epochResult : classifierEpochResults) {
-			if (epochResult.f1() == null) {
+			if (epochResult.f1() == null || epochResult.f1().isNaN()) {
 				continue;
 			}
 			if (bestEpochResult == null || epochResult.f1() > bestEpochResult.f1()) {
@@ -57,7 +57,7 @@ public class ClassifierTrainingResults {
 	public ClassifierEpochResult getBestAccuracyEpoch() {
 		ClassifierEpochResult bestEpochResult = null;
 		for (ClassifierEpochResult epochResult : classifierEpochResults) {
-			if (epochResult.accuracy() == null) {
+			if (epochResult.accuracy() == null || epochResult.accuracy().isNaN()) {
 				continue;
 			}
 			if (bestEpochResult == null || epochResult.accuracy() > bestEpochResult.accuracy()) {

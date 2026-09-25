@@ -47,21 +47,33 @@ public class BinaryClassifierStats extends ClassifierStats<Boolean> {
 		}
 	}
 
+	// a stat with an empty denominator is 0 rather than NaN, so an epoch with no positive predictions
+	// can never win a best-epoch comparison and a zero F1 reads as the worst epoch it is
 	@Override
 	public float getPrecision() {
-		return (float) truePositive / (truePositive + falsePositive);
+		return ratio(truePositive, truePositive + falsePositive);
 	}
 
 	@Override
 	public float getRecall() {
-		return (float) truePositive / (truePositive + falseNegative);
+		return ratio(truePositive, truePositive + falseNegative);
 	}
 
 	@Override
 	public float getF1() {
 		float precision = getPrecision();
 		float recall = getRecall();
-		return 2 * precision * recall / (precision + recall);
+		return ratio(2 * precision * recall, precision + recall);
+	}
+
+	/** Accuracy from the confusion counts, which are filled on every construction path unlike the generic counters. */
+	@Override
+	public float getAccuracy() {
+		return ratio(truePositive + trueNegative, truePositive + trueNegative + falsePositive + falseNegative);
+	}
+
+	private static float ratio(double numerator, double denominator) {
+		return denominator == 0 ? 0f : (float) (numerator / denominator);
 	}
 
 	public long getTruePositive() {
