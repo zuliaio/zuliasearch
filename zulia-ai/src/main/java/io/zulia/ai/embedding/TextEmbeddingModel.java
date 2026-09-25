@@ -12,10 +12,11 @@ import ai.djl.translate.TranslateException;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class TextEmbeddingModel implements AutoCloseable {
+
+	private static final double LAYER_NORM_EPSILON = 1e-5;
 
 	private final ZooModel<String, float[]> model;
 	private final EmbeddingModelConfig config;
@@ -52,9 +53,10 @@ public class TextEmbeddingModel implements AutoCloseable {
 
 		HuggingFaceTokenizer tokenizer = ModelTokenizers.forModel(modelDir, config.maxTokens());
 
+		// a Matryoshka slice is normalized after truncation in truncate(), the full vector is normalized here
 		TextEmbeddingTranslator translator = TextEmbeddingTranslator.builder(tokenizer)
 				.optPoolingMode(config.poolingModeOrDefault())
-				.optNormalize(true)
+				.optNormalize(config.truncateDimensions() == null)
 				.optIncludeTokenTypes(config.includeTokenTypes())
 				.build();
 
@@ -121,11 +123,39 @@ public class TextEmbeddingModel implements AutoCloseable {
 		return config;
 	}
 
+	/**
+	 * Matryoshka truncation as the Nomic model card prescribes: layer norm over the full vector, take the
+	 * leading dimensions, then L2 normalize the slice so it is a unit vector for dot product scoring.
+	 */
 	private float[] truncate(float[] vector) {
-		if (config.truncateDimensions() != null && vector.length > config.truncateDimensions()) {
-			return Arrays.copyOf(vector, config.truncateDimensions());
+		if (config.truncateDimensions() == null || vector.length <= config.truncateDimensions()) {
+			return vector;
 		}
-		return vector;
+		double mean = 0;
+		for (float v : vector) {
+			mean += v;
+		}
+		mean /= vector.length;
+		double variance = 0;
+		for (float v : vector) {
+			variance += (v - mean) * (v - mean);
+		}
+		variance /= vector.length;
+		double scale = 1.0 / Math.sqrt(variance + LAYER_NORM_EPSILON);
+
+		float[] sliced = new float[config.truncateDimensions()];
+		double norm = 0;
+		for (int i = 0; i < sliced.length; i++) {
+			sliced[i] = (float) ((vector[i] - mean) * scale);
+			norm += sliced[i] * sliced[i];
+		}
+		norm = Math.sqrt(norm);
+		if (norm > 0) {
+			for (int i = 0; i < sliced.length; i++) {
+				sliced[i] /= (float) norm;
+			}
+		}
+		return sliced;
 	}
 
 	@Override
