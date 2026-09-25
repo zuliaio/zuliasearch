@@ -1,5 +1,8 @@
 package io.zulia.ai.embedding;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -12,6 +15,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 public class HuggingFaceModelDownloader {
+
+	private static final Logger LOG = LoggerFactory.getLogger(HuggingFaceModelDownloader.class);
 
 	private static final String HF_BASE = "https://huggingface.co/";
 	private static final String[] ONNX_PATHS = { "onnx/model.onnx", "model.onnx" };
@@ -34,10 +39,7 @@ public class HuggingFaceModelDownloader {
 		Path modelDir = CACHE_DIR.resolve(modelId.replace("/", "_"));
 		Path onnxFile = modelDir.resolve("model.onnx");
 		Path tokenizerFile = modelDir.resolve("tokenizer.json");
-
-		if (Files.exists(onnxFile) && Files.exists(tokenizerFile)) {
-			return modelDir;
-		}
+		Path configFile = modelDir.resolve("config.json");
 
 		Files.createDirectories(modelDir);
 
@@ -47,6 +49,17 @@ public class HuggingFaceModelDownloader {
 
 		if (!Files.exists(tokenizerFile)) {
 			downloadFile(HF_BASE + modelId + "/resolve/main/tokenizer.json", tokenizerFile);
+		}
+
+		// config.json drives model type detection but not every repository publishes one, and a cache
+		// directory filled before it was fetched must still pick it up, so it is tried on every load
+		if (!Files.exists(configFile)) {
+			try {
+				downloadFile(HF_BASE + modelId + "/resolve/main/config.json", configFile);
+			}
+			catch (IOException e) {
+				LOG.info("No config.json for {}, model type detection will use its default: {}", modelId, e.getMessage());
+			}
 		}
 
 		return modelDir;
