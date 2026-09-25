@@ -87,7 +87,12 @@ public enum KnownEmbeddingModel {
 
 	// GTE ModernBERT base - retrieval-optimized, 8192 token context, CLS pooling, no prefixes, Apache 2.0 license
 	GTE_MODERNBERT_BASE(EmbeddingModelConfig.builder("https://huggingface.co/Alibaba-NLP/gte-modernbert-base", 768)
-			.poolingMode("cls").maxTokens(8192).build());
+			.poolingMode("cls").maxTokens(8192).build()),
+
+	// Multilingual E5 large instruct - instruction-conditioned queries, unprefixed passages, mean pooling, 512 token context, MIT license
+	MULTILINGUAL_E5_LARGE_INSTRUCT(EmbeddingModelConfig.builder("https://huggingface.co/intfloat/multilingual-e5-large-instruct", 1024)
+			.prefixes("Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: ", "")
+			.build());
 
 	private final EmbeddingModelConfig config;
 
