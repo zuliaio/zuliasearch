@@ -64,7 +64,7 @@ public class TextEmbeddingModel implements AutoCloseable {
 				.setTypes(String.class, float[].class)
 				.optModelPath(modelDir)
 				.optEngine("OnnxRuntime")
-				.optTranslator(translator)
+				.optTranslator(new NamedInputTranslator(translator))
 				.build();
 
 		ZooModel<String, float[]> model = criteria.loadModel();
