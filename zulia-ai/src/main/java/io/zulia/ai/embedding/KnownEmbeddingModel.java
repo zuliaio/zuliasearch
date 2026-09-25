@@ -29,7 +29,9 @@ public enum KnownEmbeddingModel {
 	PUBMEDBERT(EmbeddingModelConfig.builder("djl://ai.djl.huggingface.onnxruntime/NeuML/pubmedbert-base-embeddings", 768).build()),
 
 	// Jina v2 - symmetric, 8192 token context, mean pooling
-	JINA_SMALL_EN_V2(EmbeddingModelConfig.builder("djl://ai.djl.huggingface.onnxruntime/jinaai/jina-embeddings-v2-small-en", 512).build()),
+	// Loaded from the upstream repo: the DJL model zoo conversion of this model produces degraded embeddings
+	JINA_SMALL_EN_V2(EmbeddingModelConfig.builder("https://huggingface.co/jinaai/jina-embeddings-v2-small-en", 512)
+			.includeTokenTypes(true).maxTokens(8192).build()),
 
 	JINA_BASE_EN_V2(EmbeddingModelConfig.builder("https://huggingface.co/jinaai/jina-embeddings-v2-base-en", 768)
 			.includeTokenTypes(true).maxTokens(8192).build()),
