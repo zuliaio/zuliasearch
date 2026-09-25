@@ -171,6 +171,11 @@ public final class Signal {
 			return this;
 		}
 
+		/** A session id hashed from a secret such as the bearer token, see {@link SessionIds#hashed(String)}. */
+		public Builder sessionHashed(String secret) {
+			return session(SessionIds.hashed(secret));
+		}
+
 		public Builder actor(Actor actor) {
 			this.actor = actor;
 			return this;
@@ -223,7 +228,7 @@ public final class Signal {
 			return this;
 		}
 
-		/** Stored in the tags sub document. Declare the key as a dimension on the index config to filter or facet on it. */
+		/** Stored in the tags sub document. Index the key on the index config to filter, count, or tally on it. */
 		public Builder tag(String key, String value) {
 			requireKey(key);
 			if (value == null || value.isBlank()) {
@@ -257,7 +262,7 @@ public final class Signal {
 			return tag(key, value == null ? null : value.name());
 		}
 
-		/** A multivalued tag. A keyword dimension on it facets once per element. Empty is a value, an empty list is stored. */
+		/** A multivalued tag. Indexed as a keyword, it facets once per element. Empty is a value, an empty list is stored. */
 		public Builder tag(String key, Collection<String> values) {
 			requireKey(key);
 			if (values == null) {

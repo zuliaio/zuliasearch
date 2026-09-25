@@ -36,21 +36,23 @@ class SignalsIndexConfigTest {
 	}
 
 	@Test
-	void dimensionsBecomeTagFieldsAndBadKeysAreRejected() {
-		SignalsIndexConfig config = SignalsIndexConfig.defaults().dimensions("division", "projectType").dimension("records", SignalField.Kind.LONG);
-		Assertions.assertEquals(java.util.List.of("division", "projectType", "records"), java.util.List.copyOf(config.dimensions().keySet()));
-		Assertions.assertEquals(SignalField.Kind.KEYWORD_FACET, config.dimensions().get("division"));
+	void indexedTagsBecomeTagFieldsAndBadKeysAreRejected() {
+		SignalsIndexConfig config = SignalsIndexConfig.defaults().indexTags("division", "projectType").indexTag("records", SignalField.Kind.LONG);
+		Assertions.assertEquals(java.util.List.of("division", "projectType", "records"), java.util.List.copyOf(config.indexedTags().keySet()));
+		Assertions.assertEquals(SignalField.Kind.KEYWORD_FACET, config.indexedTags().get("division"));
+		@SuppressWarnings("removal") SignalsIndexConfig legacy = SignalsIndexConfig.defaults().dimensions("division", "projectType").dimension("records", SignalField.Kind.LONG);
+		Assertions.assertEquals(config.indexedTags(), legacy.indexedTags(), "the deprecated names still index");
 		Assertions.assertTrue(config.fieldNames().containsAll(java.util.List.of("tags.division", "tags.projectType", "tags.records")));
 		Assertions.assertNotNull(config.clientIndexConfig().getFieldConfig("tags.division"));
 		Assertions.assertNotNull(config.clientIndexConfig().getFieldConfig("tags.records"));
 		Assertions.assertNull(config.clientIndexConfig().getFieldConfig("division"), "nothing at the top level");
-		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().dimensions(" "));
-		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().dimensions("division", "division"), "duplicate");
-		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().dimensions("division", null));
-		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().dimensions("a.b"), "dotted key");
-		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().dimension("x", SignalField.Kind.STORED_ONLY),
+		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().indexTags(" "));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().indexTags("division", "division"), "duplicate");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().indexTags("division", null));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().indexTags("a.b"), "dotted key");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().indexTag("x", SignalField.Kind.STORED_ONLY),
 				"stored only");
-		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().dimension("x", null), "null kind");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> SignalsIndexConfig.defaults().indexTag("x", null), "null kind");
 	}
 
 	@Test

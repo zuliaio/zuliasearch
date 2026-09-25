@@ -80,15 +80,15 @@ class SignalEnricherTest {
 
 	@Test
 	void storesTagsInDeclaredKindsAndDuration() {
-		SignalsIndexConfig config = SignalsIndexConfig.defaults().dimensions("division", "dynamic").dimension("records", SignalField.Kind.LONG);
+		SignalsIndexConfig config = SignalsIndexConfig.defaults().indexTags("division", "dynamic").indexTag("records", SignalField.Kind.LONG);
 		Signal signal = Signal.builder().app("curation-app").timestamp(EVENT_TIME).actor(Actor.user("u1")).action(Actions.LOGOUT)
 				.duration(Duration.ofMinutes(2)).tag("division", "north").tag("dynamic", true).tag("records", 12).tag("panel", "left")
 				.tag("fields", List.of("title", "abstract")).build();
 		Document doc = new SignalEnricher(config, CLOCK).toDocument(signal);
 		Document tags = doc.get(SignalField.TAGS, Document.class);
 		Assertions.assertEquals("north", tags.getString("division"));
-		Assertions.assertEquals("true", tags.getString("dynamic"), "keyword dimension stores the string form");
-		Assertions.assertEquals(12L, tags.getLong("records"), "numeric dimension stores the number");
+		Assertions.assertEquals("true", tags.getString("dynamic"), "keyword tag stores the string form");
+		Assertions.assertEquals(12L, tags.getLong("records"), "numeric tag stores the number");
 		Assertions.assertEquals("left", tags.getString("panel"), "undeclared tags are stored as tagged");
 		Assertions.assertEquals(List.of("title", "abstract"), tags.getList("fields", String.class), "list tags stay lists");
 		Assertions.assertFalse(doc.containsKey("division"), "nothing at the top level");
@@ -114,14 +114,14 @@ class SignalEnricherTest {
 	}
 
 	@Test
-	void configWithMapperKeepsZoneAndDimensions() {
+	void configWithMapperKeepsZoneAndIndexedTags() {
 		ActorIdMapper mapper = ActorIdMapper.hmacSha256("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8));
-		SignalsIndexConfig config = SignalsIndexConfig.defaults().zone(ZoneId.of("America/New_York")).dimensions("division");
+		SignalsIndexConfig config = SignalsIndexConfig.defaults().zone(ZoneId.of("America/New_York")).indexTags("division");
 		Signal signal = Signal.builder().app("curation-app").timestamp(Instant.parse("2026-09-01T02:00:00Z")).actor(Actor.user("u1")).action(Actions.VIEW)
 				.tag("division", "north").build();
 		Document doc = new SignalEnricher(config, CLOCK, mapper).toDocument(signal);
 		Assertions.assertEquals(mapper.map("curation-app", "u1"), doc.getString(SignalField.ACTOR_ID.fieldName()));
-		Assertions.assertEquals("north", doc.get(SignalField.TAGS, Document.class).getString("division"), "dimensions from config");
+		Assertions.assertEquals("north", doc.get(SignalField.TAGS, Document.class).getString("division"), "indexed tags from config");
 		Assertions.assertEquals("2026-08-31", doc.getString(SignalField.DAY.fieldName()), "buckets in the config zone");
 	}
 
@@ -132,14 +132,14 @@ class SignalEnricherTest {
 	}
 
 	@Test
-	void typedDimensionsStoreDatesListsAndRejectOverflow() {
-		SignalsIndexConfig config = SignalsIndexConfig.defaults().dimensions("labels").dimension("uploadedAt", SignalField.Kind.DATE)
-				.dimension("rows", SignalField.Kind.INT);
+	void typedTagsStoreDatesListsAndRejectOverflow() {
+		SignalsIndexConfig config = SignalsIndexConfig.defaults().indexTags("labels").indexTag("uploadedAt", SignalField.Kind.DATE)
+				.indexTag("rows", SignalField.Kind.INT);
 		Instant uploadedAt = Instant.parse("2026-09-01T02:00:00Z");
 		Signal signal = Signal.builder().app("curation-app").timestamp(EVENT_TIME).actor(Actor.user("u1")).action(Actions.UPLOAD)
 				.tag("labels", List.of("a", "b")).tag("uploadedAt", uploadedAt).tag("rows", 42).build();
 		Document tags = new SignalEnricher(config, CLOCK).toDocument(signal).get(SignalField.TAGS, Document.class);
-		Assertions.assertEquals(List.of("a", "b"), tags.getList("labels", String.class), "a list on a keyword dimension stays a list");
+		Assertions.assertEquals(List.of("a", "b"), tags.getList("labels", String.class), "a list on a keyword tag stays a list");
 		Assertions.assertEquals(Date.from(uploadedAt), tags.getDate("uploadedAt"));
 		Assertions.assertEquals(42, tags.getInteger("rows"));
 		Signal tooBig = Signal.builder().app("curation-app").timestamp(EVENT_TIME).actor(Actor.user("u1")).action(Actions.UPLOAD).tag("rows", 5_000_000_000L)

@@ -8,6 +8,7 @@ import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.signals.model.Actions;
 import io.zulia.signals.model.Actor;
 import io.zulia.signals.model.Signal;
+import io.zulia.signals.storage.SignalField;
 import io.zulia.signals.storage.SignalsIndexConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -68,6 +69,31 @@ class SignalsClientFailurePolicyTest {
 		awaitDrops(client, 3);
 		client.close();
 		Assertions.assertEquals(0, client.queuedSignals(), "close drains the queue");
+	}
+
+	@Test
+	void logAndDropNeverThrowsForABadSignal() throws Exception {
+		SignalsIndexConfig typed = SignalsIndexConfig.defaults().indexTag("rows", SignalField.Kind.LONG);
+		SignalsClient client = new SignalsClient(unreachablePool, typed).onFailure(RecordFailurePolicy.LOG_AND_DROP);
+		RecordResult unbuilt = client.record(Signal.builder().actor(Actor.user("u1")).action(Actions.VIEW));
+		Assertions.assertFalse(unbuilt.accepted(), "no app, so it never built");
+		Assertions.assertNull(unbuilt.signalId());
+		Signal wrongKind = Signal.builder().app("search-app").actor(Actor.user("u1")).action(Actions.VIEW).tag("rows", "many").build();
+		RecordResult unenriched = client.record(wrongKind);
+		Assertions.assertFalse(unenriched.accepted(), "a string on a LONG tag is rejected by the schema");
+		Assertions.assertEquals(wrongKind.signalId(), unenriched.signalId());
+		RecordResult unstamped = client.stamping(builder -> builder.tag("host", " ")).record(signal());
+		Assertions.assertFalse(unstamped.accepted(), "a stamp that breaks the signal is a drop too");
+		Assertions.assertEquals(3, client.droppedSignals(), "counted before the writer is involved");
+		Assertions.assertEquals(0, client.queuedSignals());
+		Assertions.assertThrows(IllegalArgumentException.class, () -> client.record((Signal.Builder) null));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> client.record((Signal) null), "a null signal is a caller bug under any policy");
+		client.close();
+
+		SignalsClient propagating = new SignalsClient(unreachablePool, typed);
+		Assertions.assertThrows(IllegalArgumentException.class, () -> propagating.record(Signal.builder().actor(Actor.user("u1")).action(Actions.VIEW)),
+				"PROPAGATE throws the validation error itself");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> propagating.record(wrongKind));
 	}
 
 	@Test

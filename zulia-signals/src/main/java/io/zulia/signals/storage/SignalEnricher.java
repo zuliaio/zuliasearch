@@ -26,25 +26,25 @@ public final class SignalEnricher {
 	private final Clock clock;
 	private final ZoneId bucketZone;
 	private final ActorIdMapper actorIdMapper;
-	private final Map<String, SignalField.Kind> dimensions;
+	private final Map<String, SignalField.Kind> indexedTags;
 
 	public SignalEnricher(SignalsIndexConfig config, Clock clock) {
 		this(config, clock, ActorIdMapper.identity());
 	}
 
 	public SignalEnricher(SignalsIndexConfig config, Clock clock, ActorIdMapper actorIdMapper) {
-		this(clock, config.zone(), actorIdMapper, config.dimensions());
+		this(clock, config.zone(), actorIdMapper, config.indexedTags());
 	}
 
 	public SignalEnricher(Clock clock, ZoneId bucketZone, ActorIdMapper actorIdMapper) {
 		this(clock, bucketZone, actorIdMapper, Map.of());
 	}
 
-	public SignalEnricher(Clock clock, ZoneId bucketZone, ActorIdMapper actorIdMapper, Map<String, SignalField.Kind> dimensions) {
+	public SignalEnricher(Clock clock, ZoneId bucketZone, ActorIdMapper actorIdMapper, Map<String, SignalField.Kind> indexedTags) {
 		this.clock = clock;
 		this.bucketZone = bucketZone;
 		this.actorIdMapper = actorIdMapper;
-		this.dimensions = Map.copyOf(dimensions);
+		this.indexedTags = Map.copyOf(indexedTags);
 	}
 
 	/** The actor id as it is stored, so reports can filter on a real id under a mapping {@link ActorIdMapper}. */
@@ -102,11 +102,11 @@ public final class SignalEnricher {
 		return new Document(fields);
 	}
 
-	// a declared dimension is stored in its declared kind so the index config and the document never disagree
+	// an indexed tag is stored in its declared kind so the index config and the document never disagree
 	private Document tagsDocument(Signal signal) {
 		Document tags = new Document();
 		for (Map.Entry<String, Object> tag : signal.tags().entrySet()) {
-			SignalField.Kind kind = dimensions.get(tag.getKey());
+			SignalField.Kind kind = indexedTags.get(tag.getKey());
 			tags.put(tag.getKey(), kind == null ? tag.getValue() : asKind(signal, tag.getKey(), tag.getValue(), kind));
 		}
 		return tags;

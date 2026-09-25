@@ -22,13 +22,13 @@ public final class SignalsIndexConfig {
 	private final String indexName;
 	private final boolean monthlyPartitions;
 	private final ZoneId zone;
-	private final Map<String, SignalField.Kind> dimensions;
+	private final Map<String, SignalField.Kind> indexedTags;
 
-	private SignalsIndexConfig(String indexName, boolean monthlyPartitions, ZoneId zone, Map<String, SignalField.Kind> dimensions) {
+	private SignalsIndexConfig(String indexName, boolean monthlyPartitions, ZoneId zone, Map<String, SignalField.Kind> indexedTags) {
 		this.indexName = indexName;
 		this.monthlyPartitions = monthlyPartitions;
 		this.zone = zone;
-		this.dimensions = dimensions;
+		this.indexedTags = indexedTags;
 	}
 
 	public static SignalsIndexConfig defaults() {
@@ -39,12 +39,12 @@ public final class SignalsIndexConfig {
 		if (indexName == null || indexName.isBlank()) {
 			throw new IllegalArgumentException("Index name is required but was " + (indexName == null ? "null" : "blank"));
 		}
-		return new SignalsIndexConfig(indexName, monthlyPartitions, zone, dimensions);
+		return new SignalsIndexConfig(indexName, monthlyPartitions, zone, indexedTags);
 	}
 
 	/** Retention drops indexes instead of paging deletes. */
 	public SignalsIndexConfig monthlyPartitions() {
-		return new SignalsIndexConfig(indexName, true, zone, dimensions);
+		return new SignalsIndexConfig(indexName, true, zone, indexedTags);
 	}
 
 	/** Zone for buckets, partition months, and retention cutoffs. UTC by default. */
@@ -52,7 +52,7 @@ public final class SignalsIndexConfig {
 		if (zone == null) {
 			throw new IllegalArgumentException("Zone is required, pass ZoneOffset.UTC for the default");
 		}
-		return new SignalsIndexConfig(indexName, monthlyPartitions, zone, dimensions);
+		return new SignalsIndexConfig(indexName, monthlyPartitions, zone, indexedTags);
 	}
 
 	public String indexName() {
@@ -67,39 +67,58 @@ public final class SignalsIndexConfig {
 		return zone;
 	}
 
-	/** Tag keys indexed as keyword facets, the common case. Typed dimensions go through {@link #dimension(String, SignalField.Kind)}. */
-	public SignalsIndexConfig dimensions(String... keys) {
+	/** Tag keys to index as keyword facets so reports can slice, filter, and tally on them. Typed keys go through {@link #indexTag(String, SignalField.Kind)}. */
+	public SignalsIndexConfig indexTags(String... keys) {
 		if (keys == null) {
-			throw new IllegalArgumentException("Dimensions require the tag keys to index but got a null array");
+			throw new IllegalArgumentException("Index tags requires the tag keys to index but got a null array");
 		}
 		SignalsIndexConfig config = this;
 		for (String key : keys) {
-			config = config.dimension(key, SignalField.Kind.KEYWORD_FACET);
+			config = config.indexTag(key, SignalField.Kind.KEYWORD_FACET);
 		}
 		return config;
 	}
 
-	/** One tag key indexed as {@code tags.<key>} with the given kind. Undeclared tags are stored, not indexed. */
-	public SignalsIndexConfig dimension(String key, SignalField.Kind kind) {
+	/** One tag key indexed as {@code tags.<key>} with the given kind. Tags that are not indexed are stored only. */
+	public SignalsIndexConfig indexTag(String key, SignalField.Kind kind) {
 		if (key == null || key.isBlank()) {
-			throw new IllegalArgumentException("Dimension key must not be null or blank, declared so far: " + dimensions.keySet());
+			throw new IllegalArgumentException("Tag key must not be null or blank, indexed so far: " + indexedTags.keySet());
 		}
 		if (key.indexOf('.') >= 0 || key.indexOf('$') >= 0) {
-			throw new IllegalArgumentException("Dimension key " + key + " must not contain '.' or '$', it becomes a field of the tags document");
+			throw new IllegalArgumentException("Tag key " + key + " must not contain '.' or '$', it becomes a field of the tags document");
 		}
 		if (kind == null || kind == SignalField.Kind.STORED_ONLY) {
-			throw new IllegalArgumentException("Dimension " + key + " needs an indexed kind, got " + kind + ". Tags are stored without being declared");
+			throw new IllegalArgumentException("Tag " + key + " needs an indexed kind, got " + kind + ". Tags are stored without being indexed");
 		}
-		if (dimensions.containsKey(key)) {
-			throw new IllegalArgumentException("Dimension " + key + " is already declared as " + dimensions.get(key));
+		if (indexedTags.containsKey(key)) {
+			throw new IllegalArgumentException("Tag " + key + " is already indexed as " + indexedTags.get(key));
 		}
-		Map<String, SignalField.Kind> declared = new LinkedHashMap<>(dimensions);
-		declared.put(key, kind);
-		return new SignalsIndexConfig(indexName, monthlyPartitions, zone, Collections.unmodifiableMap(declared));
+		Map<String, SignalField.Kind> indexed = new LinkedHashMap<>(indexedTags);
+		indexed.put(key, kind);
+		return new SignalsIndexConfig(indexName, monthlyPartitions, zone, Collections.unmodifiableMap(indexed));
 	}
 
+	/** @deprecated use {@link #indexTags(String...)} */
+	@Deprecated(forRemoval = true)
+	public SignalsIndexConfig dimensions(String... keys) {
+		return indexTags(keys);
+	}
+
+	/** @deprecated use {@link #indexTag(String, SignalField.Kind)} */
+	@Deprecated(forRemoval = true)
+	public SignalsIndexConfig dimension(String key, SignalField.Kind kind) {
+		return indexTag(key, kind);
+	}
+
+	/** Indexed tag keys and their kinds, in declaration order. */
+	public Map<String, SignalField.Kind> indexedTags() {
+		return indexedTags;
+	}
+
+	/** @deprecated use {@link #indexedTags()} */
+	@Deprecated(forRemoval = true)
 	public Map<String, SignalField.Kind> dimensions() {
-		return dimensions;
+		return indexedTags;
 	}
 
 	/** The alias when partitioned. */
@@ -136,7 +155,7 @@ public final class SignalsIndexConfig {
 	/** Stored only fields are not listed. */
 	public List<String> fieldNames() {
 		return Stream.concat(Arrays.stream(SignalField.values()).filter(SignalField::indexed).map(SignalField::fieldName),
-				dimensions.keySet().stream().map(SignalField::tagField)).toList();
+				indexedTags.keySet().stream().map(SignalField::tagField)).toList();
 	}
 
 	public ClientIndexConfig clientIndexConfig() {
@@ -151,8 +170,8 @@ public final class SignalsIndexConfig {
 		for (SignalField field : SignalField.values()) {
 			field.fieldConfig().ifPresent(config::addFieldConfig);
 		}
-		for (Map.Entry<String, SignalField.Kind> dimension : dimensions.entrySet()) {
-			config.addFieldConfig(dimension.getValue().fieldConfig(SignalField.tagField(dimension.getKey())).orElseThrow());
+		for (Map.Entry<String, SignalField.Kind> tag : indexedTags.entrySet()) {
+			config.addFieldConfig(tag.getValue().fieldConfig(SignalField.tagField(tag.getKey())).orElseThrow());
 		}
 		return config;
 	}

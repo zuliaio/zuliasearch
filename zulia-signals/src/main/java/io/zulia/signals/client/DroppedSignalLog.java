@@ -25,17 +25,19 @@ final class DroppedSignalLog {
 	}
 
 	synchronized void dropped(Signal signal, Exception cause) {
+		dropped(signal.signalId() + " (" + signal.app() + " " + signal.actionType() + " by " + signal.actor().type() + ")", cause);
+	}
+
+	synchronized void dropped(String description, Exception cause) {
 		droppedSinceReport++;
 		droppedTotal++;
 		Instant now = Instant.now(clock);
 		if (lastReport == null) {
-			LOG.warn("Signals store unavailable, dropping signal {} ({} {} by {}). Later drops are summarized every {}", signal.signalId(), signal.app(),
-					signal.actionType(), signal.actor().type(), REPORT_INTERVAL, cause);
+			LOG.warn("Dropping signal {}. Later drops are summarized every {}", description, REPORT_INTERVAL, cause);
 			setLastReport(now);
 		}
 		else if (Duration.between(lastReport, now).compareTo(REPORT_INTERVAL) >= 0) {
-			LOG.warn("Signals store still unavailable, dropped {} signals since last report ({} total), latest {} {} by {}: {}", droppedSinceReport,
-					droppedTotal, signal.app(), signal.actionType(), signal.actor().type(), cause.toString());
+			LOG.warn("Dropped {} signals since last report ({} total), latest {}: {}", droppedSinceReport, droppedTotal, description, cause.toString());
 			setLastReport(now);
 		}
 	}
