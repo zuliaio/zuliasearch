@@ -164,8 +164,7 @@ public abstract class ClassifierTrainer {
 					if (classifierTrainingResults.getBestEpoch().epoch() == epochResult.epoch()) {
 						bestModelBuffer = ModelSerializer.serializeModel(model, fullyConnectedConfiguration, featureScaler);
 					}
-					else if (iteration >= MIN_EPOCHS - 1) {
-						// If the epoch just received is not the best epoch, but you've run through a few, then break out
+					if (earlyStopTraining(classifierTrainingResults, epochResult)) {
 						break;
 					}
 				}
