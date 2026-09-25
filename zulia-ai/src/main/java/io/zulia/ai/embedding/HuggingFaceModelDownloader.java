@@ -9,6 +9,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 public class HuggingFaceModelDownloader {
 
@@ -52,6 +53,7 @@ public class HuggingFaceModelDownloader {
 	}
 
 	private static void downloadOnnxModel(String modelId, Path target) throws IOException {
+		IOException failure = new IOException("No ONNX model found for " + modelId + " (tried: " + String.join(", ", ONNX_PATHS) + ")");
 		for (String onnxPath : ONNX_PATHS) {
 			String url = HF_BASE + modelId + "/resolve/main/" + onnxPath;
 			try {
@@ -59,20 +61,22 @@ public class HuggingFaceModelDownloader {
 				return;
 			}
 			catch (IOException e) {
-				// try next path
+				// the summary names every path and carries each real cause
+				failure.addSuppressed(e);
 			}
 		}
-		throw new IOException("No ONNX model found for " + modelId + " (tried: " + String.join(", ", ONNX_PATHS) + ")");
+		throw failure;
 	}
 
 	private static void downloadFile(String url, Path target) throws IOException {
+		// a per-download temp name keeps concurrent loads of the same model from truncating or renaming each other's partial body
+		Path temp = target.resolveSibling(target.getFileName() + "." + UUID.randomUUID() + ".tmp");
 		try (HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build()) {
 			HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url)).GET().build();
 			HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
 			if (response.statusCode() != 200) {
 				throw new IOException("HTTP " + response.statusCode() + " downloading " + url);
 			}
-			Path temp = target.resolveSibling(target.getFileName() + ".tmp");
 			try (InputStream is = response.body()) {
 				Files.copy(is, temp, StandardCopyOption.REPLACE_EXISTING);
 			}
@@ -81,6 +85,9 @@ public class HuggingFaceModelDownloader {
 		catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new IOException("Download interrupted: " + url, e);
+		}
+		finally {
+			Files.deleteIfExists(temp);
 		}
 	}
 
