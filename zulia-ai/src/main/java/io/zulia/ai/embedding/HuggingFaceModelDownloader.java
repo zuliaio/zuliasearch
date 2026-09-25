@@ -45,6 +45,7 @@ public class HuggingFaceModelDownloader {
 
 		if (!Files.exists(onnxFile)) {
 			downloadOnnxModel(modelId, onnxFile);
+			downloadExternalData(modelId, modelDir);
 		}
 
 		if (!Files.exists(tokenizerFile)) {
@@ -79,6 +80,26 @@ public class HuggingFaceModelDownloader {
 			}
 		}
 		throw failure;
+	}
+
+	/**
+	 * Large exports keep their weights in an external data file next to the graph, which the graph references by
+	 * name, so it must sit in the same directory as model.onnx. Fetched when the repository has one.
+	 */
+	private static void downloadExternalData(String modelId, Path modelDir) throws IOException {
+		Path dataFile = modelDir.resolve("model.onnx_data");
+		if (Files.exists(dataFile)) {
+			return;
+		}
+		for (String onnxPath : ONNX_PATHS) {
+			try {
+				downloadFile(HF_BASE + modelId + "/resolve/main/" + onnxPath + "_data", dataFile);
+				return;
+			}
+			catch (IOException e) {
+				// no external data at this path, try the next layout or accept a single file model
+			}
+		}
 	}
 
 	private static void downloadFile(String url, Path target) throws IOException {
