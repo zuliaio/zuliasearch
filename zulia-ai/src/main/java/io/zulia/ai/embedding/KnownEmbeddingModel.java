@@ -64,9 +64,9 @@ public enum KnownEmbeddingModel {
 			.prefixes("search_query: ", "search_document: ")
 			.includeTokenTypes(true).maxTokens(8192).truncateDimensions(256).build()),
 
-	// Snowflake Arctic Embed - retrieval-optimized, CLS pooling, 8192 token context
+	// Snowflake Arctic Embed v2.0 - retrieval-optimized, CLS pooling, 8192 token context, "query: " prefix on queries only
 	SNOWFLAKE_ARCTIC_EMBED_M_V2(EmbeddingModelConfig.builder("https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0", 768)
-			.prefixes("Represent this sentence for searching relevant passages: ", "")
+			.prefixes("query: ", "")
 			.poolingMode("cls").maxTokens(8192).build()),
 
 	// Bioclinical ModernBERT - biomedical/clinical domain, mean pooling, 8192 token context
