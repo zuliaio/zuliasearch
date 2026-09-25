@@ -83,7 +83,11 @@ public enum KnownEmbeddingModel {
 	// SPECTER2 with the proximity adapter - successor to SPECTER for document similarity, symmetric, CLS pooling, 512 token context
 	// Same "title[SEP]abstract" input convention as SPECTER. The export script lives in the Hugging Face repo next to the model.
 	SPECTER2(EmbeddingModelConfig.builder("https://huggingface.co/zuliaio/specter2-proximity-onnx", 768)
-			.includeTokenTypes(true).poolingMode("cls").build());
+			.includeTokenTypes(true).poolingMode("cls").build()),
+
+	// GTE ModernBERT base - retrieval-optimized, 8192 token context, CLS pooling, no prefixes, Apache 2.0 license
+	GTE_MODERNBERT_BASE(EmbeddingModelConfig.builder("https://huggingface.co/Alibaba-NLP/gte-modernbert-base", 768)
+			.poolingMode("cls").maxTokens(8192).build());
 
 	private final EmbeddingModelConfig config;
 
