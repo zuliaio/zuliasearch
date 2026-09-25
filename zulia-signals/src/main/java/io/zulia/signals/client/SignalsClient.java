@@ -53,7 +53,7 @@ public final class SignalsClient implements AutoCloseable {
 		this(pool, config, actorIdMapper, Clock.systemUTC());
 	}
 
-	/** Builds the enricher from the config so zone and dimensions match the index schema. */
+	/** Builds the enricher from the config so zone and indexed tags match the index schema. */
 	public SignalsClient(ZuliaWorkPool pool, SignalsIndexConfig config, ActorIdMapper actorIdMapper, Clock clock) {
 		this(pool, config, new SignalEnricher(config, clock, actorIdMapper), clock, RecordFailurePolicy.PROPAGATE, new DroppedSignalLog(clock),
 				new StorageState(), null, null);
@@ -107,7 +107,7 @@ public final class SignalsClient implements AutoCloseable {
 
 	/**
 	 * Same as ensureStorage but always throws. The server's createIndex is a no-op when the settings match and applies schema changes
-	 * otherwise, so a dimension declared later reaches the index without a separate update.
+	 * otherwise, so a tag indexed later reaches the index without a separate update.
 	 */
 	void createStorage() throws Exception {
 		if (!config.isPartitioned()) {
@@ -154,19 +154,51 @@ public final class SignalsClient implements AutoCloseable {
 		}
 	}
 
-	public RecordResult record(Signal signal) {
-		if (stamp != null) {
-			Signal.Builder builder = signal.toBuilder();
-			stamp.accept(builder);
+	/**
+	 * Builds and records inside the failure policy. Under LOG_AND_DROP a builder that fails validation is a counted drop with a null
+	 * signal id, never an exception, so a request path can hand over a builder and forget it. Under PROPAGATE the validation error is thrown as is.
+	 */
+	public RecordResult record(Signal.Builder builder) {
+		if (builder == null) {
+			throw new IllegalArgumentException("Signal builder is required but was null");
+		}
+		Signal signal;
+		try {
 			signal = builder.build();
 		}
-		Document document = enricher.toDocument(signal);
+		catch (RuntimeException e) {
+			if (failurePolicy == RecordFailurePolicy.PROPAGATE) {
+				throw e;
+			}
+			droppedSignalLog.dropped("that failed to build", e);
+			return new RecordResult(null, false);
+		}
+		return record(signal);
+	}
+
+	/** Under LOG_AND_DROP a signal the stamp or the index schema rejects is a counted drop, never an exception. */
+	public RecordResult record(Signal signal) {
+		if (signal == null) {
+			throw new IllegalArgumentException("Signal is required but was null");
+		}
+		Document document;
+		try {
+			signal = stamped(signal);
+			document = enricher.toDocument(signal);
+		}
+		catch (RuntimeException e) {
+			if (failurePolicy == RecordFailurePolicy.PROPAGATE) {
+				throw e;
+			}
+			droppedSignalLog.dropped(signal, e);
+			return new RecordResult(signal.signalId(), false);
+		}
 		if (failurePolicy == RecordFailurePolicy.LOG_AND_DROP) {
 			if (writer.enqueue(signal, document)) {
 				return new RecordResult(signal.signalId(), true);
 			}
-			droppedSignalLog.dropped(signal, new IllegalStateException(
-					"Signal queue is full, " + SignalWriter.MAX_QUEUED + " signals are waiting to be stored to " + config.writeName()));
+			droppedSignalLog.dropped(signal, new IllegalStateException(writer.isClosed() ? "Signals client for " + config.writeName() + " is closed"
+					: "Signal queue is full, " + SignalWriter.MAX_QUEUED + " signals are waiting to be stored to " + config.writeName()));
 			return new RecordResult(signal.signalId(), false);
 		}
 		try {
@@ -177,6 +209,15 @@ public final class SignalsClient implements AutoCloseable {
 			throw new SignalsException("Storing signal " + signal.signalId() + " to " + config.writeName() + " failed", e);
 		}
 		return new RecordResult(signal.signalId(), true);
+	}
+
+	private Signal stamped(Signal signal) {
+		if (stamp == null) {
+			return signal;
+		}
+		Signal.Builder builder = signal.toBuilder();
+		stamp.accept(builder);
+		return builder.build();
 	}
 
 	// the writer thread's store, every failure is a counted drop

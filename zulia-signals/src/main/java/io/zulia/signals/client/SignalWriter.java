@@ -47,6 +47,10 @@ final class SignalWriter implements AutoCloseable {
 		return queue.size();
 	}
 
+	boolean isClosed() {
+		return closed;
+	}
+
 	private void drain() {
 		while (!closed || !queue.isEmpty()) {
 			try {

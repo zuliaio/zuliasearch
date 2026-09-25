@@ -25,13 +25,13 @@ class ActivityTest {
 	}
 
 	@Test
-	void actorActivityDefaultsMissingCountsToZero() {
+	void actorTallyDefaultsMissingCountsToZero() {
 		Activity created = Activity.of(Actions.CREATE, Targets.PROJECT);
-		ActorActivity row = new ActorActivity("u1", Map.of(created, 3L));
+		ActorTally<Activity> row = new ActorTally<>("u1", Map.of(created, 3L));
 		Assertions.assertEquals(3, row.count(created));
 		Assertions.assertEquals(0, row.count(Activity.of(Actions.VISIT, Targets.PROJECT)));
 		Assertions.assertEquals(3, row.total());
-		Assertions.assertTrue(Assertions.assertThrows(IllegalArgumentException.class, () -> new ActorActivity("u1", null)).getMessage().contains("u1"));
-		Assertions.assertThrows(IllegalArgumentException.class, () -> new ActorActivity(" ", Map.of()));
+		Assertions.assertTrue(Assertions.assertThrows(IllegalArgumentException.class, () -> new ActorTally<>("u1", null)).getMessage().contains("u1"));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> new ActorTally<>(" ", Map.of()));
 	}
 }

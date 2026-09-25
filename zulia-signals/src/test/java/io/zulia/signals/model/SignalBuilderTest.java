@@ -43,6 +43,20 @@ class SignalBuilderTest {
 	}
 
 	@Test
+	void sessionHashedNeverStoresTheSecret() {
+		String token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1LTEwNDIifQ.signature";
+		Signal signal = Signal.builder().app("a").actor(Actor.user("u")).action(Actions.VIEW).sessionHashed(token).build();
+		Assertions.assertEquals(32, signal.sessionId().length(), "16 bytes of SHA-256 as hex");
+		Assertions.assertFalse(signal.sessionId().contains("eyJ"), "no part of the token survives");
+		Assertions.assertEquals(signal.sessionId(), SessionIds.hashed(token), "stable for the same secret");
+		Assertions.assertEquals("ba7816bf8f01cfea414140de5dae2223", SessionIds.hashed("abc"), "the first 16 bytes of SHA-256");
+		Assertions.assertNotEquals(signal.sessionId(), SessionIds.hashed(token + "x"));
+		Assertions.assertNull(SessionIds.hashed(null));
+		Assertions.assertNull(SessionIds.hashed(" "));
+		Assertions.assertNull(Signal.builder().app("a").actor(Actor.user("u")).action(Actions.VIEW).sessionHashed(null).build().sessionId(), "unset, not blank");
+	}
+
+	@Test
 	void defaultsFillIdAndTimestamp() {
 		Instant before = Instant.now();
 		Signal signal = Signal.builder().app("search-app").actor(Actor.user("u1")).action(Actions.VIEW).build();

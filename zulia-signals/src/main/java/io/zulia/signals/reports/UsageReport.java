@@ -32,15 +32,17 @@ public final class UsageReport {
 	private final boolean includeSystem;
 	private final List<Filter> filters;
 	private final int maxFacetValues;
+	private final int maxTallySearches;
 
-	private record Filter(SignalField field, String value) {
+	private record Filter(String fieldName, String value) {
 	}
 
-	UsageReport(SignalsClient client, String app, TimeRange range, int maxFacetValues) {
-		this(client, app, range, false, List.of(), maxFacetValues);
+	UsageReport(SignalsClient client, String app, TimeRange range, int maxFacetValues, int maxTallySearches) {
+		this(client, app, range, false, List.of(), maxFacetValues, maxTallySearches);
 	}
 
-	private UsageReport(SignalsClient client, String app, TimeRange range, boolean includeSystem, List<Filter> filters, int maxFacetValues) {
+	private UsageReport(SignalsClient client, String app, TimeRange range, boolean includeSystem, List<Filter> filters, int maxFacetValues,
+			int maxTallySearches) {
 		if (app == null || app.isBlank()) {
 			throw new IllegalArgumentException("App is required for a usage report but was " + (app == null ? "null" : "blank"));
 		}
@@ -53,11 +55,12 @@ public final class UsageReport {
 		this.includeSystem = includeSystem;
 		this.filters = filters;
 		this.maxFacetValues = maxFacetValues;
+		this.maxTallySearches = maxTallySearches;
 	}
 
 	/** The same report with SYSTEM actors counted, for seeing platform load next to usage. */
 	public UsageReport includingSystem() {
-		return new UsageReport(client, app, range, true, filters, maxFacetValues);
+		return new UsageReport(client, app, range, true, filters, maxFacetValues, maxTallySearches);
 	}
 
 	/** The same report narrowed to one activity. A report narrows to one activity once. */
@@ -65,14 +68,34 @@ public final class UsageReport {
 		if (activity == null) {
 			throw new IllegalArgumentException("Activity is required to narrow the report of " + app + " but was null");
 		}
-		Filter action = new Filter(SignalField.ACTION_TYPE, activity.actionType());
-		return narrowedBy(activity.targetType() == null ? List.of(action) : List.of(action, new Filter(SignalField.TARGET_TYPE, activity.targetType())));
+		Filter action = new Filter(SignalField.ACTION_TYPE.fieldName(), activity.actionType());
+		return narrowedBy(
+				activity.targetType() == null ? List.of(action) : List.of(action, new Filter(SignalField.TARGET_TYPE.fieldName(), activity.targetType())));
 	}
 
 	/** The same report narrowed to one actor. Takes the real actor id and maps it the way the client stored it. */
 	public UsageReport forActor(String actorId) {
 		requireText(actorId, "Actor id");
-		return narrowedBy(List.of(new Filter(SignalField.ACTOR_ID, client.storedActorId(app, actorId))));
+		return narrowedBy(List.of(new Filter(SignalField.ACTOR_ID.fieldName(), client.storedActorId(app, actorId))));
+	}
+
+	/** The same report narrowed to signals carrying the value in a keyword tag. A report narrows once per tag, different tags stack. */
+	public UsageReport forTag(String tag, String value) {
+		String field = indexedTagField(tag, SignalField.Kind.KEYWORD, SignalField.Kind.KEYWORD_FACET);
+		requireText(value, "Value of tag " + tag);
+		return narrowedBy(List.of(new Filter(field, value)));
+	}
+
+	/** The same report narrowed to one value of a built in keyword field, for example the client. */
+	public UsageReport forField(SignalField field, String value) {
+		if (field == null) {
+			throw new IllegalArgumentException("Field is required to narrow the report of " + app + " but was null");
+		}
+		if (field.kind() != SignalField.Kind.KEYWORD && field.kind() != SignalField.Kind.KEYWORD_FACET) {
+			throw new IllegalArgumentException(field + " (" + field.fieldName() + ") is " + field.kind() + ", only keyword fields narrow by value");
+		}
+		requireText(value, "Value of " + field.fieldName());
+		return narrowedBy(List.of(new Filter(field.fieldName(), value)));
 	}
 
 	/**
@@ -80,7 +103,7 @@ public final class UsageReport {
 	 * so the cost does not grow with the actors. Counts are signals, so a bulk counts once. Keep the activities disjoint, an activity without a
 	 * target type overlaps every activity of that action and the total sums the columns.
 	 */
-	public List<ActorActivity> tally(List<Activity> activities) {
+	public List<ActorTally<Activity>> tally(List<Activity> activities) {
 		if (activities == null || activities.isEmpty() || activities.stream().anyMatch(Objects::isNull)) {
 			throw new IllegalArgumentException("Activities are required for a tally of " + app + " but were " + activities);
 		}
@@ -99,29 +122,95 @@ public final class UsageReport {
 			}
 		}
 
-		List<ActorActivity> list = new ArrayList<>();
-		for (Map.Entry<String, Map<Activity, Long>> entry : countsByActor.entrySet()) {
-			ActorActivity actorActivity = new ActorActivity(entry.getKey(), entry.getValue());
-			list.add(actorActivity);
-		}
-		list.sort(Comparator.comparingLong(ActorActivity::total).reversed().thenComparing(ActorActivity::actorId));
-		return list;
+		return rows(countsByActor);
 	}
 
-	public List<ActorActivity> tally(Activity... activities) {
+	public List<ActorTally<Activity>> tally(Activity... activities) {
 		return tally(activities == null ? null : Arrays.asList(activities));
+	}
+
+	/**
+	 * Signal counts per actor and value of an indexed keyword tag, by total descending. Narrow by {@link #forActivity(Activity)} first for one
+	 * activity's breakdown. Runs one search per actor or per value, whichever there are fewer of, plus two to count them, so it refuses past
+	 * {@link UsageReports#maxTallySearches()} searches. A list tag counts a signal once per element.
+	 */
+	public List<ActorTally<String>> tallyBy(String tag) {
+		return tallyByField(indexedTagField(tag, SignalField.Kind.KEYWORD_FACET));
+	}
+
+	/** Same as {@link #tallyBy(String)} over a built in keyword facet field, for example the client or a time bucket. */
+	public List<ActorTally<String>> tallyBy(SignalField field) {
+		if (field == null) {
+			throw new IllegalArgumentException("Field is required for a tally but was null");
+		}
+		if (field.kind() != SignalField.Kind.KEYWORD_FACET) {
+			throw new IllegalArgumentException(field + " (" + field.fieldName() + ") is " + field.kind() + ", only KEYWORD_FACET fields tally by value");
+		}
+		return tallyByField(field.fieldName());
+	}
+
+	private List<ActorTally<String>> tallyByField(String field) {
+		String actorField = SignalField.ACTOR_ID.fieldName();
+		if (field.equals(actorField)) {
+			throw new IllegalArgumentException("A tally by " + actorField + " is one column per actor, use by(SignalField.ACTOR_ID)");
+		}
+		for (Filter filter : filters) {
+			if (filter.fieldName().equals(actorField) || filter.fieldName().equals(field)) {
+				throw new IllegalArgumentException("Report of " + app + " is narrowed to " + filter.fieldName() + " " + filter.value()
+						+ ", a tally by " + field + " needs every actor and value. Use by(...) on the narrowed report for one row or column");
+			}
+		}
+		List<DimensionCount> values = byField(field);
+		List<DimensionCount> actors = byField(actorField);
+		if (values.size() >= maxFacetValues || actors.size() >= maxFacetValues) {
+			throw new IllegalStateException("At least " + maxFacetValues + " " + (values.size() >= maxFacetValues ? field : actorField) + " values in app " + app
+					+ " over " + range + ", the tally would drop some. Raise UsageReports.maxFacetValues to count them");
+		}
+		if (values.isEmpty() || actors.isEmpty()) {
+			return List.of();
+		}
+		boolean perValue = values.size() <= actors.size();
+		List<DimensionCount> loop = perValue ? values : actors;
+		if (loop.size() > maxTallySearches) {
+			throw new IllegalStateException("A tally by " + field + " in app " + app + " over " + range + " needs " + loop.size() + " searches ("
+					+ values.size() + " values, " + actors.size() + " actors) but at most " + maxTallySearches
+					+ " are allowed. Narrow the report, or raise UsageReports.maxTallySearches");
+		}
+
+		// counts[actor][value], filled one search per loop key faceting the other field
+		Map<String, Map<String, Long>> countsByActor = new HashMap<>();
+		for (DimensionCount key : loop) {
+			UsageReport narrowed = narrowedBy(List.of(new Filter(perValue ? field : actorField, key.value())));
+			for (DimensionCount count : narrowed.byField(perValue ? actorField : field)) {
+				String actor = perValue ? count.value() : key.value();
+				String value = perValue ? key.value() : count.value();
+				countsByActor.computeIfAbsent(actor, id -> new HashMap<>()).put(value, count.count());
+			}
+		}
+
+		return rows(countsByActor);
+	}
+
+	/** By total descending, then actor id. */
+	private static <K> List<ActorTally<K>> rows(Map<String, Map<K, Long>> countsByActor) {
+		List<ActorTally<K>> rows = new ArrayList<>();
+		for (Map.Entry<String, Map<K, Long>> entry : countsByActor.entrySet()) {
+			rows.add(new ActorTally<>(entry.getKey(), entry.getValue()));
+		}
+		rows.sort(Comparator.comparingLong((ActorTally<K> row) -> row.total()).reversed().thenComparing(ActorTally::actorId));
+		return rows;
 	}
 
 	private UsageReport narrowedBy(List<Filter> added) {
 		for (Filter filter : added) {
-			filters.stream().filter(existing -> existing.field() == filter.field()).findFirst().ifPresent(existing -> {
-				throw new IllegalArgumentException("Report of " + app + " is already narrowed to " + existing.field().fieldName() + " " + existing.value()
+			filters.stream().filter(existing -> existing.fieldName().equals(filter.fieldName())).findFirst().ifPresent(existing -> {
+				throw new IllegalArgumentException("Report of " + app + " is already narrowed to " + existing.fieldName() + " " + existing.value()
 						+ ", it cannot also be narrowed to " + filter.value());
 			});
 		}
 		List<Filter> narrowed = new ArrayList<>(filters);
 		narrowed.addAll(added);
-		return new UsageReport(client, app, range, includeSystem, List.copyOf(narrowed), maxFacetValues);
+		return new UsageReport(client, app, range, includeSystem, List.copyOf(narrowed), maxFacetValues, maxTallySearches);
 	}
 
 	public String app() {
@@ -150,20 +239,22 @@ public final class UsageReport {
 		return distinctCount(search(search -> search.addQuery(actorTypes).addCountFacet(topN(field))), field);
 	}
 
-	/** Counts per value of a keyword facet dimension, by count descending. Built-in fields go through {@link #by(SignalField)}. */
-	public List<DimensionCount> by(String dimension) {
-		if (dimension == null || dimension.isBlank()) {
-			throw new IllegalArgumentException("Dimension is required but was " + (dimension == null ? "null" : "blank"));
-		}
-		SignalField.Kind kind = client.config().dimensions().get(dimension);
+	/** Counts per value of an indexed keyword tag, by count descending. Built-in fields go through {@link #by(SignalField)}. */
+	public List<DimensionCount> by(String tag) {
+		return byField(indexedTagField(tag, SignalField.Kind.KEYWORD_FACET));
+	}
+
+	private String indexedTagField(String tag, SignalField.Kind... allowed) {
+		requireText(tag, "Tag key");
+		SignalField.Kind kind = client.config().indexedTags().get(tag);
 		if (kind == null) {
-			throw new IllegalArgumentException("Dimension " + dimension + " is not declared on " + client.config().indexName() + ", declared dimensions are "
-					+ client.config().dimensions().keySet() + ". Built in fields go through by(SignalField)");
+			throw new IllegalArgumentException("Tag " + tag + " is not indexed on " + client.config().indexName() + ", indexed tags are "
+					+ client.config().indexedTags().keySet() + ". Add it with SignalsIndexConfig.indexTags. Built in fields take a SignalField instead");
 		}
-		if (kind != SignalField.Kind.KEYWORD_FACET) {
-			throw new IllegalArgumentException("Dimension " + dimension + " is " + kind + ", only KEYWORD_FACET dimensions count by value");
+		if (!Arrays.asList(allowed).contains(kind)) {
+			throw new IllegalArgumentException("Tag " + tag + " is indexed as " + kind + ", this needs one of " + Arrays.toString(allowed));
 		}
-		return byField(SignalField.tagField(dimension));
+		return SignalField.tagField(tag);
 	}
 
 	public List<DimensionCount> by(SignalField field) {
@@ -218,7 +309,7 @@ public final class UsageReport {
 	private SearchResult search(Consumer<Search> report) {
 		return rangeSearch(client, range, includeSystem, search -> {
 			search.addQuery(createTermQuery(SignalField.APP, app));
-			filters.forEach(filter -> search.addQuery(createTermQuery(filter.field(), filter.value())));
+			filters.forEach(filter -> search.addQuery(new TermQuery(filter.fieldName()).addTerm(filter.value())));
 			report.accept(search);
 		});
 	}

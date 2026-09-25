@@ -18,7 +18,7 @@ import io.zulia.signals.model.ActorType;
 import io.zulia.signals.model.Signal;
 import io.zulia.signals.model.Targets;
 import io.zulia.signals.reports.Activity;
-import io.zulia.signals.reports.ActorActivity;
+import io.zulia.signals.reports.ActorTally;
 import io.zulia.signals.reports.Bucket;
 import io.zulia.signals.reports.DimensionCount;
 import io.zulia.signals.reports.TimeRange;
@@ -39,6 +39,7 @@ import java.time.Clock;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -80,8 +81,8 @@ class SignalsNodeTest {
 
 	@Test
 	void singleIndexRoundTrip() throws Exception {
-		SignalsIndexConfig config = SignalsIndexConfig.defaults().indexName("sigtest-" + suffix).dimensions("division", "labels")
-				.dimension("records", SignalField.Kind.LONG);
+		SignalsIndexConfig config = SignalsIndexConfig.defaults().indexName("sigtest-" + suffix).indexTags("division", "labels")
+				.indexTag("records", SignalField.Kind.LONG).indexTag("ticket", SignalField.Kind.KEYWORD);
 		SignalsClient signals = new SignalsClient(pool, config);
 		try {
 			signals.ensureStorage();
@@ -102,7 +103,7 @@ class SignalsNodeTest {
 					projectSignal(Actions.CREATE, Actor.user("u3"), "p1", "north", now), projectSignal(Actions.VISIT, Actor.user("u3"), "p2", "south", now),
 					projectSignal(Actions.VISIT, Actor.user("u4"), "p2", "south", now),
 					Signal.builder().app("curation-app").client("web").session("s-u3").actor(Actor.user("u3")).action(Actions.LOGOUT).timestamp(now)
-							.duration(Duration.ofMinutes(25)).tag("records", 12).tag("labels", List.of("alpha", "beta")).build(),
+							.duration(Duration.ofMinutes(25)).tag("records", 12).tag("labels", List.of("alpha", "beta")).tag("ticket", "T-1").build(),
 					Signal.builder().app("portal-app").client("web").session("s-u5").actor(Actor.user("u5")).action(Actions.SEARCH).timestamp(now)
 							.target(Targets.INDEX, List.of("idx-a", "idx-b")).search(sd -> sd.query("home").indexes("idx-a", "idx-b").resultCount(0)).build(),
 					Signal.builder().app("curation-app").client("web").session("s-u3").actor(Actor.user("u3")).action(Actions.ANNOTATE).timestamp(now)
@@ -155,9 +156,9 @@ class SignalsNodeTest {
 			Activity recordsCoded = Activity.of(Actions.ANNOTATE, Targets.RECORD);
 			Activity logouts = Activity.of(Actions.LOGOUT);
 			UsageReport curation = reports.of("curation-app", lastWeek);
-			List<ActorActivity> tally = curation.tally(projectsCreated, projectsVisited, recordsCoded, logouts);
-			Assertions.assertEquals(List.of("u3", "u4"), tally.stream().map(ActorActivity::actorId).toList(), "by total descending: " + tally);
-			ActorActivity u3 = tally.getFirst();
+			List<ActorTally<Activity>> tally = curation.tally(projectsCreated, projectsVisited, recordsCoded, logouts);
+			Assertions.assertEquals(List.of("u3", "u4"), tally.stream().map(ActorTally::actorId).toList(), "by total descending: " + tally);
+			ActorTally<Activity> u3 = tally.getFirst();
 			Assertions.assertEquals(1, u3.count(projectsCreated));
 			Assertions.assertEquals(1, u3.count(projectsVisited));
 			Assertions.assertEquals(1, u3.count(recordsCoded), "a bulk is one signal");
@@ -166,7 +167,7 @@ class SignalsNodeTest {
 			Assertions.assertEquals(0, tally.getLast().count(projectsCreated), "u4 only visited");
 			Assertions.assertEquals(List.of(new DimensionCount("u3", 1), new DimensionCount("u4", 1)),
 					curation.forActivity(projectsVisited).by(SignalField.ACTOR_ID).stream().sorted(Comparator.comparing(DimensionCount::value)).toList());
-			Assertions.assertEquals(List.of(new ActorActivity("u4", Map.of(projectsVisited, 1L))), curation.forActor("u4").tally(projectsCreated, projectsVisited),
+			Assertions.assertEquals(List.of(new ActorTally<>("u4", Map.of(projectsVisited, 1L))), curation.forActor("u4").tally(projectsCreated, projectsVisited),
 					"one actor's row");
 			Assertions.assertEquals(3, curation.forActor("u3").distinct(Targets.RECORD, Actions.ANNOTATE), "distinct records for one actor");
 			Assertions.assertEquals(0, curation.forActor("u4").distinct(Targets.RECORD, Actions.ANNOTATE));
@@ -180,11 +181,11 @@ class SignalsNodeTest {
 			Assertions.assertThrows(IllegalStateException.class, () -> reports.maxFacetValues(2).of("curation-app", lastWeek).tally(projectsVisited),
 					"two visitors at a cap of two would truncate");
 			Assertions.assertEquals(List.of("u3", "u4"), reports.maxFacetValues(3).of("curation-app", lastWeek).tally(projectsVisited).stream()
-					.map(ActorActivity::actorId).toList(), "under the cap");
+					.map(ActorTally::actorId).toList(), "under the cap");
 			Activity pageViews = Activity.of(Actions.VIEW, Targets.PAGE);
-			Assertions.assertTrue(reports.of("search-app", lastWeek).includingSystem().tally(pageViews).stream().map(ActorActivity::actorId).toList()
+			Assertions.assertTrue(reports.of("search-app", lastWeek).includingSystem().tally(pageViews).stream().map(ActorTally::actorId).toList()
 					.contains(Actor.SYSTEM_ID), "the system view tallies when included");
-			Assertions.assertFalse(reports.of("search-app", lastWeek).tally(pageViews).stream().map(ActorActivity::actorId).toList().contains(Actor.SYSTEM_ID),
+			Assertions.assertFalse(reports.of("search-app", lastWeek).tally(pageViews).stream().map(ActorTally::actorId).toList().contains(Actor.SYSTEM_ID),
 					"and not by default");
 
 			String quotedApp = "data \"coding\" app";
@@ -195,14 +196,70 @@ class SignalsNodeTest {
 			String pseudonym = pseudonymous.storedActorId(quotedApp, "u9");
 			Assertions.assertNotEquals("u9", pseudonym);
 			Assertions.assertEquals(1, quoted.forActor("u9").activeUsers(), "the real id filters through the mapper, the app name needs no escaping");
-			Assertions.assertEquals(List.of(new ActorActivity(pseudonym, Map.of(pageViews, 1L))), quoted.tally(pageViews), "rows carry the pseudonym");
+			Assertions.assertEquals(List.of(new ActorTally<>(pseudonym, Map.of(pageViews, 1L))), quoted.tally(pageViews), "rows carry the pseudonym");
 
+			List<String> sinceYesterday = reports.of("search-app", LocalDate.now(config.zone()).minusDays(1)).by(SignalField.ACTOR_ID).stream()
+					.map(DimensionCount::value).toList();
+			Assertions.assertTrue(sinceYesterday.contains("u2") && !sinceYesterday.contains("zulia-agent"), "since yesterday drops the views from two days ago: " + sinceYesterday);
+			Assertions.assertTrue(reports.of("search-app", lastWeek).by(SignalField.ACTOR_ID).stream().map(DimensionCount::value).toList().contains("zulia-agent"),
+					"the week keeps them");
+			Assertions.assertEquals(List.of(), reports.of("curation-app", YearMonth.now(config.zone()).plusMonths(1)).by("division"), "next month is empty");
 			List<DimensionCount> byDivision = reports.of("curation-app", lastWeek).by("division");
 			Assertions.assertEquals(List.of(new DimensionCount("alpha", 1), new DimensionCount("beta", 1)), reports.of("curation-app", lastWeek).by("labels"),
 					"a list tag facets once per element");
 			Assertions.assertEquals(1, signals.search(query -> query.setAmount(0).addQuery(new FilterQuery("tags.records:[10 TO 100]"))).getTotalHits(),
-					"numeric dimension filters through the dotted field");
-			Assertions.assertEquals(List.of(new DimensionCount("south", 2), new DimensionCount("north", 1)), byDivision, "facets on a promoted dimension");
+					"numeric tag filters through the dotted field");
+			Assertions.assertEquals(List.of(new DimensionCount("south", 2), new DimensionCount("north", 1)), byDivision, "facets on an indexed tag");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> reports.of("curation-app", lastWeek).by("host"), "a tag that is not indexed");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> reports.of("curation-app", lastWeek).by("records"), "a numeric tag");
+
+			UsageReport south = curation.forTag("division", "south");
+			Assertions.assertEquals(List.of(new DimensionCount("u3", 1), new DimensionCount("u4", 1)),
+					south.by(SignalField.ACTOR_ID).stream().sorted(Comparator.comparing(DimensionCount::value)).toList(), "narrowed to one tag value");
+			Assertions.assertEquals(List.of("u3", "u4"), south.tally(projectsCreated, projectsVisited).stream().map(ActorTally::actorId).toList());
+			Assertions.assertEquals(0, south.tally(projectsCreated, projectsVisited).getFirst().count(projectsCreated), "p1 was created in the north");
+			Assertions.assertEquals(1, south.forActivity(projectsVisited).forActor("u4").activeUsers(), "tag, activity, and actor narrowings stack");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> south.forTag("division", "north"), "a report narrows to one value per tag");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forTag("division", " "));
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forTag("host", "node-1"), "a tag that is not indexed");
+			Assertions.assertEquals(List.of(new DimensionCount(Actions.LOGOUT, 1)), curation.forTag("ticket", "T-1").by(SignalField.ACTION_TYPE),
+					"a keyword tag filters without being a facet");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.by("ticket"), "but cannot be counted by value");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forTag("records", "12"), "a numeric tag is not a term");
+
+			List<ActorTally<String>> byDivisionPerActor = curation.tallyBy("division");
+			Assertions.assertEquals(List.of(new ActorTally<>("u3", Map.of("north", 1L, "south", 1L)), new ActorTally<>("u4", Map.of("south", 1L))), byDivisionPerActor,
+					"two values and two actors loops the values, by total descending");
+			Assertions.assertEquals(2, byDivisionPerActor.getFirst().total());
+			Assertions.assertEquals(0, byDivisionPerActor.getLast().count("north"));
+			Assertions.assertEquals(List.of(new ActorTally<>("u3", Map.of("south", 1L)), new ActorTally<>("u4", Map.of("south", 1L))),
+					curation.forActivity(projectsVisited).tallyBy("division"), "one activity's breakdown");
+			Assertions.assertEquals(List.of(new ActorTally<>("u3", Map.of("alpha", 1L, "beta", 1L))), curation.tallyBy("labels"), "a list tag counts once per element");
+			Assertions.assertEquals(List.of(new ActorTally<>("u3",
+							Map.of(Actions.VIEW, 1L, Actions.CREATE, 1L, Actions.VISIT, 1L, Actions.LOGOUT, 1L, Actions.ANNOTATE, 1L)),
+							new ActorTally<>("u4", Map.of(Actions.VISIT, 1L))), curation.tallyBy(SignalField.ACTION_TYPE),
+					"five values and two actors loops the actors, over a built in field");
+			Assertions.assertEquals(List.of(), curation.forActivity(Activity.of(Actions.EXPORT)).tallyBy("division"), "nothing to tally");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forActor("u3").tallyBy("division"), "one actor is a by, not a tally");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> south.tallyBy("division"), "one value is a by, not a tally");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.tallyBy("records"), "a numeric tag");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.tallyBy("host"), "a tag that is not indexed");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.tallyBy(SignalField.DURATION_MS), "a sortable field");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.tallyBy(SignalField.ACTOR_ID), "the row key is not a column");
+			Assertions.assertThrows(IllegalStateException.class, () -> reports.maxFacetValues(2).of("curation-app", lastWeek).tallyBy("division"),
+					"two actors at a cap of two would truncate");
+			Assertions.assertEquals(byDivisionPerActor, reports.maxFacetValues(3).of("curation-app", lastWeek).tallyBy("division"), "under the cap");
+			IllegalStateException tooManySearches = Assertions.assertThrows(IllegalStateException.class,
+					() -> reports.maxTallySearches(1).of("curation-app", lastWeek).tallyBy("division"), "two values need two searches");
+			Assertions.assertTrue(tooManySearches.getMessage().contains("2 values, 2 actors"), tooManySearches.getMessage());
+			Assertions.assertEquals(byDivisionPerActor, reports.maxTallySearches(2).of("curation-app", lastWeek).tallyBy("division"), "at the cap");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> reports.maxTallySearches(0));
+			Assertions.assertEquals(List.of(new DimensionCount("u3", 5), new DimensionCount("u4", 1)), curation.forField(SignalField.CLIENT, "web").by(SignalField.ACTOR_ID),
+					"narrowed by a built in keyword field");
+			Assertions.assertEquals(List.of(), curation.forField(SignalField.CLIENT, "mobile").by(SignalField.ACTOR_ID));
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forField(SignalField.DURATION_MS, "1"), "not a keyword field");
+			Assertions.assertThrows(IllegalArgumentException.class, () -> curation.forField(SignalField.CLIENT, " "));
+			Assertions.assertEquals(List.of(new ActorTally<>(pseudonym, Map.of("web", 1L))), quoted.tallyBy(SignalField.CLIENT), "rows carry the pseudonym");
 			Assertions.assertEquals(0, reports.of("search-app", new TimeRange(now.minus(Duration.ofDays(30)), now.minus(Duration.ofDays(20)))).activeUsers());
 
 			Signal stamped = view("search-app", Actor.user("u8"), now);

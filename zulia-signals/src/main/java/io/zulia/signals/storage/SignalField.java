@@ -6,7 +6,7 @@ import io.zulia.fields.FieldConfigBuilder;
 import java.util.Arrays;
 import java.util.Optional;
 
-/** App dimensions are added by {@link SignalsIndexConfig#dimensions(String...)}. */
+/** App tags are indexed by {@link SignalsIndexConfig#indexTags(String...)}. */
 public enum SignalField {
 	SIGNAL_ID("signalId", Kind.KEYWORD),
 	TIMESTAMP("timestamp", Kind.DATE),
@@ -35,7 +35,7 @@ public enum SignalField {
 	SEARCH_SHOWN_DOC_IDS("searchShownDocIds", Kind.STORED_ONLY),
 	DURATION_MS("durationMs", Kind.LONG);
 
-	/** The sub document holding tags. A declared dimension is indexed as {@code tags.<key>}. */
+	/** The sub document holding tags. An indexed tag lives at {@code tags.<key>}. */
 	public static final String TAGS = "tags";
 
 	public enum Kind {
