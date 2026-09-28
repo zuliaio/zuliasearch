@@ -6,6 +6,8 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.Objects;
@@ -172,6 +174,43 @@ public class DefaultExcelCellHandler implements ExcelCellHandler {
 		}
 		else if (isCellString(cell)) {
 			return parseText(cell.getStringCellValue(), parsers.dateParser());
+		}
+
+		return null;
+	}
+
+	/**
+	 * A date cell is read as its calendar day with no time zone involved. Text goes through the local date parser.
+	 */
+	@Override
+	public LocalDate cellToLocalDate(Cell cell) {
+		return cellToLocal(cell, LocalDateTime::toLocalDate, parsers.localDateParser());
+	}
+
+	/**
+	 * A date cell is read as its wall clock time with no time zone involved. Text goes through the local date time parser.
+	 */
+	@Override
+	public LocalDateTime cellToLocalDateTime(Cell cell) {
+		return cellToLocal(cell, Function.identity(), parsers.localDateTimeParser());
+	}
+
+	private <T> T cellToLocal(Cell cell, Function<LocalDateTime, T> fromDateCell, Function<String, T> parser) {
+
+		if (isCellNumeric(cell)) {
+			return fromDateCell.apply(cell.getLocalDateTimeCellValue());
+		}
+		else if (isCellFormula(cell)) {
+			CellType cachedFormulaResultType = cell.getCachedFormulaResultType();
+			if (cachedFormulaResultType.equals(CellType.NUMERIC)) {
+				return fromDateCell.apply(cell.getLocalDateTimeCellValue());
+			}
+			else if (cachedFormulaResultType.equals(CellType.STRING)) {
+				return parseText(cell.getRichStringCellValue().getString(), parser);
+			}
+		}
+		else if (isCellString(cell)) {
+			return parseText(cell.getStringCellValue(), parser);
 		}
 
 		return null;

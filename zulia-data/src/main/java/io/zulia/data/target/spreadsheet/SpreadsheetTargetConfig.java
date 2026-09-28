@@ -6,7 +6,7 @@ import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 import io.zulia.data.target.spreadsheet.excel.cell.Link;
 
 import java.util.Collection;
-import java.util.Date;
+import java.util.Map;
 
 public abstract class SpreadsheetTargetConfig<T, S extends SpreadsheetTargetConfig<?, ?>> {
 
@@ -17,10 +17,11 @@ public abstract class SpreadsheetTargetConfig<T, S extends SpreadsheetTargetConf
 	private DelimitedListHandler delimitedListHandler = new DefaultDelimitedListHandler(';');
 
 	private SpreadsheetTypeHandler<T, String> stringTypeHandler;
-	private SpreadsheetTypeHandler<T, Date> dateTypeHandler;
+	private DateTypeHandler<T> dateTypeHandler;
 	private SpreadsheetTypeHandler<T, Number> numberTypeHandler;
 	private SpreadsheetTypeHandler<T, Boolean> booleanTypeHandler;
 	private SpreadsheetTypeHandler<T, Collection<?>> collectionHandler;
+	private SpreadsheetTypeHandler<T, Map<?, ?>> mapHandler;
 	private SpreadsheetTypeHandler<T, Link> linkTypeHandler;
 	private SpreadsheetTypeHandler<T, Object> defaultTypeHandler;
 	private SpreadsheetTypeHandler<T, String> headerHandler;
@@ -70,11 +71,14 @@ public abstract class SpreadsheetTargetConfig<T, S extends SpreadsheetTargetConf
 		return getSelf();
 	}
 
-	public SpreadsheetTypeHandler<T, Date> getDateTypeHandler() {
+	public DateTypeHandler<T> getDateTypeHandler() {
 		return dateTypeHandler;
 	}
 
-	public S withDateTypeHandler(SpreadsheetTypeHandler<T, Date> dateTypeHandler) {
+	/**
+	 * Handles Date, LocalDate and LocalDateTime. A lambda receives the local values as that day or wall clock time in UTC.
+	 */
+	public S withDateTypeHandler(DateTypeHandler<T> dateTypeHandler) {
 		this.dateTypeHandler = dateTypeHandler;
 		return getSelf();
 	}
@@ -103,6 +107,15 @@ public abstract class SpreadsheetTargetConfig<T, S extends SpreadsheetTargetConf
 
 	public S withCollectionHandler(SpreadsheetTypeHandler<T, Collection<?>> collectionHandler) {
 		this.collectionHandler = collectionHandler;
+		return getSelf();
+	}
+
+	public SpreadsheetTypeHandler<T, Map<?, ?>> getMapHandler() {
+		return mapHandler;
+	}
+
+	public S withMapHandler(SpreadsheetTypeHandler<T, Map<?, ?>> mapHandler) {
+		this.mapHandler = mapHandler;
 		return getSelf();
 	}
 

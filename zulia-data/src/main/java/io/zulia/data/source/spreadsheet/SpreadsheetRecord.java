@@ -2,6 +2,9 @@ package io.zulia.data.source.spreadsheet;
 
 import io.zulia.data.source.DataSourceRecord;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
@@ -81,6 +84,39 @@ public interface SpreadsheetRecord extends DataSourceRecord {
 			throw new IllegalArgumentException("defaultValue cannot be null");
 		}
 		Date val = getDate(index);
+		return val != null ? val : defaultValue;
+	}
+
+	LocalDate getLocalDate(int index);
+
+	default LocalDate getLocalDate(int index, LocalDate defaultValue) {
+		if (defaultValue == null) {
+			throw new IllegalArgumentException("defaultValue cannot be null");
+		}
+		LocalDate val = getLocalDate(index);
+		return val != null ? val : defaultValue;
+	}
+
+	LocalDateTime getLocalDateTime(int index);
+
+	default LocalDateTime getLocalDateTime(int index, LocalDateTime defaultValue) {
+		if (defaultValue == null) {
+			throw new IllegalArgumentException("defaultValue cannot be null");
+		}
+		LocalDateTime val = getLocalDateTime(index);
+		return val != null ? val : defaultValue;
+	}
+
+	default Instant getInstant(int index) {
+		Date val = getDate(index);
+		return val != null ? val.toInstant() : null;
+	}
+
+	default Instant getInstant(int index, Instant defaultValue) {
+		if (defaultValue == null) {
+			throw new IllegalArgumentException("defaultValue cannot be null");
+		}
+		Instant val = getInstant(index);
 		return val != null ? val : defaultValue;
 	}
 

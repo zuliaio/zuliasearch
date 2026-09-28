@@ -7,6 +7,7 @@ import io.zulia.data.target.spreadsheet.delimited.formatter.CollectionDelimitedW
 import io.zulia.data.target.spreadsheet.delimited.formatter.DateCSVWriter;
 import io.zulia.data.target.spreadsheet.delimited.formatter.DefaultCSVWriter;
 import io.zulia.data.target.spreadsheet.delimited.formatter.LinkCSVWriter;
+import io.zulia.data.target.spreadsheet.delimited.formatter.MapDelimitedWriter;
 import io.zulia.data.target.spreadsheet.delimited.formatter.NumberCSVWriter;
 import io.zulia.data.target.spreadsheet.delimited.formatter.StringDelimitedWriter;
 
@@ -23,6 +24,7 @@ public abstract class DelimitedTargetConfig<T extends List<String>, S extends De
 		withDefaultTypeHandler(new DefaultCSVWriter<>());
 		withBooleanTypeHandler(new BooleanDelimitedWriter<>());
 		withCollectionHandler(new CollectionDelimitedWriter<>(this));
+		withMapHandler(new MapDelimitedWriter<>(this));
 		withHeaderHandler(new StringDelimitedWriter<>()); // csv headers are just strings
 	}
 

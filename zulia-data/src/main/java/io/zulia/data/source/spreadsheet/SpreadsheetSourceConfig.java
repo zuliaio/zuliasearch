@@ -3,6 +3,8 @@ package io.zulia.data.source.spreadsheet;
 import io.zulia.data.common.HeaderConfig;
 import io.zulia.data.input.DataInputStream;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.function.Function;
 
@@ -39,7 +41,15 @@ public interface SpreadsheetSourceConfig {
 
 	SpreadsheetSourceConfig withDateParser(Function<String, Date> dateParser);
 
+	SpreadsheetSourceConfig withLocalDateParser(Function<String, LocalDate> localDateParser);
+
+	SpreadsheetSourceConfig withLocalDateTimeParser(Function<String, LocalDateTime> localDateTimeParser);
+
 	Function<String, Boolean> getBooleanParser();
 
 	Function<String, Date> getDateParser();
+
+	Function<String, LocalDate> getLocalDateParser();
+
+	Function<String, LocalDateTime> getLocalDateTimeParser();
 }

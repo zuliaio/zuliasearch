@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -333,6 +334,9 @@ public class DelimitedListParsingTest {
 		Assertions.assertEquals(Date.from(Instant.parse("2024-12-18T08:00:00Z")), defaults.dateParser().apply("2024-12-18T08:00:00Z[Etc/UTC]"));
 		// a zone-less value is read in the zone the parser was built for
 		Assertions.assertEquals(Date.from(Instant.parse("2024-12-18T08:00:00Z")), CellParsers.isoDateParser(ZoneOffset.UTC).apply("2024-12-18T08:00:00"));
+		Assertions.assertEquals(LocalDate.of(2024, 5, 1), defaults.localDateParser().apply("2024-05-01"));
+		Assertions.assertThrows(DateTimeParseException.class, () -> defaults.localDateParser().apply("2024-02-30"));
+		Assertions.assertEquals(LocalDateTime.of(2024, 5, 1, 13, 45, 30), defaults.localDateTimeParser().apply("2024-05-01T13:45:30"));
 	}
 
 	@Test
@@ -344,6 +348,8 @@ public class DelimitedListParsingTest {
 		Assertions.assertSame(defaults, CellParsers.defaults(), "defaults are shared, not rebuilt");
 		Assertions.assertThrows(NullPointerException.class, () -> defaults.withBooleanParser(null));
 		Assertions.assertThrows(NullPointerException.class, () -> new CellParsers(ONE_IS_TRUE, null));
+		Assertions.assertThrows(NullPointerException.class, () -> defaults.withLocalDateParser(null));
+		Assertions.assertSame(defaults.localDateParser(), dates.localDateParser());
 	}
 
 	// ---- helpers

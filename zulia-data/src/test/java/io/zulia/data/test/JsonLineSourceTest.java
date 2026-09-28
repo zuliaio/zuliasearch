@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -34,6 +37,22 @@ public class JsonLineSourceTest {
 		Assertions.assertEquals(List.of("a", "b", "c"), records.stream().map(r -> r.getString("id")).toList());
 		Assertions.assertEquals(1, records.getFirst().getInt("count"));
 		Assertions.assertEquals(Boolean.FALSE, records.get(1).getBoolean("active"));
+	}
+
+	@Test
+	public void localDateAndInstantGetters() {
+		JsonSourceRecord record = new JsonSourceRecord(
+				"{\"day\": \"2024-05-01\", \"when\": \"2024-05-01T13:45:30\", \"at\": {\"$date\": \"2024-12-18T08:00:00Z\"}, \"count\": 1}");
+
+		Assertions.assertEquals(LocalDate.of(2024, 5, 1), record.getLocalDate("day"));
+		Assertions.assertEquals(LocalDate.of(2024, 12, 18), record.getLocalDate("at"));
+		Assertions.assertEquals(LocalDateTime.of(2024, 5, 1, 13, 45, 30), record.getLocalDateTime("when"));
+		Assertions.assertEquals(LocalDateTime.of(2024, 12, 18, 8, 0), record.getLocalDateTime("at"));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> record.getLocalDateTime("count"));
+		Assertions.assertEquals(Instant.parse("2024-12-18T08:00:00Z"), record.getInstant("at"));
+		Assertions.assertNull(record.getLocalDate("missing"));
+		Assertions.assertNull(record.getInstant("missing"));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> record.getLocalDate("count"));
 	}
 
 	@Test

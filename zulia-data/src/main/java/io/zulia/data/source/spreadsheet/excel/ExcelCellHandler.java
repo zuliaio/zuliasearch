@@ -2,6 +2,8 @@ package io.zulia.data.source.spreadsheet.excel;
 
 import org.apache.poi.ss.usermodel.Cell;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 public interface ExcelCellHandler {
@@ -18,6 +20,10 @@ public interface ExcelCellHandler {
 	Double cellToDouble(Cell cell);
 
 	Date cellToDate(Cell cell);
+
+	LocalDate cellToLocalDate(Cell cell);
+
+	LocalDateTime cellToLocalDateTime(Cell cell);
 
 	boolean isCellNumeric(Cell cell);
 
