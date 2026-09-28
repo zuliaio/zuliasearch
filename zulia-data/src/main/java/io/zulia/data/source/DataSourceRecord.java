@@ -1,5 +1,8 @@
 package io.zulia.data.source;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -56,6 +59,39 @@ public interface DataSourceRecord {
 			throw new IllegalArgumentException("defaultValue cannot be null");
 		}
 		Date val = getDate(field);
+		return val != null ? val : defaultValue;
+	}
+
+	LocalDate getLocalDate(String field);
+
+	default LocalDate getLocalDate(String field, LocalDate defaultValue) {
+		if (defaultValue == null) {
+			throw new IllegalArgumentException("defaultValue cannot be null");
+		}
+		LocalDate val = getLocalDate(field);
+		return val != null ? val : defaultValue;
+	}
+
+	LocalDateTime getLocalDateTime(String field);
+
+	default LocalDateTime getLocalDateTime(String field, LocalDateTime defaultValue) {
+		if (defaultValue == null) {
+			throw new IllegalArgumentException("defaultValue cannot be null");
+		}
+		LocalDateTime val = getLocalDateTime(field);
+		return val != null ? val : defaultValue;
+	}
+
+	default Instant getInstant(String field) {
+		Date val = getDate(field);
+		return val != null ? val.toInstant() : null;
+	}
+
+	default Instant getInstant(String field, Instant defaultValue) {
+		if (defaultValue == null) {
+			throw new IllegalArgumentException("defaultValue cannot be null");
+		}
+		Instant val = getInstant(field);
 		return val != null ? val : defaultValue;
 	}
 

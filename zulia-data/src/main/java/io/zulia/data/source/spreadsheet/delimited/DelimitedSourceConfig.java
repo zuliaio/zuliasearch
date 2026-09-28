@@ -7,6 +7,8 @@ import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListSettings;
 import io.zulia.data.source.spreadsheet.SpreadsheetSourceConfig;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.function.Function;
 
@@ -33,7 +35,7 @@ public class DelimitedSourceConfig implements SpreadsheetSourceConfig {
 	}
 
 	/**
-	 * Replaces the boolean parser, the date parser and the date formatter in one call, for cells and for the elements of a
+	 * Replaces the boolean, date, local date and local date time parsers and the date formatter in one call, for cells and for the elements of a
 	 * delimited list.
 	 */
 	public DelimitedSourceConfig withParsers(CellParsers parsers) {
@@ -90,6 +92,24 @@ public class DelimitedSourceConfig implements SpreadsheetSourceConfig {
 
 	public DelimitedSourceConfig withDateParser(Function<String, Date> dateParser) {
 		listSettings.withParsers(listSettings.getParsers().withDateParser(dateParser));
+		return this;
+	}
+
+	public Function<String, LocalDate> getLocalDateParser() {
+		return listSettings.getParsers().localDateParser();
+	}
+
+	public DelimitedSourceConfig withLocalDateParser(Function<String, LocalDate> localDateParser) {
+		listSettings.withParsers(listSettings.getParsers().withLocalDateParser(localDateParser));
+		return this;
+	}
+
+	public Function<String, LocalDateTime> getLocalDateTimeParser() {
+		return listSettings.getParsers().localDateTimeParser();
+	}
+
+	public DelimitedSourceConfig withLocalDateTimeParser(Function<String, LocalDateTime> localDateTimeParser) {
+		listSettings.withParsers(listSettings.getParsers().withLocalDateTimeParser(localDateTimeParser));
 		return this;
 	}
 }

@@ -4,6 +4,8 @@ import io.zulia.util.BooleanUtil;
 import io.zulia.util.ZuliaDateUtil;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -24,27 +26,40 @@ import java.util.function.Function;
  * @param booleanParser parses one trimmed element or cell. Unrecognised text may map to null
  * @param dateParser    parses one trimmed element or cell. Unparseable text should throw
  * @param dateFormatter writes a Date as text the date parser reads back
+ * @param localDateParser parses one trimmed element or cell as a calendar day. Unparseable text should throw
+ * @param localDateTimeParser parses one trimmed element or cell as a wall clock time. Unparseable text should throw
  */
-public record CellParsers(Function<String, Boolean> booleanParser, Function<String, Date> dateParser, Function<Date, String> dateFormatter) {
+public record CellParsers(Function<String, Boolean> booleanParser, Function<String, Date> dateParser, Function<Date, String> dateFormatter,
+		Function<String, LocalDate> localDateParser, Function<String, LocalDateTime> localDateTimeParser) {
 
 	private static final CellParsers DEFAULTS = new CellParsers(BooleanUtil::parseBoolean, isoDateParser(ZoneId.systemDefault()),
-			isoDateFormatter(ZoneId.systemDefault()));
+			isoDateFormatter(ZoneId.systemDefault()), isoLocalDateParser(), isoLocalDateTimeParser());
 
 	public CellParsers {
 		Objects.requireNonNull(booleanParser, "booleanParser");
 		Objects.requireNonNull(dateParser, "dateParser");
 		Objects.requireNonNull(dateFormatter, "dateFormatter");
+		Objects.requireNonNull(localDateParser, "localDateParser");
+		Objects.requireNonNull(localDateTimeParser, "localDateTimeParser");
 	}
 
 	/**
-	 * Keeps the default ISO date formatter, which reads back through the default date parser.
+	 * Keeps the default ISO date formatter, which reads back through the default date parser, and the default local parsers.
 	 */
 	public CellParsers(Function<String, Boolean> booleanParser, Function<String, Date> dateParser) {
 		this(booleanParser, dateParser, DEFAULTS.dateFormatter());
 	}
 
 	/**
-	 * {@link BooleanUtil#parseBoolean(String)} for booleans and ISO date time in the system default zone for dates, read and written.
+	 * Keeps the default local date and local date time parsers.
+	 */
+	public CellParsers(Function<String, Boolean> booleanParser, Function<String, Date> dateParser, Function<Date, String> dateFormatter) {
+		this(booleanParser, dateParser, dateFormatter, isoLocalDateParser(), isoLocalDateTimeParser());
+	}
+
+	/**
+	 * {@link BooleanUtil#parseBoolean(String)} for booleans, ISO date time in the system default zone for dates, read and written, ISO
+	 * local date for calendar days and ISO local date time for wall clock times.
 	 */
 	public static CellParsers defaults() {
 		return DEFAULTS;
@@ -71,6 +86,20 @@ public record CellParsers(Function<String, Boolean> booleanParser, Function<Stri
 				.appendLiteral('[').parseCaseSensitive().appendZoneRegionId().appendLiteral(']').optionalEnd().parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
 				.toFormatter().withResolverStyle(ResolverStyle.STRICT).withZone(zoneId);
 		return (s) -> Date.from(Instant.from(formatter.parse(s)));
+	}
+
+	/**
+	 * A plain ISO date such as 2024-05-01, which is what the targets write for a LocalDate. Resolves strictly, so 2024-02-30 is rejected.
+	 */
+	public static Function<String, LocalDate> isoLocalDateParser() {
+		return LocalDate::parse;
+	}
+
+	/**
+	 * A plain ISO local date time such as 2024-05-01T13:45:30, which is what the targets write for a LocalDateTime. Resolves strictly.
+	 */
+	public static Function<String, LocalDateTime> isoLocalDateTimeParser() {
+		return LocalDateTime::parse;
 	}
 
 	/**
@@ -122,14 +151,22 @@ public record CellParsers(Function<String, Boolean> booleanParser, Function<Stri
 	}
 
 	public CellParsers withBooleanParser(Function<String, Boolean> booleanParser) {
-		return new CellParsers(booleanParser, dateParser, dateFormatter);
+		return new CellParsers(booleanParser, dateParser, dateFormatter, localDateParser, localDateTimeParser);
 	}
 
 	public CellParsers withDateParser(Function<String, Date> dateParser) {
-		return new CellParsers(booleanParser, dateParser, dateFormatter);
+		return new CellParsers(booleanParser, dateParser, dateFormatter, localDateParser, localDateTimeParser);
 	}
 
 	public CellParsers withDateFormatter(Function<Date, String> dateFormatter) {
-		return new CellParsers(booleanParser, dateParser, dateFormatter);
+		return new CellParsers(booleanParser, dateParser, dateFormatter, localDateParser, localDateTimeParser);
+	}
+
+	public CellParsers withLocalDateParser(Function<String, LocalDate> localDateParser) {
+		return new CellParsers(booleanParser, dateParser, dateFormatter, localDateParser, localDateTimeParser);
+	}
+
+	public CellParsers withLocalDateTimeParser(Function<String, LocalDateTime> localDateTimeParser) {
+		return new CellParsers(booleanParser, dateParser, dateFormatter, localDateParser, localDateTimeParser);
 	}
 }

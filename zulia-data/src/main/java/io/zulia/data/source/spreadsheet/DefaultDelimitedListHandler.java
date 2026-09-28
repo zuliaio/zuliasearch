@@ -2,6 +2,9 @@ package io.zulia.data.source.spreadsheet;
 
 import com.google.common.base.Splitter;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -12,8 +15,9 @@ import java.util.stream.Stream;
 
 /**
  * Splits a cell on the list delimiter and converts each element to the requested class.
- * Numeric elements use the JDK parsers. Date and Boolean elements use the {@link CellParsers} of the source config, so they follow
- * the same rules as {@link SpreadsheetRecord#getDate(int)} and {@link SpreadsheetRecord#getBoolean(int)}. For every class but
+ * Numeric elements use the JDK parsers. Date, Instant, LocalDate, LocalDateTime and Boolean elements use the {@link CellParsers} of
+ * the source config, so they follow the same rules as {@link SpreadsheetRecord#getDate(int)}, {@link SpreadsheetRecord#getLocalDate(int)},
+ * {@link SpreadsheetRecord#getLocalDateTime(int)} and {@link SpreadsheetRecord#getBoolean(int)}. For every class but
  * String an element is trimmed before it is converted and a blank element becomes a null placeholder, so positions line up with
  * sibling list columns and {@link #collectionToCellValue} writes the list back the way it was read. A blank whole cell reads as an
  * empty list, matching how a blank whole cell reads as null for a single value. String lists keep every element as written.
@@ -38,6 +42,9 @@ public class DefaultDelimitedListHandler implements DelimitedListHandler {
 				Float.class, Float::parseFloat,
 				Double.class, Double::parseDouble,
 				Date.class, parsers.dateParser(),
+				Instant.class, element -> parsers.dateParser().apply(element).toInstant(),
+				LocalDate.class, parsers.localDateParser(),
+				LocalDateTime.class, parsers.localDateTimeParser(),
 				Boolean.class, parsers.booleanParser());
 	}
 
@@ -62,8 +69,8 @@ public class DefaultDelimitedListHandler implements DelimitedListHandler {
 
 	/**
 	 * Joins the elements with the list delimiter. A null element is written as a blank, so it reads back as a null placeholder,
-	 * and a Date is written with the date formatter so it reads back through the date parser. Other elements use toString,
-	 * which the numeric parsers and the default boolean parser read.
+	 * and a Date or Instant is written with the date formatter so it reads back through the date parser. Other elements use
+	 * toString, which the numeric parsers, the default boolean parser and the default local date and local date time parsers read.
 	 */
 	@Override
 	public String collectionToCellValue(Collection<?> collection) {
@@ -74,6 +81,7 @@ public class DefaultDelimitedListHandler implements DelimitedListHandler {
 		return switch (element) {
 			case null -> "";
 			case Date date -> dateFormatter.apply(date);
+			case Instant instant -> dateFormatter.apply(Date.from(instant));
 			default -> element.toString();
 		};
 	}

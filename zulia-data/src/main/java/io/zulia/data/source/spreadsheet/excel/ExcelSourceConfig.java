@@ -7,6 +7,8 @@ import io.zulia.data.source.spreadsheet.DelimitedListHandler;
 import io.zulia.data.source.spreadsheet.DelimitedListSettings;
 import io.zulia.data.source.spreadsheet.SpreadsheetSourceConfig;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Objects;
 import java.util.function.Function;
@@ -67,8 +69,9 @@ public class ExcelSourceConfig implements SpreadsheetSourceConfig {
 	}
 
 	/**
-	 * Replaces the default cell handler. A handler set here reads cells its own way and is not affected by {@link #withBooleanParser}
-	 * or {@link #withDateParser}, which still apply to delimited lists inside a cell.
+	 * Replaces the default cell handler. A handler set here reads cells its own way and is not affected by {@link #withBooleanParser},
+	 * {@link #withDateParser}, {@link #withLocalDateParser} or {@link #withLocalDateTimeParser}, which still apply to delimited lists
+	 * inside a cell.
 	 */
 	public ExcelSourceConfig withExcelCellHandler(ExcelCellHandler excelCellHandler) {
 		this.explicitCellHandler = Objects.requireNonNull(excelCellHandler, "excelCellHandler");
@@ -76,8 +79,8 @@ public class ExcelSourceConfig implements SpreadsheetSourceConfig {
 	}
 
 	/**
-	 * Replaces the boolean parser, the date parser and the date formatter in one call, for text cells and for the elements of a
-	 * delimited list. Typed cells are read from the cell type and do not go through the parsers.
+	 * Replaces the boolean, date, local date and local date time parsers and the date formatter in one call, for text cells and for the
+	 * elements of a delimited list. Typed cells are read from the cell type and do not go through the parsers.
 	 */
 	public ExcelSourceConfig withParsers(CellParsers parsers) {
 		listSettings.withParsers(parsers);
@@ -101,6 +104,26 @@ public class ExcelSourceConfig implements SpreadsheetSourceConfig {
 	 */
 	public ExcelSourceConfig withDateParser(Function<String, Date> dateParser) {
 		listSettings.withParsers(listSettings.getParsers().withDateParser(dateParser));
+		builtCellHandler = null;
+		return this;
+	}
+
+	/**
+	 * Parses calendar day text, both a text cell read with getLocalDate and each element of a delimited list read with getList.
+	 * Date formatted numeric cells are read from the cell type and do not go through the parser.
+	 */
+	public ExcelSourceConfig withLocalDateParser(Function<String, LocalDate> localDateParser) {
+		listSettings.withParsers(listSettings.getParsers().withLocalDateParser(localDateParser));
+		builtCellHandler = null;
+		return this;
+	}
+
+	/**
+	 * Parses wall clock time text, both a text cell read with getLocalDateTime and each element of a delimited list read with getList.
+	 * Date formatted numeric cells are read from the cell type and do not go through the parser.
+	 */
+	public ExcelSourceConfig withLocalDateTimeParser(Function<String, LocalDateTime> localDateTimeParser) {
+		listSettings.withParsers(listSettings.getParsers().withLocalDateTimeParser(localDateTimeParser));
 		builtCellHandler = null;
 		return this;
 	}
@@ -146,5 +169,13 @@ public class ExcelSourceConfig implements SpreadsheetSourceConfig {
 
 	public Function<String, Date> getDateParser() {
 		return listSettings.getParsers().dateParser();
+	}
+
+	public Function<String, LocalDate> getLocalDateParser() {
+		return listSettings.getParsers().localDateParser();
+	}
+
+	public Function<String, LocalDateTime> getLocalDateTimeParser() {
+		return listSettings.getParsers().localDateTimeParser();
 	}
 }

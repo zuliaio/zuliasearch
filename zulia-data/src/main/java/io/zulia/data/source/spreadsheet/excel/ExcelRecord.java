@@ -6,6 +6,8 @@ import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.SequencedSet;
@@ -98,6 +100,16 @@ public class ExcelRecord implements SpreadsheetRecord {
 	}
 
 	@Override
+	public LocalDate getLocalDate(String field) {
+		return excelCellHandler.cellToLocalDate(getCell(field));
+	}
+
+	@Override
+	public LocalDateTime getLocalDateTime(String field) {
+		return excelCellHandler.cellToLocalDateTime(getCell(field));
+	}
+
+	@Override
 	public <T> List<T> getList(int index, Class<T> clazz) {
 		String cellValue = getString(index);
 		return delimitedListHandler.cellValueToList(clazz, cellValue);
@@ -136,6 +148,16 @@ public class ExcelRecord implements SpreadsheetRecord {
 	@Override
 	public Date getDate(int index) {
 		return excelCellHandler.cellToDate(getCell(index));
+	}
+
+	@Override
+	public LocalDate getLocalDate(int index) {
+		return excelCellHandler.cellToLocalDate(getCell(index));
+	}
+
+	@Override
+	public LocalDateTime getLocalDateTime(int index) {
+		return excelCellHandler.cellToLocalDateTime(getCell(index));
 	}
 
 	public String[] getRow() {

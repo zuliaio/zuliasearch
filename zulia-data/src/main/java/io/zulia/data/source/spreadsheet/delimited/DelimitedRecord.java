@@ -3,6 +3,8 @@ package io.zulia.data.source.spreadsheet.delimited;
 import io.zulia.data.common.HeaderMapping;
 import io.zulia.data.source.spreadsheet.SpreadsheetRecord;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.SequencedSet;
@@ -73,6 +75,16 @@ public class DelimitedRecord implements SpreadsheetRecord {
 	}
 
 	@Override
+	public LocalDate getLocalDate(String field) {
+		return parseFromString(field, delimitedSourceConfig.getLocalDateParser(), null);
+	}
+
+	@Override
+	public LocalDateTime getLocalDateTime(String field) {
+		return parseFromString(field, delimitedSourceConfig.getLocalDateTimeParser(), null);
+	}
+
+	@Override
 	public <T> List<T> getList(int index, Class<T> clazz) {
 		String cellValue = getString(index);
 		return delimitedSourceConfig.getDelimitedListHandler().cellValueToList(clazz, cellValue);
@@ -111,6 +123,16 @@ public class DelimitedRecord implements SpreadsheetRecord {
 	@Override
 	public Date getDate(int index) {
 		return parseFromString(index, delimitedSourceConfig.getDateParser(), null);
+	}
+
+	@Override
+	public LocalDate getLocalDate(int index) {
+		return parseFromString(index, delimitedSourceConfig.getLocalDateParser(), null);
+	}
+
+	@Override
+	public LocalDateTime getLocalDateTime(int index) {
+		return parseFromString(index, delimitedSourceConfig.getLocalDateTimeParser(), null);
 	}
 
 	public String[] getRow() {

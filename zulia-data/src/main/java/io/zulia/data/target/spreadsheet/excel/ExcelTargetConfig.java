@@ -10,6 +10,7 @@ import io.zulia.data.target.spreadsheet.excel.cell.DateCellHandler;
 import io.zulia.data.target.spreadsheet.excel.cell.DefaultCellHandler;
 import io.zulia.data.target.spreadsheet.excel.cell.HeaderCellHandler;
 import io.zulia.data.target.spreadsheet.excel.cell.LinkCellHandler;
+import io.zulia.data.target.spreadsheet.excel.cell.MapCellHandler;
 import io.zulia.data.target.spreadsheet.excel.cell.NumberCellHandler;
 import io.zulia.data.target.spreadsheet.excel.cell.StringCellHandler;
 
@@ -30,6 +31,7 @@ public class ExcelTargetConfig extends SpreadsheetTargetConfig<CellReference, Ex
 		withDefaultTypeHandler(new DefaultCellHandler(this));
 		withBooleanTypeHandler(new BooleanCellHandler());
 		withCollectionHandler(new CollectionCellHandler(this));
+		withMapHandler(new MapCellHandler(this));
 		withHeaderHandler(new HeaderCellHandler());
 		withBoldHandler(new BoldCellHandler());
 	}
