@@ -75,7 +75,8 @@ public class ZuliaTestRunner {
 		Map<String, Supplier<ZuliaWorkPool>> connectionToConnectionConfig = new HashMap<>();
 		for (ConnectionConfig connectionConfig : connections) {
 			ThrowingSupplier<ZuliaWorkPool> throwingSupplier = () -> {
-				ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(connectionConfig.getServerAddress(), connectionConfig.getPort());
+				ZuliaPoolConfig zuliaPoolConfig = new ZuliaPoolConfig().addNode(connectionConfig.getServerAddress(), connectionConfig.getPort())
+						.setRoutingEnabled(connectionConfig.isRoutingEnabled()).setNodeUpdateEnabled(connectionConfig.isRoutingEnabled());
 				return new ZuliaWorkPool(zuliaPoolConfig);
 			};
 
