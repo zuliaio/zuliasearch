@@ -9,6 +9,7 @@ import io.zulia.message.ZuliaIndex.IndexSettings;
 import io.zulia.message.ZuliaServiceOuterClass.CreateIndexRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.server.field.FieldTypeUtil;
+import io.zulia.server.index.ShardReader;
 import io.zulia.util.DefaultValueUtil;
 
 import java.util.ArrayList;
@@ -107,6 +108,12 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 			indexSettings.setShardQueryCacheMaxAmount(256);
 		}
 
+		if (indexSettings.getShardQueryCacheMaxResponseMB() < 0) {
+			throw new IllegalArgumentException(
+					"Shard Query Cache Max Response MB must be positive or zero for the default of " + ShardReader.DEFAULT_SHARD_QUERY_CACHE_MAX_RESPONSE_MB
+							+ ", got " + Integer.toUnsignedLong(indexSettings.getShardQueryCacheMaxResponseMB()));
+		}
+
 		if (indexSettings.getShardCommitInterval() < 0) {
 			throw new IllegalArgumentException("Shard Commit Interval must be positive");
 		}
@@ -202,23 +209,11 @@ public class CreateIndexRequestValidator implements DefaultValidator<CreateIndex
 		HashSet<String> searchLabels = new HashSet<>();
 		List<ByteString> warmingSearchesList = new ArrayList<>();
 		for (ByteString bytes : indexSettings.getWarmingSearchesList()) {
-			try {
-				QueryRequest queryRequest = QueryRequest.parseFrom(bytes);
-				queryRequest = new QueryRequestValidator().validateAndSetDefault(queryRequest);
-				warmingSearchesList.add(queryRequest.toByteString());
-				String searchLabel = queryRequest.getSearchLabel();
-				if (searchLabel.isEmpty()) {
-					throw new RuntimeException("A search label is required for a warming search");
-				}
-				if (searchLabels.contains(searchLabel)) {
-					throw new IllegalArgumentException("Warming search list has duplicate search label <" + searchLabel + ">");
-				}
-
-				searchLabels.add(searchLabel);
+			QueryRequest queryRequest = QueryRequestValidator.validateWarmingSearch(bytes);
+			if (!searchLabels.add(queryRequest.getSearchLabel())) {
+				throw new IllegalArgumentException("Warming search list has duplicate search label <" + queryRequest.getSearchLabel() + ">");
 			}
-			catch (Exception e) {
-				throw new IllegalArgumentException("Failed to parse QueryRequest from warming search bytes", e);
-			}
+			warmingSearchesList.add(queryRequest.toByteString());
 		}
 		indexSettings.clearWarmingSearches();
 		indexSettings.addAllWarmingSearches(warmingSearchesList);

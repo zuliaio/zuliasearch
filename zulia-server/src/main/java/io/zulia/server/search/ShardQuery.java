@@ -28,6 +28,7 @@ public class ShardQuery {
 	java.util.List<String> fieldsToMask;
 	List<ZuliaQuery.HighlightRequest> highlightList;
 	List<ZuliaQuery.AnalysisRequest> analysisRequestList;
+	List<ZuliaQuery.DistinctCountRequest> distinctCountRequests;
 	boolean debug;
 	long searchId;
 	String searchLabel;
@@ -37,7 +38,8 @@ public class ShardQuery {
 	public ShardQuery(Query query, Map<String, ZuliaBase.Similarity> similarityOverrideMap, int amount, Map<Integer, FieldDoc> shardToAfter,
 			ZuliaQuery.FacetRequest facetRequest, ZuliaQuery.SortRequest sortRequest, QueryCacheKey queryCacheKey, ZuliaQuery.FetchType resultFetchType,
 			List<String> fieldsToReturn, List<String> fieldsToMask, List<ZuliaQuery.HighlightRequest> highlightList,
-			List<ZuliaQuery.AnalysisRequest> analysisRequestList, boolean debug, long searchId, String searchLabel, boolean realtime, int concurrency) {
+			List<ZuliaQuery.AnalysisRequest> analysisRequestList, List<ZuliaQuery.DistinctCountRequest> distinctCountRequests, boolean debug, long searchId,
+			String searchLabel, boolean realtime, int concurrency) {
 		this.query = query;
 		this.similarityOverrideMap = similarityOverrideMap;
 		this.amount = amount;
@@ -50,6 +52,7 @@ public class ShardQuery {
 		this.fieldsToMask = fieldsToMask;
 		this.highlightList = highlightList;
 		this.analysisRequestList = analysisRequestList;
+		this.distinctCountRequests = distinctCountRequests;
 		this.debug = debug;
 		this.searchId = searchId;
 		this.searchLabel = searchLabel;
@@ -61,7 +64,7 @@ public class ShardQuery {
 			boolean realtime) {
 		Query query = new ConstantScoreQuery(new TermQuery(new Term(ZuliaFieldConstants.ID_FIELD, uniqueId)));
 		return new ShardQuery(query, null, 1, Collections.emptyMap(), ZuliaQuery.FacetRequest.newBuilder().build(), null, null, resultFetchType, fieldsToReturn,
-				fieldsToMask, Collections.emptyList(), Collections.emptyList(), false, 0, "", realtime, 1);
+				fieldsToMask, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false, 0, "", realtime, 1);
 	}
 
 	public static ShardQuery queryByIds(List<String> uniqueIds, ZuliaQuery.FetchType resultFetchType, List<String> fieldsToReturn, List<String> fieldsToMask,
@@ -69,7 +72,7 @@ public class ShardQuery {
 		List<BytesRef> bytesRefs = uniqueIds.stream().map(BytesRef::new).toList();
 		Query query = new ConstantScoreQuery(new TermInSetQuery(ZuliaFieldConstants.ID_FIELD, bytesRefs));
 		return new ShardQuery(query, null, uniqueIds.size(), Collections.emptyMap(), ZuliaQuery.FacetRequest.newBuilder().build(), null, null, resultFetchType,
-				fieldsToReturn, fieldsToMask, Collections.emptyList(), Collections.emptyList(), false, 0, "", realtime, 1);
+				fieldsToReturn, fieldsToMask, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), false, 0, "", realtime, 1);
 	}
 
 	public Query getQuery() {
@@ -118,6 +121,10 @@ public class ShardQuery {
 
 	public List<ZuliaQuery.AnalysisRequest> getAnalysisRequestList() {
 		return analysisRequestList;
+	}
+
+	public List<ZuliaQuery.DistinctCountRequest> getDistinctCountRequests() {
+		return distinctCountRequests;
 	}
 
 	public boolean isDebug() {

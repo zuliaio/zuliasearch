@@ -8,6 +8,7 @@ public class SearchResultsDTO {
 	private List<AnalysisDTO> analysis;
 	private List<ScoredResultDTO> results;
 	private List<FacetsDTO> facets;
+	private List<DistinctCountDTO> distinctCounts;
 
 	public SearchResultsDTO() {
 	}
@@ -52,9 +53,17 @@ public class SearchResultsDTO {
 		this.facets = facets;
 	}
 
+	public List<DistinctCountDTO> getDistinctCounts() {
+		return distinctCounts;
+	}
+
+	public void setDistinctCounts(List<DistinctCountDTO> distinctCounts) {
+		this.distinctCounts = distinctCounts;
+	}
+
 	@Override
 	public String toString() {
 		return "SearchResultsDTO{" + "totalHits=" + totalHits + ", cursor='" + cursor + '\'' + ", analysis=" + analysis + ", results=" + results + ", facets="
-				+ facets + '}';
+				+ facets + ", distinctCounts=" + distinctCounts + '}';
 	}
 }

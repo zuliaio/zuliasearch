@@ -6,6 +6,7 @@ import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
 import io.zulia.message.ZuliaQuery.CountRequest;
+import io.zulia.message.ZuliaQuery.DistinctCountRequest;
 import io.zulia.message.ZuliaQuery.FacetGroup;
 import io.zulia.message.ZuliaQuery.FieldSort;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
@@ -23,7 +24,9 @@ import io.zulia.server.config.SortFieldInfo;
 import io.zulia.server.index.ZuliaIndex;
 import io.zulia.server.search.aggregation.facets.FacetCombiner;
 import io.zulia.server.search.aggregation.stats.StatCombiner;
+import io.zulia.server.search.distinct.DistinctCountCombiner;
 import io.zulia.server.search.score.ZuliaPostSortingComparator;
+import org.apache.lucene.search.TaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 public class QueryCombiner {
 
@@ -46,13 +50,16 @@ public class QueryCombiner {
 	private final int start;
 	private final LastResult lastResult;
 	private final List<AnalysisRequest> analysisRequestList;
+	private final List<DistinctCountRequest> distinctCountRequests;
 	private final SortRequest sortRequest;
 	private final Collection<ZuliaIndex> indexes;
 	private final Map<String, Integer> indexToShardCount;
 	private final int vectorTopN;
+	private final TaskExecutor mergeExecutor;
 	private boolean isShort;
 
-	public QueryCombiner(Collection<ZuliaIndex> indexes, QueryRequest request, List<InternalQueryResponse> responses) {
+	public QueryCombiner(Collection<ZuliaIndex> indexes, QueryRequest request, List<InternalQueryResponse> responses, ExecutorService pool) {
+		this.mergeExecutor = new TaskExecutor(pool);
 		this.indexToShardCount = new HashMap<>();
 
 		for (ZuliaIndex zuliaIndex : indexes) {
@@ -69,6 +76,7 @@ public class QueryCombiner {
 		this.sortRequest = request.getSortRequest();
 		this.start = request.getStart();
 		this.analysisRequestList = request.getAnalysisRequestList();
+		this.distinctCountRequests = request.getDistinctCountList();
 
 		this.isShort = false;
 
@@ -243,6 +251,10 @@ public class QueryCombiner {
 			if (statCombiner.isComplete()) {
 				builder.addStatGroup(statCombiner.getCombinedStatGroupAndConvertToExternalType());
 			}
+		}
+
+		for (int i = 0; i < distinctCountRequests.size(); i++) {
+			builder.addDistinctCount(DistinctCountCombiner.combine(i, distinctCountRequests.get(i), shardResponses, mergeExecutor));
 		}
 
 		Map<String, ScoredResult[]> lastIndexResultMap = createLastIndexResultMapWithPreviousLastResults();

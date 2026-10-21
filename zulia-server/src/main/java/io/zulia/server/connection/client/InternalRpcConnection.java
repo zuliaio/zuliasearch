@@ -12,6 +12,11 @@ import java.util.concurrent.TimeUnit;
 
 public class InternalRpcConnection {
 
+	/**
+	 * The largest message one node accepts from another. A node answers for every shard it holds in one message.
+	 */
+	public static final int MAX_INBOUND_MESSAGE_BYTES = 256 * 1024 * 1024;
+
 	private final static Logger LOG = LoggerFactory.getLogger(InternalRpcConnection.class);
 	private final String memberAddress;
 	private final int internalServicePort;
@@ -26,7 +31,8 @@ public class InternalRpcConnection {
 		this.memberAddress = memberAddress;
 		this.internalServicePort = servicePort;
 
-		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(memberAddress, servicePort).maxInboundMessageSize(256 * 1024 * 1024)
+		ManagedChannelBuilder<?> managedChannelBuilder = ManagedChannelBuilder.forAddress(memberAddress, servicePort)
+				.maxInboundMessageSize(MAX_INBOUND_MESSAGE_BYTES)
 				.usePlaintext().keepAliveTime(30, TimeUnit.SECONDS).keepAliveTimeout(5, TimeUnit.SECONDS).keepAliveWithoutCalls(true);
 		channel = managedChannelBuilder.build();
 

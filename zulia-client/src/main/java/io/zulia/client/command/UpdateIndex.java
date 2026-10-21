@@ -42,6 +42,8 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 	private Double shardTolerance;
 	private Integer shardQueryCacheSize;
 	private Integer shardQueryCacheMaxAmount;
+	private Integer shardQueryCacheMB;
+	private Integer shardQueryCacheMaxResponseMB;
 	private Integer indexWeight;
 	private Integer ramBufferMB;
 	private Integer numberOfReplicas;
@@ -296,6 +298,24 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 
 	public UpdateIndex setShardQueryCacheSize(Integer shardQueryCacheSize) {
 		this.shardQueryCacheSize = shardQueryCacheSize;
+		return this;
+	}
+
+	public Integer getShardQueryCacheMB() {
+		return shardQueryCacheMB;
+	}
+
+	public UpdateIndex setShardQueryCacheMB(Integer shardQueryCacheMB) {
+		this.shardQueryCacheMB = shardQueryCacheMB;
+		return this;
+	}
+
+	public Integer getShardQueryCacheMaxResponseMB() {
+		return shardQueryCacheMaxResponseMB;
+	}
+
+	public UpdateIndex setShardQueryCacheMaxResponseMB(Integer shardQueryCacheMaxResponseMB) {
+		this.shardQueryCacheMaxResponseMB = shardQueryCacheMaxResponseMB;
 		return this;
 	}
 
@@ -589,6 +609,16 @@ public class UpdateIndex extends SimpleCommand<UpdateIndexRequest, UpdateIndexRe
 		if (shardQueryCacheSize != null) {
 			updateIndexSettings.setSetShardQueryCacheSize(true);
 			updateIndexSettings.setShardQueryCacheSize(shardQueryCacheSize);
+		}
+
+		if (shardQueryCacheMB != null) {
+			updateIndexSettings.setSetShardQueryCacheMB(true);
+			updateIndexSettings.setShardQueryCacheMB(shardQueryCacheMB);
+		}
+
+		if (shardQueryCacheMaxResponseMB != null) {
+			updateIndexSettings.setSetShardQueryCacheMaxResponseMB(true);
+			updateIndexSettings.setShardQueryCacheMaxResponseMB(shardQueryCacheMaxResponseMB);
 		}
 
 		if (shardQueryCacheMaxAmount != null) {

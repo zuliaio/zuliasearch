@@ -45,6 +45,12 @@ public class UpdateIndexCmd implements Callable<Integer> {
 	@CommandLine.Option(names = "--shardQueryCacheMaxAmount", description = "Queries with more than this amount of documents returned are not cached")
 	private Integer shardQueryCacheMaxAmount;
 
+	@CommandLine.Option(names = "--shardQueryCacheMB", description = "MB of responses the shard query cache may hold instead of a number of queries (0 returns to the number of queries)")
+	private Integer shardQueryCacheMB;
+
+	@CommandLine.Option(names = "--shardQueryCacheMaxResponseMB", description = "A response larger than this many MB is returned but not cached (0 returns to the default of 8)")
+	private Integer shardQueryCacheMaxResponseMB;
+
 	@CommandLine.Option(names = "--idleTimeWithoutCommit", description = "Time without indexing before commit is forced in seconds (0 disables) (default 30)")
 	private Integer idleTimeWithoutCommit;
 
@@ -121,6 +127,12 @@ public class UpdateIndexCmd implements Callable<Integer> {
 		}
 		if (shardQueryCacheMaxAmount != null) {
 			updateIndex.setShardQueryCacheMaxAmount(shardQueryCacheMaxAmount);
+		}
+		if (shardQueryCacheMB != null) {
+			updateIndex.setShardQueryCacheMB(shardQueryCacheMB);
+		}
+		if (shardQueryCacheMaxResponseMB != null) {
+			updateIndex.setShardQueryCacheMaxResponseMB(shardQueryCacheMaxResponseMB);
 		}
 		if (idleTimeWithoutCommit != null) {
 			updateIndex.setIdleTimeWithoutCommit(idleTimeWithoutCommit);

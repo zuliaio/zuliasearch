@@ -1127,12 +1127,38 @@ public class ZuliaIndex {
 			fieldSimilarityMap.put(fieldSimilarity.getField(), fieldSimilarity.getSimilarity());
 		}
 
+		validateDistinctCountRequests(queryRequest.getDistinctCountList());
+
 		QueryCacheKey queryCacheKey = queryRequest.getDontCache() ? null : new QueryCacheKey(queryRequest);
 		boolean debug = queryRequest.getDebug();
 		return new ShardQuery(query, fieldSimilarityMap, requestedAmount, lastScoreDocMap, queryRequest.getFacetRequest(), queryRequest.getSortRequest(),
 				queryCacheKey, queryRequest.getResultFetchType(), queryRequest.getDocumentFieldsList(), queryRequest.getDocumentMaskedFieldsList(),
-				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), debug, searchId, queryRequest.getSearchLabel(),
-				queryRequest.getRealtime(), queryRequest.getConcurrency());
+				queryRequest.getHighlightRequestList(), queryRequest.getAnalysisRequestList(), queryRequest.getDistinctCountList(), debug, searchId,
+				queryRequest.getSearchLabel(), queryRequest.getRealtime(), queryRequest.getConcurrency());
+	}
+
+	/**
+	 * The request shape is checked by QueryRequestValidator. This checks what only the index knows: the field exists as a sortable, countable type.
+	 */
+	private void validateDistinctCountRequests(List<ZuliaQuery.DistinctCountRequest> distinctCountRequests) {
+		for (ZuliaQuery.DistinctCountRequest request : distinctCountRequests) {
+			String field = request.getField();
+			SortFieldInfo sortFieldInfo = indexConfig.getSortFieldInfo(field);
+			if (sortFieldInfo == null) {
+				throw new IllegalArgumentException(
+						"Distinct count field <" + field + "> on index <" + indexName + "> is not sortable. Add sort() or sortAs() to the field config");
+			}
+			if (sortFieldInfo.getInternalSortFieldName() == null) {
+				// the relevance score sorts without a stored field, since it is computed for each query
+				throw new IllegalArgumentException(
+						"Distinct count field <" + field + "> on index <" + indexName + "> is computed per query and has no stored values to count");
+			}
+			if (FieldTypeUtil.isGeoPointFieldType(sortFieldInfo.getFieldType())) {
+				throw new IllegalArgumentException("Distinct count field <" + field + "> on index <" + indexName
+						+ "> is a GEO_POINT field. Its sort value is one coordinate per document (the last point, to about 1 cm) for distance sorting, "
+						+ "which is not a meaningful distinct count");
+			}
+		}
 	}
 
 	public Integer getNumberOfShards() {

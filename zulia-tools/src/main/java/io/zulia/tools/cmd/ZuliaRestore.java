@@ -109,7 +109,8 @@ public class ZuliaRestore implements Callable<Integer> {
 			try (InputStream inputStream = gzip ?
 					new GZIPInputStream(new BufferedInputStream(new FileInputStream(settingsFilename))) :
 					new BufferedInputStream(new FileInputStream(settingsFilename))) {
-				JsonFormat.parser().merge(new InputStreamReader(inputStream), indexSettingsBuilder);
+				// ignoringUnknownFields so a dump from a newer version restores with the settings this version knows rather than failing
+				JsonFormat.parser().ignoringUnknownFields().merge(new InputStreamReader(inputStream), indexSettingsBuilder);
 				ClientIndexConfig indexConfig = new ClientIndexConfig();
 				indexConfig.configure(indexSettingsBuilder.build());
 				workPool.createIndex(indexConfig);

@@ -30,4 +30,8 @@ public @interface Settings {
 
 	int shardQueryCacheMaxAmount() default 256;
 
+	int shardQueryCacheMB() default 0;
+
+	int shardQueryCacheMaxResponseMB() default 0;
+
 }

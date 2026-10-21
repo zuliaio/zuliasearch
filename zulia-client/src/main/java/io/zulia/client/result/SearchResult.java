@@ -3,6 +3,7 @@ package io.zulia.client.result;
 import io.zulia.fields.GsonDocumentMapper;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisResult;
+import io.zulia.message.ZuliaQuery.DistinctCount;
 import io.zulia.message.ZuliaQuery.FacetCount;
 import io.zulia.message.ZuliaQuery.FacetGroup;
 import io.zulia.message.ZuliaQuery.FacetStats;
@@ -167,6 +168,19 @@ public class SearchResult extends Result {
 
 	public List<FacetGroup> getFacetGroups() {
 		return queryResponse.getFacetGroupList();
+	}
+
+	public List<DistinctCount> getDistinctCounts() {
+		return queryResponse.getDistinctCountList();
+	}
+
+	public DistinctCount getDistinctCount(String fieldName) {
+		for (DistinctCount distinctCount : queryResponse.getDistinctCountList()) {
+			if (fieldName.equals(distinctCount.getField())) {
+				return distinctCount;
+			}
+		}
+		return null;
 	}
 
 	public List<FacetCount> getFacetCounts(String fieldName) {

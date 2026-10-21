@@ -33,6 +33,8 @@ public class ClientIndexConfig {
 	private Double shardTolerance;
 	private Integer shardQueryCacheSize;
 	private Integer shardQueryCacheMaxAmount;
+	private Integer shardQueryCacheMB;
+	private Integer shardQueryCacheMaxResponseMB;
 	private Integer indexWeight;
 	private Integer ramBufferMB;
 	private Integer numberOfReplicas;
@@ -280,6 +282,24 @@ public class ClientIndexConfig {
 		return this;
 	}
 
+	public Integer getShardQueryCacheMB() {
+		return shardQueryCacheMB;
+	}
+
+	public ClientIndexConfig setShardQueryCacheMB(Integer shardQueryCacheMB) {
+		this.shardQueryCacheMB = shardQueryCacheMB;
+		return this;
+	}
+
+	public Integer getShardQueryCacheMaxResponseMB() {
+		return shardQueryCacheMaxResponseMB;
+	}
+
+	public ClientIndexConfig setShardQueryCacheMaxResponseMB(Integer shardQueryCacheMaxResponseMB) {
+		this.shardQueryCacheMaxResponseMB = shardQueryCacheMaxResponseMB;
+		return this;
+	}
+
 	public Integer getShardQueryCacheMaxAmount() {
 		return shardQueryCacheMaxAmount;
 	}
@@ -441,6 +461,14 @@ public class ClientIndexConfig {
 			isb.setShardQueryCacheSize(shardQueryCacheSize);
 		}
 
+		if (shardQueryCacheMB != null) {
+			isb.setShardQueryCacheMB(shardQueryCacheMB);
+		}
+
+		if (shardQueryCacheMaxResponseMB != null) {
+			isb.setShardQueryCacheMaxResponseMB(shardQueryCacheMaxResponseMB);
+		}
+
 		if (shardQueryCacheMaxAmount != null) {
 			isb.setShardQueryCacheMaxAmount(shardQueryCacheMaxAmount);
 		}
@@ -560,6 +588,8 @@ public class ClientIndexConfig {
 		this.minShardRequest = indexSettings.getMinShardRequest();
 		this.shardTolerance = indexSettings.getShardTolerance();
 		this.shardQueryCacheSize = indexSettings.getShardQueryCacheSize();
+		this.shardQueryCacheMB = indexSettings.getShardQueryCacheMB();
+		this.shardQueryCacheMaxResponseMB = indexSettings.getShardQueryCacheMaxResponseMB();
 		this.shardQueryCacheMaxAmount = indexSettings.getShardQueryCacheMaxAmount();
 		this.idleTimeWithoutCommit = indexSettings.getIdleTimeWithoutCommit();
 		this.shardCommitInterval = indexSettings.getShardCommitInterval();

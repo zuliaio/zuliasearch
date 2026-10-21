@@ -245,6 +245,20 @@ public class Search extends SimpleCommand<QueryRequest, SearchResult> implements
 		return this;
 	}
 
+	public Search addDistinctCount(String field) {
+		return addDistinctCount(new CountDistinct(field));
+	}
+
+	public Search addDistinctCount(DistinctCountBuilder distinctCountBuilder) {
+		queryRequest.addDistinctCount(distinctCountBuilder.getDistinctCountRequest());
+		return this;
+	}
+
+	public Search clearDistinctCount() {
+		queryRequest.clearDistinctCount();
+		return this;
+	}
+
 	public Search addAnalysis(AnalysisBuilder analysisBuilder) {
 		queryRequest.addAnalysisRequest(analysisBuilder.getAnalysis());
 		return this;

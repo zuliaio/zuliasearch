@@ -82,6 +82,7 @@ message QueryRequest {
     string searchLabel = 19;
     bool realtime = 20;
     uint32 concurrency = 21;
+    repeated DistinctCountRequest distinctCount = 22;
 }
 
 message QueryResponse {
@@ -95,6 +96,7 @@ message QueryResponse {
     int32 shardsCached = 8;
     int32 shardsPinned = 9;
     int32 shardsQueried = 10;
+    repeated DistinctCount distinctCount = 11;
 }
 
 message InternalQueryResponse {

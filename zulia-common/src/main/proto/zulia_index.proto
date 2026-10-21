@@ -78,6 +78,13 @@ message IndexSettings {
     uint32 nrtTaxoMaxCachedMB = 31; // default 15
     bool nrtCachingDisabled = 32; // when true, no new segments are cached in RAM (directory stays wrapped so it can be toggled live)
 
+    // When set, the shard query cache is bounded by this many MB of serialized responses instead of by shardQueryCacheSize entries.
+    uint32 shardQueryCacheMB = 35; // default 0, bounded by entries
+
+    // A response larger than this many MB when serialized is returned but not kept in the shard query cache, so one search
+    // with a large distinct count or an unlimited facet cannot fill the cache. 0 means the default.
+    uint32 shardQueryCacheMaxResponseMB = 36; // default 8
+
     // server populated: the index-creation version, stamped once at create time and never changed (see ZuliaIndexVersion).
     // Lets new indexes adopt evolving built-in defaults (e.g. id-sort doc-values skip index, default vector quantization)
     // that cannot be expressed per field and must not change for an index that already exists. 0 means legacy (pre-versioning).
@@ -163,6 +170,12 @@ message UpdateIndexSettings {
 
     bool setIndexingThrottle = 41;
     uint32 indexingThrottle = 42;
+
+    bool setShardQueryCacheMB = 57;
+    uint32 shardQueryCacheMB = 58;
+
+    bool setShardQueryCacheMaxResponseMB = 59;
+    uint32 shardQueryCacheMaxResponseMB = 60;
 
     bool setNrtIndexMaxMergeSizeMB = 43;
     uint32 nrtIndexMaxMergeSizeMB = 44;

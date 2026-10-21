@@ -3,6 +3,7 @@ package io.zulia.server.index;
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Policy;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import io.zulia.ZuliaFieldConstants;
@@ -27,9 +28,12 @@ import io.zulia.server.search.QueryCacheKey;
 import io.zulia.server.search.ShardQuery;
 import io.zulia.server.search.aggregation.AggregationHandler;
 import io.zulia.server.search.aggregation.AggregationSettings;
+import io.zulia.server.search.distinct.DistinctCountCollectorManager;
+import io.zulia.server.search.distinct.DistinctValueCollector;
 import io.zulia.util.pool.SemaphoreLimitedVirtualPool;
 import io.zulia.util.pool.VirtualThreadPerTaskTaskExecutor;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.facet.FacetsCollector;
 import org.apache.lucene.facet.FacetsCollectorManager;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
@@ -41,7 +45,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.lucene.search.highlight.QueryScorer;
@@ -62,11 +65,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class ShardReader implements AutoCloseable {
@@ -80,16 +85,27 @@ public class ShardReader implements AutoCloseable {
 	private final long creationTime;
 	private final ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer;
 	private final ExecutorService segmentOpenExecutor;
-	private final AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> queryResultCache;
+	// the general cache is rebuilt from the index settings on an update, so a request thread reads these once per call
+	private volatile AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> queryResultCache;
 	private final AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> pinnedQueryResultCache;
 	private final AggregationSettings aggregationSettings;
 
-	private final AtomicInteger queryResultCacheSize = new AtomicInteger();
-	private final AtomicInteger pinnedQueryResultCacheSize = new AtomicInteger();
+	/**
+	 * Bytes held by the entry bound general cache. Null when the cache is weighted, since Caffeine then keeps the figure.
+	 */
+	private volatile AtomicLong queryResultCacheSize;
+	private final AtomicLong pinnedQueryResultCacheSize = new AtomicLong();
 
 	private final ConcurrentHashMap<Integer, Integer> dimensionChildCountCache = new ConcurrentHashMap<>();
 
 	private static final String[] EMPTY_STRING_ARRAY = new String[0];
+
+	/**
+	 * Used when IndexSettings.shardQueryCacheMaxResponseMB is 0, which is never stamped so an index that keeps the default stays readable by older nodes.
+	 */
+	public static final int DEFAULT_SHARD_QUERY_CACHE_MAX_RESPONSE_MB = 8;
+
+	private volatile long maxCachedResponseBytes;
 
 	public ShardReader(int shardNumber, DirectoryReader indexReader, DirectoryTaxonomyReader taxoReader, ServerIndexConfig indexConfig,
 			ZuliaPerFieldAnalyzer zuliaPerFieldAnalyzer, ExecutorService segmentOpenExecutor, AggregationSettings aggregationSettings) {
@@ -102,11 +118,41 @@ public class ShardReader implements AutoCloseable {
 		this.zuliaPerFieldAnalyzer = zuliaPerFieldAnalyzer;
 		this.segmentOpenExecutor = segmentOpenExecutor;
 		this.aggregationSettings = aggregationSettings;
-		RemovalListener<@NotNull QueryCacheKey, ZuliaQuery.@NotNull ShardQueryResponse> removalListener = (key, value, cause) -> queryResultCacheSize.getAndAdd(
-				-value.getSerializedSize());
-		this.queryResultCache = Caffeine.newBuilder().maximumSize(indexConfig.getIndexSettings().getShardQueryCacheSize()).removalListener(removalListener)
-				.recordStats().buildAsync();
 		this.pinnedQueryResultCache = Caffeine.newBuilder().recordStats().buildAsync();
+		buildQueryResultCache();
+	}
+
+	/**
+	 * Builds the general cache from the current index settings. Called at construction and again when the settings change.
+	 */
+	private void buildQueryResultCache() {
+		ZuliaIndex.IndexSettings settings = indexConfig.getIndexSettings();
+		Caffeine<Object, Object> cacheBuilder = Caffeine.newBuilder().recordStats();
+		long cacheMB = settings.getShardQueryCacheMB();
+		if (cacheMB > 0) {
+			// a byte budget, since a response with a distinct count or an unlimited facet can be many MB while most are a few KB.
+			// Caffeine tracks the weighted size itself, so the counter stays null and the stats read it from the policy
+			queryResultCacheSize = null;
+			queryResultCache = cacheBuilder.maximumWeight(cacheMB * 1024 * 1024)
+					.weigher((QueryCacheKey _, ZuliaQuery.ShardQueryResponse value) -> value.getSerializedSize()).buildAsync();
+		}
+		else {
+			// the listener holds its own counter, so one firing late on a replaced cache cannot touch the counter of the new one
+			AtomicLong counter = new AtomicLong();
+			queryResultCacheSize = counter;
+			RemovalListener<QueryCacheKey, ZuliaQuery.ShardQueryResponse> removalListener = (key, value, cause) -> {
+				// Caffeine passes a null value for an entry whose value was collected, which strong references rule out, but the contract allows it
+				if (value != null) {
+					counter.getAndAdd(-value.getSerializedSize());
+				}
+			};
+			queryResultCache = cacheBuilder.maximumSize(settings.getShardQueryCacheSize()).removalListener(removalListener).buildAsync();
+		}
+		long maxResponseMB = settings.getShardQueryCacheMaxResponseMB();
+		if (maxResponseMB <= 0) {
+			maxResponseMB = DEFAULT_SHARD_QUERY_CACHE_MAX_RESPONSE_MB;
+		}
+		maxCachedResponseBytes = maxResponseMB * 1024 * 1024;
 	}
 
 	@Override
@@ -188,10 +234,14 @@ public class ShardReader implements AutoCloseable {
 		return indexReader.numDocs();
 	}
 
-	/** Drops cached query results so that settings changes such as field mappings are visible without a reader reopen. */
+	/** Drops cached query results and applies the current cache settings, so a changed mapping or cache bound takes effect without a reader reopen. */
 	public void clearQueryCaches() {
-		queryResultCache.synchronous().invalidateAll();
+		AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> previous = queryResultCache;
+		buildQueryResultCache();
+		previous.synchronous().invalidateAll();
 		pinnedQueryResultCache.synchronous().invalidateAll();
+		// the pinned cache has no removal listener, so its counter is reset here
+		pinnedQueryResultCacheSize.set(0);
 	}
 
 	public ZuliaQuery.ShardQueryResponse queryShard(ShardQuery shardQuery) throws Exception {
@@ -206,20 +256,24 @@ public class ShardReader implements AutoCloseable {
 			}
 
 			if (queryCacheKey.isPinned()) {
-				return getFromAsyncCache(pinnedQueryResultCache, queryCacheKey, shardQuery, pinnedQueryResultCacheSize);
+				// a pinned search is kept whatever its size, since pinning it was an explicit choice
+				return getFromAsyncCache(pinnedQueryResultCache, queryCacheKey, shardQuery, pinnedQueryResultCacheSize, Long.MAX_VALUE);
 			}
 
 			int segmentQueryCacheMaxAmount = indexConfig.getIndexSettings().getShardQueryCacheMaxAmount();
 			boolean useCache = (segmentQueryCacheMaxAmount >= shardQuery.getAmount());
 			if (useCache) {
+				// one snapshot of the cache and its counter, since a settings update can replace both while this request runs
+				AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> cache = queryResultCache;
+				AtomicLong cacheSize = queryResultCacheSize;
 
 				// Check if the search is existing, so we can indicate it is cached. Otherwise, compute it in the cache so multiple identical requests are deduplicated
-				CompletableFuture<ZuliaQuery.ShardQueryResponse> cachedResult = queryResultCache.getIfPresent(queryCacheKey);
+				CompletableFuture<ZuliaQuery.ShardQueryResponse> cachedResult = cache.getIfPresent(queryCacheKey);
 				if (cachedResult != null) {
 					return cachedResult.get().toBuilder().setCached(true).build();
 				}
 
-				return getFromAsyncCache(queryResultCache, queryCacheKey, shardQuery, queryResultCacheSize);
+				return getFromAsyncCache(cache, queryCacheKey, shardQuery, cacheSize, maxCachedResponseBytes);
 			}
 		}
 
@@ -228,19 +282,26 @@ public class ShardReader implements AutoCloseable {
 	}
 
 	private ZuliaQuery.ShardQueryResponse getFromAsyncCache(AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> cache,
-			QueryCacheKey queryCacheKey, ShardQuery shardQuery, AtomicInteger cacheSize) throws Exception {
+			QueryCacheKey queryCacheKey, ShardQuery shardQuery, AtomicLong cacheSize, long maxCachedBytes) throws Exception {
 		try {
-			CompletableFuture<ZuliaQuery.ShardQueryResponse> future = cache.get(queryCacheKey, key -> {
+			CompletableFuture<ZuliaQuery.ShardQueryResponse> future = cache.get(queryCacheKey, _ -> {
 				try {
 					ZuliaQuery.ShardQueryResponse shardQueryResponse = getShardQueryResponse(shardQuery);
-					cacheSize.getAndAdd(shardQueryResponse.getSerializedSize());
+					if (cacheSize != null) {
+						cacheSize.getAndAdd(shardQueryResponse.getSerializedSize());
+					}
 					return shardQueryResponse;
 				}
 				catch (Exception e) {
 					throw new WrappedCheckedException(e);
 				}
 			});
-			return future.get();
+			ZuliaQuery.ShardQueryResponse shardQueryResponse = future.get();
+			if (shardQueryResponse.getSerializedSize() > maxCachedBytes) {
+				// computed inside the cache so identical concurrent searches share one run, then dropped so one large response cannot crowd out the rest
+				cache.synchronous().invalidate(queryCacheKey);
+			}
+			return shardQueryResponse;
 		}
 		catch (ExecutionException e) {
 			Throwable cause = e.getCause();
@@ -322,31 +383,54 @@ public class ShardReader implements AutoCloseable {
 
 		boolean hasFacetRequests = !countRequestList.isEmpty();
 		boolean hasStatRequests = !statRequestList.isEmpty();
+		boolean hasAggregations = hasFacetRequests || hasStatRequests;
+		boolean hasDistinctCountRequests = !shardQuery.getDistinctCountRequests().isEmpty();
 
 		TopDocs topDocs;
-		if (hasFacetRequests || hasStatRequests) {
-			FacetsCollectorManager facetsCollectorManager = new FacetsCollectorManager();
-			Object[] results = indexSearcher.search(shardQuery.getQuery(), new MultiCollectorManager(collectorManager, facetsCollectorManager));
+		if (hasAggregations || hasDistinctCountRequests) {
+			List<CollectorManager<?, ?>> managers = new ArrayList<>();
+			managers.add(collectorManager);
+			if (hasAggregations) {
+				managers.add(new FacetsCollectorManager());
+			}
+			int distinctCountOffset = managers.size();
+			List<DistinctCountCollectorManager> distinctCountManagers = List.of();
+			if (hasDistinctCountRequests) {
+				distinctCountManagers = getDistinctCountManagers(shardQuery.getDistinctCountRequests());
+				managers.addAll(distinctCountManagers);
+			}
+
+			Object[] results = indexSearcher.search(shardQuery.getQuery(), new MultiCollectorManager(managers.toArray(new CollectorManager<?, ?>[0])));
 			topDocs = (TopDocs) results[0];
 			int shardTotalHits = (int) topDocs.totalHits.value();
 
-			if (shardTotalHits == 0) {
-				addEmptyFacetAndStatGroups(shardQueryReponseBuilder, countRequestList, statRequestList);
-			}
-			else {
-				List<ZuliaQuery.CountRequest> filteredCountRequests = countRequestList.stream().filter(cr -> {
-					long shardLimit = cr.getMaxShardHitsForFacet() != 0 ? cr.getMaxShardHitsForFacet() : cr.getMaxTotalHitsForFacet();
-					return shardLimit == 0 || shardTotalHits <= shardLimit;
-				}).toList();
-				List<ZuliaQuery.StatRequest> filteredStatRequests = statRequestList.stream().filter(sr -> {
-					long shardLimit = sr.getMaxShardHitsForFacet() != 0 ? sr.getMaxShardHitsForFacet() : sr.getMaxTotalHitsForFacet();
-					return shardLimit == 0 || shardTotalHits <= shardLimit;
-				}).toList();
+			if (hasAggregations) {
+				if (shardTotalHits == 0) {
+					addEmptyFacetAndStatGroups(shardQueryReponseBuilder, countRequestList, statRequestList);
+				}
+				else {
+					List<ZuliaQuery.CountRequest> filteredCountRequests = countRequestList.stream().filter(cr -> {
+						long shardLimit = cr.getMaxShardHitsForFacet() != 0 ? cr.getMaxShardHitsForFacet() : cr.getMaxTotalHitsForFacet();
+						return shardLimit == 0 || shardTotalHits <= shardLimit;
+					}).toList();
+					List<ZuliaQuery.StatRequest> filteredStatRequests = statRequestList.stream().filter(sr -> {
+						long shardLimit = sr.getMaxShardHitsForFacet() != 0 ? sr.getMaxShardHitsForFacet() : sr.getMaxTotalHitsForFacet();
+						return shardLimit == 0 || shardTotalHits <= shardLimit;
+					}).toList();
 
-				if (!filteredCountRequests.isEmpty() || !filteredStatRequests.isEmpty()) {
-					FacetsCollector facetsCollector = (FacetsCollector) results[1];
-					handleAggregations(shardQueryReponseBuilder, filteredStatRequests, filteredCountRequests, facetsCollector, aggregationConcurrency,
-							shardQuery.isDebug(), shardQuery.getSearchId());
+					if (!filteredCountRequests.isEmpty() || !filteredStatRequests.isEmpty()) {
+						FacetsCollector facetsCollector = (FacetsCollector) results[1];
+						handleAggregations(shardQueryReponseBuilder, filteredStatRequests, filteredCountRequests, facetsCollector, aggregationConcurrency,
+								shardQuery.isDebug(), shardQuery.getSearchId());
+					}
+				}
+			}
+
+			if (hasDistinctCountRequests) {
+				for (int i = 0; i < distinctCountManagers.size(); i++) {
+					DistinctValueCollector collected = (DistinctValueCollector) results[distinctCountOffset + i];
+					shardQueryReponseBuilder.addDistinctCount(
+							distinctCountManagers.get(i).toInternal(collected, indexReader.leaves(), indexSearcher.getTaskExecutor()));
 				}
 			}
 		}
@@ -397,6 +481,16 @@ public class ShardReader implements AutoCloseable {
 			}
 		}
 		return shardQueryReponseBuilder.build();
+	}
+
+	private List<DistinctCountCollectorManager> getDistinctCountManagers(List<ZuliaQuery.DistinctCountRequest> distinctCountRequests) {
+		List<DistinctCountCollectorManager> managers = new ArrayList<>(distinctCountRequests.size());
+		for (ZuliaQuery.DistinctCountRequest request : distinctCountRequests) {
+			SortFieldInfo sortFieldInfo = Objects.requireNonNull(indexConfig.getSortFieldInfo(request.getField()),
+					() -> "Distinct count field <" + request.getField() + "> is not sortable in index <" + indexName + ">");
+			managers.add(new DistinctCountCollectorManager(request, sortFieldInfo));
+		}
+		return managers;
 	}
 
 	private void handleAggregations(ZuliaQuery.ShardQueryResponse.Builder shardQueryReponseBuilder, List<ZuliaQuery.StatRequest> statRequestList,
@@ -828,12 +922,16 @@ public class ShardReader implements AutoCloseable {
 
 	public ZuliaBase.ShardCacheStats.Builder getShardCacheStats() {
 		ZuliaBase.ShardCacheStats.Builder b = ZuliaBase.ShardCacheStats.newBuilder();
-		b.setGeneralCache(getCacheStats(queryResultCache.synchronous()).setResultSize(queryResultCacheSize.get()));
-		b.setPinnedCache(getCacheStats(pinnedQueryResultCache.synchronous()).setResultSize(pinnedQueryResultCacheSize.get()));
+		AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> cache = queryResultCache;
+		b.setGeneralCache(getCacheStats(cache.synchronous(), queryResultCacheSize));
+		b.setPinnedCache(getCacheStats(pinnedQueryResultCache.synchronous(), pinnedQueryResultCacheSize));
 		return b;
 	}
 
-	private static ZuliaBase.CacheStats.Builder getCacheStats(Cache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> cache) {
+	/**
+	 * Cache statistics with the bytes held. A weighted cache reports Caffeine's own weighted size, any other the counter kept beside it.
+	 */
+	private static ZuliaBase.CacheStats.Builder getCacheStats(Cache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> cache, AtomicLong countedSize) {
 		CacheStats stats = cache.stats();
 		ZuliaBase.CacheStats.Builder b = ZuliaBase.CacheStats.newBuilder();
 		b.setEstimatedSize(cache.estimatedSize());
@@ -841,6 +939,9 @@ public class ShardReader implements AutoCloseable {
 		b.setMissCount(stats.missCount());
 		b.setTotalLoadTime(stats.totalLoadTime() / 1_000_000);
 		b.setEvictionCount(stats.evictionCount());
+		OptionalLong weightedSize = cache.policy().eviction().map(Policy.Eviction::weightedSize).orElse(OptionalLong.empty());
+		// the counter is null for a weighted cache, and a stats call can observe a cache swap between reading the two fields
+		b.setResultSize(weightedSize.isPresent() ? weightedSize.getAsLong() : countedSize == null ? 0 : countedSize.get());
 		return b;
 	}
 }

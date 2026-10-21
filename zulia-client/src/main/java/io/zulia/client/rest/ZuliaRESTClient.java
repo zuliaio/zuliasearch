@@ -5,7 +5,6 @@ import com.google.protobuf.util.JsonFormat;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.client.rest.options.SearchREST;
 import io.zulia.client.rest.options.TermsRESTOptions;
-import io.zulia.message.ZuliaBase;
 import io.zulia.message.ZuliaBase.NodeStats;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaServiceOuterClass.RestIndexSettingsResponse;
@@ -56,7 +55,7 @@ public class ZuliaRESTClient implements AutoCloseable {
 		String json = unirestInstance.get(ZuliaRESTConstants.INDEXES_URL + "/{indexName}").routeParam("indexName", indexName).asString()
 				.ifFailure(new FailureHandler<>()).getBody();
 		RestIndexSettingsResponse.Builder builder = RestIndexSettingsResponse.newBuilder();
-		JsonFormat.parser().merge(json, builder);
+		JsonFormat.parser().ignoringUnknownFields().merge(json, builder);
 		return builder.build();
 	}
 
@@ -84,7 +83,7 @@ public class ZuliaRESTClient implements AutoCloseable {
 	public NodeStats getStats() throws InvalidProtocolBufferException {
 		String jsonResponse = unirestInstance.get(ZuliaRESTConstants.STATS_URL).asString().ifFailure(new FailureHandler<>()).getBody();
 		NodeStats.Builder nodeStatsBuilder = NodeStats.newBuilder();
-		JsonFormat.parser().merge(jsonResponse, nodeStatsBuilder);
+		JsonFormat.parser().ignoringUnknownFields().merge(jsonResponse, nodeStatsBuilder);
 		return nodeStatsBuilder.build();
 
 	}
@@ -249,6 +248,9 @@ public class ZuliaRESTClient implements AutoCloseable {
 
 		if (searchRest.getFacet() != null && !searchRest.getFacet().isEmpty()) {
 			request = request.queryString(ZuliaRESTConstants.FACET, searchRest.getFacet());
+		}
+		if (searchRest.getDistinctCount() != null && !searchRest.getDistinctCount().isEmpty()) {
+			request = request.queryString(ZuliaRESTConstants.DISTINCT_COUNT, searchRest.getDistinctCount());
 		}
 		if (searchRest.getFields() != null && !searchRest.getFields().isEmpty()) {
 			request = request.queryString(ZuliaRESTConstants.FIELDS, searchRest.getFields());

@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.zulia.ZuliaRESTConstants;
 import io.zulia.rest.dto.AnalysisDTO;
+import io.zulia.rest.dto.DistinctCountDTO;
 import io.zulia.rest.dto.FacetsDTO;
 import io.zulia.rest.dto.HighlightDTO;
 import io.zulia.rest.dto.ScoredResultDTO;
@@ -89,6 +90,8 @@ public class QueryController {
 			@io.swagger.v3.oas.annotations.Parameter(description = "Whether to fetch full documents") @QueryValue(value = ZuliaRESTConstants.FETCH, defaultValue = "true") Boolean fetch,
 			@io.swagger.v3.oas.annotations.Parameter(description = "Number of results to return") @QueryValue(value = ZuliaRESTConstants.ROWS, defaultValue = "0") Integer rows,
 			@io.swagger.v3.oas.annotations.Parameter(description = "Facet fields to compute counts for (field or field:maxCount (-1 for no limit))") @Nullable @QueryValue(ZuliaRESTConstants.FACET) List<String> facet,
+			@io.swagger.v3.oas.annotations.Parameter(description = "Sortable fields to count distinct values for over all matching documents (field or field:maxGroupsPerShard)")
+			@Nullable @QueryValue(ZuliaRESTConstants.DISTINCT_COUNT) List<String> distinctCount,
 			@io.swagger.v3.oas.annotations.Parameter(description = "Drill-down facet filters (field:value)") @Nullable @QueryValue(ZuliaRESTConstants.DRILL_DOWN) List<String> drillDowns,
 			@io.swagger.v3.oas.annotations.Parameter(description = "Default boolean operator (AND or OR)") @Nullable @QueryValue(ZuliaRESTConstants.DEFAULT_OP) String defaultOperator,
 			@io.swagger.v3.oas.annotations.Parameter(description = "Sort fields (field or field:ASC/DESC)") @Nullable @QueryValue(ZuliaRESTConstants.SORT) List<String> sort,
@@ -108,8 +111,9 @@ public class QueryController {
 
 		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
-		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
-				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime,
+		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet,
+				distinctCount, drillDowns, defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList,
+				cursor, realtime,
 				concurrency);
 		QueryResponse qr = indexManager.query(qrBuilder.build());
 		return getJsonResponse(qr, cursor != null, truncate);
@@ -142,8 +146,8 @@ public class QueryController {
 
 		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
-		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, drillDowns,
-				defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime,
+		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, fetch, rows, facet, null,
+				drillDowns, defaultOperator, sort, mm, similarity, debug, dontCache, start, highlightList, highlightJsonList, analyzeJsonList, cursor, realtime,
 				concurrency);
 
 		LocalDateTime now = LocalDateTime.now();
@@ -183,7 +187,8 @@ public class QueryController {
 
 		ZuliaIndexManager indexManager = zuliaNode.getIndexManager();
 
-		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, null, 0, facet, drillDowns,
+		QueryRequest.Builder qrBuilder = buildQueryRequest(indexName, query, queryFields, filterQueries, queryJsonList, fields, null, 0, facet, null,
+				drillDowns,
 				defaultOperator, sort, mm, null, debug, null, start, null, null, null, cursor, realtime, concurrency);
 
 		if (facet != null && !facet.isEmpty()) {
@@ -256,8 +261,9 @@ public class QueryController {
 
 	@NotNull
 	private static QueryRequest.Builder buildQueryRequest(List<String> indexName, String query, List<String> queryFields, List<String> filterQueries,
-			List<String> queryJsonList, List<String> fields, Boolean fetch, Integer rows, List<String> facet, List<String> drillDowns, String defaultOperator,
-			List<String> sort, Integer mm, List<String> similarity, Boolean debug, Boolean dontCache, Integer start, List<String> highlightList,
+			List<String> queryJsonList, List<String> fields, Boolean fetch, Integer rows, List<String> facet, List<String> distinctCount,
+			List<String> drillDowns, String defaultOperator, List<String> sort, Integer mm, List<String> similarity, Boolean debug, Boolean dontCache,
+			Integer start, List<String> highlightList,
 			List<String> highlightJsonList, List<String> analyzeJsonList, String cursor, Boolean realtime, Integer concurrency) {
 		QueryRequest.Builder qrBuilder = QueryRequest.newBuilder().addAllIndex(indexName);
 		if (cursor != null) {
@@ -465,6 +471,32 @@ public class QueryController {
 
 		qrBuilder.setFacetRequest(frBuilder);
 
+		if (distinctCount != null) {
+			for (String distinctCountField : distinctCount) {
+				DistinctCountRequest.Builder distinctCountRequest = DistinctCountRequest.newBuilder();
+				int separator = distinctCountField.indexOf(':');
+				if (separator >= 0) {
+					String maxGroups = distinctCountField.substring(separator + 1);
+					distinctCountField = distinctCountField.substring(0, separator);
+					int parsed;
+					try {
+						parsed = Integer.parseInt(maxGroups);
+					}
+					catch (NumberFormatException e) {
+						throw new IllegalArgumentException(
+								"Invalid max groups per shard <" + maxGroups + "> for distinct count field <" + distinctCountField + ">. Expecting an integer");
+					}
+					if (parsed < 0) {
+						throw new IllegalArgumentException("Max groups per shard <" + maxGroups + "> for distinct count field <" + distinctCountField
+								+ "> must be 0 for the default or positive");
+					}
+					distinctCountRequest.setMaxGroupsPerShard(parsed);
+				}
+				distinctCountRequest.setField(distinctCountField);
+				qrBuilder.addDistinctCount(distinctCountRequest);
+			}
+		}
+
 		if (sort != null) {
 			SortRequest.Builder sortRequest = SortRequest.newBuilder();
 			for (String sortField : sort) {
@@ -566,6 +598,10 @@ public class QueryController {
 
 			List<FacetsDTO> facets = qr.getFacetGroupList().stream().map(FacetsDTO::fromFacetGroup).toList();
 			searchResultsDTO.setFacets(facets);
+		}
+
+		if (!qr.getDistinctCountList().isEmpty()) {
+			searchResultsDTO.setDistinctCounts(qr.getDistinctCountList().stream().map(DistinctCountDTO::fromDistinctCount).toList());
 		}
 
 		return searchResultsDTO;
