@@ -466,6 +466,13 @@ public class GeneralFeaturesTest {
 		fetchDoc2Again.setRealtime(true);
 		fetchResult = zuliaWorkPool.fetch(fetchDoc2Again);
 		Assertions.assertFalse(fetchResult.hasResultDocument());
+		Assertions.assertNull(fetchResult.getDocument(), "deleted document must fetch as null, not an empty document");
+		Assertions.assertNull(fetchResult.getDocumentAsJson());
+
+		// An ID that never existed behaves the same way
+		FetchResult neverStored = zuliaWorkPool.fetch(new Fetch("never-stored-id", INDEX_NAME));
+		Assertions.assertFalse(neverStored.hasResultDocument());
+		Assertions.assertNull(neverStored.getDocument());
 
 		// Associated docs for doc 2 should be gone
 		fetchResult = zuliaWorkPool.fetch(new FetchAllAssociated("2", INDEX_NAME));

@@ -72,7 +72,7 @@ public class FetchController {
 
 		FetchResponse fetchResponse = indexManager.fetch(fetchRequest.build());
 
-		if (fetchResponse.hasResultDocument()) {
+		if (fetchResponse.hasResultDocument() && !fetchResponse.getResultDocument().getDocument().isEmpty()) {
 			Document document = ResultHelper.getDocumentFromResultDocument(fetchResponse.getResultDocument());
 			if (document != null) {
 				return document.toJson();

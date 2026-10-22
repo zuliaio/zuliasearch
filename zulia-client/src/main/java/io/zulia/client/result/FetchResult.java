@@ -59,7 +59,7 @@ public class FetchResult extends Result {
 	}
 
 	public Document getDocument() {
-		if (fetchResponse.hasResultDocument()) {
+		if (hasResultDocument()) {
 			ResultDocument rd = fetchResponse.getResultDocument();
 			return ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
 		}
@@ -67,7 +67,7 @@ public class FetchResult extends Result {
 	}
 
 	public String getDocumentAsJson() {
-		if (fetchResponse.hasResultDocument()) {
+		if (hasResultDocument()) {
 			ResultDocument rd = fetchResponse.getResultDocument();
 			Document document = ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
 			return ZuliaUtil.mongoDocumentToJson(document);
@@ -76,7 +76,7 @@ public class FetchResult extends Result {
 	}
 
 	public String getDocumentAsPrettyJson() {
-		if (fetchResponse.hasResultDocument()) {
+		if (hasResultDocument()) {
 			ResultDocument rd = fetchResponse.getResultDocument();
 			Document document = ZuliaUtil.byteArrayToMongoDocument(rd.getDocument().toByteArray());
 			return ZuliaUtil.mongoDocumentToJson(document, true);
@@ -85,7 +85,7 @@ public class FetchResult extends Result {
 	}
 
 	public <T> T getDocument(GsonDocumentMapper<T> mapper) {
-		if (fetchResponse.hasResultDocument()) {
+		if (hasResultDocument()) {
 			Document document = getDocument();
 			return mapper.fromDocument(document);
 		}

@@ -108,6 +108,17 @@ public class RestTest {
 
 	@Test
 	@Order(3)
+	public void fetchMissingTest() {
+		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
+		Document found = restClient.fetchRecord("index1", "123", true);
+		Assertions.assertEquals("test", found.getString("title"));
+
+		RuntimeException notFound = Assertions.assertThrows(RuntimeException.class, () -> restClient.fetchRecord("index1", "does-not-exist", false));
+		Assertions.assertEquals("404", notFound.getMessage(), "missing document must be a 404, not an empty document");
+	}
+
+	@Test
+	@Order(3)
 	public void indexTest() throws Exception {
 		ZuliaRESTClient restClient = restNodeExtension.getRESTClient();
 		RestIndexSettingsResponse restIndexSettingsResponse = restClient.getIndex("index1");
