@@ -1,8 +1,6 @@
 syntax = "proto3";
 
-
 import "zulia_base.proto";
-import "DDSketch.proto";
 
 option java_package = "io.zulia.message";
 
@@ -167,7 +165,8 @@ message FacetStatsInternal {
     uint64 docCount = 5;
     uint64 allDocCount = 6;
     uint64 valueCount = 7;
-    DDSketch statSketch = 8;
+    reserved 8; // DDSketch message from the sketches-java library, replaced by the QuantileSketch bytes below
+    bytes statSketch = 9; // io.zulia.util.sketch.QuantileSketch bytes, only sent between nodes
 }
 
 message StatGroup {
@@ -176,7 +175,7 @@ message StatGroup {
     repeated FacetStats facetStats = 3;
 }
 
-// Internal message to handle larger DDSketch facet stats
+// Internal message to handle larger facet stats with their quantile sketches
 message StatGroupInternal {
     StatRequest statRequest = 1;
     FacetStatsInternal globalStats = 2;

@@ -3,7 +3,6 @@ description = "Zulia AI"
 dependencies {
     api(projects.zuliaData)
 
-    implementation(libs.sketches.java)
     implementation(libs.eclipse.collections)
     api(libs.djl.pytorch.engine)
     api(libs.djl.bom)
