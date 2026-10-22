@@ -57,7 +57,7 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 
 	public void tallyValue(double newValue) {
 		this.valueCount++;
-		if (this.sketch != null) {
+		if (this.sketch != null && Double.isFinite(newValue)) {
 			this.sketch.accept(newValue);
 		}
 	}
