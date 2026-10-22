@@ -1,9 +1,6 @@
 package io.zulia.server.search.aggregation.stats;
 
-import com.datadoghq.sketch.ddsketch.DDSketch;
-import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
-import com.datadoghq.sketch.ddsketch.DDSketches;
-import com.datadoghq.sketch.ddsketch.store.UnboundedSizeDenseStore;
+import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaQuery.FacetStats;
 import io.zulia.message.ZuliaQuery.FacetStatsInternal;
 import io.zulia.message.ZuliaQuery.Percentile;
@@ -11,8 +8,10 @@ import io.zulia.message.ZuliaQuery.SortValue;
 import io.zulia.message.ZuliaQuery.StatGroup;
 import io.zulia.message.ZuliaQuery.StatGroupInternal;
 import io.zulia.message.ZuliaQuery.StatRequest;
+import io.zulia.util.sketch.QuantileSketch;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
@@ -169,8 +168,8 @@ public class StatCombiner {
 	}
 
 	/**
-	 * Combines a list of FacetStats Internal type into a single "merged" FacetStats type which can be returned to the calling user. Combines DDSketches
-	 * into a final single sketch and then retrieves the requested percentiles.
+	 * Combines a list of FacetStats Internal type into a single "merged" FacetStats type which can be returned to the calling user. Merges the shard
+	 * sketches into one and then reads the requested percentiles from it.
 	 *
 	 * @param internalStats List of internal stat messages to parse and combine into a return type
 	 * @return Combined FacetStats message object ready to be returned to the user
@@ -185,23 +184,9 @@ public class StatCombiner {
 		// Populate percentiles if they were requested correctly
 		List<Percentile> percentiles = new ArrayList<>();
 		if (statRequest.getPrecision() > 0.0 && !statRequest.getPercentilesList().isEmpty()) {
-			// Build initial sketch and merge other sketches into this one
-			DDSketch combinedSketch = DDSketches.unboundedDense(statRequest.getPrecision());
-			for (FacetStatsWithShardIndex fsi : internalStats) {
-				// Skip entries with no sketch (e.g. shards with 0 matching docs return default FacetStatsInternal)
-				if (fsi.facetStats().hasStatSketch() && fsi.facetStats().getStatSketch().getSerializedSize() > 0) {
-					DDSketch sketch = DDSketchProtoBinding.fromProto(UnboundedSizeDenseStore::new, fsi.facetStats().getStatSketch());
-					combinedSketch.mergeWith(sketch);
-				}
-			}
-
-			// Get all percentiles
-			if (!combinedSketch.isEmpty()) {
-				for (Double point : statRequest.getPercentilesList()) {
-					if (point >= 0.0 && point <= 100.0) {
-						percentiles.add(Percentile.newBuilder().setPoint(point).setValue(combinedSketch.getValueAtQuantile(point)).build());
-					}
-				}
+			QuantileSketch combinedSketch = combineSketches(internalStats);
+			if (combinedSketch != null && !combinedSketch.isEmpty()) {
+				percentiles = readPercentiles(combinedSketch, statRequest.getPercentilesList());
 			}
 		}
 
@@ -220,6 +205,38 @@ public class StatCombiner {
 		return FacetStats.newBuilder().setFacet(facetName).setMin(carrier.getMin()).setMax(carrier.getMax()).setSum(carrier.getSum())
 				.setDocCount(carrier.docCount).setAllDocCount(carrier.allDocCount).setValueCount(carrier.valueCount).addAllPercentiles(percentiles)
 				.setHasError(hasError);
+	}
+
+	/** Merges every shard sketch straight from its bytes. Shards with no sketch, such as shards with no matching docs, are skipped. */
+	private static QuantileSketch combineSketches(List<FacetStatsWithShardIndex> internalStats) {
+		QuantileSketch combined = null;
+		for (FacetStatsWithShardIndex fsi : internalStats) {
+			ByteString bytes = fsi.facetStats().getStatSketch();
+			if (bytes.isEmpty()) {
+				continue;
+			}
+			if (combined == null) {
+				combined = QuantileSketch.fromBytes(bytes.toByteArray());
+			}
+			else {
+				combined.mergeFrom(bytes.toByteArray());
+			}
+		}
+		return combined;
+	}
+
+	/** Reads every requested point in one walk over the sketch, returning them in the order they were requested. */
+	private static List<Percentile> readPercentiles(QuantileSketch sketch, List<Double> points) {
+		double[] ascending = points.stream().mapToDouble(Double::doubleValue).filter(point -> point >= 0.0 && point <= 100.0).distinct().sorted().toArray();
+		double[] values = sketch.quantiles(ascending);
+		List<Percentile> percentiles = new ArrayList<>(points.size());
+		for (double point : points) {
+			int i = Arrays.binarySearch(ascending, point);
+			if (i >= 0) {
+				percentiles.add(Percentile.newBuilder().setPoint(point).setValue(values[i]).build());
+			}
+		}
+		return percentiles;
 	}
 
 	private static class StatCarrier {

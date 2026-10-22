@@ -5,11 +5,14 @@ import io.zulia.message.ZuliaQuery.FacetStatsInternal;
 import io.zulia.message.ZuliaQuery.SortValue;
 import io.zulia.message.ZuliaQuery.StatGroup;
 import io.zulia.message.ZuliaQuery.StatGroupInternal;
+import io.zulia.message.ZuliaQuery.Percentile;
 import io.zulia.message.ZuliaQuery.StatRequest;
+import io.zulia.util.sketch.QuantileSketch;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Random;
 
 public class StatCombinerTest {
 
@@ -218,6 +221,84 @@ public class StatCombinerTest {
 		Assertions.assertNotNull(facetA);
 		Assertions.assertFalse(facetA.getHasError());
 		Assertions.assertEquals(150, facetA.getSum().getLongValue());
+	}
+
+	private static final double PRECISION = 0.001;
+
+	@Test
+	public void percentilesMatchOneSketchOverEveryShardValue() {
+		// points out of order and repeated, the response keeps the requested order
+		List<Double> points = List.of(0.5, 0.05, 0.99, 0.5, 0.0, 1.0, 0.25);
+		StatRequest statRequest = StatRequest.newBuilder().setNumericField("amount").setMaxFacets(10).setShardFacets(-1).setPrecision(PRECISION)
+				.addAllPercentiles(points).build();
+
+		Random random = new Random(7);
+		int shardCount = 4;
+		StatCombiner combiner = new StatCombiner(statRequest, shardCount);
+		QuantileSketch everyValue = new QuantileSketch(PRECISION, QuantileSketch.Mapping.CUBIC);
+		for (int shard = 0; shard < shardCount; shard++) {
+			DoubleDoubleStats shardStats = new DoubleDoubleStats(PRECISION);
+			int values = 50 + random.nextInt(500);
+			double scale = Math.pow(10, random.nextInt(6) - 2);
+			for (int i = 0; i < values; i++) {
+				double value = random.nextInt(40) == 0 ? 0 : (random.nextDouble() - 0.3) * scale;
+				shardStats.newDoc(true);
+				shardStats.newValue(value);
+				everyValue.accept(value);
+			}
+			FacetStatsInternal facetStats = shardStats.buildResponse().setFacet("facetA").build();
+			combiner.handleStatGroupForShard(StatGroupInternal.newBuilder().setGlobalStats(facetStats).addFacetStats(facetStats).build(), shard);
+		}
+
+		StatGroup result = combiner.getCombinedStatGroupAndConvertToExternalType();
+		double[] expected = everyValue.quantiles(new double[] { 0.0, 0.05, 0.25, 0.5, 0.99, 1.0 });
+		double[] expectedInRequestOrder = { expected[3], expected[1], expected[4], expected[3], expected[0], expected[5], expected[2] };
+		assertPercentiles(points, expectedInRequestOrder, result.getGlobalStats().getPercentilesList());
+		assertPercentiles(points, expectedInRequestOrder, findFacetByName(result.getFacetStatsList(), "facetA").getPercentilesList());
+	}
+
+	@Test
+	public void shardsWithoutASketchAreSkippedAndEmptySketchesGiveNoPercentiles() {
+		StatRequest statRequest = StatRequest.newBuilder().setNumericField("amount").setMaxFacets(10).setShardFacets(-1).setPrecision(PRECISION)
+				.addPercentiles(0.5).build();
+		StatCombiner combiner = new StatCombiner(statRequest, 3);
+
+		DoubleDoubleStats withValues = new DoubleDoubleStats(PRECISION);
+		for (double value : new double[] { 1, 2, 3, 4, 5 }) {
+			withValues.newDoc(true);
+			withValues.newValue(value);
+		}
+		DoubleDoubleStats noValues = new DoubleDoubleStats(PRECISION);
+		noValues.newDoc(false);
+
+		// shard 0 matched docs, shard 1 matched docs with no values, shard 2 matched nothing and sends the default message
+		combiner.handleStatGroupForShard(StatGroupInternal.newBuilder().setGlobalStats(withValues.buildResponse().build())
+				.addFacetStats(withValues.buildResponse().setFacet("facetA").build()).addFacetStats(noValues.buildResponse().setFacet("facetB").build())
+				.build(), 0);
+		combiner.handleStatGroupForShard(StatGroupInternal.newBuilder().setGlobalStats(noValues.buildResponse().build())
+				.addFacetStats(noValues.buildResponse().setFacet("facetB").build()).build(), 1);
+		combiner.handleStatGroupForShard(StatGroupInternal.newBuilder().setGlobalStats(FacetStatsInternal.getDefaultInstance()).build(), 2);
+
+		StatGroup result = combiner.getCombinedStatGroupAndConvertToExternalType();
+		QuantileSketch everyValue = new QuantileSketch(PRECISION, QuantileSketch.Mapping.CUBIC);
+		for (double value : new double[] { 1, 2, 3, 4, 5 }) {
+			everyValue.accept(value);
+		}
+		double median = everyValue.quantile(0.5);
+		assertPercentiles(List.of(0.5), new double[] { median }, result.getGlobalStats().getPercentilesList());
+		assertPercentiles(List.of(0.5), new double[] { median }, findFacetByName(result.getFacetStatsList(), "facetA").getPercentilesList());
+		Assertions.assertEquals(0, findFacetByName(result.getFacetStatsList(), "facetB").getPercentilesCount());
+		// five docs with values from shard 0, one without a value from shard 1, nothing from shard 2
+		Assertions.assertEquals(6, result.getGlobalStats().getAllDocCount());
+		Assertions.assertEquals(5, result.getGlobalStats().getDocCount());
+	}
+
+	private static void assertPercentiles(List<Double> points, double[] expected, List<Percentile> actual) {
+		Assertions.assertEquals(points.size(), actual.size());
+		for (int i = 0; i < points.size(); i++) {
+			Assertions.assertEquals(points.get(i), actual.get(i).getPoint(), "point " + i);
+			Assertions.assertEquals(expected[i], actual.get(i).getValue(), "value at " + points.get(i));
+		}
 	}
 
 	private FacetStatsInternal buildFacetStats(String facet, long sum) {

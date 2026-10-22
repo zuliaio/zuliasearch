@@ -93,7 +93,6 @@ dependencies {
     implementation(libs.micronaut.reactor)
     implementation(libs.micronaut.serde.jackson)
     implementation(libs.picocli.base)
-    implementation(libs.sketches.java)
     implementation(libs.snake.yaml)
     implementation(libs.snappy.java)
     implementation(libs.swagger.annotations)
