@@ -67,7 +67,6 @@ dependencies {
     implementation(libs.micronaut.openapi)
     implementation(libs.micronaut.data.mongodb)
     implementation(libs.micronaut.http.client)
-    implementation(libs.sketches.java)
     implementation(libs.snake.yaml)
     implementation(libs.snappy.java)
     implementation(libs.swagger.annotations)

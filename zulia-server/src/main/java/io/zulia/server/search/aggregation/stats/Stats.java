@@ -1,14 +1,13 @@
 package io.zulia.server.search.aggregation.stats;
 
-import com.datadoghq.sketch.ddsketch.DDSketch;
-import com.datadoghq.sketch.ddsketch.DDSketchProtoBinding;
-import com.datadoghq.sketch.ddsketch.DDSketches;
+import com.google.protobuf.ByteString;
 import io.zulia.message.ZuliaQuery;
+import io.zulia.util.sketch.QuantileSketch;
 
 public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 
 	private final double precision;
-	private final DDSketch sketch;
+	private final QuantileSketch sketch;
 
 	private int ordinal;
 	private long docCount;
@@ -17,10 +16,9 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 
 	// overload constructor for building w/ precision
 	public Stats(double precision) {
-		// Cannot perform DDSketch with perfect precision.
-		// This prevents quantile from running.
+		// A sketch cannot have perfect precision, so no precision means no percentiles
 		if (precision > 0.0) {
-			this.sketch = DDSketches.unboundedDense(precision);
+			this.sketch = new QuantileSketch(precision, QuantileSketch.Mapping.CUBIC);
 		}
 		else {
 			this.sketch = null;
@@ -28,7 +26,7 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 		this.precision = precision;
 	}
 
-	protected DDSketch getSketch() {
+	protected QuantileSketch getSketch() {
 		return sketch;
 	}
 
@@ -80,7 +78,7 @@ public abstract class Stats<T extends Stats<T>> implements Comparable<T> {
 		ZuliaQuery.FacetStatsInternal.Builder builder = ZuliaQuery.FacetStatsInternal.newBuilder().setDocCount(docCount).setAllDocCount(allDocCount)
 				.setValueCount(valueCount);
 		if (sketch != null) {
-			builder.setStatSketch(DDSketchProtoBinding.toProto(sketch));
+			builder.setStatSketch(ByteString.copyFrom(sketch.toBytes()));
 		}
 		return builder;
 	}

@@ -127,7 +127,7 @@ public class ShardWriteManager implements Closeable {
 		TieredMergePolicy tieredMergePolicy = new TieredMergePolicy();
 		tieredMergePolicy.setMaxCFSSegmentSizeMB(100);
 		tieredMergePolicy.setMaxMergedSegmentMB(10_000);
-		tieredMergePolicy.setDeletesPctAllowed(0.15);
+		tieredMergePolicy.setDeletesPctAllowed(15.0);
 		config.setMergePolicy(tieredMergePolicy);
 		config.setIndexDeletionPolicy(snapshotDeletionPolicy);
 		// per-field vector codec, encodes each vector field representation per its VectorIndexingConfig

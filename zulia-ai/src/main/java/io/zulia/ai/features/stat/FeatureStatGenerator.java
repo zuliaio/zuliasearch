@@ -1,18 +1,19 @@
 package io.zulia.ai.features.stat;
 
-import com.datadoghq.sketch.ddsketch.DDSketch;
-import com.datadoghq.sketch.ddsketch.DDSketches;
+import io.zulia.util.sketch.QuantileSketch;
 
 public class FeatureStatGenerator {
 
+	private static final double[] QUANTILES = { 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95 };
+
 	private final int numberOfFeatures;
-	private final DDSketch[] featureSketches;
+	private final QuantileSketch[] featureSketches;
 
 	public FeatureStatGenerator(int numberOfFeatures) {
 		this.numberOfFeatures = numberOfFeatures;
-		this.featureSketches = new DDSketch[numberOfFeatures];
+		this.featureSketches = new QuantileSketch[numberOfFeatures];
 		for (int i = 0; i < numberOfFeatures; i++) {
-			featureSketches[i] = DDSketches.unboundedDense(0.0001);
+			featureSketches[i] = new QuantileSketch(0.0001, QuantileSketch.Mapping.CUBIC);
 		}
 	}
 
@@ -37,18 +38,19 @@ public class FeatureStatGenerator {
 	public FeatureStat[] computeFeatureStats() {
 		FeatureStat[] featureStats = new FeatureStat[numberOfFeatures];
 		for (int i = 0; i < numberOfFeatures; i++) {
-			DDSketch featureSketch = featureSketches[i];
+			QuantileSketch featureSketch = featureSketches[i];
+			double[] quantiles = featureSketch.quantiles(QUANTILES);
 			FeatureStat featureStat = new FeatureStat();
-			featureStat.setAvg(featureSketch.getAverage());
-			featureStat.setMin(featureSketch.getMinValue());
-			featureStat.setP05(featureSketch.getValueAtQuantile(0.05));
-			featureStat.setP10(featureSketch.getValueAtQuantile(0.10));
-			featureStat.setP25(featureSketch.getValueAtQuantile(0.25));
-			featureStat.setP50(featureSketch.getValueAtQuantile(0.50));
-			featureStat.setP75(featureSketch.getValueAtQuantile(0.75));
-			featureStat.setP90(featureSketch.getValueAtQuantile(0.90));
-			featureStat.setP95(featureSketch.getValueAtQuantile(0.95));
-			featureStat.setMax(featureSketch.getMaxValue());
+			featureStat.setAvg(featureSketch.average());
+			featureStat.setMin(featureSketch.min());
+			featureStat.setP05(quantiles[0]);
+			featureStat.setP10(quantiles[1]);
+			featureStat.setP25(quantiles[2]);
+			featureStat.setP50(quantiles[3]);
+			featureStat.setP75(quantiles[4]);
+			featureStat.setP90(quantiles[5]);
+			featureStat.setP95(quantiles[6]);
+			featureStat.setMax(featureSketch.max());
 			featureStats[i] = featureStat;
 		}
 		return featureStats;
