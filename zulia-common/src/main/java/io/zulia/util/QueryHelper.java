@@ -37,8 +37,8 @@ public class QueryHelper {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < s.length(); i++) {
 			char c = s.charAt(i);
-			// These characters are part of the query syntax and must be escaped
-			if (c == '\"') {
+			// Inside quotes only the quote and the escape character itself carry syntax meaning
+			if (c == '\"' || c == '\\') {
 				sb.append('\\');
 			}
 			sb.append(c);

@@ -2,6 +2,7 @@ package io.zulia.client;
 
 import io.zulia.client.command.builder.FilterQuery;
 import io.zulia.client.command.builder.ScoredQuery;
+import io.zulia.client.command.factory.Terms;
 import io.zulia.client.command.factory.Values;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.util.QueryHelper;
@@ -66,6 +67,23 @@ public class HelperTest {
 		}
 
 		{
+			// a slash forces quoting and needs no escape inside quotes
+			String query = Values.single("10.1000/jrnl.2011-0102-a").withFields("identifierExact").asString();
+			Assertions.assertEquals("identifierExact:(\"10.1000/jrnl.2011-0102-a\")", query);
+		}
+
+		{
+			// a backslash is doubled so the parser hands the literal value to the index
+			String query = Values.single("share\\reports\\q1").withFields("identifierExact").asString();
+			Assertions.assertEquals("identifierExact:(\"share\\\\reports\\\\q1\")", query);
+		}
+
+		{
+			String query = Values.single("12\" monitor").withFields("identifierExact").asString();
+			Assertions.assertEquals("identifierExact:(\"12\\\" monitor\")", query);
+		}
+
+		{
 			FilterQuery fq = Values.atLeast(2).of("a", "b", "c").withFields("title", "abstract").exclude().asFilterQuery();
 			FilterQuery fq2 = new FilterQuery("a b c").setDefaultOperator(ZuliaQuery.Query.Operator.OR).exclude().addQueryFields("title", "abstract")
 					.setMinShouldMatch(2);
@@ -90,6 +108,31 @@ public class HelperTest {
 				// exclude not supported in scored queries
 				ScoredQuery sq = Values.atLeast(2).of("a", "b", "c").withFields("title", "abstract").exclude().asScoredQuery();
 			});
+		}
+
+	}
+
+	@Test
+	public void termsTest() {
+
+		{
+			String query = Terms.withField("identifierExact").of("10.1000/jrnl.2011-0102-a", "10.1000/jrnl.2011-0345-b").asString();
+			Assertions.assertEquals("identifierExact:zl:tq(\"10.1000/jrnl.2011-0102-a\" \"10.1000/jrnl.2011-0345-b\")", query);
+		}
+
+		{
+			String query = Terms.withField("identifierExact").of("share\\reports\\q1").asString();
+			Assertions.assertEquals("identifierExact:zl:tq(\"share\\\\reports\\\\q1\")", query);
+		}
+
+		{
+			String query = Terms.withField("identifierExact").of("12\" monitor").asString();
+			Assertions.assertEquals("identifierExact:zl:tq(\"12\\\" monitor\")", query);
+		}
+
+		{
+			String query = Terms.withFields("id", "altId").of("a", "b c").exclude().asString();
+			Assertions.assertEquals("-id,altId:zl:tq(a \"b c\")", query);
 		}
 
 	}

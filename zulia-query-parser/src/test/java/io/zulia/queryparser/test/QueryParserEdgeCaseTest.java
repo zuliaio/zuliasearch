@@ -7,9 +7,12 @@ import io.zulia.server.config.ServerIndexConfig;
 import io.zulia.server.search.queryparser.ZuliaFlexibleQueryParser;
 import io.zulia.server.search.queryparser.parser.EscapeQuerySyntaxImpl;
 import io.zulia.server.search.queryparser.parser.ParseException;
+import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.util.BytesRef;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -122,6 +125,32 @@ public class QueryParserEdgeCaseTest {
 
 		// terms escape the full parser syntax set
 		Assertions.assertEquals("12\\:30", escaper.escape("12:30", Locale.ROOT, EscapeQuerySyntax.Type.NORMAL).toString());
+	}
+
+	@Test
+	public void termSetEscapeTest() throws Exception {
+		ZuliaFlexibleQueryParser parser = parser();
+
+		// a slash must be quoted or escaped, and every version reaches the index as the same term
+		Query bareSlashQuoted = parser.parse("title:zl:tq(\"10.1000/jrnl.2011-0102-a\" \"10.1000/jrnl.2011-0345-b\")");
+		Query escapedSlashQuoted = parser.parse("title:zl:tq(\"10.1000\\/jrnl.2011-0102-a\" \"10.1000\\/jrnl.2011-0345-b\")");
+		Query escapedSlashUnquoted = parser.parse("title:zl:tq(10.1000\\/jrnl.2011-0102-a 10.1000\\/jrnl.2011-0345-b)");
+		Query expected = new TermInSetQuery("title", List.of(new BytesRef("10.1000/jrnl.2011-0102-a"), new BytesRef("10.1000/jrnl.2011-0345-b")));
+		Assertions.assertEquals(expected, bareSlashQuoted);
+		Assertions.assertEquals(expected, escapedSlashQuoted);
+		Assertions.assertEquals(expected, escapedSlashUnquoted);
+
+		// an unquoted bare slash starts a regex, so the parser rejects it before the term set is built
+		Assertions.assertThrows(QueryNodeParseException.class, () -> parser.parse("title:zl:tq(10.1000/jrnl.2011-0102-a)"));
+
+		// a literal backslash is written doubled, a single backslash escapes the next character
+		Assertions.assertEquals(new TermInSetQuery("title", List.of(new BytesRef("share\\reports"))), parser.parse("title:zl:tq(\"share\\\\reports\")"));
+		Assertions.assertEquals(new TermInSetQuery("title", List.of(new BytesRef("sharereports"))), parser.parse("title:zl:tq(\"share\\reports\")"));
+
+		// escaped quotes and unicode escapes follow the same rules as the rest of the syntax
+		Assertions.assertEquals(new TermInSetQuery("title", List.of(new BytesRef("12\" monitor"))), parser.parse("title:zl:tq(\"12\\\" monitor\")"));
+		Assertions.assertEquals(new TermInSetQuery("title", List.of(new BytesRef("Abc"))), parser.parse("title:zl:tq(\"\\u0041bc\")"));
+		Assertions.assertThrows(ParseException.class, () -> parser.parse("title:zl:tq(\"\\uzzzz\")"));
 	}
 
 	@Test
