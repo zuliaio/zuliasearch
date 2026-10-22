@@ -2,7 +2,7 @@ plugins {
     java
     idea
     alias(libs.plugins.maven.publish) apply false
-    id("com.github.ben-manes.versions") version "0.61.0"
+    id("io.github.ben-manes.versions") version "0.66.0"
     id("org.owasp.dependencycheck") version "13.0.0"
 }
 
@@ -90,26 +90,26 @@ subprojects {
     group = "io.zulia"
 
     dependencies {
-        val catalogs = rootProject.extensions.getByType<VersionCatalogsExtension>()
-        val libs = catalogs.named("libs")
+        // Inside subprojects {} the generated accessor would resolve against the subproject, so take the root one.
+        val libs = rootProject.libs
 
-        add("testImplementation", platform(libs.findLibrary("junit-bom").get()))
-        add("testImplementation", libs.findLibrary("junit-jupiter").get())
-        add("testRuntimeOnly", libs.findLibrary("junit-platform-launcher").get())
+        add("testImplementation", platform(libs.junit.bom))
+        add("testImplementation", libs.junit.jupiter)
+        add("testRuntimeOnly", libs.junit.platform.launcher)
 
         // These are pulled in transitively only (POI, caffeine, guava, commons-compress, flapdoodle request
         // different versions in different modules, jsoup via micronaut-openapi). Constrain them so every module / every published POM
         // lands on the same version instead of drifting by whichever transitive chain a module happens to
         // include. implementation constraints also reach the test classpaths (testImplementation extends it).
         constraints {
-            add("implementation", libs.findLibrary("commons-codec").get())
-            add("implementation", libs.findLibrary("commons-io").get())
-            add("implementation", libs.findLibrary("error-prone-annotations").get())
-            add("implementation", libs.findLibrary("httpclient5").get())
-            add("implementation", libs.findLibrary("jackson-databind").get())
-            add("implementation", libs.findLibrary("jna").get())
-            add("implementation", libs.findLibrary("jsoup").get())
-            add("implementation", libs.findLibrary("log4j-api").get())
+            add("implementation", libs.commons.codec)
+            add("implementation", libs.commons.io)
+            add("implementation", libs.error.prone.annotations)
+            add("implementation", libs.httpclient5)
+            add("implementation", libs.jackson.databind)
+            add("implementation", libs.jna)
+            add("implementation", libs.jsoup)
+            add("implementation", libs.log4j.api)
         }
     }
 

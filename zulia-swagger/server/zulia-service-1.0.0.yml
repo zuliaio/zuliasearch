@@ -1701,9 +1701,15 @@ components:
       type: object
       properties:
         _links:
-          $ref: "#/components/schemas/OptionalMultiValues_Link_"
+          type: object
+          additionalProperties:
+            type: object
         _embedded:
-          $ref: "#/components/schemas/OptionalMultiValues_Resource_"
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: "#/components/schemas/Resource"
     AnalysisDTO:
       required:
       - field
@@ -1765,9 +1771,9 @@ components:
             type: object
     DistinctCountDTO:
       required:
-        - count
-        - exact
-        - field
+      - count
+      - exact
+      - field
       type: object
       properties:
         field:
@@ -1902,9 +1908,15 @@ components:
       - type: object
         properties:
           _links:
-            $ref: "#/components/schemas/OptionalMultiValues_Link_"
+            type: object
+            additionalProperties:
+              type: object
           _embedded:
-            $ref: "#/components/schemas/OptionalMultiValues_Resource_"
+            type: object
+            additionalProperties:
+              type: array
+              items:
+                $ref: "#/components/schemas/Resource"
           message:
             type: string
           logref:
@@ -2009,6 +2021,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ReplicaReplicationState"
+    Resource:
+      required:
+      - _embedded
+      - _links
+      type: object
+      properties:
+        _links:
+          $ref: "#/components/schemas/OptionalMultiValues_Link_"
+        _embedded:
+          $ref: "#/components/schemas/OptionalMultiValues_Resource_"
     ScoredResultDTO:
       type: object
       properties:

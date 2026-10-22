@@ -1,15 +1,15 @@
 [versions]
-grpc = "1.83.1"
-lucene = "10.5.1"
+grpc = "1.85.1"
+lucene = "10.5.2"
 eclipse-collections = "13.0.0"
-graalvm = "25.0.3"
-micronaut = "5.1.1" # micronaut platform BOM version, applied via micronaut { version(...) }
-mongodb = "5.10.0"
+graalvm = "25.4.4.1.1"
+micronaut = "5.2.3" # micronaut platform BOM version, applied via micronaut { version(...) }
+mongodb = "5.13.0"
 picocli = "4.7.7"
 poi = "5.5.1"
-protobuf = "4.35.1"
-unirest = '4.10.1'
-djl = "0.36.0"
+protobuf = "4.36.2"
+unirest = '4.10.2'
+djl = "0.39.0"
 junit = "6.1.3"
 maven-publish = "0.37.0"
 
@@ -18,7 +18,7 @@ annontations = { module = "org.jetbrains:annotations", version = "26.1.0" }
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 bson = { module = "org.mongodb:bson", version.ref = "mongodb" }
 caffeine = { module = "com.github.ben-manes.caffeine:caffeine" }
-commons-codec = { module = "commons-codec:commons-codec", version = "1.22.1" }
+commons-codec = { module = "commons-codec:commons-codec", version = "1.23.0" }
 commons-compress = { module = "org.apache.commons:commons-compress", version = "1.28.0" }
 commons-io = { module = "commons-io:commons-io", version = "2.22.0" }
 djl-bom = { module = "ai.djl:bom", version.ref = "djl" }
@@ -28,27 +28,27 @@ djl-huggingface-tokenizers = { module = "ai.djl.huggingface:tokenizers", version
 djl-onnxruntime-engine = { module = "ai.djl.onnxruntime:onnxruntime-engine", version.ref = "djl" }
 flapdoodle-mongo = { module = "de.flapdoodle.embed:de.flapdoodle.embed.mongo", version = "5.0.0" }
 fast-csv = { module = "de.siegmar:fastcsv", version = "4.4.0" }
-guava = { module = "com.google.guava:guava", version = "33.7.1-jre" }
-httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version = "5.6.3" }
+guava = { module = "com.google.guava:guava", version = "33.7.2-jre" }
+httpclient5 = { module = "org.apache.httpcomponents.client5:httpclient5", version = "5.6.5" }
 grpc-netty-shaded = { module = "io.grpc:grpc-netty-shaded", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
 grpc-stub = { module = "io.grpc:grpc-stub", version.ref = "grpc" }
 graalvm-polyglot = { module = "org.graalvm.polyglot:polyglot", version.ref = "graalvm" }
 graalvm-js = { module = "org.graalvm.polyglot:js-community", version.ref = "graalvm" }
 gson = { module = "com.google.code.gson:gson", version = "2.14.0" }
-jackson-databind = { module = "tools.jackson.core:jackson-databind", version = "3.2.2" }
+jackson-databind = { module = "tools.jackson.core:jackson-databind", version = "3.2.4" }
 jakarta-validation = { module = "jakarta.validation:jakarta.validation-api" }
 jakarta-inject = { module = "jakarta.inject:jakarta.inject-api" }
 javax-annotation = { module = "javax.annotation:javax.annotation-api", version = "1.3.2" }
 jna = { module = "net.java.dev.jna:jna", version = "5.19.1" }
-jsoup = { module = "org.jsoup:jsoup", version = "1.23.1" }
+jsoup = { module = "org.jsoup:jsoup", version = "1.23.2" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version = "2.26.1" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 eclipse-collections = { module = "org.eclipse.collections:eclipse-collections", version.ref = "eclipse-collections" }
-error-prone-annotations = { module = "com.google.errorprone:error_prone_annotations", version = "2.50.0" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.6.3" }
+error-prone-annotations = { module = "com.google.errorprone:error_prone_annotations", version = "2.51.0" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.6.5" }
 lucene-analysis-common = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "lucene" }
 lucene-backward-codecs = { module = "org.apache.lucene:lucene-backward-codecs", version.ref = "lucene" }
 lucene-expressions = { module = "org.apache.lucene:lucene-expressions", version.ref = "lucene" }
@@ -81,22 +81,16 @@ poi-ooxml = { module = "org.apache.poi:poi-ooxml", version.ref = "poi" }
 protobuf-java-util = { module = "com.google.protobuf:protobuf-java-util", version.ref = "protobuf" }
 simplemagic = { module = "com.j256.simplemagic:simplemagic", version = "1.17" }
 sketches-java = { module = "com.datadoghq:sketches-java", version = "0.8.3" }
-slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.18" }
-snake-yaml = { module = "org.yaml:snakeyaml", version = "2.6" }
-snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.8" }
+slf4j-api = { module = "org.slf4j:jul-to-slf4j", version = "2.0.20" }
+snake-yaml = { module = "org.yaml:snakeyaml", version = "2.7" }
+snappy-java = { module = "org.xerial.snappy:snappy-java", version = "1.1.10.12" }
 swagger-annotations = { module = "io.swagger.core.v3:swagger-annotations" }
 unirest-core = { module = "com.konghq:unirest-java-core", version.ref = "unirest" }
 unirest-gson = { module = "com.konghq:unirest-modules-gson", version.ref = "unirest" }
 unirest-java-bom = { module = "com.konghq:unirest-java-bom", version.ref = "unirest" }
 password4j = { module = "com.password4j:password4j", version = "1.8.4" }
 
-[bundles]
-poi = ["poi", "poi-ooxml"]
-
-
 [plugins]
-#reckon is defined in settings.gradle.kts now
-#reckon = { id = "org.ajoberstar.reckon", version = "0.19.2" }
 micronaut-application = { id = "io.micronaut.application", version = "5.0.2" }
 protobuf = { id = "com.google.protobuf", version = "0.10.0" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }
