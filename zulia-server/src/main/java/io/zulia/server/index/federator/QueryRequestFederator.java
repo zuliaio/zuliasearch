@@ -1,15 +1,18 @@
 package io.zulia.server.index.federator;
 
 import com.google.protobuf.util.JsonFormat;
-import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaBase.Node;
+import io.zulia.message.ZuliaBase.PrimaryReplicaSettings;
 import io.zulia.message.ZuliaQuery.IndexShardResponse;
+import io.zulia.message.ZuliaServiceOuterClass.IndexRouting;
 import io.zulia.message.ZuliaServiceOuterClass.InternalQueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.InternalQueryResponse;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryResponse;
 import io.zulia.server.connection.client.InternalClient;
+import io.zulia.server.connection.server.validation.QueryRequestValidator;
 import io.zulia.server.index.ZuliaIndex;
+import io.zulia.server.node.ZuliaNode;
 import io.zulia.server.search.QueryCombiner;
 import org.apache.lucene.search.Query;
 import org.slf4j.Logger;
@@ -29,6 +32,7 @@ public class QueryRequestFederator extends PrimaryReplicaNodeRequestFederator<Qu
 	private final InternalClient internalClient;
 	private final Collection<ZuliaIndex> indexes;
 	private final Map<String, Query> queryMap;
+	private final ExecutorService pool;
 	private final long searchId;
 
 	public QueryRequestFederator(Node thisNode, Collection<Node> otherNodesActive, PrimaryReplicaSettings primaryReplicaSettings, Collection<ZuliaIndex> indexes,
@@ -37,6 +41,7 @@ public class QueryRequestFederator extends PrimaryReplicaNodeRequestFederator<Qu
 		this.internalClient = internalClient;
 		this.indexes = indexes;
 		this.queryMap = queryMap;
+		this.pool = pool;
 		this.searchId = QUERY_NUMBER.incrementAndGet();
 	}
 
@@ -69,6 +74,17 @@ public class QueryRequestFederator extends PrimaryReplicaNodeRequestFederator<Qu
 
 		long start = System.currentTimeMillis();
 
+		if (request.getDistinctCountCount() > 0) {
+			for (Node node : nodes) {
+				// the local node's answer never crosses the internal channel
+				if (!ZuliaNode.isEqual(node, thisNode)) {
+					int shardsOnNode = getIndexRouting(node).stream().mapToInt(IndexRouting::getShardCount).sum();
+					QueryRequestValidator.validateDistinctCountKeysPerNode(request.getDistinctCountList(),
+							"node " + node.getServerAddress() + ":" + node.getServicePort(), shardsOnNode);
+				}
+			}
+		}
+
 		String queryJson = JsonFormat.printer().print(request);
 
 		queryJson = queryJson.replace('\n', ' ').replaceAll("\\s+", " ");
@@ -86,7 +102,7 @@ public class QueryRequestFederator extends PrimaryReplicaNodeRequestFederator<Qu
 
 		long mergeStart = System.currentTimeMillis();
 
-		QueryCombiner queryCombiner = new QueryCombiner(indexes, request, results);
+		QueryCombiner queryCombiner = new QueryCombiner(indexes, request, results, pool);
 
 		QueryResponse qr = queryCombiner.getQueryResponse();
 

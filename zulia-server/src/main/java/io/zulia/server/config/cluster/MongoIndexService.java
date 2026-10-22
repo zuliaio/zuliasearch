@@ -172,21 +172,21 @@ public class MongoIndexService implements IndexService {
 		}
 
 		IndexSettings.Builder builder = IndexSettings.newBuilder();
-		JsonFormat.parser().merge(indexSettingsDoc.toJson(), builder);
+		JsonFormat.parser().ignoringUnknownFields().merge(indexSettingsDoc.toJson(), builder);
 		return builder.build();
 	}
 
 	private IndexShardMapping getIndexMappingFromDoc(Document doc) throws InvalidProtocolBufferException {
 		Document mappingDoc = (Document) doc.get(INDEX_MAPPING);
 		IndexShardMapping.Builder builder = IndexShardMapping.newBuilder();
-		JsonFormat.parser().merge(mappingDoc.toJson(), builder);
+		JsonFormat.parser().ignoringUnknownFields().merge(mappingDoc.toJson(), builder);
 		return builder.build();
 	}
 
 	private IndexAlias getIndexAliasFromDoc(Document doc) throws InvalidProtocolBufferException {
 		Document indexAliasDoc = (Document) doc.get(INDEX_ALIAS);
 		IndexAlias.Builder builder = IndexAlias.newBuilder();
-		JsonFormat.parser().merge(indexAliasDoc.toJson(), builder);
+		JsonFormat.parser().ignoringUnknownFields().merge(indexAliasDoc.toJson(), builder);
 		return builder.build();
 	}
 

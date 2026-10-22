@@ -14,6 +14,7 @@ public class SearchREST {
 	private Collection<String> fields;
 	private int rows;
 	private Collection<String> facet;
+	private Collection<String> distinctCount;
 	private Collection<String> drillDowns;
 	private Operator defaultOperator;
 	private Integer mm;
@@ -115,6 +116,19 @@ public class SearchREST {
 
 	public SearchREST setFacet(List<String> facet) {
 		this.facet = facet;
+		return this;
+	}
+
+	public Collection<String> getDistinctCount() {
+		return distinctCount;
+	}
+
+	public SearchREST setDistinctCount(String... distinctCount) {
+		return setDistinctCount(List.of(distinctCount));
+	}
+
+	public SearchREST setDistinctCount(List<String> distinctCount) {
+		this.distinctCount = distinctCount;
 		return this;
 	}
 

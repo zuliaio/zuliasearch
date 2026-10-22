@@ -864,6 +864,16 @@ paths:
           nullable: true
           items:
             type: string
+      - name: distinctCount
+        in: query
+        description: Sortable fields to count distinct values for over all matching
+          documents (field or field:maxGroupsPerShard)
+        explode: false
+        schema:
+          type: array
+          nullable: true
+          items:
+            type: string
       - name: drillDown
         in: query
         description: Drill-down facet filters (field:value)
@@ -1753,6 +1763,20 @@ components:
           type: object
           additionalProperties:
             type: object
+    DistinctCountDTO:
+      required:
+        - count
+        - exact
+        - field
+      type: object
+      properties:
+        field:
+          type: string
+        count:
+          type: integer
+          format: int64
+        exact:
+          type: boolean
     FacetDTO:
       required:
       - count
@@ -2030,6 +2054,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FacetsDTO"
+        distinctCounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/DistinctCountDTO"
     TermDTO:
       required:
       - docFreq

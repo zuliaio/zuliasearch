@@ -1,6 +1,8 @@
 syntax = "proto3";
 
 import "zulia_base.proto";
+import "zulia_index.proto";
+
 
 option java_package = "io.zulia.message";
 
@@ -197,6 +199,28 @@ message FieldSort {
     bool missingLast = 3;
 }
 
+// Exact count of distinct values of a sortable field across the matching documents
+message DistinctCountRequest {
+    string field = 1;                 // must be a sortable field
+    uint32 maxGroupsPerShard = 2;     // 0 = server default. Above this many distinct values on one shard the count becomes a floor
+}
+
+message DistinctCount {
+    string field = 1;
+    uint64 count = 2;                 // exact when exact is true, otherwise a floor (true count >= count)
+    bool exact = 3;                   // false when any shard passed its cap. String values compare by 64-bit hash, so two distinct strings collide with probability about n^2 / 2^65. Other types hash one to one, so they compare exactly
+}
+
+// Internal per shard payload: the shard's distinct keys as 64-bit values so the coordinator can union across shards
+message DistinctCountInternal {
+    string field = 1;
+    repeated fixed64 key = 2;         // the shard's distinct keys in ascending signed order for the coordinator's streaming merge, a sorted subset of at most maxGroupsPerShard when capped
+    uint64 count = 3;                 // shard-local distinct count. A floor of it when capped on a numeric field, which reports one past the cap, or on a string field past its memory guard
+    bool capped = 4;                  // the shard has more distinct values than maxGroupsPerShard, so key is the shard's smallest hashes and the union is a floor
+    FieldConfig.FieldType fieldType = 5; // every key is a 64-bit hash, of the term for a string and of the long doc value otherwise, so a type that differs across indexes is rejected
+    SortAs.StringHandling stringHandling = 6; // how a string field's sort values were normalized before hashing, so indexes that fold differently are rejected rather than unioned
+}
+
 enum FetchType {
     FULL = 0;
     META = 1;
@@ -312,4 +336,5 @@ message ShardQueryResponse {
     repeated StatGroupInternal statGroup = 8;
     bool cached = 9;
     bool pinned = 10;
+    repeated DistinctCountInternal distinctCount = 11;
 }

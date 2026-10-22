@@ -1184,9 +1184,7 @@ public class ZuliaIndexManager {
 				List<QueryRequest> existingWarmingSearch = new ArrayList<>();
 				for (ByteString existingWarmingByte : existingWarmingBytes) {
 					try {
-						QueryRequest queryRequest = QueryRequest.parseFrom(existingWarmingByte);
-						queryRequest = new QueryRequestValidator().validateAndSetDefault(queryRequest);
-						existingWarmingSearch.add(queryRequest);
+						existingWarmingSearch.add(QueryRequestValidator.validateWarmingSearch(existingWarmingByte));
 					}
 					catch (Exception e) {
 						LOG.error("Failed to parse existing warming search.  Removing from list: {}", e.getMessage());
@@ -1195,16 +1193,7 @@ public class ZuliaIndexManager {
 
 				List<QueryRequest> warmingSearch = new ArrayList<>();
 				for (ByteString updates : updateIndexSettings.getWarmingSearchesList()) {
-					try {
-						QueryRequest queryRequest = QueryRequest.parseFrom(updates);
-						if (queryRequest.getSearchLabel().isEmpty()) {
-							throw new RuntimeException("A search label is required for a warming search");
-						}
-						warmingSearch.add(queryRequest);
-					}
-					catch (Exception e) {
-						throw new RuntimeException("Failed to parse existing warming search update", e);
-					}
+					warmingSearch.add(QueryRequestValidator.validateWarmingSearch(updates));
 				}
 
 				//TODO(Ian): Check if there was a change before resetting the warming (not compatible w/
@@ -1237,6 +1226,14 @@ public class ZuliaIndexManager {
 
 			if (updateIndexSettings.getSetShardQueryCacheMaxAmount()) {
 				existingSettings.setShardQueryCacheMaxAmount(updateIndexSettings.getShardQueryCacheMaxAmount());
+			}
+
+			if (updateIndexSettings.getSetShardQueryCacheMB()) {
+				existingSettings.setShardQueryCacheMB(updateIndexSettings.getShardQueryCacheMB());
+			}
+
+			if (updateIndexSettings.getSetShardQueryCacheMaxResponseMB()) {
+				existingSettings.setShardQueryCacheMaxResponseMB(updateIndexSettings.getShardQueryCacheMaxResponseMB());
 			}
 
 			if (updateIndexSettings.getSetIdleTimeWithoutCommit()) {

@@ -34,6 +34,7 @@ public interface ZuliaRESTConstants {
 	String META_JSON = "metaJson";
 	String INDEX = "index";
 	String FACET = "facet";
+	String DISTINCT_COUNT = "distinctCount";
 	String SORT = "sort";
 	String FETCH = "fetch";
 	String FIELDS = "fl";

@@ -24,6 +24,7 @@ import jakarta.inject.Singleton;
 @SerdeImport(AnalysisResultDTO.class)
 @SerdeImport(AssociatedController.Filenames.class)
 @SerdeImport(AssociatedMetadataDTO.class)
+@SerdeImport(DistinctCountDTO.class)
 @SerdeImport(FacetDTO.class)
 @SerdeImport(FacetsDTO.class)
 @SerdeImport(FieldsDTO.class)

@@ -132,6 +132,8 @@ public class Mapper<T> extends GsonDocumentMapper<T> {
 		indexConfig.setShardTolerance(settings.shardTolerance());
 		indexConfig.setShardQueryCacheSize(settings.shardQueryCacheSize());
 		indexConfig.setShardQueryCacheMaxAmount(settings.shardQueryCacheMaxAmount());
+		indexConfig.setShardQueryCacheMB(settings.shardQueryCacheMB());
+		indexConfig.setShardQueryCacheMaxResponseMB(settings.shardQueryCacheMaxResponseMB());
 
 		for (FieldConfig fieldConfig : fieldConfigMapper.getFieldConfigs()) {
 			indexConfig.addFieldConfig(fieldConfig);

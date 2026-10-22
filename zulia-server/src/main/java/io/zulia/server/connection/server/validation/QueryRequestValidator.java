@@ -1,13 +1,21 @@
 package io.zulia.server.connection.server.validation;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.zulia.ZuliaConstants;
 import io.zulia.message.ZuliaQuery;
 import io.zulia.message.ZuliaQuery.AnalysisRequest;
+import io.zulia.message.ZuliaQuery.DistinctCountRequest;
 import io.zulia.message.ZuliaQuery.HighlightRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
+import io.zulia.server.connection.client.InternalRpcConnection;
+import io.zulia.server.search.distinct.DistinctCountCollectorManager;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static io.zulia.message.ZuliaQuery.CountRequest;
 import static io.zulia.message.ZuliaQuery.FacetRequest;
@@ -18,6 +26,46 @@ import static io.zulia.message.ZuliaQuery.FacetRequest;
  * @author pmeyer
  */
 public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
+
+	/**
+	 * Distinct keys one node may send in one internal message, leaving 32 MB of the message limit for everything else in the response.
+	 */
+	public static final long MAX_DISTINCT_KEY_BYTES_PER_NODE = InternalRpcConnection.MAX_INBOUND_MESSAGE_BYTES - 32L * 1024 * 1024;
+
+	/**
+	 * Rejects distinct counts whose caps would let a node's keys for all its shards overflow its one internal message. It checks
+	 * the worst case from the caps, not the values a field really has, and shard placement can change before the query runs.
+	 */
+	public static void validateDistinctCountKeysPerNode(List<DistinctCountRequest> distinctCountRequests, String node, int shardsOnNode) {
+		long keysPerShard = 0;
+		for (DistinctCountRequest request : distinctCountRequests) {
+			keysPerShard += request.getMaxGroupsPerShard();
+		}
+		long bytesFromNode = keysPerShard * shardsOnNode * Long.BYTES;
+		if (bytesFromNode > MAX_DISTINCT_KEY_BYTES_PER_NODE) {
+			throw new IllegalArgumentException(
+					"Distinct count caps total " + keysPerShard + " keys per shard and " + node + " answers for " + shardsOnNode + " shards, so it could send "
+							+ (bytesFromNode / 1_000_000) + " MB of keys in one message against a limit of " + (MAX_DISTINCT_KEY_BYTES_PER_NODE / 1_000_000)
+							+ " MB. Lower the caps, count fewer fields at once, or spread the shards over more nodes");
+		}
+	}
+
+	/**
+	 * A stored warming search gets the same defaults and checks as a live query, plus the label that updates address it by.
+	 */
+	public static QueryRequest validateWarmingSearch(ByteString bytes) {
+		QueryRequest queryRequest;
+		try {
+			queryRequest = QueryRequest.parseFrom(bytes);
+		}
+		catch (InvalidProtocolBufferException e) {
+			throw new IllegalArgumentException("Failed to parse QueryRequest from warming search bytes", e);
+		}
+		if (queryRequest.getSearchLabel().isEmpty()) {
+			throw new IllegalArgumentException("A search label is required for a warming search");
+		}
+		return new QueryRequestValidator().validateAndSetDefault(queryRequest);
+	}
 
 	@Override
 	public QueryRequest validateAndSetDefault(QueryRequest request) {
@@ -96,6 +144,37 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 		}
 		facetRequestBuilder.clearCountRequest();
 		facetRequestBuilder.addAllCountRequest(uniqueRequests.values().stream().map(CountRequest.Builder::build).toList());
+
+		Set<String> distinctCountFields = new HashSet<>();
+		long distinctCountKeysPerShard = 0;
+		for (DistinctCountRequest.Builder distinctCountBuilder : queryRequestBuilder.getDistinctCountBuilderList()) {
+			String field = distinctCountBuilder.getField();
+			if (field.isEmpty()) {
+				throw new IllegalArgumentException("Distinct count requires a field");
+			}
+			if (!distinctCountFields.add(field)) {
+				throw new IllegalArgumentException("Distinct count field <" + field + "> is requested more than once");
+			}
+			// the proto field is uint32, so a value at or above 2^31 reads back negative here
+			long maxGroupsPerShard = Integer.toUnsignedLong(distinctCountBuilder.getMaxGroupsPerShard());
+			if (maxGroupsPerShard > DistinctCountCollectorManager.MAX_MAX_GROUPS_PER_SHARD) {
+				throw new IllegalArgumentException("Distinct count field <" + field + "> has maxGroupsPerShard " + maxGroupsPerShard
+						+ " (a negative number reads back this way). Each distinct value costs 8 bytes per shard on the wire, so the limit is "
+						+ DistinctCountCollectorManager.MAX_MAX_GROUPS_PER_SHARD + " (128 MB per field per shard). Use 0 for the default of "
+						+ DistinctCountCollectorManager.DEFAULT_MAX_GROUPS_PER_SHARD);
+			}
+			if (maxGroupsPerShard == 0) {
+				distinctCountBuilder.setMaxGroupsPerShard(DistinctCountCollectorManager.DEFAULT_MAX_GROUPS_PER_SHARD);
+			}
+			distinctCountKeysPerShard += distinctCountBuilder.getMaxGroupsPerShard();
+		}
+		// one node answers for every shard it holds in one message, so the per shard total across fields is bounded like a single field
+		if (distinctCountKeysPerShard > DistinctCountCollectorManager.MAX_MAX_GROUPS_PER_SHARD) {
+			throw new IllegalArgumentException(
+					"Distinct count caps across all fields total " + distinctCountKeysPerShard + " keys per shard, more than the limit of "
+							+ DistinctCountCollectorManager.MAX_MAX_GROUPS_PER_SHARD
+							+ ". Every shard a node holds ships its keys in one message, so lower the caps or count fewer fields at once");
+		}
 
 		if (queryRequestBuilder.getHighlightRequestList() != null) {
 

@@ -165,7 +165,7 @@ public class FSIndexService implements IndexService {
 
 		ZuliaIndex.IndexSettings.Builder indexSettingsBuilder = ZuliaIndex.IndexSettings.newBuilder();
 		try (FileReader fileReader = new FileReader(indexSettingsFile)) {
-			JsonFormat.parser().merge(fileReader, indexSettingsBuilder);
+			JsonFormat.parser().ignoringUnknownFields().merge(fileReader, indexSettingsBuilder);
 		}
 		return indexSettingsBuilder.build();
 	}
@@ -177,7 +177,7 @@ public class FSIndexService implements IndexService {
 
 		IndexShardMapping.Builder indexMappingBuilder = IndexShardMapping.newBuilder();
 		try (FileReader fileReader = new FileReader(indexMappingFile)) {
-			JsonFormat.parser().merge(fileReader, indexMappingBuilder);
+			JsonFormat.parser().ignoringUnknownFields().merge(fileReader, indexMappingBuilder);
 		}
 		return indexMappingBuilder.build();
 	}
@@ -191,7 +191,7 @@ public class FSIndexService implements IndexService {
 
 		IndexAlias.Builder indexAliasBuilder = IndexAlias.newBuilder();
 		try (FileReader fileReader = new FileReader(indexAliasFile)) {
-			JsonFormat.parser().merge(fileReader, indexAliasBuilder);
+			JsonFormat.parser().ignoringUnknownFields().merge(fileReader, indexAliasBuilder);
 		}
 		return indexAliasBuilder.build();
 	}
