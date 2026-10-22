@@ -465,8 +465,8 @@ private CharSequence SignedNumericValue() : {
 private CharSequence TermText() : {
 }
 {
-    (<QUOTED>)          { return token.image.substring(1, token.image.length() - 1); }
-  | (<TERM> | <NUMBER>) { return token.image; }
+    (<QUOTED>)          { return discardEscapeChar(token.image.substring(1, token.image.length() - 1)); }
+  | (<TERM> | <NUMBER>) { return discardEscapeChar(token.image); }
 }
 
 

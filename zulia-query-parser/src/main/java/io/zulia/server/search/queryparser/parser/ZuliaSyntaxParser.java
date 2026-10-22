@@ -19,11 +19,15 @@ package io.zulia.server.search.queryparser.parser;
  * limitations under the License.
  */
 
-import java.io.StringReader;
-import java.io.Reader;
-import java.util.Collections;
-import java.util.ArrayList;
-
+import io.zulia.server.search.queryparser.node.ZuliaFieldableQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaGeoBboxQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaGeoDistanceQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaNumericSetQueryNode;
+import io.zulia.server.search.queryparser.node.ZuliaTermsInSetQueryNode;
+import org.apache.lucene.queryparser.charstream.CharStream;
+import org.apache.lucene.queryparser.charstream.FastCharStream;
+import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
+import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.AndQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.BoostQueryNode;
@@ -35,45 +39,19 @@ import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.SlopQueryNode;
+import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
 import org.apache.lucene.queryparser.flexible.messages.Message;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
-import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
-import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.After;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.AnalyzedText;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.AtLeast;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Before;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.ContainedBy;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Containing;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Extend;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.FuzzyTerm;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.IntervalFunction;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.MaxGaps;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.MaxWidth;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.NonOverlapping;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.NotContainedBy;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.NotContaining;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.NotWithin;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Or;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Ordered;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Overlapping;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Phrase;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Unordered;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.UnorderedNoOverlaps;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Wildcard;
-import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.Within;
 import org.apache.lucene.queryparser.flexible.standard.nodes.IntervalQueryNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.MinShouldMatchNode;
 import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
-import org.apache.lucene.queryparser.charstream.CharStream;
-import org.apache.lucene.queryparser.charstream.FastCharStream;
 import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
-import io.zulia.server.search.queryparser.node.ZuliaGeoDistanceQueryNode;
-import io.zulia.server.search.queryparser.node.ZuliaGeoBboxQueryNode;
-import io.zulia.server.search.queryparser.node.ZuliaNumericSetQueryNode;
-import io.zulia.server.search.queryparser.node.ZuliaTermsInSetQueryNode;
-import io.zulia.server.search.queryparser.node.ZuliaFieldableQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.intervalfn.*;
+
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
 
 import static io.zulia.server.search.queryparser.parser.EscapeQuerySyntaxImpl.discardEscapeChar;
 
@@ -517,7 +495,10 @@ negative = true;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case QUOTED:{
       jj_consume_token(QUOTED);
-{if ("" != null) return token.image.substring(1, token.image.length() - 1);}
+        {
+            if ("" != null)
+                return discardEscapeChar(token.image.substring(1, token.image.length() - 1));
+        }
       break;
       }
     case NUMBER:
@@ -536,7 +517,10 @@ negative = true;
         jj_consume_token(-1);
         throw new ParseException();
       }
-{if ("" != null) return token.image;}
+        {
+            if ("" != null)
+                return discardEscapeChar(token.image);
+        }
       break;
       }
     default:
