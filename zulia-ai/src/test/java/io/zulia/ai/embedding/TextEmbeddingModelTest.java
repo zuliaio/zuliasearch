@@ -86,6 +86,19 @@ class TextEmbeddingModelTest {
 	}
 
 	@Test
+	void codeModelRanksMatchingMethodFirst() throws Exception {
+		try (TextEmbeddingModel model = TextEmbeddingModel.load(KnownEmbeddingModel.CODE_RANK_EMBED)) {
+			float[] query = model.embedQuery("Calculate the n-th factorial");
+			float[] factorial = model.embedPassage("public static long factorial(int n) {\n\treturn n <= 1 ? 1 : n * factorial(n - 1);\n}");
+			float[] reverse = model.embedPassage("public static String reverse(String s) {\n\treturn new StringBuilder(s).reverse().toString();\n}");
+
+			float matchScore = VectorUtil.cosineSimilarity(query, factorial);
+			float otherScore = VectorUtil.cosineSimilarity(query, reverse);
+			assertTrue(matchScore > otherScore, "factorial method should outscore string reversal (%f vs %f)".formatted(matchScore, otherScore));
+		}
+	}
+
+	@Test
 	void matryoshkaSlicesAreUnitVectors() throws Exception {
 		try (TextEmbeddingModel model = TextEmbeddingModel.load(KnownEmbeddingModel.NOMIC_EMBED_TEXT_V1_5_256)) {
 			float[] embedding = model.embedPassage("A study on non-small cell lung cancer therapy options.");
