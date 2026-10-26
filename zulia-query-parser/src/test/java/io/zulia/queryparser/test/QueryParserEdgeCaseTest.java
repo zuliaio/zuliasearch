@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.PatternSyntaxException;
 
 public class QueryParserEdgeCaseTest {
 
@@ -160,6 +161,22 @@ public class QueryParserEdgeCaseTest {
 		// a fieldless term without default fields reports the missing configuration instead of a NullPointerException
 		IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class, () -> parser.parse("cancer"));
 		Assertions.assertTrue(e.getMessage().contains("MULTI_FIELDS should be set"), e.getMessage());
+	}
+
+	@Test
+	public void failedParseDoesNotAffectNextParseTest() throws Exception {
+		// one parser instance is reused across queries, the same way the server pools parsers
+		ZuliaFlexibleQueryParser parser = parser();
+
+		// no default fields are set yet, so a term without a field throws part way through field expansion
+		Assertions.assertThrows(IllegalArgumentException.class, () -> parser.parse("cancer"));
+		Assertions.assertEquals("title:cancer abstract:lung", parser.parse("ti*:cancer abs*:lung").toString());
+
+		parser.setDefaultFields(List.of("title"));
+
+		// this field pattern becomes an invalid regular expression, so field expansion throws again
+		Assertions.assertThrows(PatternSyntaxException.class, () -> parser.parse("a\\\\E*:foo"));
+		Assertions.assertEquals("title:cancer title:lung", parser.parse("cancer lung").toString());
 	}
 
 	private static ZuliaFlexibleQueryParser parser() {

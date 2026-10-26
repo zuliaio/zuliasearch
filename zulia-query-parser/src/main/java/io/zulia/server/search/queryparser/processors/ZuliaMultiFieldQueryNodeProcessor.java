@@ -55,6 +55,13 @@ public class ZuliaMultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 	}
 
 	@Override
+	public QueryNode process(QueryNode queryTree) throws QueryNodeException {
+		// this processor is reused across parses and a parse that threw in preProcessNode leaves the flag cleared
+		this.processChildren = true;
+		return super.process(queryTree);
+	}
+
+	@Override
 	protected QueryNode postProcessNode(QueryNode node) {
 
 		return node;
