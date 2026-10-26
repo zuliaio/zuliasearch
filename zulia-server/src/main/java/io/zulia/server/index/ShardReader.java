@@ -352,11 +352,13 @@ public class ShardReader implements AutoCloseable {
 		List<SortMeta> sortMetas = new ArrayList<>();
 
 		boolean sortingWithScores = false;
+		int scoreSortPosition = -1;
 
 		FieldDoc after = shardQuery.getAfter(shardNumber);
 		if (sorting) {
 			Sort sort = buildSortFromSortRequest(shardQuery.getSortRequest());
 			sortingWithScores = sort.needsScores();
+			scoreSortPosition = getScoreSortPosition(sort);
 			collectorManager = new TopFieldCollectorManager(sort, hasMoreAmount, after, Integer.MAX_VALUE);
 
 			for (ZuliaQuery.FieldSort fieldSort : shardQuery.getSortRequest().getFieldSortList()) {
@@ -440,7 +442,15 @@ public class ShardReader implements AutoCloseable {
 
 		ScoreDoc[] results = topDocs.scoreDocs;
 		if (sortingWithScores) {
-			TopFieldCollector.populateScores(topDocs.scoreDocs, indexSearcher, shardQuery.getQuery());
+			if (scoreSortPosition >= 0) {
+				// the score sort field already holds each hit's score, so the query does not need to run again
+				for (ScoreDoc scoreDoc : results) {
+					scoreDoc.score = (Float) ((FieldDoc) scoreDoc).fields[scoreSortPosition];
+				}
+			}
+			else {
+				TopFieldCollector.populateScores(topDocs.scoreDocs, indexSearcher, shardQuery.getQuery());
+			}
 		}
 
 		//TODO is there a way to avoid this cast?  should we support more total hits than an int
@@ -700,6 +710,16 @@ public class ShardReader implements AutoCloseable {
 			}
 		}
 		return numOfFacets;
+	}
+
+	private static int getScoreSortPosition(Sort sort) {
+		SortField[] sortFields = sort.getSort();
+		for (int i = 0; i < sortFields.length; i++) {
+			if (sortFields[i].getType() == SortField.Type.SCORE) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	private @NotNull Sort buildSortFromSortRequest(ZuliaQuery.SortRequest sortRequest) throws Exception {
