@@ -4,6 +4,7 @@ import io.zulia.server.search.aggregation.ordinal.FacetHandler;
 import io.zulia.server.search.aggregation.ordinal.OrdinalConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 
 import java.io.IOException;
@@ -11,6 +12,8 @@ import java.io.IOException;
 public class NumericFieldStatContext implements OrdinalConsumer {
 
 	private final SortedNumericDocValues numericDocValues;
+	// non null when the segment holds at most one value per document for this field
+	private final NumericDocValues singleNumericDocValues;
 	private final NumericFieldStatInfo numericFieldStatInfo;
 
 	private long[] numericValues;
@@ -19,12 +22,19 @@ public class NumericFieldStatContext implements OrdinalConsumer {
 	public NumericFieldStatContext(LeafReader reader, NumericFieldStatInfo numericFieldStatInfo) throws IOException {
 		this.numericFieldStatInfo = numericFieldStatInfo;
 		this.numericDocValues = DocValues.getSortedNumeric(reader, numericFieldStatInfo.getSortFieldName());
+		this.singleNumericDocValues = DocValues.unwrapSingleton(numericDocValues);
 		this.numericValues = new long[1];
 	}
 
 	public void advanceNumericValues(int doc) throws IOException {
 		numericValueCount = -1;
-		if (numericDocValues.advanceExact(doc)) {
+		if (singleNumericDocValues != null) {
+			if (singleNumericDocValues.advanceExact(doc)) {
+				numericValueCount = 1;
+				numericValues[0] = singleNumericDocValues.longValue();
+			}
+		}
+		else if (numericDocValues.advanceExact(doc)) {
 			numericValueCount = numericDocValues.docValueCount();
 			if (numericValueCount > numericValues.length) {
 				numericValues = new long[numericValueCount];
