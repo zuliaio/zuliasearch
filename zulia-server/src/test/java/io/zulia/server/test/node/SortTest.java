@@ -26,7 +26,9 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.zulia.message.ZuliaIndex.SortAs.StringHandling.LOWERCASE_FOLDING;
@@ -515,6 +517,34 @@ public class SortTest {
 		Assertions.assertEquals("99", searchResult.getFirstDocument().get("id"));
 		Assertions.assertEquals("99", searchResult.getFirstCompleteResult().getUniqueId());
 
+	}
+
+	@Test
+	@Order(9)
+	public void scoreReturnedWithScoreSort() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		Search relevance = new Search(INDEX_NAME).setAmount(10).addQuery(new ScoredQuery("title:special OR title:secret"));
+		Map<String, Float> expectedScores = new HashMap<>();
+		for (CompleteResult result : zuliaWorkPool.search(relevance).getCompleteResults()) {
+			Assertions.assertTrue(result.getScore() > 0);
+			expectedScores.put(result.getUniqueId(), result.getScore());
+		}
+		Assertions.assertEquals(2, expectedScores.size());
+
+		// the score sort field can sit at any position in the sort
+		List<List<Sort>> sorts = List.of(List.of(new Sort(ZuliaFieldConstants.SCORE_FIELD).descending()),
+				List.of(new Sort("stars").descending(), new Sort(ZuliaFieldConstants.SCORE_FIELD).descending()),
+				List.of(new Sort(ZuliaFieldConstants.SCORE_FIELD), new Sort("stars")));
+		for (List<Sort> sort : sorts) {
+			Search sorted = new Search(INDEX_NAME).setAmount(10).addQuery(new ScoredQuery("title:special OR title:secret"));
+			sort.forEach(sorted::addSort);
+			List<CompleteResult> results = zuliaWorkPool.search(sorted).getCompleteResults();
+			Assertions.assertEquals(2, results.size());
+			for (CompleteResult result : results) {
+				Assertions.assertEquals(expectedScores.get(result.getUniqueId()), result.getScore(), 0.0f);
+			}
+		}
 	}
 
 	@Test
