@@ -6,8 +6,6 @@ import io.zulia.server.search.distinct.DistinctCountCollectorManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 public class QueryRequestValidatorDistinctCountTest {
 
 	private static final int MAX_CAP = DistinctCountCollectorManager.MAX_MAX_GROUPS_PER_SHARD;
@@ -21,27 +19,6 @@ public class QueryRequestValidatorDistinctCountTest {
 		QueryRequest explicit = QueryRequest.newBuilder().addIndex("articles")
 				.addDistinctCount(DistinctCountRequest.newBuilder().setField("journal").setMaxGroupsPerShard(5)).build();
 		Assertions.assertEquals(5, new QueryRequestValidator().validateAndSetDefault(explicit).getDistinctCount(0).getMaxGroupsPerShard());
-	}
-
-	@Test
-	public void keysPerNodeAreBoundedByTheInternalMessage() {
-		DistinctCountRequest full = DistinctCountRequest.newBuilder().setField("journal").setMaxGroupsPerShard(MAX_CAP).build();
-		DistinctCountRequest third = DistinctCountRequest.newBuilder().setField("year").setMaxGroupsPerShard(MAX_CAP / 3).build();
-		// one shard at the full cap is 128 MB and fits, a second shard on the same node does not
-		QueryRequestValidator.validateDistinctCountKeysPerNode(List.of(full), "node a:1", 1);
-		IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
-				() -> QueryRequestValidator.validateDistinctCountKeysPerNode(List.of(full), "node a:1", 2));
-		Assertions.assertTrue(e.getMessage().contains("node a:1") && e.getMessage().contains("2 shards") && e.getMessage().contains("256 MB"), e.getMessage());
-		// caps add up across fields: 16M + 5.3M keys over a shard, 170 MB, fits once but not twice
-		QueryRequestValidator.validateDistinctCountKeysPerNode(List.of(full, third), "node b:1", 1);
-		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> QueryRequestValidator.validateDistinctCountKeysPerNode(List.of(full, third), "node b:1", 2));
-		// the default cap is 8 MB per shard, so 29 shards on one node (232 MB) fit under the 234 MB limit and 30 do not
-		DistinctCountRequest defaults = DistinctCountRequest.newBuilder().setField("journal")
-				.setMaxGroupsPerShard(DistinctCountCollectorManager.DEFAULT_MAX_GROUPS_PER_SHARD).build();
-		QueryRequestValidator.validateDistinctCountKeysPerNode(List.of(defaults), "node c:1", 29);
-		Assertions.assertThrows(IllegalArgumentException.class,
-				() -> QueryRequestValidator.validateDistinctCountKeysPerNode(List.of(defaults), "node c:1", 30));
 	}
 
 	@Test

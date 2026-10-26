@@ -8,7 +8,6 @@ import io.zulia.message.ZuliaQuery.AnalysisRequest;
 import io.zulia.message.ZuliaQuery.DistinctCountRequest;
 import io.zulia.message.ZuliaQuery.HighlightRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
-import io.zulia.server.connection.client.InternalRpcConnection;
 import io.zulia.server.search.distinct.DistinctCountCollectorManager;
 
 import java.util.HashMap;
@@ -26,29 +25,6 @@ import static io.zulia.message.ZuliaQuery.FacetRequest;
  * @author pmeyer
  */
 public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
-
-	/**
-	 * Distinct keys one node may send in one internal message, leaving 32 MB of the message limit for everything else in the response.
-	 */
-	public static final long MAX_DISTINCT_KEY_BYTES_PER_NODE = InternalRpcConnection.MAX_INBOUND_MESSAGE_BYTES - 32L * 1024 * 1024;
-
-	/**
-	 * Rejects distinct counts whose caps would let a node's keys for all its shards overflow its one internal message. It checks
-	 * the worst case from the caps, not the values a field really has, and shard placement can change before the query runs.
-	 */
-	public static void validateDistinctCountKeysPerNode(List<DistinctCountRequest> distinctCountRequests, String node, int shardsOnNode) {
-		long keysPerShard = 0;
-		for (DistinctCountRequest request : distinctCountRequests) {
-			keysPerShard += request.getMaxGroupsPerShard();
-		}
-		long bytesFromNode = keysPerShard * shardsOnNode * Long.BYTES;
-		if (bytesFromNode > MAX_DISTINCT_KEY_BYTES_PER_NODE) {
-			throw new IllegalArgumentException(
-					"Distinct count caps total " + keysPerShard + " keys per shard and " + node + " answers for " + shardsOnNode + " shards, so it could send "
-							+ (bytesFromNode / 1_000_000) + " MB of keys in one message against a limit of " + (MAX_DISTINCT_KEY_BYTES_PER_NODE / 1_000_000)
-							+ " MB. Lower the caps, count fewer fields at once, or spread the shards over more nodes");
-		}
-	}
 
 	/**
 	 * A stored warming search gets the same defaults and checks as a live query, plus the label that updates address it by.

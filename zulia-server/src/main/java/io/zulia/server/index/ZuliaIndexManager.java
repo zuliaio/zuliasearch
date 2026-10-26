@@ -63,6 +63,7 @@ import io.zulia.server.index.router.DeleteRequestRouter;
 import io.zulia.server.index.router.FetchRequestRouter;
 import io.zulia.server.index.router.StoreRequestRouter;
 import io.zulia.server.node.ZuliaNode;
+import io.zulia.server.search.distinct.DistinctKeyBudget;
 import io.zulia.server.util.DeletingFileVisitor;
 import io.zulia.server.util.MongoProvider;
 import io.zulia.util.IndexAliasUtil;
@@ -464,7 +465,10 @@ public class ZuliaIndexManager {
 			Map<String, ZuliaIndex> resolvedIndexes = leases.getIndexes();
 			populateIndexesAndIndexMap(request.getQueryRequest(), resolvedIndexes, queryMap, indexes);
 
-			return QueryRequestFederator.internalQuery(indexes, request, queryMap);
+			InternalQueryResponse response = QueryRequestFederator.internalQuery(indexes, request, queryMap);
+			// this answer crosses the internal channel as one message, the coordinator's own shards never do
+			DistinctKeyBudget.check(response, "node " + thisNode.getServerAddress() + ":" + thisNode.getServicePort());
+			return response;
 		}
 	}
 
