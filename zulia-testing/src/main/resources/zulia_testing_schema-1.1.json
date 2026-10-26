@@ -59,6 +59,11 @@
         },
         "port": {
           "type": "integer"
+        },
+        "routingEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable node discovery and shard routing. Leave off for port forwards and load balancers."
         }
       },
       "required": [
