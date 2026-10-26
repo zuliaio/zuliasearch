@@ -92,7 +92,13 @@ public enum KnownEmbeddingModel {
 	// Multilingual E5 large instruct - instruction-conditioned queries, unprefixed passages, mean pooling, 512 token context, MIT license
 	MULTILINGUAL_E5_LARGE_INSTRUCT(EmbeddingModelConfig.builder("https://huggingface.co/intfloat/multilingual-e5-large-instruct", 1024)
 			.prefixes("Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery: ", "")
-			.build());
+			.build()),
+
+	// CodeRankEmbed - natural language to code retrieval, NomicBERT, CLS pooling, 8192 token context, MIT license
+	// Queries require the instruction prefix, code passages take none. The export script lives in the Hugging Face repo next to the model.
+	CODE_RANK_EMBED(EmbeddingModelConfig.builder("https://huggingface.co/zuliaio/coderankembed-onnx", 768)
+			.prefixes("Represent this query for searching relevant code: ", "")
+			.includeTokenTypes(true).poolingMode("cls").maxTokens(8192).build());
 
 	private final EmbeddingModelConfig config;
 
