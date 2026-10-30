@@ -61,6 +61,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -95,6 +96,7 @@ public class ShardReader implements AutoCloseable {
 	 */
 	private volatile AtomicLong queryResultCacheSize;
 	private final AtomicLong pinnedQueryResultCacheSize = new AtomicLong();
+	private final AtomicLong oversizedResponseCount = new AtomicLong();
 
 	private final ConcurrentHashMap<Integer, Integer> dimensionChildCountCache = new ConcurrentHashMap<>();
 
@@ -300,6 +302,9 @@ public class ShardReader implements AutoCloseable {
 			if (shardQueryResponse.getSerializedSize() > maxCachedBytes) {
 				// computed inside the cache so identical concurrent searches share one run, then dropped so one large response cannot crowd out the rest
 				cache.synchronous().invalidate(queryCacheKey);
+				oversizedResponseCount.incrementAndGet();
+				LOG.debug("Query id {} on {}:s{} not cached, response of {} bytes is over the {} byte cap", shardQuery.getSearchId(), indexName, shardNumber,
+						shardQueryResponse.getSerializedSize(), maxCachedBytes);
 			}
 			return shardQueryResponse;
 		}
@@ -468,14 +473,20 @@ public class ShardReader implements AutoCloseable {
 
 		DocumentScoredDocLeafHandler documentScoredDocLeafHandler = new DocumentScoredDocLeafHandler(indexName, shardNumber, shardQuery.getResultFetchType(),
 				shardQuery.getFieldsToReturn(), shardQuery.getFieldsToMask(), sortMetas, highlighterList, analysisHandlerList);
-		ZuliaQuery.ScoredResult[] scoredResults = documentScoredDocLeafHandler.handle(indexReader, results, ZuliaQuery.ScoredResult[]::new);
+		// only the page's hits carry documents, highlights and analysis (so exclude the extra doc for the cursor)
+		ZuliaQuery.ScoredResult[] scoredResults = documentScoredDocLeafHandler.handle(indexReader, Arrays.copyOf(results, numResults),
+				ZuliaQuery.ScoredResult[]::new);
 
-		for (int i = 0; i < numResults; i++) {
-			shardQueryReponseBuilder.addScoredResult(scoredResults[i]);
+		for (ZuliaQuery.ScoredResult scoredResult : scoredResults) {
+			shardQueryReponseBuilder.addScoredResult(scoredResult);
 		}
 
 		if (moreAvailable) {
-			shardQueryReponseBuilder.setNext(scoredResults[numResults]);
+			// the coordinator compares the cursor by score and sort values only, so it is built without the stored document
+			DocumentScoredDocLeafHandler cursorHandler = new DocumentScoredDocLeafHandler(indexName, shardNumber, ZuliaQuery.FetchType.NONE, List.of(),
+					List.of(), sortMetas, List.of(), List.of());
+			ZuliaQuery.ScoredResult[] cursor = cursorHandler.handle(indexReader, new ScoreDoc[] { results[numResults] }, ZuliaQuery.ScoredResult[]::new);
+			shardQueryReponseBuilder.setNext(cursor[0]);
 		}
 
 		shardQueryReponseBuilder.setIndexName(indexName);
@@ -943,7 +954,7 @@ public class ShardReader implements AutoCloseable {
 	public ZuliaBase.ShardCacheStats.Builder getShardCacheStats() {
 		ZuliaBase.ShardCacheStats.Builder b = ZuliaBase.ShardCacheStats.newBuilder();
 		AsyncCache<@NotNull QueryCacheKey, ZuliaQuery.ShardQueryResponse> cache = queryResultCache;
-		b.setGeneralCache(getCacheStats(cache.synchronous(), queryResultCacheSize));
+		b.setGeneralCache(getCacheStats(cache.synchronous(), queryResultCacheSize).setOversizedResponseCount(oversizedResponseCount.get()));
 		b.setPinnedCache(getCacheStats(pinnedQueryResultCache.synchronous(), pinnedQueryResultCacheSize));
 		return b;
 	}
