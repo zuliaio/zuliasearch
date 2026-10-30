@@ -121,5 +121,6 @@ message CacheStats {
     uint64 totalLoadTime = 4;
     uint64 evictionCount = 5;
     uint64 resultSize = 6;
+    uint64 oversizedResponseCount = 7;
 }
 
