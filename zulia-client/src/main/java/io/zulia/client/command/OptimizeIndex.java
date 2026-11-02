@@ -18,6 +18,7 @@ import static io.zulia.message.ZuliaServiceOuterClass.OptimizeResponse;
 public class OptimizeIndex extends SimpleCommand<ZuliaServiceOuterClass.OptimizeRequest, OptimizeIndexResult> implements SingleIndexRoutableCommand {
 
 	private String indexName;
+	private int maxNumberOfSegments;
 
 	public OptimizeIndex(String indexName) {
 		this.indexName = indexName;
@@ -28,9 +29,26 @@ public class OptimizeIndex extends SimpleCommand<ZuliaServiceOuterClass.Optimize
 		return indexName;
 	}
 
+	/**
+	 * Merges each primary shard down to at most this many segments. 0, the default, merges each shard to one segment.
+	 */
+	public OptimizeIndex setMaxNumberOfSegments(int maxNumberOfSegments) {
+		if (maxNumberOfSegments < 0) {
+			throw new IllegalArgumentException(
+					"maxNumberOfSegments for optimize of index <" + indexName + "> must be 0 (one segment) or a positive segment count, got "
+							+ maxNumberOfSegments);
+		}
+		this.maxNumberOfSegments = maxNumberOfSegments;
+		return this;
+	}
+
+	public int getMaxNumberOfSegments() {
+		return maxNumberOfSegments;
+	}
+
 	@Override
 	public OptimizeRequest getRequest() {
-		return OptimizeRequest.newBuilder().setIndexName(indexName).build();
+		return OptimizeRequest.newBuilder().setIndexName(indexName).setMaxNumberOfSegments(maxNumberOfSegments).build();
 	}
 
 	@Override

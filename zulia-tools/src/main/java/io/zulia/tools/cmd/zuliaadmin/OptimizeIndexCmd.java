@@ -1,5 +1,6 @@
 package io.zulia.tools.cmd.zuliaadmin;
 
+import io.zulia.client.command.OptimizeIndex;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.tools.cmd.ZuliaAdmin;
 import io.zulia.tools.cmd.common.MultipleIndexArgs;
@@ -17,6 +18,9 @@ public class OptimizeIndexCmd implements Callable<Integer> {
 	@CommandLine.Mixin
 	private MultipleIndexArgs multipleIndexArgs;
 
+	@CommandLine.Option(names = "--maxSegments", description = "Merge each shard down to at most this many segments. Default merges each shard to one segment")
+	private int maxSegments = 0;
+
 	@Override
 	public Integer call() throws Exception {
 
@@ -25,7 +29,7 @@ public class OptimizeIndexCmd implements Callable<Integer> {
 		Set<String> indexes = multipleIndexArgs.resolveIndexes(zuliaWorkPool);
 
 		for (String index : indexes) {
-			zuliaWorkPool.optimizeIndex(index);
+			zuliaWorkPool.optimizeIndex(new OptimizeIndex(index).setMaxNumberOfSegments(maxSegments));
 		}
 		return CommandLine.ExitCode.OK;
 	}
