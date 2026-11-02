@@ -94,5 +94,6 @@ public class CacheMaxResponseTest {
 				.map(IndexStats::getShardCacheStatList).orElseThrow().getFirst().getGeneralCache();
 		Assertions.assertTrue(general.getResultSize() < 1024 * 1024, "the cache holds less than the 1 MB limit: " + general);
 		Assertions.assertTrue(general.getEstimatedSize() >= 1, "the small response is still there: " + general);
+		Assertions.assertEquals(2, general.getOversizedResponseCount(), "both runs of the oversized search are counted: " + general);
 	}
 }
