@@ -293,6 +293,28 @@ public class StatCombinerTest {
 		Assertions.assertEquals(5, result.getGlobalStats().getDocCount());
 	}
 
+	@Test
+	public void percentilesUseTheShardSketchPrecision() {
+		// two global stat requests on one field share the shard sketch, which takes the precision of the last request
+		StatRequest statRequest = StatRequest.newBuilder().setNumericField("amount").setMaxFacets(10).setShardFacets(-1).setPrecision(0.01)
+				.addPercentiles(0.5).build();
+		StatCombiner combiner = new StatCombiner(statRequest, 2);
+		QuantileSketch everyValue = new QuantileSketch(PRECISION, QuantileSketch.Mapping.CUBIC);
+		for (int shard = 0; shard < 2; shard++) {
+			DoubleDoubleStats shardStats = new DoubleDoubleStats(PRECISION);
+			for (int i = 1; i <= 100; i++) {
+				double value = i * (shard + 1.5);
+				shardStats.newDoc(true);
+				shardStats.newValue(value);
+				everyValue.accept(value);
+			}
+			combiner.handleStatGroupForShard(StatGroupInternal.newBuilder().setGlobalStats(shardStats.buildResponse().build()).build(), shard);
+		}
+
+		StatGroup result = combiner.getCombinedStatGroupAndConvertToExternalType();
+		assertPercentiles(List.of(0.5), new double[] { everyValue.quantile(0.5) }, result.getGlobalStats().getPercentilesList());
+	}
+
 	private static void assertPercentiles(List<Double> points, double[] expected, List<Percentile> actual) {
 		Assertions.assertEquals(points.size(), actual.size());
 		for (int i = 0; i < points.size(); i++) {

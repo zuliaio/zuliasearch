@@ -1,19 +1,20 @@
 package io.zulia.ai.features.stat;
 
 import io.zulia.util.sketch.QuantileSketch;
+import io.zulia.util.sketch.SummarizedQuantileSketch;
 
 public class FeatureStatGenerator {
 
 	private static final double[] QUANTILES = { 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95 };
 
 	private final int numberOfFeatures;
-	private final QuantileSketch[] featureSketches;
+	private final SummarizedQuantileSketch[] featureSketches;
 
 	public FeatureStatGenerator(int numberOfFeatures) {
 		this.numberOfFeatures = numberOfFeatures;
-		this.featureSketches = new QuantileSketch[numberOfFeatures];
+		this.featureSketches = new SummarizedQuantileSketch[numberOfFeatures];
 		for (int i = 0; i < numberOfFeatures; i++) {
-			featureSketches[i] = new QuantileSketch(0.0001, QuantileSketch.Mapping.CUBIC);
+			featureSketches[i] = new SummarizedQuantileSketch(0.0001, QuantileSketch.Mapping.CUBIC);
 		}
 	}
 
@@ -45,7 +46,7 @@ public class FeatureStatGenerator {
 	public FeatureStat[] computeFeatureStats() {
 		FeatureStat[] featureStats = new FeatureStat[numberOfFeatures];
 		for (int i = 0; i < numberOfFeatures; i++) {
-			QuantileSketch featureSketch = featureSketches[i];
+			SummarizedQuantileSketch featureSketch = featureSketches[i];
 			FeatureStat featureStat = new FeatureStat();
 			if (featureSketch.isEmpty()) {
 				featureStat.setAvg(Double.NaN);
