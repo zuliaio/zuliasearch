@@ -7,6 +7,7 @@ import io.zulia.client.command.builder.Search;
 import io.zulia.client.config.ClientIndexConfig;
 import io.zulia.client.pool.ZuliaWorkPool;
 import io.zulia.client.result.SearchResult;
+import io.zulia.message.ZuliaQuery.ScoredResult;
 import io.zulia.doc.ResultDocBuilder;
 import io.zulia.fields.FieldConfigBuilder;
 import io.zulia.server.test.node.shared.NodeExtension;
@@ -315,6 +316,65 @@ public class ScoreFunctionTest {
 
 		// Doc 1 has popularity=1, so it gets highest score after division
 		Assertions.assertEquals("1", invertedResult.getFirstDocument().get("id"));
+	}
+
+	@Test
+	@Order(16)
+	public void testScoreFunctionWithNegativeFloatAndDouble() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		// Negative float and double sort values round trip through the sortable doc values encoding.
+		// Lucene clamps negative function values to a score of 0, so add an offset to make the decoded value observable.
+		Document doc = new Document();
+		doc.put("id", "6");
+		doc.put("title", "cats with negative rating");
+		doc.put("popularity", 1);
+		doc.put("viewCount", 1L);
+		doc.put("rating", -1.0f);
+		doc.put("boost", -2.5);
+		doc.put("pageRank", 1.0);
+		doc.put("publishDate", new Date());
+		zuliaWorkPool.store(new Store("6", INDEX_NAME, ResultDocBuilder.from(doc)));
+
+		Assertions.assertEquals(9.0f, scoreFor(zuliaWorkPool, "6", "rating + 10"), 1e-5f);
+		Assertions.assertEquals(7.5f, scoreFor(zuliaWorkPool, "6", "boost + 10"), 1e-5f);
+
+		// A negative rating must rank below every positive rating
+		Search search = new Search(INDEX_NAME).setAmount(10).setRealtime(true);
+		search.addQuery(new ScoredQuery("title:cats").setScoreFunction("rating + 10"));
+		SearchResult result = zuliaWorkPool.search(search);
+		Assertions.assertEquals(5, result.getTotalHits());
+		Assertions.assertEquals("6", result.getDocuments().getLast().get("id"));
+	}
+
+	@Test
+	@Order(17)
+	public void testScoreFunctionWithNegativeZero() throws Exception {
+		ZuliaWorkPool zuliaWorkPool = nodeExtension.getClient();
+
+		Document doc = new Document();
+		doc.put("id", "7");
+		doc.put("title", "cats with negative zero");
+		doc.put("popularity", 1);
+		doc.put("viewCount", 1L);
+		doc.put("rating", -0.0f);
+		doc.put("boost", -0.0);
+		doc.put("pageRank", 1.0);
+		doc.put("publishDate", new Date());
+		zuliaWorkPool.store(new Store("7", INDEX_NAME, ResultDocBuilder.from(doc)));
+
+		Assertions.assertEquals(10.0f, scoreFor(zuliaWorkPool, "7", "rating + 10"), 1e-5f);
+		Assertions.assertEquals(10.0f, scoreFor(zuliaWorkPool, "7", "boost + 10"), 1e-5f);
+	}
+
+	private float scoreFor(ZuliaWorkPool zuliaWorkPool, String id, String scoreFunction) throws Exception {
+		Search search = new Search(INDEX_NAME).setAmount(1).setRealtime(true);
+		search.addQuery(new ScoredQuery("id:" + id).setScoreFunction(scoreFunction));
+		SearchResult result = zuliaWorkPool.search(search);
+		Assertions.assertEquals(1, result.getTotalHits(), "document " + id + " not found");
+		ScoredResult hit = result.getFirstResult();
+		Assertions.assertEquals(id, hit.getUniqueId());
+		return hit.getScore();
 	}
 
 }
