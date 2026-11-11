@@ -15,6 +15,7 @@ public class QuantileSketchTest {
 
 	private static final double ACCURACY = 0.001;
 	private static final double[] QUANTILES = { 0, 0.01, 0.25, 0.5, 0.75, 0.99, 1 };
+	private static final int HEADER_LENGTH = 34;
 
 	@ParameterizedTest
 	@EnumSource(Mapping.class)
@@ -40,22 +41,52 @@ public class QuantileSketchTest {
 	}
 
 	@Test
-	void countSumMinMaxAreExact() {
+	void countIsExact() {
 		Random random = new Random(5);
 		double[] values = randomValues(random, 10000);
 		QuantileSketch sketch = new QuantileSketch(ACCURACY);
-		double sum = 0;
 		for (double value : values) {
 			sketch.accept(value);
-			sum += value;
 		}
-		double[] sorted = values.clone();
-		Arrays.sort(sorted);
 		Assertions.assertEquals(values.length, sketch.count());
-		Assertions.assertEquals(sum, sketch.sum(), 0.0);
-		Assertions.assertEquals(sum / values.length, sketch.average(), 0.0);
-		Assertions.assertEquals(sorted[0], sketch.min(), 0.0);
-		Assertions.assertEquals(sorted[sorted.length - 1], sketch.max(), 0.0);
+	}
+
+	@Test
+	void otherFormatVersionsFailClearly() {
+		QuantileSketch sketch = new QuantileSketch(ACCURACY);
+		sketch.accept(3);
+		byte[] bytes = sketch.toBytes();
+		Assertions.assertEquals(1, bytes[0], "current format version");
+		for (byte version : new byte[] { 0, 2 }) {
+			bytes[0] = version;
+			IllegalArgumentException fromBytes = Assertions.assertThrows(IllegalArgumentException.class, () -> QuantileSketch.fromBytes(bytes));
+			Assertions.assertTrue(fromBytes.getMessage().contains("version " + version), fromBytes.getMessage());
+			Assertions.assertThrows(IllegalArgumentException.class, () -> new QuantileSketch(ACCURACY).mergeFrom(bytes));
+		}
+	}
+
+	@Test
+	void corruptBytesFailClearly() {
+		// zero count 0, a positive store of one bin at index 0 holding -1 as a ten byte varint, empty negative store
+		byte[] negativeCount = withHeader(0, 1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, 0);
+		IllegalArgumentException negative = Assertions.assertThrows(IllegalArgumentException.class,
+				() -> new QuantileSketch(ACCURACY).mergeFrom(negativeCount));
+		Assertions.assertTrue(negative.getMessage().contains("negative count -1"), negative.getMessage());
+	}
+
+	@Test
+	void binOverflowIsCaughtWhenRead() {
+		// a bin holding Integer.MAX_VALUE arrives in byte form, two more values wrap it without a per value check
+		QuantileSketch sketch = new QuantileSketch(ACCURACY);
+		// zero count 0, a positive store of one bin at index 0 holding MAX_VALUE, empty negative store
+		byte[] full = withHeader(0, 1, 0, 0xFF, 0xFF, 0xFF, 0xFF, 7, 0);
+		sketch.mergeFrom(full);
+		Assertions.assertEquals(Integer.MAX_VALUE, sketch.count());
+		sketch.accept(1);
+		sketch.accept(1);
+		ArithmeticException overflow = Assertions.assertThrows(ArithmeticException.class, sketch::toBytes);
+		Assertions.assertTrue(overflow.getMessage().contains(String.valueOf(Integer.MAX_VALUE + 2L)), overflow.getMessage());
+		Assertions.assertThrows(ArithmeticException.class, () -> sketch.quantile(0.5));
 	}
 
 	@ParameterizedTest
@@ -112,20 +143,15 @@ public class QuantileSketchTest {
 		Assertions.assertTrue(empty.isEmpty());
 		Assertions.assertEquals(0, empty.count());
 		Assertions.assertEquals(0, empty.bins());
-		Assertions.assertEquals(0.0, empty.sum(), 0.0);
-		Assertions.assertThrows(NoSuchElementException.class, empty::average);
-		Assertions.assertThrows(NoSuchElementException.class, empty::min);
-		Assertions.assertThrows(NoSuchElementException.class, empty::max);
 		Assertions.assertThrows(NoSuchElementException.class, () -> empty.quantile(0.5));
 
-		// merging an empty sketch into a populated one must not disturb min or max
+		// merging an empty sketch into a populated one must not disturb it
 		QuantileSketch populated = new QuantileSketch(ACCURACY);
 		populated.accept(3);
 		populated.mergeWith(empty);
 		populated.mergeFrom(empty.toBytes());
-		Assertions.assertEquals(3, populated.min(), 0.0);
-		Assertions.assertEquals(3, populated.max(), 0.0);
 		Assertions.assertEquals(1, populated.count());
+		Assertions.assertEquals(3, populated.quantile(0.5), 3 * ACCURACY);
 	}
 
 	@Test
@@ -139,7 +165,6 @@ public class QuantileSketchTest {
 		Assertions.assertEquals(0, sketch.quantile(0), 0.0);
 		Assertions.assertEquals(0, sketch.quantile(0.5), 0.0);
 		Assertions.assertEquals(5, sketch.quantile(1), 5 * ACCURACY);
-		Assertions.assertEquals(-Double.MIN_VALUE, sketch.min(), 0.0);
 	}
 
 	@Test
@@ -184,6 +209,15 @@ public class QuantileSketchTest {
 	}
 
 	/** Positive, negative or mixed values over a random magnitude so bin ranges overlap or sit far apart. */
+	/** The header of an empty cubic sketch followed by a body written by hand. */
+	private static byte[] withHeader(int... body) {
+		byte[] bytes = Arrays.copyOf(new QuantileSketch(ACCURACY).toBytes(), HEADER_LENGTH + body.length);
+		for (int i = 0; i < body.length; i++) {
+			bytes[HEADER_LENGTH + i] = (byte) body[i];
+		}
+		return bytes;
+	}
+
 	private static double[] randomValues(Random random, int size) {
 		double scale = Math.pow(10, random.nextInt(9) - 3);
 		int sign = random.nextInt(3);
@@ -202,10 +236,7 @@ public class QuantileSketchTest {
 	private static void assertSameSketch(QuantileSketch expected, QuantileSketch actual, String message) {
 		Assertions.assertEquals(expected.count(), actual.count(), message + " count");
 		Assertions.assertEquals(expected.bins(), actual.bins(), message + " bins");
-		Assertions.assertEquals(expected.sum(), actual.sum(), Math.abs(expected.sum()) * 1e-12, message + " sum");
 		if (!expected.isEmpty()) {
-			Assertions.assertEquals(expected.min(), actual.min(), 0.0, message + " min");
-			Assertions.assertEquals(expected.max(), actual.max(), 0.0, message + " max");
 			Assertions.assertArrayEquals(expected.quantiles(QUANTILES), actual.quantiles(QUANTILES), 0.0, message + " quantiles");
 		}
 	}
