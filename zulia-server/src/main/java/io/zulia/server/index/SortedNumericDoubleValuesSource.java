@@ -10,8 +10,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
 
-import org.apache.lucene.util.NumericUtils;
-
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.LongToDoubleFunction;
@@ -44,16 +42,17 @@ public class SortedNumericDoubleValuesSource extends DoubleValuesSource {
 	}
 
 	public static SortedNumericDoubleValuesSource fromFloat(String field) {
-		return new SortedNumericDoubleValuesSource(field, SortField.Type.FLOAT, v -> (double) NumericUtils.sortableIntToFloat((int) v));
+		return new SortedNumericDoubleValuesSource(field, SortField.Type.FLOAT, v -> (double) Float.intBitsToFloat((int) v));
 	}
 
 	public static SortedNumericDoubleValuesSource fromDouble(String field) {
-		return new SortedNumericDoubleValuesSource(field, SortField.Type.DOUBLE, NumericUtils::sortableLongToDouble);
+		return new SortedNumericDoubleValuesSource(field, SortField.Type.DOUBLE, Double::longBitsToDouble);
 	}
 
 	@Override
 	public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
 		SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(ctx.reader(), field);
+		// wrap already undoes the sortable encoding for FLOAT and DOUBLE, so the decoders see raw IEEE bits
 		NumericDocValues numericDocValues = SortedNumericSelector.wrap(sortedNumeric, SortedNumericSelector.Type.MIN, sortType);
 		return new DoubleValues() {
 			@Override
