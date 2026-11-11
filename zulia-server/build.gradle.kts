@@ -89,7 +89,7 @@ dependencies {
     implementation(libs.micronaut.http.base)
     implementation(libs.micronaut.http.server)
     implementation(libs.micronaut.management)
-    implementation(libs.micronaut.openapi)
+    implementation(libs.micronaut.openapi.annotations)
     implementation(libs.micronaut.reactor)
     implementation(libs.micronaut.serde.jackson)
     implementation(libs.picocli.base)

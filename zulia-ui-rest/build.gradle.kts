@@ -64,7 +64,7 @@ dependencies {
     implementation(libs.micronaut.reactor)
     implementation(libs.micronaut.serde.jackson)
     implementation(libs.micronaut.security.jwt)
-    implementation(libs.micronaut.openapi)
+    implementation(libs.micronaut.openapi.annotations)
     implementation(libs.micronaut.data.mongodb)
     implementation(libs.micronaut.http.client)
     implementation(libs.snake.yaml)

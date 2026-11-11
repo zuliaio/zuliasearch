@@ -98,7 +98,7 @@ subprojects {
         add("testRuntimeOnly", libs.junit.platform.launcher)
 
         // These are pulled in transitively only (POI, caffeine, guava, commons-compress, flapdoodle request
-        // different versions in different modules, jsoup via micronaut-openapi). Constrain them so every module / every published POM
+        // different versions in different modules, jackson-core via micronaut-serde). Constrain them so every module / every published POM
         // lands on the same version instead of drifting by whichever transitive chain a module happens to
         // include. implementation constraints also reach the test classpaths (testImplementation extends it).
         constraints {
@@ -106,9 +106,9 @@ subprojects {
             add("implementation", libs.commons.io)
             add("implementation", libs.error.prone.annotations)
             add("implementation", libs.httpclient5)
+            add("implementation", libs.jackson.core)
             add("implementation", libs.jackson.databind)
             add("implementation", libs.jna)
-            add("implementation", libs.jsoup)
             add("implementation", libs.log4j.api)
         }
     }
