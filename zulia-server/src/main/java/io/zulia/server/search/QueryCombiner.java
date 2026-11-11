@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -185,8 +186,8 @@ public class QueryCombiner {
 			resultsSize = Math.min(resultsSize, vectorTopN);
 		}
 
-		Map<CountRequest, FacetCombiner> facetCombinerMap = new HashMap<>();
-		Map<StatRequest, StatCombiner> statCombinerMap = new HashMap<>();
+		Map<CountRequest, FacetCombiner> facetCombinerMap = new LinkedHashMap<>();
+		Map<StatRequest, StatCombiner> statCombinerMap = new LinkedHashMap<>();
 
 		Map<AnalysisRequest, Map<String, Term.Builder>> analysisRequestToTermMap = new HashMap<>();
 

@@ -10,7 +10,7 @@ import io.zulia.message.ZuliaQuery.HighlightRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 import io.zulia.server.search.distinct.DistinctCountCollectorManager;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +99,7 @@ public class QueryRequestValidator implements DefaultValidator<QueryRequest> {
 			}
 		}
 
-		Map<String, CountRequest.Builder> uniqueRequests = new HashMap<>();
+		Map<String, CountRequest.Builder> uniqueRequests = new LinkedHashMap<>();
 		for (CountRequest.Builder builder : facetRequestBuilder.getCountRequestBuilderList()) {
 			ZuliaQuery.Facet facetField = builder.getFacetField();
 			StringBuilder facet = new StringBuilder(facetField.getLabel());
