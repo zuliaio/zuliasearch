@@ -41,7 +41,7 @@ public class ZuliaShard {
 	private String trackingId;
 	private HashSet<String> trackedIds;
 
-	private boolean unloaded;
+	private volatile boolean unloaded;
 	private volatile boolean replicaNeedsWarming;
 	private volatile Runnable postCommitHook;
 

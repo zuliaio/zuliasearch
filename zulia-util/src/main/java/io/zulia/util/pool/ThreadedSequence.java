@@ -20,7 +20,7 @@ public abstract class ThreadedSequence<I, O> {
 
 	private final int batchSize;
 	private final TaskExecutor taskExecutor;
-	private int totalProcessed;
+	private volatile int totalProcessed;
 	private ProgressTracker progressTracker;
 
 	/**

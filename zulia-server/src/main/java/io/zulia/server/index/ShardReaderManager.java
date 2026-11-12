@@ -6,7 +6,7 @@ import java.io.IOException;
 
 public class ShardReaderManager extends ReferenceManager<ShardReader> {
 
-	private long latestShardTime;
+	private volatile long latestShardTime;
 
 	public ShardReaderManager(ShardReader initial) {
 		this.current = initial;
