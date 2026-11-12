@@ -1,8 +1,16 @@
 package io.zulia.server.search;
 
+import io.zulia.ZuliaFieldConstants;
+import io.zulia.message.ZuliaQuery.CountRequest;
 import io.zulia.message.ZuliaServiceOuterClass.QueryRequest;
 
+import java.util.Comparator;
+import java.util.List;
+
 public class QueryCacheKey {
+
+	private static final Comparator<CountRequest> FACET_ORDER = Comparator.comparing((CountRequest countRequest) -> countRequest.getFacetField().getLabel())
+			.thenComparing(countRequest -> String.join(ZuliaFieldConstants.FACET_PATH_DELIMITER, countRequest.getFacetField().getPathList()));
 
 	private final QueryRequest queryRequest;
 	private final boolean pinned;
@@ -19,7 +27,16 @@ public class QueryCacheKey {
 		//  * the caching for identical queries searched again two indexes could be used for a combined query against two indexes
 		//  * the two identical queries against different aliases pointed at the same index would be cache hits for each other
 
-		this.queryRequest = queryRequest.toBuilder().clearIndex().setPinToCache(false).setSearchLabel("").setConcurrency(1).build();
+		QueryRequest.Builder keyBuilder = queryRequest.toBuilder().clearIndex().setPinToCache(false).setSearchLabel("").setConcurrency(1);
+
+		// QueryCombiner restores the caller's facet group order, so count request order must not split the cache.
+		// Warming searches stored by 5.6.0 or earlier hold their count requests in hash order.
+		if (keyBuilder.getFacetRequest().getCountRequestCount() > 1) {
+			List<CountRequest> sorted = keyBuilder.getFacetRequest().getCountRequestList().stream().sorted(FACET_ORDER).toList();
+			keyBuilder.getFacetRequestBuilder().clearCountRequest().addAllCountRequest(sorted);
+		}
+
+		this.queryRequest = keyBuilder.build();
 	}
 
 	public boolean isPinned() {

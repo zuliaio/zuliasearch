@@ -51,6 +51,7 @@ public class QueryCombiner {
 	private final int start;
 	private final LastResult lastResult;
 	private final List<AnalysisRequest> analysisRequestList;
+	private final List<CountRequest> countRequests;
 	private final List<DistinctCountRequest> distinctCountRequests;
 	private final SortRequest sortRequest;
 	private final Collection<ZuliaIndex> indexes;
@@ -77,6 +78,7 @@ public class QueryCombiner {
 		this.sortRequest = request.getSortRequest();
 		this.start = request.getStart();
 		this.analysisRequestList = request.getAnalysisRequestList();
+		this.countRequests = request.getFacetRequest().getCountRequestList();
 		this.distinctCountRequests = request.getDistinctCountList();
 
 		this.isShort = false;
@@ -242,6 +244,14 @@ public class QueryCombiner {
 			}
 		}
 
+		// a cached shard response can hold its facet groups in another request's order, so follow this request's order
+		for (CountRequest countRequest : countRequests) {
+			FacetCombiner facetCombiner = facetCombinerMap.remove(countRequest);
+			if (facetCombiner != null && facetCombiner.isComplete()) {
+				builder.addFacetGroup(facetCombiner.getCombinedFacetGroup());
+			}
+		}
+		// a group whose count request is not in this request is still returned rather than dropped
 		for (FacetCombiner facetCombiner : facetCombinerMap.values()) {
 			if (facetCombiner.isComplete()) {
 				builder.addFacetGroup(facetCombiner.getCombinedFacetGroup());

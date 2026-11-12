@@ -115,6 +115,30 @@ public class FacetGroupOrderTest {
 		Assertions.assertEquals(expected, actual);
 	}
 
+	@Test
+	@Order(6)
+	public void cachedResponseServesAnotherFacetOrder() throws Exception {
+		// a warming search stored by 5.6.0 or earlier holds its facets in hash order, while the live search keeps the caller's order
+		List<String> storedOrder = FACETS.reversed();
+		List<String> liveOrder = List.of("grade", "aisle", "shape", "vendor", "brand", "size", "color", "origin");
+
+		SearchResult first = nodeExtension.getClient().search(facetSearch(storedOrder));
+		Assertions.assertEquals(0, first.getShardsCached());
+		Assertions.assertEquals(storedOrder, facetGroupLabels(first));
+
+		SearchResult second = nodeExtension.getClient().search(facetSearch(liveOrder));
+		Assertions.assertEquals(4, second.getShardsCached(), "the same facets in another order share the cached shard responses");
+		Assertions.assertEquals(liveOrder, facetGroupLabels(second));
+	}
+
+	private static Search facetSearch(List<String> facets) {
+		Search search = new Search(INDEX_NAME).setAmount(0);
+		for (String facet : facets) {
+			search.addCountFacet(new CountFacet(facet));
+		}
+		return search;
+	}
+
 	private static List<String> facetGroupLabels(SearchResult result) {
 		return result.getFacetGroups().stream().map(group -> group.getCountRequest().getFacetField().getLabel()).toList();
 	}
