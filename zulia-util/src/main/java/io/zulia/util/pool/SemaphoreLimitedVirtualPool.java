@@ -31,6 +31,7 @@ public class SemaphoreLimitedVirtualPool extends VirtualThreadPerTaskTaskExecuto
 			});
 		}
 		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 			throw new RuntimeException(e);
 		}
 

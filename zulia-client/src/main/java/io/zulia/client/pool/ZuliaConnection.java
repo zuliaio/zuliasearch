@@ -66,8 +66,8 @@ public class ZuliaConnection {
 				try {
 					channel.awaitTermination(15, TimeUnit.SECONDS);
 				}
-				catch (InterruptedException ignored) {
-
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 				}
 			}
 		}

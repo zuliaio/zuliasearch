@@ -17,6 +17,7 @@ public class WaitingArrayBlockingQueue<T> extends ArrayBlockingQueue<T> {
 			put(e);
 		}
 		catch (InterruptedException e1) {
+			Thread.currentThread().interrupt();
 			throw new RuntimeException(e1);
 		}
 		return true;
