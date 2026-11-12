@@ -84,7 +84,11 @@ class SignalsClientFailurePolicyTest {
 		Assertions.assertEquals(wrongKind.signalId(), unenriched.signalId());
 		RecordResult unstamped = client.stamping(builder -> builder.tag("host", " ")).record(signal());
 		Assertions.assertFalse(unstamped.accepted(), "a stamp that breaks the signal is a drop too");
-		Assertions.assertEquals(3, client.droppedSignals(), "counted before the writer is involved");
+		RecordResult badTarget = client.record(
+				Signal.builder().app("search-app").actor(Actor.user("u1")).action(Actions.UPDATE).target("template", (String) null));
+		Assertions.assertFalse(badTarget.accepted(), "a null target id from request code is a drop, not an exception at the call site");
+		Assertions.assertNull(badTarget.signalId());
+		Assertions.assertEquals(4, client.droppedSignals(), "counted before the writer is involved");
 		Assertions.assertEquals(0, client.queuedSignals());
 		Assertions.assertThrows(IllegalArgumentException.class, () -> client.record((Signal.Builder) null));
 		Assertions.assertThrows(IllegalArgumentException.class, () -> client.record((Signal) null), "a null signal is a caller bug under any policy");

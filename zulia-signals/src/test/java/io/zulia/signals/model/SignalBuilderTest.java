@@ -7,10 +7,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 class SignalBuilderTest {
@@ -88,10 +91,10 @@ class SignalBuilderTest {
 		IllegalArgumentException empty = Assertions.assertThrows(IllegalArgumentException.class, () -> new Target(Targets.RECORD, List.of()));
 		Assertions.assertTrue(empty.getMessage().contains("empty"), empty.getMessage());
 		IllegalArgumentException nullList = Assertions.assertThrows(IllegalArgumentException.class,
-				() -> Signal.builder().target(Targets.RECORD, (Collection<String>) null));
+				() -> Signal.builder().target(Targets.RECORD, (Collection<String>) null).build());
 		Assertions.assertTrue(nullList.getMessage().contains("null"), nullList.getMessage());
 		IllegalArgumentException blank = Assertions.assertThrows(IllegalArgumentException.class,
-				() -> Signal.builder().target(Targets.RECORD, java.util.Arrays.asList("r1", " ")));
+				() -> Signal.builder().target(Targets.RECORD, Arrays.asList("r1", " ")).build());
 		Assertions.assertTrue(blank.getMessage().contains("id 1 of 2") && blank.getMessage().contains("blank"), blank.getMessage());
 		List<String> tooMany = IntStream.rangeClosed(0, Target.MAX_IDS).mapToObj(Integer::toString).toList();
 		IllegalArgumentException cap = Assertions.assertThrows(IllegalArgumentException.class, () -> new Target(Targets.RECORD, tooMany));
@@ -115,9 +118,9 @@ class SignalBuilderTest {
 	void tagsAreImmutableAndValidated() {
 		Signal signal = Signal.builder().app("a").actor(Actor.system()).action(Actions.LOGIN).tag("k", "v").build();
 		Assertions.assertThrows(UnsupportedOperationException.class, () -> signal.tags().put("x", "y"));
-		IllegalArgumentException nullValue = Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("k", (String) null));
+		IllegalArgumentException nullValue = Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("k", (String) null).build());
 		Assertions.assertTrue(nullValue.getMessage().contains("k"), nullValue.getMessage());
-		IllegalArgumentException blankValue = Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("k", " "));
+		IllegalArgumentException blankValue = Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("k", " ").build());
 		Assertions.assertTrue(blankValue.getMessage().contains("blank"), blankValue.getMessage());
 		Signal typed = Signal.builder().app("a").actor(Actor.system()).action(Actions.LOGIN).tag("n", 5).tag("b", true).tag("e", ActorType.AGENT).build();
 		Assertions.assertEquals(5L, typed.tags().get("n"));
@@ -127,14 +130,14 @@ class SignalBuilderTest {
 		Assertions.assertEquals(List.of("x", "y"), listed.tags().get("l"));
 		Assertions.assertEquals(List.of(), Signal.builder().app("a").actor(Actor.system()).action(Actions.LOGIN).tag("l", List.of()).build().tags().get("l"),
 				"an empty list is a value");
-		Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("l", (Collection<String>) null), "null list");
+		Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("l", (Collection<String>) null).build(), "null list");
 		Signal optional = Signal.builder().app("a").actor(Actor.user("secret-id")).action(Actions.LOGIN).session(" ").client("").tagIfPresent("o", " ")
 				.tagIfPresent("e", (Enum<?>) null).tagIfPresent("p", "x").build();
 		Assertions.assertNull(optional.sessionId(), "blank session is unset");
 		Assertions.assertNull(optional.client(), "blank client is unset");
 		Assertions.assertEquals(Map.of("p", "x"), optional.tags(), "tagIfPresent skips blank and null");
 		Assertions.assertFalse(optional.toString().contains("secret-id"), "toString hides the actor id");
-		IllegalArgumentException dotted = Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("a.b", "v"));
+		IllegalArgumentException dotted = Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("a.b", "v").build());
 		Assertions.assertTrue(dotted.getMessage().contains("a.b"), dotted.getMessage());
 	}
 
@@ -151,9 +154,60 @@ class SignalBuilderTest {
 		Signal logout = Signal.builder().app("search-app").actor(Actor.user("u1")).action(Actions.LOGOUT).duration(Duration.ofMinutes(2)).build();
 		Assertions.assertEquals(120_000L, logout.durationMs());
 		Assertions.assertNull(Signal.builder().app("search-app").actor(Actor.user("u1")).action(Actions.VIEW).build().durationMs());
-		IllegalArgumentException negative = Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().duration(Duration.ofSeconds(-1)));
+		IllegalArgumentException negative = Assertions.assertThrows(IllegalArgumentException.class,
+				() -> Signal.builder().duration(Duration.ofSeconds(-1)).build());
 		Assertions.assertTrue(negative.getMessage().contains("negative"), negative.getMessage());
-		Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().duration(null));
+		Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().duration(null).build());
+	}
+
+	@Test
+	void setterFailuresWaitForBuild() {
+		Signal.Builder builder = Signal.builder().app("search-app").actor(Actor.user("u1")).action(Actions.UPDATE);
+		Assertions.assertSame(builder, builder.target("template", (String) null), "a bad value never throws from the setter");
+		Assertions.assertSame(builder, builder.tag("k", " ").duration(Duration.ofSeconds(-1)), "later setters still chain");
+		IllegalArgumentException all = Assertions.assertThrows(IllegalArgumentException.class, builder::build);
+		Assertions.assertTrue(all.getMessage().startsWith("3 setter failures. Target id is required for target type template but was null. Tag k must have"),
+				all.getMessage());
+		Assertions.assertTrue(all.getMessage().endsWith("Duration must not be negative but was PT-1S"), all.getMessage());
+		Signal repaired = builder.target("template", "t1").tag("k", "v").duration(Duration.ZERO).build();
+		Assertions.assertEquals(new Target("template", "t1"), repaired.target(), "a later call on the same setter clears its failure");
+		Assertions.assertEquals(Map.of("k", "v"), repaired.tags());
+		Assertions.assertEquals(0L, repaired.durationMs());
+		IllegalArgumentException beforeRequired = Assertions.assertThrows(IllegalArgumentException.class, () -> Signal.builder().tag("k", " ").build());
+		Assertions.assertTrue(beforeRequired.getMessage().startsWith("Tag k"), "the setter failure wins over the missing app: " + beforeRequired.getMessage());
+		IllegalArgumentException otherKey = Assertions.assertThrows(IllegalArgumentException.class,
+				() -> Signal.builder().app("a").actor(Actor.user("u1")).action(Actions.VIEW).tag("k", (String) null).tag("j", "fixed").build());
+		Assertions.assertTrue(otherKey.getMessage().startsWith("Tag k must have a value but was null"),
+				"a single failure is thrown as it was, another key does not clear it");
+		Signal.Builder npe = Signal.builder().app("a").actor(Actor.user("u1")).action(Actions.SEARCH);
+		Assertions.assertSame(npe, npe.search(sd -> sd.shownDocIds(Arrays.asList("d1", null))), "a null element fails inside the consumer");
+		IllegalArgumentException consumer = Assertions.assertThrows(IllegalArgumentException.class, npe::build,
+				"caller code failing in a setter waits for build");
+		Assertions.assertTrue(consumer.getMessage().startsWith("Search details failed, "), consumer.getMessage());
+	}
+
+	@Test
+	void readyMadeValuesClearTheirSetterProblem() {
+		Signal.Builder builder = Signal.builder().app("a").actor(Actor.user("u1")).action(Actions.SEARCH);
+		builder.target("template", (String) null).search(sd -> sd.searchId(" "));
+		Assertions.assertThrows(IllegalArgumentException.class, builder::build);
+		Signal signal = builder.target(new Target("template", "t1")).search(SearchDetails.builder().searchId("s1").build()).build();
+		Assertions.assertEquals(new Target("template", "t1"), signal.target());
+		Assertions.assertEquals("s1", signal.search().searchId());
+	}
+
+	@Test
+	void extremeValuesAreProblemsNotExceptions() {
+		Signal.Builder builder = Signal.builder().app("a").actor(Actor.user("u1")).action(Actions.VIEW);
+		Assertions.assertSame(builder,
+				builder.duration(Duration.ofSeconds(Long.MAX_VALUE)).tag("when", Instant.MAX).search((Consumer<SearchDetails.Builder>) null));
+		IllegalArgumentException all = Assertions.assertThrows(IllegalArgumentException.class, builder::build);
+		Assertions.assertTrue(all.getMessage().contains("does not fit milliseconds in a long"), all.getMessage());
+		Assertions.assertTrue(all.getMessage().contains("Tag when instant +1000000000-12-31T23:59:59.999999999Z does not fit a Date"), all.getMessage());
+		Assertions.assertTrue(all.getMessage().contains("Search details failed, "), "a null consumer is caught like any consumer failure: " + all.getMessage());
+		Signal signal = builder.duration(Duration.ofMillis(Long.MAX_VALUE)).tag("when", Instant.EPOCH).search(sd -> sd.searchId("s1")).build();
+		Assertions.assertEquals(Long.MAX_VALUE, signal.durationMs());
+		Assertions.assertEquals(Date.from(Instant.EPOCH), signal.tags().get("when"));
 	}
 
 	@Test

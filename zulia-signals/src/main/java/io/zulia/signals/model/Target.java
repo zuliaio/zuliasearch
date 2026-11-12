@@ -10,29 +10,38 @@ public record Target(String type, List<String> ids) {
 	public static final int MAX_IDS = 10_000;
 
 	public Target {
+		String problem = problem(type, ids);
+		if (problem != null) {
+			throw new IllegalArgumentException(problem);
+		}
+		ids = List.copyOf(new LinkedHashSet<>(ids));
+	}
+
+	public Target(String type, String id) {
+		this(type, id == null ? null : List.of(id));
+	}
+
+	/** Why the constructor would refuse these arguments, or null. The signal builder records it instead of throwing. */
+	static String problem(String type, List<String> ids) {
 		if (type == null || type.isBlank()) {
-			throw new IllegalArgumentException("Target type is required but was " + (type == null ? "null" : "blank"));
+			return "Target type is required but was " + (type == null ? "null" : "blank");
 		}
 		if (ids == null || ids.isEmpty()) {
-			throw new IllegalArgumentException("Target id is required for target type " + type + " but was " + (ids == null ? "null" : "empty"));
+			return "Target id is required for target type " + type + " but was " + (ids == null ? "null" : "empty");
 		}
 		for (int i = 0; i < ids.size(); i++) {
 			String id = ids.get(i);
 			if (id == null || id.isBlank()) {
-				throw new IllegalArgumentException("Target id " + i + " of " + ids.size() + " for target type " + type + " is " + (id == null ? "null" : "blank"));
+				return "Target id " + i + " of " + ids.size() + " for target type " + type + " is " + (id == null ? "null" : "blank");
 			}
 		}
-		ids = List.copyOf(new LinkedHashSet<>(ids));
 		if (ids.size() > MAX_IDS) {
-			throw new IllegalArgumentException(
-					"Target type " + type + " has " + ids.size() + " distinct ids but at most " + MAX_IDS + " fit one signal, split the bulk or record the count as a tag");
+			int distinct = new LinkedHashSet<>(ids).size();
+			if (distinct > MAX_IDS) {
+				return "Target type " + type + " has " + distinct + " distinct ids but at most " + MAX_IDS
+						+ " fit one signal, split the bulk or record the count as a tag";
+			}
 		}
-	}
-
-	public Target(String type, String id) {
-		if (id == null || id.isBlank()) {
-			throw new IllegalArgumentException("Target id is required for target type " + type + " but was " + (id == null ? "null" : "blank"));
-		}
-		this(type, List.of(id));
+		return null;
 	}
 }
