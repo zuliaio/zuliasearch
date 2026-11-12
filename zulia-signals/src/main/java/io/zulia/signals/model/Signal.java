@@ -129,6 +129,10 @@ public final class Signal {
 
 	public static final class Builder {
 
+		private static final Duration MAX_DURATION = Duration.ofMillis(Long.MAX_VALUE);
+		private static final Instant MIN_DATE = Instant.ofEpochMilli(Long.MIN_VALUE);
+		private static final Instant MAX_DATE = Instant.ofEpochMilli(Long.MAX_VALUE);
+
 		private String signalId;
 		private Instant timestamp;
 		private String app;
@@ -140,8 +144,20 @@ public final class Signal {
 		private SearchDetails search;
 		private Long durationMs;
 		private final Map<String, Object> tags = new LinkedHashMap<>();
+		/** Problems by setter, so build() reports all of them and a later call on the same setter clears its own. */
+		private final Map<String, String> problems = new LinkedHashMap<>();
 
 		private Builder() {
+		}
+
+		/** Records or clears the setter's problem and says whether its value may be applied. Setters never throw so record can turn the problem into a drop. */
+		private boolean ok(String setter, String problem) {
+			if (problem == null) {
+				problems.remove(setter);
+				return true;
+			}
+			problems.put(setter, problem);
+			return false;
 		}
 
 		/** Overrides the generated id */
@@ -187,55 +203,72 @@ public final class Signal {
 		}
 
 		public Builder target(String type, String id) {
-			this.target = new Target(type, id);
-			return this;
+			return target(type, id == null ? null : List.of(id));
 		}
 
 		/** A bulk, one action on every id. Reports by target count each id once, reports by action count the signal once. */
 		public Builder target(String type, Collection<String> ids) {
-			this.target = new Target(type, ids == null ? null : new ArrayList<>(ids));
+			List<String> copy = ids == null ? null : new ArrayList<>(ids);
+			if (ok("target", Target.problem(type, copy))) {
+				target = new Target(type, copy);
+			}
 			return this;
 		}
 
 		public Builder target(Target target) {
+			ok("target", null);
 			this.target = target;
 			return this;
 		}
 
 		public Builder search(SearchDetails search) {
+			ok("search", null);
 			this.search = search;
 			return this;
 		}
 
 		public Builder search(Consumer<SearchDetails.Builder> details) {
 			SearchDetails.Builder searchBuilder = search == null ? SearchDetails.builder() : search.toBuilder();
-			details.accept(searchBuilder);
-			this.search = searchBuilder.build();
+			String problem = null;
+			try {
+				details.accept(searchBuilder);
+				search = searchBuilder.build();
+			}
+			catch (RuntimeException e) {
+				// the consumer is caller code, the one setter that has to catch it
+				problem = "Search details failed, " + (e.getMessage() == null ? e.toString() : e.getMessage());
+			}
+			ok("search", problem);
 			return this;
 		}
+
 		public Builder searchId(String searchId) {
 			return searchId == null ? this : search(sd -> sd.searchId(searchId));
 		}
 
 		public Builder duration(Duration duration) {
+			String problem = null;
 			if (duration == null) {
-				throw new IllegalArgumentException("Duration must not be null, skip the call to leave it unset");
+				problem = "Duration must not be null, skip the call to leave it unset";
 			}
-			if (duration.isNegative()) {
-				throw new IllegalArgumentException("Duration must not be negative but was " + duration);
+			else if (duration.isNegative()) {
+				problem = "Duration must not be negative but was " + duration;
 			}
-			this.durationMs = duration.toMillis();
+			else if (duration.compareTo(MAX_DURATION) > 0) {
+				problem = "Duration " + duration + " does not fit milliseconds in a long";
+			}
+			if (ok("duration", problem)) {
+				durationMs = duration.toMillis();
+			}
 			return this;
 		}
 
 		/** Stored in the tags sub document. Index the key on the index config to filter, count, or tally on it. */
 		public Builder tag(String key, String value) {
-			requireKey(key);
 			if (value == null || value.isBlank()) {
-				throw new IllegalArgumentException("Tag " + key + " must have a value but was " + (value == null ? "null" : "blank"));
+				return putTag(key, null, "must have a value but was " + (value == null ? "null" : "blank"));
 			}
-			tags.put(key, value);
-			return this;
+			return putTag(key, value, null);
 		}
 
 		/** Same as tag, skipping a null or blank value. */
@@ -248,13 +281,11 @@ public final class Signal {
 		}
 
 		public Builder tag(String key, long value) {
-			tags.put(requireKey(key), value);
-			return this;
+			return putTag(key, value, null);
 		}
 
 		public Builder tag(String key, boolean value) {
-			tags.put(requireKey(key), value);
-			return this;
+			return putTag(key, value, null);
 		}
 
 		/** Stores the constant's name. */
@@ -264,37 +295,53 @@ public final class Signal {
 
 		/** A multivalued tag. Indexed as a keyword, it facets once per element. Empty is a value, an empty list is stored. */
 		public Builder tag(String key, Collection<String> values) {
-			requireKey(key);
 			if (values == null) {
-				throw new IllegalArgumentException("Tag " + key + " must have a value but was null, pass an empty list for no values");
+				return putTag(key, null, "must have a value but was null, pass an empty list for no values");
 			}
 			if (values.stream().anyMatch(value -> value == null || value.isBlank())) {
-				throw new IllegalArgumentException("Tag " + key + " must not contain null or blank values but got " + values);
+				return putTag(key, null, "must not contain null or blank values but got " + values);
 			}
-			tags.put(key, List.copyOf(values));
-			return this;
+			return putTag(key, List.copyOf(values), null);
 		}
 
 		public Builder tag(String key, Instant value) {
-			requireKey(key);
 			if (value == null) {
-				throw new IllegalArgumentException("Tag " + key + " must have a value but was null");
+				return putTag(key, null, "must have a value but was null");
 			}
-			tags.put(key, Date.from(value));
+			if (value.isBefore(MIN_DATE) || value.isAfter(MAX_DATE)) {
+				return putTag(key, null, "instant " + value + " does not fit a Date");
+			}
+			return putTag(key, Date.from(value), null);
+		}
+
+		/** Every tag overload lands here. A key problem wins over the value problem, else the value is stored. */
+		private Builder putTag(String key, Object value, String valueProblem) {
+			String problem = keyProblem(key);
+			if (problem == null && valueProblem != null) {
+				problem = "Tag " + key + " " + valueProblem;
+			}
+			if (ok("tag " + key, problem)) {
+				tags.put(key, value);
+			}
 			return this;
 		}
 
-		private static String requireKey(String key) {
+		private static String keyProblem(String key) {
 			if (key == null || key.isBlank()) {
-				throw new IllegalArgumentException("Tag key is required but was " + (key == null ? "null" : "blank"));
+				return "Tag key is required but was " + (key == null ? "null" : "blank");
 			}
 			if (key.indexOf('.') >= 0 || key.indexOf('$') >= 0) {
-				throw new IllegalArgumentException("Tag key " + key + " must not contain '.' or '$', it becomes a field of the tags document");
+				return "Tag key " + key + " must not contain '.' or '$', it becomes a field of the tags document";
 			}
-			return key;
+			return null;
 		}
 
+		/** Throws the setter problems before anything else, they are the earlier mistakes. */
 		public Signal build() {
+			if (!problems.isEmpty()) {
+				throw new IllegalArgumentException(problems.size() == 1 ? problems.values().iterator().next()
+						: problems.size() + " setter failures. " + String.join(". ", problems.values()));
+			}
 			requireText(app, "App");
 			requireText(actionType, "Action");
 			if (actor == null) {
