@@ -227,6 +227,7 @@ public final class Signal {
 			return this;
 		}
 
+		/** Merges into the current details. A failure here is kept until build() even after later merges, only search(SearchDetails) clears it. */
 		public Builder search(Consumer<SearchDetails.Builder> details) {
 			SearchDetails.Builder searchBuilder = search == null ? SearchDetails.builder() : search.toBuilder();
 			String problem = null;
@@ -238,7 +239,10 @@ public final class Signal {
 				// the consumer is caller code, the one setter that has to catch it
 				problem = "Search details failed, " + (e.getMessage() == null ? e.toString() : e.getMessage());
 			}
-			ok("search", problem);
+			// a later merge builds on details a failed merge never added, so success here must not clear an earlier failure
+			if (problem != null) {
+				ok("search", problem);
+			}
 			return this;
 		}
 

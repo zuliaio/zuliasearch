@@ -187,6 +187,20 @@ class SignalBuilderTest {
 	}
 
 	@Test
+	void failedSearchMergeSurvivesLaterMerges() {
+		Signal.Builder builder = Signal.builder().app("a").actor(Actor.user("u1")).action(Actions.SEARCH)
+				.search(sd -> sd.query("lung cancer").latency(Duration.ofMillis(-5)));
+		builder.searchId("saved-7").search(sd -> sd.resultCount(3));
+		IllegalArgumentException failure = Assertions.assertThrows(IllegalArgumentException.class, builder::build,
+				"the query and latency of the failed merge are missing, so later merges must not hide it");
+		Assertions.assertTrue(failure.getMessage().startsWith("Search details failed, "), failure.getMessage());
+
+		SearchDetails replacement = SearchDetails.builder().query("lung cancer").searchId("saved-7").build();
+		Signal repaired = builder.search(replacement).build();
+		Assertions.assertEquals(replacement, repaired.search(), "a full replacement clears the failure");
+	}
+
+	@Test
 	void readyMadeValuesClearTheirSetterProblem() {
 		Signal.Builder builder = Signal.builder().app("a").actor(Actor.user("u1")).action(Actions.SEARCH);
 		builder.target("template", (String) null).search(sd -> sd.searchId(" "));
@@ -205,7 +219,9 @@ class SignalBuilderTest {
 		Assertions.assertTrue(all.getMessage().contains("does not fit milliseconds in a long"), all.getMessage());
 		Assertions.assertTrue(all.getMessage().contains("Tag when instant +1000000000-12-31T23:59:59.999999999Z does not fit a Date"), all.getMessage());
 		Assertions.assertTrue(all.getMessage().contains("Search details failed, "), "a null consumer is caught like any consumer failure: " + all.getMessage());
-		Signal signal = builder.duration(Duration.ofMillis(Long.MAX_VALUE)).tag("when", Instant.EPOCH).search(sd -> sd.searchId("s1")).build();
+		// a failed search merge is cleared only by a full replacement, see failedSearchMergeSurvivesLaterMerges
+		Signal signal = builder.duration(Duration.ofMillis(Long.MAX_VALUE)).tag("when", Instant.EPOCH).search(SearchDetails.builder().searchId("s1").build())
+				.build();
 		Assertions.assertEquals(Long.MAX_VALUE, signal.durationMs());
 		Assertions.assertEquals(Date.from(Instant.EPOCH), signal.tags().get("when"));
 	}
