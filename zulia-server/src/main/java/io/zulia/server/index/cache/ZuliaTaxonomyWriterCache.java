@@ -1,41 +1,25 @@
 package io.zulia.server.index.cache;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalCause;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.facet.taxonomy.writercache.TaxonomyWriterCache;
 
-import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * Bounded per dimension taxonomy writer cache. Returning true from put asks DirectoryTaxonomyWriter to reopen its taxonomy
+ * reader, which is expensive, so it is only requested when an evicted category is newer than the last reopen and a later lookup
+ * could otherwise miss it on disk and assign a second ordinal. See {@link DimensionCache} for the rule.
+ */
 public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
 	private final int maxOrdinalsPerDimension;
-	private final int evictionsBetweenRefreshes;
 	private final ConcurrentHashMap<FacetLabel, Integer> topLevelCache;
-	private final ConcurrentHashMap<String, Cache<FacetLabel, Integer>> dimensionCaches;
-	private final Set<String> evictedDimensions;
-	private final ConcurrentHashMap<String, AtomicLong> evictionCounters;
+	private final ConcurrentHashMap<String, DimensionCache> dimensionCaches;
 
 	public ZuliaTaxonomyWriterCache(int maxOrdinalsPerDimension) {
 		this.maxOrdinalsPerDimension = maxOrdinalsPerDimension;
-		this.evictionsBetweenRefreshes = Math.max(1, this.maxOrdinalsPerDimension / 4);
 		this.topLevelCache = new ConcurrentHashMap<>();
 		this.dimensionCaches = new ConcurrentHashMap<>();
-		this.evictedDimensions = Collections.newSetFromMap(new ConcurrentHashMap<>());
-		this.evictionCounters = new ConcurrentHashMap<>();
-	}
-
-	private Cache<FacetLabel, Integer> getOrCreateDimensionCache(String dimension) {
-		return dimensionCaches.computeIfAbsent(dimension, k -> CacheBuilder.newBuilder().maximumSize(maxOrdinalsPerDimension)
-				.removalListener(notification -> {
-					if (notification.getCause() == RemovalCause.SIZE) {
-						evictedDimensions.add(dimension);
-					}
-				}).build());
 	}
 
 	private String getDimension(FacetLabel categoryPath) {
@@ -44,10 +28,7 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 
 	@Override
 	public void close() {
-		topLevelCache.clear();
-		dimensionCaches.values().forEach(Cache::invalidateAll);
-		dimensionCaches.clear();
-		evictedDimensions.clear();
+		clear();
 	}
 
 	@Override
@@ -56,13 +37,8 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 			Integer ordinal = topLevelCache.get(categoryPath);
 			return ordinal != null ? ordinal : -1;
 		}
-		String dimension = getDimension(categoryPath);
-		Cache<FacetLabel, Integer> cache = dimensionCaches.get(dimension);
-		if (cache == null) {
-			return -1;
-		}
-		Integer ordinal = cache.getIfPresent(categoryPath);
-		return ordinal != null ? ordinal : -1;
+		DimensionCache dimensionCache = dimensionCaches.get(getDimension(categoryPath));
+		return dimensionCache != null ? dimensionCache.get(categoryPath) : -1;
 	}
 
 	@Override
@@ -71,31 +47,8 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 			topLevelCache.put(categoryPath, ordinal);
 			return false;
 		}
-		String dimension = getDimension(categoryPath);
-		Cache<FacetLabel, Integer> cache = getOrCreateDimensionCache(dimension);
-		// Guava's removal listener fires synchronously during put() when an eviction occurs,
-		// adding the dimension to evictedDimensions before this line completes
-		cache.put(categoryPath, ordinal);
-		// Returning true signals DirectoryTaxonomyWriter.addToCache() to refresh its reader so that
-		// subsequent disk lookups for evicted categories can find their existing ordinals and avoid
-		// assigning duplicates. Refreshing on every eviction is extremely expensive under high-
-		// cardinality facets (each refresh reopens the NRT taxonomy reader). Instead, we batch
-		// refreshes: accumulate evictions and only trigger a refresh every evictionsBetweenRefreshes.
-		// At steady state this is safe because the LRU keeps a category cached until roughly
-		// maxOrdinalsPerDimension newer entries displace it, by which point several refreshes have run
-		// (about maxOrdinalsPerDimension/evictionsBetweenRefreshes), so a category re-encountered after
-		// eviction is already in the refreshed reader and findCategory() returns its existing ordinal.
-		if (evictedDimensions.remove(dimension)) {
-			AtomicLong counter = evictionCounters.computeIfAbsent(dimension, k -> new AtomicLong());
-			long evictionCount = counter.incrementAndGet();
-			// The steady-state argument does not cover the cold start: the first maxOrdinalsPerDimension categories
-			// fill the cache with no eviction and therefore no refresh, so the reader holds none of them yet. The first
-			// eviction would then drop a category that is in neither the cache nor the reader, and re-encountering it
-			// before the evictionsBetweenRefreshes-th eviction assigns a duplicate ordinal. Force a refresh on that first
-			// eviction so the reader catches up, then fall back to batching.
-			return evictionCount == 1 || evictionCount % evictionsBetweenRefreshes == 0;
-		}
-		return false;
+		return dimensionCaches.computeIfAbsent(getDimension(categoryPath), k -> new DimensionCache(maxOrdinalsPerDimension))
+				.put(categoryPath, ordinal);
 	}
 
 	@Override
@@ -106,17 +59,15 @@ public class ZuliaTaxonomyWriterCache implements TaxonomyWriterCache {
 	@Override
 	public void clear() {
 		topLevelCache.clear();
-		dimensionCaches.values().forEach(Cache::invalidateAll);
+		dimensionCaches.values().forEach(DimensionCache::clear);
 		dimensionCaches.clear();
-		evictedDimensions.clear();
-		evictionCounters.clear();
 	}
 
 	@Override
 	public int size() {
 		long size = topLevelCache.size();
-		for (Cache<FacetLabel, Integer> cache : dimensionCaches.values()) {
-			size += cache.size();
+		for (DimensionCache dimensionCache : dimensionCaches.values()) {
+			size += dimensionCache.size();
 		}
 		return (int) size;
 	}
