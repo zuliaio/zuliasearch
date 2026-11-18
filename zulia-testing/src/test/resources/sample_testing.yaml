@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://zulia.io/schema/zulia_testing_schema-1.1.json
+# yaml-language-server: $schema=https://zulia.io/schema/zulia_testing_schema-1.2.json
 logSearches: true
 logSearchResults: true
 connections:
@@ -46,12 +46,40 @@ searches:
     numStats:
       - numericField: pubYear
         percentiles: [ 0.1, 0.5, 0.9 ]
+  - name: pubsThisYear
+    index: publications
+    queries:
+      - q: "pubDate:${thisYearRange}"
+        queryType: "FILTER"
+  - name: pubsSamePointLastYear
+    index: publications
+    queries:
+      - q: "pubDate:${lastYearRange}"
+        queryType: "FILTER"
   - name: pubsWithDocument
     index: publications
     queries:
       - q: "title:\"Understanding PCSK9 and anti-PCSK9 therapies\""
     amount: 1
     documentFields: [ "authors" ]
+variables:
+  tolerance: 0.2
+  thisYearRange: "[${startOfYear} TO ${today}]"
+  lastYearRange: "[${startOfLastYear} TO ${oneYearAgo}]"
+script: |
+  const MILLION = 1000000;
+  function atLeastMillion(count) {
+    return count >= MILLION;
+  }
+functions:
+  - name: within
+    args: [ actual, expected, tolerance ]
+    expr: Math.abs(actual - expected) <= expected * tolerance
+  - name: topLabel
+    args: [ search, field ]
+    body: |
+      const values = search.facet[field];
+      return values.length > 0 ? values[0].label : null;
 tests:
   - name: pubsCount
     expr: pubsStar.count > 30000000
@@ -64,11 +92,23 @@ tests:
   - name: topYearFacet
     expr: pubsComplex.facet["pubYear"][0].label == "2022" && pubsComplex.facet["pubYear"][0].count > 1000000
   - name: topJournalFacet
-    expr: pubsComplex.facet["journalNameIso"][0].label = "PLoS One" && pubsComplex.facet["journalNameIso"][0].count > 1000
+    expr: pubsComplex.facet["journalNameIso"][0].label == "PLoS One" && pubsComplex.facet["journalNameIso"][0].count > 1000
   - name: statFacetCheck
-    expr: pubsComplex.statFacet["pubYear-authorCount"][0].label = "2022" && pubsComplex.statFacet["pubYear-authorCount"][0].docCount > 1000000 && pubsComplex.statFacet["pubYear-authorCount"][0].sum > 5000000
+    expr: pubsComplex.statFacet["pubYear-authorCount"][0].label == "2022" && pubsComplex.statFacet["pubYear-authorCount"][0].docCount > 1000000 && pubsComplex.statFacet["pubYear-authorCount"][0].sum > 5000000
   - name: numStatCheck
     expr: (pubsComplex2.numStat["pubYear"].sum/pubsComplex2.numStat["pubYear"].docCount) > 2008
   - name: numStatCheck2
     expr: (pubsComplex2.numStat["pubYear"].percentiles[0].value < 1996) && (pubsComplex2.numStat["pubYear"].percentiles[2].value > 2021)
-
+  - name: yearToDateTracksLastYear
+    expr: within(pubsThisYear.count, pubsSamePointLastYear.count, tolerance)
+  - name: thisYearAtLeastMillion
+    expr: atLeastMillion(pubsThisYear.count)
+  - name: topYearViaFunction
+    expr: topLabel(pubsComplex, "pubYear") == "2022"
+values:
+  - name: pubsCount
+    expr: pubsStar.count
+  - name: pubsThisYear
+    expr: pubsThisYear.count
+  - name: topYear
+    expr: pubsComplex.facet["pubYear"][0]

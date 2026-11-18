@@ -18,11 +18,13 @@ import java.util.TreeSet;
  */
 public class SchemaFieldCoverageTest {
 
-	private static final String SCHEMA = "/zulia_testing_schema-1.1.json";
+	private static final String SCHEMA = "/zulia_testing_schema-1.2.json";
 
-	private static final Map<String, Class<?>> DEFINITIONS = Map.of("ZuliaTesting", ZuliaTestConfig.class, "Connection", ConnectionConfig.class, "Index",
-			IndexConfig.class, "Search", SearchConfig.class, "Query", QueryConfig.class, "Facet", FacetConfig.class, "StatFacet", StatFacetConfig.class,
-			"NumStat", NumStatConfig.class, "Test", TestConfig.class);
+	private static final Map<String, Class<?>> DEFINITIONS = Map.ofEntries(Map.entry("ZuliaTesting", ZuliaTestConfig.class),
+			Map.entry("Connection", ConnectionConfig.class), Map.entry("Index", IndexConfig.class), Map.entry("Search", SearchConfig.class),
+			Map.entry("Query", QueryConfig.class), Map.entry("Facet", FacetConfig.class), Map.entry("StatFacet", StatFacetConfig.class),
+			Map.entry("NumStat", NumStatConfig.class), Map.entry("Test", TestConfig.class), Map.entry("Value", ValueConfig.class),
+			Map.entry("Function", FunctionConfig.class));
 
 	@Test
 	public void everyConfigFieldIsInTheSchema() throws Exception {

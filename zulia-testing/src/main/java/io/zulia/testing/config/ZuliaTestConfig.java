@@ -1,13 +1,18 @@
 package io.zulia.testing.config;
 
 import java.util.List;
+import java.util.Map;
 
 public class ZuliaTestConfig {
 
 	private List<ConnectionConfig> connections;
 	private List<IndexConfig> indexes;
 	private List<SearchConfig> searches;
+	private Map<String, Object> variables;
+	private String script;
+	private List<FunctionConfig> functions;
 	private List<TestConfig> tests;
+	private List<ValueConfig> values;
 
 	private boolean logSearches;
 	private boolean logSearchResults;
@@ -40,12 +45,44 @@ public class ZuliaTestConfig {
 		this.searches = searches;
 	}
 
+	public Map<String, Object> getVariables() {
+		return variables;
+	}
+
+	public void setVariables(Map<String, Object> variables) {
+		this.variables = variables;
+	}
+
+	public String getScript() {
+		return script;
+	}
+
+	public void setScript(String script) {
+		this.script = script;
+	}
+
+	public List<FunctionConfig> getFunctions() {
+		return functions;
+	}
+
+	public void setFunctions(List<FunctionConfig> functions) {
+		this.functions = functions;
+	}
+
 	public List<TestConfig> getTests() {
 		return tests;
 	}
 
 	public void setTests(List<TestConfig> tests) {
 		this.tests = tests;
+	}
+
+	public List<ValueConfig> getValues() {
+		return values;
+	}
+
+	public void setValues(List<ValueConfig> values) {
+		this.values = values;
 	}
 
 	public boolean isLogSearches() {
@@ -66,7 +103,8 @@ public class ZuliaTestConfig {
 
 	@Override
 	public String toString() {
-		return "ZuliaTestConfig{" + "connections=" + connections + ", indexes=" + indexes + ", searches=" + searches + ", tests=" + tests + ", logSearches="
-				+ logSearches + ", logSearchResults=" + logSearchResults + '}';
+		return "ZuliaTestConfig{" + "connections=" + connections + ", indexes=" + indexes + ", searches=" + searches + ", variables=" + variables + ", script='"
+				+ script + '\'' + ", functions=" + functions + ", tests=" + tests + ", values=" + values + ", logSearches=" + logSearches
+				+ ", logSearchResults=" + logSearchResults + '}';
 	}
 }

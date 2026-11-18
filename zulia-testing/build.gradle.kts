@@ -3,6 +3,7 @@ description = "Zulia Testing"
 dependencies {
     api(projects.zuliaUtil)
     api(projects.zuliaClient)
+    implementation(libs.gson)
     implementation(libs.graalvm.polyglot)
     implementation(libs.graalvm.js)
     implementation(libs.logback.classic)

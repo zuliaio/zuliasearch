@@ -8,7 +8,9 @@ public class TestResult {
 
 	private TestConfig testConfig;
 
-	private boolean passed;
+	private TestStatus status = TestStatus.FAIL;
+
+	private String message;
 
 	public TestResult() {
 	}
@@ -30,15 +32,34 @@ public class TestResult {
 	}
 
 	public boolean isPassed() {
-		return passed;
+		return status == TestStatus.PASS;
 	}
 
 	public void setPassed(boolean passed) {
-		this.passed = passed;
+		this.status = passed ? TestStatus.PASS : TestStatus.FAIL;
+	}
+
+	public TestStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(TestStatus status) {
+		this.status = status;
+	}
+
+	/**
+	 * Why the test is ERROR or SKIPPED, null for PASS and FAIL.
+	 */
+	public String getMessage() {
+		return message;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
 	}
 
 	@Override
 	public String toString() {
-		return "TestResult{" + "testId='" + testId + '\'' + ", testConfig=" + testConfig + ", passed=" + passed + '}';
+		return "TestResult{" + "testId='" + testId + '\'' + ", testConfig=" + testConfig + ", status=" + status + ", message='" + message + '\'' + '}';
 	}
 }
