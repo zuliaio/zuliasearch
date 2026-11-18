@@ -30,10 +30,31 @@
             "$ref": "#/definitions/Search"
           }
         },
+        "variables": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Globals available to expressions by name and inside query strings as ${name}"
+        },
+        "script": {
+          "type": "string",
+          "description": "JavaScript evaluated once in the global scope before functions and tests"
+        },
+        "functions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Function"
+          }
+        },
         "tests": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/Test"
+          }
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Value"
           }
         }
       },
@@ -250,6 +271,60 @@
         "name"
       ],
       "title": "Test"
+    },
+    "Value": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "expr": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "expr",
+        "name"
+      ],
+      "title": "Value"
+    },
+    "Function": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expr": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "expr"
+          ]
+        },
+        {
+          "required": [
+            "body"
+          ]
+        }
+      ],
+      "title": "Function"
     }
   }
 }
