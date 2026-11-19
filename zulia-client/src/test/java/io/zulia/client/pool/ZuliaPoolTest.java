@@ -1,5 +1,6 @@
 package io.zulia.client.pool;
 
+import io.grpc.Status;
 import io.zulia.client.command.base.BaseCommand;
 import io.zulia.client.command.base.GrpcCommand;
 import io.zulia.client.config.ZuliaPoolConfig;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -239,6 +241,85 @@ class ZuliaPoolTest {
 		var result = pool.execute(cmd);
 		assertEquals("localhost", result.getNodeAddress());
 		assertEquals(2, counter.get());
+	}
+
+	@Test
+	void shardRoutedRetryAvoidsUnreachableNode() throws Exception {
+		pool = twoNodeRoutedPool(1);
+		String routedHost = pool.execute(new StubShardCommand("myIndex", "doc-42")).getNodeAddress();
+
+		List<String> attempts = new ArrayList<>();
+		var cmd = new StubShardCommand("myIndex", "doc-42") {
+			@Override
+			public StubResult execute(ZuliaConnection zuliaConnection) {
+				String host = zuliaConnection.getNode().getServerAddress();
+				attempts.add(host);
+				if (host.equals(routedHost)) {
+					throw Status.UNAVAILABLE.asRuntimeException();
+				}
+				return new StubResult(host);
+			}
+		};
+
+		var result = pool.execute(cmd);
+		assertEquals(2, attempts.size());
+		assertEquals(routedHost, attempts.getFirst());
+		assertNotEquals(routedHost, result.getNodeAddress(), "the retry must go to the other node, which forwards it");
+	}
+
+	@Test
+	void shardRoutedRetryKeepsNodeAfterServerError() throws Exception {
+		pool = twoNodeRoutedPool(1);
+		String routedHost = pool.execute(new StubShardCommand("myIndex", "doc-42")).getNodeAddress();
+
+		List<String> attempts = new ArrayList<>();
+		var cmd = new StubShardCommand("myIndex", "doc-42") {
+			@Override
+			public StubResult execute(ZuliaConnection zuliaConnection) {
+				String host = zuliaConnection.getNode().getServerAddress();
+				attempts.add(host);
+				if (attempts.size() == 1) {
+					// the node answered, so it is reachable
+					throw Status.INTERNAL.asRuntimeException();
+				}
+				return new StubResult(host);
+			}
+		};
+
+		pool.execute(cmd);
+		assertEquals(List.of(routedHost, routedHost), attempts);
+	}
+
+	@Test
+	void retryReusesUnreachableNodeWhenNoOtherNodeExists() {
+		var config = configWithNodes(makeNode("hostA", 32191));
+		config.setDefaultRetries(2);
+		pool = new ZuliaPool(config);
+
+		var counter = new AtomicInteger(0);
+		var cmd = new StubGrpcCommand() {
+			@Override
+			public StubResult execute(ZuliaConnection zuliaConnection) {
+				counter.incrementAndGet();
+				throw Status.UNAVAILABLE.asRuntimeException();
+			}
+		};
+
+		assertThrows(RuntimeException.class, () -> pool.execute(cmd));
+		assertEquals(3, counter.get());
+	}
+
+	private ZuliaPool twoNodeRoutedPool(int retries) {
+		var nodeA = makeNode("hostA", 32191);
+		var nodeB = makeNode("hostB", 32191);
+		var config = configWithNodes(nodeA, nodeB);
+		config.setRoutingEnabled(true);
+		config.setDefaultRetries(retries);
+		var routedPool = new ZuliaPool(config);
+		routedPool.updateIndexMappings(List.of(IndexShardMapping.newBuilder().setIndexName("myIndex").setNumberOfShards(2)
+				.addShardMapping(ShardMapping.newBuilder().setShardNumber(0).setPrimaryNode(nodeA))
+				.addShardMapping(ShardMapping.newBuilder().setShardNumber(1).setPrimaryNode(nodeB)).build()), List.of());
+		return routedPool;
 	}
 
 	// Null connectionListener safety 

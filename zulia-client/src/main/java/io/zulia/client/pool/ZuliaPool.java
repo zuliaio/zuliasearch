@@ -124,6 +124,8 @@ public class ZuliaPool {
 	public <R extends Result> R execute(BaseCommand<R> command) throws Exception {
 
 		int tries = 0;
+		// nodes this call could not reach, so a retry goes elsewhere instead of back to the same node
+		Set<NodeKey> unreachable = new HashSet<>();
 		while (true) {
 			if (isClosed) {
 				throw new IllegalStateException("Cannot execute " + command.getClass().getSimpleName() + " because the pool is closed");
@@ -142,15 +144,13 @@ public class ZuliaPool {
 					}
 				}
 
+				if (selectedNode != null && unreachable.contains(NodeKey.of(selectedNode))) {
+					// any node forwards the request to the shard's owner on the server side
+					selectedNode = null;
+				}
+
 				if (selectedNode == null) {
-					List<Node> tempList = nodes;
-
-					if (tempList.isEmpty()) {
-						throw new IOException("There are no active nodes");
-					}
-
-					int randomNodeIndex = (int) (Math.random() * tempList.size());
-					selectedNode = tempList.get(randomNodeIndex);
+					selectedNode = randomNode(unreachable);
 				}
 
 				NodeKey nodeKey = NodeKey.of(selectedNode);
@@ -210,6 +210,9 @@ public class ZuliaPool {
 
 			}
 			catch (Exception e) {
+				if (selectedNode != null && e instanceof StatusRuntimeException sre && sre.getStatus().getCode() == Status.Code.UNAVAILABLE) {
+					unreachable.add(NodeKey.of(selectedNode));
+				}
 				// a closed pool must not retry: the retry would surface a pool-closed error and hide this one
 				if (tries >= retries || isClosed) {
 					if (connectionListener != null) {
@@ -224,6 +227,17 @@ public class ZuliaPool {
 			}
 		}
 
+	}
+
+	private Node randomNode(Set<NodeKey> exclude) throws IOException {
+		List<Node> current = nodes;
+		if (current.isEmpty()) {
+			throw new IOException("There are no active nodes");
+		}
+		List<Node> reachable = current.stream().filter(node -> !exclude.contains(NodeKey.of(node))).toList();
+		// when every node has failed, retry them all rather than give up early
+		List<Node> candidates = reachable.isEmpty() ? current : reachable;
+		return candidates.get((int) (Math.random() * candidates.size()));
 	}
 
 	private void closeConnection(ZuliaConnection connection) {
