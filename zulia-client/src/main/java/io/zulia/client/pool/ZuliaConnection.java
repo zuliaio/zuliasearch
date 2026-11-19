@@ -59,24 +59,17 @@ public class ZuliaConnection {
 	 * closes the connection to the server
 	 */
 	public void close() {
-
-		try {
-			if (channel != null) {
-				channel.shutdown();
-				try {
-					channel.awaitTermination(15, TimeUnit.SECONDS);
-				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
+		// the stubs stay set because ZuliaPool closes a removed node's connection while other threads may still hold it.
+		// A late call then fails with UNAVAILABLE, which the pool retries, instead of a NullPointerException
+		if (channel != null) {
+			channel.shutdown();
+			try {
+				channel.awaitTermination(15, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 		}
-		finally {
-			channel = null;
-			blockingStub = null;
-			asyncStub = null;
-		}
-
 	}
 
 }
