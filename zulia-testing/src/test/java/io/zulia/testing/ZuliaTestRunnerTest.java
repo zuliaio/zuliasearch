@@ -511,6 +511,16 @@ public class ZuliaTestRunnerTest {
 	}
 
 	@Test
+	public void reportKeepsAngleBracketsReadable() {
+		ZuliaTestRunner runner = createRunner(List.of(createTest("notBoolean", "search1.count")), List.of());
+		TestRun run = runner.evaluate(Instant.parse("2026-10-22T14:00:00Z"), Map.of("search1", facetResult()));
+
+		String json = run.toReport().toJson();
+		Assertions.assertTrue(json.contains("Test <notBoolean> expression <search1.count> must evaluate to a boolean"), json);
+		Assertions.assertFalse(json.contains("\\u003c"), json);
+	}
+
+	@Test
 	public void templatesResolveInQueries() {
 		ZuliaTestRunner runner = createRunner(List.of()).setAsOf(LocalDate.of(2026, 10, 22));
 

@@ -29,7 +29,9 @@ public record TestRunReport(int formatVersion, String timestamp, String asOf, Ma
 	 */
 	public static final int CURRENT_FORMAT_VERSION = 1;
 
-	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();
+	// The report is a file people read, not JSON embedded in HTML, so messages keep their angle brackets.
+	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().serializeNulls().disableHtmlEscaping()
+			.setObjectToNumberStrategy(ToNumberPolicy.LONG_OR_DOUBLE).create();
 
 	public void write(Path path) throws IOException {
 		Files.writeString(path, GSON.toJson(this));
